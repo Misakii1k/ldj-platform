@@ -22,6 +22,11 @@ export type ReduceResult<S, E> =
   | { ok: false; code: string; message: string }
   | { ok: true; state: S; events: E[]; effects: GameEffect[] };
 
+export interface InitialStateResult<S> {
+  readonly state: S;
+  readonly effects: readonly GameEffect[];
+}
+
 export interface RandomSource {
   nextInt(minInclusive: number, maxExclusive: number): number;
   shuffle<T>(items: readonly T[]): T[];
@@ -36,7 +41,11 @@ export interface GameModule<C, S, A, PV, SV, E, R> {
   readonly manifest: GameManifest;
   parseConfig(input: unknown): C;
   parseAction(input: unknown): A;
-  createInitialState(ctx: GameContext, players: PlayerId[], config: C): S;
+  createInitialState(
+    ctx: GameContext,
+    players: PlayerId[],
+    config: C,
+  ): InitialStateResult<S>;
   reduce(ctx: GameContext, state: S, actor: Actor, action: A): ReduceResult<S, E>;
   getPlayerView(state: S, playerId: PlayerId): PV;
   getSpectatorView(state: S): SV;

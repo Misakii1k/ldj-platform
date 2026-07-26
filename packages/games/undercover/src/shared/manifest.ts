@@ -2,7 +2,7 @@ import type { GameManifest } from '@lan-party/shared';
 
 export const undercoverManifest = {
   id: 'undercover',
-  version: '0.1.0',
+  version: '0.2.0-alpha.2',
   displayName: '谁是卧底',
   minPlayers: 4,
   maxPlayers: 12,

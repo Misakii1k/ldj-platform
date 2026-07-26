@@ -640,11 +640,20 @@ interface GameContext {
   random: RandomSource;     // 由持久化种子与游标驱动
 }
 
+interface InitialStateResult<S> {
+  state: S;
+  effects: GameEffect[];
+}
+
 interface GameModule<C, S, A, PV, SV, E, R> {
   readonly manifest: GameManifest;
   parseConfig(input: unknown): C;
   parseAction(input: unknown): A;
-  createInitialState(ctx: GameContext, players: PlayerId[], config: C): S;
+  createInitialState(
+    ctx: GameContext,
+    players: PlayerId[],
+    config: C,
+  ): InitialStateResult<S>;
   reduce(ctx: GameContext, state: S, actor: Actor, action: A): ReduceResult<S, E>;
   getPlayerView(state: S, playerId: PlayerId): PV;
   getSpectatorView(state: S): SV;
@@ -656,6 +665,7 @@ interface GameModule<C, S, A, PV, SV, E, R> {
 契约要求：
 
 - `createInitialState`、`reduce`、视角函数和结果函数不得执行 I/O。
+- `createInitialState` 返回初始状态及 effects；内核必须在创建对局的同一事务中持久化两者，不能丢弃初始计时器。
 - 游戏模块不得直接使用 `Date.now()`、`Math.random()`、网络、数据库或全局可变状态。
 - `reduce` 不得修改传入状态对象；返回的新状态必须通过该模块的运行时 schema 校验。
 - 所有计时和系统消息以 effect 描述，由内核在同一事务中登记或执行。
