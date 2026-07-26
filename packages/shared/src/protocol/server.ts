@@ -11,7 +11,8 @@ import {
   sessionIdSchema,
   timestampSchema,
 } from '../ids.js';
-import { jsonValueSchema, safeJsonObjectSchema } from '../json.js';
+import { safeJsonObjectSchema, safeJsonValueSchema } from '../json.js';
+import { canonicalChatTextSchema, canonicalNicknameSchema } from '../text.js';
 import { protocolErrorPayloadSchema } from './errors.js';
 
 export const roomStatusSchema = z.enum(['LOBBY', 'IN_GAME', 'POST_GAME', 'CLOSED']);
@@ -33,7 +34,7 @@ export const gameSessionStatusSchema = z.enum([
 export const roomMemberViewSchema = z
   .object({
     playerId: playerIdSchema,
-    nickname: z.string().min(1).max(64),
+    nickname: canonicalNicknameSchema,
     role: memberRoleSchema,
     connectionStatus: connectionStatusSchema,
     isHost: z.boolean(),
@@ -65,7 +66,7 @@ export const chatMessageSchema = z
     id: nonNegativeIntegerSchema,
     fromPlayerId: playerIdSchema.nullable(),
     kind: z.enum(['user', 'system']),
-    text: z.string().min(1).max(200),
+    text: canonicalChatTextSchema,
     createdAt: timestampSchema,
   })
   .strict();
@@ -99,7 +100,7 @@ export const ackEnvelopeSchema = z
     ...stateBase,
     type: z.literal('ack'),
     requestId: requestIdSchema,
-    payload: z.object({ accepted: z.literal(true), result: jsonValueSchema.optional() }).strict(),
+    payload: z.object({ accepted: z.literal(true), result: safeJsonValueSchema.optional() }).strict(),
   })
   .strict();
 

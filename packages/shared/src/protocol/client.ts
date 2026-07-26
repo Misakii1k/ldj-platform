@@ -10,22 +10,26 @@ import {
   roomCodeSchema,
 } from '../ids.js';
 import { emptyPayloadSchema, safeJsonObjectSchema } from '../json.js';
+import {
+  clientChatTextSchema,
+  clientNicknameSchema,
+  containsOnlyUnicodeScalars,
+} from '../text.js';
 
-const nicknameSchema = z
+const passwordSchema = z
   .string()
   .max(64)
-  .transform((value) => value.trim().normalize('NFC'))
-  .refine((value) => Array.from(value).length >= 1 && Array.from(value).length <= 16, {
-    message: 'nickname must contain 1 to 16 Unicode characters',
-  });
-
-const passwordSchema = z.string().min(4).max(32);
+  .refine(containsOnlyUnicodeScalars, 'password must contain valid Unicode scalar values')
+  .refine((value) => {
+    const length = Array.from(value).length;
+    return length >= 4 && length <= 32;
+  }, 'password must contain 4 to 32 Unicode characters');
 const roleSchema = z.enum(['player', 'spectator']);
 
 const createRoomPayloadSchema = z
   .object({
     identityId: identityIdSchema,
-    nickname: nicknameSchema,
+    nickname: clientNicknameSchema,
     password: passwordSchema.optional(),
     gameId: gameIdSchema,
     gameConfig: safeJsonObjectSchema.optional(),
@@ -37,7 +41,7 @@ const joinRoomPayloadSchema = z
   .object({
     identityId: identityIdSchema,
     roomCode: roomCodeSchema,
-    nickname: nicknameSchema,
+    nickname: clientNicknameSchema,
     role: roleSchema,
     password: passwordSchema.optional(),
   })
@@ -73,13 +77,7 @@ const gameActionPayloadSchema = z.object({ action: safeJsonObjectSchema }).stric
 
 const chatSendPayloadSchema = z
   .object({
-    text: z
-      .string()
-      .max(1_000)
-      .transform((value) => value.trim().normalize('NFC'))
-      .refine((value) => Array.from(value).length >= 1 && Array.from(value).length <= 200, {
-        message: 'chat text must contain 1 to 200 Unicode characters',
-      }),
+    text: clientChatTextSchema,
   })
   .strict();
 

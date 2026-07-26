@@ -52,6 +52,11 @@ export const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
   ]),
 );
 
+const jsonObjectSchema: z.ZodType<JsonObject> = z.record(
+  z.string().min(1).max(64),
+  jsonValueSchema,
+);
+
 function validateJsonTree(
   value: JsonValue,
   ctx: z.RefinementCtx,
@@ -87,15 +92,20 @@ function validateJsonTree(
   }
 }
 
-export const safeJsonObjectSchema = z
-  .unknown()
-  .superRefine((value, ctx) => rejectDangerousRawKeys(value, ctx))
-  .pipe(z.record(z.string().min(1).max(64), jsonValueSchema))
-  .superRefine((value, ctx) => {
+function withJsonSafety<T extends JsonValue>(schema: z.ZodType<T>): z.ZodType<T> {
+  return z
+    .unknown()
+    .superRefine((value, ctx) => rejectDangerousRawKeys(value, ctx))
+    .pipe(schema)
+    .superRefine((value, ctx) => {
     validateJsonTree(value, ctx);
     if (utf8ByteLength(JSON.stringify(value)) > MAX_JSON_BYTES) {
       ctx.addIssue({ code: 'custom', message: `JSON object exceeds ${MAX_JSON_BYTES} bytes` });
     }
   });
+}
+
+export const safeJsonValueSchema = withJsonSafety(jsonValueSchema);
+export const safeJsonObjectSchema = withJsonSafety(jsonObjectSchema);
 
 export const emptyPayloadSchema = z.object({}).strict();

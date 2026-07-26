@@ -29,6 +29,27 @@ describe('client protocol v1', () => {
     }
   });
 
+  it('measures room passwords by Unicode code points', () => {
+    const base = {
+      v: 1,
+      type: 'create_room',
+      requestId: 'unicode-password',
+      payload: { identityId: 'identity-1', nickname: '玩家', gameId: 'undercover' },
+    } as const;
+    expect(
+      clientEnvelopeSchema.safeParse({
+        ...base,
+        payload: { ...base.payload, password: '😀'.repeat(32) },
+      }).success,
+    ).toBe(true);
+    expect(
+      clientEnvelopeSchema.safeParse({
+        ...base,
+        payload: { ...base.payload, password: '😀'.repeat(33) },
+      }).success,
+    ).toBe(false);
+  });
+
   it('accepts each declared client message type', () => {
     const messages = [
       {
@@ -107,7 +128,7 @@ describe('client protocol v1', () => {
   it('rejects invalid and over-limit text and numbers', () => {
     const invalidMessages = [
       { v: 1, type: 'chat_send', requestId: 'a', payload: { text: ' '.repeat(10) } },
-      { v: 1, type: 'chat_send', requestId: 'b', payload: { text: '字'.repeat(201) } },
+      { v: 1, type: 'chat_send', requestId: 'b', payload: { text: '字'.repeat(301) } },
       {
         v: 1,
         type: 'create_room',
