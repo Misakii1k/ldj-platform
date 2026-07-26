@@ -5,7 +5,8 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { openDatabase } from '../../src/persistence/database.js';
-import type { SqliteDatabase } from '../../src/persistence/sqlite-database.js';
+import { discoverMigrations, runMigrations } from '../../src/persistence/migrations.js';
+import { SqliteDatabase } from '../../src/persistence/sqlite-database.js';
 
 const temporaryDirectories: string[] = [];
 const openDatabases: SqliteDatabase[] = [];
@@ -82,12 +83,12 @@ describe('SQLite persistence boundary', () => {
     const path = join(directory, 'platform.sqlite');
 
     const first = openDatabase(path);
-    expect(first.migrations).toEqual({ appliedVersions: [1], currentVersion: 1 });
+    expect(first.migrations).toEqual({ appliedVersions: [1, 2], currentVersion: 2 });
     first.database.close();
 
     const second = openDatabase(path);
     openDatabases.push(second.database);
-    expect(second.migrations).toEqual({ appliedVersions: [], currentVersion: 1 });
+    expect(second.migrations).toEqual({ appliedVersions: [], currentVersion: 2 });
   });
 
   it('enforces foreign keys and rolls back failed transactions', () => {
@@ -177,14 +178,63 @@ describe('SQLite persistence boundary', () => {
       `INSERT INTO chat_messages
         (room_id, session_id, from_player_id, kind, text, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      ['room-1', 'session-1', 'player-1', 'player', '字'.repeat(300), 1],
+      ['room-1', 'session-1', 'player-1', 'user', '字'.repeat(300), 1],
     );
     expect(() =>
       database.run(
         `INSERT INTO chat_messages
           (room_id, session_id, from_player_id, kind, text, created_at)
          VALUES (?, ?, ?, ?, ?, ?)`,
-        ['room-1', 'session-1', 'player-1', 'player', '字'.repeat(301), 1],
+        ['room-1', 'session-1', 'player-1', 'user', '字'.repeat(301), 1],
+      ),
+    ).toThrow();
+  });
+
+  it('migrates legacy chat kinds and never reuses a deleted cursor', () => {
+    const database = SqliteDatabase.open(':memory:');
+    openDatabases.push(database);
+    const migrations = discoverMigrations();
+    expect(runMigrations(database, migrations.slice(0, 1), 1)).toEqual({
+      appliedVersions: [1],
+      currentVersion: 1,
+    });
+
+    database.run(
+      `INSERT INTO rooms
+        (id, code, status, config_json, seq, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      ['legacy-room', 'LEGC', 'LOBBY', '{}', 0, 1, 1],
+    );
+    const legacy = database.run(
+      `INSERT INTO chat_messages
+        (room_id, from_player_id, kind, text, created_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      ['legacy-room', 'player-1', 'player', '旧消息', 1],
+    );
+
+    expect(runMigrations(database, migrations, 2)).toEqual({
+      appliedVersions: [2],
+      currentVersion: 2,
+    });
+    expect(database.get<{ id: number; kind: string }>(
+      'SELECT id, kind FROM chat_messages',
+    )).toEqual({ id: Number(legacy.lastInsertRowid), kind: 'user' });
+
+    const deletedCursor = Number(legacy.lastInsertRowid);
+    database.run('DELETE FROM chat_messages WHERE id = ?', [deletedCursor]);
+    const inserted = database.run(
+      `INSERT INTO chat_messages
+        (room_id, from_player_id, kind, text, created_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      ['legacy-room', 'player-1', 'user', '新消息', 3],
+    );
+    expect(Number(inserted.lastInsertRowid)).toBeGreaterThan(deletedCursor);
+    expect(() =>
+      database.run(
+        `INSERT INTO chat_messages
+          (room_id, from_player_id, kind, text, created_at)
+         VALUES (?, ?, ?, ?, ?)`,
+        ['legacy-room', 'player-1', 'player', '旧 kind', 4],
       ),
     ).toThrow();
   });
