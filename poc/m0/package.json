@@ -1,0 +1,12 @@
+{
+  "name": "m0-poc",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sqlite": "node sqlite-poc.mjs",
+    "ws": "node ws-poc.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

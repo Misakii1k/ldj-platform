@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.log
+.env
+.env.*
+
+# PoC 运行产物
+poc/m0/poc.db*
+poc/m0/poc.backup.db
+poc/m0/poc.vacuum.db
