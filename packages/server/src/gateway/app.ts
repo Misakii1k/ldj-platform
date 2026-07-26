@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 
 import {
@@ -34,6 +35,14 @@ export interface ServerApplication {
 interface CountRow {
   count: number;
 }
+
+const packageMetadata = createRequire(import.meta.url)('../../package.json') as {
+  readonly version?: unknown;
+};
+if (typeof packageMetadata.version !== 'string') {
+  throw new TypeError('Server package version is missing');
+}
+const SERVER_VERSION = packageMetadata.version;
 
 function writeJson(response: ServerResponse, statusCode: number, payload: unknown): void {
   response.statusCode = statusCode;
@@ -116,7 +125,7 @@ export function createApplication(config: ServerConfig, logger: Logger): ServerA
         "SELECT COUNT(*) AS count FROM rooms WHERE status != 'CLOSED'",
       )?.count ?? 0;
       writeJson(response, 200, {
-        version: process.env.npm_package_version ?? '0.1.0',
+        version: SERVER_VERSION,
         uptimeSeconds: Math.floor((Date.now() - startedAt) / 1000),
         ready,
         roomCount,
@@ -169,7 +178,7 @@ export function createApplication(config: ServerConfig, logger: Logger): ServerA
             payload: {
               protocolVersion: PROTOCOL_VERSION,
               connectionId,
-              serverVersion: '0.1.0',
+              serverVersion: SERVER_VERSION,
             },
           }),
         );

@@ -30,7 +30,8 @@
 - [x] CI 脚本：typecheck + lint + 单测；lockfile 提交（SEC-008）
 - 退出标准（SPEC §15 M1）：健康检查、schema 校验、空房间命令链通过
 
-### Phase 2：M2 房间闭环 — pending
+### Phase 2：M2 房间闭环 — in_progress
+- [x] `0.2.0-alpha.1` 基础切片：昵称/密码/房间码/恢复令牌安全原语、成员/连接/房主纯策略、创建/加入/恢复客户端大厅与重连状态机
 - [ ] 创建/加入/退出/重名校验/密码慢哈希（FR-ROOM-*）
 - [ ] 房主权限与转让（FR-HOST-001~006）、踢人、观战（FR-SPEC-*）
 - [ ] 公屏聊天 + 游标补发（FR-CHAT-001~005）
@@ -66,10 +67,11 @@
 | SQLite 驱动 | 首选 `node:sqlite`（Node 24 内置） | 零原生编译，天然满足 Termux 约束；真机 PoC 后冻结 |
 | WebSocket 库 | 服务端 `ws`（纯 JS） | 无原生依赖；客户端用浏览器/Node 内置 WebSocket |
 | 运行时校验 | zod | 生态成熟，shared 包内定义 schema 双端复用 |
-| git | 已 init，首次提交待用户确认 | 遵循"用户要求才提交" |
+| git | `codex/r1-mvp` 独立工作树，小步提交，不自动合并或推送 | R1 实施计划约束 |
 
 ## 错误记录
 
 | 错误 | 尝试 | 解决 |
 |------|------|------|
 | npm 依赖范围解析到不完整的未来版本 | 2 | 将工具链和 workspace 依赖固定为 Node 24 兼容版本，成功生成 lockfile |
+| Playwright 验收后 esbuild 可选二进制临时缺失 | 1 | `npm rebuild esbuild` 恢复本机工具文件；客户端随即重新构建通过，lockfile 未变化 |

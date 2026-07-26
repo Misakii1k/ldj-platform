@@ -1,6 +1,6 @@
 {
   "name": "@lan-party/client",
-  "version": "0.1.0",
+  "version": "0.2.0-alpha.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,11 +8,13 @@
     "dev": "vite",
     "preview": "vite preview",
     "typecheck": "tsc -b --pretty false && tsc --noEmit -p tsconfig.test.json --pretty false",
-    "test": "vitest run"
+    "test": "vitest run --root ../.. packages/client/src"
   },
   "dependencies": {
+    "@lan-party/shared": "0.2.0-alpha.1",
     "react": "19.1.1",
-    "react-dom": "19.1.1"
+    "react-dom": "19.1.1",
+    "zod": "4.0.17"
   },
   "devDependencies": {
     "@types/node": "24.2.0",

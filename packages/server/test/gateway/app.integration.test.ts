@@ -56,7 +56,11 @@ describe('server application', () => {
     await expect(ready.json()).resolves.toEqual({ status: 'ready' });
 
     const diagnostics = await fetch(`${base}/diagnostics`);
-    await expect(diagnostics.json()).resolves.toMatchObject({ ready: true, roomCount: 0 });
+    await expect(diagnostics.json()).resolves.toMatchObject({
+      version: '0.2.0-alpha.1',
+      ready: true,
+      roomCount: 0,
+    });
 
     const home = await fetch(base);
     expect(await home.text()).toContain('局域网桌游');
@@ -72,7 +76,11 @@ describe('server application', () => {
       socket.once('message', (data) => resolve(data.toString()));
       socket.once('error', reject);
     });
-    expect(JSON.parse(message)).toMatchObject({ v: 1, type: 'welcome' });
+    expect(JSON.parse(message)).toMatchObject({
+      v: 1,
+      type: 'welcome',
+      payload: { serverVersion: '0.2.0-alpha.1' },
+    });
     socket.close();
   });
 });
