@@ -20,14 +20,14 @@
 - [x] M0 PoC 脚本（node:sqlite + WebSocket + 局域网服务模式）在 Windows 本机验证通过
 - [ ] 【需用户真机】按 poc/m0/README.md 在 ARM64 Termux 设备执行清单，回填结果 → 冻结 DG-01/DG-02
 
-### Phase 1：M1 工程骨架 — pending
-- [ ] npm workspaces：`packages/shared`、`packages/server`、`packages/client`、`packages/games/undercover`
-- [ ] shared/protocol：消息 envelope、错误码表（附录 A）、zod 运行时 schema
-- [ ] server/gateway：HTTP 静态托管 + `/health/live|ready` + WebSocket 接入 + Origin 校验 + 限流骨架
-- [ ] server/persistence：迁移器 + schema v1（SPEC §10.2 十张逻辑表）+ 数据库薄边界
-- [ ] server/core：每房间串行命令队列（空房间命令链贯通：校验→入队→事务→ack→广播）
-- [ ] 结构化日志（脱敏约束 SEC-009）、启动地址检测与二维码输出（FR-BOOT-001/002）
-- [ ] CI 脚本：typecheck + lint + 单测；lockfile 提交（SEC-008）
+### Phase 1：M1 工程骨架 — completed
+- [x] npm workspaces：`packages/shared`、`packages/server`、`packages/client`、`packages/games/undercover`
+- [x] shared/protocol：消息 envelope、错误码表（附录 A）、zod 运行时 schema
+- [x] server/gateway：HTTP 静态托管 + `/health/live|ready` + WebSocket 接入 + Origin 校验 + 限流骨架
+- [x] server/persistence：迁移器 + schema v1（SPEC §10.2 十张逻辑表）+ 数据库薄边界
+- [x] server/core：每房间串行命令队列（空房间命令链贯通：校验→入队→事务→ack→广播）
+- [x] 结构化日志（脱敏约束 SEC-009）、启动地址检测与二维码输出（FR-BOOT-001/002）
+- [x] CI 脚本：typecheck + lint + 单测；lockfile 提交（SEC-008）
 - 退出标准（SPEC §15 M1）：健康检查、schema 校验、空房间命令链通过
 
 ### Phase 2：M2 房间闭环 — pending
@@ -72,4 +72,4 @@
 
 | 错误 | 尝试 | 解决 |
 |------|------|------|
-| （暂无） | | |
+| npm 依赖范围解析到不完整的未来版本 | 2 | 将工具链和 workspace 依赖固定为 Node 24 兼容版本，成功生成 lockfile |

@@ -1,0 +1,225 @@
+:root {
+  color: #28251f;
+  background: #f7edda;
+  font-family: "Trebuchet MS", "Microsoft YaHei", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --ink: #28251f;
+  --paper: #fffaf0;
+  --cream: #f7edda;
+  --tomato: #e44c35;
+  --tomato-dark: #a92e21;
+  --green: #176b51;
+  --yellow: #f2c14e;
+  --line: #2d2a24;
+}
+
+* { box-sizing: border-box; }
+
+html { min-width: 320px; background: var(--cream); }
+
+body {
+  min-width: 320px;
+  min-height: 100svh;
+  margin: 0;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 12% 8%, rgb(228 76 53 / 10%) 0 2px, transparent 3px),
+    radial-gradient(circle at 84% 20%, rgb(23 107 81 / 12%) 0 2px, transparent 3px),
+    var(--cream);
+  background-size: 28px 28px, 37px 37px, auto;
+}
+
+button, a { font: inherit; }
+
+button:focus-visible, a:focus-visible {
+  outline: 4px solid var(--yellow);
+  outline-offset: 3px;
+}
+
+.party-shell {
+  position: relative;
+  width: min(100%, 500px);
+  min-height: 100svh;
+  margin: 0 auto;
+  padding: max(22px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+}
+
+.masthead, footer, .brand, .primary-action, .connection-badge { display: flex; align-items: center; }
+
+.masthead { justify-content: space-between; gap: 12px; }
+
+.brand {
+  min-height: 44px;
+  gap: 9px;
+  color: var(--ink);
+  font-family: Georgia, "Noto Serif SC", serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.brand__stamp {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  rotate: -6deg;
+  place-items: center;
+  color: #fffaf0;
+  background: var(--tomato);
+  border: 2px solid var(--line);
+  border-radius: 9px 5px 10px 6px;
+  box-shadow: 2px 2px 0 var(--line);
+}
+
+.lan-tag {
+  padding: 6px 10px;
+  color: var(--green);
+  border: 1.5px dashed var(--green);
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.hero { padding: 12svh 4px 7svh; }
+
+.eyebrow, .kicker {
+  margin: 0 0 10px;
+  color: var(--tomato-dark);
+  font-size: .75rem;
+  font-weight: 900;
+  letter-spacing: .18em;
+}
+
+h1, h2 { font-family: Georgia, "Noto Serif SC", serif; }
+
+h1 {
+  margin: 0;
+  font-size: clamp(3.25rem, 18vw, 5.2rem);
+  line-height: .92;
+  letter-spacing: -.07em;
+}
+
+h1 em { color: var(--tomato); font-style: normal; }
+
+.hero__lede {
+  max-width: 29rem;
+  margin: 24px 0 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.75;
+}
+
+.table-card {
+  position: relative;
+  padding: 24px;
+  background: var(--paper);
+  border: 2px solid var(--line);
+  border-radius: 28px 28px 28px 8px;
+  box-shadow: 7px 8px 0 var(--line);
+}
+
+.table-card__marker {
+  position: absolute;
+  top: -16px;
+  right: 22px;
+  padding: 6px 10px;
+  rotate: 4deg;
+  color: var(--ink);
+  background: var(--yellow);
+  border: 2px solid var(--line);
+  font-family: Georgia, serif;
+  font-weight: 900;
+  box-shadow: 2px 2px 0 var(--line);
+}
+
+.game-art { position: relative; height: 88px; margin-bottom: 14px; }
+
+.game-art__card {
+  position: absolute;
+  display: grid;
+  width: 62px;
+  height: 82px;
+  place-items: center;
+  border: 2px solid var(--line);
+  border-radius: 9px;
+  font-family: Georgia, "Noto Serif SC", serif;
+  font-size: 2.15rem;
+  font-weight: 900;
+  box-shadow: 3px 3px 0 var(--line);
+}
+
+.game-art__card--back { left: 8px; rotate: -10deg; color: var(--paper); background: var(--green); }
+.game-art__card--front { left: 59px; top: 3px; rotate: 7deg; color: var(--tomato); background: var(--paper); }
+
+.table-card__copy h2 { margin: 0; font-size: 2rem; letter-spacing: -.03em; }
+.table-card__copy p:not(.kicker) { margin: 6px 0 22px; color: #655e51; font-size: .88rem; font-weight: 700; }
+
+.primary-action {
+  width: 100%;
+  min-height: 54px;
+  justify-content: space-between;
+  padding: 0 20px;
+  color: var(--paper);
+  background: var(--tomato);
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  font-weight: 900;
+  box-shadow: 3px 4px 0 var(--line);
+}
+
+.primary-action:not(:disabled):active { translate: 2px 2px; box-shadow: 1px 2px 0 var(--line); }
+.primary-action:disabled { color: #6d675d; background: #d8d0c2; cursor: wait; }
+
+.milestone-note { margin: 16px 0 0; color: #655e51; font-size: .76rem; line-height: 1.55; }
+.milestone-note span { color: var(--tomato); }
+
+.connection-badge {
+  gap: 12px;
+  margin-top: 22px;
+  padding: 14px 16px;
+  background: rgb(255 250 240 / 72%);
+  border: 1.5px solid rgb(45 42 36 / 28%);
+  border-radius: 16px;
+}
+
+.connection-badge__dot {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  background: currentColor;
+  border: 3px solid var(--paper);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px currentColor;
+}
+
+.connection-badge strong, .connection-badge small { display: block; }
+.connection-badge strong { font-size: .85rem; }
+.connection-badge small { margin-top: 3px; color: #655e51; font-size: .72rem; line-height: 1.4; }
+.connection-badge--pending { color: #816218; }
+.connection-badge--success { color: var(--green); }
+.connection-badge--warning { color: #a45b12; }
+.connection-badge--danger { color: var(--tomato-dark); }
+
+footer { justify-content: center; gap: 8px; padding: 26px 0 4px; color: #71695d; font-size: .7rem; font-weight: 800; letter-spacing: .08em; }
+
+.confetti { position: absolute; z-index: -1; border: 3px solid var(--line); }
+.confetti--one { top: 124px; right: -10px; width: 28px; height: 12px; rotate: 25deg; background: var(--green); }
+.confetti--two { top: 308px; left: -8px; width: 18px; height: 18px; rotate: -14deg; background: var(--yellow); border-radius: 50%; }
+
+@media (min-width: 430px) {
+  .table-card { padding: 28px; }
+  .game-art { float: right; width: 132px; }
+  .table-card__copy { min-height: 100px; }
+  .primary-action { clear: both; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero > *, .table-card, .connection-badge { animation: arrive .52s both cubic-bezier(.2,.8,.2,1); }
+  .hero > :nth-child(2) { animation-delay: 80ms; }
+  .hero > :nth-child(3) { animation-delay: 150ms; }
+  .table-card { animation-delay: 210ms; }
+  .connection-badge { animation-delay: 280ms; }
+  @keyframes arrive { from { opacity: 0; translate: 0 12px; } }
+}

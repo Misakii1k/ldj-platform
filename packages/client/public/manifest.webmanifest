@@ -1,0 +1,17 @@
+{
+  "name": "闹一桌 · 局域网桌游",
+  "short_name": "闹一桌",
+  "description": "同一张网里，和朋友轻松开一局。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7edda",
+  "theme_color": "#e45b38",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

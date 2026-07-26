@@ -14,4 +14,4 @@ TypeScript（严格模式）· Node.js ≥ 24 LTS · `node:sqlite` · `ws` · Re
 
 ## 当前状态
 
-Phase 0：SPEC 冻结候选，M0 PoC 进行中。工程骨架（M1）尚未生成。
+Phase 0：M0 Termux 真机 PoC 等待用户回填。M1 工程骨架已完成并通过类型、单元、集成、构建、生产冒烟与移动端视觉检查；下一步为 M2 房间闭环。
