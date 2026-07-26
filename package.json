@@ -1,0 +1,50 @@
+{
+  "name": "lan-party-platform",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@11.8.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "workspaces": [
+    "packages/shared",
+    "packages/games/*",
+    "packages/server",
+    "packages/client"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "check": "npm run lint && npm run typecheck && npm run test:unit && npm run test:integration && npm run build",
+    "dev:client": "npm run dev --workspace @lan-party/client",
+    "dev:server": "npm run dev --workspace @lan-party/server",
+    "lint": "eslint \"packages/**/*.{ts,tsx}\" \"scripts/**/*.mjs\" \"*.{ts,js}\"",
+    "package": "node scripts/package-release.mjs",
+    "smoke:prod": "node scripts/smoke-prod.mjs",
+    "start:prod": "npm run start --workspace @lan-party/server",
+    "test": "npm run test:unit",
+    "test:e2e": "playwright test",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:unit": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.32.0",
+    "@playwright/test": "1.55.0",
+    "@types/node": "24.2.0",
+    "@types/qrcode": "1.5.5",
+    "@types/react": "19.1.10",
+    "@types/react-dom": "19.1.7",
+    "@types/ws": "8.18.1",
+    "@vitejs/plugin-react": "5.0.0",
+    "@vitest/coverage-v8": "3.2.4",
+    "archiver": "7.0.1",
+    "eslint": "9.32.0",
+    "fast-check": "4.2.0",
+    "tsx": "4.20.3",
+    "typescript": "5.9.2",
+    "typescript-eslint": "8.39.1",
+    "vite": "7.1.2",
+    "vitest": "3.2.4"
+  }
+}

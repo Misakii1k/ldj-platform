@@ -1,0 +1,9 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./packages/games/undercover" },
+    { "path": "./packages/server" },
+    { "path": "./packages/client" }
+  ]
+}

@@ -3,6 +3,14 @@ dist/
 *.log
 .env
 .env.*
+artifacts/
+coverage/
+playwright-report/
+test-results/
+.tmp/
+output/
+.playwright-cli/
+*.tsbuildinfo
 
 # PoC 运行产物
 poc/m0/poc.db*

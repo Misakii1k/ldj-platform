@@ -1,0 +1,30 @@
+{
+  "name": "@lan-party/game-undercover",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./shared": {
+      "types": "./dist/shared/index.d.ts",
+      "default": "./dist/shared/index.js"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty false && tsc --noEmit -p tsconfig.test.json --pretty false",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@lan-party/shared": "0.1.0",
+    "zod": "4.0.17"
+  },
+  "devDependencies": {
+    "typescript": "5.9.2",
+    "vitest": "3.2.4"
+  }
+}
