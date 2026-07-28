@@ -110,3 +110,29 @@
   RTO 同步完成远低于 60 秒。
 - 下一步：Phase 5（M5 发布候选：UI 打磨、PWA、Termux 文档、性能/安全测试、
   真实聚会验收）。
+
+## 2026-07-28 会话 6：M5 子里程碑 - UI 打磨与 PWA
+
+- 分支：`m5-ui-polish` 已创建；M4 改动已作为首次提交 `e6250b8` 进入 main。
+- PWA：
+  - 新增 `packages/client/public/{manifest.json, icon.svg, offline.html, sw.js}`。
+  - `manifest.json`：standalone、theme-color、SVG maskable 图标。
+  - `sw.js`：网络优先，导航请求失败返回 `offline.html`。
+  - `index.html` 增加 viewport-fit=cover、theme-color、apple-mobile-web-app 等 meta。
+  - `main.tsx` 注册 service worker，失败不阻断应用。
+  - `vite.config.ts` 显式保留 `publicDir` 与 `copyPublicDir`。
+- 可访问性：
+  - `:focus-visible` 统一聚焦环；`prefers-reduced-motion` 关闭动画与过渡。
+  - `ConnectPage`/`RoomPage`/`App` 补充 aria-label、aria-invalid、aria-describedby、
+    aria-live/aria-busy。
+- UX 打磨：
+  - 新增 `ToastContext` + `ToastContainer` + `useToast`：复制房间码、聊天发送失败、
+    连接页提交错误均有 toast 反馈。
+  - 昵称输入框与聊天输入框自动聚焦。
+- 测试回归：修正 AC-15d 与链式推进测试，投票目标改为平民，避免随机角色导致
+  game_over 后 snapshot 断言失败；104/104 测试全绿。
+- 验证：
+  - `npm run typecheck` ✓、`npm run lint` ✓、`npm run test` 104/104 ✓
+  - `npm run build -w @ldj/client` ✓，dist 包含 manifest/sw.js/offline.html/icon.svg
+  - dev:server 冒烟：/health/ready、/manifest.json、/sw.js、/offline.html 均 200
+- M5 剩余子任务：性能/安全测试、Termux 部署文档、真实聚会验收。

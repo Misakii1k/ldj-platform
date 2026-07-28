@@ -4,6 +4,10 @@ dist/
 .env
 .env.*
 
+# SQLite 运行时旁车文件
+data/*.db-wal
+data/*.db-shm
+
 # PoC 运行产物
 poc/m0/poc.db*
 poc/m0/poc.backup.db

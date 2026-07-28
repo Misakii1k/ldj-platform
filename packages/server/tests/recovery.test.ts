@@ -270,10 +270,14 @@ test('AC-15d：vote_result 阶段崩溃重启，到期展示计时器补执行�
       state = snapshot(ctx.db, ctx.roomId);
     }
 
-    // 全员投同一人 → vote_result（自己不能投自己，target 投给另一人）
+    // 全员投一名平民 → vote_result；淘汰平民后游戏继续（避免直接 game_over 导致 snapshot 失败）
     const players = state.players as Record<string, { role: string }>;
-    const target = Object.keys(players)[0]!;
-    const other = Object.keys(players)[1]!;
+    const civilianIds = Object.entries(players)
+      .filter(([, p]) => p.role === 'civilian')
+      .map(([id]) => id);
+    assert.ok(civilianIds.length >= 1, '应存在平民玩家');
+    const target = civilianIds[0]!;
+    const other = Object.keys(players).find((id) => id !== target)!;
     for (const v of Object.keys(players)) {
       await action(ctx, v, { type: 'cast_vote', targetPlayerId: v === target ? other : target });
     }
@@ -536,10 +540,14 @@ test('补执行产生的下游计时器继续补执行（链式推进）', async
       state = snapshot(ctx.db, ctx.roomId);
     }
 
-    // 全员投同一人 → vote_result（自己不能投自己，target 投给另一人）
+    // 全员投一名平民 → vote_result；淘汰平民后游戏继续，可验证下游计时器链式推进
     const players = state.players as Record<string, { role: string }>;
-    const target = Object.keys(players)[0]!;
-    const other = Object.keys(players)[1]!;
+    const civilianIds = Object.entries(players)
+      .filter(([, p]) => p.role === 'civilian')
+      .map(([id]) => id);
+    assert.ok(civilianIds.length >= 1, '应存在平民玩家');
+    const target = civilianIds[0]!;
+    const other = Object.keys(players).find((id) => id !== target)!;
     for (const v of Object.keys(players)) {
       await action(ctx, v, { type: 'cast_vote', targetPlayerId: v === target ? other : target });
     }

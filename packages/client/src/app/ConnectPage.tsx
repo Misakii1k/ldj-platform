@@ -2,8 +2,9 @@
  * 连接页（Task 2）：昵称输入 + 创建/加入房间。
  * 创建：可选密码；加入：必填房间码（5 位），可选密码。
  */
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
+import { useToast } from '../shared-ui/ToastContext.tsx';
 import { describeError } from '../shared-ui/errors.ts';
 import type { Me } from '../connection/types.ts';
 
@@ -34,6 +35,7 @@ function parseAck(payload: unknown): AckOutcome | null {
 
 export function ConnectPage() {
   const { send, setMe, state } = useConnection();
+  const { showToast } = useToast();
   const [mode, setMode] = useState<Mode>('create');
   const [nickname, setNickname] = useState('');
   const [roomCode, setRoomCode] = useState('');
@@ -41,6 +43,11 @@ export function ConnectPage() {
   const [asSpectator, setAsSpectator] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const nicknameRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    nicknameRef.current?.focus();
+  }, []);
 
   const canSubmit =
     !submitting &&
@@ -81,7 +88,9 @@ export function ConnectPage() {
       };
       setMe(me);
     } catch (err) {
-      setError(describeError(err));
+      const msg = describeError(err);
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -95,11 +104,12 @@ export function ConnectPage() {
       </header>
 
       <form className="connect-form" onSubmit={handleSubmit}>
-        <div className="mode-toggle" role="tablist">
+        <div className="mode-toggle" role="tablist" aria-label="选择创建或加入房间">
           <button
             type="button"
             role="tab"
             aria-selected={mode === 'create'}
+            aria-label="创建房间"
             className={mode === 'create' ? 'active' : ''}
             onClick={() => setMode('create')}
           >
@@ -109,6 +119,7 @@ export function ConnectPage() {
             type="button"
             role="tab"
             aria-selected={mode === 'join'}
+            aria-label="加入房间"
             className={mode === 'join' ? 'active' : ''}
             onClick={() => setMode('join')}
           >
@@ -116,37 +127,45 @@ export function ConnectPage() {
           </button>
         </div>
 
-        <label className="field">
+        <label className="field" htmlFor="nickname">
           <span className="field-label">昵称</span>
           <input
+            ref={nicknameRef}
+            id="nickname"
             type="text"
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
             placeholder="1-16 个字符"
             maxLength={16}
             autoComplete="off"
+            aria-invalid={!!error}
+            aria-describedby={error ? 'connect-error' : undefined}
             required
           />
         </label>
 
         {mode === 'join' && (
-          <label className="field">
+          <label className="field" htmlFor="roomCode">
             <span className="field-label">房间码</span>
             <input
+              id="roomCode"
               type="text"
               value={roomCode}
               onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
               placeholder="5 位字母数字"
               maxLength={5}
               autoComplete="off"
+              aria-invalid={!!error}
+              aria-describedby={error ? 'connect-error' : undefined}
               required
             />
           </label>
         )}
 
-        <label className="field">
+        <label className="field" htmlFor="password">
           <span className="field-label">密码（可选）</span>
           <input
+            id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -162,12 +181,13 @@ export function ConnectPage() {
               type="checkbox"
               checked={asSpectator}
               onChange={(e) => setAsSpectator(e.target.checked)}
+              aria-label="以观战身份加入"
             />
             <span>以观战身份加入</span>
           </label>
         )}
 
-        {error && <div className="error-banner" role="alert">{error}</div>}
+        {error && <div id="connect-error" className="error-banner" role="alert">{error}</div>}
 
         <button type="submit" className="submit-btn" disabled={!canSubmit}>
           {submitting ? '处理中…' : mode === 'create' ? '创建并进入' : '加入房间'}

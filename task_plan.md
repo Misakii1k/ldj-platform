@@ -54,12 +54,29 @@
 - [x] 崩溃注入测试：各阶段 kill -9 后重启验证
 - 退出标准已验证：AC-15/AC-16 自动化通过；已确认动作 RPO=0；恢复流程同步完成、无网络 I/O，远低于 60 秒；Node 24 下 104/104 测试全绿（新增 10 个恢复测试）
 
-### Phase 5：M5 发布候选 — pending
-- [ ] 移动端 UI 打磨、可访问性（§7.4）、PWA manifest（P1 非阻塞）
-- [ ] Termux 部署文档（§13.3）、备份/恢复说明
-- [ ] 性能测试（12+8 连接三局、NFR-001~009）、安全测试（§14.1 安全行）
-- [ ] 【需用户】真实 8 人聚会连续 3 局（AC-18）、真机资源采样（AC-19/20）
-- 退出标准：AC-18～20 通过，无未关闭 P0 缺陷
+### Phase 5：M5 发布候选 — in_progress（2026-07-28）
+
+#### 子任务 5.1：UI 打磨与 PWA — complete
+- [x] 移动端可访问性（§7.4）：focus-visible、prefers-reduced-motion、aria 标签
+- [x] PWA：manifest、icon、offline fallback、service worker、index.html meta
+- [x] UX 反馈：toast 通知、复制成功、输入自动聚焦、错误提示
+- 退出标准已验证：client build 成功，dist 含 PWA 资源；104/104 测试无回归；
+  dev:server 冒烟 /health/ready、/manifest.json、/sw.js、/offline.html 均 200
+
+#### 子任务 5.2：Termux 部署与运维文档 — pending
+- [ ] 编写 packages/server/docs/termux.md（环境安装、启动、后台运行、自启动）
+- [ ] 备份/恢复说明（data/platform.db、定时备份脚本）
+- [ ] 环境变量与端口配置示例
+
+#### 子任务 5.3：性能与安全测试 — pending
+- [ ] 性能压测脚本：12+8 连接三局，采样延迟与 RPS（NFR-001~009）
+- [ ] 安全行审计：§14.1 检查清单（输入校验、CORS、密码哈希、日志脱敏、WS 鉴权）
+- [ ] 修复子任务发现的 P0 缺陷
+
+#### 子任务 5.4：真实聚会验收 — pending（需用户）
+- [ ] 8 人连续 3 局无中断（AC-18）
+- [ ] 真机资源采样：CPU/内存/电量（AC-19/20）
+- 总体退出标准：AC-18～20 通过，无未关闭 P0 缺陷
 
 ## 关键决策
 
@@ -70,7 +87,7 @@
 | 运行时校验 | zod | 生态成熟，shared 包内定义 schema 双端复用 |
 | 运行方式 | Node 24 原生 TS type stripping 直跑 `.ts`，零构建 | 零原生依赖、部署最简；`tsc --noEmit` 严格类型检查兼顾安全 |
 | 测试运行器 | `node --test`（内置） | 无额外依赖，原生支持直跑 .ts 测试 |
-| git | 已 init，首次提交待用户确认 | 遵循“用户要求才提交” |
+| git | 已 init，首次提交 `e6250b8` 完成 | M4 完成后用户要求先提交再切分支；当前在 `m5-ui-polish` |
 
 ## 错误记录
 

@@ -6,6 +6,7 @@
  */
 import { useConnection } from './connection/useConnection.ts';
 import { ConnectionProvider } from './connection/ConnectionContext.tsx';
+import { ToastProvider } from './shared-ui/ToastContext.tsx';
 import { ConnectPage } from './app/ConnectPage.tsx';
 import { RoomPage } from './room/RoomPage.tsx';
 import { GamePage } from './game/GamePage.tsx';
@@ -30,7 +31,7 @@ function Router() {
   // 正在连接
   if (connState === 'connecting') {
     return (
-      <main className="app loading-screen">
+      <main className="app loading-screen" aria-live="polite" aria-busy="true">
         <h1>局域网桌游平台</h1>
         <p className="loading">正在连接服务器…</p>
       </main>
@@ -40,7 +41,7 @@ function Router() {
   // 正在重连
   if (connState === 'reconnecting') {
     return (
-      <main className="app loading-screen">
+      <main className="app loading-screen" aria-live="polite" aria-busy="true">
         <h1>局域网桌游平台</h1>
         <p className="loading">连接断开，正在重连…</p>
         {me && <p className="loading-hint">将自动恢复你的席位</p>}
@@ -51,7 +52,7 @@ function Router() {
   // 服务端恢复中
   if (connState === 'server_recovering') {
     return (
-      <main className="app loading-screen">
+      <main className="app loading-screen" aria-live="polite" aria-busy="true">
         <h1>正在重新同步</h1>
         <p className="loading">服务端正在恢复对局状态，请稍候…</p>
       </main>
@@ -100,7 +101,9 @@ function Router() {
 export function App() {
   return (
     <ConnectionProvider>
-      <Router />
+      <ToastProvider>
+        <Router />
+      </ToastProvider>
     </ConnectionProvider>
   );
 }

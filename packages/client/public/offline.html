@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#4f46e5" />
+    <title>局域网桌游平台 - 离线</title>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+          'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+        background: #f9fafb;
+        color: #111827;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: 24px;
+        text-align: center;
+      }
+      .box {
+        max-width: 360px;
+      }
+      h1 { font-size: 1.5rem; margin: 0 0 0.5rem; }
+      p { color: #6b7280; margin: 0.5rem 0 1.5rem; line-height: 1.6; }
+      button {
+        font-family: inherit;
+        font-size: 1rem;
+        cursor: pointer;
+        min-height: 44px;
+        padding: 8px 20px;
+        border: none;
+        border-radius: 8px;
+        background: #4f46e5;
+        color: #fff;
+        font-weight: 600;
+      }
+      button:active { opacity: 0.9; }
+    </style>
+  </head>
+  <body>
+    <main class="box">
+      <h1>当前处于离线状态</h1>
+      <p>请检查网络连接后刷新页面，或等待设备重新连入局域网。</p>
+      <button type="button" onclick="location.reload()">刷新重试</button>
+    </main>
+  </body>
+</html>

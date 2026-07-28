@@ -4,6 +4,7 @@
  */
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
+import { useToast } from '../shared-ui/ToastContext.tsx';
 import { describeError } from '../shared-ui/errors.ts';
 import {
   MAX_PLAYERS,
@@ -47,12 +48,14 @@ function formatTime(at: number): string {
 
 export function RoomPage() {
   const { state, me, send, clearMe } = useConnection();
+  const { showToast } = useToast();
   const room: RoomSnapshotView | null = state.room;
   const [chatDraft, setChatDraft] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
   const chatBoxRef = useRef<HTMLDivElement | null>(null);
+  const chatInputRef = useRef<HTMLInputElement | null>(null);
 
   const synced = state.connState === 'synced';
   const isHost = me !== null && room !== null && room.members.some(
@@ -133,9 +136,11 @@ export function RoomPage() {
     setChatDraft('');
     try {
       await send('chat_send', { text });
+      chatInputRef.current?.focus();
     } catch (err) {
       setChatDraft(draftBackup);
       setActionError(`发送失败：${describeError(err)}`);
+      showToast(`发送失败：${describeError(err)}`, 'error');
     } finally {
       setBusy(false);
     }
@@ -163,7 +168,11 @@ export function RoomPage() {
           <button
             type="button"
             className="copy-btn"
-            onClick={() => void navigator.clipboard?.writeText(room.roomCode)}
+            aria-label="复制房间码"
+            onClick={() => {
+              void navigator.clipboard?.writeText(room.roomCode);
+              showToast('房间码已复制', 'success');
+            }}
           >
             复制
           </button>
@@ -200,6 +209,7 @@ export function RoomPage() {
                     <button
                       type="button"
                       className="mini-btn"
+                      aria-label={`踢出玩家 ${m.nickname}`}
                       onClick={() => handleKick(m.playerId)}
                       disabled={busy || !synced || room.status === 'CLOSED'}
                     >
@@ -208,6 +218,7 @@ export function RoomPage() {
                     <button
                       type="button"
                       className="mini-btn"
+                      aria-label={`转让房主给 ${m.nickname}`}
                       onClick={() => handleTransfer(m.playerId)}
                       disabled={busy || !synced || room.status === 'CLOSED'}
                     >
@@ -244,14 +255,16 @@ export function RoomPage() {
         </div>
         <form className="chat-input-row" onSubmit={handleSendChat}>
           <input
+            ref={chatInputRef}
             type="text"
             value={chatDraft}
             onChange={(e) => setChatDraft(e.target.value.slice(0, 300))}
             placeholder={synced ? '输入消息…' : '同步中…暂不能发送'}
             maxLength={300}
             disabled={!synced}
+            aria-label="聊天输入"
           />
-          <button type="submit" disabled={!synced || !chatDraft.trim() || busy}>
+          <button type="submit" aria-label="发送消息" disabled={!synced || !chatDraft.trim() || busy}>
             发送
           </button>
         </form>

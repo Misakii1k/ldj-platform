@@ -23,4 +23,16 @@ export default tseslint.config(
       'no-console': 'off',
     },
   },
+  {
+    files: ['packages/client/public/sw.js'],
+    languageOptions: {
+      globals: {
+        self: 'readonly',
+        caches: 'readonly',
+        fetch: 'readonly',
+        Response: 'readonly',
+        clients: 'readonly',
+      },
+    },
+  },
 );
