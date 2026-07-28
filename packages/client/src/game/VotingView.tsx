@@ -1,5 +1,5 @@
 ﻿/** 投票阶段：候选人卡牌、提交进度和明确的选择反馈。 */
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
 import { describeError } from '../shared-ui/errors.ts';
 import { useCountdown } from '../shared-ui/useCountdown.ts';
@@ -43,7 +43,7 @@ export function VotingView({ view }: Props) {
 
       <div className="vote-progress-card">
         <div><span>投票进度</span><strong>{view.votesSubmitted}/{view.votesExpected}</strong></div>
-        <div className="vote-progress-track"><span style={{ width: `${votePercent}%` }} /></div>
+        <div className="vote-progress-track" style={{ '--vote-progress': `${votePercent}%` } as CSSProperties}><span /></div>
       </div>
 
       <div className="vote-candidates">
@@ -54,7 +54,7 @@ export function VotingView({ view }: Props) {
           const isMyVote = candidateId === myVote;
           const disabled = busy || hasVoted || isSelf || state.connState !== 'synced' || !me?.alive;
           return (
-            <button key={candidateId} type="button" className={`vote-card ${isMyVote ? 'voted' : ''} ${isSelf ? 'self' : ''}`} onClick={() => void handleVote(candidateId)} disabled={disabled} style={{ animationDelay: `${index * 45}ms` }}>
+            <button key={candidateId} type="button" className={`vote-card ${isMyVote ? 'voted' : ''} ${isSelf ? 'self' : ''}`} onClick={() => void handleVote(candidateId)} disabled={disabled} style={{ '--stagger-index': index } as CSSProperties}>
               <span className="vote-card-index">SUSPECT {String(index + 1).padStart(2, '0')}</span>
               <span className="vote-avatar" aria-hidden="true"><i /></span>
               <span className="vote-seat">#{player.seat}</span>

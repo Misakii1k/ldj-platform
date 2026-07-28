@@ -3643,6 +3643,8 @@ p { margin: 0.5rem 0; }
 .reveal-progress-card strong { font-size: 1.15rem; }
 .reveal-progress-track, .vote-progress-track { height: 10px; overflow: hidden; border: 2px solid var(--game-line); border-radius: 999px; background: #e9dfcf; }
 .reveal-progress-track span, .vote-progress-track span { display: block; height: 100%; background: var(--game-green); transition: width .45s cubic-bezier(.2,.8,.2,1); }
+.reveal-progress-track span { width: var(--reveal-progress, 0%); }
+.vote-progress-track span { width: var(--vote-progress, 0%); }
 
 .game-page .word-reveal-box { position: relative; min-height: 245px; flex-direction: column; gap: 16px; overflow: hidden; border: 3px solid var(--game-line); border-radius: 18px; background: var(--game-purple); box-shadow: 6px 6px 0 var(--game-line); color: #fff; cursor: pointer; transition: transform .22s ease, background .25s ease; }
 .game-page .word-reveal-box::before, .game-page .word-reveal-box::after { position: absolute; content: ''; pointer-events: none; }
@@ -3691,7 +3693,7 @@ p { margin: 0.5rem 0; }
 .eliminated-info > div { display: flex; flex-direction: column; }.eliminated-info > div span { color: var(--game-muted); font-size: .65rem; }.eliminated-info > div strong { font-size: .9rem; }
 .game-page .tally-list { gap: 9px; }.game-page .tally-item { display: grid; grid-template-columns: 70px minmax(45px,1fr) 42px; gap: 8px; align-items: center; padding: 6px 0; border: 0; animation: tally-in .35s ease both; }
 .tally-player { display: flex; flex-direction: column; font-weight: 900; }.tally-player small { color: var(--game-muted); font-size: .58rem; font-weight: 600; }
-.tally-bar { height: 10px; overflow: hidden; border: 2px solid var(--game-line); border-radius: 999px; background: #e8dfd2; }.tally-bar i { display: block; height: 100%; background: var(--game-coral); animation: tally-grow .65s cubic-bezier(.2,.8,.2,1) both; transform-origin: left; }
+.tally-bar { height: 10px; overflow: hidden; border: 2px solid var(--game-line); border-radius: 999px; background: #e8dfd2; }.tally-bar i { display: block; width: var(--fill-percent, 0%); height: 100%; background: var(--game-coral); animation: tally-grow .65s cubic-bezier(.2,.8,.2,1) both; transform-origin: left; }
 .game-page .tally-count { text-align: right; font-size: .75rem; }.game-page .countdown-hint { display: flex; gap: 7px; align-items: center; justify-content: center; padding: 9px; border: 2px dashed var(--game-line); border-radius: 12px; color: var(--game-muted); background: rgba(255,253,247,.8); }
 .waiting-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--game-green); animation: state-breathe 1s ease-in-out infinite; }
 
@@ -3864,6 +3866,194 @@ p { margin: 0.5rem 0; }
   max-width: none;
 }
 
+/* 头部 */
+.room-layout .room-header {
+  align-items: center;
+  padding: 4px 2px;
+}
+
+/* Hero：标题面板 */
+.room-hero__panel {
+  display: flex;
+  min-height: 190px;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(20px, 5vw, 36px);
+  border: var(--home-border);
+  border-radius: 27px;
+  background: var(--home-surface);
+  box-shadow: 7px 8px 0 var(--home-ink);
+  color: var(--home-ink);
+}
+
+.room-hero__panel .home-hero__eyebrow {
+  margin-top: 0;
+}
+
+.room-hero__title {
+  max-width: 10em;
+  margin: 0;
+  color: var(--home-ink);
+  font-family: ui-serif, 'Songti SC', 'STSong', 'Noto Serif SC', serif;
+  font-size: clamp(2.35rem, 8vw, 4.6rem);
+  font-weight: 900;
+  line-height: .98;
+  letter-spacing: -.07em;
+}
+
+.room-hero__title em {
+  color: var(--home-coral);
+  font-style: normal;
+}
+
+.room-hero__lede {
+  max-width: 34rem;
+  margin: 16px 0 0;
+  color: var(--home-muted);
+  font-weight: 700;
+}
+
+/* Hero：房间码卡片 */
+.room-code-card {
+  min-height: 190px;
+  padding: 20px;
+  transform: rotate(1deg);
+}
+
+.room-code-card__body {
+  display: grid;
+  flex: 1;
+  align-content: center;
+  gap: 8px;
+}
+
+.room-code-card .room-code-label {
+  color: var(--home-muted);
+  font-weight: 800;
+}
+
+.room-code-card .room-code {
+  color: var(--home-ink);
+  font-size: clamp(1.8rem, 7vw, 2.7rem);
+}
+
+.room-code-card .room-copy-btn {
+  min-height: 42px;
+  margin-top: 4px;
+  padding: 7px 12px;
+}
+
+/* 面板通用（成员 / 聊天） */
+.room-panel {
+  min-height: 0;
+  padding: clamp(16px, 3vw, 24px);
+}
+
+.room-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.room-panel__eyebrow {
+  margin: 0 0 4px;
+  color: var(--home-coral);
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.room-panel__title {
+  margin: 0;
+  color: var(--home-ink);
+  font-family: ui-serif, 'Songti SC', 'STSong', serif;
+  font-size: clamp(1.35rem, 4vw, 1.85rem);
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.room-panel__mark {
+  font-size: 1.5rem;
+}
+
+.room-panel .members-hint {
+  max-width: 92px;
+  margin-left: 0;
+  text-align: right;
+}
+
+.room-panel .members-list {
+  gap: 8px;
+}
+
+.room-content-grid .member {
+  gap: 8px;
+  padding: 8px 6px;
+  border: 1.5px solid color-mix(in srgb, var(--game-accent, #146e59) 28%, transparent);
+  background: rgba(255, 253, 248, .72);
+}
+
+.room-content-grid .member-seat {
+  min-width: 28px;
+}
+
+.room-content-grid .member-name {
+  gap: 5px;
+}
+
+.room-layout .chat-box {
+  min-height: 200px;
+  background: rgba(255, 253, 248, .72);
+}
+
+.room-layout .chat-send-btn {
+  width: auto;
+  min-height: 44px;
+  margin-top: 0;
+  white-space: nowrap;
+}
+
+/* 房主操作台 */
+.room-host-console {
+  grid-template-columns: 1fr;
+  margin-top: 0;
+  gap: 12px;
+}
+
+.room-host-console__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.room-host-console__eyebrow {
+  margin: 0;
+  color: var(--home-green);
+}
+
+.room-host-console__title {
+  margin: 0;
+  font-family: ui-serif, 'Songti SC', serif;
+  font-weight: 900;
+}
+
+.room-layout .action-bar {
+  gap: 10px;
+}
+
+.room-action-btn {
+  width: auto;
+  min-height: 44px;
+  margin-top: 0;
+}
+
+.room-loading {
+  padding: 20vh 0;
+  text-align: center;
+}
+
 @media (min-width: 1600px) {
   .room-page.game-home-page {
     padding-right: clamp(42px, 4vw, 76px);
@@ -3879,7 +4069,7 @@ p { margin: 0.5rem 0; }
   }
 
   .room-layout .chat-box {
-    min-height: 260px !important;
+    min-height: 260px;
     max-height: 380px;
   }
 }
@@ -3909,7 +4099,7 @@ p { margin: 0.5rem 0; }
   }
 
   .room-layout .room-share-note {
-    transform: none !important;
+    transform: none;
   }
 }
 
@@ -3918,7 +4108,7 @@ p { margin: 0.5rem 0; }
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    padding: 8px 10px !important;
+    padding: 8px 10px;
   }
 
   .room-layout .home-brand {
@@ -3932,14 +4122,14 @@ p { margin: 0.5rem 0; }
     justify-content: flex-start;
   }
 
-  .room-hero > div:first-child {
-    min-height: 0 !important;
-    padding: 22px 19px !important;
+  .room-hero__intro {
+    min-height: 0;
+    padding: 22px 19px;
   }
 
   .room-hero h1 {
-    max-width: 8em !important;
-    font-size: clamp(2.25rem, 14vw, 3.45rem) !important;
+    max-width: 8em;
+    font-size: clamp(2.25rem, 14vw, 3.45rem);
   }
 
   .room-content-grid .member {
@@ -3974,7 +4164,7 @@ p { margin: 0.5rem 0; }
   }
 
   .room-layout .chat-input-row button {
-    width: 100% !important;
+    width: 100%;
   }
 }
 
@@ -4225,6 +4415,32 @@ p { margin: 0.5rem 0; }
 }
 .landlord-bid-actions {
   min-height: 52px;
+}
+/* 当前牌型的牌面一行摆开，牌多时换行而不是溢出 */
+.current-combo-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  margin: 10px 0 6px;
+}
+/* 选色弹层：写出颜色名，不让红/绿只靠色相区分 */
+.color-picker button {
+  font-size: 19px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .6);
+}
+.color-picker .color-picker-cancel {
+  width: auto;
+  height: auto;
+  padding: 11px 22px;
+  border: 2px solid rgba(255, 255, 255, .7);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .14);
+  font-size: 15px;
+  font-weight: 800;
+  text-shadow: none;
 }
 .waiting-tip,
 .hand-hint {
@@ -4758,3 +4974,13 @@ p { margin: 0.5rem 0; }
 }
 
 
+
+/* —— 列表入场交错延迟：由 TSX 注入 --stagger-index，避免内联 animationDelay —— */
+.game-page .vote-card,
+.game-page .tally-item,
+.game-page .role-item {
+  animation-delay: calc(var(--stagger-index, 0) * var(--stagger-step, 45ms));
+}
+
+.game-page .tally-item { --stagger-step: 70ms; }
+.game-page .role-item { --stagger-step: 55ms; }

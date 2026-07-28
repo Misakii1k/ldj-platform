@@ -1,5 +1,5 @@
 ﻿/** 看词阶段：按住展示秘密词卡，松开或离开页面立即遮挡。 */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type CSSProperties } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
 import { describeError } from '../shared-ui/errors.ts';
 import { useCountdown } from '../shared-ui/useCountdown.ts';
@@ -52,7 +52,7 @@ export function WordRevealView({ view }: Props) {
 
       <div className="reveal-progress-card">
         <div><strong>{confirmedCount}</strong><span>/ {total} 人已确认</span></div>
-        <div className="reveal-progress-track"><span style={{ width: `${total > 0 ? confirmedCount / total * 100 : 0}%` }} /></div>
+        <div className="reveal-progress-track" style={{ '--reveal-progress': `${total > 0 ? confirmedCount / total * 100 : 0}%` } as CSSProperties}><span /></div>
       </div>
 
       {myWord !== null ? (

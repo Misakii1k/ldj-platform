@@ -1,4 +1,5 @@
 ﻿/** 投票结果：以票数筹码和身份档案展示本轮结论。 */
+import type { CSSProperties } from 'react';
 import { useCountdown } from '../shared-ui/useCountdown.ts';
 import { PhaseLead } from './GameChrome.tsx';
 import type { UndercoverPlayerView, PublicPlayerInfo, VoteSummary } from './types.ts';
@@ -46,7 +47,7 @@ export function VoteResultView({ view }: Props) {
           <ul className="tally-list">
             {sortedTally.map(([playerId, count], index) => {
               const player = playerMap.get(playerId);
-              return <li key={playerId} className="tally-item" style={{ animationDelay: `${index * 70}ms` }}><span className="tally-player">#{player?.seat ?? '?'}<small>玩家 {player?.seat ?? '?'}</small></span><span className="tally-bar"><i style={{ width: `${count / maxVotes * 100}%` }} /></span><strong className="tally-count">{count} 票</strong></li>;
+              return <li key={playerId} className="tally-item" style={{ '--stagger-index': index } as CSSProperties}><span className="tally-player">#{player?.seat ?? '?'}<small>玩家 {player?.seat ?? '?'}</small></span><span className="tally-bar"><i style={{ '--fill-percent': `${count / maxVotes * 100}%` } as CSSProperties} /></span><strong className="tally-count">{count} 票</strong></li>;
             })}
           </ul>
         </div>

@@ -1,6 +1,6 @@
 {
   "name": "ldj-platform",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "局域网桌游平台（谁是卧底 MVP / R1）",
   "type": "module",

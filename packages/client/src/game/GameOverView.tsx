@@ -1,5 +1,5 @@
 ﻿/** 结算页：揭示胜方、词语与所有玩家身份。 */
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
 import { describeError } from '../shared-ui/errors.ts';
 import type { UndercoverPlayerView, PublicPlayerInfo } from './types.ts';
@@ -49,7 +49,7 @@ export function GameOverView({ view }: Props) {
             const role = reveal.roles[player.playerId];
             const isMe = player.playerId === myId;
             return (
-              <li key={player.playerId} className={`role-item ${role ?? 'unknown'} ${!player.alive ? 'dead' : ''}`} style={{ animationDelay: `${index * 55}ms` }}>
+              <li key={player.playerId} className={`role-item ${role ?? 'unknown'} ${!player.alive ? 'dead' : ''}`} style={{ '--stagger-index': index } as CSSProperties}>
                 <span className="role-avatar" aria-hidden="true" />
                 <span className="role-seat">#{player.seat}</span>
                 <span className="role-name"><strong>{isMe ? '我' : `玩家 ${player.seat}`}</strong><small>{!player.alive ? '本局已淘汰' : '存活至结算'}</small></span>

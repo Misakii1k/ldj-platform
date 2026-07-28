@@ -144,9 +144,9 @@ export function RoomPage() {
 
   if (room === null) {
     return (
-      <main className="room-page game-home-page" style={{ maxWidth: 'none' }}>
+      <main className="room-page game-home-page">
         <div className="game-home-page__content room-layout">
-          <div className="loading" style={{ padding: '20vh 0', textAlign: 'center' }}>
+          <div className="loading room-loading">
             正在加载房间信息…
           </div>
         </div>
@@ -169,9 +169,9 @@ export function RoomPage() {
   });
 
   return (
-    <main className="room-page game-home-page" data-game-id={roomGame.id} style={{ maxWidth: 'none' }}>
+    <main className="room-page game-home-page" data-game-id={roomGame.id}>
       <div className="game-home-page__content room-layout">
-        <header className="home-header room-header" style={{ alignItems: 'center', padding: '4px 2px' }}>
+        <header className="home-header room-header">
           <div className="home-brand">
             <span className="home-brand__tile" aria-hidden="true">卧</span>
             <span>谁是卧底 · 房间</span>
@@ -183,25 +183,25 @@ export function RoomPage() {
         </header>
 
         <section className="room-hero" aria-labelledby="room-title">
-          <div style={{ display: 'flex', minHeight: 190, flexDirection: 'column', justifyContent: 'center', border: 'var(--home-border)', borderRadius: 27, padding: 'clamp(20px, 5vw, 36px)', color: 'var(--home-ink)', background: 'var(--home-surface)', boxShadow: '7px 8px 0 var(--home-ink)' }}>
-            <p className="home-hero__eyebrow" style={{ marginTop: 0 }}>READY WHEN YOU ARE</p>
-            <h1 id="room-title" style={{ maxWidth: '10em', margin: 0, color: 'var(--home-ink)', fontFamily: 'ui-serif, "Songti SC", "STSong", "Noto Serif SC", serif', fontSize: 'clamp(2.35rem, 8vw, 4.6rem)', fontWeight: 900, lineHeight: 0.98, letterSpacing: '-0.07em' }}>
-              等待你的<span style={{ color: 'var(--home-coral)' }}>队友</span>
+          <div className="room-hero__panel">
+            <p className="home-hero__eyebrow room-hero__eyebrow">READY WHEN YOU ARE</p>
+            <h1 id="room-title" className="room-hero__title">
+              等待你的<span>队友</span>
             </h1>
-            <p style={{ maxWidth: '34rem', margin: '16px 0 0', color: 'var(--home-muted)', fontWeight: 700 }}>
+            <p className="room-hero__description">
               本局游戏：{roomGame.displayName} · {minimumPlayersToStart}–{maximumPlayers} 人。把房间码分享给朋友，准备好后就开始这一局推理。
             </p>
           </div>
 
-          <div className="game-card game-card--sunset room-share-note" style={{ minHeight: 190, padding: 20, transform: 'rotate(1deg)' }}>
+          <div className="game-card game-card--sunset room-share-note room-code-card">
             <div className="game-card__meta">
               <span className="game-card__availability">ROOM CODE</span>
               <span className="game-card__players">{onlinePlayers.length}/{maximumPlayers} 在线</span>
             </div>
-            <div style={{ display: 'grid', flex: 1, alignContent: 'center', gap: 8 }}>
-              <span className="room-code-label" style={{ color: 'var(--home-muted)', fontWeight: 800 }}>房间码</span>
-              <strong className="room-code" style={{ color: 'var(--home-ink)', fontSize: 'clamp(1.8rem, 7vw, 2.7rem)' }}>{room.roomCode}</strong>
-              <button type="button" className="game-card__action" style={{ minHeight: 42, marginTop: 4, padding: '7px 12px' }} aria-label="复制房间码" onClick={() => { void navigator.clipboard?.writeText(room.roomCode); showToast('房间码已复制', 'success'); }}>
+            <div className="room-code-card__body">
+              <span className="room-code-label">房间码</span>
+              <strong className="room-code">{room.roomCode}</strong>
+              <button type="button" className="game-card__action room-code-card__copy" aria-label="复制房间码" onClick={() => { void navigator.clipboard?.writeText(room.roomCode); showToast('房间码已复制', 'success'); }}>
                 <span>复制房间码</span><span aria-hidden="true">↗</span>
               </button>
             </div>
@@ -212,22 +212,22 @@ export function RoomPage() {
         {actionError && <div className="error-banner room-sheet__error" role="alert">{actionError}</div>}
 
         <div className="room-content-grid">
-          <section className="game-card game-card--berry room-players-panel members-section" style={{ minHeight: 0, padding: 'clamp(16px, 3vw, 24px)' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+          <section className="game-card game-card--berry room-players-panel members-section room-panel">
+            <div className="room-panel__head">
               <div>
-                <p style={{ margin: '0 0 4px', color: 'var(--home-coral)', fontSize: '0.72rem', fontWeight: 900, letterSpacing: '0.08em' }}>THE TABLE</p>
-                <h2 style={{ margin: 0, color: 'var(--home-ink)', fontFamily: 'ui-serif, "Songti SC", "STSong", serif', fontSize: 'clamp(1.35rem, 4vw, 1.85rem)', fontWeight: 900, lineHeight: 1.1 }}>成员（{onlinePlayers.length}/{maximumPlayers}）</h2>
+                <p className="room-panel__eyebrow">THE TABLE</p>
+                <h2 className="room-panel__title">成员（{onlinePlayers.length}/{maximumPlayers}）</h2>
               </div>
-              {room.members.some((m) => m.connectionStatus !== 'CONNECTED' && m.connectionStatus !== 'KICKED') && <span className="members-hint" style={{ maxWidth: 92, marginLeft: 0, textAlign: 'right' }}>含断线保留</span>}
+              {room.members.some((m) => m.connectionStatus !== 'CONNECTED' && m.connectionStatus !== 'KICKED') && <span className="members-hint room-panel__hint">含断线保留</span>}
             </div>
-            <ul className="members-list" aria-label="房间成员列表" style={{ gap: 8 }}>
+            <ul className="members-list room-members-list" aria-label="房间成员列表">
               {sortedMembers.map((m) => {
                 const badge = memberStatusBadge(m);
                 const isMe = m.playerId === myPlayerId;
                 return (
-                  <li key={m.playerId} className={'member ' + badge.cls} style={{ gap: 8, padding: '8px 6px', border: '1.5px solid color-mix(in srgb, var(--game-accent, #146e59) 28%, transparent)', background: 'rgba(255, 253, 248, 0.72)' }}>
-                    <span className="member-seat" style={{ minWidth: 28 }}>{m.seatRole === 'player' ? '#' + (m.seat ?? '?') : '观'}</span>
-                    <span className="member-name" style={{ gap: 5 }}>
+                  <li key={m.playerId} className={'member ' + badge.cls}>
+                    <span className="member-seat">{m.seatRole === 'player' ? '#' + (m.seat ?? '?') : '观'}</span>
+                    <span className="member-name">
                       {m.nickname}
                       {m.isHost && <span className="host-icon" title="房主">★</span>}
                       {isMe && <span className="me-tag">（我）</span>}
@@ -245,15 +245,15 @@ export function RoomPage() {
             </ul>
           </section>
 
-          <section className="game-card game-card--violet room-chat-panel chat-section" style={{ minHeight: 0, padding: 'clamp(16px, 3vw, 24px)' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+          <section className="game-card game-card--violet room-chat-panel chat-section room-panel">
+            <div className="room-panel__head">
               <div>
-                <p style={{ margin: '0 0 4px', color: 'var(--home-coral)', fontSize: '0.72rem', fontWeight: 900, letterSpacing: '0.08em' }}>SIDE CHAT</p>
-                <h2 style={{ margin: 0, color: 'var(--home-ink)', fontFamily: 'ui-serif, "Songti SC", "STSong", serif', fontSize: 'clamp(1.35rem, 4vw, 1.85rem)', fontWeight: 900, lineHeight: 1.1 }}>聊天</h2>
+                <p className="room-panel__eyebrow">SIDE CHAT</p>
+                <h2 className="room-panel__title">聊天</h2>
               </div>
-              <span aria-hidden="true" style={{ fontSize: '1.5rem' }}>✦</span>
+              <span className="room-panel__glyph" aria-hidden="true">✦</span>
             </div>
-            <div className="chat-box" ref={chatBoxRef} style={{ minHeight: 200, background: 'rgba(255, 253, 248, 0.72)' }}>
+            <div className="chat-box room-chat-box" ref={chatBoxRef}>
               {state.chat.length === 0 ? <div className="chat-empty">还没有消息</div> : state.chat.map((msg: ChatLine) => (
                 <div key={msg.cursor} className={'chat-line ' + msg.kind}>
                   <span className="chat-time">{formatTime(msg.at)}</span>
@@ -263,23 +263,23 @@ export function RoomPage() {
             </div>
             <form className="chat-input-row" onSubmit={handleSendChat}>
               <input ref={chatInputRef} type="text" value={chatDraft} onChange={(e) => setChatDraft(e.target.value.slice(0, 300))} placeholder={synced ? '输入消息…' : '同步中…暂不能发送'} maxLength={300} disabled={!synced} aria-label="聊天输入" />
-              <button type="submit" className="game-card__action" aria-label="发送消息" disabled={!synced || !chatDraft.trim() || busy} style={{ width: 'auto', minHeight: 44, marginTop: 0, whiteSpace: 'nowrap' }}>发送</button>
+              <button type="submit" className="game-card__action room-inline-btn" aria-label="发送消息" disabled={!synced || !chatDraft.trim() || busy}>发送</button>
             </form>
           </section>
         </div>
 
-        <section className="home-join-callout room-share-note" aria-labelledby="room-actions-title" style={{ marginTop: 0, gridTemplateColumns: '1fr', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <section className="home-join-callout room-share-note room-console" aria-labelledby="room-actions-title">
+          <div className="room-console__head">
             <span className="home-join-callout__icon" aria-hidden="true">♟</span>
             <div>
-              <p className="home-hero__eyebrow" style={{ margin: 0, color: 'var(--home-green)' }}>HOST CONSOLE</p>
-              <h2 id="room-actions-title" style={{ margin: 0, fontFamily: 'ui-serif, "Songti SC", serif', fontWeight: 900 }}>{room.status === 'LOBBY' ? '准备开局' : '当前状态：' + statusText(room.status)}</h2>
+              <p className="home-hero__eyebrow room-console__eyebrow">HOST CONSOLE</p>
+              <h2 id="room-actions-title" className="room-console__title">{room.status === 'LOBBY' ? '准备开局' : '当前状态：' + statusText(room.status)}</h2>
             </div>
           </div>
-          <div className="action-bar" style={{ gap: 10 }}>
+          <div className="action-bar room-console__actions">
             <button type="button" className="leave-btn" onClick={handleLeaveRoom} disabled={busy}>离开房间</button>
-            {room.status === 'POST_GAME' && isHost && <button type="button" className="game-card__action" onClick={handleReturnToLobby} disabled={busy || !synced} style={{ width: 'auto', minHeight: 44, marginTop: 0 }}>返回大厅</button>}
-            {isHost && room.status === 'LOBBY' && <button type="button" className="game-card__action" onClick={handleStartGame} disabled={busy || !synced || !canStart} title={!canStart ? '需要 ' + minimumPlayersToStart + '–' + maximumPlayers + ' 名在线玩家' : ''} style={{ width: 'auto', minHeight: 44, marginTop: 0 }}>开始游戏</button>}
+            {room.status === 'POST_GAME' && isHost && <button type="button" className="game-card__action room-inline-btn" onClick={handleReturnToLobby} disabled={busy || !synced}>返回大厅</button>}
+            {isHost && room.status === 'LOBBY' && <button type="button" className="game-card__action room-inline-btn" onClick={handleStartGame} disabled={busy || !synced || !canStart} title={!canStart ? '需要 ' + minimumPlayersToStart + '–' + maximumPlayers + ' 名在线玩家' : ''}>开始游戏</button>}
             {isHost && room.status === 'IN_GAME' && <button type="button" className="danger-btn" onClick={() => { if (confirm('确定要终止本局吗？')) void doRoomCommand({ command: 'abort_game' }, '终止对局'); }} disabled={busy || !synced}>终止对局</button>}
             {isHost && !confirmClose && room.status !== 'CLOSED' && <button type="button" className="danger-btn" onClick={() => setConfirmClose(true)} disabled={busy || !synced}>关闭房间</button>}
             {confirmClose && <div className="confirm-row"><span>确认关闭？</span><button type="button" className="danger-btn" onClick={handleCloseRoom} disabled={busy}>确认关闭</button><button type="button" onClick={() => setConfirmClose(false)} disabled={busy}>取消</button></div>}
