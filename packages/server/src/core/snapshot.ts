@@ -39,6 +39,8 @@ interface MemberRow {
   seat_role: string;
   seat: number | null;
   connection_status: string;
+  is_bot: number;
+  bot_kind: string | null;
 }
 
 interface PublicRoomRow {
@@ -106,7 +108,7 @@ export function buildRoomSnapshot(db: Db, roomId: string): RoomSnapshotView {
 
   const memberRows = db
     .prepare(
-      `SELECT player_id, nickname, seat_role, seat, connection_status
+      `SELECT player_id, nickname, seat_role, seat, connection_status, is_bot, bot_kind
        FROM room_members WHERE room_id = ? AND connection_status != 'KICKED'
        ORDER BY joined_at ASC`,
     )
@@ -119,6 +121,8 @@ export function buildRoomSnapshot(db: Db, roomId: string): RoomSnapshotView {
     seat: m.seat,
     isHost: m.player_id === room.host_player_id,
     connectionStatus: m.connection_status as MemberConnectionStatus,
+    // 真人为 null；机器人缺失 bot_kind 时按 rule 处理（与 listBotMembers 一致）
+    botKind: m.is_bot === 1 ? (m.bot_kind === 'llm' ? 'llm' : 'rule') : null,
   }));
 
   return {

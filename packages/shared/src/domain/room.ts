@@ -31,6 +31,8 @@ export interface RoomMemberView {
   seat: number | null;
   isHost: boolean;
   connectionStatus: MemberConnectionStatus;
+  /** 机器人种类；真人为 null（客户端据此打标签） */
+  botKind: 'rule' | 'llm' | null;
 }
 
 /** 房间快照的公开视图（room_snapshot payload） */

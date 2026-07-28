@@ -12,6 +12,7 @@ function testConfig(): ServerConfig {
     publicBaseUrl: null,
     logLevel: 'error',
     allowedOrigins: [],
+    llm: { baseUrl: null, apiKey: null, model: 'test-model', timeoutMs: 5000 },
   };
 }
 

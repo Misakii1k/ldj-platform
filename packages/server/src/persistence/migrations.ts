@@ -137,4 +137,21 @@ SET game_id = 'undercover'
 WHERE game_id IS NULL;
 `,
   },
+  {
+    version: 3,
+    name: 'add-member-bot-columns',
+    // 机器人是普通成员多两个标记：席位/昵称/重名规则全部复用，
+    // 只在"房主转让"和"房间空置回收"两处需要把它排除掉。
+    // resume_token_hash 存字面量 'bot'（非 64 位 hex，永不匹配任何 sha256），
+    // 与 'revoked' 同为不可用凭证哨兵。
+    //
+    // bot_kind 区分决策方式：'rule' 走纯函数策略，'llm' 先问大模型、
+    // 失败再回落到同一个纯函数策略。真人成员该列为 NULL。
+    up: `
+ALTER TABLE room_members ADD COLUMN is_bot INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE room_members ADD COLUMN bot_kind TEXT
+  CHECK (bot_kind IS NULL OR bot_kind IN ('rule','llm'));
+CREATE INDEX idx_members_bot ON room_members(room_id) WHERE is_bot = 1;
+`,
+  },
 ];

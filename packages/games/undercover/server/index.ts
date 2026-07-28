@@ -3,6 +3,7 @@
  * 服务端专用（含词库与完整状态类型），不得进入客户端构建（SPEC §8.4）。
  */
 export { undercoverModule } from './module.ts';
+export { pickUndercoverBotAction } from './bot.ts';
 export { WORD_BANK, WORD_BANK_VERSION, type WordPair } from './words.ts';
 export * from './state.ts';
 export {
@@ -13,3 +14,4 @@ export {
   type UndercoverPublicView,
   type PublicPlayerInfo,
 } from './views.ts';
+export { buildUndercoverBotPrompt } from './botPrompt.ts';

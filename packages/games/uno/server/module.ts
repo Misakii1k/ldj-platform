@@ -1,5 +1,7 @@
 ﻿import type { Actor, GameContext, GameModule, ReduceResult } from '@ldj/shared';
 import { UNO_MANIFEST } from '../shared/manifest.ts';
+import { pickUnoBotAction } from './bot.ts';
+import { buildUnoBotPrompt } from './botPrompt.ts';
 
 export type UnoColor = 'red' | 'yellow' | 'green' | 'blue';
 export type UnoCard =
@@ -106,6 +108,8 @@ export const unoModule: GameModule<UnoConfig, UnoState, UnoAction, UnoPlayerView
   getPlayerView(state: UnoState, playerId: string): UnoPlayerView { return { ...publicView(state), me: state.players.includes(playerId) ? { playerId, hand: state.hands[playerId] ?? [], hasDrawnThisTurn: state.hasDrawnThisTurn } : null }; },
   getSpectatorView(state: UnoState): UnoPublicView { return publicView(state); },
   getResult(state: UnoState): UnoResult | null { return state.winnerId ? { winnerId: state.winnerId } : null; },
+  pickBotAction(input) { return pickUnoBotAction(input); },
+  buildBotPrompt(input) { return buildUnoBotPrompt(input); },
 };
 
 

@@ -103,6 +103,20 @@ export const roomCommandPayloadSchema = z.discriminatedUnion('command', [
     })
     .strict(),
   z.object({ command: z.literal('close_room') }).strict(),
+  // 添加机器人陪练（测试用）：rule 走纯函数策略，llm 交给大模型决策
+  z
+    .object({
+      command: z.literal('add_bot'),
+      kind: z.enum(['rule', 'llm']).optional().default('rule'),
+    })
+    .strict(),
+  // 移除机器人；不指定目标时移除席位号最大的那个
+  z
+    .object({
+      command: z.literal('remove_bot'),
+      targetPlayerId: z.string().min(1).max(64).optional(),
+    })
+    .strict(),
   // 开局（FR-HOST-001）：gameConfig 由游戏模块 parseConfig 把关，内核只透传
   z.object({ command: z.literal('start_game'), gameConfig: z.unknown().optional() }).strict(),
   // 终止本局（FR-HOST-002）：二次确认在客户端完成

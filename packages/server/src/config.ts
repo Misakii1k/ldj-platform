@@ -1,6 +1,25 @@
 /** 运行配置（SPEC §13.1：数据目录、端口、公开地址、日志级别通过环境变量设置） */
 import { resolve } from 'node:path';
 
+/**
+ * 大模型接入配置（AI 玩家）。
+ *
+ * 默认全空 = 功能关闭：没配 baseUrl 就不能添加 AI 玩家，只能用规则机器人。
+ * 端点由使用者自己指定（本地 Ollama、自建网关或云服务都行），
+ * 平台不内置任何默认第三方地址——决定把对局内容发给谁，是使用者的选择。
+ *
+ * 注意：启用后，AI 玩家的局势描述（含它自己的手牌/身份）会发往该端点。
+ */
+export interface LlmConfig {
+  /** OpenAI 兼容的 chat completions 端点前缀，例如 http://127.0.0.1:11434/v1 */
+  baseUrl: string | null;
+  /** API 密钥；本地模型通常留空 */
+  apiKey: string | null;
+  model: string;
+  /** 单次决策超时；超时或报错则回落到规则策略 */
+  timeoutMs: number;
+}
+
 export interface ServerConfig {
   host: string;
   port: number;
@@ -10,6 +29,7 @@ export interface ServerConfig {
   logLevel: 'debug' | 'info' | 'warn' | 'error';
   /** 额外允许的 Origin（开发模式例外，SPEC §9.5） */
   allowedOrigins: string[];
+  llm: LlmConfig;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
@@ -22,6 +42,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
   if (!['debug', 'info', 'warn', 'error'].includes(logLevel)) {
     throw new Error(`非法日志级别：${logLevel}`);
   }
+  const llmTimeout = Number(env.LLM_TIMEOUT_MS ?? 20_000);
+  if (!Number.isInteger(llmTimeout) || llmTimeout < 1000 || llmTimeout > 120_000) {
+    throw new Error(`非法 LLM 超时：${env.LLM_TIMEOUT_MS}`);
+  }
+  // 末尾斜杠统一去掉，避免拼出 //chat/completions
+  const llmBaseUrl = (env.LLM_BASE_URL ?? '').trim().replace(/\/+$/, '');
+
   return {
     host: env.HOST ?? '0.0.0.0',
     port,
@@ -32,5 +59,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean),
+    llm: {
+      baseUrl: llmBaseUrl === '' ? null : llmBaseUrl,
+      apiKey: (env.LLM_API_KEY ?? '').trim() || null,
+      model: (env.LLM_MODEL ?? '').trim() || 'gpt-4o-mini',
+      timeoutMs: llmTimeout,
+    },
   };
 }

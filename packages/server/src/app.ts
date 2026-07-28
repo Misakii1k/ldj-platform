@@ -11,6 +11,8 @@ import { RoomQueues } from './core/queue.ts';
 import { listOpenRoomSummaries } from './core/snapshot.ts';
 import { runStartupRecovery } from './core/recovery.ts';
 import { TimerRunner } from './core/game/timerRunner.ts';
+import { BotRunner } from './core/game/botRunner.ts';
+import { LlmClient, isLlmEnabled } from './core/game/llmClient.ts';
 import { createHttpServer } from './gateway/http.ts';
 import { WsGateway } from './gateway/ws.ts';
 import type { Logger } from './boot/logger.ts';
@@ -24,6 +26,7 @@ export interface App {
   ws: WsGateway;
   executor: RoomCommandExecutor;
   timerRunner: TimerRunner;
+  botRunner: BotRunner;
   /** 实际监听端口（port=0 时由系统分配） */
   port: () => number;
   listen: () => Promise<void>;
@@ -51,6 +54,14 @@ export function createApp(
   let ready = true;
 
   const executor = new RoomCommandExecutor(db, new RoomQueues());
+
+  // 大模型客户端：没配 LLM_BASE_URL 就是 null，此时 AI 玩家无法加入，
+  // 已在房间里的 llm 机器人退化为规则策略（不会卡住对局）。
+  const llm = isLlmEnabled(config.llm) ? new LlmClient(config.llm, logger) : null;
+  if (llm) {
+    logger.info('llm_enabled', { model: config.llm.model });
+  }
+
   const server = createHttpServer({
     isReady: () => ready,
     listOpenRooms: () => listOpenRoomSummaries(db),
@@ -65,7 +76,9 @@ export function createApp(
     logger,
     allowedOrigins: config.allowedOrigins,
     serverVersion: SERVER_VERSION,
+    llmAvailable: llm !== null,
     onTimersChanged: () => timerRunner.notifyChanged(),
+    onBotTrigger: (roomId) => botRunner.trigger(roomId),
     ...(tuning?.hostTransferDelayMs !== undefined
       ? { hostTransferDelayMs: tuning.hostTransferDelayMs }
       : {}),
@@ -83,6 +96,22 @@ export function createApp(
   // 启动即对表：崩溃重启后自然补执行到期计时器（§10.4）
   timerRunner.start();
 
+  // 机器人驱动器：纯函数 reduce 不会主动通知"轮到你了"，
+  // 所以由 ws.applyGameOutcome 每次对局变化后 trigger 一次（见上方 onBotTrigger）。
+  const botRunner = new BotRunner({
+    db,
+    executor,
+    logger,
+    llm,
+    onOutcome: (roomId, outcome) => {
+      try {
+        ws.applyGameOutcome(roomId, outcome);
+      } catch (err) {
+        logger.error('bot_outcome_broadcast_failed', { roomId, message: (err as Error).message });
+      }
+    },
+  });
+
   let shutdownStarted = false;
 
   return {
@@ -91,6 +120,7 @@ export function createApp(
     ws,
     executor,
     timerRunner,
+    botRunner,
     port: () => (server.address() as AddressInfo).port,
     listen: () =>
       new Promise<void>((resolvePromise, reject) => {
@@ -103,6 +133,8 @@ export function createApp(
       ready = false;
       logger.info('shutdown_started');
       timerRunner.stop();
+      // 停在 ws.close() 之前：驱动器还在跑时不该再有新动作落库
+      botRunner.stop();
       await ws.close();
       await new Promise<void>((resolvePromise) => {
         server.close(() => resolvePromise());

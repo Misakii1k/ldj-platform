@@ -58,6 +58,16 @@ export interface WsGatewayDeps {
   onTimersChanged?: () => void;
   /** 席位保留期扫描间隔（§6.7，默认 30 秒；测试可缩短） */
   reservationSweepMs?: number;
+  /**
+   * 大模型是否已配置（app 层从 ServerConfig 判定）。
+   * false 时房主添加 AI 玩家会被拒绝并说明原因，而不是加进来每步都回落规则策略。
+   */
+  llmAvailable?: boolean;
+  /**
+   * 对局状态变化后触发机器人推进（app 层接 BotRunner.trigger）。
+   * 纯函数 reduce 不能主动通知"轮到你了"，所以每次落库后都要问一遍。
+   */
+  onBotTrigger?: (roomId: string) => void;
 }
 
 interface ConnectionState {
@@ -599,11 +609,17 @@ export class WsGateway {
           payload.data.command === 'kick_player'
             ? this.#nicknameOf(roomId, payload.data.targetPlayerId)
             : null;
-        const outcome = applyRoomCommand(tx, roomId, playerId, payload.data);
-        const sysChat =
-          outcome.kickedPlayerId !== undefined
-            ? insertSystemChat(tx, roomId, `${kickedNickname ?? '玩家'} 被移出房间`)
-            : null;
+        const outcome = applyRoomCommand(tx, roomId, playerId, payload.data, {
+          llmAvailable: this.#deps.llmAvailable === true,
+        });
+        let sysChat: ChatMessageView | null = null;
+        if (outcome.kickedPlayerId !== undefined) {
+          sysChat = insertSystemChat(tx, roomId, `${kickedNickname ?? '玩家'} 被移出房间`);
+        } else if (outcome.bot) {
+          // 加/减机器人也发一条系统提示：房间里的人需要知道多了个"人"
+          const verb = outcome.bot.kind === null ? '离开了房间' : '加入了房间';
+          sysChat = insertSystemChat(tx, roomId, `${outcome.bot.nickname} ${verb}`);
+        }
         return { ...outcome, sysChat };
       },
     });
@@ -713,6 +729,11 @@ export class WsGateway {
     }
     if (outcome.timersChanged) {
       this.#deps.onTimersChanged?.();
+    }
+    // 机器人推进：本局还没结束就问一遍"有没有机器人该动了"。
+    // 放在广播之后，真人先看到刚发生的事，再看到机器人的响应。
+    if (!outcome.finished && !outcome.aborted) {
+      this.#deps.onBotTrigger?.(roomId);
     }
   }
 

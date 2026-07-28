@@ -5,6 +5,8 @@
  * 计时与系统消息一律以 effect 描述，由内核在同一事务中登记或执行。
  */
 
+import type { BotDecisionInput, BotPromptContext } from './bot.ts';
+
 export type Actor =
   | { kind: 'player'; playerId: string }
   | { kind: 'system'; source: 'timer' | 'recovery' | 'admin' };
@@ -49,4 +51,15 @@ export interface GameModule<C, S, A, PV, SV, E, R> {
   getSpectatorView(state: S): SV;
   getResult(state: S): R | null;
   migrateSnapshot?(fromVersion: number, snapshot: unknown): S;
+  /**
+   * 机器人策略（测试用陪练，可选）。同样是纯函数：只读玩家视角，返回动作或 null。
+   * 未实现时该游戏不支持机器人，平台拒绝在此游戏的房间里添加。
+   */
+  pickBotAction?(input: BotDecisionInput<PV>): A | null;
+  /**
+   * LLM 决策材料（可选）：把玩家视角翻译成自然语言局势 + 候选动作清单。
+   * 大模型只从候选项里挑 id，因此不可能产出非法动作。
+   * 未实现时该游戏的 LLM 机器人退化为 pickBotAction。
+   */
+  buildBotPrompt?(input: BotDecisionInput<PV>): BotPromptContext<A> | null;
 }

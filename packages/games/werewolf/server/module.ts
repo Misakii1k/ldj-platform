@@ -1,5 +1,7 @@
 ﻿import type { Actor, GameContext, GameModule, ReduceResult } from '@ldj/shared';
 import { WEREWOLF_MANIFEST } from '../shared/manifest.ts';
+import { pickWerewolfBotAction } from './bot.ts';
+import { buildWerewolfBotPrompt } from './botPrompt.ts';
 export type WerewolfRole = 'wolf' | 'villager' | 'seer' | 'witch';
 export type WerewolfTeam = 'wolves' | 'village';
 export type WerewolfPhase = 'night' | 'day_announcement' | 'discussion' | 'voting' | 'game_over';
@@ -56,6 +58,8 @@ export const werewolfModule: GameModule<WerewolfConfig, WerewolfState, WerewolfA
   getPlayerView(state: WerewolfState, playerId: string): WerewolfPlayerView { const p = state.players[playerId]; const canAct = Boolean(p?.alive && ((state.phase === 'night' && ['wolf', 'seer', 'witch'].includes(p.role)) || (state.phase === 'discussion' && state.speakingOrder[state.currentSpeakerIndex] === playerId) || state.phase === 'voting' || state.phase === 'day_announcement')); return { ...publicView(state), me: p ? { playerId, role: p.role, alive: p.alive, seerResult: p.role === 'seer' ? state.night.seerResult : null, canAct, nightVictimId: p.role === 'witch' ? state.night.killTargetId : null, wolfTeammateIds: p.role === 'wolf' ? Object.entries(state.players).filter(([id, other]) => id !== playerId && other.role === 'wolf').map(([id]) => id) : [], witchSaveUsed: state.witchSaveUsed, witchPoisonUsed: state.witchPoisonUsed } : null }; },
   getSpectatorView(state: WerewolfState): WerewolfPublicView { return publicView(state); },
   getResult(state: WerewolfState): WerewolfResult | null { return state.winner ? { winner: state.winner } : null; },
+  pickBotAction(input) { return pickWerewolfBotAction(input); },
+  buildBotPrompt(input) { return buildWerewolfBotPrompt(input); },
 };
 
 

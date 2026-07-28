@@ -9,6 +9,7 @@ import { parseRoomConfig } from '../roomConfig.ts';
 import { buildRoomSnapshot } from '../snapshot.ts';
 import { forfeitPlayers, type GameActionOutcome } from '../game/session.ts';
 import { insertSystemChat } from './chat.ts';
+import { purgeBotsIfNoHumans } from './bots.ts';
 import type { ChatMessageView, RoomSnapshotView } from '@ldj/shared';
 
 /** 活跃成员数（占用房间的成员：CONNECTED / 断线保留中） */
@@ -22,8 +23,14 @@ export function countActiveMembers(db: Db, roomId: string): number {
   return row.n;
 }
 
-/** 无活跃成员时记录空置时间（FR-ROOM-007 清理依据） */
+/**
+ * 无活跃成员时记录空置时间（FR-ROOM-007 清理依据）。
+ *
+ * 先清机器人：机器人恒为 CONNECTED 会一直被 countActiveMembers 计入，
+ * 真人全走之后房间就永远不满足"空置"条件，也就永不回收。
+ */
 export function markEmptyIfNoActive(db: Db, roomId: string, now: number): void {
+  purgeBotsIfNoHumans(db, roomId);
   if (countActiveMembers(db, roomId) === 0) {
     db.prepare('UPDATE rooms SET empty_since = ? WHERE id = ?').run(now, roomId);
   }
@@ -33,12 +40,15 @@ export function markEmptyIfNoActive(db: Db, roomId: string, now: number): void {
  * 房主转让目标：joined_at 最早的 CONNECTED 玩家（排除指定成员）；
  * 同毫秒加入时按席位号确定性平局。
  * 无人在线返回 null（房主位空缺，下个入座玩家接任）。
+ *
+ * 机器人被排除在外：它恒为 CONNECTED，一旦接任房主就没人能再开局或关房间。
  */
 export function pickNextHost(db: Db, roomId: string, excludePlayerId: string | null): string | null {
   const row = db
     .prepare(
       `SELECT player_id FROM room_members
        WHERE room_id = ? AND seat_role = 'player' AND connection_status = 'CONNECTED'
+         AND is_bot = 0
          AND (? IS NULL OR player_id != ?)
        ORDER BY joined_at ASC, seat ASC LIMIT 1`,
     )

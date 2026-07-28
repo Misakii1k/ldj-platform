@@ -4,12 +4,13 @@
  * start_game / abort_game / return_to_lobby。
  * 权限只信服务端连接上下文推导出的 actorPlayerId（FR-HOST-004）。
  */
-import type { ChatMessageView, RoomCommandPayload, RoomSnapshotView } from '@ldj/shared';
+import type { BotKind, ChatMessageView, RoomCommandPayload, RoomSnapshotView } from '@ldj/shared';
 import type { TxContext } from '../executor.ts';
 import { CommandError } from '../executor.ts';
 import { parseRoomConfig } from '../roomConfig.ts';
 import { buildRoomSnapshot } from '../snapshot.ts';
 import { markEmptyIfNoActive } from './presence.ts';
+import { applyAddBot, applyRemoveBot } from './bots.ts';
 import { startGame, abortGame, returnToLobby, type StartGameOutcome } from '../game/session.ts';
 
 export interface RoomCommandOutcome {
@@ -23,6 +24,8 @@ export interface RoomCommandOutcome {
   gameStarted?: StartGameOutcome;
   /** abort_game 时被终止的会话与已落库的系统聊天提示 */
   gameAborted?: { sessionId: string; sysChat: ChatMessageView };
+  /** add_bot / remove_bot 时的机器人信息；gateway 据此发系统提示 */
+  bot?: { playerId: string; nickname: string; kind: BotKind | null };
 }
 
 interface RoomRow {
@@ -45,11 +48,20 @@ function writeAudit(
     .run(roomId, actorPlayerId, action, result, tx.now);
 }
 
+export interface RoomCommandOptions {
+  /**
+   * LLM 是否已配置可用（由 gateway 从 ServerConfig 判定后传入）。
+   * 事务内不读进程配置，保持 handler 只依赖入参与数据库。
+   */
+  llmAvailable?: boolean;
+}
+
 export function applyRoomCommand(
   tx: TxContext,
   roomId: string,
   actorPlayerId: string,
   payload: RoomCommandPayload,
+  options: RoomCommandOptions = {},
 ): RoomCommandOutcome {
   const { db, now } = tx;
   const room = db
@@ -151,6 +163,27 @@ export function applyRoomCommand(
       returnToLobby(tx, roomId);
       writeAudit(tx, roomId, actorPlayerId, 'return_to_lobby', 'ok');
       return { command: payload.command, snapshot: buildRoomSnapshot(db, roomId) };
+    }
+    case 'add_bot': {
+      const added = applyAddBot(tx, roomId, {
+        kind: payload.kind,
+        llmAvailable: options.llmAvailable,
+      });
+      writeAudit(tx, roomId, actorPlayerId, `add_bot:${payload.kind}:${added.nickname}`, 'ok');
+      return {
+        command: payload.command,
+        snapshot: added.snapshot,
+        bot: { playerId: added.playerId, nickname: added.nickname, kind: added.kind },
+      };
+    }
+    case 'remove_bot': {
+      const removed = applyRemoveBot(tx, roomId, payload.targetPlayerId);
+      writeAudit(tx, roomId, actorPlayerId, `remove_bot:${removed.nickname}`, 'ok');
+      return {
+        command: payload.command,
+        snapshot: removed.snapshot,
+        bot: { playerId: removed.playerId, nickname: removed.nickname, kind: null },
+      };
     }
   }
 }

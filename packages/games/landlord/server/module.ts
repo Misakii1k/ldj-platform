@@ -1,6 +1,8 @@
 ﻿import type { Actor, GameContext, GameModule, ReduceResult } from '@ldj/shared';
 import { LANDLORD_MANIFEST } from '../shared/manifest.ts';
 import { buildLandlordDeck, canBeat, identifyCombo, sortCards, type LandlordCard, type LandlordCombo } from './cards.ts';
+import { pickLandlordBotAction } from './bot.ts';
+import { buildLandlordBotPrompt } from './botPrompt.ts';
 export interface LandlordConfig { variant: 'standard' }
 export type LandlordPhase = 'bidding' | 'playing' | 'game_over';
 export interface LandlordBid { playerId: string; score: 0 | 1 | 2 | 3 }
@@ -33,6 +35,8 @@ export const landlordModule: GameModule<LandlordConfig, LandlordState, LandlordA
   getPlayerView(state: LandlordState, playerId: string): LandlordPlayerView { return { ...publicView(state), me: state.players.includes(playerId) ? { playerId, hand: state.hands[playerId] ?? [] } : null }; },
   getSpectatorView(state: LandlordState): LandlordPublicView { return publicView(state); },
   getResult(state: LandlordState): LandlordResult | null { return state.winnerTeam && state.winnerId ? { winnerTeam: state.winnerTeam, winnerId: state.winnerId } : null; },
+  pickBotAction(input) { return pickLandlordBotAction(input); },
+  buildBotPrompt(input) { return buildLandlordBotPrompt(input); },
 };
 
 

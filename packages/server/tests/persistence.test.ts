@@ -35,10 +35,13 @@ test('migrate：十张逻辑表全部创建', () => {
   db.close();
 });
 
+/** 从迁移表派生期望版本号：新增迁移时不必再改断言 */
+const ALL_VERSIONS = MIGRATIONS.map((m) => m.version);
+
 test('migrate：重复执行幂等', () => {
   const db = openDb({ path: ':memory:' });
   const first = migrate(db);
-  assert.deepEqual(first, [1, 2]);
+  assert.deepEqual(first, ALL_VERSIONS);
   const second = migrate(db);
   assert.deepEqual(second, []);
   db.close();
@@ -53,7 +56,8 @@ test('migrate：v2 为历史房间回填默认游戏', () => {
      VALUES ('legacy', 'ABCDE', 'LOBBY', NULL, 0, ?, ?)`,
   ).run(now, now);
 
-  assert.deepEqual(migrate(db), [2]);
+  // 只应用过 v1，余下版本一次补齐
+  assert.deepEqual(migrate(db), ALL_VERSIONS.slice(1));
   const room = db.prepare("SELECT game_id FROM rooms WHERE id = 'legacy'").get() as {
     game_id: string | null;
   };

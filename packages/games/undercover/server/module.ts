@@ -24,6 +24,8 @@ import {
   type UndercoverPlayerView,
   type UndercoverSpectatorView,
 } from './views.ts';
+import { pickUndercoverBotAction } from './bot.ts';
+import { buildUndercoverBotPrompt } from './botPrompt.ts';
 
 const REVEAL_TIMEOUT_MS = 30_000; // §6.3：30 秒后自动进入发言
 const VOTE_RESULT_MS = 5_000; // 附录 D-3：结果展示固定 5 秒
@@ -572,5 +574,13 @@ export const undercoverModule: GameModule<
     }
     // 无法迁移时由内核进入 ABORTED（§8.5），不猜测恢复
     throw new Error(`无法从状态版本 ${fromVersion} 迁移`);
+  },
+
+  pickBotAction(input) {
+    return pickUndercoverBotAction(input);
+  },
+
+  buildBotPrompt(input) {
+    return buildUndercoverBotPrompt(input);
   },
 };
