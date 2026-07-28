@@ -4365,7 +4365,265 @@ p { margin: 0.5rem 0; }
   }
 }
 /* UNO、斗地主、狼人杀专用桌面 */
-.new-game-page{min-height:100dvh;padding:clamp(16px,3vw,32px);background:radial-gradient(circle at top,#26375f 0,#12182d 42%,#090d18 100%);color:#fff}.new-game-header{max-width:1100px;margin:0 auto 18px}.new-game-header h1{font-size:clamp(32px,6vw,60px);margin:4px 0}.new-game-header p{margin:0;color:#cbd5e1}.new-game-kicker{font-size:12px;letter-spacing:.18em;color:#fbbf24}.uno-table,.landlord-table,.werewolf-board{max-width:1100px;margin:auto;padding:clamp(16px,3vw,28px);border:1px solid #ffffff22;border-radius:28px;background:#ffffff0d;box-shadow:0 24px 60px #0005}.uno-players,.landlord-players,.werewolf-players{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}.new-player-chip{padding:12px;border-radius:16px;background:#ffffff12;border:1px solid #ffffff18;display:flex;flex-direction:column;gap:4px}.new-player-chip span{font-size:12px;color:#cbd5e1}.new-player-chip.active{border-color:#fbbf24;background:#fbbf2422}.new-player-chip.dead{opacity:.42;filter:grayscale(1)}.uno-discard{margin:28px auto}.uno-hand,.landlord-hand{display:flex;overflow-x:auto;padding:22px 4px 8px;gap:8px;align-items:flex-end}.uno-card{width:82px;min-width:82px;height:122px;border:3px solid #fff;border-radius:16px;color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 8px 18px #0005}.uno-card strong,.uno-card span{font-size:22px}.uno-card small{font-size:10px;margin-top:8px}.color-red{background:#dc2626}.color-yellow{background:#d49a08}.color-green{background:#16a34a}.color-blue{background:#2563eb}.color-wild{background:conic-gradient(#dc2626,#d49a08,#16a34a,#2563eb,#dc2626)}.new-game-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:18px 0}.new-game-actions button,.werewolf-targets button,.day-announcement button,.night-actions>button{padding:12px 18px;border:0;border-radius:14px;background:#ffffff18;color:white;font-weight:700}.new-game-actions .accent{background:#f59e0b;color:#17120a}.color-picker{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;gap:10px;z-index:40}.color-picker strong{position:absolute;margin-top:-110px}.color-picker button{width:64px;height:64px;border:3px solid white;border-radius:50%;font-size:0}.game-alert,.game-error{text-align:center;padding:10px;border-radius:12px}.game-alert{background:#f59e0b33}.game-error{background:#ef444433;color:#fecaca}.landlord-table{background:radial-gradient(circle,#276749,#12372c)}.bottom-cards,.current-combo{margin:20px auto;text-align:center}.bottom-cards b,.current-combo b{display:inline-flex;padding:8px 10px;margin:4px;border-radius:8px;background:white;color:#111}.landlord-hand button{min-width:54px;height:92px;margin-left:-8px;border:0;border-radius:10px;background:white;color:#111;transition:.15s}.landlord-hand button.selected{transform:translateY(-18px);box-shadow:0 0 0 3px #fbbf24}.landlord-hand small{display:block;font-size:9px}.werewolf-board{background:linear-gradient(180deg,#1d2744,#12172a)}.role-card{max-width:420px;margin:16px auto 24px;padding:22px;text-align:center;border-radius:22px;background:linear-gradient(135deg,#6d28d9,#312e81)}.role-card span,.role-card small{display:block}.role-card strong{display:block;font-size:36px;margin:8px}.werewolf-targets{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}.night-actions,.day-announcement{text-align:center;margin:24px auto;padding:18px;border-radius:18px;background:#0003}.night-actions h3{margin-top:18px}@media(max-width:640px){.new-game-page{padding:12px}.uno-table,.landlord-table,.werewolf-board{border-radius:20px;padding:12px}.uno-card{width:68px;min-width:68px;height:104px}.landlord-hand button{min-width:48px}.new-game-header h1{font-size:36px}}
+.new-game-page {
+  min-height: 100dvh;
+  padding: clamp(16px,3vw,32px);
+  background: radial-gradient(circle at top,#26375f 0,#12182d 42%,#090d18 100%);
+  color: #fff;
+}
+.new-game-header {
+  max-width: 1100px;
+  margin: 0 auto 18px;
+}
+.new-game-header h1 {
+  font-size: clamp(32px,6vw,60px);
+  margin: 4px 0;
+}
+.new-game-header p {
+  margin: 0;
+  color: #cbd5e1;
+}
+.new-game-kicker {
+  font-size: 12px;
+  letter-spacing: .18em;
+  color: #fbbf24;
+}
+.uno-table,
+.landlord-table,
+.werewolf-board {
+  max-width: 1100px;
+  margin: auto;
+  padding: clamp(16px,3vw,28px);
+  border: 1px solid #ffffff22;
+  border-radius: 28px;
+  background: #ffffff0d;
+  box-shadow: 0 24px 60px #0005;
+}
+.uno-players,
+.landlord-players,
+.werewolf-players {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(130px,1fr));
+  gap: 10px;
+}
+.new-player-chip {
+  padding: 12px;
+  border-radius: 16px;
+  background: #ffffff12;
+  border: 1px solid #ffffff18;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.new-player-chip span {
+  font-size: 12px;
+  color: #cbd5e1;
+}
+.new-player-chip.active {
+  border-color: #fbbf24;
+  background: #fbbf2422;
+}
+.new-player-chip.dead {
+  opacity: .42;
+  filter: grayscale(1);
+}
+.uno-discard {
+  margin: 28px auto;
+}
+.uno-hand,
+.landlord-hand {
+  display: flex;
+  overflow-x: auto;
+  padding: 22px 4px 8px;
+  gap: 8px;
+  align-items: flex-end;
+}
+.uno-card {
+  width: 82px;
+  min-width: 82px;
+  height: 122px;
+  border: 3px solid #fff;
+  border-radius: 16px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 18px #0005;
+}
+.uno-card strong,
+.uno-card span {
+  font-size: 22px;
+}
+.uno-card small {
+  font-size: 10px;
+  margin-top: 8px;
+}
+.color-red {
+  background: #dc2626;
+}
+.color-yellow {
+  background: #d49a08;
+}
+.color-green {
+  background: #16a34a;
+}
+.color-blue {
+  background: #2563eb;
+}
+.color-wild {
+  background: conic-gradient(#dc2626,#d49a08,#16a34a,#2563eb,#dc2626);
+}
+.new-game-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin: 18px 0;
+}
+.new-game-actions button,
+.werewolf-targets button,
+.day-announcement button,
+.night-actions>button {
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 14px;
+  background: #ffffff18;
+  color: white;
+  font-weight: 700;
+}
+.new-game-actions .accent {
+  background: #f59e0b;
+  color: #17120a;
+}
+.color-picker {
+  position: fixed;
+  inset: 0;
+  background: #000a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  z-index: 40;
+}
+.color-picker strong {
+  position: absolute;
+  margin-top: -110px;
+}
+.color-picker button {
+  width: 64px;
+  height: 64px;
+  border: 3px solid white;
+  border-radius: 50%;
+  font-size: 0;
+}
+.game-alert,
+.game-error {
+  text-align: center;
+  padding: 10px;
+  border-radius: 12px;
+}
+.game-alert {
+  background: #f59e0b33;
+}
+.game-error {
+  background: #ef444433;
+  color: #fecaca;
+}
+.landlord-table {
+  background: radial-gradient(circle,#276749,#12372c);
+}
+.bottom-cards,
+.current-combo {
+  margin: 20px auto;
+  text-align: center;
+}
+.bottom-cards b,
+.current-combo b {
+  display: inline-flex;
+  padding: 8px 10px;
+  margin: 4px;
+  border-radius: 8px;
+  background: white;
+  color: #111;
+}
+.landlord-hand button {
+  min-width: 54px;
+  height: 92px;
+  margin-left: -8px;
+  border: 0;
+  border-radius: 10px;
+  background: white;
+  color: #111;
+  transition: .15s;
+}
+.landlord-hand button.selected {
+  transform: translateY(-18px);
+  box-shadow: 0 0 0 3px #fbbf24;
+}
+.landlord-hand small {
+  display: block;
+  font-size: 9px;
+}
+.werewolf-board {
+  background: linear-gradient(180deg,#1d2744,#12172a);
+}
+.role-card {
+  max-width: 420px;
+  margin: 16px auto 24px;
+  padding: 22px;
+  text-align: center;
+  border-radius: 22px;
+  background: linear-gradient(135deg,#6d28d9,#312e81);
+}
+.role-card span,
+.role-card small {
+  display: block;
+}
+.role-card strong {
+  display: block;
+  font-size: 36px;
+  margin: 8px;
+}
+.werewolf-targets {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+.night-actions,
+.day-announcement {
+  text-align: center;
+  margin: 24px auto;
+  padding: 18px;
+  border-radius: 18px;
+  background: #0003;
+}
+.night-actions h3 {
+  margin-top: 18px;
+}
+@media(max-width:640px) {
+  .new-game-page {
+    padding: 12px;
+  }
+  .uno-table,
+  .landlord-table,
+  .werewolf-board {
+    border-radius: 20px;
+    padding: 12px;
+  }
+  .uno-card {
+    width: 68px;
+    min-width: 68px;
+    height: 104px;
+  }
+  .landlord-hand button {
+    min-width: 48px;
+  }
+  .new-game-header h1 {
+    font-size: 36px;
+  }
+}
 
 /* 斗地主叫分阶段手牌与牌桌修正 */
 .landlord-table.phase-bidding .current-combo {
