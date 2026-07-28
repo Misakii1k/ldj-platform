@@ -1,0 +1,21 @@
+# 统一行尾与编码，避免中文源码被按本地代码页（GBK）解码后回写造成乱码。
+# 背景：2026-07-28 曾出现 GamePage.tsx / styles.css 共 40 处编码损坏。
+
+* text=auto eol=lf
+
+*.ts   text eol=lf
+*.tsx  text eol=lf
+*.css  text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+*.mjs  text eol=lf
+*.js   text eol=lf
+
+# 二进制：不做行尾转换
+*.png  binary
+*.jpg  binary
+*.webp binary
+*.svg  text eol=lf
+*.db   binary
+*.ico  binary
