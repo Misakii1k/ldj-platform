@@ -1,0 +1,32 @@
+{
+  "name": "ldj-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "局域网桌游平台（谁是卧底 MVP / R1）",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "packages/shared",
+    "packages/server",
+    "packages/client",
+    "packages/games/*"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.server.json && tsc -p packages/client/tsconfig.json",
+    "lint": "eslint .",
+    "test": "node --test \"packages/**/tests/**/*.test.ts\"",
+    "ci": "npm run typecheck && npm run lint && npm run test",
+    "dev:server": "node packages/server/src/index.ts",
+    "build": "npm run build -w @ldj/client",
+    "start:prod": "node packages/server/src/index.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.32.0",
+    "@types/node": "^24.1.0",
+    "eslint": "^9.32.0",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.38.0"
+  }
+}

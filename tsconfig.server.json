@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "paths": {
+      "@ldj/shared": ["./packages/shared/src/index.ts"],
+      "@ldj/game-undercover/manifest": ["./packages/games/undercover/shared/manifest.ts"],
+      "@ldj/game-undercover/server": ["./packages/games/undercover/server/index.ts"]
+    }
+  },
+  "include": [
+    "packages/shared/src/**/*.ts",
+    "packages/shared/tests/**/*.ts",
+    "packages/server/src/**/*.ts",
+    "packages/server/tests/**/*.ts",
+    "packages/games/*/shared/**/*.ts",
+    "packages/games/*/server/**/*.ts",
+    "packages/games/*/tests/**/*.ts"
+  ]
+}

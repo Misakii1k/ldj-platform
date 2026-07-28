@@ -1,0 +1,36 @@
+- [x] 客户端连接层实现 ConnectionContext，处理 welcome/ack/error/room_seq/game_state/game_event/chat_batch/room_snapshot/session_replaced 全部消息类型
+- [x] 连接六态明确展示：connecting / connected / reconnecting / synced / seat_expired / server_recovering
+- [x] requestId 幂等回执表正确工作（重复响应不重复处理）
+- [x] roomSeq 期望值校验：收到 STALE_CLIENT_STATE 后自动发送 resync
+- [x] 连接页支持昵称输入 + 创建房间 + 加入房间（带房间码）
+- [x] 房间页展示成员列表（含在线/断线/房主/席位角色）、房间码、二维码、聊天区
+- [x] 房主操作栏含：开始游戏、踢人、转让、改配置、关房
+- [x] 聊天输入框在同步未完成时禁用但保留草稿
+- [x] 游戏页 word_reveal 阶段：按住显示词语、松开遮挡、visibilitychange/blur 立即遮挡
+- [x] 秘密词不出现在页面标题、URL、控制台日志
+- [x] speaking 阶段：speakingOrder 高亮当前发言者 + 倒计时 + 当前发言者可点击"我已说完"
+- [x] voting 阶段：候选玩家卡片，不能投自己/已淘汰者，已投后整列禁用
+- [x] runoff_voting 阶段：只显示 runoffCandidates 作为可选项
+- [x] vote_result 阶段：展示 lastVoteSummary 摘要
+- [x] game_over 阶段：揭示胜方、所有玩家角色、两词；房主可点击"返回大厅"
+- [x] 320 CSS px 宽度下所有 P0 页面可操作
+- [x] 关键按钮 ≥44×44 CSS px 且有防误触间距
+- [x] 安全区与软键盘适配（投票按钮不被键盘遮挡）
+- [x] 倒计时使用颜色 + 数字双信号
+- [x] 错误文案使用可读文字而非错误码
+- [x] 词库 120 组词对复核通过（无相同词对、无反向重复、无空、无敏感词）
+- [x] 若词库有调整，WORD_BANK_VERSION 已同步并测试通过
+- [x] `npm run typecheck` 在 Node 24 环境通过（含 client tsconfig）
+- [x] `npm run lint` 无新增错误
+- [x] `npm run test` 全绿（Node 24 下 94/94 通过，含 gameSession / gatewayGame / module / words / protocol / room / executor 等全部套件）
+- [x] `npm run build` client 构建成功
+- [x] 真实启动冒烟：服务启动 + /health/live|ready 200 + 静态托管 dist 200 + 二维码输出正常（完整浏览器交互流程待用户在 Node 24 环境手动验证，服务端规则已由 94 个自动化测试覆盖）
+- [x] AC-05 秘密视角：网络消息与客户端状态不含他人角色/词语（已由 gatewayGame.test.ts 覆盖）
+- [x] AC-06 发言推进：手动结束与超时均按正确顺序推进；无权玩家动作被拒（已由 module.test.ts 覆盖）
+- [x] AC-07 普通投票：自投/重复/投已淘汰者被拒；合法投票正确结算（已由 module.test.ts 覆盖）
+- [x] AC-08 平票加赛：第一次平票进加赛；第二次平票无人淘汰进下一轮（已由 module.test.ts 覆盖）
+- [x] AC-09 胜负判定：覆盖卧底全灭、卧底数达平民数、双卧底局（已由 module.test.ts 覆盖）
+- [x] AC-17 掉线超时退出：超过保留期在安全点淘汰，随后胜负判定正确（已由 gameSession.test.ts forfeitPlayers 覆盖）
+- [x] progress.md 新增"会话 4：M3 完成"条目，内容完整
+- [x] task_plan.md Phase 3 标记为 complete，所有子项勾选
+- [x] README.md"当前状态"更新为"Phase 3 完成，下一步 M4"

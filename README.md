@@ -14,4 +14,4 @@ TypeScript（严格模式）· Node.js ≥ 24 LTS · `node:sqlite` · `ws` · Re
 
 ## 当前状态
 
-Phase 0：SPEC 冻结候选，M0 PoC 进行中。工程骨架（M1）尚未生成。
+Phase 3 完成（M3 谁是卧底）。下一步：M4 持久化恢复。

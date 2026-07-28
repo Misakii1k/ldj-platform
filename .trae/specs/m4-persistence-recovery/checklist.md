@@ -1,0 +1,29 @@
+- [ ] 新增 `packages/server/src/core/recovery.ts`，实现 `runStartupRecovery(db, executor, logger)` 函数
+- [ ] 恢复流程第 1 步：重置非 CLOSED 房间所有成员 `connection_status` 为 `DISCONNECTED_RESERVED`（保留 `reserved_until`，KICKED 不变）
+- [ ] 恢复流程第 2 步：遍历活动对局（PREPARING/ACTIVE/RECOVERING），校验模块注册、stateSchemaVersion、快照可解析；失败 → ABORTED + 系统聊天 + 房间 POST_GAME；通过 → 标记 RECOVERING
+- [ ] 恢复流程第 3 步：按 `deadlineAt ASC` 逐个补执行到期计时器（每个独立事务，复用 `executor.executeInternal` + `consumeDueTimer`）
+- [ ] 恢复流程第 4 步：补执行完毕后将所有 RECOVERING 会话标记 ACTIVE
+- [ ] 恢复流程返回摘要对象（房间数/会话数/已终止数/已补计时器数）
+- [ ] `consumeDueTimer` 会话查询从 `status = 'ACTIVE'` 改为 `status IN ('ACTIVE','RECOVERING')`
+- [ ] `applyGameAction` 在会话 `status === 'RECOVERING'` 时抛 `RECOVERY_IN_PROGRESS`
+- [ ] `app.ts` 在 `migrate` 之后、`timerRunner.start()` 之前调用 `runStartupRecovery`，记录恢复摘要日志
+- [ ] 新增 `packages/server/tests/recovery.test.ts`，使用临时文件 db 模拟崩溃重启
+- [ ] 测试：word_reveal 阶段崩溃重启，已确认 confirm_word 保留，到期 reveal 计时器补执行 → speaking
+- [ ] 测试：speaking 阶段崩溃重启，已完成的 finish_speech 保留，发言顺序正确
+- [ ] 测试：voting 阶段崩溃重启，已投选票保留，到期投票计时器补执行并结算
+- [ ] 测试：vote_result 阶段崩溃重启，到期展示计时器补执行并推进到下一轮或 game_over
+- [ ] 测试：跨 deadline 重启（deadline 改为过去），计时器按 deadlineAt 顺序补执行且只执行一次
+- [ ] 测试：快照 JSON 损坏 → 会话 ABORTED + 系统聊天 + 房间 POST_GAME + 不写 game_results
+- [ ] 测试：模块未注册（伪造 module_id）→ 会话 ABORTED + 系统聊天
+- [ ] 测试：恢复后成员 connection_status 全部为 DISCONNECTED_RESERVED（KICKED 不变）
+- [ ] 测试：恢复期间 game_action 返回 RECOVERY_IN_PROGRESS（需通过 RECOVERING 状态的会话验证）
+- [ ] 测试：补执行产生的下游计时器若也已到期则继续补执行（如 vote_result 到期 → speaking 计时器也已到期 → 继续推进）
+- [ ] `npm run typecheck` 在 Node 24 环境通过
+- [ ] `npm run lint` 无新增错误
+- [ ] `npm run test` 全绿（Node 24 下，原有 94 测试 + 新增恢复测试，无回归）
+- [ ] AC-15 进程崩溃：在看词/发言/投票/结算阶段分别强制结束进程，重启后已确认操作不丢失（由 recovery.test.ts 覆盖）
+- [ ] AC-16 过期计时器：服务关闭跨过 deadline，重启后系统动作只补执行一次且顺序正确（由 recovery.test.ts 覆盖）
+- [ ] RPO=0：已确认操作的 command_receipts、game_events、snapshot_json 在重启后完整保留
+- [ ] RTO≤60s：恢复流程同步完成、无网络 I/O，远低于 60 秒门槛
+- [ ] progress.md 新增"会话 5：M4 完成"条目，内容完整
+- [ ] task_plan.md Phase 4 标记为 complete，所有子项勾选
