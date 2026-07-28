@@ -80,6 +80,21 @@ test('createRoomPayloadSchema：密码长度校验', () => {
   assert.equal(createRoomPayloadSchema.safeParse({ nickname: '阿明' }).success, true);
 });
 
+test('createRoomPayloadSchema：gameId 只接受目录中的游戏', () => {
+  assert.equal(
+    createRoomPayloadSchema.safeParse({ nickname: '阿明', gameId: 'undercover' }).success,
+    true,
+  );
+  assert.equal(
+    createRoomPayloadSchema.safeParse({ nickname: '阿明', gameId: 'uno' }).success,
+    true,
+  );
+  assert.equal(
+    createRoomPayloadSchema.safeParse({ nickname: '阿明', gameId: 'unknown-game' }).success,
+    false,
+  );
+});
+
 test('nicknameSchema：transform 输出规范化结果', () => {
   const r = nicknameSchema.safeParse(' 小 红 ');
   assert.equal(r.success, true);

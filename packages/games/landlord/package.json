@@ -1,0 +1,13 @@
+{
+  "name": "@ldj/game-landlord",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./manifest": "./shared/manifest.ts",
+    "./server": "./server/index.ts"
+  },
+  "dependencies": {
+    "@ldj/shared": "*"
+  }
+}

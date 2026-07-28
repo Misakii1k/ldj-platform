@@ -1,11 +1,28 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "paths": {
-      "@ldj/shared": ["./packages/shared/src/index.ts"],
-      "@ldj/game-undercover/manifest": ["./packages/games/undercover/shared/manifest.ts"],
-      "@ldj/game-undercover/server": ["./packages/games/undercover/server/index.ts"]
+      "@ldj/shared": [
+        "./packages/shared/src/index.ts"
+      ],
+      "@ldj/game-undercover/manifest": [
+        "./packages/games/undercover/shared/manifest.ts"
+      ],
+      "@ldj/game-undercover/server": [
+        "./packages/games/undercover/server/index.ts"
+      ],
+      "@ldj/game-uno/server": [
+        "./packages/games/uno/server/index.ts"
+      ],
+      "@ldj/game-landlord/server": [
+        "./packages/games/landlord/server/index.ts"
+      ],
+      "@ldj/game-werewolf/server": [
+        "./packages/games/werewolf/server/index.ts"
+      ]
     }
   },
   "include": [

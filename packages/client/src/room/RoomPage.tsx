@@ -7,8 +7,8 @@ import { useConnection } from '../connection/useConnection.ts';
 import { useToast } from '../shared-ui/ToastContext.tsx';
 import { describeError } from '../shared-ui/errors.ts';
 import {
-  MAX_PLAYERS,
-  MIN_PLAYERS_TO_START,
+  DEFAULT_PLAYABLE_GAME_ID,
+  getGameCatalogEntry,
   type RoomMemberView,
   type RoomSnapshotView,
 } from '@ldj/shared';
@@ -66,10 +66,6 @@ export function RoomPage() {
   const onlinePlayers = room?.members.filter(
     (m) => m.seatRole === 'player' && m.connectionStatus === 'CONNECTED',
   ) ?? [];
-  const canStart =
-    room?.status === 'LOBBY' &&
-    onlinePlayers.length >= MIN_PLAYERS_TO_START &&
-    onlinePlayers.length <= MAX_PLAYERS;
 
   // 聊天滚动到底
   useEffect(() => {
@@ -148,11 +144,24 @@ export function RoomPage() {
 
   if (room === null) {
     return (
-      <main className="room-page">
-        <div className="loading">正在加载房间信息…</div>
+      <main className="room-page game-home-page" style={{ maxWidth: 'none' }}>
+        <div className="game-home-page__content room-layout">
+          <div className="loading" style={{ padding: '20vh 0', textAlign: 'center' }}>
+            正在加载房间信息…
+          </div>
+        </div>
       </main>
     );
   }
+
+  const roomGame = getGameCatalogEntry(room.gameId ?? DEFAULT_PLAYABLE_GAME_ID)
+    ?? getGameCatalogEntry(DEFAULT_PLAYABLE_GAME_ID)!;
+  const minimumPlayersToStart = roomGame.minPlayers;
+  const maximumPlayers = roomGame.maxPlayers;
+  const canStart =
+    room.status === 'LOBBY' &&
+    onlinePlayers.length >= minimumPlayersToStart &&
+    onlinePlayers.length <= maximumPlayers;
 
   const sortedMembers = [...room.members].sort((a, b) => {
     if (a.seatRole !== b.seatRole) return a.seatRole === 'player' ? -1 : 1;
@@ -160,190 +169,126 @@ export function RoomPage() {
   });
 
   return (
-    <main className="room-page">
-      <header className="room-header">
-        <div className="room-code-box">
-          <span className="room-code-label">房间码</span>
-          <span className="room-code">{room.roomCode}</span>
-          <button
-            type="button"
-            className="copy-btn"
-            aria-label="复制房间码"
-            onClick={() => {
-              void navigator.clipboard?.writeText(room.roomCode);
-              showToast('房间码已复制', 'success');
-            }}
-          >
-            复制
-          </button>
-        </div>
-        <div className="room-status">{statusText(room.status)}</div>
-      </header>
-
-      {actionError && <div className="error-banner" role="alert">{actionError}</div>}
-
-      <section className="members-section">
-        <h2>
-          成员（{onlinePlayers.length}/{MAX_PLAYERS}）
-          {room.members.some((m) => m.connectionStatus !== 'CONNECTED' && m.connectionStatus !== 'KICKED') && (
-            <span className="members-hint">（含断线保留）</span>
-          )}
-        </h2>
-        <ul className="members-list">
-          {sortedMembers.map((m) => {
-            const badge = memberStatusBadge(m);
-            const isMe = m.playerId === myPlayerId;
-            return (
-              <li key={m.playerId} className={`member ${badge.cls}`}>
-                <span className="member-seat">
-                  {m.seatRole === 'player' ? `#${m.seat ?? '?'}` : '观'}
-                </span>
-                <span className="member-name">
-                  {m.nickname}
-                  {m.isHost && <span className="host-icon" title="房主">★</span>}
-                  {isMe && <span className="me-tag">（我）</span>}
-                </span>
-                <span className={`member-status ${badge.cls}`}>{badge.label}</span>
-                {isHost && m.playerId !== myPlayerId && m.connectionStatus === 'CONNECTED' && (
-                  <span className="member-actions">
-                    <button
-                      type="button"
-                      className="mini-btn"
-                      aria-label={`踢出玩家 ${m.nickname}`}
-                      onClick={() => handleKick(m.playerId)}
-                      disabled={busy || !synced || room.status === 'CLOSED'}
-                    >
-                      踢出
-                    </button>
-                    <button
-                      type="button"
-                      className="mini-btn"
-                      aria-label={`转让房主给 ${m.nickname}`}
-                      onClick={() => handleTransfer(m.playerId)}
-                      disabled={busy || !synced || room.status === 'CLOSED'}
-                    >
-                      转让房主
-                    </button>
-                  </span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-
-      <section className="chat-section">
-        <h2>聊天</h2>
-        <div className="chat-box" ref={chatBoxRef}>
-          {state.chat.length === 0 ? (
-            <div className="chat-empty">还没有消息</div>
-          ) : (
-            state.chat.map((msg: ChatLine) => (
-              <div key={msg.cursor} className={`chat-line ${msg.kind}`}>
-                <span className="chat-time">{formatTime(msg.at)}</span>
-                {msg.kind === 'system' ? (
-                  <span className="chat-system">{msg.text}</span>
-                ) : (
-                  <span className="chat-text">
-                    <b>{msg.fromPlayerId === myPlayerId ? '我' : room.members.find((mm) => mm.playerId === msg.fromPlayerId)?.nickname ?? '未知'}</b>
-                    ：{msg.text}
-                  </span>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-        <form className="chat-input-row" onSubmit={handleSendChat}>
-          <input
-            ref={chatInputRef}
-            type="text"
-            value={chatDraft}
-            onChange={(e) => setChatDraft(e.target.value.slice(0, 300))}
-            placeholder={synced ? '输入消息…' : '同步中…暂不能发送'}
-            maxLength={300}
-            disabled={!synced}
-            aria-label="聊天输入"
-          />
-          <button type="submit" aria-label="发送消息" disabled={!synced || !chatDraft.trim() || busy}>
-            发送
-          </button>
-        </form>
-      </section>
-
-      {room.status === 'POST_GAME' && isHost && (
-        <button
-          type="button"
-          className="primary-btn"
-          onClick={handleReturnToLobby}
-          disabled={busy || !synced}
-        >
-          返回大厅
-        </button>
-      )}
-
-      <section className="action-bar">
-        <button
-          type="button"
-          className="leave-btn"
-          onClick={handleLeaveRoom}
-          disabled={busy}
-        >
-          离开房间
-        </button>
-        {isHost && room.status === 'LOBBY' && (
-          <button
-            type="button"
-            className="primary-btn"
-            onClick={handleStartGame}
-            disabled={busy || !synced || !canStart}
-            title={!canStart ? `需要 ${MIN_PLAYERS_TO_START}-${MAX_PLAYERS} 名在线玩家` : ''}
-          >
-            开始游戏
-          </button>
-        )}
-        {isHost && room.status === 'IN_GAME' && (
-          <button
-            type="button"
-            className="danger-btn"
-            onClick={() => {
-              if (confirm('确定要终止本局吗？')) {
-                void doRoomCommand({ command: 'abort_game' }, '终止对局');
-              }
-            }}
-            disabled={busy || !synced}
-          >
-            终止对局
-          </button>
-        )}
-        {isHost && !confirmClose && room.status !== 'CLOSED' && (
-          <button
-            type="button"
-            className="danger-btn"
-            onClick={() => setConfirmClose(true)}
-            disabled={busy || !synced}
-          >
-            关闭房间
-          </button>
-        )}
-        {confirmClose && (
-          <div className="confirm-row">
-            <span>确认关闭？</span>
-            <button type="button" className="danger-btn" onClick={handleCloseRoom} disabled={busy}>
-              确认关闭
-            </button>
-            <button type="button" onClick={() => setConfirmClose(false)} disabled={busy}>
-              取消
-            </button>
+    <main className="room-page game-home-page" data-game-id={roomGame.id} style={{ maxWidth: 'none' }}>
+      <div className="game-home-page__content room-layout">
+        <header className="home-header room-header" style={{ alignItems: 'center', padding: '4px 2px' }}>
+          <div className="home-brand">
+            <span className="home-brand__tile" aria-hidden="true">卧</span>
+            <span>谁是卧底 · 房间</span>
           </div>
-        )}
-      </section>
+          <div className="home-header__actions">
+            <span className="home-local-badge">本地联机</span>
+            <span className="room-status">{statusText(room.status)}</span>
+          </div>
+        </header>
 
-      {state.connState === 'server_recovering' && (
-        <div className="status-banner recovering">正在重新同步房间状态…</div>
-      )}
-      {state.connState === 'reconnecting' && (
-        <div className="status-banner reconnecting">连接断开，正在重连…</div>
-      )}
+        <section className="room-hero" aria-labelledby="room-title">
+          <div style={{ display: 'flex', minHeight: 190, flexDirection: 'column', justifyContent: 'center', border: 'var(--home-border)', borderRadius: 27, padding: 'clamp(20px, 5vw, 36px)', color: 'var(--home-ink)', background: 'var(--home-surface)', boxShadow: '7px 8px 0 var(--home-ink)' }}>
+            <p className="home-hero__eyebrow" style={{ marginTop: 0 }}>READY WHEN YOU ARE</p>
+            <h1 id="room-title" style={{ maxWidth: '10em', margin: 0, color: 'var(--home-ink)', fontFamily: 'ui-serif, "Songti SC", "STSong", "Noto Serif SC", serif', fontSize: 'clamp(2.35rem, 8vw, 4.6rem)', fontWeight: 900, lineHeight: 0.98, letterSpacing: '-0.07em' }}>
+              等待你的<span style={{ color: 'var(--home-coral)' }}>队友</span>
+            </h1>
+            <p style={{ maxWidth: '34rem', margin: '16px 0 0', color: 'var(--home-muted)', fontWeight: 700 }}>
+              本局游戏：{roomGame.displayName} · {minimumPlayersToStart}–{maximumPlayers} 人。把房间码分享给朋友，准备好后就开始这一局推理。
+            </p>
+          </div>
+
+          <div className="game-card game-card--sunset room-share-note" style={{ minHeight: 190, padding: 20, transform: 'rotate(1deg)' }}>
+            <div className="game-card__meta">
+              <span className="game-card__availability">ROOM CODE</span>
+              <span className="game-card__players">{onlinePlayers.length}/{maximumPlayers} 在线</span>
+            </div>
+            <div style={{ display: 'grid', flex: 1, alignContent: 'center', gap: 8 }}>
+              <span className="room-code-label" style={{ color: 'var(--home-muted)', fontWeight: 800 }}>房间码</span>
+              <strong className="room-code" style={{ color: 'var(--home-ink)', fontSize: 'clamp(1.8rem, 7vw, 2.7rem)' }}>{room.roomCode}</strong>
+              <button type="button" className="game-card__action" style={{ minHeight: 42, marginTop: 4, padding: '7px 12px' }} aria-label="复制房间码" onClick={() => { void navigator.clipboard?.writeText(room.roomCode); showToast('房间码已复制', 'success'); }}>
+                <span>复制房间码</span><span aria-hidden="true">↗</span>
+              </button>
+            </div>
+            <div className="game-card__ticket" aria-label="当前游戏">卧</div>
+          </div>
+        </section>
+
+        {actionError && <div className="error-banner room-sheet__error" role="alert">{actionError}</div>}
+
+        <div className="room-content-grid">
+          <section className="game-card game-card--berry room-players-panel members-section" style={{ minHeight: 0, padding: 'clamp(16px, 3vw, 24px)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+              <div>
+                <p style={{ margin: '0 0 4px', color: 'var(--home-coral)', fontSize: '0.72rem', fontWeight: 900, letterSpacing: '0.08em' }}>THE TABLE</p>
+                <h2 style={{ margin: 0, color: 'var(--home-ink)', fontFamily: 'ui-serif, "Songti SC", "STSong", serif', fontSize: 'clamp(1.35rem, 4vw, 1.85rem)', fontWeight: 900, lineHeight: 1.1 }}>成员（{onlinePlayers.length}/{maximumPlayers}）</h2>
+              </div>
+              {room.members.some((m) => m.connectionStatus !== 'CONNECTED' && m.connectionStatus !== 'KICKED') && <span className="members-hint" style={{ maxWidth: 92, marginLeft: 0, textAlign: 'right' }}>含断线保留</span>}
+            </div>
+            <ul className="members-list" aria-label="房间成员列表" style={{ gap: 8 }}>
+              {sortedMembers.map((m) => {
+                const badge = memberStatusBadge(m);
+                const isMe = m.playerId === myPlayerId;
+                return (
+                  <li key={m.playerId} className={'member ' + badge.cls} style={{ gap: 8, padding: '8px 6px', border: '1.5px solid color-mix(in srgb, var(--game-accent, #146e59) 28%, transparent)', background: 'rgba(255, 253, 248, 0.72)' }}>
+                    <span className="member-seat" style={{ minWidth: 28 }}>{m.seatRole === 'player' ? '#' + (m.seat ?? '?') : '观'}</span>
+                    <span className="member-name" style={{ gap: 5 }}>
+                      {m.nickname}
+                      {m.isHost && <span className="host-icon" title="房主">★</span>}
+                      {isMe && <span className="me-tag">（我）</span>}
+                    </span>
+                    <span className={'member-status ' + badge.cls}>{badge.label}</span>
+                    {isHost && m.playerId !== myPlayerId && m.connectionStatus === 'CONNECTED' && (
+                      <span className="member-actions">
+                        <button type="button" className="mini-btn" aria-label={'踢出玩家 ' + m.nickname} onClick={() => handleKick(m.playerId)} disabled={busy || !synced || room.status === 'CLOSED'}>踢出</button>
+                        <button type="button" className="mini-btn" aria-label={'转让房主给 ' + m.nickname} onClick={() => handleTransfer(m.playerId)} disabled={busy || !synced || room.status === 'CLOSED'}>转让房主</button>
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+
+          <section className="game-card game-card--violet room-chat-panel chat-section" style={{ minHeight: 0, padding: 'clamp(16px, 3vw, 24px)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+              <div>
+                <p style={{ margin: '0 0 4px', color: 'var(--home-coral)', fontSize: '0.72rem', fontWeight: 900, letterSpacing: '0.08em' }}>SIDE CHAT</p>
+                <h2 style={{ margin: 0, color: 'var(--home-ink)', fontFamily: 'ui-serif, "Songti SC", "STSong", serif', fontSize: 'clamp(1.35rem, 4vw, 1.85rem)', fontWeight: 900, lineHeight: 1.1 }}>聊天</h2>
+              </div>
+              <span aria-hidden="true" style={{ fontSize: '1.5rem' }}>✦</span>
+            </div>
+            <div className="chat-box" ref={chatBoxRef} style={{ minHeight: 200, background: 'rgba(255, 253, 248, 0.72)' }}>
+              {state.chat.length === 0 ? <div className="chat-empty">还没有消息</div> : state.chat.map((msg: ChatLine) => (
+                <div key={msg.cursor} className={'chat-line ' + msg.kind}>
+                  <span className="chat-time">{formatTime(msg.at)}</span>
+                  {msg.kind === 'system' ? <span className="chat-system">{msg.text}</span> : <span className="chat-text"><b>{msg.fromPlayerId === myPlayerId ? '我' : room.members.find((mm) => mm.playerId === msg.fromPlayerId)?.nickname ?? '未知'}</b>：{msg.text}</span>}
+                </div>
+              ))}
+            </div>
+            <form className="chat-input-row" onSubmit={handleSendChat}>
+              <input ref={chatInputRef} type="text" value={chatDraft} onChange={(e) => setChatDraft(e.target.value.slice(0, 300))} placeholder={synced ? '输入消息…' : '同步中…暂不能发送'} maxLength={300} disabled={!synced} aria-label="聊天输入" />
+              <button type="submit" className="game-card__action" aria-label="发送消息" disabled={!synced || !chatDraft.trim() || busy} style={{ width: 'auto', minHeight: 44, marginTop: 0, whiteSpace: 'nowrap' }}>发送</button>
+            </form>
+          </section>
+        </div>
+
+        <section className="home-join-callout room-share-note" aria-labelledby="room-actions-title" style={{ marginTop: 0, gridTemplateColumns: '1fr', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span className="home-join-callout__icon" aria-hidden="true">♟</span>
+            <div>
+              <p className="home-hero__eyebrow" style={{ margin: 0, color: 'var(--home-green)' }}>HOST CONSOLE</p>
+              <h2 id="room-actions-title" style={{ margin: 0, fontFamily: 'ui-serif, "Songti SC", serif', fontWeight: 900 }}>{room.status === 'LOBBY' ? '准备开局' : '当前状态：' + statusText(room.status)}</h2>
+            </div>
+          </div>
+          <div className="action-bar" style={{ gap: 10 }}>
+            <button type="button" className="leave-btn" onClick={handleLeaveRoom} disabled={busy}>离开房间</button>
+            {room.status === 'POST_GAME' && isHost && <button type="button" className="game-card__action" onClick={handleReturnToLobby} disabled={busy || !synced} style={{ width: 'auto', minHeight: 44, marginTop: 0 }}>返回大厅</button>}
+            {isHost && room.status === 'LOBBY' && <button type="button" className="game-card__action" onClick={handleStartGame} disabled={busy || !synced || !canStart} title={!canStart ? '需要 ' + minimumPlayersToStart + '–' + maximumPlayers + ' 名在线玩家' : ''} style={{ width: 'auto', minHeight: 44, marginTop: 0 }}>开始游戏</button>}
+            {isHost && room.status === 'IN_GAME' && <button type="button" className="danger-btn" onClick={() => { if (confirm('确定要终止本局吗？')) void doRoomCommand({ command: 'abort_game' }, '终止对局'); }} disabled={busy || !synced}>终止对局</button>}
+            {isHost && !confirmClose && room.status !== 'CLOSED' && <button type="button" className="danger-btn" onClick={() => setConfirmClose(true)} disabled={busy || !synced}>关闭房间</button>}
+            {confirmClose && <div className="confirm-row"><span>确认关闭？</span><button type="button" className="danger-btn" onClick={handleCloseRoom} disabled={busy}>确认关闭</button><button type="button" onClick={() => setConfirmClose(false)} disabled={busy}>取消</button></div>}
+          </div>
+        </section>
+
+        {state.connState === 'server_recovering' && <div className="status-banner recovering">正在重新同步房间状态…</div>}
+        {state.connState === 'reconnecting' && <div className="status-banner reconnecting">连接断开，正在重连…</div>}
+      </div>
     </main>
   );
 }

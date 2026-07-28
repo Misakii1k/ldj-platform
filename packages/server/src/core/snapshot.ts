@@ -9,7 +9,20 @@ import type {
   SeatRole,
   MemberConnectionStatus,
 } from '@ldj/shared';
+import { DEFAULT_PLAYABLE_GAME_ID, getGameCatalogEntry } from '@ldj/shared';
 import type { Db } from '../persistence/db.ts';
+
+export interface PublicRoomSummary {
+  roomCode: string;
+  gameId: string;
+  gameName: string;
+  status: 'LOBBY' | 'IN_GAME';
+  playerCount: number;
+  maxPlayers: number;
+  spectatorCount: number;
+  requiresPassword: boolean;
+  updatedAt: number;
+}
 
 interface RoomRow {
   code: string;
@@ -26,6 +39,61 @@ interface MemberRow {
   seat_role: string;
   seat: number | null;
   connection_status: string;
+}
+
+interface PublicRoomRow {
+  room_code: string;
+  game_id: string | null;
+  status: 'LOBBY' | 'IN_GAME';
+  player_count: number;
+  spectator_count: number;
+  requires_password: number;
+  updated_at: number;
+}
+
+const ACTIVE_MEMBER_STATUSES = "('CONNECTED', 'DISCONNECTED_RESERVED')";
+
+/**
+ * Return only the aggregate, non-sensitive fields needed by the LAN lobby.
+ * Active reservations remain counted while expired and kicked members do not.
+ */
+export function listOpenRoomSummaries(db: Db): PublicRoomSummary[] {
+  const rows = db
+    .prepare(
+      `SELECT
+         r.code AS room_code,
+         r.game_id AS game_id,
+         r.status AS status,
+         COUNT(CASE WHEN m.seat_role = 'player'
+                    AND m.connection_status IN ${ACTIVE_MEMBER_STATUSES} THEN 1 END) AS player_count,
+         COUNT(CASE WHEN m.seat_role = 'spectator'
+                    AND m.connection_status IN ${ACTIVE_MEMBER_STATUSES} THEN 1 END) AS spectator_count,
+         CASE WHEN r.password_hash IS NULL THEN 0 ELSE 1 END AS requires_password,
+         r.updated_at AS updated_at
+       FROM rooms r
+       LEFT JOIN room_members m ON m.room_id = r.id
+       WHERE r.status IN ('LOBBY', 'IN_GAME')
+       GROUP BY r.id
+       ORDER BY r.updated_at DESC, r.created_at DESC, r.id ASC`,
+    )
+    .all() as unknown as PublicRoomRow[];
+
+  return rows.map((row) => {
+    const gameId = row.game_id ?? DEFAULT_PLAYABLE_GAME_ID;
+    const game = getGameCatalogEntry(gameId);
+
+    return {
+      roomCode: row.room_code,
+      gameId,
+      gameName: game?.displayName ?? gameId,
+      status: row.status,
+      playerCount: row.player_count,
+      maxPlayers: game?.maxPlayers ?? 0,
+      spectatorCount: row.spectator_count,
+      requiresPassword: row.requires_password === 1,
+      updatedAt: row.updated_at,
+    };
+  });
 }
 
 export function buildRoomSnapshot(db: Db, roomId: string): RoomSnapshotView {

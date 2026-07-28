@@ -4,6 +4,7 @@
 import http from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve, sep } from 'node:path';
+import type { PublicRoomSummary } from '../core/snapshot.ts';
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -30,6 +31,8 @@ const PLACEHOLDER_HTML = `<!doctype html>
 export interface HttpDeps {
   /** readiness：数据库未就绪时必须失败（FR-BOOT-003） */
   isReady: () => boolean;
+  /** Open LAN rooms are supplied by the application layer, not the HTTP gateway. */
+  listOpenRooms: () => readonly PublicRoomSummary[];
   /** 前端构建产物目录；不存在时返回占位页 */
   staticDir?: string;
 }
@@ -65,6 +68,20 @@ export function createHttpServer(deps: HttpDeps): http.Server {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.writeHead(405, { 'content-type': 'text/plain; charset=utf-8' });
       res.end('Method Not Allowed');
+      return;
+    }
+
+    if (url === '/api/rooms') {
+      const body = JSON.stringify({ rooms: deps.listOpenRooms() });
+      res.writeHead(200, {
+        'content-type': MIME['.json']!,
+        'cache-control': 'no-store',
+      });
+      if (req.method === 'HEAD') {
+        res.end();
+      } else {
+        res.end(body);
+      }
       return;
     }
 

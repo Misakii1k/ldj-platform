@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isKnownGameId } from '../game/catalog.ts';
 
 /**
  * 昵称规范化（FR-ROOM-003）：Unicode NFC 规范化 + 去除首尾空白后长度 1–16。
@@ -42,10 +43,18 @@ export const roomCodeSchema = z
     return code;
   });
 
+/** 已知游戏 ID；是否已开放由服务端创建房间时决定。 */
+export const gameIdSchema = z
+  .string()
+  .min(1)
+  .max(32)
+  .refine(isKnownGameId, { message: '未知游戏' });
+
 /** create_room payload */
 export const createRoomPayloadSchema = z
   .object({
     nickname: nicknameSchema,
+    gameId: gameIdSchema.optional(),
     password: roomPasswordSchema.optional(),
   })
   .strict();

@@ -4,9 +4,13 @@ dist/
 .env
 .env.*
 
-# SQLite 运行时旁车文件
+# SQLite 数据库与运行时旁车文件（本地数据，不入库）
+data/*.db
 data/*.db-wal
 data/*.db-shm
+
+# UI 调试截图
+/*.png
 
 # PoC 运行产物
 poc/m0/poc.db*

@@ -128,4 +128,13 @@ CREATE TABLE audit_log (
 );
 `,
   },
+  {
+    version: 2,
+    name: 'backfill-room-game-id',
+    up: `
+UPDATE rooms
+SET game_id = 'undercover'
+WHERE game_id IS NULL;
+`,
+  },
 ];

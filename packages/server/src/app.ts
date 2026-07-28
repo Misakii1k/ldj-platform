@@ -8,6 +8,7 @@ import { openDb, closeDb, type Db } from './persistence/db.ts';
 import { migrate, integrityCheck } from './persistence/migrator.ts';
 import { RoomCommandExecutor } from './core/executor.ts';
 import { RoomQueues } from './core/queue.ts';
+import { listOpenRoomSummaries } from './core/snapshot.ts';
 import { runStartupRecovery } from './core/recovery.ts';
 import { TimerRunner } from './core/game/timerRunner.ts';
 import { createHttpServer } from './gateway/http.ts';
@@ -50,7 +51,11 @@ export function createApp(
   let ready = true;
 
   const executor = new RoomCommandExecutor(db, new RoomQueues());
-  const server = createHttpServer({ isReady: () => ready, staticDir });
+  const server = createHttpServer({
+    isReady: () => ready,
+    listOpenRooms: () => listOpenRoomSummaries(db),
+    staticDir,
+  });
   // ws 与 timerRunner 互相引用：ts 变更后 ws 通知 runner 对表，runner 到期后经 ws 广播
   // （闭包延迟求值：onTimersChanged 仅在对局事件后触发，彼时 timerRunner 已初始化）
   const ws = new WsGateway({

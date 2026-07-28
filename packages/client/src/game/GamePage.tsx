@@ -1,35 +1,33 @@
 /**
- * 游戏页（Task 3/4）：根据 phase 渲染对应子视图。
+ * 游戏页：先按 moduleId 分流到各游戏，再按 phase 渲染对应子视图。
  * game_state payload 经 asPlayerView 解析后分发。
  */
 import { useConnection } from '../connection/useConnection.ts';
 import { asPlayerView } from './types.ts';
+import { GamePhaseRail } from './GameChrome.tsx';
+import { GameChatDrawer } from './GameChatDrawer.tsx';
 import { WordRevealView } from './WordRevealView.tsx';
 import { SpeakingView } from './SpeakingView.tsx';
 import { VotingView } from './VotingView.tsx';
 import { VoteResultView } from './VoteResultView.tsx';
 import { GameOverView } from './GameOverView.tsx';
+import { LandlordGamePage, UnoGamePage, WerewolfGamePage } from './NewGamePages.tsx';
 
-export function GamePage() {
-  const { state } = useConnection();
-  const game = state.game;
+type ActiveGame = NonNullable<ReturnType<typeof useConnection>['state']['game']>;
 
-  if (game === null) {
-    return (
-      <main className="game-page">
-        <div className="loading">等待对局数据…</div>
-      </main>
-    );
-  }
+function GameLoadingCard({ children }: { children: React.ReactNode }) {
+  return (
+    <main className="game-page">
+      <div className="game-shell">
+        <div className="game-loading-card">{children}</div>
+      </div>
+    </main>
+  );
+}
 
+function UndercoverGamePage({ game }: { game: ActiveGame }) {
   const view = asPlayerView(game.view);
-  if (view === null) {
-    return (
-      <main className="game-page">
-        <div className="loading">对局数据格式异常</div>
-      </main>
-    );
-  }
+  if (view === null) return <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
 
   let phaseView;
   switch (view.phase) {
@@ -50,16 +48,45 @@ export function GamePage() {
       phaseView = <GameOverView view={view} />;
       break;
     default:
-      phaseView = <div className="loading">未知阶段</div>;
+      phaseView = <div className="game-loading-card">未知阶段</div>;
   }
 
   return (
-    <main className="game-page">
-      <header className="game-header">
-        <span className="game-title">谁是卧底 · 第 {view.round} 轮</span>
-        {game.role === 'spectator' && <span className="spectator-badge">观战</span>}
-      </header>
-      {phaseView}
+    <main className={`game-page phase-${view.phase}`}>
+      <div className="game-page-decor game-page-decor-left" aria-hidden="true" />
+      <div className="game-page-decor game-page-decor-right" aria-hidden="true" />
+      <div className="game-shell">
+        <header className="game-header">
+          <div className="game-brand-mark" aria-hidden="true"><span /><span /><span /></div>
+          <div className="game-header-copy">
+            <span className="game-title">谁是卧底</span>
+            <span className="game-round">第 {view.round} 轮 · 找出那个人</span>
+          </div>
+          {game.role === 'spectator' && <span className="spectator-badge">观战</span>}
+        </header>
+        {view.phase !== 'game_over' && <GamePhaseRail phase={view.phase} />}
+        {phaseView}
+      </div>
+      <GameChatDrawer />
     </main>
   );
+}
+
+export function GamePage() {
+  const { state } = useConnection();
+  const game = state.game;
+  if (game === null) return <GameLoadingCard>等待对局数据…</GameLoadingCard>;
+
+  switch (game.moduleId) {
+    case 'uno':
+      return <><UnoGamePage view={game.view as Record<string, unknown>} /><GameChatDrawer /></>;
+    case 'landlord':
+      return <><LandlordGamePage view={game.view as Record<string, unknown>} /><GameChatDrawer /></>;
+    case 'werewolf':
+      return <><WerewolfGamePage view={game.view as Record<string, unknown>} /><GameChatDrawer /></>;
+    case 'undercover':
+      return <UndercoverGamePage game={game} />;
+    default:
+      return <GameLoadingCard>暂不支持的游戏：{game.moduleId}</GameLoadingCard>;
+  }
 }

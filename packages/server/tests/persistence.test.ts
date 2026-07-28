@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { openDb, withTransaction } from '../src/persistence/db.ts';
 import { migrate, integrityCheck } from '../src/persistence/migrator.ts';
+import { MIGRATIONS } from '../src/persistence/migrations.ts';
 
 const EXPECTED_TABLES = [
   'schema_migrations',
@@ -37,9 +38,26 @@ test('migrate：十张逻辑表全部创建', () => {
 test('migrate：重复执行幂等', () => {
   const db = openDb({ path: ':memory:' });
   const first = migrate(db);
-  assert.deepEqual(first, [1]);
+  assert.deepEqual(first, [1, 2]);
   const second = migrate(db);
   assert.deepEqual(second, []);
+  db.close();
+});
+
+test('migrate：v2 为历史房间回填默认游戏', () => {
+  const db = openDb({ path: ':memory:' });
+  assert.deepEqual(migrate(db, [MIGRATIONS[0]!]), [1]);
+  const now = Date.now();
+  db.prepare(
+    `INSERT INTO rooms (id, code, status, game_id, seq, created_at, updated_at)
+     VALUES ('legacy', 'ABCDE', 'LOBBY', NULL, 0, ?, ?)`,
+  ).run(now, now);
+
+  assert.deepEqual(migrate(db), [2]);
+  const room = db.prepare("SELECT game_id FROM rooms WHERE id = 'legacy'").get() as {
+    game_id: string | null;
+  };
+  assert.equal(room.game_id, 'undercover');
   db.close();
 });
 

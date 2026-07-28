@@ -46,13 +46,16 @@ test('create_room 命令链：房间 + 房主成员 + seq=1 + 回执', async () 
   assert.ok(!json.includes('resume_token_hash') && !json.includes('password'));
 
   // 数据库落盘
-  const room = db.prepare('SELECT seq, status, host_player_id FROM rooms WHERE id = ?').get(o.roomId) as {
+  const room = db.prepare('SELECT seq, status, host_player_id, game_id FROM rooms WHERE id = ?').get(o.roomId) as {
     seq: number;
     status: string;
     host_player_id: string;
+    game_id: string | null;
   };
   assert.equal(room.seq, 1);
   assert.equal(room.host_player_id, o.playerId);
+  assert.equal(room.game_id, 'undercover');
+  assert.equal(o.snapshot.gameId, 'undercover');
 
   // 成员存的是 token 哈希而非原文
   const member = db
@@ -69,7 +72,31 @@ test('create_room 命令链：房间 + 房主成员 + seq=1 + 回执', async () 
   db.close();
 });
 
-test('executeOnRoom：seq 递增 + 幂等回执返回第一次结果', async () => {
+test('create_room：即将推出的游戏不能创建房间', async () => {
+  const { db, executor } = setup();
+  try {
+    const { roomId } = prepareCreateRoom();
+    await assert.rejects(
+      executor.executeCreate({
+        roomId,
+        actorScope: 'conn:coming-soon',
+        requestId: 'req-coming-soon',
+        handler: (tx) => applyCreateRoom(tx, roomId, { nickname: '房主', gameId: 'avalon' }),
+      }),
+      (err: unknown) => {
+        assert.ok(err instanceof CommandError);
+        assert.equal(err.code, 'ACTION_NOT_ALLOWED');
+        return true;
+      },
+    );
+    const count = db.prepare('SELECT COUNT(*) AS count FROM rooms').get() as { count: number };
+    assert.equal(count.count, 0);
+  } finally {
+    db.close();
+  }
+});
+
+test('executeOnRoom seq increments and idempotent receipt returns first result', async () => {
   const { db, executor } = setup();
   const created = await createRoomViaExecutor(executor);
   const roomId = created.outcome.roomId;
@@ -160,7 +187,7 @@ test('房间码：字符集排除 0/O/1/I', () => {
   }
 });
 
-test('密码慢哈希：可验证、盐随机、不存明文', () => {
+test('password hash verifies with random salt and no plaintext storage', () => {
   const h1 = hashRoomPassword('secret-1');
   const h2 = hashRoomPassword('secret-1');
   assert.notEqual(h1, h2); // 盐不同
