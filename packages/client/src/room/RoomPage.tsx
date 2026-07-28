@@ -100,6 +100,19 @@ export function RoomPage() {
     void doRoomCommand({ command: 'transfer_host', targetPlayerId: playerId }, '转让房主');
   }
 
+  function handleAddBot(kind: 'rule' | 'llm') {
+    void doRoomCommand({ command: 'add_bot', kind }, kind === 'llm' ? '添加 AI 玩家' : '添加机器人');
+  }
+
+  function handleRemoveBot(targetPlayerId?: string) {
+    void doRoomCommand(
+      targetPlayerId === undefined
+        ? { command: 'remove_bot' }
+        : { command: 'remove_bot', targetPlayerId },
+      '移除机器人',
+    );
+  }
+
   function handleCloseRoom() {
     setConfirmClose(false);
     void doRoomCommand({ command: 'close_room' }, '关闭房间');
@@ -162,6 +175,10 @@ export function RoomPage() {
     room.status === 'LOBBY' &&
     onlinePlayers.length >= minimumPlayersToStart &&
     onlinePlayers.length <= maximumPlayers;
+
+  const botCount = room.members.filter((m) => m.botKind !== null).length;
+  // 席位满了就不能再加：服务端也会拒，这里提前禁用避免无效往返
+  const seatsFull = onlinePlayers.length >= maximumPlayers;
 
   const sortedMembers = [...room.members].sort((a, b) => {
     if (a.seatRole !== b.seatRole) return a.seatRole === 'player' ? -1 : 1;
@@ -231,9 +248,17 @@ export function RoomPage() {
                       {m.nickname}
                       {m.isHost && <span className="host-icon" title="房主">★</span>}
                       {isMe && <span className="me-tag">（我）</span>}
+                      {m.botKind === 'llm' && <span className="bot-tag bot-tag--llm" title="由大模型决策">AI</span>}
+                      {m.botKind === 'rule' && <span className="bot-tag" title="随机合法出牌">机器人</span>}
                     </span>
                     <span className={'member-status ' + badge.cls}>{badge.label}</span>
-                    {isHost && m.playerId !== myPlayerId && m.connectionStatus === 'CONNECTED' && (
+                    {/* 机器人不能当房主、也不叫"踢出"，只给一个移除入口 */}
+                    {isHost && m.botKind !== null && room.status === 'LOBBY' && (
+                      <span className="member-actions">
+                        <button type="button" className="mini-btn" aria-label={'移除 ' + m.nickname} onClick={() => handleRemoveBot(m.playerId)} disabled={busy || !synced}>移除</button>
+                      </span>
+                    )}
+                    {isHost && m.botKind === null && m.playerId !== myPlayerId && m.connectionStatus === 'CONNECTED' && (
                       <span className="member-actions">
                         <button type="button" className="mini-btn" aria-label={'踢出玩家 ' + m.nickname} onClick={() => handleKick(m.playerId)} disabled={busy || !synced || room.status === 'CLOSED'}>踢出</button>
                         <button type="button" className="mini-btn" aria-label={'转让房主给 ' + m.nickname} onClick={() => handleTransfer(m.playerId)} disabled={busy || !synced || room.status === 'CLOSED'}>转让房主</button>
@@ -280,6 +305,9 @@ export function RoomPage() {
             <button type="button" className="leave-btn" onClick={handleLeaveRoom} disabled={busy}>离开房间</button>
             {room.status === 'POST_GAME' && isHost && <button type="button" className="game-card__action room-inline-btn" onClick={handleReturnToLobby} disabled={busy || !synced}>返回大厅</button>}
             {isHost && room.status === 'LOBBY' && <button type="button" className="game-card__action room-inline-btn" onClick={handleStartGame} disabled={busy || !synced || !canStart} title={!canStart ? '需要 ' + minimumPlayersToStart + '–' + maximumPlayers + ' 名在线玩家' : ''}>开始游戏</button>}
+            {isHost && room.status === 'LOBBY' && <button type="button" className="game-card__action room-inline-btn" onClick={() => handleAddBot('rule')} disabled={busy || !synced || seatsFull} title={seatsFull ? '席位已满' : '随机合法出牌，用来凑人数试玩'}>加机器人</button>}
+            {isHost && room.status === 'LOBBY' && state.llmAvailable && <button type="button" className="game-card__action room-inline-btn" onClick={() => handleAddBot('llm')} disabled={busy || !synced || seatsFull} title={seatsFull ? '席位已满' : '由大模型决策，失败自动退回随机出牌'}>加 AI 玩家</button>}
+            {isHost && room.status === 'LOBBY' && botCount > 0 && <button type="button" className="game-card__action room-inline-btn" onClick={() => handleRemoveBot()} disabled={busy || !synced} title="移除最后加入的机器人">减机器人（{botCount}）</button>}
             {isHost && room.status === 'IN_GAME' && <button type="button" className="danger-btn" onClick={() => { if (confirm('确定要终止本局吗？')) void doRoomCommand({ command: 'abort_game' }, '终止对局'); }} disabled={busy || !synced}>终止对局</button>}
             {isHost && !confirmClose && room.status !== 'CLOSED' && <button type="button" className="danger-btn" onClick={() => setConfirmClose(true)} disabled={busy || !synced}>关闭房间</button>}
             {confirmClose && <div className="confirm-row"><span>确认关闭？</span><button type="button" className="danger-btn" onClick={handleCloseRoom} disabled={busy}>确认关闭</button><button type="button" onClick={() => setConfirmClose(false)} disabled={busy}>取消</button></div>}

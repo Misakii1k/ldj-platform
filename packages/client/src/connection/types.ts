@@ -61,6 +61,11 @@ export interface ConnectionSnapshot {
   game: GameStatePayload | null;
   lastError: LastError | null;
   closeReason: CloseReason | null;
+  /**
+   * 服务端是否配置了大模型接口（welcome 携带的能力位）。
+   * false 时房主只能加规则机器人，"加 AI 玩家"按钮隐藏。
+   */
+  llmAvailable: boolean;
 }
 
 export const INITIAL_CONNECTION_STATE: ConnectionSnapshot = {
@@ -74,6 +79,7 @@ export const INITIAL_CONNECTION_STATE: ConnectionSnapshot = {
   game: null,
   lastError: null,
   closeReason: null,
+  llmAvailable: false,
 };
 
 /** reducer 产出的副作用提示（保持 reducer 纯函数） */

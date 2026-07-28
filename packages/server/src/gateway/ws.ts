@@ -198,6 +198,8 @@ export class WsGateway {
       protocolVersion: PROTOCOL_VERSION,
       connectionId: state.connectionId,
       serverVersion: this.#deps.serverVersion,
+      // 能力位：没配 LLM_BASE_URL 时客户端不显示"加 AI 玩家"按钮
+      llmAvailable: this.#deps.llmAvailable === true,
     });
 
     socket.on('message', (data) => {

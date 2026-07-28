@@ -29,13 +29,15 @@ function parseWelcomePayload(p: unknown): {
   protocolVersion: number;
   connectionId: string;
   serverVersion: string;
+  llmAvailable: boolean;
 } | null {
   if (!isObject(p)) return null;
-  const { protocolVersion, connectionId, serverVersion } = p;
+  const { protocolVersion, connectionId, serverVersion, llmAvailable } = p;
   if (typeof protocolVersion !== 'number') return null;
   if (typeof connectionId !== 'string') return null;
   if (typeof serverVersion !== 'string') return null;
-  return { protocolVersion, connectionId, serverVersion };
+  // 能力位缺失（旧服务端）按"未启用"处理，不因此丢掉整个 welcome
+  return { protocolVersion, connectionId, serverVersion, llmAvailable: llmAvailable === true };
 }
 
 function parseRoomSnapshot(p: unknown): RoomSnapshotView | null {
@@ -143,6 +145,7 @@ export function applyEnvelope(
           connState: state.connState === 'reconnecting' ? 'connected' : 'connected',
           serverVersion: payload.serverVersion,
           connectionId: payload.connectionId,
+          llmAvailable: payload.llmAvailable,
           // 重连后清空旧 closeReason
           closeReason: null,
         },

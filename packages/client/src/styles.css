@@ -2805,6 +2805,25 @@ p { margin: 0.5rem 0; }
   font-weight: 700;
 }
 
+/* 机器人/AI 标记：跟在昵称后面的小胶囊，与 member-status 视觉上区分开 */
+.bot-tag {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--room-muted) 55%, transparent);
+  color: var(--room-muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  vertical-align: 1px;
+}
+
+.bot-tag--llm {
+  border-color: color-mix(in srgb, var(--room-coral) 65%, transparent);
+  color: var(--room-coral);
+}
+
 .member-status {
   min-height: 24px;
   display: inline-flex;
