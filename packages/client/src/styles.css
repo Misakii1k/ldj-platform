@@ -171,13 +171,6 @@ p { margin: 0.5rem 0; }
   padding: 4px;
 }
 
-.mini-btn {
-  font-size: 0.75rem;
-  min-height: 32px;
-  min-width: 32px;
-  padding: 2px 8px;
-}
-
 .copy-btn {
   font-size: 0.75rem;
   min-height: 32px;
@@ -284,155 +277,52 @@ p { margin: 0.5rem 0; }
 /* —— 错误与状态横幅 —— */
 
 .error-banner {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: var(--color-danger);
-  padding: 10px 12px;
-  border-radius: 8px;
   font-size: 0.875rem;
 }
 
 .status-banner {
-  padding: 8px 12px;
-  border-radius: 8px;
   font-size: 0.875rem;
-  text-align: center;
-}
-
-.status-banner.recovering {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.status-banner.reconnecting {
-  background: #dbeafe;
-  color: #1e40af;
 }
 
 /* —— 房间页 —— */
 
 .room-header {
-  display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 8px;
   flex-wrap: wrap;
 }
 
-.room-code-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.room-code-label {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-}
-
-.room-code {
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: 2px;
-  font-family: 'Menlo', 'Consolas', monospace;
-  color: var(--color-primary);
-}
-
-.room-status {
-  font-size: 0.875rem;
-  color: var(--color-text-muted);
-  background: var(--color-surface);
-  padding: 4px 10px;
-  border-radius: 12px;
-  border: 1px solid var(--color-border);
-}
-
-.members-section, .chat-section {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 12px;
-}
-
 .members-hint {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
   margin-left: 4px;
 }
 
 .members-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
 .member {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 4px;
-  border-radius: 6px;
   font-size: 0.9rem;
   flex-wrap: wrap;
 }
 
 .member-seat {
-  font-weight: 600;
-  color: var(--color-text-muted);
   min-width: 28px;
 }
 
 .member-name {
   flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.host-icon {
-  color: var(--color-warning);
-}
-
-.me-tag {
-  color: var(--color-text-muted);
-  font-size: 0.75rem;
 }
 
 .member-status {
-  font-size: 0.7rem;
-  padding: 2px 6px;
-  border-radius: 8px;
   background: #f3f4f6;
-}
-
-.member-status.online { background: #dcfce7; color: #166534; }
-.member-status.reserved { background: #fef3c7; color: #92400e; }
-.member-status.expired { background: #f3f4f6; color: #6b7280; }
-.member-status.kicked { background: #fee2e2; color: #991b1b; }
-
-.member-actions {
-  display: flex;
-  gap: 4px;
 }
 
 /* —— 聊天 —— */
 
 .chat-box {
-  height: 200px;
   overflow-y: auto;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 8px;
-  margin-bottom: 8px;
-  background: var(--color-bg);
-  font-size: 0.875rem;
 }
 
 .chat-empty {
-  color: var(--color-text-muted);
   text-align: center;
   padding: 20px;
 }
@@ -440,26 +330,6 @@ p { margin: 0.5rem 0; }
 .chat-line {
   margin-bottom: 4px;
   word-break: break-word;
-}
-
-.chat-line.system {
-  color: var(--color-text-muted);
-  font-style: italic;
-}
-
-.chat-time {
-  color: var(--color-text-muted);
-  font-size: 0.7rem;
-  margin-right: 4px;
-}
-
-.chat-system {
-  font-size: 0.8rem;
-}
-
-.chat-input-row {
-  display: flex;
-  gap: 8px;
 }
 
 .chat-input-row input {
@@ -471,20 +341,6 @@ p { margin: 0.5rem 0; }
 }
 
 /* —— 操作栏 —— */
-
-.action-bar {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.confirm-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  font-size: 0.875rem;
-}
 
 /* —— 游戏页 —— */
 
@@ -759,13 +615,6 @@ p { margin: 0.5rem 0; }
   font-weight: 700;
 }
 
-.tally-box {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 12px;
-}
-
 .tally-list {
   list-style: none;
   padding: 0;
@@ -795,13 +644,6 @@ p { margin: 0.5rem 0; }
   padding: 16px;
   border-radius: 12px;
   background: linear-gradient(135deg, #fef3c7, #fde68a);
-}
-
-.reveal-box {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 12px;
 }
 
 .word-pair {
@@ -980,7 +822,6 @@ p { margin: 0.5rem 0; }
     flex-direction: column;
   }
 }
-
 
 /* —— 游戏首页：纸牌桌游风格 —— */
 
@@ -1785,29 +1626,6 @@ p { margin: 0.5rem 0; }
 }
 
 /* Room-page addition: selected game identity stays visible once a room is created. */
-.room-game-summary {
-  display: grid;
-  gap: 1px;
-  min-width: 104px;
-  padding: 5px 10px;
-  border-left: 3px solid var(--color-primary);
-}
-
-.room-game-summary > span {
-  color: var(--color-text-muted);
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
-.room-game-summary strong {
-  color: var(--color-text);
-  font-size: 0.88rem;
-}
-
-.room-game-summary small {
-  color: var(--color-text-muted);
-  font-size: 0.72rem;
-}
 
 @keyframes home-connection-pulse {
   0%, 100% { box-shadow: inset 0 0 0 4px #fffdf7, 0 0 0 0 rgba(12, 113, 93, 0.25); }
@@ -1844,11 +1662,6 @@ p { margin: 0.5rem 0; }
   .home-join-link {
     min-height: 40px;
     font-size: 0.9rem;
-  }
-
-  .player-filter {
-    grid-template-columns: minmax(200px, 0.8fr) minmax(0, 1.45fr);
-    align-items: center;
   }
 
   .game-grid {
@@ -3522,7 +3335,6 @@ p { margin: 0.5rem 0; }
   --game-purple: #7358a7;
   position: relative;
   isolation: isolate;
-  max-width: 760px;
   min-height: 100vh;
   min-height: 100dvh;
   padding: max(var(--safe-top), 14px) 14px calc(var(--safe-bottom) + 24px);
@@ -4365,71 +4177,22 @@ p { margin: 0.5rem 0; }
   }
 }
 /* UNO、斗地主、狼人杀专用桌面 */
-.new-game-page {
-  min-height: 100dvh;
-  padding: clamp(16px,3vw,32px);
-  background: radial-gradient(circle at top,#26375f 0,#12182d 42%,#090d18 100%);
-  color: #fff;
-}
-.new-game-header {
-  max-width: 1100px;
-  margin: 0 auto 18px;
-}
-.new-game-header h1 {
-  font-size: clamp(32px,6vw,60px);
-  margin: 4px 0;
-}
-.new-game-header p {
-  margin: 0;
-  color: #cbd5e1;
-}
-.new-game-kicker {
-  font-size: 12px;
-  letter-spacing: .18em;
-  color: #fbbf24;
-}
-.uno-table,
-.landlord-table,
-.werewolf-board {
-  max-width: 1100px;
-  margin: auto;
-  padding: clamp(16px,3vw,28px);
-  border: 1px solid #ffffff22;
-  border-radius: 28px;
-  background: #ffffff0d;
-  box-shadow: 0 24px 60px #0005;
-}
-.uno-players,
-.landlord-players,
-.werewolf-players {
-  display: grid;
-  grid-template-columns: repeat(auto-fit,minmax(130px,1fr));
-  gap: 10px;
-}
+
 .new-player-chip {
   padding: 12px;
-  border-radius: 16px;
-  background: #ffffff12;
-  border: 1px solid #ffffff18;
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 .new-player-chip span {
   font-size: 12px;
-  color: #cbd5e1;
 }
-.new-player-chip.active {
-  border-color: #fbbf24;
-  background: #fbbf2422;
-}
+
 .new-player-chip.dead {
   opacity: .42;
   filter: grayscale(1);
 }
-.uno-discard {
-  margin: 28px auto;
-}
+
 .uno-hand,
 .landlord-hand {
   display: flex;
@@ -4442,14 +4205,11 @@ p { margin: 0.5rem 0; }
   width: 82px;
   min-width: 82px;
   height: 122px;
-  border: 3px solid #fff;
-  border-radius: 16px;
   color: white;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 18px #0005;
 }
 .uno-card strong,
 .uno-card span {
@@ -4492,10 +4252,7 @@ p { margin: 0.5rem 0; }
   color: white;
   font-weight: 700;
 }
-.new-game-actions .accent {
-  background: #f59e0b;
-  color: #17120a;
-}
+
 .color-picker {
   position: fixed;
   inset: 0;
@@ -4515,7 +4272,6 @@ p { margin: 0.5rem 0; }
   height: 64px;
   border: 3px solid white;
   border-radius: 50%;
-  font-size: 0;
 }
 .game-alert,
 .game-error {
@@ -4523,16 +4279,7 @@ p { margin: 0.5rem 0; }
   padding: 10px;
   border-radius: 12px;
 }
-.game-alert {
-  background: #f59e0b33;
-}
-.game-error {
-  background: #ef444433;
-  color: #fecaca;
-}
-.landlord-table {
-  background: radial-gradient(circle,#276749,#12372c);
-}
+
 .bottom-cards,
 .current-combo {
   margin: 20px auto;
@@ -4548,26 +4295,14 @@ p { margin: 0.5rem 0; }
   color: #111;
 }
 .landlord-hand button {
-  min-width: 54px;
-  height: 92px;
-  margin-left: -8px;
-  border: 0;
-  border-radius: 10px;
-  background: white;
-  color: #111;
   transition: .15s;
 }
-.landlord-hand button.selected {
-  transform: translateY(-18px);
-  box-shadow: 0 0 0 3px #fbbf24;
-}
+
 .landlord-hand small {
   display: block;
   font-size: 9px;
 }
-.werewolf-board {
-  background: linear-gradient(180deg,#1d2744,#12172a);
-}
+
 .role-card {
   max-width: 420px;
   margin: 16px auto 24px;
@@ -4617,9 +4352,7 @@ p { margin: 0.5rem 0; }
     min-width: 68px;
     height: 104px;
   }
-  .landlord-hand button {
-    min-width: 48px;
-  }
+
   .new-game-header h1 {
     font-size: 36px;
   }
@@ -5230,8 +4963,6 @@ p { margin: 0.5rem 0; }
     height: clamp(76px, 21vw, 88px);
   }
 }
-
-
 
 /* —— 列表入场交错延迟：由 TSX 注入 --stagger-index，避免内联 animationDelay —— */
 .game-page .vote-card,
