@@ -2455,7 +2455,6 @@ p { margin: 0.5rem 0; }
 /* —— 谁是卧底房间：与首页统一的纸张卡牌布局 —— */
 .room-page {
   --room-paper: #fff5e6;
-  --room-surface: #fffdf8;
   --room-ink: #312d28;
   --room-muted: #6f665d;
   --room-coral: #ef4d39;
@@ -4497,14 +4496,9 @@ p { margin: 0.5rem 0; }
 /* Party game table redesign: shared home-style visual language for UNO, Landlord and Werewolf. */
 .new-game-page {
   --party-ink: #312d28;
-  --party-paper: #fff7e8;
-  --party-card: #fffaf0;
   --party-muted: #71695f;
   --party-coral: #ff7f66;
-  --party-coral-dark: #e85e47;
   --party-yellow: #ffc857;
-  --party-green: #49b07a;
-  --party-blue: #4d7cff;
   --party-border: 3px solid var(--party-ink);
   min-height: 100dvh;
   padding: clamp(14px, 2.4vw, 28px) clamp(12px, 3vw, 44px) calc(var(--safe-bottom, 0px) + 28px);
@@ -4853,8 +4847,6 @@ p { margin: 0.5rem 0; }
 /* Werewolf: same layout language, darker story atmosphere */
 .new-game-page--werewolf {
   --party-ink: #f6efe8;
-  --party-paper: #151527;
-  --party-card: #22223a;
   --party-muted: #c9bed2;
   --party-yellow: #d6a95c;
   --party-coral: #b05cff;
