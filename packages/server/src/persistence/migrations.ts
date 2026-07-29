@@ -154,4 +154,23 @@ ALTER TABLE room_members ADD COLUMN bot_kind TEXT
 CREATE INDEX idx_members_bot ON room_members(room_id) WHERE is_bot = 1;
 `,
   },
+  {
+    version: 4,
+    name: 'add-app-settings',
+    // 运行期设置（目前只有大模型接入）。做成 key-value 而非固定列：
+    // 这张表存的是"部署时才知道的配置"，加一项不该再来一次迁移。
+    //
+    // 单行单例（id = 1）本来也够用，但 key-value 让「只改 model 不动 apiKey」
+    // 这种局部更新天然可行，也便于以后加无关的设置项。
+    //
+    // 密钥以明文存本机 SQLite：与 .env 同级的信任模型（局域网自部署，
+    // 库文件本身就是敏感文件）。对外一律不回传，只回 hasApiKey 布尔。
+    up: `
+CREATE TABLE app_settings (
+  key        TEXT PRIMARY KEY,
+  value      TEXT NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+`,
+  },
 ];

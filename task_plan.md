@@ -78,6 +78,17 @@
 - [ ] 真机资源采样：CPU/内存/电量（AC-19/20）
 - 总体退出标准：AC-18～20 通过，无未关闭 P0 缺陷
 
+#### 子任务 5.5：机器人陪练 + AI 大模型玩家 + 运行期设置面板 — in_progress（2026-07-29）
+详细计划见 [docs/settings-panel-plan.md](docs/settings-panel-plan.md)
+- [x] 规则机器人（随机合法动作）与 llm 机器人的服务端管道、大厅加减按钮与成员标签
+- [x] 迁移 v4 `app_settings` 表；`core/settings.ts` 读写校验；`LlmProvider` 热生效持有者
+- [x] `tests/gatewayBot.test.ts` 真实 WS 验证 add_bot 全链路（证明「请求格式有误」是旧进程所致，重启即好）
+- [ ] HTTP 端点 `GET/PUT /api/settings/llm`（写入需 `ADMIN_TOKEN`，未设则仅放行本机）
+- [ ] `app.ts` 换用 LlmProvider；`ws.ts` 的 llmAvailable 改为动态读取
+- [ ] 客户端设置弹层（复用 SheetDialog）+ 首页入口按钮；密钥只写不回显
+- [ ] settings 校验分支与 HTTP 端点测试；README 补环境变量与开启 AI 玩家说明
+- 退出标准：不重启服务端即可改端点/密钥/模型并让 AI 玩家生效；密钥原文不出任何接口
+
 ## 关键决策
 
 | 决策 | 结论 | 依据 |
@@ -87,6 +98,10 @@
 | 运行时校验 | zod | 生态成熟，shared 包内定义 schema 双端复用 |
 | 运行方式 | Node 24 原生 TS type stripping 直跑 `.ts`，零构建 | 零原生依赖、部署最简；`tsc --noEmit` 严格类型检查兼顾安全 |
 | 测试运行器 | `node --test`（内置） | 无额外依赖，原生支持直跑 .ts 测试 |
+| 大模型决策形式 | 只做选择题：候选动作由游戏模块枚举，模型回候选 id | 模型无法产出非法动作；超时/格式错/id 不存在一律回落规则策略 |
+| 大模型调用位置 | 事务外（peek → 决策 → 同步落库三段式） | 三条命令执行链的 handler 全是同步函数，fetch 不能进事务 |
+| 运行期设置 | 存 SQLite，环境变量兜底，热生效不重启 | 聚会现场没人愿意改文件重启进程 |
+| 设置写入鉴权 | `ADMIN_TOKEN` 校验，未设则仅本机可写 | 局域网内谁都能访问该端点，改端点或塞入他人密钥花的是服主的钱 |
 | git | 已 init，首次提交 `e6250b8` 完成 | M4 完成后用户要求先提交再切分支；当前在 `m5-ui-polish` |
 
 ## 错误记录
