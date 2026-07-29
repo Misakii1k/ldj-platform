@@ -42,8 +42,12 @@ export interface BotRunnerDeps {
   logger: Logger;
   /** 一个机器人动作落库后的对外同步（接 WsGateway.applyGameOutcome） */
   onOutcome: (roomId: string, outcome: GameActionOutcome) => void;
-  /** 大模型客户端；未配置时 llm 机器人自动退化为规则策略 */
-  llm?: LlmClient | null;
+  /**
+   * 取当前大模型客户端；返回 null 时 llm 机器人自动退化为规则策略。
+   * 之所以是函数而不是实例：设置面板改完就换客户端，
+   * 构造时固定的引用会让驱动器一直用旧端点。
+   */
+  llm?: () => LlmClient | null;
   /** 每步之间的延迟；测试传 0 以同步跑完 */
   thinkDelayMs?: number;
 }
@@ -95,7 +99,9 @@ async function planNextAction(
   deps: BotRunnerDeps,
   roomId: string,
 ): Promise<PlannedAction | null> {
-  const { logger, llm } = deps;
+  const { logger } = deps;
+  // 每次决策前重新取一次：设置面板改完就换客户端，不用重启（见 LlmProvider）
+  const llm = deps.llm?.() ?? null;
   const { module } = peek;
 
   for (const bot of bots) {

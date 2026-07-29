@@ -59,10 +59,11 @@ export interface WsGatewayDeps {
   /** 席位保留期扫描间隔（§6.7，默认 30 秒；测试可缩短） */
   reservationSweepMs?: number;
   /**
-   * 大模型是否已配置（app 层从 ServerConfig 判定）。
+   * 大模型是否已配置（app 层接 LlmProvider.isAvailable）。
    * false 时房主添加 AI 玩家会被拒绝并说明原因，而不是加进来每步都回落规则策略。
+   * 之所以是函数而不是布尔：设置面板改完就生效，静态值会让已连着的客户端一直用旧判断。
    */
-  llmAvailable?: boolean;
+  llmAvailable?: () => boolean;
   /**
    * 对局状态变化后触发机器人推进（app 层接 BotRunner.trigger）。
    * 纯函数 reduce 不能主动通知"轮到你了"，所以每次落库后都要问一遍。
@@ -198,8 +199,8 @@ export class WsGateway {
       protocolVersion: PROTOCOL_VERSION,
       connectionId: state.connectionId,
       serverVersion: this.#deps.serverVersion,
-      // 能力位：没配 LLM_BASE_URL 时客户端不显示"加 AI 玩家"按钮
-      llmAvailable: this.#deps.llmAvailable === true,
+      // 能力位：没配大模型时客户端不显示"加 AI 玩家"按钮
+      llmAvailable: this.#llmAvailable(),
     });
 
     socket.on('message', (data) => {
@@ -354,6 +355,11 @@ export class WsGateway {
         this.#sendError(socket, envelope.requestId, 'INTERNAL_ERROR');
       }
     }
+  }
+
+  /** 大模型当前是否可用；deps 没给（老测试夹具）按未配置处理 */
+  #llmAvailable(): boolean {
+    return this.#deps.llmAvailable?.() === true;
   }
 
   #currentRoomSeq(roomId: string): number | undefined {
@@ -612,7 +618,7 @@ export class WsGateway {
             ? this.#nicknameOf(roomId, payload.data.targetPlayerId)
             : null;
         const outcome = applyRoomCommand(tx, roomId, playerId, payload.data, {
-          llmAvailable: this.#deps.llmAvailable === true,
+          llmAvailable: this.#llmAvailable(),
         });
         let sysChat: ChatMessageView | null = null;
         if (outcome.kickedPlayerId !== undefined) {

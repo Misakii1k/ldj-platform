@@ -16,6 +16,7 @@ function testConfig(): ServerConfig {
     logLevel: 'error',
     allowedOrigins: ['http://allowed.example'],
     llm: { baseUrl: null, apiKey: null, model: 'test-model', timeoutMs: 5000 },
+    adminToken: null,
   };
 }
 

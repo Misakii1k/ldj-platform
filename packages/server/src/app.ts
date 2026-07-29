@@ -12,7 +12,8 @@ import { listOpenRoomSummaries } from './core/snapshot.ts';
 import { runStartupRecovery } from './core/recovery.ts';
 import { TimerRunner } from './core/game/timerRunner.ts';
 import { BotRunner } from './core/game/botRunner.ts';
-import { LlmClient, isLlmEnabled } from './core/game/llmClient.ts';
+import { LlmProvider } from './core/game/llmProvider.ts';
+import { resolveLlmConfig, getLlmSettingsView, updateLlmSettings } from './core/settings.ts';
 import { createHttpServer } from './gateway/http.ts';
 import { WsGateway } from './gateway/ws.ts';
 import type { Logger } from './boot/logger.ts';
@@ -55,17 +56,26 @@ export function createApp(
 
   const executor = new RoomCommandExecutor(db, new RoomQueues());
 
-  // 大模型客户端：没配 LLM_BASE_URL 就是 null，此时 AI 玩家无法加入，
-  // 已在房间里的 llm 机器人退化为规则策略（不会卡住对局）。
-  const llm = isLlmEnabled(config.llm) ? new LlmClient(config.llm, logger) : null;
-  if (llm) {
-    logger.info('llm_enabled', { model: config.llm.model });
+  // 大模型客户端：配置来自「库优先、环境变量兜底」，没配 baseUrl 时 provider 内部为 null，
+  // 此时 AI 玩家无法加入，已在房间里的 llm 机器人退化为规则策略（不会卡住对局）。
+  // 用 provider 而不是裸客户端：设置面板改完要立即生效，不能要求重启。
+  const llm = new LlmProvider(resolveLlmConfig(db, config.llm), logger);
+  if (llm.isAvailable()) {
+    logger.info('llm_enabled', { model: llm.config().model });
   }
 
   const server = createHttpServer({
     isReady: () => ready,
     listOpenRooms: () => listOpenRoomSummaries(db),
     staticDir,
+    readLlmSettings: () => getLlmSettingsView(db, config.llm),
+    writeLlmSettings: (patch) => {
+      // 先落库拿到合并后的配置，再换掉客户端 —— 顺序反了会在校验失败时留下脏客户端
+      const next = updateLlmSettings(db, patch, config.llm);
+      llm.update(next);
+      return getLlmSettingsView(db, config.llm);
+    },
+    adminToken: config.adminToken,
   });
   // ws 与 timerRunner 互相引用：ts 变更后 ws 通知 runner 对表，runner 到期后经 ws 广播
   // （闭包延迟求值：onTimersChanged 仅在对局事件后触发，彼时 timerRunner 已初始化）
@@ -76,7 +86,7 @@ export function createApp(
     logger,
     allowedOrigins: config.allowedOrigins,
     serverVersion: SERVER_VERSION,
-    llmAvailable: llm !== null,
+    llmAvailable: () => llm.isAvailable(),
     onTimersChanged: () => timerRunner.notifyChanged(),
     onBotTrigger: (roomId) => botRunner.trigger(roomId),
     ...(tuning?.hostTransferDelayMs !== undefined
@@ -102,7 +112,8 @@ export function createApp(
     db,
     executor,
     logger,
-    llm,
+    // 每次决策前问一次 provider，而不是构造时抓一个引用：设置改了就用新的
+    llm: () => llm.current(),
     onOutcome: (roomId, outcome) => {
       try {
         ws.applyGameOutcome(roomId, outcome);

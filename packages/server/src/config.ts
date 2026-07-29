@@ -30,6 +30,14 @@ export interface ServerConfig {
   /** 额外允许的 Origin（开发模式例外，SPEC §9.5） */
   allowedOrigins: string[];
   llm: LlmConfig;
+  /**
+   * 远程改设置的口令。
+   *
+   * 不设（默认）时，写设置只放行本机请求 —— 也就是只有开服务器那台机器能改。
+   * 想在手机上改设置就设一个，请求头带 x-admin-token。
+   * 之所以要这道关：设置里含 API 密钥，而局域网内谁都能访问这个端口。
+   */
+  adminToken: string | null;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
@@ -65,5 +73,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
       model: (env.LLM_MODEL ?? '').trim() || 'gpt-4o-mini',
       timeoutMs: llmTimeout,
     },
+    adminToken: (env.ADMIN_TOKEN ?? '').trim() || null,
   };
 }

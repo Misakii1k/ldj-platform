@@ -20,6 +20,7 @@ function testConfig(llmBaseUrl: string | null = null): ServerConfig {
     logLevel: 'error',
     allowedOrigins: [],
     llm: { baseUrl: llmBaseUrl, apiKey: null, model: 'test-model', timeoutMs: 5000 },
+    adminToken: null,
   };
 }
 
