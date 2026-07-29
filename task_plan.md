@@ -83,11 +83,14 @@
 - [x] 规则机器人（随机合法动作）与 llm 机器人的服务端管道、大厅加减按钮与成员标签
 - [x] 迁移 v4 `app_settings` 表；`core/settings.ts` 读写校验；`LlmProvider` 热生效持有者
 - [x] `tests/gatewayBot.test.ts` 真实 WS 验证 add_bot 全链路（证明「请求格式有误」是旧进程所致，重启即好）
-- [ ] HTTP 端点 `GET/PUT /api/settings/llm`（写入需 `ADMIN_TOKEN`，未设则仅放行本机）
-- [ ] `app.ts` 换用 LlmProvider；`ws.ts` 的 llmAvailable 改为动态读取
+- [x] HTTP 端点 `GET/PUT /api/settings/llm`（写入需 `ADMIN_TOKEN`，未设则仅放行本机）
+- [x] `app.ts` 换用 LlmProvider；`ws.ts` 与 `botRunner.ts` 改为动态读取（构造时固定引用会让热生效到不了机器人）
 - [ ] 客户端设置弹层（复用 SheetDialog）+ 首页入口按钮；密钥只写不回显
 - [ ] settings 校验分支与 HTTP 端点测试；README 补环境变量与开启 AI 玩家说明
+- [ ] `npm run ci` + `npm run build`；版本升至 0.4.0
 - 退出标准：不重启服务端即可改端点/密钥/模型并让 AI 玩家生效；密钥原文不出任何接口
+- 已知取舍：① 面板里「清空」是回落到环境变量而非关闭功能，部署时设了 `LLM_BASE_URL` 就无法在面板上关掉 AI 玩家；
+  ② 未设 `ADMIN_TOKEN` 时手机改设置会得到 403（开发时 vite 代理算本机，故本地无感）
 
 ## 关键决策
 

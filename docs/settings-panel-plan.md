@@ -1,7 +1,28 @@
 # 运行期设置面板 + AI 大模型玩家接入：实施计划
 
-状态：进行中（2026-07-29 起）
+状态：**服务端已完成，客户端待做**（更新于 2026-07-29）
 关联：M5 子任务 5.5
+
+## 进度一览
+
+| # | 事项 | 状态 |
+|---|------|------|
+| — | 迁移 v4 `app_settings` 表 | ✅ `87d7826` |
+| — | `settings.ts` 校验与读写 | ✅ `87d7826` |
+| — | `llmProvider.ts` 热生效持有者 | ✅ `87d7826` |
+| — | `gatewayBot.test.ts` 真实 WS 验证 `add_bot` | ✅ `87d7826` |
+| — | `http.ts` 设置端点 + 鉴权 | ✅ `9da02ab` |
+| — | `config.ts` `ADMIN_TOKEN` | ✅ `9da02ab` |
+| — | `ws.ts` `llmAvailable` 改动态 | ✅ `9da02ab` |
+| — | `botRunner.ts` `llm` 改动态 | ✅ `9da02ab` |
+| — | `app.ts` 装配 `LlmProvider` | ✅ `9da02ab` |
+| 1 | 客户端 `SettingsSheet.tsx` | ⬜ 待做 |
+| 2 | `GameHomePage` 入口按钮 | ⬜ 待做 |
+| 3 | `settings.test.ts` 校验分支 | ⬜ 待做 |
+| 4 | HTTP 端点测试 | ⬜ 待做 |
+| 5 | `npm run ci` + `npm run build` | ⬜ 待做（仅 typecheck 跑过） |
+| 6 | 版本 0.3.0 → 0.4.0 并打包 | ⬜ 待做 |
+| 7 | README 环境变量章节 | ⬜ 待做 |
 
 ## 背景
 
@@ -10,7 +31,7 @@
 1. **「添加机器人失败：请求格式有误」** —— 已定位，不是代码缺陷。运行中的服务端进程启动于
    本次改动之前，它加载的库还停在迁移 v2（`room_members` 没有 `is_bot` 列），进程内的 zod
    schema 也没有 `add_bot` 分支，所以整个 payload 在 `ws.ts` 的
-   `roomCommandPayloadSchema.safeParse` 处被判格式错误。**重启服务端即可**，迁移 v3 会自动应用。
+   `roomCommandPayloadSchema.safeParse` 处被判格式错误。**重启服务端即可**，迁移 v3/v4 会自动应用。
    `packages/server/tests/gatewayBot.test.ts` 用真实 WebSocket 连接跑通了 `add_bot` 全链路，
    证明服务端这条路是通的。
 
@@ -28,6 +49,13 @@
 | 传输通道 | HTTP，不走 WS | 设置入口在首页，此时还没有房间连接 |
 | 写入鉴权 | 设了 `ADMIN_TOKEN` 就校验它；没设则只放行本机（127.0.0.1/::1） | 局域网里谁都能访问这个端点，改掉端点或塞进别人的密钥花的是服主的钱。默认「只有开服务器那台机器能改」，想在手机上改就设口令 |
 | 读取鉴权 | 不设限 | 返回内容不含密钥原文 |
+| 请求体上限 | 1 KiB | 设置对象很小，超了直接拒绝而不是攒内存 |
+
+### 为什么 `llmAvailable` 与 `botRunner.llm` 都得是函数
+
+原先两处都是构造时传入的静态值。`WsGateway` 那份静态布尔会让设置改完之后已连着的客户端
+一直以为没配大模型；`BotRunner` 在 `planNextAction` 里解构 `deps.llm`，抓住的是构造时那个
+客户端引用，热生效根本到不了机器人。两处都改成 `() => T`，每次用时才读。
 
 ### 为什么大模型的 `fetch` 必须在事务外
 
@@ -41,39 +69,69 @@
 超时、格式错误、id 不存在一律回落规则策略。日志只记 choiceId / reason / elapsedMs，不记含身份
 和手牌的局势描述。
 
-## 已完成
+## 已完成的改动明细
+
+### `87d7826` 地基
 
 - `packages/server/src/persistence/migrations.ts` —— 迁移 v4，建 `app_settings` 表（key/value/updated_at）
-- `packages/server/src/core/settings.ts` —— 读写与校验；`resolveLlmConfig` / `getLlmSettingsView` /
-  `updateLlmSettings`；baseUrl 只允许 http/https，timeoutMs 限 1000–120000
-- `packages/server/src/core/game/llmProvider.ts` —— 热生效持有者
+- `packages/server/src/core/settings.ts` —— `resolveLlmConfig` / `getLlmSettingsView` /
+  `updateLlmSettings` / `SettingsError`；baseUrl 只允许 http/https，timeoutMs 限 1000–120000，
+  模型名 ≤128 字符
+- `packages/server/src/core/game/llmProvider.ts` —— 热生效持有者（`current()` / `isAvailable()` /
+  `config()` / `update()`）
 - `packages/server/tests/gatewayBot.test.ts` —— 真实 WS 验证 `add_bot`（5 测试）
+
+### `9da02ab` 接线
+
+- `gateway/http.ts` —— `GET /api/settings/llm`（含 HEAD）、`PUT /api/settings/llm`；路由放在
+  「非 GET/HEAD 一律 405」关卡**之前**，否则 PUT 进不来。新增 `isLocalAddress`、
+  `parseLlmSettingsPatch`（白名单键，区分「没传」与「传了 null」）、`readJsonBody`（1 KiB 上限）
+- `config.ts` —— `ServerConfig.adminToken` ← `ADMIN_TOKEN`
+- `gateway/ws.ts` —— `llmAvailable?: () => boolean`，新增 `#llmAvailable()` 私有方法，
+  welcome payload 与 `applyRoomCommand` 两处调用点改为动态读
+- `core/game/botRunner.ts` —— `llm?: () => LlmClient | null`
+- `app.ts` —— `new LlmProvider(resolveLlmConfig(db, config.llm), logger)` 替换静态客户端；
+  写设置时**先落库拿到合并后配置、再换客户端**（顺序反了会在校验失败时留下脏客户端）
+- 5 个测试的 `ServerConfig` 字面量补 `adminToken: null`
 
 ## 待办
 
-### 服务端接线
+### 1. 客户端设置弹层 `packages/client/src/app/SettingsSheet.tsx`
 
-1. `gateway/http.ts`
-   - `GET /api/settings/llm` → `LlmSettingsView`
-   - `PUT /api/settings/llm` → 收 `LlmSettingsPatch`，返回更新后的视图
-   - 现在这里是「非 GET/HEAD 一律 405」，需为这条路径放开 PUT
-   - `HttpDeps` 扩出设置读写依赖
-2. `app.ts` —— 把静态的 `const llm = isLlmEnabled(...) ? new LlmClient(...) : null` 换成
-   `LlmProvider`，初值取 `resolveLlmConfig(db, config.llm)`
-3. `gateway/ws.ts` —— `llmAvailable` 现在是构造时传入的静态布尔（deps 声明、welcome payload、
-   `applyRoomCommand` 三处），改成每次从 provider 读，否则设置改完之后老连接仍以为没配
+复用现成的 `SheetDialog`（title / description / onClose / initialFocusRef / children，
+自带 Escape 关闭与焦点归还）。CSS 全部现成，不新写样式：
+`room-sheet__form` / `room-sheet__field` / `room-sheet__field small` / `room-sheet__error` /
+`room-sheet__submit` / `room-sheet__checkbox`。
 
-### 客户端
+- 打开时 `GET /api/settings/llm` 填表，参照 `JoinRoomSheet` 里 `/api/rooms` 的 fetch 写法
+- 字段：接口地址、密钥、模型名、超时毫秒
+- 密钥框只写不回显：`hasApiKey` 为真时显示「已设置」加一个清空按钮；留空提交则不动这一项
+- 保存走 `PUT`，成功后 toast 提示（`useToast`）
+- 收到 403 时把服务端那句话显示出来，并展开口令输入框（发 `x-admin-token`），
+  口令只存 React state，不落 localStorage/sessionStorage
 
-4. 设置弹层 —— 复用现成的 `SheetDialog`；密钥框只写不回显，已配过就显示「已设置」加一个清空按钮
-5. 入口按钮 —— 放 `GameHomePage` 的 `home-header__actions`（「局域网限定」badge 旁边）
+### 2. 入口按钮
 
-### 测试与收尾
+`GameHomePage` 的 `home-header__actions`，放在「局域网限定」badge 旁边；
+`ActiveSheet` 类型加 `'settings'`。
 
-6. `settings.ts` 校验分支（baseUrl 协议限制、timeoutMs 边界、密钥清空）+ HTTP 两个端点
-7. `npm run ci`（typecheck + lint + test）与 `npm run build`
-8. 版本升至 0.4.0 并打包；按逻辑单元 commit
-9. README 补一节环境变量与「怎么开 AI 玩家」（现在没有这一节）
+### 3. `packages/server/tests/settings.test.ts`
+
+- 校验分支：URL 非法、非 http(s)、超时越界（含边界 1000 / 120000）、模型名超长
+- 库优先 env 兜底；清空后回落 env
+- `getLlmSettingsView` 不漏密钥原文
+
+### 4. HTTP 端点测试
+
+- `GET` 返回体不含密钥
+- `PUT` 改完即时生效：新连接的 `welcome.llmAvailable` 跟着变
+- 非本机且未设口令 → 403；设了口令但没带/带错 → 403
+- 坏 JSON → 400；超大 body → 413；未知键 → 400
+
+### 5–7. 收尾
+
+`npm run ci`（typecheck + lint + test）与 `npm run build`；版本 0.3.0 → 0.4.0（含 lockfile）；
+README 补环境变量表与「怎么开 AI 玩家」。按逻辑单元 commit。
 
 ## 环境变量
 
@@ -86,3 +144,12 @@
 | `ADMIN_TOKEN` | 无 | 设置写入口令。不设则只有本机能改设置 |
 
 以上都可被设置面板里的值覆盖。
+
+## 两个已知限制（需在 UI 文案里说清）
+
+**清空 ≠ 关闭。** 按「库里没有就用环境变量兜底」的规则，在面板里清空 baseUrl 或密钥，会回落到
+环境变量里的值，而不是变成空。如果部署时设了 `LLM_BASE_URL`，面板上关不掉 AI 玩家。
+UI 文案写「清空（回到启动配置）」而不是「删除」。
+
+**手机上默认改不了设置。** 没设 `ADMIN_TOKEN` 时只放行 127.0.0.1，手机访问会拿 403。
+开发时 vite 代理过来的请求算本机，所以本地开发无感；真机聚会要在手机上改就得设口令。
