@@ -8,6 +8,8 @@ export interface RoomConfig {
   spectatorsAllowed: boolean;
   /** 断线席位保留分钟数（FR-REC-004，默认 5） */
   reservationMinutes: number;
+  /** 游戏配置透传（开局时交给模块 parseConfig；不透明对象） */
+  gameConfig?: Record<string, unknown>;
 }
 
 export const DEFAULT_ROOM_CONFIG: RoomConfig = {
@@ -32,5 +34,9 @@ export function parseRoomConfig(configJson: string): RoomConfig {
       typeof obj.reservationMinutes === 'number' && Number.isInteger(obj.reservationMinutes)
         ? obj.reservationMinutes
         : DEFAULT_ROOM_CONFIG.reservationMinutes,
+    gameConfig:
+      typeof obj.gameConfig === 'object' && obj.gameConfig !== null && !Array.isArray(obj.gameConfig)
+        ? (obj.gameConfig as Record<string, unknown>)
+        : undefined,
   };
 }

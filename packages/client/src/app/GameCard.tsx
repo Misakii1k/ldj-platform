@@ -1,4 +1,5 @@
 import type { GameCatalogEntry } from '@ldj/shared';
+import { Plus, Users } from 'lucide-react';
 
 interface GameCardProps {
   game: GameCatalogEntry;
@@ -11,7 +12,6 @@ function gameMark(gameId: string): string {
     case 'uno': return 'UNO';
     case 'landlord': return '斗';
     case 'werewolf': return '狼';
-    case 'avalon': return 'A';
     default: return '玩';
   }
 }
@@ -20,6 +20,13 @@ function playerRange(game: GameCatalogEntry): string {
   return game.minPlayers === game.maxPlayers
     ? `${game.minPlayers} 人`
     : `${game.minPlayers}–${game.maxPlayers} 人`;
+}
+
+function availabilityLabel(game: GameCatalogEntry): string {
+  if (game.availability === 'playable') return '可以开局';
+  if (game.availability === 'blocked_rights') return '权利审核中';
+  if (game.availability === 'internal_prototype') return '内部原型';
+  return '即将推出';
 }
 
 export function GameCard({ game, onCreate }: GameCardProps) {
@@ -31,9 +38,12 @@ export function GameCard({ game, onCreate }: GameCardProps) {
       {isFeatured && <span className="game-card__ticket" aria-hidden="true">01</span>}
       <div className="game-card__meta">
         <span className={`game-card__availability ${isPlayable ? 'is-live' : ''}`}>
-          {isPlayable ? '首发游戏' : '即将推出'}
+          {availabilityLabel(game)}
         </span>
-        <span className="game-card__players">{playerRange(game)}</span>
+        <span className="game-card__players">
+          <Users size={14} strokeWidth={2.4} aria-hidden="true" />
+          {playerRange(game)}
+        </span>
       </div>
       <div className="game-card__illustration" aria-hidden="true">
         <span className="game-card__card game-card__card--back">?</span>
@@ -46,8 +56,8 @@ export function GameCard({ game, onCreate }: GameCardProps) {
       </ul>
       {isPlayable ? (
         <button type="button" className="game-card__action" onClick={() => onCreate(game)}>
+          <Plus size={18} strokeWidth={2.6} aria-hidden="true" />
           创建房间
-          <span aria-hidden="true">→</span>
         </button>
       ) : (
         <button type="button" className="game-card__action game-card__action--soon" disabled>

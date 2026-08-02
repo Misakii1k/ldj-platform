@@ -12,8 +12,8 @@ import { openDb, closeDb, type Db } from '../src/persistence/db.ts';
 import { migrate } from '../src/persistence/migrator.ts';
 import { createLogger } from '../src/boot/logger.ts';
 import { RoomCommandExecutor, CommandError } from '../src/core/executor.ts';
-import { prepareCreateRoom, applyCreateRoom } from '../src/core/commands/createRoom.ts';
 import { applyJoinRoom } from '../src/core/commands/joinRoom.ts';
+import { seedRoom } from './helpers/seedRoom.ts';
 import { applyRoomCommand } from '../src/core/commands/roomCommand.ts';
 import {
   applyGameAction,
@@ -59,15 +59,8 @@ async function setupRoom(playerCount: number, dbPath: string): Promise<Ctx> {
   const db = openDb({ path: dbPath });
   migrate(db);
   const executor = new RoomCommandExecutor(db);
-  const { roomId } = prepareCreateRoom();
-  const created = await executor.executeCreate({
-    roomId,
-    actorScope: 'conn:host',
-    requestId: nextReq(),
-    handler: (tx) => applyCreateRoom(tx, roomId, { nickname: '房主' }),
-  });
-  const roomCode = created.outcome.roomCode;
-  const hostId = created.outcome.playerId;
+  const seeded = seedRoom(db);
+  const { roomId, roomCode, hostId } = seeded;
   const playerIds = [hostId];
   for (let i = 2; i <= playerCount; i++) {
     const joined = await executor.executeOnRoom({
@@ -79,6 +72,8 @@ async function setupRoom(playerCount: number, dbPath: string): Promise<Ctx> {
     });
     playerIds.push(joined.outcome.playerId);
   }
+  // 全员就绪（房间级"准备"机制：先准备再开局）
+  db.prepare(`UPDATE room_members SET ready = 1 WHERE room_id = ? AND seat_role = 'player'`).run(roomId);
   return { db, executor, roomId, hostId, playerIds, roomCode, dbPath };
 }
 
@@ -110,6 +105,71 @@ function sessionRow(db: Db, roomId: string) {
   return getActiveSession(db, roomId);
 }
 
+function legacyWerewolfSnapshot(schemaVersion: 1 | 2): Record<string, unknown> {
+  if (schemaVersion === 1) {
+    return {
+      schemaVersion: 1,
+      phase: 'night',
+      day: 2,
+      players: {
+        w1: { role: 'wolf', alive: true, seat: 0 },
+        v1: { role: 'villager', alive: false, seat: 1 },
+      },
+      night: {
+        killTargetId: 'v1',
+        seerChecked: true,
+        seerResult: { playerId: 'w1', team: 'wolves' },
+        witchSaveDecision: false,
+        witchPoisonTargetId: null,
+      },
+      lastNightDeaths: ['v1'],
+      speakingOrder: [],
+      currentSpeakerIndex: 0,
+      votes: {},
+      witchSaveUsed: false,
+      witchPoisonUsed: false,
+      winner: null,
+    };
+  }
+  return {
+    schemaVersion: 2,
+    phase: 'night',
+    day: 1,
+    players: {
+      w1: { role: 'wolf', alive: true, seat: 0, forfeited: false, exitReason: null },
+      v1: { role: 'villager', alive: true, seat: 1, forfeited: false, exitReason: null },
+    },
+    config: { preset: 'classic', pace: 'standard', witchSelfSave: 'first_night', winCondition: 'numbers' },
+    confirmedRolePlayerIds: ['w1', 'v1'],
+    announcementConfirmedPlayerIds: [],
+    night: {
+      wolfVotes: { w1: 'v1' },
+      killTargetId: 'v1',
+      seerChecked: true,
+      seerResult: null,
+      witchSaveDecision: false,
+      witchPoisonDecided: true,
+      witchPoisonTargetId: null,
+    },
+    seerHistory: [],
+    lastNightDeaths: [],
+    speakingOrder: [],
+    currentSpeakerIndex: 0,
+    votes: {},
+    runoffCandidates: [],
+    lastVoteSummary: null,
+    voteHistory: [],
+    pendingOutcome: null,
+    lastWordsPlayerId: null,
+    witchSaveUsed: false,
+    witchPoisonUsed: false,
+    deadlineAt: null,
+    phaseToken: null,
+    winner: null,
+    aborted: false,
+  };
+}
+
 /** 模拟崩溃：关闭 db。后续用 reopenAndRecover 重开并恢复。 */
 function crash(ctx: Ctx): void {
   closeDb(ctx.db);
@@ -124,6 +184,62 @@ function reopenAndRecover(dbPath: string, roomId: string, hostId: string, player
   runStartupRecovery(db, logger);
   const executor = new RoomCommandExecutor(db);
   return { db, executor, roomId, hostId, playerIds, roomCode, dbPath };
+}
+
+for (const schemaVersion of [1, 2] as const) {
+  test(`狼人杀 v${schemaVersion} 快照经启动恢复迁移至 v3，重复恢复保持兼容`, () => {
+    const db = openDb({ path: ':memory:' });
+    try {
+      migrate(db);
+      const now = Date.now();
+      const roomId = `werewolf-v${schemaVersion}-room`;
+      const sessionId = `werewolf-v${schemaVersion}-session`;
+      db.prepare(
+        `INSERT INTO rooms (id, code, status, game_id, seq, created_at, updated_at)
+         VALUES (?, ?, 'IN_GAME', 'werewolf', 0, ?, ?)`,
+      ).run(roomId, `WWV${schemaVersion}0`, now, now);
+      db.prepare(
+        `INSERT INTO game_sessions
+           (id, room_id, module_id, module_version, state_schema_version, status,
+            snapshot_json, seed, rng_state_json, created_at, updated_at)
+         VALUES (?, ?, 'werewolf', '0.3.0', ?, 'ACTIVE', ?, 'legacy-seed', '{}', ?, ?)`,
+      ).run(sessionId, roomId, schemaVersion, JSON.stringify(legacyWerewolfSnapshot(schemaVersion)), now, now);
+
+      const first = runStartupRecovery(db, logger);
+      assert.equal(first.sessionsRecovered, 1);
+      assert.equal(first.sessionsAborted, 0);
+
+      const migratedRow = db
+        .prepare(`SELECT status, state_schema_version, snapshot_json FROM game_sessions WHERE id = ?`)
+        .get(sessionId) as { status: string; state_schema_version: number; snapshot_json: string };
+      const migrated = JSON.parse(migratedRow.snapshot_json) as Record<string, unknown>;
+      assert.equal(migratedRow.status, 'ACTIVE');
+      assert.equal(migratedRow.state_schema_version, 3);
+      assert.equal(migrated.schemaVersion, 3);
+      assert.deepEqual((migrated.config as { roles: unknown }).roles, {
+        guard: false,
+        hunter: false,
+        idiot: false,
+      });
+      const migratedNight = migrated.night as { guardDecided: boolean; guardTargetId: string | null };
+      assert.equal(migratedNight.guardDecided, true);
+      assert.equal(migratedNight.guardTargetId, null);
+      assert.equal(migrated.lastGuardTargetId, null);
+      assert.equal(migrated.pendingShoot, null);
+
+      const snapshotAfterFirstRecovery = migratedRow.snapshot_json;
+      const second = runStartupRecovery(db, logger);
+      assert.equal(second.sessionsRecovered, 1);
+      assert.equal(second.sessionsAborted, 0);
+      const afterSecond = db
+        .prepare(`SELECT state_schema_version, snapshot_json FROM game_sessions WHERE id = ?`)
+        .get(sessionId) as { state_schema_version: number; snapshot_json: string };
+      assert.equal(afterSecond.state_schema_version, 3);
+      assert.equal(afterSecond.snapshot_json, snapshotAfterFirstRecovery);
+    } finally {
+      closeDb(db);
+    }
+  });
 }
 
 test('AC-15a：word_reveal 阶段崩溃重启，已确认 confirm_word 保留，到期 reveal 计时器补执行 → speaking', async () => {

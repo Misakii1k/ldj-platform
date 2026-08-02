@@ -1,21 +1,19 @@
-# 新游戏接入准备清单
+﻿# 游戏模块 D1 状态
 
-本目录已经为 UNO、斗地主、狼人杀建立待接入模块骨架。当前状态：
+本目录保留 `undercover`、`uno`、`landlord`、`werewolf` 的服务端模块，用于历史快照恢复和模块级回归。registry 保留模块不代表产品准入；D1 生产目录不允许使用这四款游戏新建房间。
 
-- 首页目录仍为 `coming_soon`，不会开放建房，避免半成品进入正式流程。
-- 每个游戏都有独立 package、shared manifest、server module 入口。
-- server module 只提供可编译的占位状态；实际规则 reduce 暂时返回 `GAME_NOT_IMPLEMENTED`。
+## 冻结状态
 
-## 后续实现顺序建议
+| 模块 | D1 目录状态 | 冻结 ruleset ID | 说明 |
+| --- | --- | --- | --- |
+| `undercover` | `internal_prototype` | `undercover_classic_v1` | 平台经典兼容基线，不代表规则或权利审批完成 |
+| `uno` | `blocked_rights` | `uno_legacy_platform_v1` | Legacy 兼容基线，不称为“标准规则” |
+| `landlord` | `internal_prototype` | `landlord_legacy_platform_v1` | 仅作 D1 盘点对象，不进入 D2/D3 范围 |
+| `werewolf` | `internal_prototype` | `werewolf_legacy_platform_v2` | 仅作 D1 盘点对象，不进入 D2/D3 范围 |
 
-1. UNO：规则最独立，适合先打通通用卡牌视图、手牌私有视图、回合动作。
-2. 斗地主：在 UNO 卡牌基础上补充扑克牌、牌型校验、叫分、地主牌、结算。
-3. 狼人杀：在现有“谁是卧底”的发言/投票体验上补充夜晚阶段、角色能力与阵营胜负。
+## 准入边界
 
-## 上线前必须完成
-
-- 完整状态类型与 action schema。
-- 纯函数规则测试：初始化、合法动作、非法动作、胜负结算。
-- 玩家私有视图脱敏检查。
-- 注册到服务端 game registry。
-- 将首页目录从 `coming_soon` 改为 `playable`。
+- 当前四款游戏均不是 `playable`，默认生产建房路径必须拒绝。
+- registry 继续保留模块，只服务于历史恢复和模块回归，不构成产品发布结论。
+- D1 只冻结当前兼容语义，不修改游戏规则、服务端执行链或模块契约。
+- 任何重新开放动作都必须经过独立的权利审批和规则审批，不得在 D1 中完成。

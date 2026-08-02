@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
 import { describeError } from '../shared-ui/errors.ts';
 
@@ -89,10 +89,10 @@ export function GameChatDrawer() {
               <button type="button" className="game-chat-close" onClick={() => setOpen(false)} aria-label="关闭对局聊天">×</button>
             </header>
 
-            <div className="game-chat-notice">聊天内容全房间可见，请不要发送自己的秘密词。</div>
+            <div className="game-chat-notice">提示：聊天内容房间全员可见，切勿暴露自己的秘密词条！</div>
             <div className="game-chat-messages" ref={listRef} aria-live="polite">
               {state.chat.length === 0 ? (
-                <div className="game-chat-empty"><span aria-hidden="true">···</span><strong>还没有消息</strong><p>可以先和大家打个招呼。</p></div>
+                <div className="game-chat-empty"><span aria-hidden="true">···</span><strong>暂无消息记录</strong><p>发一条消息，与这一桌好友打个招呼吧。</p></div>
               ) : state.chat.map((message) => {
                 const mine = message.fromPlayerId === me?.playerId;
                 if (message.kind === 'system') {
@@ -115,7 +115,7 @@ export function GameChatDrawer() {
                 ref={inputRef}
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
-                placeholder="发消息给这一桌…"
+                placeholder="发送消息到房间大厅…"
                 maxLength={300}
                 aria-label="对局聊天输入"
                 disabled={!synced}

@@ -12,16 +12,19 @@
 import { LlmClient, isLlmEnabled } from './llmClient.ts';
 import type { LlmConfig } from '../../config.ts';
 import type { Logger } from '../../boot/logger.ts';
+import type { UpstreamAddressPolicy } from '../safeUpstream.ts';
 
 export class LlmProvider {
   #client: LlmClient | null;
   #config: LlmConfig;
   readonly #logger: Logger;
+  readonly #addressPolicy: UpstreamAddressPolicy;
 
-  constructor(config: LlmConfig, logger: Logger) {
+  constructor(config: LlmConfig, logger: Logger, addressPolicy: UpstreamAddressPolicy = {}) {
     this.#config = config;
     this.#logger = logger;
-    this.#client = isLlmEnabled(config) ? new LlmClient(config, logger) : null;
+    this.#addressPolicy = addressPolicy;
+    this.#client = isLlmEnabled(config) ? new LlmClient(config, logger, addressPolicy) : null;
   }
 
   /** 当前可用的客户端；null 表示未配置，调用方应回落规则策略 */
@@ -46,7 +49,7 @@ export class LlmProvider {
    */
   update(config: LlmConfig): void {
     this.#config = config;
-    this.#client = isLlmEnabled(config) ? new LlmClient(config, this.#logger) : null;
+    this.#client = isLlmEnabled(config) ? new LlmClient(config, this.#logger, this.#addressPolicy) : null;
     this.#logger.info('llm_config_updated', {
       enabled: this.#client !== null,
       model: config.model,

@@ -100,7 +100,7 @@ export function ConnectPage() {
     <main className="connect-page">
       <header className="connect-header">
         <h1>局域网桌游平台</h1>
-        <p className="subtitle">谁是卧底 · 局域网联机</p>
+        <p className="subtitle">聚会面对面 · 极速联机畅玩</p>
       </header>
 
       <form className="connect-form" onSubmit={handleSubmit}>

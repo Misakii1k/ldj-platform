@@ -10,6 +10,7 @@ import { PROTOCOL_VERSION } from '@ldj/shared';
 import { createApp, type App } from '../src/app.ts';
 import { createLogger } from '../src/boot/logger.ts';
 import type { ServerConfig } from '../src/config.ts';
+import { seedRoom } from './helpers/seedRoom.ts';
 
 function testConfig(): ServerConfig {
   return {
@@ -19,7 +20,8 @@ function testConfig(): ServerConfig {
     publicBaseUrl: null,
     logLevel: 'error',
     allowedOrigins: [],
-    llm: { baseUrl: null, apiKey: null, model: 'test-model', timeoutMs: 5000 },
+    allowPrivateLlmUpstream: false,
+    llm: { provider: 'openai', baseUrl: null, apiKey: null, model: 'test-model', thinkingDepth: 'off', timeoutMs: 5000 },
     adminToken: null,
   };
 }
@@ -40,6 +42,15 @@ interface Envelope {
 }
 
 let reqCounter = 0;
+
+function isRetryableConnectError(err: unknown): boolean {
+  const code = typeof err === 'object' && err !== null ? (err as { code?: unknown }).code : undefined;
+  return code === 'EADDRINUSE';
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolvePromise) => setTimeout(resolvePromise, ms));
+}
 
 /** 消息队列式客户端：所有服务端消息入队，支持按条件等待 */
 class Client {
@@ -66,11 +77,24 @@ class Client {
   }
 
   static async connect(app: App): Promise<Client> {
-    // 先挂 message 监听再等 welcome，避免错过握手后立即到达的首帧
-    const socket = new WebSocket(`ws://127.0.0.1:${app.port()}/`);
-    const client = new Client(socket);
-    await client.waitFor((e) => e.type === 'welcome');
-    return client;
+    // Windows loopback can occasionally pick a just-used local port and emit EADDRINUSE.
+    // Retry the client dial; the server port itself is still valid.
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const socket = new WebSocket(`ws://127.0.0.1:${app.port()}/`);
+      const client = new Client(socket);
+      try {
+        await Promise.race([
+          client.waitFor((e) => e.type === 'welcome'),
+          once(socket, 'error').then(([err]) => { throw err as Error; }),
+        ]);
+        return client;
+      } catch (err) {
+        socket.close();
+        if (!isRetryableConnectError(err) || attempt === 5) throw err;
+        await delay(20 + attempt * 20);
+      }
+    }
+    throw new Error('unreachable connect retry state');
   }
 
   send(type: string, payload: unknown, extra: { requestId?: string; expectedSeq?: number } = {}): string {
@@ -125,15 +149,20 @@ interface RoomHandles {
 }
 
 async function createRoomVia(app: App, nickname = '房主'): Promise<RoomHandles> {
+  const seeded = seedRoom(app.db, { nickname });
   const host = await Client.connect(app);
-  const ack = await host.request('create_room', { nickname });
+  const ack = await host.request('resume_room', {
+    roomCode: seeded.roomCode,
+    playerId: seeded.hostId,
+    resumeToken: seeded.hostResumeToken,
+  });
   assert.equal(ack.type, 'ack');
   await host.waitFor((e) => e.type === 'room_snapshot');
   return {
     host,
-    roomCode: String(ack.payload.roomCode),
-    hostId: String(ack.payload.playerId),
-    hostToken: String(ack.payload.resumeToken),
+    roomCode: seeded.roomCode,
+    hostId: seeded.hostId,
+    hostToken: seeded.hostResumeToken,
   };
 }
 

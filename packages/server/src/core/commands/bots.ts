@@ -180,8 +180,8 @@ export function applyAddBot(
   const nickname = pickBotNickname(db, roomId, prefix);
   db.prepare(
     `INSERT INTO room_members
-       (room_id, player_id, identity_id, nickname, seat_role, seat, connection_status, resume_token_hash, reserved_until, joined_at, is_bot, bot_kind)
-     VALUES (?, ?, NULL, ?, 'player', ?, 'CONNECTED', ?, NULL, ?, 1, ?)`,
+       (room_id, player_id, identity_id, nickname, seat_role, seat, connection_status, resume_token_hash, reserved_until, joined_at, is_bot, bot_kind, ready)
+     VALUES (?, ?, NULL, ?, 'player', ?, 'CONNECTED', ?, NULL, ?, 1, ?, 1)`,
   ).run(roomId, playerId, nickname, seat, BOT_TOKEN_SENTINEL, now, kind);
 
   return { playerId, nickname, kind, snapshot: buildRoomSnapshot(db, roomId) };

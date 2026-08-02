@@ -1,4 +1,4 @@
-﻿/** 游戏模块注册表：只有完整通过规则测试的模块才注册为可玩。 */
+/** 游戏模块注册表：只有完整通过规则测试的模块才注册为可玩。 */
 import type { GameModule } from '@ldj/shared';
 import { undercoverModule } from '@ldj/game-undercover/server';
 import { unoModule } from '@ldj/game-uno/server';

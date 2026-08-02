@@ -1,5 +1,8 @@
 /** 运行配置（SPEC §13.1：数据目录、端口、公开地址、日志级别通过环境变量设置） */
 import { resolve } from 'node:path';
+import type { LlmProviderType, ThinkingDepth } from '@ldj/shared';
+import { normalizeThinkingDepth } from './core/settings.ts';
+import { normalizeLlmBaseUrl } from './core/llmBaseUrl.ts';
 
 /**
  * 大模型接入配置（AI 玩家）。
@@ -11,11 +14,13 @@ import { resolve } from 'node:path';
  * 注意：启用后，AI 玩家的局势描述（含它自己的手牌/身份）会发往该端点。
  */
 export interface LlmConfig {
-  /** OpenAI 兼容的 chat completions 端点前缀，例如 http://127.0.0.1:11434/v1 */
+  provider: LlmProviderType;
+  /** 端点前缀，例如 http://127.0.0.1:11434/v1 或 https://api.anthropic.com */
   baseUrl: string | null;
   /** API 密钥；本地模型通常留空 */
   apiKey: string | null;
   model: string;
+  thinkingDepth: ThinkingDepth;
   /** 单次决策超时；超时或报错则回落到规则策略 */
   timeoutMs: number;
 }
@@ -29,6 +34,7 @@ export interface ServerConfig {
   logLevel: 'debug' | 'info' | 'warn' | 'error';
   /** 额外允许的 Origin（开发模式例外，SPEC §9.5） */
   allowedOrigins: string[];
+  allowPrivateLlmUpstream: boolean;
   llm: LlmConfig;
   /**
    * 远程改设置的口令。
@@ -54,8 +60,30 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
   if (!Number.isInteger(llmTimeout) || llmTimeout < 1000 || llmTimeout > 120_000) {
     throw new Error(`非法 LLM 超时：${env.LLM_TIMEOUT_MS}`);
   }
-  // 末尾斜杠统一去掉，避免拼出 //chat/completions
-  const llmBaseUrl = (env.LLM_BASE_URL ?? '').trim().replace(/\/+$/, '');
+  const rawLlmBaseUrl = (env.LLM_BASE_URL ?? '').trim();
+  let llmBaseUrl: string | null = null;
+  if (rawLlmBaseUrl !== '') {
+    try {
+      llmBaseUrl = normalizeLlmBaseUrl(rawLlmBaseUrl);
+    } catch {
+      throw new Error('非法 LLM Base URL');
+    }
+  }
+  const llmProvider = (env.LLM_PROVIDER ?? 'openai').trim().toLowerCase();
+  if (llmProvider !== 'openai' && llmProvider !== 'anthropic') {
+    throw new Error(`非法 LLM 服务商：${env.LLM_PROVIDER}`);
+  }
+  const thinkingDepthRaw = env.LLM_THINKING_DEPTH === undefined
+    ? 'off'
+    : env.LLM_THINKING_DEPTH.trim().toLowerCase();
+  const thinkingDepth = normalizeThinkingDepth(thinkingDepthRaw);
+  if (thinkingDepth === null) {
+    throw new Error(`非法 LLM 思考深度：${env.LLM_THINKING_DEPTH}`);
+  }
+  const allowPrivateNetworkRaw = env.LLM_ALLOW_PRIVATE_NETWORK;
+  if (allowPrivateNetworkRaw !== undefined && allowPrivateNetworkRaw !== 'true' && allowPrivateNetworkRaw !== 'false') {
+    throw new Error(`非法 LLM 私网上游开关：${allowPrivateNetworkRaw}`);
+  }
 
   return {
     host: env.HOST ?? '0.0.0.0',
@@ -67,10 +95,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean),
+    allowPrivateLlmUpstream: allowPrivateNetworkRaw === 'true',
     llm: {
-      baseUrl: llmBaseUrl === '' ? null : llmBaseUrl,
+      provider: llmProvider,
+      baseUrl: llmBaseUrl,
       apiKey: (env.LLM_API_KEY ?? '').trim() || null,
       model: (env.LLM_MODEL ?? '').trim() || 'gpt-4o-mini',
+      thinkingDepth,
       timeoutMs: llmTimeout,
     },
     adminToken: (env.ADMIN_TOKEN ?? '').trim() || null,

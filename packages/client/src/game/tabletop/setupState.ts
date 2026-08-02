@@ -1,0 +1,57 @@
+import type { GameSetupOption, GameSetupSpec } from '@ldj/shared';
+
+export type SetupConfig = Readonly<Record<string, string | number | boolean>>;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function accepts(option: GameSetupOption, value: unknown): value is string | number | boolean {
+  if (option.kind === 'select') return typeof value === 'string' && option.choices.some((choice) => choice.value === value);
+  if (option.kind === 'boolean') return typeof value === 'boolean';
+  return typeof value === 'number'
+    && Number.isInteger(value)
+    && value >= option.min
+    && value <= option.max
+    && (value - option.min) % option.step === 0;
+}
+
+export function buildSetupConfig(setup: GameSetupSpec): SetupConfig {
+  return { ...setup.defaultConfig };
+}
+
+export function applySetupValue(
+  setup: GameSetupSpec,
+  config: SetupConfig,
+  key: string,
+  value: unknown,
+): SetupConfig {
+  if (key === 'rulesetId') {
+    if (typeof value !== 'string' || !setup.rulesets.some((ruleset) => ruleset.id === value)) {
+      throw new Error('配置值无效');
+    }
+    return { ...config, rulesetId: value };
+  }
+  const option = setup.options.find((candidate) => candidate.key === key);
+  if (!option) throw new Error('配置项不存在');
+  if (!accepts(option, value)) throw new Error('配置值无效');
+  return { ...config, [key]: value };
+}
+
+export function readRoomGameConfig(setup: GameSetupSpec, roomConfig: unknown): SetupConfig {
+  let config = buildSetupConfig(setup);
+  if (!isRecord(roomConfig) || !isRecord(roomConfig.gameConfig)) return config;
+  for (const [key, value] of Object.entries(roomConfig.gameConfig)) {
+    try {
+      config = applySetupValue(setup, config, key, value);
+    } catch {
+      continue;
+    }
+  }
+  return config;
+}
+
+export function buildModuleConfig(setup: GameSetupSpec, config: SetupConfig): SetupConfig {
+  const allowed = new Set(setup.options.map((option) => option.key));
+  return Object.fromEntries(Object.entries(config).filter(([key]) => allowed.has(key)));
+}

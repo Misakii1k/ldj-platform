@@ -44,9 +44,9 @@ export function applyJoinRoom(tx: TxContext, roomId: string, payload: JoinRoomPa
 
   const config = parseRoomConfig(room.config_json);
 
-  // 状态判定（FR-ROOM-005）：LOBBY 可加玩家/观战；IN_GAME/POST_GAME 仅观战
+  // 状态判定（FR-ROOM-005）：LOBBY/POST_GAME 可加玩家/观战；仅对局中（IN_GAME）降级观战
   let seatRole: 'player' | 'spectator' = payload.asSpectator ? 'spectator' : 'player';
-  if (room.status !== 'LOBBY') {
+  if (room.status === 'IN_GAME') {
     if (!payload.asSpectator) {
       seatRole = 'spectator'; // 对局中加入自动降级为观战（FR-ROOM-005）
     }

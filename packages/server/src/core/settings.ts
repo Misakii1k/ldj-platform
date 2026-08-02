@@ -1,43 +1,37 @@
 /**
  * 运行期设置（存库、改完即生效）。
  *
- * 为什么不只用环境变量：环境变量要改文件、要重启进程，聚会现场没人愿意干这个。
- * 这里的规则是「库里有就用库里的，库里没有就用环境变量兜底」——
- * 部署方可以继续用 LLM_BASE_URL 预置，房主也能在网页上临时改。
- *
  * 密钥只进不出：写入后对外一律只回 hasApiKey 布尔，任何接口都不回传原文。
  */
-import type { Db } from '../persistence/db.ts';
+import { withTransaction, type Db } from '../persistence/db.ts';
 import type { LlmConfig } from '../config.ts';
+import type {
+  LlmProviderType,
+  ThinkingDepth,
+  LlmSettingsView,
+  LlmSettingsPatch,
+  LlmProfileSummary,
+} from '@ldj/shared';
+import { THINKING_DEPTH_OPTIONS } from '@ldj/shared';
+import { normalizeLlmBaseUrl } from './llmBaseUrl.ts';
 
-/** 设置项键名；值一律以字符串存，读出时各自解析 */
+export type { LlmSettingsView, LlmSettingsPatch };
+
+const KEY_LLM_PROVIDER = 'llm.provider';
 const KEY_LLM_BASE_URL = 'llm.baseUrl';
 const KEY_LLM_API_KEY = 'llm.apiKey';
 const KEY_LLM_MODEL = 'llm.model';
+const KEY_LLM_THINKING_DEPTH = 'llm.thinkingDepth';
 const KEY_LLM_TIMEOUT_MS = 'llm.timeoutMs';
+const KEY_LLM_PROFILES = 'llm.profiles';
+const KEY_LLM_ACTIVE_PROFILE_ID = 'llm.activeProfileId';
 
 export const LLM_TIMEOUT_MIN_MS = 1000;
 export const LLM_TIMEOUT_MAX_MS = 120_000;
-
-/** 对外可见的设置视图：不含密钥原文 */
-export interface LlmSettingsView {
-  baseUrl: string | null;
-  model: string;
-  timeoutMs: number;
-  /** 是否已设置密钥；原文永不出库 */
-  hasApiKey: boolean;
-  /** 该项当前值是否来自环境变量（库里没写过） */
-  fromEnv: boolean;
-}
-
-/** 一次设置更新；字段缺省表示"不动这一项" */
-export interface LlmSettingsPatch {
-  baseUrl?: string | null;
-  /** null = 清空密钥；undefined = 保持不变 */
-  apiKey?: string | null;
-  model?: string;
-  timeoutMs?: number;
-}
+const MAX_LLM_PROFILES = 32;
+const MAX_PROFILE_ID_LENGTH = 128;
+const MAX_PROFILE_NAME_LENGTH = 64;
+const MAX_PROFILE_BASE_URL_LENGTH = 2048;
 
 export class SettingsError extends Error {}
 
@@ -59,21 +53,135 @@ function writeRaw(db: Db, key: string, value: string | null, now: number): void 
   ).run(key, value, now);
 }
 
+function isProvider(value: unknown): value is LlmProviderType {
+  return value === 'openai' || value === 'anthropic';
+}
+
+export function normalizeThinkingDepth(value: unknown): ThinkingDepth | null {
+  if (value === '8192') return 'max';
+  return THINKING_DEPTH_OPTIONS.some((option) => option.value === value)
+    ? value as ThinkingDepth
+    : null;
+}
+
+function parseProfile(value: unknown, index: number): LlmProfileSummary {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new SettingsError(`第 ${index + 1} 个 API 预设格式不正确`);
+  }
+  const source = value as Record<string, unknown>;
+  const id = typeof source.id === 'string' ? source.id.trim() : '';
+  const name = typeof source.name === 'string' ? source.name.trim() : '';
+  const baseUrl = typeof source.baseUrl === 'string' ? source.baseUrl.trim() : '';
+  const model = typeof source.model === 'string' ? source.model.trim() : '';
+  const thinkingDepth = normalizeThinkingDepth(source.thinkingDepth);
+  const timeoutMs = source.timeoutMs;
+
+  if (id === '' || id.length > MAX_PROFILE_ID_LENGTH) {
+    throw new SettingsError(`第 ${index + 1} 个 API 预设 id 无效`);
+  }
+  if (name === '' || name.length > MAX_PROFILE_NAME_LENGTH) {
+    throw new SettingsError(`第 ${index + 1} 个 API 预设名称无效`);
+  }
+  if (baseUrl.length > MAX_PROFILE_BASE_URL_LENGTH) {
+    throw new SettingsError(`第 ${index + 1} 个 API 预设地址过长`);
+  }
+  if (model.length > 128) {
+    throw new SettingsError(`第 ${index + 1} 个 API 预设模型名过长`);
+  }
+  if (!isProvider(source.provider)) {
+    throw new SettingsError(`第 ${index + 1} 个 API 预设服务商无效`);
+  }
+  if (thinkingDepth === null) {
+    throw new SettingsError(`第 ${index + 1} 个 API 预设思考深度无效`);
+  }
+  if (
+    typeof timeoutMs !== 'number' ||
+    !Number.isInteger(timeoutMs) ||
+    timeoutMs < LLM_TIMEOUT_MIN_MS ||
+    timeoutMs > LLM_TIMEOUT_MAX_MS
+  ) {
+    throw new SettingsError(`第 ${index + 1} 个 API 预设超时无效`);
+  }
+  if (typeof source.hasApiKey !== 'boolean') {
+    throw new SettingsError(`第 ${index + 1} 个 API 预设密钥标记无效`);
+  }
+
+  return {
+    id,
+    name,
+    provider: source.provider,
+    baseUrl,
+    model,
+    thinkingDepth,
+    timeoutMs,
+    hasApiKey: source.hasApiKey,
+  };
+}
+
+function parseProfilesJson(raw: string | null, strict: boolean): LlmProfileSummary[] {
+  if (raw === null || raw.trim() === '') return [];
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    if (strict) throw new SettingsError('profilesJson 不是合法 JSON');
+    return [];
+  }
+  if (!Array.isArray(value)) {
+    if (strict) throw new SettingsError('profilesJson 必须是数组');
+    return [];
+  }
+  if (value.length > MAX_LLM_PROFILES) {
+    if (strict) throw new SettingsError(`API 预设最多 ${MAX_LLM_PROFILES} 个`);
+    return [];
+  }
+
+  try {
+    const profiles = value.map((profile, index) => parseProfile(profile, index));
+    if (new Set(profiles.map((profile) => profile.id)).size !== profiles.length) {
+      throw new SettingsError('API 预设 id 不能重复');
+    }
+    return profiles;
+  } catch (error) {
+    if (strict) throw error;
+    return [];
+  }
+}
+
+function normalizeBaseUrl(value: string | null): string | null {
+  if (value === null) return null;
+  if (value.trim() === '') return null;
+  try {
+    return normalizeLlmBaseUrl(value);
+  } catch {
+    throw new SettingsError('接口地址不是合法 URL，例如 http://127.0.0.1:11434/v1 或 https://api.anthropic.com');
+  }
+}
+
 /**
  * 合并环境变量与库设置，得到当前生效的大模型配置。
- * envFallback 传 loadConfig() 读出来的那份。
  */
 export function resolveLlmConfig(db: Db, envFallback: LlmConfig): LlmConfig {
+  const providerRaw = readRaw(db, KEY_LLM_PROVIDER);
+  const provider: LlmProviderType = providerRaw === 'anthropic'
+    ? 'anthropic'
+    : providerRaw === 'openai'
+      ? 'openai'
+      : (envFallback.provider ?? 'openai');
   const baseUrl = readRaw(db, KEY_LLM_BASE_URL);
   const apiKey = readRaw(db, KEY_LLM_API_KEY);
   const model = readRaw(db, KEY_LLM_MODEL);
+  const thinkingDepthRaw = readRaw(db, KEY_LLM_THINKING_DEPTH);
+  const thinkingDepth = normalizeThinkingDepth(thinkingDepthRaw) ?? envFallback.thinkingDepth;
   const timeoutRaw = readRaw(db, KEY_LLM_TIMEOUT_MS);
   const timeoutMs = timeoutRaw === null ? null : Number(timeoutRaw);
 
   return {
+    provider,
     baseUrl: baseUrl ?? envFallback.baseUrl,
-    apiKey: apiKey ?? envFallback.apiKey,
+    apiKey: apiKey === '' ? null : apiKey ?? envFallback.apiKey,
     model: model ?? envFallback.model,
+    thinkingDepth,
     timeoutMs:
       timeoutMs !== null && Number.isInteger(timeoutMs) ? timeoutMs : envFallback.timeoutMs,
   };
@@ -82,12 +190,23 @@ export function resolveLlmConfig(db: Db, envFallback: LlmConfig): LlmConfig {
 /** 给设置面板看的视图（不含密钥原文） */
 export function getLlmSettingsView(db: Db, envFallback: LlmConfig): LlmSettingsView {
   const effective = resolveLlmConfig(db, envFallback);
+  const profilesRaw = readRaw(db, KEY_LLM_PROFILES);
+  const profiles = parseProfilesJson(profilesRaw, false);
+  const storedActiveProfileId = readRaw(db, KEY_LLM_ACTIVE_PROFILE_ID);
+  const activeProfileId = storedActiveProfileId !== null && profiles.some((profile) => profile.id === storedActiveProfileId)
+    ? storedActiveProfileId
+    : null;
+
   return {
+    provider: effective.provider,
     baseUrl: effective.baseUrl,
     model: effective.model,
+    thinkingDepth: effective.thinkingDepth,
     timeoutMs: effective.timeoutMs,
     hasApiKey: effective.apiKey !== null && effective.apiKey !== '',
     fromEnv: readRaw(db, KEY_LLM_BASE_URL) === null && envFallback.baseUrl !== null,
+    profiles,
+    activeProfileId,
   };
 }
 
@@ -98,27 +217,37 @@ export function updateLlmSettings(
   envFallback: LlmConfig,
   now: number = Date.now(),
 ): LlmConfig {
-  if (patch.baseUrl !== undefined && patch.baseUrl !== null) {
-    const trimmed = patch.baseUrl.trim().replace(/\/+$/, '');
-    if (trimmed !== '') {
-      let parsed: URL;
-      try {
-        parsed = new URL(trimmed);
-      } catch {
-        throw new SettingsError('接口地址不是合法 URL，例如 http://127.0.0.1:11434/v1');
-      }
-      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-        throw new SettingsError('接口地址只支持 http 或 https');
-      }
+  const current = resolveLlmConfig(db, envFallback);
+  const normalized: {
+    provider?: LlmProviderType;
+    baseUrl?: string | null;
+    apiKey?: string | null;
+    model?: string | null;
+    thinkingDepth?: ThinkingDepth;
+    timeoutMs?: number;
+    profilesJson?: string | null;
+    activeProfileId?: string | null;
+  } = {};
+  if (patch.provider !== undefined) {
+    if (patch.provider !== 'openai' && patch.provider !== 'anthropic') {
+      throw new SettingsError('非法服务商类型');
     }
-    writeRaw(db, KEY_LLM_BASE_URL, trimmed === '' ? null : trimmed, now);
-  } else if (patch.baseUrl === null) {
-    writeRaw(db, KEY_LLM_BASE_URL, null, now);
+    normalized.provider = patch.provider;
+  }
+
+  if (patch.baseUrl !== undefined) {
+    normalized.baseUrl = normalizeBaseUrl(patch.baseUrl);
   }
 
   if (patch.apiKey !== undefined) {
     const trimmed = patch.apiKey === null ? null : patch.apiKey.trim();
-    writeRaw(db, KEY_LLM_API_KEY, trimmed === '' ? null : trimmed, now);
+    normalized.apiKey = trimmed === '' ? null : trimmed;
+  }
+
+  const providerChanged = normalized.provider !== undefined && normalized.provider !== current.provider;
+  const baseUrlChanged = normalized.baseUrl !== undefined && normalized.baseUrl !== current.baseUrl;
+  if (patch.apiKey === undefined && (providerChanged || baseUrlChanged)) {
+    normalized.apiKey = '';
   }
 
   if (patch.model !== undefined) {
@@ -126,7 +255,15 @@ export function updateLlmSettings(
     if (trimmed.length > 128) {
       throw new SettingsError('模型名过长');
     }
-    writeRaw(db, KEY_LLM_MODEL, trimmed === '' ? null : trimmed, now);
+    normalized.model = trimmed === '' ? null : trimmed;
+  }
+
+  if (patch.thinkingDepth !== undefined) {
+    const thinkingDepth = normalizeThinkingDepth(patch.thinkingDepth);
+    if (thinkingDepth === null) {
+      throw new SettingsError('非法的思考深度选项');
+    }
+    normalized.thinkingDepth = thinkingDepth;
   }
 
   if (patch.timeoutMs !== undefined) {
@@ -139,8 +276,38 @@ export function updateLlmSettings(
         `超时需在 ${LLM_TIMEOUT_MIN_MS}–${LLM_TIMEOUT_MAX_MS} 毫秒之间`,
       );
     }
-    writeRaw(db, KEY_LLM_TIMEOUT_MS, String(patch.timeoutMs), now);
+    normalized.timeoutMs = patch.timeoutMs;
   }
+
+  let nextProfiles = parseProfilesJson(readRaw(db, KEY_LLM_PROFILES), false);
+  if (patch.profilesJson !== undefined) {
+    nextProfiles = parseProfilesJson(patch.profilesJson, true);
+    normalized.profilesJson = patch.profilesJson === null ? null : JSON.stringify(nextProfiles);
+  }
+
+  if (patch.activeProfileId !== undefined) {
+    const activeProfileId = patch.activeProfileId === null ? null : patch.activeProfileId.trim() || null;
+    if (activeProfileId !== null && !nextProfiles.some((profile) => profile.id === activeProfileId)) {
+      throw new SettingsError('activeProfileId 不存在于 API 预设列表');
+    }
+    normalized.activeProfileId = activeProfileId;
+  } else {
+    const currentActiveProfileId = readRaw(db, KEY_LLM_ACTIVE_PROFILE_ID);
+    if (currentActiveProfileId !== null && !nextProfiles.some((profile) => profile.id === currentActiveProfileId)) {
+      normalized.activeProfileId = null;
+    }
+  }
+
+  withTransaction(db, () => {
+    if (normalized.provider !== undefined) writeRaw(db, KEY_LLM_PROVIDER, normalized.provider, now);
+    if (normalized.baseUrl !== undefined) writeRaw(db, KEY_LLM_BASE_URL, normalized.baseUrl, now);
+    if (normalized.apiKey !== undefined) writeRaw(db, KEY_LLM_API_KEY, normalized.apiKey, now);
+    if (normalized.model !== undefined) writeRaw(db, KEY_LLM_MODEL, normalized.model, now);
+    if (normalized.thinkingDepth !== undefined) writeRaw(db, KEY_LLM_THINKING_DEPTH, normalized.thinkingDepth, now);
+    if (normalized.timeoutMs !== undefined) writeRaw(db, KEY_LLM_TIMEOUT_MS, String(normalized.timeoutMs), now);
+    if (normalized.profilesJson !== undefined) writeRaw(db, KEY_LLM_PROFILES, normalized.profilesJson, now);
+    if (normalized.activeProfileId !== undefined) writeRaw(db, KEY_LLM_ACTIVE_PROFILE_ID, normalized.activeProfileId, now);
+  });
 
   return resolveLlmConfig(db, envFallback);
 }

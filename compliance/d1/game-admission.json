@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "frozenAt": "2026-08-02",
+  "games": [
+    {
+      "gameId": "undercover",
+      "catalogStatus": "internal_prototype",
+      "rulesets": [
+        {
+          "rulesetId": "undercover_classic_v1",
+          "kind": "platform_variant",
+          "releaseStatus": "internal_prototype",
+          "sourceDocuments": [
+            "packages/games/undercover/server/module.ts",
+            "docs/superpowers/specs/2026-08-02-shared-game-engine-design.md#已确认的谁是卧底规则集"
+          ],
+          "includedExtensions": [],
+          "excludedExtensions": ["undercover_blank_v1"],
+          "digitalAdaptations": [
+            "发言和投票由服务端计时器推进",
+            "淘汰者进入旁观视角",
+            "机器人只能从模块合法动作候选中选择"
+          ],
+          "rights": {
+            "status": "unverified",
+            "recordId": null,
+            "scope": null,
+            "expiresAt": null,
+            "rightsApprover": null,
+            "rulesApprover": null
+          }
+        }
+      ]
+    },
+    {
+      "gameId": "uno",
+      "catalogStatus": "blocked_rights",
+      "rulesets": [
+        {
+          "rulesetId": "uno_legacy_platform_v1",
+          "kind": "legacy_compatibility",
+          "releaseStatus": "blocked_rights",
+          "sourceDocuments": [
+            "packages/games/uno/server/module.ts",
+            "docs/superpowers/specs/2026-08-02-shared-game-engine-design.md#已确认的-uno-平台规则集"
+          ],
+          "includedExtensions": [],
+          "excludedExtensions": ["uno_platform_house_v1"],
+          "digitalAdaptations": [
+            "当前实现只冻结为迁移兼容基线",
+            "黄金回放不证明新平台规则正确"
+          ],
+          "rights": {
+            "status": "unverified",
+            "recordId": null,
+            "scope": null,
+            "expiresAt": null,
+            "rightsApprover": null,
+            "rulesApprover": null
+          }
+        }
+      ]
+    },
+    {
+      "gameId": "landlord",
+      "catalogStatus": "internal_prototype",
+      "rulesets": [
+        {
+          "rulesetId": "landlord_legacy_platform_v1",
+          "kind": "legacy_compatibility",
+          "releaseStatus": "internal_prototype",
+          "sourceDocuments": ["docs/new-games-preparation.md#斗地主"],
+          "includedExtensions": [],
+          "excludedExtensions": [],
+          "digitalAdaptations": ["当前实现仅作为 D1 盘点对象，不在 D2 或 D3 迁移范围"],
+          "rights": {
+            "status": "unverified",
+            "recordId": null,
+            "scope": null,
+            "expiresAt": null,
+            "rightsApprover": null,
+            "rulesApprover": null
+          }
+        }
+      ]
+    },
+    {
+      "gameId": "werewolf",
+      "catalogStatus": "internal_prototype",
+      "rulesets": [
+        {
+          "rulesetId": "werewolf_legacy_platform_v2",
+          "kind": "legacy_compatibility",
+          "releaseStatus": "internal_prototype",
+          "sourceDocuments": ["docs/new-games-preparation.md#狼人杀"],
+          "includedExtensions": [],
+          "excludedExtensions": [],
+          "digitalAdaptations": ["当前实现仅作为 D1 盘点对象，不在 D2 或 D3 迁移范围"],
+          "rights": {
+            "status": "unverified",
+            "recordId": null,
+            "scope": null,
+            "expiresAt": null,
+            "rightsApprover": null,
+            "rulesApprover": null
+          }
+        }
+      ]
+    }
+  ],
+  "forbidden": {
+    "canonicalName": "骗子酒馆",
+    "aliases": ["Liar's Bar", "liars-bar", "liars_bar"],
+    "productScopes": ["packages", "dist", "registry", "catalog", "routes", "static_assets", "release_archives"],
+    "researchRoot": "research/quarantined/liars-bar"
+  }
+}

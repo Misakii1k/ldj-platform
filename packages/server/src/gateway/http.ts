@@ -5,7 +5,17 @@ import http from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import type { PublicRoomSummary } from '../core/snapshot.ts';
+import type { LlmConfig } from '../config.ts';
+import { THINKING_DEPTH_OPTIONS, type ThinkingDepth } from '@ldj/shared';
 import { SettingsError, type LlmSettingsView, type LlmSettingsPatch } from '../core/settings.ts';
+import {
+  LlmConnectionTestError,
+  testLlmConnection,
+  type LlmConnectionTestInput,
+} from '../core/llmConnectionTest.ts';
+import { fetchLlmModels, LlmModelCatalogError } from '../core/llmModelCatalog.ts';
+import { normalizeLlmBaseUrl } from '../core/llmBaseUrl.ts';
+import { isOriginAllowed } from './ws.ts';
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -38,6 +48,8 @@ export interface HttpDeps {
   staticDir?: string;
   /** 读取大模型设置；不含密钥原文（只回 hasApiKey） */
   readLlmSettings?: () => LlmSettingsView;
+  /** 读取服务端当前生效配置，仅供模型目录代理复用密钥，不会写入响应。 */
+  readLlmConfig?: () => Pick<LlmConfig, 'provider' | 'baseUrl' | 'apiKey' | 'model' | 'thinkingDepth' | 'timeoutMs'>;
   /**
    * 写入大模型设置；抛 SettingsError 表示入参非法（映射 400）。
    * app 层在这里同时更新 LlmProvider，所以写完立即生效。
@@ -48,10 +60,12 @@ export interface HttpDeps {
    * 没设时只放行本机请求 —— 见 isLocalAddress 的注释。
    */
   adminToken?: string | null;
+  allowedOrigins?: string[];
+  allowPrivateLlmUpstream?: boolean;
 }
 
 /** 请求体上限：设置对象很小，1 KiB 足够，超了直接拒绝而不是攒内存 */
-const MAX_BODY_BYTES = 1024;
+const MAX_BODY_BYTES = 16 * 1024;
 
 /**
  * 是否来自本机。
@@ -71,16 +85,22 @@ function readJsonBody(req: http.IncomingMessage): Promise<unknown> {
   return new Promise((resolvePromise, reject) => {
     const chunks: Buffer[] = [];
     let size = 0;
+    let tooLarge = false;
     req.on('data', (chunk: Buffer) => {
       size += chunk.length;
       if (size > MAX_BODY_BYTES) {
-        reject(new Error('BODY_TOO_LARGE'));
-        req.destroy();
+        // Continue draining without retaining bytes. Destroying the request here also
+        // destroys its socket, preventing the intended 413 response from reaching the client.
+        tooLarge = true;
         return;
       }
       chunks.push(chunk);
     });
     req.on('end', () => {
+      if (tooLarge) {
+        reject(new Error('BODY_TOO_LARGE'));
+        return;
+      }
       const raw = Buffer.concat(chunks).toString('utf8').trim();
       if (raw === '') {
         resolvePromise({});
@@ -101,20 +121,74 @@ function sendJson(res: http.ServerResponse, status: number, body: unknown): void
   res.end(JSON.stringify(body));
 }
 
-/**
- * 把请求体解析成 LlmSettingsPatch。
- * 只认白名单键，且区分「没传」与「传了 null」——后者是"清空"的意思。
- */
+function requireJsonContentType(req: http.IncomingMessage, res: http.ServerResponse): boolean {
+  const contentType = req.headers['content-type'];
+  if (typeof contentType === 'string' && contentType.split(';', 1)[0]!.trim().toLowerCase() === 'application/json') return true;
+  sendJson(res, 415, { error: 'UNSUPPORTED_MEDIA_TYPE', message: '请求体必须使用 application/json' });
+  return false;
+}
+
+function createRequestAbortSignal(res: http.ServerResponse): { signal: AbortSignal; dispose: () => void } {
+  const controller = new AbortController();
+  const abort = () => {
+    if (!res.writableEnded) controller.abort();
+  };
+  res.once('close', abort);
+  return {
+    signal: controller.signal,
+    dispose: () => res.off('close', abort),
+  };
+}
+
+function isThinkingDepth(value: string): value is ThinkingDepth {
+  return THINKING_DEPTH_OPTIONS.some((option) => option.value === value);
+}
+
+function authorizeSettingsWrite(
+  req: http.IncomingMessage,
+  deps: HttpDeps,
+): { status: number; message: string } | null {
+  const origin = req.headers.origin;
+  if (!isOriginAllowed(origin === '' ? undefined : origin, req.headers.host, deps.allowedOrigins ?? [])) {
+    return { status: 403, message: '请求来源不被允许' };
+  }
+  const token = deps.adminToken ?? null;
+  if (token !== null) {
+    return req.headers['x-admin-token'] === token
+      ? null
+      : { status: 403, message: '管理口令不正确' };
+  }
+  return isLocalAddress(req.socket.remoteAddress)
+    ? null
+    : {
+        status: 403,
+        message: '只有服务器本机能改设置；要在手机上改，请给服务端设置 ADMIN_TOKEN 环境变量',
+      };
+}
+
 export function parseLlmSettingsPatch(body: unknown): LlmSettingsPatch {
   if (typeof body !== 'object' || body === null || Array.isArray(body)) {
     throw new SettingsError('请求体需为 JSON 对象');
   }
   const src = body as Record<string, unknown>;
-  const known = new Set(['baseUrl', 'apiKey', 'model', 'timeoutMs']);
+  const known = new Set([
+    'provider',
+    'baseUrl',
+    'apiKey',
+    'model',
+    'thinkingDepth',
+    'timeoutMs',
+    'profilesJson',
+    'activeProfileId',
+  ]);
   for (const key of Object.keys(src)) {
     if (!known.has(key)) throw new SettingsError(`未知设置项：${key}`);
   }
   const patch: LlmSettingsPatch = {};
+  if ('provider' in src) {
+    if (src.provider !== 'openai' && src.provider !== 'anthropic') throw new SettingsError('provider 需为 openai 或 anthropic');
+    patch.provider = src.provider;
+  }
   if ('baseUrl' in src) {
     const v = src.baseUrl;
     if (v !== null && typeof v !== 'string') throw new SettingsError('baseUrl 需为字符串或 null');
@@ -129,9 +203,23 @@ export function parseLlmSettingsPatch(body: unknown): LlmSettingsPatch {
     if (typeof src.model !== 'string') throw new SettingsError('model 需为字符串');
     patch.model = src.model;
   }
+  if ('thinkingDepth' in src) {
+    if (typeof src.thinkingDepth !== 'string' || !isThinkingDepth(src.thinkingDepth)) {
+      throw new SettingsError('thinkingDepth invalid');
+    }
+    patch.thinkingDepth = src.thinkingDepth;
+  }
   if ('timeoutMs' in src) {
     if (typeof src.timeoutMs !== 'number') throw new SettingsError('timeoutMs 需为数字');
     patch.timeoutMs = src.timeoutMs;
+  }
+  if ('profilesJson' in src) {
+    if (src.profilesJson !== null && typeof src.profilesJson !== 'string') throw new SettingsError('profilesJson 需为字符串或 null');
+    patch.profilesJson = src.profilesJson;
+  }
+  if ('activeProfileId' in src) {
+    if (src.activeProfileId !== null && typeof src.activeProfileId !== 'string') throw new SettingsError('activeProfileId 需为字符串或 null');
+    patch.activeProfileId = src.activeProfileId;
   }
   return patch;
 }
@@ -164,6 +252,182 @@ export function createHttpServer(deps: HttpDeps): http.Server {
       return;
     }
 
+    if (url === '/api/settings/llm/test') {
+      const read = deps.readLlmConfig;
+      if (read === undefined) {
+        sendJson(res, 404, { error: 'NOT_AVAILABLE', message: '设置接口未启用' });
+        return;
+      }
+      if (req.method !== 'POST') {
+        res.writeHead(405, { 'content-type': 'text/plain; charset=utf-8' });
+        res.end('Method Not Allowed');
+        return;
+      }
+      const authorizationError = authorizeSettingsWrite(req, deps);
+      if (authorizationError !== null) {
+        sendJson(res, authorizationError.status, { error: 'FORBIDDEN', message: authorizationError.message });
+        return;
+      }
+      if (!requireJsonContentType(req, res)) return;
+
+      void (async () => {
+        const requestAbort = createRequestAbortSignal(res);
+        try {
+          const rawBody = await readJsonBody(req);
+          if (typeof rawBody !== 'object' || rawBody === null || Array.isArray(rawBody)) {
+            throw new LlmConnectionTestError('INVALID_CONFIG', '诊断配置无效');
+          }
+          const body = rawBody as Record<string, unknown>;
+          const known = new Set(['provider', 'baseUrl', 'apiKey', 'model', 'thinkingDepth', 'timeoutMs']);
+          if (Object.keys(body).some((key) => !known.has(key))) {
+            throw new LlmConnectionTestError('INVALID_CONFIG', '诊断配置无效');
+          }
+          const current = read();
+          const provider = (body.provider ?? current.provider) as LlmConnectionTestInput['provider'];
+          const baseUrl = (body.baseUrl ?? current.baseUrl ?? '') as string;
+          const hasApiKeyOverride = Object.prototype.hasOwnProperty.call(body, 'apiKey');
+          let normalizedBaseUrl = '';
+          let normalizedCurrentBaseUrl = '';
+          try {
+            if (typeof baseUrl === 'string' && baseUrl.trim() !== '') normalizedBaseUrl = normalizeLlmBaseUrl(baseUrl);
+            if (current.baseUrl !== null) normalizedCurrentBaseUrl = normalizeLlmBaseUrl(current.baseUrl);
+          } catch {
+            throw new LlmConnectionTestError('INVALID_CONFIG', '诊断配置无效');
+          }
+          const canReuseSavedApiKey = !hasApiKeyOverride
+            && provider === current.provider
+            && normalizedBaseUrl === normalizedCurrentBaseUrl;
+          const input: LlmConnectionTestInput = {
+            provider,
+            baseUrl,
+            apiKey: hasApiKeyOverride ? body.apiKey as string | null : canReuseSavedApiKey ? current.apiKey : null,
+            model: (body.model ?? current.model) as string,
+            thinkingDepth: (body.thinkingDepth ?? current.thinkingDepth) as LlmConnectionTestInput['thinkingDepth'],
+            timeoutMs: (body.timeoutMs ?? current.timeoutMs) as number,
+          };
+          const result = await testLlmConnection(input, requestAbort.signal, {
+            allowPrivateNetwork: deps.allowPrivateLlmUpstream,
+          });
+          if (!requestAbort.signal.aborted) {
+            sendJson(res, 200, {
+              status: 'ok',
+              ...result,
+              usedSavedApiKey: canReuseSavedApiKey && current.apiKey !== null,
+            });
+          }
+        } catch (error) {
+          const message = (error as Error).message;
+          if (message === 'BODY_TOO_LARGE') {
+            sendJson(res, 413, { error: 'BODY_TOO_LARGE', message: '请求体过大' });
+          } else if (message === 'INVALID_JSON') {
+            sendJson(res, 400, { error: 'INVALID_JSON', message: '请求体不是合法 JSON' });
+          } else if (error instanceof LlmConnectionTestError) {
+            sendJson(res, error.code === 'INVALID_CONFIG' ? 400 : 502, {
+              error: error.code,
+              message: error.message,
+            });
+          } else if (!requestAbort.signal.aborted) {
+            sendJson(res, 502, { error: 'UPSTREAM_UNAVAILABLE', message: '暂时无法连接上游服务' });
+          }
+        } finally {
+          requestAbort.dispose();
+        }
+      })();
+      return;
+    }
+
+    if (url === '/api/settings/llm/models') {
+      const read = deps.readLlmSettings;
+      if (read === undefined) {
+        sendJson(res, 404, { error: 'NOT_AVAILABLE', message: '设置接口未启用' });
+        return;
+      }
+      if (req.method !== 'POST') {
+        res.writeHead(405, { 'content-type': 'text/plain; charset=utf-8' });
+        res.end('Method Not Allowed');
+        return;
+      }
+      const authorizationError = authorizeSettingsWrite(req, deps);
+      if (authorizationError !== null) {
+        sendJson(res, authorizationError.status, { error: 'FORBIDDEN', message: authorizationError.message });
+        return;
+      }
+      if (!requireJsonContentType(req, res)) return;
+
+      void (async () => {
+        const requestAbort = createRequestAbortSignal(res);
+        try {
+          const rawBody = await readJsonBody(req);
+          if (typeof rawBody !== 'object' || rawBody === null || Array.isArray(rawBody)) {
+            throw new SettingsError('请求体需为 JSON 对象');
+          }
+          const reqBody = rawBody as Record<string, unknown>;
+          const activeSettings = read();
+          const activeConfig = deps.readLlmConfig?.();
+          const provider = reqBody.provider === undefined
+            ? activeConfig?.provider ?? activeSettings.provider ?? 'openai'
+            : reqBody.provider;
+          if (provider !== 'openai' && provider !== 'anthropic') {
+            throw new SettingsError('provider 需为 openai 或 anthropic');
+          }
+          const baseUrl = reqBody.baseUrl === undefined
+            ? activeConfig?.baseUrl ?? activeSettings.baseUrl ?? ''
+            : reqBody.baseUrl;
+          if (typeof baseUrl !== 'string') throw new SettingsError('baseUrl 需为字符串');
+          let normalizedBaseUrl = '';
+          let normalizedActiveBaseUrl = '';
+          try {
+            if (baseUrl.trim() !== '') normalizedBaseUrl = normalizeLlmBaseUrl(baseUrl);
+            if (activeConfig?.baseUrl) normalizedActiveBaseUrl = normalizeLlmBaseUrl(activeConfig.baseUrl);
+          } catch {
+            throw new SettingsError('baseUrl 不是合法的安全 URL');
+          }
+          const hasApiKeyOverride = Object.prototype.hasOwnProperty.call(reqBody, 'apiKey');
+          const canReuseSavedApiKey = !hasApiKeyOverride
+            && provider === activeConfig?.provider
+            && normalizedBaseUrl === normalizedActiveBaseUrl;
+          const apiKey = hasApiKeyOverride
+            ? reqBody.apiKey
+            : canReuseSavedApiKey ? activeConfig?.apiKey ?? null : null;
+          if (apiKey !== null && typeof apiKey !== 'string') {
+            throw new SettingsError('apiKey 需为字符串或 null');
+          }
+          const normalizedApiKey = typeof apiKey === 'string' ? apiKey.trim() || null : null;
+
+          if (!normalizedBaseUrl) {
+            sendJson(res, 400, { error: 'INVALID_SETTINGS', message: '请先填写接口 Base URL' });
+            return;
+          }
+          const models = await fetchLlmModels({
+            provider,
+            baseUrl: normalizedBaseUrl,
+            apiKey: normalizedApiKey,
+          }, requestAbort.signal, {
+            allowPrivateNetwork: deps.allowPrivateLlmUpstream,
+          });
+          if (!requestAbort.signal.aborted) sendJson(res, 200, { models, source: 'remote' });
+        } catch (err) {
+          if (err instanceof SettingsError) {
+            sendJson(res, 400, { error: 'INVALID_SETTINGS', message: err.message });
+          } else if ((err as Error).message === 'BODY_TOO_LARGE') {
+            sendJson(res, 413, { error: 'BODY_TOO_LARGE', message: '请求体过大' });
+          } else if ((err as Error).message === 'INVALID_JSON') {
+            sendJson(res, 400, { error: 'INVALID_JSON', message: '请求体不是合法 JSON' });
+          } else if (err instanceof LlmModelCatalogError) {
+            sendJson(res, err.code === 'INVALID_CONFIG' ? 400 : 502, {
+              error: err.code,
+              message: err.message,
+            });
+          } else if (!requestAbort.signal.aborted) {
+            sendJson(res, 502, { error: 'UPSTREAM_UNAVAILABLE', message: '暂时无法连接上游模型目录' });
+          }
+        } finally {
+          requestAbort.dispose();
+        }
+      })();
+      return;
+    }
+
     // 大模型设置：GET 读（不含密钥原文）、PUT 写。
     // 放在 405 关卡之前，否则 PUT 进不来。
     if (url === '/api/settings/llm') {
@@ -188,19 +452,12 @@ export function createHttpServer(deps: HttpDeps): http.Server {
 
       if (req.method === 'PUT') {
         // 写入鉴权：设了口令就验口令，没设就只信本机（见 isLocalAddress）
-        const token = deps.adminToken ?? null;
-        if (token !== null) {
-          if (req.headers['x-admin-token'] !== token) {
-            sendJson(res, 403, { error: 'FORBIDDEN', message: '管理口令不正确' });
-            return;
-          }
-        } else if (!isLocalAddress(req.socket.remoteAddress)) {
-          sendJson(res, 403, {
-            error: 'FORBIDDEN',
-            message: '只有服务器本机能改设置；要在手机上改，请给服务端设置 ADMIN_TOKEN 环境变量',
-          });
+        const authorizationError = authorizeSettingsWrite(req, deps);
+        if (authorizationError !== null) {
+          sendJson(res, authorizationError.status, { error: 'FORBIDDEN', message: authorizationError.message });
           return;
         }
+        if (!requireJsonContentType(req, res)) return;
         void (async () => {
           try {
             sendJson(res, 200, write(parseLlmSettingsPatch(await readJsonBody(req))));

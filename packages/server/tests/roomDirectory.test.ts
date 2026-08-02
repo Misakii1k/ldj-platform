@@ -12,7 +12,8 @@ function testConfig(): ServerConfig {
     publicBaseUrl: null,
     logLevel: 'error',
     allowedOrigins: [],
-    llm: { baseUrl: null, apiKey: null, model: 'test-model', timeoutMs: 5000 },
+    allowPrivateLlmUpstream: false,
+    llm: { provider: 'openai', baseUrl: null, apiKey: null, model: 'test-model', thinkingDepth: 'off', timeoutMs: 5000 },
     adminToken: null,
   };
 }
@@ -99,6 +100,13 @@ test('GET /api/rooms lists only open rooms with aggregate public fields', async 
 
     insertRoom(app, { id: 'room-post-game', code: 'POST1', status: 'POST_GAME', updatedAt: 300 });
     insertRoom(app, { id: 'room-closed', code: 'CLOSE', status: 'CLOSED', updatedAt: 400 });
+    insertRoom(app, {
+      id: 'room-removed-game',
+      code: 'OLD01',
+      status: 'LOBBY',
+      gameId: 'removed-game',
+      updatedAt: 500,
+    });
 
     const body = await getRooms(app);
     assert.deepEqual(

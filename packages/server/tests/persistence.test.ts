@@ -38,6 +38,16 @@ test('migrate：十张逻辑表全部创建', () => {
 /** 从迁移表派生期望版本号：新增迁移时不必再改断言 */
 const ALL_VERSIONS = MIGRATIONS.map((m) => m.version);
 
+test('migrate：版本唯一且 v5 退役旧游戏先于 v6 增加准备状态', () => {
+  assert.deepEqual(ALL_VERSIONS, [...new Set(ALL_VERSIONS)].sort((a, b) => a - b));
+  const v5Index = MIGRATIONS.findIndex((migration) => migration.name === 'retire-removed-game-sessions');
+  const v6Index = MIGRATIONS.findIndex((migration) => migration.name === 'add-member-ready');
+  assert.ok(v5Index >= 0);
+  assert.ok(v6Index > v5Index);
+  assert.equal(MIGRATIONS[v5Index]?.version, 5);
+  assert.equal(MIGRATIONS[v6Index]?.version, 6);
+});
+
 test('migrate：重复执行幂等', () => {
   const db = openDb({ path: ':memory:' });
   const first = migrate(db);
@@ -62,6 +72,75 @@ test('migrate：v2 为历史房间回填默认游戏', () => {
     game_id: string | null;
   };
   assert.equal(room.game_id, 'undercover');
+  db.close();
+});
+
+test('migrate：v4 既有数据经 v5/v6 安全升级且重复执行幂等', () => {
+  const db = openDb({ path: ':memory:' });
+  assert.deepEqual(migrate(db, MIGRATIONS.slice(0, 4)), [1, 2, 3, 4]);
+  const now = Date.now();
+  db.prepare(
+    `INSERT INTO rooms (id, code, status, game_id, seq, created_at, updated_at)
+     VALUES ('removed-room', 'OLD01', 'IN_GAME', 'richman', 0, ?, ?)`,
+  ).run(now, now);
+  db.prepare(
+    `INSERT INTO room_members
+       (room_id, player_id, nickname, seat_role, seat, connection_status,
+        resume_token_hash, joined_at, is_bot, bot_kind)
+     VALUES ('removed-room', 'legacy-player', '旧玩家', 'player', 1, 'CONNECTED',
+             'hash', ?, 0, NULL)`,
+  ).run(now);
+  db.prepare(
+    `INSERT INTO game_sessions
+       (id, room_id, module_id, module_version, state_schema_version, status,
+        snapshot_json, seed, rng_state_json, created_at, updated_at)
+     VALUES ('removed-session', 'removed-room', 'richman', '1.0.0', 1, 'ACTIVE',
+             '{}', 'seed-active', '{}', ?, ?)`,
+  ).run(now, now);
+  db.prepare(
+    `INSERT INTO timers (session_id, timer_id, deadline_at, action_json, status)
+     VALUES ('removed-session', 'turn', ?, '{}', 'pending')`,
+  ).run(now + 1000);
+  db.prepare(
+    `INSERT INTO game_sessions
+       (id, room_id, module_id, module_version, state_schema_version, status,
+        snapshot_json, seed, rng_state_json, created_at, updated_at)
+     VALUES ('finished-session', 'removed-room', 'richman', '1.0.0', 1, 'FINISHED',
+             '{"winner":"p1"}', 'seed-finished', '{}', ?, ?)`,
+  ).run(now, now);
+  db.prepare(
+    `INSERT INTO game_results (id, session_id, module_id, result_json, created_at)
+     VALUES ('finished-result', 'finished-session', 'richman', '{"winner":"p1"}', ?)`,
+  ).run(now);
+
+  assert.deepEqual(migrate(db), [5, 6]);
+  assert.deepEqual(migrate(db), []);
+  assert.equal(
+    (db.prepare("SELECT status FROM rooms WHERE id = 'removed-room'").get() as { status: string }).status,
+    'CLOSED',
+  );
+  assert.equal(
+    (db.prepare("SELECT status FROM game_sessions WHERE id = 'removed-session'").get() as { status: string }).status,
+    'ABORTED',
+  );
+  assert.equal(
+    (db.prepare("SELECT status FROM timers WHERE session_id = 'removed-session'").get() as { status: string }).status,
+    'cancelled',
+  );
+  assert.equal(
+    (db.prepare("SELECT status FROM game_sessions WHERE id = 'finished-session'").get() as { status: string }).status,
+    'FINISHED',
+  );
+  assert.equal(
+    (db.prepare("SELECT result_json FROM game_results WHERE id = 'finished-result'").get() as { result_json: string }).result_json,
+    '{"winner":"p1"}',
+  );
+  const member = db
+    .prepare("SELECT nickname, is_bot, ready FROM room_members WHERE player_id = 'legacy-player'")
+    .get() as { nickname: string; is_bot: number; ready: number };
+  assert.equal(member.nickname, '旧玩家');
+  assert.equal(member.is_bot, 0);
+  assert.equal(member.ready, 0);
   db.close();
 });
 

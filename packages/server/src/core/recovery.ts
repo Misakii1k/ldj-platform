@@ -69,25 +69,48 @@ function abortSession(db: Db, session: SessionRow, reason: string, now: number):
  * 校验单个会话是否可恢复：模块已注册 + stateSchemaVersion 匹配（或可迁移）+ 快照可解析。
  * 返回 null 表示可恢复；返回失败原因文案表示不可恢复。
  */
-function validateSession(session: SessionRow): string | null {
+interface SessionValidation {
+  failureReason: string | null;
+  migratedSnapshot: unknown | null;
+  migratedSchemaVersion: number | null;
+}
+
+function validateSession(session: SessionRow): SessionValidation {
   const module = getGameModule(session.module_id);
-  if (!module) return REASON_MODULE_MISSING;
+  if (!module) {
+    return {
+      failureReason: REASON_MODULE_MISSING,
+      migratedSnapshot: null,
+      migratedSchemaVersion: null,
+    };
+  }
 
   const schemaMatch = module.manifest.stateSchemaVersion === session.state_schema_version;
   if (!schemaMatch && typeof module.migrateSnapshot !== 'function') {
-    return REASON_SCHEMA_MISMATCH;
+    return {
+      failureReason: REASON_SCHEMA_MISMATCH,
+      migratedSnapshot: null,
+      migratedSchemaVersion: null,
+    };
   }
 
   try {
     const parsed = JSON.parse(session.snapshot_json);
     if (!schemaMatch) {
-      // 有 migrateSnapshot：尝试迁移，失败则视为损坏
-      module.migrateSnapshot!(session.state_schema_version, parsed);
+      return {
+        failureReason: null,
+        migratedSnapshot: module.migrateSnapshot!(session.state_schema_version, parsed),
+        migratedSchemaVersion: module.manifest.stateSchemaVersion,
+      };
     }
   } catch {
-    return REASON_SNAPSHOT_CORRUPT;
+    return {
+      failureReason: REASON_SNAPSHOT_CORRUPT,
+      migratedSnapshot: null,
+      migratedSchemaVersion: null,
+    };
   }
-  return null;
+  return { failureReason: null, migratedSnapshot: null, migratedSchemaVersion: null };
 }
 
 /**
@@ -132,7 +155,8 @@ export function runStartupRecovery(db: Db, logger: Logger): RecoverySummary {
   for (const session of sessions) {
     summary.roomsProcessed += 1;
     const now = Date.now();
-    const failureReason = validateSession(session);
+    const validation = validateSession(session);
+    const { failureReason } = validation;
 
     if (failureReason !== null) {
       withTransaction(db, () => abortSession(db, session, failureReason, now));
@@ -148,6 +172,24 @@ export function runStartupRecovery(db: Db, logger: Logger): RecoverySummary {
               : 'snapshot_corrupt',
       });
       continue;
+    }
+
+    if (validation.migratedSnapshot !== null && validation.migratedSchemaVersion !== null) {
+      const snapshotJson = JSON.stringify(validation.migratedSnapshot);
+      withTransaction(db, () => {
+        db.prepare(
+          `UPDATE game_sessions
+           SET snapshot_json = ?, state_schema_version = ?, updated_at = ?
+           WHERE id = ?`,
+        ).run(snapshotJson, validation.migratedSchemaVersion, now, session.id);
+      });
+      session.snapshot_json = snapshotJson;
+      session.state_schema_version = validation.migratedSchemaVersion;
+      logger.info('recovery_session_migrated', {
+        sessionId: session.id,
+        roomId: session.room_id,
+        stateSchemaVersion: validation.migratedSchemaVersion,
+      });
     }
 
     // 校验通过：标记 RECOVERING（若已是 RECOVERING 则保持）

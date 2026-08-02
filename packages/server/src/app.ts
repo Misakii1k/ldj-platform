@@ -21,6 +21,25 @@ import type { ServerConfig } from './config.ts';
 
 export const SERVER_VERSION = '0.1.0-m1';
 
+const DYNAMIC_TEST_PORT_MIN = 10_000;
+const DYNAMIC_TEST_PORT_SPAN = 10_000;
+const DYNAMIC_TEST_PORT_RETRIES = 30;
+let dynamicTestPortCursor = DYNAMIC_TEST_PORT_MIN + (process.pid % DYNAMIC_TEST_PORT_SPAN);
+
+function nextDynamicTestPort(): number {
+  const port = dynamicTestPortCursor;
+  dynamicTestPortCursor += 1;
+  if (dynamicTestPortCursor >= DYNAMIC_TEST_PORT_MIN + DYNAMIC_TEST_PORT_SPAN) {
+    dynamicTestPortCursor = DYNAMIC_TEST_PORT_MIN;
+  }
+  return port;
+}
+
+function isListenRetryable(err: unknown): boolean {
+  const code = typeof err === 'object' && err !== null ? (err as { code?: unknown }).code : undefined;
+  return code === 'EADDRINUSE' || code === 'EACCES';
+}
+
 export interface App {
   db: Db;
   server: http.Server;
@@ -59,7 +78,9 @@ export function createApp(
   // 大模型客户端：配置来自「库优先、环境变量兜底」，没配 baseUrl 时 provider 内部为 null，
   // 此时 AI 玩家无法加入，已在房间里的 llm 机器人退化为规则策略（不会卡住对局）。
   // 用 provider 而不是裸客户端：设置面板改完要立即生效，不能要求重启。
-  const llm = new LlmProvider(resolveLlmConfig(db, config.llm), logger);
+  const llm = new LlmProvider(resolveLlmConfig(db, config.llm), logger, {
+    allowPrivateNetwork: config.allowPrivateLlmUpstream,
+  });
   if (llm.isAvailable()) {
     logger.info('llm_enabled', { model: llm.config().model });
   }
@@ -69,6 +90,17 @@ export function createApp(
     listOpenRooms: () => listOpenRoomSummaries(db),
     staticDir,
     readLlmSettings: () => getLlmSettingsView(db, config.llm),
+    readLlmConfig: () => {
+      const current = resolveLlmConfig(db, config.llm);
+      return {
+        provider: current.provider,
+        baseUrl: current.baseUrl,
+        apiKey: current.apiKey,
+        model: current.model,
+        thinkingDepth: current.thinkingDepth,
+        timeoutMs: current.timeoutMs,
+      };
+    },
     writeLlmSettings: (patch) => {
       // 先落库拿到合并后的配置，再换掉客户端 —— 顺序反了会在校验失败时留下脏客户端
       const next = updateLlmSettings(db, patch, config.llm);
@@ -76,6 +108,8 @@ export function createApp(
       return getLlmSettingsView(db, config.llm);
     },
     adminToken: config.adminToken,
+    allowedOrigins: config.allowedOrigins,
+    allowPrivateLlmUpstream: config.allowPrivateLlmUpstream,
   });
   // ws 与 timerRunner 互相引用：ts 变更后 ws 通知 runner 对表，runner 到期后经 ws 广播
   // （闭包延迟求值：onTimersChanged 仅在对局事件后触发，彼时 timerRunner 已初始化）
@@ -135,8 +169,24 @@ export function createApp(
     port: () => (server.address() as AddressInfo).port,
     listen: () =>
       new Promise<void>((resolvePromise, reject) => {
-        server.once('error', reject);
-        server.listen(config.port, config.host, () => resolvePromise());
+        const listenOnPort = (port: number, attempt: number): void => {
+          const onError = (err: Error): void => {
+            server.off('listening', onListening);
+            if (config.port === 0 && attempt < DYNAMIC_TEST_PORT_RETRIES && isListenRetryable(err)) {
+              listenOnPort(nextDynamicTestPort(), attempt + 1);
+              return;
+            }
+            reject(err);
+          };
+          const onListening = (): void => {
+            server.off('error', onError);
+            resolvePromise();
+          };
+          server.once('error', onError);
+          server.once('listening', onListening);
+          server.listen(port, config.host);
+        };
+        listenOnPort(config.port === 0 ? nextDynamicTestPort() : config.port, 0);
       }),
     shutdown: async () => {
       if (shutdownStarted) return;

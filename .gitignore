@@ -12,7 +12,25 @@ data/*.db-shm
 # UI 调试截图
 /*.png
 
+# 本地开发工具与会话元数据（保留在磁盘，不入库）
+/.codebuddy/
+/.playwright-cli/
+/.superpowers/
+/.zcode/
+
+# 本地数据库备份（保留在磁盘，不入库）
+/data/backups/
+
+# 尚未接入产品的头像候选资产
+/packages/client/public/assets/avatars/
+
+# 未完成的本地占位计划（正式规格与执行计划仍入库）
+/docs/superpowers/plans/2026-08-01-ai-engine-settings.md
+
 # PoC 运行产物
 poc/m0/poc.db*
 poc/m0/poc.backup.db
 poc/m0/poc.vacuum.db
+research/quarantined/**/dist/
+research/quarantined/**/generated/
+research/quarantined/**/*.zip

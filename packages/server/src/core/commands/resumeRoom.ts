@@ -58,7 +58,7 @@ export function applyResumeRoom(
   }
 
   db.prepare(
-    `UPDATE room_members SET connection_status = 'CONNECTED', reserved_until = NULL
+    `UPDATE room_members SET connection_status = 'CONNECTED', reserved_until = NULL, ready = 0
      WHERE room_id = ? AND player_id = ?`,
   ).run(roomId, payload.playerId);
   db.prepare('UPDATE rooms SET empty_since = NULL WHERE id = ?').run(roomId);

@@ -216,15 +216,16 @@ export function applyEnvelope(
       const payload = parseGameStatePayload(envelope.payload);
       if (!payload) return { state, effects };
       return {
-        state: { ...state, game: payload },
+        state: {
+          ...state,
+          game: payload,
+        },
         effects,
       };
     }
 
     case 'game_event': {
-      // MVP 不维护事件日志，仅更新 roomSeq（如有）
-      const next = applyRoomSeq(state, envelope, effects);
-      return { state: next, effects };
+      return { state: applyRoomSeq(state, envelope, effects), effects };
     }
 
     case 'session_replaced': {

@@ -7,28 +7,30 @@ import { useConnection } from '../connection/useConnection.ts';
 import { useToast } from '../shared-ui/ToastContext.tsx';
 import { describeError } from '../shared-ui/errors.ts';
 import {
-  DEFAULT_PLAYABLE_GAME_ID,
   getGameCatalogEntry,
   type RoomMemberView,
   type RoomSnapshotView,
 } from '@ldj/shared';
+import { GameSetupPanel } from '../game/tabletop/GameSetupPanel.tsx';
+import { buildModuleConfig, readRoomGameConfig, type SetupConfig } from '../game/tabletop/setupState.ts';
 
 function statusText(status: string): string {
   switch (status) {
-    case 'LOBBY': return '等待开始';
-    case 'IN_GAME': return '对局中';
-    case 'POST_GAME': return '已结束';
-    case 'CLOSED': return '已关闭';
+    case 'LOBBY': return '大厅筹备中';
+    case 'IN_GAME': return '激战进行中';
+    case 'POST_GAME': return '对局已结算';
+    case 'CLOSED': return '房间已解散';
     default: return status;
   }
 }
 
 function memberStatusBadge(m: RoomMemberView): { label: string; cls: string } {
   switch (m.connectionStatus) {
-    case 'CONNECTED': return { label: '在线', cls: 'online' };
-    case 'DISCONNECTED_RESERVED': return { label: '断线保留', cls: 'reserved' };
+    case 'CONNECTED':
+      return m.ready ? { label: '已就绪', cls: 'online ready' } : { label: '待准备', cls: 'online' };
+    case 'DISCONNECTED_RESERVED': return { label: '保留席位', cls: 'reserved' };
     case 'EXPIRED': return { label: '已过期', cls: 'expired' };
-    case 'KICKED': return { label: '已踢出', cls: 'kicked' };
+    case 'KICKED': return { label: '已移出', cls: 'kicked' };
     default: return { label: m.connectionStatus, cls: '' };
   }
 }
@@ -46,6 +48,26 @@ function formatTime(at: number): string {
   return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
 }
 
+/** 全员就绪时的自动开局倒计时横幅（服务端 5 秒后 auto_start） */
+function AutoStartBanner({ active }: { active: boolean }) {
+  const [left, setLeft] = useState(5);
+  useEffect(() => {
+    if (!active) {
+      setLeft(5);
+      return;
+    }
+    const id = setInterval(() => setLeft((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, [active]);
+  if (!active) return null;
+  return (
+    <div className="status-banner auto-start-banner" role="status">
+      <span className="auto-start-pulse" aria-hidden="true" />
+      全员就绪 · {left} 秒后自动开局…
+    </div>
+  );
+}
+
 export function RoomPage() {
   const { state, me, send, clearMe } = useConnection();
   const { showToast } = useToast();
@@ -56,6 +78,8 @@ export function RoomPage() {
   const [confirmClose, setConfirmClose] = useState(false);
   const chatBoxRef = useRef<HTMLDivElement | null>(null);
   const chatInputRef = useRef<HTMLInputElement | null>(null);
+  const roomCommandInFlightRef = useRef(false);
+  const [gameConfig, setGameConfig] = useState<SetupConfig>({});
 
   const synced = state.connState === 'synced';
   const isHost = me !== null && room !== null && room.members.some(
@@ -67,6 +91,13 @@ export function RoomPage() {
     (m) => m.seatRole === 'player' && m.connectionStatus === 'CONNECTED',
   ) ?? [];
 
+  const selectedGame = getGameCatalogEntry(room?.gameId);
+
+  useEffect(() => {
+    if (!selectedGame) return;
+    setGameConfig(readRoomGameConfig(selectedGame.setup, room?.config));
+  }, [room?.config, selectedGame]);
+
   // 聊天滚动到底
   useEffect(() => {
     const el = chatBoxRef.current;
@@ -74,7 +105,8 @@ export function RoomPage() {
   }, [state.chat.length]);
 
   async function doRoomCommand(payload: unknown, label: string) {
-    if (busy) return;
+    if (roomCommandInFlightRef.current) return;
+    roomCommandInFlightRef.current = true;
     setBusy(true);
     setActionError(null);
     try {
@@ -82,12 +114,24 @@ export function RoomPage() {
     } catch (err) {
       setActionError(`${label}失败：${describeError(err)}`);
     } finally {
+      roomCommandInFlightRef.current = false;
       setBusy(false);
     }
   }
 
   function handleStartGame() {
-    void doRoomCommand({ command: 'start_game' }, '开始游戏');
+    if (!selectedGame) return;
+    void doRoomCommand({ command: 'start_game', gameConfig: buildModuleConfig(selectedGame.setup, gameConfig) }, '开始游戏');
+  }
+
+  function handleGameConfigChange(next: SetupConfig) {
+    if (!selectedGame) return;
+    setGameConfig(next);
+    void doRoomCommand({ command: 'update_config', config: { gameConfig: buildModuleConfig(selectedGame.setup, next) } }, '保存规则');
+  }
+
+  function handleToggleReady(ready: boolean) {
+    void doRoomCommand({ command: 'ready', ready: !ready }, ready ? '取消准备' : '准备');
   }
 
   function handleKick(playerId: string) {
@@ -155,7 +199,7 @@ export function RoomPage() {
     }
   }
 
-  if (room === null) {
+  if (room === null || selectedGame === undefined) {
     return (
       <main className="room-page game-home-page">
         <div className="game-home-page__content room-layout">
@@ -167,18 +211,25 @@ export function RoomPage() {
     );
   }
 
-  const roomGame = getGameCatalogEntry(room.gameId ?? DEFAULT_PLAYABLE_GAME_ID)
-    ?? getGameCatalogEntry(DEFAULT_PLAYABLE_GAME_ID)!;
+  const roomGame = selectedGame;
   const minimumPlayersToStart = roomGame.minPlayers;
   const maximumPlayers = roomGame.maxPlayers;
+  const notReadyCount = onlinePlayers.filter((p) => !p.ready).length;
   const canStart =
     room.status === 'LOBBY' &&
     onlinePlayers.length >= minimumPlayersToStart &&
-    onlinePlayers.length <= maximumPlayers;
+    onlinePlayers.length <= maximumPlayers &&
+    notReadyCount === 0;
 
   const botCount = room.members.filter((m) => m.botKind !== null).length;
   // 席位满了就不能再加：服务端也会拒，这里提前禁用避免无效往返
   const seatsFull = onlinePlayers.length >= maximumPlayers;
+  const autoStartActive =
+    (room.status === 'LOBBY' || room.status === 'POST_GAME') &&
+    onlinePlayers.length >= minimumPlayersToStart &&
+    onlinePlayers.length <= maximumPlayers &&
+    onlinePlayers.length > 0 &&
+    notReadyCount === 0;
 
   const sortedMembers = [...room.members].sort((a, b) => {
     if (a.seatRole !== b.seatRole) return a.seatRole === 'player' ? -1 : 1;
@@ -190,11 +241,11 @@ export function RoomPage() {
       <div className="game-home-page__content room-layout">
         <header className="home-header room-header">
           <div className="home-brand">
-            <span className="home-brand__tile" aria-hidden="true">卧</span>
-            <span>谁是卧底 · 房间</span>
+            <span className="home-brand__tile" aria-hidden="true">{roomGame.displayName.slice(0, 1)}</span>
+            <span>{roomGame.displayName} · 房间大厅</span>
           </div>
           <div className="home-header__actions">
-            <span className="home-local-badge">本地联机</span>
+            <span className="home-local-badge">局域网极速联机</span>
             <span className="room-status">{statusText(room.status)}</span>
           </div>
         </header>
@@ -203,10 +254,10 @@ export function RoomPage() {
           <div className="room-hero__panel">
             <p className="home-hero__eyebrow room-hero__eyebrow">READY WHEN YOU ARE</p>
             <h1 id="room-title" className="room-hero__title">
-              等待你的<span>队友</span>
+              等待好友<span>入座</span>
             </h1>
             <p className="room-hero__description">
-              本局游戏：{roomGame.displayName} · {minimumPlayersToStart}–{maximumPlayers} 人。把房间码分享给朋友，准备好后就开始这一局推理。
+              本局游戏：{roomGame.displayName} · 适合 {minimumPlayersToStart}–{maximumPlayers} 人。将房间码分享给身边的朋友，准备就绪后即可开启本局对局。
             </p>
           </div>
 
@@ -227,6 +278,13 @@ export function RoomPage() {
         </section>
 
         {actionError && <div className="error-banner room-sheet__error" role="alert">{actionError}</div>}
+
+        <GameSetupPanel
+          setup={roomGame.setup}
+          value={gameConfig}
+          disabled={!isHost || busy || !synced || room.status !== 'LOBBY'}
+          onChange={handleGameConfigChange}
+        />
 
         <div className="room-content-grid">
           <section className="game-card game-card--berry room-players-panel members-section room-panel">
@@ -252,6 +310,20 @@ export function RoomPage() {
                       {m.botKind === 'rule' && <span className="bot-tag" title="随机合法出牌">机器人</span>}
                     </span>
                     <span className={'member-status ' + badge.cls}>{badge.label}</span>
+                    {/* 我自己的准备/取消准备（非机器人；机器人自动就绪） */}
+                    {isMe && m.botKind === null && (room.status === 'LOBBY' || room.status === 'POST_GAME') && (
+                      <span className="member-actions">
+                        <button
+                          type="button"
+                          className="mini-btn"
+                          aria-label={m.ready ? '取消准备' : '准备'}
+                          onClick={() => handleToggleReady(m.ready)}
+                          disabled={busy || !synced}
+                        >
+                          {m.ready ? '取消准备' : '准备'}
+                        </button>
+                      </span>
+                    )}
                     {/* 机器人不能当房主、也不叫"踢出"，只给一个移除入口 */}
                     {isHost && m.botKind !== null && room.status === 'LOBBY' && (
                       <span className="member-actions">
@@ -298,24 +370,25 @@ export function RoomPage() {
             <span className="home-join-callout__icon" aria-hidden="true">♟</span>
             <div>
               <p className="home-hero__eyebrow room-console__eyebrow">HOST CONSOLE</p>
-              <h2 id="room-actions-title" className="room-console__title">{room.status === 'LOBBY' ? '准备开局' : '当前状态：' + statusText(room.status)}</h2>
+              <h2 id="room-actions-title" className="room-console__title">{room.status === 'LOBBY' ? '对局准备中' : '当前状态：' + statusText(room.status)}</h2>
             </div>
           </div>
           <div className="action-bar room-console__actions">
             <button type="button" className="leave-btn" onClick={handleLeaveRoom} disabled={busy}>离开房间</button>
             {room.status === 'POST_GAME' && isHost && <button type="button" className="game-card__action room-inline-btn" onClick={handleReturnToLobby} disabled={busy || !synced}>返回大厅</button>}
-            {isHost && room.status === 'LOBBY' && <button type="button" className="game-card__action room-inline-btn" onClick={handleStartGame} disabled={busy || !synced || !canStart} title={!canStart ? '需要 ' + minimumPlayersToStart + '–' + maximumPlayers + ' 名在线玩家' : ''}>开始游戏</button>}
-            {isHost && room.status === 'LOBBY' && <button type="button" className="game-card__action room-inline-btn" onClick={() => handleAddBot('rule')} disabled={busy || !synced || seatsFull} title={seatsFull ? '席位已满' : '随机合法出牌，用来凑人数试玩'}>加机器人</button>}
-            {isHost && room.status === 'LOBBY' && state.llmAvailable && <button type="button" className="game-card__action room-inline-btn" onClick={() => handleAddBot('llm')} disabled={busy || !synced || seatsFull} title={seatsFull ? '席位已满' : '由大模型决策，失败自动退回随机出牌'}>加 AI 玩家</button>}
-            {isHost && room.status === 'LOBBY' && botCount > 0 && <button type="button" className="game-card__action room-inline-btn" onClick={() => handleRemoveBot()} disabled={busy || !synced} title="移除最后加入的机器人">减机器人（{botCount}）</button>}
+            {isHost && room.status === 'LOBBY' && <button type="button" className="game-card__action room-inline-btn" onClick={handleStartGame} disabled={busy || !synced || !canStart} title={!canStart ? '需要 ' + minimumPlayersToStart + '–' + maximumPlayers + ' 名在线玩家' + (notReadyCount > 0 ? '，还有 ' + notReadyCount + ' 人未准备' : '') : ''}>开始游戏</button>}
+            {isHost && room.status === 'LOBBY' && roomGame.botSupport !== 'none' && <button type="button" className="game-card__action room-inline-btn" onClick={() => handleAddBot('rule')} disabled={busy || !synced || seatsFull} title={seatsFull ? '席位已满' : '随机合法出牌规则机器人，适合凑人数试玩'}>添加规则机器人</button>}
+            {isHost && room.status === 'LOBBY' && roomGame.botSupport === 'rule_and_llm' && state.llmAvailable && <button type="button" className="game-card__action room-inline-btn" onClick={() => handleAddBot('llm')} disabled={busy || !synced || seatsFull} title={seatsFull ? '席位已满' : '由 AI 大模型智能决策，超时或异常自动降级为规则策略'}>添加 AI 大模型玩家</button>}
+            {isHost && room.status === 'LOBBY' && roomGame.botSupport !== 'none' && botCount > 0 && <button type="button" className="game-card__action room-inline-btn" onClick={() => handleRemoveBot()} disabled={busy || !synced} title="移除最后加入的机器人">移除机器人（{botCount}）</button>}
             {isHost && room.status === 'IN_GAME' && <button type="button" className="danger-btn" onClick={() => { if (confirm('确定要终止本局吗？')) void doRoomCommand({ command: 'abort_game' }, '终止对局'); }} disabled={busy || !synced}>终止对局</button>}
-            {isHost && !confirmClose && room.status !== 'CLOSED' && <button type="button" className="danger-btn" onClick={() => setConfirmClose(true)} disabled={busy || !synced}>关闭房间</button>}
-            {confirmClose && <div className="confirm-row"><span>确认关闭？</span><button type="button" className="danger-btn" onClick={handleCloseRoom} disabled={busy}>确认关闭</button><button type="button" onClick={() => setConfirmClose(false)} disabled={busy}>取消</button></div>}
+            {isHost && !confirmClose && room.status !== 'CLOSED' && <button type="button" className="danger-btn" onClick={() => setConfirmClose(true)} disabled={busy || !synced}>解散房间</button>}
+            {confirmClose && <div className="confirm-row"><span>确认解散？</span><button type="button" className="danger-btn" onClick={handleCloseRoom} disabled={busy}>确认解散</button><button type="button" onClick={() => setConfirmClose(false)} disabled={busy}>取消</button></div>}
           </div>
         </section>
 
         {state.connState === 'server_recovering' && <div className="status-banner recovering">正在重新同步房间状态…</div>}
         {state.connState === 'reconnecting' && <div className="status-banner reconnecting">连接断开，正在重连…</div>}
+        <AutoStartBanner active={autoStartActive && synced} />
       </div>
     </main>
   );

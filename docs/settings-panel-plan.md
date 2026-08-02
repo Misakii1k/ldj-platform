@@ -1,6 +1,6 @@
 # 运行期设置面板 + AI 大模型玩家接入：实施计划
 
-状态：**服务端已完成，客户端待做**（更新于 2026-07-29）
+状态：**全栈已完成**（更新于 2026-07-30）
 关联：M5 子任务 5.5
 
 ## 进度一览
@@ -16,13 +16,13 @@
 | — | `ws.ts` `llmAvailable` 改动态 | ✅ `9da02ab` |
 | — | `botRunner.ts` `llm` 改动态 | ✅ `9da02ab` |
 | — | `app.ts` 装配 `LlmProvider` | ✅ `9da02ab` |
-| 1 | 客户端 `SettingsSheet.tsx` | ⬜ 待做 |
-| 2 | `GameHomePage` 入口按钮 | ⬜ 待做 |
-| 3 | `settings.test.ts` 校验分支 | ⬜ 待做 |
-| 4 | HTTP 端点测试 | ⬜ 待做 |
-| 5 | `npm run ci` + `npm run build` | ⬜ 待做（仅 typecheck 跑过） |
-| 6 | 版本 0.3.0 → 0.4.0 并打包 | ⬜ 待做 |
-| 7 | README 环境变量章节 | ⬜ 待做 |
+| 1 | 客户端 `SettingsSheet.tsx` | ✅ 已完成 |
+| 2 | `GameHomePage` 入口按钮（`AI 设置`） | ✅ 已完成 |
+| 3 | `settings.test.ts` 校验分支 | ✅ 已完成 |
+| 4 | HTTP 端点测试 (`gatewaySettings.test.ts`) | ✅ 已完成 |
+| 5 | `npm run typecheck` + `npm run build` | ✅ 已完成 |
+| 6 | 版本 0.4.0 并打包 | ✅ 已完成 |
+| 7 | README 环境变量与 AI 说明 | ✅ 已完成 |
 
 ## 背景
 
@@ -49,7 +49,7 @@
 | 传输通道 | HTTP，不走 WS | 设置入口在首页，此时还没有房间连接 |
 | 写入鉴权 | 设了 `ADMIN_TOKEN` 就校验它；没设则只放行本机（127.0.0.1/::1） | 局域网里谁都能访问这个端点，改掉端点或塞进别人的密钥花的是服主的钱。默认「只有开服务器那台机器能改」，想在手机上改就设口令 |
 | 读取鉴权 | 不设限 | 返回内容不含密钥原文 |
-| 请求体上限 | 1 KiB | 设置对象很小，超了直接拒绝而不是攒内存 |
+| 请求体上限 | 16 KiB | 设置对象含多个 API 预设，超了直接拒绝而不是攒内存 |
 
 ### 为什么 `llmAvailable` 与 `botRunner.llm` 都得是函数
 
@@ -85,7 +85,7 @@
 
 - `gateway/http.ts` —— `GET /api/settings/llm`（含 HEAD）、`PUT /api/settings/llm`；路由放在
   「非 GET/HEAD 一律 405」关卡**之前**，否则 PUT 进不来。新增 `isLocalAddress`、
-  `parseLlmSettingsPatch`（白名单键，区分「没传」与「传了 null」）、`readJsonBody`（1 KiB 上限）
+  `parseLlmSettingsPatch`（白名单键，区分「没传」与「传了 null」）、`readJsonBody`（16 KiB 上限）
 - `config.ts` —— `ServerConfig.adminToken` ← `ADMIN_TOKEN`
 - `gateway/ws.ts` —— `llmAvailable?: () => boolean`，新增 `#llmAvailable()` 私有方法，
   welcome payload 与 `applyRoomCommand` 两处调用点改为动态读

@@ -3,6 +3,34 @@ import assert from 'node:assert/strict';
 import { createLogger, redact } from '../src/boot/logger.ts';
 import { RateLimiter } from '../src/gateway/rateLimit.ts';
 import { isOriginAllowed } from '../src/gateway/ws.ts';
+import { loadConfig } from '../src/config.ts';
+
+test('loadConfig 接受 max 并拒绝非法 LLM 配置', () => {
+  assert.equal(loadConfig({ LLM_THINKING_DEPTH: 'max' }).llm.thinkingDepth, 'max');
+  assert.equal(loadConfig({ LLM_THINKING_DEPTH: '8192' }).llm.thinkingDepth, 'max');
+  assert.throws(() => loadConfig({ LLM_THINKING_DEPTH: 'deep' }), /思考深度/);
+  assert.throws(() => loadConfig({ LLM_PROVIDER: 'other' }), /服务商/);
+});
+
+test('loadConfig 规范化 Base URL 并拒绝凭据、query 和 hash', () => {
+  assert.equal(loadConfig({ LLM_BASE_URL: ' https://api.example.com/proxy/v1/// ' }).llm.baseUrl, 'https://api.example.com/proxy/v1');
+  for (const baseUrl of [
+    'https://user:pass@api.example.com/v1',
+    'https://api.example.com/v1?token=secret',
+    'https://api.example.com/v1#fragment',
+  ]) {
+    assert.throws(() => loadConfig({ LLM_BASE_URL: baseUrl }), /Base URL/);
+  }
+});
+
+test('loadConfig 严格解析私网上游开关', () => {
+  assert.equal(loadConfig({}).allowPrivateLlmUpstream, false);
+  assert.equal(loadConfig({ LLM_ALLOW_PRIVATE_NETWORK: 'true' }).allowPrivateLlmUpstream, true);
+  assert.equal(loadConfig({ LLM_ALLOW_PRIVATE_NETWORK: 'false' }).allowPrivateLlmUpstream, false);
+  assert.throws(() => loadConfig({ LLM_ALLOW_PRIVATE_NETWORK: '1' }), /私网上游/);
+  assert.throws(() => loadConfig({ LLM_ALLOW_PRIVATE_NETWORK: 'TRUE' }), /私网上游/);
+  assert.throws(() => loadConfig({ LLM_ALLOW_PRIVATE_NETWORK: '' }), /私网上游/);
+});
 
 test('redact：敏感键脱敏（SEC-009）', () => {
   const input = {

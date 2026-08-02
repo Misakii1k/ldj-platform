@@ -1,11 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { openDb } from '../src/persistence/db.ts';
+import { openDb, type Db } from '../src/persistence/db.ts';
 import { migrate } from '../src/persistence/migrator.ts';
 import { RoomCommandExecutor, CommandError } from '../src/core/executor.ts';
-import { prepareCreateRoom, applyCreateRoom, type CreateRoomOutcome } from '../src/core/commands/createRoom.ts';
+import { prepareCreateRoom, applyCreateRoom } from '../src/core/commands/createRoom.ts';
 import { newRoomCode, hashRoomPassword, verifyRoomPassword, newResumeToken, hashResumeToken } from '../src/core/ids.ts';
 import { buildRoomSnapshot } from '../src/core/snapshot.ts';
+import { seedRoom } from './helpers/seedRoom.ts';
+import type { CreateRoomPayload } from '@ldj/shared';
 
 function setup() {
   const db = openDb({ path: ':memory:' });
@@ -13,82 +15,120 @@ function setup() {
   return { db, executor: new RoomCommandExecutor(db) };
 }
 
-async function createRoomViaExecutor(
-  executor: RoomCommandExecutor,
-  nickname = '房主',
-  requestId = 'req-create-1',
-) {
-  const { roomId } = prepareCreateRoom();
-  return executor.executeCreate({
-    roomId,
-    actorScope: 'conn:c1',
-    requestId,
-    handler: (tx) => applyCreateRoom(tx, roomId, { nickname }),
-  });
+function seedExecutorRoom(db: Db) {
+  const seeded = seedRoom(db);
+  return {
+    roomSeq: 1,
+    replayed: false,
+    outcome: {
+      roomId: seeded.roomId,
+      roomCode: seeded.roomCode,
+      playerId: seeded.hostId,
+      resumeToken: seeded.hostResumeToken,
+      snapshot: buildRoomSnapshot(db, seeded.roomId),
+    },
+  };
 }
 
-test('create_room 命令链：房间 + 房主成员 + seq=1 + 回执', async () => {
-  const { db, executor } = setup();
-  const result = await createRoomViaExecutor(executor);
-
-  assert.equal(result.roomSeq, 1);
-  assert.equal(result.replayed, false);
-  const o: CreateRoomOutcome = result.outcome;
-  assert.match(o.roomCode, /^[A-HJ-NP-Z2-9]{5}$/);
-  assert.equal(o.snapshot.status, 'LOBBY');
-  assert.equal(o.snapshot.seq, 1);
-  assert.equal(o.snapshot.members.length, 1);
-  assert.equal(o.snapshot.members[0]!.isHost, true);
-  assert.equal(o.snapshot.members[0]!.nickname, '房主');
-
-  // 快照白名单：不得携带凭证/密码哈希（SEC-003）
-  const json = JSON.stringify(o.snapshot);
-  assert.ok(!json.includes('resume_token_hash') && !json.includes('password'));
-
-  // 数据库落盘
-  const room = db.prepare('SELECT seq, status, host_player_id, game_id FROM rooms WHERE id = ?').get(o.roomId) as {
-    seq: number;
-    status: string;
-    host_player_id: string;
-    game_id: string | null;
-  };
-  assert.equal(room.seq, 1);
-  assert.equal(room.host_player_id, o.playerId);
-  assert.equal(room.game_id, 'undercover');
-  assert.equal(o.snapshot.gameId, 'undercover');
-
-  // 成员存的是 token 哈希而非原文
-  const member = db
-    .prepare('SELECT resume_token_hash FROM room_members WHERE room_id = ? AND player_id = ?')
-    .get(o.roomId, o.playerId) as { resume_token_hash: string };
-  assert.equal(member.resume_token_hash, hashResumeToken(o.resumeToken));
-  assert.notEqual(member.resume_token_hash, o.resumeToken);
-
-  // 回执已写入
-  const receipt = db
-    .prepare('SELECT room_seq FROM command_receipts WHERE room_id = ? AND request_id = ?')
-    .get(o.roomId, 'req-create-1') as { room_seq: number };
-  assert.equal(receipt.room_seq, 1);
-  db.close();
-});
-
-test('create_room：即将推出的游戏不能创建房间', async () => {
+test('create_room 默认生产路径：无已批准游戏时明确拒绝且不落脏数据', async () => {
   const { db, executor } = setup();
   try {
     const { roomId } = prepareCreateRoom();
     await assert.rejects(
       executor.executeCreate({
         roomId,
-        actorScope: 'conn:coming-soon',
-        requestId: 'req-coming-soon',
-        handler: (tx) => applyCreateRoom(tx, roomId, { nickname: '房主', gameId: 'avalon' }),
+        actorScope: 'conn:c1',
+        requestId: 'req-create-1',
+        handler: (tx) => applyCreateRoom(tx, roomId, { nickname: '房主' }),
       }),
-      (err: unknown) => {
-        assert.ok(err instanceof CommandError);
-        assert.equal(err.code, 'ACTION_NOT_ALLOWED');
+      (error: unknown) => {
+        assert.ok(error instanceof CommandError);
+        assert.equal(error.code, 'ACTION_NOT_ALLOWED');
+        assert.equal(error.message, '所选游戏暂未开放');
         return true;
       },
     );
+    const counts = db
+      .prepare(
+        `SELECT
+           (SELECT COUNT(*) FROM rooms) AS rooms,
+           (SELECT COUNT(*) FROM room_members) AS members,
+           (SELECT COUNT(*) FROM command_receipts) AS receipts`,
+      )
+      .get() as { rooms: number; members: number; receipts: number };
+    assert.equal(counts.rooms, 0);
+    assert.equal(counts.members, 0);
+    assert.equal(counts.receipts, 0);
+  } finally {
+    db.close();
+  }
+});
+
+test('历史房间夹具：合法 room/host/member 可供真实 executor 与快照读取', () => {
+  const { db } = setup();
+  try {
+    const result = seedExecutorRoom(db);
+    assert.equal(result.roomSeq, 1);
+    assert.equal(result.replayed, false);
+    const o = result.outcome;
+    assert.match(o.roomCode, /^[A-HJ-NP-Z2-9]{5}$/);
+    assert.equal(o.snapshot.status, 'LOBBY');
+    assert.equal(o.snapshot.seq, 1);
+    assert.equal(o.snapshot.members.length, 1);
+    assert.equal(o.snapshot.members[0]!.isHost, true);
+    assert.equal(o.snapshot.members[0]!.nickname, '房主');
+
+    // 快照白名单：不得携带凭证/密码哈希（SEC-003）
+    const json = JSON.stringify(o.snapshot);
+    assert.ok(!json.includes('resume_token_hash') && !json.includes('password'));
+
+    const room = db.prepare('SELECT seq, status, host_player_id, game_id FROM rooms WHERE id = ?').get(o.roomId) as {
+      seq: number;
+      status: string;
+      host_player_id: string;
+      game_id: string | null;
+    };
+    assert.equal(room.seq, 1);
+    assert.equal(room.status, 'LOBBY');
+    assert.equal(room.host_player_id, o.playerId);
+    assert.equal(room.game_id, 'undercover');
+    assert.equal(o.snapshot.gameId, 'undercover');
+
+    const member = db
+      .prepare('SELECT resume_token_hash, connection_status, ready FROM room_members WHERE room_id = ? AND player_id = ?')
+      .get(o.roomId, o.playerId) as { resume_token_hash: string; connection_status: string; ready: number };
+    assert.equal(member.resume_token_hash, hashResumeToken(o.resumeToken));
+    assert.notEqual(member.resume_token_hash, o.resumeToken);
+    assert.equal(member.connection_status, 'CONNECTED');
+    assert.equal(member.ready, 0);
+  } finally {
+    db.close();
+  }
+});
+
+test('create_room：未开放或未定的游戏不能创建房间', async () => {
+  const { db, executor } = setup();
+  try {
+    const { roomId } = prepareCreateRoom();
+    for (const [requestId, gameId] of [
+      ['req-coming-soon', 'unreleased_game'],
+      ['req-null-game', null],
+    ] as const) {
+      const invalidGamePayload: unknown = { nickname: '房主', gameId };
+      await assert.rejects(
+        executor.executeCreate({
+          roomId,
+          actorScope: `conn:${requestId}`,
+          requestId,
+          handler: (tx) => applyCreateRoom(tx, roomId, invalidGamePayload as CreateRoomPayload),
+        }),
+        (err: unknown) => {
+          assert.ok(err instanceof CommandError);
+          assert.equal(err.code, 'ACTION_NOT_ALLOWED');
+          return true;
+        },
+      );
+    }
     const count = db.prepare('SELECT COUNT(*) AS count FROM rooms').get() as { count: number };
     assert.equal(count.count, 0);
   } finally {
@@ -96,9 +136,34 @@ test('create_room：即将推出的游戏不能创建房间', async () => {
   }
 });
 
+test('D1：证据未批准的游戏不能通过默认生产路径新建房间', async () => {
+  const { db, executor } = setup();
+  try {
+    for (const gameId of ['undercover', 'uno', 'landlord', 'werewolf'] as const) {
+      const { roomId } = prepareCreateRoom();
+      await assert.rejects(
+        executor.executeCreate({
+          roomId,
+          actorScope: `conn:${gameId}`,
+          requestId: `req-d1-${gameId}`,
+          handler: (tx) => applyCreateRoom(tx, roomId, { nickname: '房主', gameId }),
+        }),
+        (error: unknown) => {
+          assert.ok(error instanceof CommandError);
+          assert.equal(error.code, 'ACTION_NOT_ALLOWED');
+          assert.equal(error.message, '所选游戏暂未开放');
+          return true;
+        },
+      );
+    }
+  } finally {
+    db.close();
+  }
+});
+
 test('executeOnRoom seq increments and idempotent receipt returns first result', async () => {
   const { db, executor } = setup();
-  const created = await createRoomViaExecutor(executor);
+  const created = seedExecutorRoom(db);
   const roomId = created.outcome.roomId;
 
   let executions = 0;
@@ -138,7 +203,7 @@ test('executeOnRoom seq increments and idempotent receipt returns first result',
 
 test('executeOnRoom：handler 抛错时事务回滚，seq 不变', async () => {
   const { db, executor } = setup();
-  const created = await createRoomViaExecutor(executor);
+  const created = seedExecutorRoom(db);
   const roomId = created.outcome.roomId;
 
   await assert.rejects(
@@ -206,8 +271,8 @@ test('resumeToken：高熵且哈希稳定', () => {
 });
 
 test('buildRoomSnapshot：被踢成员不出现在快照中', async () => {
-  const { db, executor } = setup();
-  const created = await createRoomViaExecutor(executor);
+  const { db } = setup();
+  const created = seedExecutorRoom(db);
   const roomId = created.outcome.roomId;
   db.prepare(
     `INSERT INTO room_members (room_id, player_id, nickname, seat_role, seat, connection_status, resume_token_hash, joined_at)

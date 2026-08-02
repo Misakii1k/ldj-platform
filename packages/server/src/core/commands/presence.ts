@@ -104,7 +104,7 @@ export function applyMarkDisconnected(
   const reservedUntil = now + config.reservationMinutes * 60_000;
 
   db.prepare(
-    `UPDATE room_members SET connection_status = 'DISCONNECTED_RESERVED', reserved_until = ?
+    `UPDATE room_members SET connection_status = 'DISCONNECTED_RESERVED', reserved_until = ?, ready = 0
      WHERE room_id = ? AND player_id = ?`,
   ).run(reservedUntil, roomId, playerId);
 

@@ -15,7 +15,8 @@ function testConfig(): ServerConfig {
     publicBaseUrl: null,
     logLevel: 'error',
     allowedOrigins: ['http://allowed.example'],
-    llm: { baseUrl: null, apiKey: null, model: 'test-model', timeoutMs: 5000 },
+    allowPrivateLlmUpstream: false,
+    llm: { provider: 'openai', baseUrl: null, apiKey: null, model: 'test-model', thinkingDepth: 'off', timeoutMs: 5000 },
     adminToken: null,
   };
 }
@@ -120,7 +121,7 @@ test('WS Origin 校验：跨源被拒（403），白名单与同源放行', asyn
   }
 });
 
-test('WS create_room 全链路：ack（含 resumeToken）+ room_snapshot 广播', async () => {
+test('WS create_room：无已批准游戏时明确拒绝且不创建房间', async () => {
   const app = await startApp();
   try {
     const { socket } = await connect(app);
@@ -130,21 +131,14 @@ test('WS create_room 全链路：ack（含 resumeToken）+ room_snapshot 广播'
       requestId: 'req-gw-1',
       payload: { nickname: '房主' },
     });
-    const messages = await sendAndCollect(socket, envelope, 2);
+    const [error] = await sendAndCollect(socket, envelope, 1);
 
-    const ack = messages.find((m) => m.type === 'ack');
-    assert.ok(ack, '应收到 ack');
-    assert.equal(ack.requestId, 'req-gw-1');
-    assert.equal(ack.roomSeq, 1);
-    assert.match(String(ack.payload.roomCode), /^[A-HJ-NP-Z2-9]{5}$/);
-    assert.ok(String(ack.payload.resumeToken).length >= 40);
-
-    const snapshot = messages.find((m) => m.type === 'room_snapshot');
-    assert.ok(snapshot, '应收到 room_snapshot 广播');
-    assert.equal(snapshot.payload.status, 'LOBBY');
-    assert.equal((snapshot.payload.members as unknown[]).length, 1);
-    // 广播快照不得携带凭证（SEC-003）
-    assert.ok(!JSON.stringify(snapshot.payload).includes('resumeToken'));
+    assert.equal(error!.type, 'error');
+    assert.equal(error!.requestId, 'req-gw-1');
+    assert.equal(error!.payload.code, 'ACTION_NOT_ALLOWED');
+    assert.equal(error!.payload.message, '所选游戏暂未开放');
+    const count = app.db.prepare('SELECT COUNT(*) AS count FROM rooms').get() as { count: number };
+    assert.equal(count.count, 0);
     socket.close();
   } finally {
     await app.shutdown();

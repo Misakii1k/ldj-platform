@@ -11,6 +11,7 @@ import { parseRoomConfig } from '../roomConfig.ts';
 import { buildRoomSnapshot } from '../snapshot.ts';
 import { markEmptyIfNoActive } from './presence.ts';
 import { applyAddBot, applyRemoveBot } from './bots.ts';
+import { applyReadyRoom } from './readyRoom.ts';
 import { startGame, abortGame, returnToLobby, type StartGameOutcome } from '../game/session.ts';
 
 export interface RoomCommandOutcome {
@@ -69,7 +70,12 @@ export function applyRoomCommand(
     .get(roomId) as RoomRow | undefined;
   if (!room) throw new CommandError('ROOM_NOT_FOUND');
 
-  // 房主权限校验（FR-HOST-001/004）
+  // 房主权限校验（FR-HOST-001/004）；ready 是全员命令，不需要房主身份
+  if (payload.command === 'ready') {
+    const readyOutcome = applyReadyRoom(tx, roomId, actorPlayerId, payload.ready);
+    writeAudit(tx, roomId, actorPlayerId, `ready:${payload.ready ? 'yes' : 'no'}`, 'ok');
+    return { command: payload.command, snapshot: readyOutcome.snapshot };
+  }
   if (room.host_player_id !== actorPlayerId) {
     throw new CommandError('NOT_AUTHORIZED');
   }
@@ -127,6 +133,8 @@ export function applyRoomCommand(
     case 'update_config': {
       const merged = { ...parseRoomConfig(room.config_json), ...payload.config };
       db.prepare('UPDATE rooms SET config_json = ? WHERE id = ?').run(JSON.stringify(merged), roomId);
+      // 配置变更影响下一局：重置全员准备状态
+      db.prepare('UPDATE room_members SET ready = 0 WHERE room_id = ?').run(roomId);
       writeAudit(tx, roomId, actorPlayerId, 'update_config', 'ok');
       return { command: payload.command, snapshot: buildRoomSnapshot(db, roomId) };
     }

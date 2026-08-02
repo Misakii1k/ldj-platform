@@ -1,19 +1,15 @@
 /**
  * 大模型决策客户端（AI 玩家）。
  *
- * 三条设计原则：
- * 1. 模型只做选择题。候选动作由游戏模块枚举，模型回一个编号；
- *    因此模型再怎么胡说也产不出非法动作，最坏是选了个笨招。
- * 2. 失败必须兜住。超时、网络错误、返回垃圾——一律返回 null，
- *    由调用方回落到规则策略，绝不让一次 API 抖动把整局卡死。
- * 3. 不把秘密写进日志。局势描述含身份与手牌，只记编号与耗时。
- *
- * 走 OpenAI Chat Completions 兼容协议，本地 Ollama / vLLM 与各家云 API
- * 都能直连，不引第三方 SDK。
+ * 走 OpenAI Chat Completions 兼容协议或 Anthropic Messages 协议，
+ * 支持选择思考深度 (Reasoning Effort / Thinking Budget)，
+ * 本地 Ollama / vLLM、DeepSeek、Anthropic Claude 与各家云 API 均可直连。
  */
 import type { BotActionOption, BotPromptContext } from '@ldj/shared';
 import type { LlmConfig } from '../../config.ts';
 import type { Logger } from '../../boot/logger.ts';
+import { buildInferenceRequest, buildInferenceUrl, extractText } from '../llmProtocol.ts';
+import { readLimitedJson, safeFetch, type UpstreamAddressPolicy } from '../safeUpstream.ts';
 
 /** 已启用的 LLM 配置：baseUrl 非空才能构造客户端 */
 export type ActiveLlmConfig = LlmConfig & { baseUrl: string };
@@ -52,7 +48,6 @@ function extractChoice<A>(
   options: readonly BotActionOption<A>[],
 ): { id: string; reason: string | null } | null {
   const trimmed = raw.trim();
-  // 模型常把 JSON 套在 ```json 围栏里
   const fenced = /```(?:json)?\s*([\s\S]*?)```/.exec(trimmed);
   const candidate = fenced?.[1]?.trim() ?? trimmed;
 
@@ -67,8 +62,6 @@ function extractChoice<A>(
     // 不是合法 JSON，走下面的宽松匹配
   }
 
-  // 兜底：模型可能直接回 "3" 或 "我选 3"。
-  // 按编号长度降序匹配，避免 "1" 抢先命中 "12"。
   const byLength = [...options].sort((a, b) => b.id.length - a.id.length);
   for (const option of byLength) {
     if (new RegExp(`(^|[^0-9])${option.id}([^0-9]|$)`).test(candidate)) {
@@ -81,10 +74,12 @@ function extractChoice<A>(
 export class LlmClient {
   readonly #config: ActiveLlmConfig;
   readonly #logger: Logger;
+  readonly #addressPolicy: UpstreamAddressPolicy;
 
-  constructor(config: ActiveLlmConfig, logger: Logger) {
+  constructor(config: ActiveLlmConfig, logger: Logger, addressPolicy: UpstreamAddressPolicy = {}) {
     this.#config = config;
     this.#logger = logger;
+    this.#addressPolicy = addressPolicy;
   }
 
   /**
@@ -103,34 +98,40 @@ export class LlmClient {
     timer.unref?.();
 
     try {
-      const response = await fetch(`${this.#config.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          ...(this.#config.apiKey !== null ? { authorization: `Bearer ${this.#config.apiKey}` } : {}),
-        },
-        body: JSON.stringify({
-          model: this.#config.model,
-          messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'user', content: buildUserPrompt(prompt) },
-          ],
-          temperature: 0.7,
-          max_tokens: 200,
-        }),
-        signal: controller.signal,
+      const requestUrl = buildInferenceUrl(this.#config.baseUrl, this.#config.provider);
+      const request = buildInferenceRequest({
+        provider: this.#config.provider,
+        model: this.#config.model,
+        apiKey: this.#config.apiKey,
+        thinkingDepth: this.#config.thinkingDepth,
+        system: SYSTEM_PROMPT,
+        user: buildUserPrompt(prompt),
+        maxOutputTokens: 400,
+        temperature: 0.7,
       });
+      const response = await safeFetch(requestUrl, {
+        method: 'POST',
+        headers: request.headers,
+        body: JSON.stringify(request.body),
+        signal: controller.signal,
+        redirect: 'manual',
+      }, this.#addressPolicy);
 
+      if (response.status >= 300 && response.status < 400) {
+        this.#logger.warn('llm_invalid_response', { ...meta, provider: this.#config.provider });
+        return null;
+      }
       if (!response.ok) {
-        this.#logger.warn('llm_http_error', { ...meta, status: response.status });
+        this.#logger.warn('llm_http_error', {
+          ...meta,
+          status: response.status,
+          provider: this.#config.provider,
+        });
         return null;
       }
 
-      const body = (await response.json()) as {
-        choices?: { message?: { content?: unknown } }[];
-      };
-      const content = body.choices?.[0]?.message?.content;
-      if (typeof content !== 'string') {
+      const content = extractText(this.#config.provider, await readLimitedJson(response));
+      if (content === null) {
         this.#logger.warn('llm_empty_response', meta);
         return null;
       }
@@ -150,12 +151,11 @@ export class LlmClient {
         elapsedMs: Date.now() - startedAt,
       });
       return { option, reason: choice.reason };
-    } catch (err) {
-      const aborted = (err as Error).name === 'AbortError';
+    } catch (error) {
+      const aborted = (error as Error).name === 'AbortError';
       this.#logger.warn(aborted ? 'llm_timeout' : 'llm_request_failed', {
         ...meta,
         elapsedMs: Date.now() - startedAt,
-        ...(aborted ? {} : { message: (err as Error).message }),
       });
       return null;
     } finally {

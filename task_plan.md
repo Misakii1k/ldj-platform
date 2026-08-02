@@ -7,8 +7,8 @@
 
 ## 基线
 
-- 规格：`docs/SPEC.md`（与 `C:\Users\87850\Desktop\SPEC-v1.1-optimized.md` 同步，补遗见附录 D）
-- 运行时：Node.js 24 LTS（开发机 24.13.1）、npm 11、TypeScript 严格模式、npm workspaces
+- 规格：`docs/SPEC.md`（仓库内基线；补遗见附录 D）
+- 运行时：Node.js ≥ 24 LTS、npm、TypeScript 严格模式、npm workspaces
 - 数据库：SQLite；首选驱动 `node:sqlite`（Node 24 内置，零原生依赖），待 M0 真机 PoC 后按 DG-01 冻结
 - 里程碑映射 SPEC §15：M0 可行性 → M1 骨架 → M2 房间闭环 → M3 谁是卧底 → M4 持久化恢复 → M5 发布候选
 
@@ -16,7 +16,7 @@
 
 ### Phase 0：SPEC 审查与项目初始化 — in_progress
 - [x] 审查 SPEC v1.1，补齐 8 处边界缺口（写回原文 + 附录 D 留痕）
-- [x] 初始化 D:\项目（计划文件、README、docs/SPEC.md、git init）
+- [x] 初始化仓库根目录（计划文件、README、`docs/SPEC.md`、Git 仓库）
 - [x] M0 PoC 脚本（node:sqlite + WebSocket + 局域网服务模式）在 Windows 本机验证通过
 - [ ] 【需用户真机】按 poc/m0/README.md 在 ARM64 Termux 设备执行清单，回填结果 → 冻结 DG-01/DG-02
 
@@ -63,32 +63,33 @@
 - 退出标准已验证：client build 成功，dist 含 PWA 资源；104/104 测试无回归；
   dev:server 冒烟 /health/ready、/manifest.json、/sw.js、/offline.html 均 200
 
-#### 子任务 5.2：Termux 部署与运维文档 — pending
-- [ ] 编写 packages/server/docs/termux.md（环境安装、启动、后台运行、自启动）
-- [ ] 备份/恢复说明（data/platform.db、定时备份脚本）
-- [ ] 环境变量与端口配置示例
+#### 子任务 5.2：Termux 部署与运维文档 — documentation_complete（真机回填待完成）
+- [x] 编写 `packages/server/docs/termux.md`（环境安装、启动、后台运行、自启动）
+- [x] 备份/恢复说明（`data/platform.db` 的在线/离线备份与恢复）
+- [x] 环境变量与端口配置示例
+- [ ] 【需用户真机】在 ARM64 Termux 执行 PoC/部署清单并回填 DG-01/DG-02；文档存在不代表真机验证完成
 
-#### 子任务 5.3：性能与安全测试 — pending
-- [ ] 性能压测脚本：12+8 连接三局，采样延迟与 RPS（NFR-001~009）
-- [ ] 安全行审计：§14.1 检查清单（输入校验、CORS、密码哈希、日志脱敏、WS 鉴权）
-- [ ] 修复子任务发现的 P0 缺陷
+#### 子任务 5.3：性能与安全测试 — in_progress（验收未完成）
+- [ ] 性能压测：冒烟测试已通过受准入夹具完成 1 局 4 人 + 2 机器人短时对局，生产建房门未放宽；三局长压测仍无报告，服务端内存/CPU 指标也尚未补齐
+- [ ] 当前安全复审：`docs/security-audit.md` 仅为 2026-07-29 历史时点审计；HTTP JSON body 上限随后已由 1 KiB 改为 16 KiB，当前工作树仍需完整复审
+- [ ] 修复当前复审发现的 P0 缺陷；历史审计当时无 P0，不能替代当前确认
 
 #### 子任务 5.4：真实聚会验收 — pending（需用户）
 - [ ] 8 人连续 3 局无中断（AC-18）
 - [ ] 真机资源采样：CPU/内存/电量（AC-19/20）
 - 总体退出标准：AC-18～20 通过，无未关闭 P0 缺陷
 
-#### 子任务 5.5：机器人陪练 + AI 大模型玩家 + 运行期设置面板 — in_progress（2026-07-29）
+#### 子任务 5.5：机器人陪练 + AI 大模型玩家 + 运行期设置面板 — implementation_complete / verification_pending
 详细计划见 [docs/settings-panel-plan.md](docs/settings-panel-plan.md)
 - [x] 规则机器人（随机合法动作）与 llm 机器人的服务端管道、大厅加减按钮与成员标签
 - [x] 迁移 v4 `app_settings` 表；`core/settings.ts` 读写校验；`LlmProvider` 热生效持有者
-- [x] `tests/gatewayBot.test.ts` 真实 WS 验证 add_bot 全链路（证明「请求格式有误」是旧进程所致，重启即好）
+- [x] `tests/gatewayBot.test.ts` 真实 WS 验证 add_bot 全链路
 - [x] HTTP 端点 `GET/PUT /api/settings/llm`（写入需 `ADMIN_TOKEN`，未设则仅放行本机）
-- [x] `app.ts` 换用 LlmProvider；`ws.ts` 与 `botRunner.ts` 改为动态读取（构造时固定引用会让热生效到不了机器人）
-- [ ] 客户端设置弹层（复用 SheetDialog）+ 首页入口按钮；密钥只写不回显
-- [ ] settings 校验分支与 HTTP 端点测试；README 补环境变量与开启 AI 玩家说明
-- [ ] `npm run ci` + `npm run build`；版本升至 0.4.0
-- 退出标准：不重启服务端即可改端点/密钥/模型并让 AI 玩家生效；密钥原文不出任何接口
+- [x] `app.ts` 换用 LlmProvider；`ws.ts` 与 `botRunner.ts` 改为动态读取
+- [x] 客户端设置弹层（复用 SheetDialog）+ 首页入口按钮（`AI 设置`）；密钥只写不回显
+- [x] settings 校验分支与 HTTP 端点测试（`settings.test.ts` & `gatewaySettings.test.ts`）；README 补环境变量与开启 AI 玩家说明
+- [x] 当前工作树全量质量门：版本已升至 0.4.0；2026-08-02 `typecheck`、`lint`、客户端 `build` 和 `npm test` 均通过（包内测试 365/365、D1 扫描器契约测试 4/4），设置专项测试 61/61、性能冒烟 1/1 通过
+- 退出标准待全量验证：不重启服务端即可改端点/密钥/模型并让 AI 玩家生效；密钥原文不出任何接口
 - 已知取舍：① 面板里「清空」是回落到环境变量而非关闭功能，部署时设了 `LLM_BASE_URL` 就无法在面板上关掉 AI 玩家；
   ② 未设 `ADMIN_TOKEN` 时手机改设置会得到 403（开发时 vite 代理算本机，故本地无感）
 
@@ -105,7 +106,7 @@
 | 大模型调用位置 | 事务外（peek → 决策 → 同步落库三段式） | 三条命令执行链的 handler 全是同步函数，fetch 不能进事务 |
 | 运行期设置 | 存 SQLite，环境变量兜底，热生效不重启 | 聚会现场没人愿意改文件重启进程 |
 | 设置写入鉴权 | `ADMIN_TOKEN` 校验，未设则仅本机可写 | 局域网内谁都能访问该端点，改端点或塞入他人密钥花的是服主的钱 |
-| git | 已 init，首次提交 `e6250b8` 完成 | M4 完成后用户要求先提交再切分支；当前在 `m5-ui-polish` |
+| Git | 仓库与历史已保留，首次提交 `e6250b8` | 分支和工作树状态以执行时 `git status` 为准，不在计划文档固化本机状态 |
 
 ## 错误记录
 

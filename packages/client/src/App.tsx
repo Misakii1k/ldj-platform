@@ -1,6 +1,9 @@
-﻿import { useConnection } from './connection/useConnection.ts';
+import { useConnection } from './connection/useConnection.ts';
 import { ConnectionProvider } from './connection/ConnectionContext.tsx';
 import { ToastProvider } from './shared-ui/ToastContext.tsx';
+import { BackgroundProvider } from './shared-ui/BackgroundContext.tsx';
+import { BackgroundManager } from './shared-ui/BackgroundManager.tsx';
+import { MotionProvider } from './motion/MotionContext.tsx';
 import { GameHomePage } from './app/GameHomePage.tsx';
 import { RoomPage } from './room/RoomPage.tsx';
 import { GamePage } from './game/GamePage.tsx';
@@ -86,7 +89,13 @@ export function App() {
   return (
     <ConnectionProvider>
       <ToastProvider>
-        <Router />
+        <MotionProvider>
+          <BackgroundProvider>
+            <BackgroundManager>
+              <Router />
+            </BackgroundManager>
+          </BackgroundProvider>
+        </MotionProvider>
       </ToastProvider>
     </ConnectionProvider>
   );

@@ -10,6 +10,7 @@ import { PROTOCOL_VERSION } from '@ldj/shared';
 import { createApp, type App } from '../src/app.ts';
 import { createLogger } from '../src/boot/logger.ts';
 import type { ServerConfig } from '../src/config.ts';
+import { seedRoom } from './helpers/seedRoom.ts';
 
 function testConfig(llmBaseUrl: string | null = null): ServerConfig {
   return {
@@ -19,7 +20,8 @@ function testConfig(llmBaseUrl: string | null = null): ServerConfig {
     publicBaseUrl: null,
     logLevel: 'error',
     allowedOrigins: [],
-    llm: { baseUrl: llmBaseUrl, apiKey: null, model: 'test-model', timeoutMs: 5000 },
+    allowPrivateLlmUpstream: false,
+    llm: { provider: 'openai', baseUrl: llmBaseUrl, apiKey: null, model: 'test-model', thinkingDepth: 'off', timeoutMs: 5000 },
     adminToken: null,
   };
 }
@@ -95,12 +97,17 @@ class Client {
   }
 }
 
-/** 建房并返回房主客户端 */
+/** 注入历史房间并通过真实 resume_room 绑定房主客户端 */
 async function createRoom(app: App): Promise<{ host: Client; roomCode: string }> {
+  const seeded = seedRoom(app.db);
   const host = await Client.connect(app);
-  const created = await host.request('create_room', { nickname: '房主' });
-  assert.equal(created.type, 'ack', `建房失败：${JSON.stringify(created.payload)}`);
-  return { host, roomCode: String(created.payload.roomCode) };
+  const resumed = await host.request('resume_room', {
+    roomCode: seeded.roomCode,
+    playerId: seeded.hostId,
+    resumeToken: seeded.hostResumeToken,
+  });
+  assert.equal(resumed.type, 'ack', `恢复房主失败：${JSON.stringify(resumed.payload)}`);
+  return { host, roomCode: seeded.roomCode };
 }
 
 test('WS add_bot：房主添加规则机器人应成功并广播快照', async () => {

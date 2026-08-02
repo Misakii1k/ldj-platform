@@ -1,11 +1,11 @@
-﻿import type { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type { UndercoverPlayerView } from './types.ts';
 
 const PHASES = [
-  { key: 'word', label: '看词', short: '1' },
-  { key: 'speak', label: '发言', short: '2' },
+  { key: 'word', label: '查词', short: '1' },
+  { key: 'speak', label: '描述', short: '2' },
   { key: 'vote', label: '投票', short: '3' },
-  { key: 'result', label: '结果', short: '4' },
+  { key: 'result', label: '揭晓', short: '4' },
 ] as const;
 
 function phaseIndex(phase: UndercoverPlayerView['phase']): number {

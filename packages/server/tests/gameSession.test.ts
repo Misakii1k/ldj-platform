@@ -8,8 +8,8 @@ import assert from 'node:assert/strict';
 import { openDb, closeDb, type Db } from '../src/persistence/db.ts';
 import { migrate } from '../src/persistence/migrator.ts';
 import { RoomCommandExecutor, CommandError } from '../src/core/executor.ts';
-import { prepareCreateRoom, applyCreateRoom } from '../src/core/commands/createRoom.ts';
 import { applyJoinRoom } from '../src/core/commands/joinRoom.ts';
+import { seedRoom } from './helpers/seedRoom.ts';
 import { applyRoomCommand } from '../src/core/commands/roomCommand.ts';
 import {
   applyGameAction,
@@ -18,6 +18,7 @@ import {
 } from '../src/core/game/session.ts';
 import { consumeDueTimer, TimerRunner } from '../src/core/game/timerRunner.ts';
 import { getGameModule, DEFAULT_GAME_ID } from '../src/core/game/registry.ts';
+import { GAME_CATALOG, getPlayableGameCatalogEntry } from '@ldj/shared';
 
 interface Ctx {
   db: Db;
@@ -37,15 +38,8 @@ async function setupRoom(playerCount: number): Promise<Ctx> {
   const db = openDb({ path: ':memory:' });
   migrate(db);
   const executor = new RoomCommandExecutor(db);
-  const { roomId } = prepareCreateRoom();
-  const created = await executor.executeCreate({
-    roomId,
-    actorScope: 'conn:host',
-    requestId: nextReq(),
-    handler: (tx) => applyCreateRoom(tx, roomId, { nickname: '房主' }),
-  });
-  const roomCode = created.outcome.roomCode;
-  const hostId = created.outcome.playerId;
+  const seeded = seedRoom(db);
+  const { roomId, roomCode, hostId } = seeded;
   const playerIds = [hostId];
   for (let i = 2; i <= playerCount; i++) {
     const joined = await executor.executeOnRoom({
@@ -57,6 +51,8 @@ async function setupRoom(playerCount: number): Promise<Ctx> {
     });
     playerIds.push(joined.outcome.playerId);
   }
+  // 全员就绪（房间级"准备"机制：先准备再开局）
+  db.prepare(`UPDATE room_members SET ready = 1 WHERE room_id = ? AND seat_role = 'player'`).run(roomId);
   return { db, executor, roomId, hostId, playerIds };
 }
 
@@ -248,7 +244,8 @@ test('对局闭环：投票淘汰至卧底胜/平民胜 → FINISHED + game_resu
       .get(ctx.roomId) as { n: number };
     assert.equal(members.n, 4); // FR-RESULT-004
 
-    // 再来一局：新 SessionId 新种子（FR-RESULT-003）
+    // 再来一局：新 SessionId 新种子（FR-RESULT-003）—— return_to_lobby 重置了全员准备，重新就绪
+    ctx.db.prepare(`UPDATE room_members SET ready = 1 WHERE room_id = ?`).run(ctx.roomId);
     const restarted = await startGameAs(ctx, ctx.hostId);
     const again = getActiveSession(ctx.db, ctx.roomId);
     assert.ok(again);
@@ -375,4 +372,12 @@ test('注册表：默认游戏可查、manifest 一致', () => {
   assert.ok(module);
   assert.equal(module.manifest.id, DEFAULT_GAME_ID);
   assert.ok(module.manifest.minPlayers >= 2);
+});
+
+test('注册表：内部模块可为历史恢复保留，但 D1 无模块可新建房', async () => {
+  const { listGameManifests } = await import('../src/core/game/registry.ts');
+  const manifests = listGameManifests();
+  assert.deepEqual(manifests.map((manifest) => manifest.id), ['undercover', 'uno', 'landlord', 'werewolf']);
+  assert.deepEqual(GAME_CATALOG.filter((game) => String(game.availability) === 'playable'), []);
+  for (const manifest of manifests) assert.equal(getPlayableGameCatalogEntry(manifest.id), undefined);
 });

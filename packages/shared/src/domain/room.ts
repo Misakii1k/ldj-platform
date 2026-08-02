@@ -33,6 +33,8 @@ export interface RoomMemberView {
   connectionStatus: MemberConnectionStatus;
   /** 机器人种类；真人为 null（客户端据此打标签） */
   botKind: 'rule' | 'llm' | null;
+  /** 是否已准备（LOBBY/POST_GAME 生效；对局中恒为 false） */
+  ready: boolean;
 }
 
 /** 房间快照的公开视图（room_snapshot payload） */

@@ -12,8 +12,8 @@ import assert from 'node:assert/strict';
 import { openDb, closeDb, type Db } from '../src/persistence/db.ts';
 import { migrate } from '../src/persistence/migrator.ts';
 import { RoomCommandExecutor } from '../src/core/executor.ts';
-import { prepareCreateRoom, applyCreateRoom } from '../src/core/commands/createRoom.ts';
 import { applyRoomCommand } from '../src/core/commands/roomCommand.ts';
+import { seedRoom } from './helpers/seedRoom.ts';
 import { BotRunner } from '../src/core/game/botRunner.ts';
 import { getActiveSession } from '../src/core/game/session.ts';
 import { createLogger } from '../src/boot/logger.ts';
@@ -37,14 +37,8 @@ async function setup(): Promise<Ctx> {
   const db = openDb({ path: ':memory:' });
   migrate(db);
   const executor = new RoomCommandExecutor(db);
-  const { roomId } = prepareCreateRoom();
-  const created = await executor.executeCreate({
-    roomId,
-    actorScope: 'conn:test',
-    requestId: nextReq(),
-    handler: (tx) => applyCreateRoom(tx, roomId, { nickname: '房主' }),
-  });
-  return { db, executor, roomId, hostId: created.outcome.playerId };
+  const seeded = seedRoom(db, { ready: true });
+  return { db, executor, roomId: seeded.roomId, hostId: seeded.hostId };
 }
 
 async function hostCommand(ctx: Ctx, payload: unknown): Promise<void> {

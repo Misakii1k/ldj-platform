@@ -1,4 +1,4 @@
-﻿/** 投票阶段：候选人卡牌、提交进度和明确的选择反馈。 */
+/** 投票阶段：候选人卡牌、提交进度和明确的选择反馈。 */
 import { useState, type CSSProperties } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
 import { describeError } from '../shared-ui/errors.ts';
@@ -35,9 +35,9 @@ export function VotingView({ view }: Props) {
   return (
     <section className="game-phase voting">
       <PhaseLead
-        eyebrow={`${isRunoff ? 'RUNOFF' : 'ROUND'} ${view.round} · VOTE`}
-        title={hasVoted ? '你的选择已锁定' : isRunoff ? '加赛：再次选择' : '谁最像卧底？'}
-        description={hasVoted ? '票数将在全部提交或倒计时结束后公开。' : '结合本轮发言，选择一位你最怀疑的玩家。'}
+        eyebrow={`第 ${view.round} 轮 · ${isRunoff ? '加赛PK' : '投票指认'}`}
+        title={hasVoted ? '选票已锁定' : isRunoff ? '加赛：请再次选择' : '指认你心中的卧底！'}
+        description={hasVoted ? '票数将在全员提交或倒计时结束后统一公开。' : '综合大家的发言细节与蛛丝马迹，投出你最怀疑的一票。'}
         aside={<GameCountdown seconds={countdown.secondsLeft} />}
       />
 
@@ -65,8 +65,8 @@ export function VotingView({ view }: Props) {
         })}
       </div>
 
-      {hasVoted && <div className="vote-done-hint"><strong>选票已投入</strong><span>等待其他玩家完成投票</span></div>}
-      {me && !me.alive && <div className="spectator-hint">你已淘汰，本回合以观战身份等待结果</div>}
+      {hasVoted && <div className="vote-done-hint"><strong>选票已锁定</strong><span>等待其他玩家完成投票…</span></div>}
+      {me && !me.alive && <div className="spectator-hint">你已淘汰，本回合以观战身份等待结果揭晓</div>}
       {error && <div className="error-banner" role="alert">{error}</div>}
       {state.connState !== 'synced' && <div className="status-banner">连接中…部分操作可能不可用</div>}
     </section>

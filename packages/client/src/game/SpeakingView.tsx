@@ -1,4 +1,4 @@
-﻿/** 发言阶段：突出当前发言者、顺序轮转和移动端底部操作。 */
+/** 发言阶段：突出当前发言者、顺序轮转和移动端底部操作。 */
 import { useState } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
 import { describeError } from '../shared-ui/errors.ts';
@@ -34,9 +34,9 @@ export function SpeakingView({ view }: Props) {
   return (
     <section className="game-phase speaking">
       <PhaseLead
-        eyebrow={`ROUND ${view.round} · SPEAK`}
-        title={isMyTurn ? '轮到你发言' : '听听他的线索'}
-        description={isMyTurn ? '描述你的词，但别说得太明显。' : '留意用词和停顿，记住可疑线索。'}
+        eyebrow={`第 ${view.round} 轮 · 描述发言`}
+        title={isMyTurn ? '轮到你发言了' : '倾听同桌玩家的描述'}
+        description={isMyTurn ? '巧妙描述你的词条，注意隐蔽身份并捕捉可疑蛛丝马迹。' : '细心留意大家的描述词与语气停顿，寻找破绽。'}
         aside={<GameCountdown seconds={countdown.secondsLeft} />}
       />
 
@@ -54,7 +54,7 @@ export function SpeakingView({ view }: Props) {
 
       <div className="speaking-board">
         <div className="section-heading-row">
-          <div><span className="section-kicker">发言顺序</span><h3>顺时针轮转</h3></div>
+          <div><span className="section-kicker">发言顺序</span><h3>顺时针轮流发言</h3></div>
           <span className="section-count">{Math.max(currentIndex + 1, 0)}/{view.speakingOrder.length}</span>
         </div>
         <ol className="speaking-order">
@@ -69,7 +69,7 @@ export function SpeakingView({ view }: Props) {
                 <span className="speaking-idx">{isDone ? '✓' : idx + 1}</span>
                 <span className="speaking-mini-avatar" aria-hidden="true" />
                 <span className="speaking-person"><strong>{isMe ? '我' : `玩家 ${player.seat}`}</strong><small>#{player.seat} 号座位</small></span>
-                <span className="speaking-state">{isCurrent ? '发言中' : isDone ? '已发言' : '等待'}</span>
+                <span className="speaking-state">{isCurrent ? '发言中' : isDone ? '已发言' : '等待中'}</span>
               </li>
             );
           })}
@@ -79,15 +79,15 @@ export function SpeakingView({ view }: Props) {
       <aside className="game-tip-card">
         <span className="tip-pin" aria-hidden="true" />
         <strong>本轮小提示</strong>
-        <p>用一个角度描述词语即可。说得太具体会暴露身份，说得太模糊也可能被怀疑。</p>
+        <p>提示：从一个侧面或特征入手描述。言多必失容易暴露词条，过度含糊也会招致怀疑哦！</p>
       </aside>
 
       {me && (
         <div className="game-action-dock">
           <button type="button" className="game-primary-action" onClick={handleFinish} disabled={busy || !isMyTurn || !me.alive}>
-            {!me.alive ? '本轮观战中' : isMyTurn ? (busy ? '正在提交…' : '我已说完') : '等待其他玩家发言'}
+            {!me.alive ? '本轮观战中' : isMyTurn ? (busy ? '提交中…' : '发言完毕，交棒下一位') : '等待其他玩家发言'}
           </button>
-          <span>{isMyTurn ? '说完后交给下一位玩家' : '轮到你时按钮会自动点亮'}</span>
+          <span>{isMyTurn ? '发言结束后点击按钮交给下一位玩家' : '轮到你发言时按钮会自动点亮'}</span>
         </div>
       )}
       {error && <div className="error-banner" role="alert">{error}</div>}

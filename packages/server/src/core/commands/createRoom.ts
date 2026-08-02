@@ -62,15 +62,19 @@ export function applyCreateRoom(
   const resumeToken = newResumeToken();
   const passwordHash = payload.password === undefined ? null : hashRoomPassword(payload.password);
   // 兼容没有 gameId 的旧客户端；目录与实际模块必须同时存在才允许建房。
-  const gameId = payload.gameId ?? DEFAULT_PLAYABLE_GAME_ID;
-  if (!getPlayableGameCatalogEntry(gameId) || !getGameModule(gameId)) {
+  const gameId = payload.gameId === undefined ? DEFAULT_PLAYABLE_GAME_ID : payload.gameId;
+  if (gameId === null || !getPlayableGameCatalogEntry(gameId) || !getGameModule(gameId)) {
     throw new CommandError('ACTION_NOT_ALLOWED', '所选游戏暂未开放');
   }
+  // 建房时可携带游戏配置（角色池/节奏等），存入 config_json 供开局沿用
+  const configJson = JSON.stringify({
+    gameConfig: payload.gameConfig ?? {},
+  });
 
   db.prepare(
     `INSERT INTO rooms (id, code, status, host_player_id, game_id, config_json, password_hash, seq, created_at, updated_at)
-     VALUES (?, ?, 'LOBBY', ?, ?, '{}', ?, ?, ?, ?)`,
-  ).run(roomId, roomCode, playerId, gameId, passwordHash, tx.roomSeq, now, now);
+     VALUES (?, ?, 'LOBBY', ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(roomId, roomCode, playerId, gameId, configJson, passwordHash, tx.roomSeq, now, now);
 
   db.prepare(
     `INSERT INTO room_members

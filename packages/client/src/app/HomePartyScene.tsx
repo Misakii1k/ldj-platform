@@ -35,6 +35,7 @@ export function HomePartyScene({ selectedCount }: HomePartySceneProps) {
     <div
       className={`home-party-scene home-party-scene--${stage}`}
       data-player-count={selectedCount ?? 'all'}
+      data-scene-stage={stage}
       aria-hidden="true"
     >
       <span className="home-party-scene__glow" />
@@ -46,19 +47,24 @@ export function HomePartyScene({ selectedCount }: HomePartySceneProps) {
       <span className="home-party-scene__table"><i /></span>
       <span className="home-party-scene__lamp"><i /></span>
       <span className="home-party-scene__plant"><i /><i /><i /></span>
-      {PERSON_POSITIONS.map((person, index) => (
-        <span
-          key={index}
-          className={`home-party-scene__person ${index < visiblePeople ? 'is-visible' : ''}`}
-          style={{
-            '--person-index': index,
-            '--person-left': person.left,
-            '--person-top': person.top,
-            '--person-rotate': person.rotate,
-            '--person-color': person.color,
-          } as CSSProperties}
-        />
-      ))}
+      {PERSON_POSITIONS.map((person, index) => {
+        const isVisible = index < visiblePeople;
+        return (
+          <span
+            key={index}
+            className={`home-party-scene__person ${isVisible ? 'is-visible' : ''}`}
+            style={{
+              '--person-index': index,
+              '--person-left': person.left,
+              '--person-top': person.top,
+              '--person-rotate': person.rotate,
+              '--person-color': person.color,
+            } as CSSProperties}
+          >
+            <i className="home-party-scene__person-body" />
+          </span>
+        );
+      })}
       <span className="home-party-scene__spark home-party-scene__spark--one">✦</span>
       <span className="home-party-scene__spark home-party-scene__spark--two">✦</span>
       <span className="home-party-scene__spark home-party-scene__spark--three">·</span>

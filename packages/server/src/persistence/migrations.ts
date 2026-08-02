@@ -173,4 +173,39 @@ CREATE TABLE app_settings (
 );
 `,
   },
+  {
+    version: 5,
+    name: 'retire-removed-game-sessions',
+    // 清理已从代码和目录中摘除的历史游戏，避免旧房间继续出现在大厅，
+    // 同时保留 FINISHED 会话和 game_results 供历史审计。
+    up: `
+UPDATE timers
+SET status = 'cancelled'
+WHERE status = 'pending'
+  AND session_id IN (
+    SELECT id FROM game_sessions WHERE module_id = 'richman'
+  );
+
+UPDATE game_sessions
+SET status = 'ABORTED',
+    updated_at = CAST(strftime('%s', 'now') AS INTEGER) * 1000
+WHERE module_id = 'richman'
+  AND status IN ('PREPARING', 'ACTIVE', 'RECOVERING');
+
+UPDATE rooms
+SET status = 'CLOSED',
+    updated_at = CAST(strftime('%s', 'now') AS INTEGER) * 1000
+WHERE game_id = 'richman'
+  AND status != 'CLOSED';
+`,
+  },
+  {
+    version: 6,
+    name: 'add-member-ready',
+    // 房间级"准备"机制（FR-ROOM-NEW）：LOBBY/POST_GAME 下玩家先准备，
+    // 全员就绪且人数达标后自动开局；对局中该列保留但恒为 0。
+    up: `
+ALTER TABLE room_members ADD COLUMN ready INTEGER NOT NULL DEFAULT 0;
+`,
+  },
 ];

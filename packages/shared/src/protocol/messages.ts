@@ -56,6 +56,8 @@ export const createRoomPayloadSchema = z
     nickname: nicknameSchema,
     gameId: gameIdSchema.optional(),
     password: roomPasswordSchema.optional(),
+    // 建房时可选携带游戏配置（如角色池开关、节奏预设）；键由模块 parseConfig 把关
+    gameConfig: z.record(z.unknown()).optional(),
   })
   .strict();
 export type CreateRoomPayload = z.infer<typeof createRoomPayloadSchema>;
@@ -86,8 +88,10 @@ export type ResumeRoomPayload = z.infer<typeof resumeRoomPayloadSchema>;
 /** leave_room payload（无字段；actor 由服务端连接上下文推导） */
 export const leaveRoomPayloadSchema = z.object({}).strict();
 
-/** room_command payload（§9.2：开局/终止/返回大厅/踢人/转让房主/修改配置/关闭房间） */
+/** room_command payload（§9.2：准备/开局/终止/返回大厅/踢人/转让房主/修改配置/关闭房间） */
 export const roomCommandPayloadSchema = z.discriminatedUnion('command', [
+  // 准备/取消准备（LOBBY/POST_GAME，全员可发）
+  z.object({ command: z.literal('ready'), ready: z.boolean() }).strict(),
   z.object({ command: z.literal('kick_player'), targetPlayerId: z.string().min(1).max(64) }).strict(),
   z.object({ command: z.literal('transfer_host'), targetPlayerId: z.string().min(1).max(64) }).strict(),
   z
@@ -98,6 +102,8 @@ export const roomCommandPayloadSchema = z.discriminatedUnion('command', [
         .object({
           spectatorsAllowed: z.boolean().optional(),
           reservationMinutes: z.number().int().min(1).max(30).optional(),
+          // 游戏配置透传：键由各游戏模块 parseConfig 把关（开局时校验）
+          gameConfig: z.record(z.unknown()).optional(),
         })
         .strict(),
     })

@@ -70,7 +70,7 @@ function parseLanRooms(value: unknown): LanRoom[] {
 }
 
 function roomStatusLabel(status: LanRoom['status']): string {
-  return status === 'LOBBY' ? '等待加入' : '对局进行中';
+  return status === 'LOBBY' ? '大厅筹备中' : '激战进行中';
 }
 
 export function JoinRoomSheet({ onClose }: JoinRoomSheetProps) {
@@ -161,7 +161,7 @@ export function JoinRoomSheet({ onClose }: JoinRoomSheetProps) {
   return (
     <SheetDialog
       title="加入局域网房间"
-      description="同一 Wi-Fi 下会自动发现正在营业的房间；也可以手动输入 5 位房间码。"
+      description="同一 Wi-Fi 下会自动发现可加入的房间；也可以手动输入 5 位房间码。"
       onClose={onClose}
       initialFocusRef={nicknameRef}
     >
@@ -169,8 +169,8 @@ export function JoinRoomSheet({ onClose }: JoinRoomSheetProps) {
         <div className="lan-room-discovery__header">
           <div>
             <p className="lan-room-discovery__eyebrow">LOCAL TABLES</p>
-            <h3 id="lan-room-discovery-title">附近正在开的桌</h3>
-            <p>选择一桌后，房间码会自动填入。</p>
+            <h3 id="lan-room-discovery-title">发现同一 Wi-Fi 下的房间</h3>
+            <p>点击下方卡片，房间码将自动填入。</p>
           </div>
           <button
             type="button"
@@ -208,27 +208,27 @@ export function JoinRoomSheet({ onClose }: JoinRoomSheetProps) {
                     onClick={() => selectRoom(room)}
                     aria-pressed={selected}
                   >
-                    {selected ? '已选择' : '进入这桌'}
+                    {selected ? '已选择' : '加入此房间'}
                   </button>
                 </article>
               );
             })}
           </div>
         ) : (
-          <p className="lan-room-discovery__empty" role="status">当前没有发现开放房间，可以手动输入房间码。</p>
+          <p className="lan-room-discovery__empty" role="status">暂未发现开启的局域网房间，你可以输入房间码加入或自行建房。</p>
         )}
         {roomsError && <p className="lan-room-discovery__hint" role="status">{roomsError}</p>}
       </section>
 
       <form className="room-sheet__form" onSubmit={handleSubmit}>
         <label className="room-sheet__field" htmlFor="join-nickname">
-          <span>你的昵称</span>
+          <span>玩家昵称</span>
           <input
             ref={nicknameRef}
             id="join-nickname"
             value={nickname}
             onChange={(event) => setNickname(event.target.value)}
-            placeholder="例如：小明"
+            placeholder="例如：大头爸爸"
             maxLength={16}
             autoComplete="nickname"
             aria-invalid={Boolean(error)}
@@ -237,29 +237,29 @@ export function JoinRoomSheet({ onClose }: JoinRoomSheetProps) {
           />
         </label>
         <label className="room-sheet__field" htmlFor="join-room-code">
-          <span>房间码 <em>可从上方选择</em></span>
+          <span>房间码 <em>(可点上方快速填入)</em></span>
           <input
             ref={roomCodeRef}
             id="join-room-code"
             value={roomCode}
             onChange={(event) => setRoomCode(event.target.value.toUpperCase())}
-            placeholder="选择房间，或输入 AB2CD"
+            placeholder="选择上方房间，或手动输入 AB2CD"
             maxLength={5}
             autoComplete="off"
             inputMode="text"
             aria-invalid={Boolean(roomCode) && !hasValidRoomCode}
             aria-describedby={error ? 'join-room-error' : 'join-room-code-hint'}
           />
-          <small id="join-room-code-hint">无需手动输入 ID：选中上面的房间即可。</small>
+          <small id="join-room-code-hint">选中上方列表即可自动填入，也可手动输入 5 位房间码。</small>
         </label>
         <label className="room-sheet__field" htmlFor="join-password">
-          <span>房间密码 <em>如有</em></span>
+          <span>房间密码 <em>(如有)</em></span>
           <input
             id="join-password"
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            placeholder="有密码的房间需要填写"
+            placeholder="受保护的房间需输入密码"
             maxLength={32}
             autoComplete="current-password"
           />
@@ -271,8 +271,8 @@ export function JoinRoomSheet({ onClose }: JoinRoomSheetProps) {
             onChange={(event) => setAsSpectator(event.target.checked)}
           />
           <span>
-            <strong>以观战身份加入</strong>
-            <small>不占玩家席位，也能围观聊天和进程</small>
+            <strong>以观战者身份加入</strong>
+            <small>不占用对局席位，可实时旁观进程与参与聊天</small>
           </span>
         </label>
         {error && <p id="join-room-error" className="room-sheet__error" role="alert">{error}</p>}

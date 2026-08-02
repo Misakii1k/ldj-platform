@@ -379,7 +379,15 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
     }
   }, [connect]);
 
-  const api: ConnectionApi = { state, me, send, resync, setMe, clearMe, reset };
+  const api: ConnectionApi = {
+    state,
+    me,
+    send,
+    resync,
+    setMe,
+    clearMe,
+    reset,
+  };
 
   return (
     <ConnectionContext.Provider value={api}>

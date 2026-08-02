@@ -1,4 +1,4 @@
-/**
+﻿/**
  * WebSocket 接入（SPEC §9）：
  * Origin 校验 → welcome → 消息 envelope 校验 → 路由到命令执行链 → ack → 广播。
  * M2：join/resume/leave/room_command/chat_send/resync 全链路 + 会话接管 + 断线保留。
@@ -39,6 +39,8 @@ import {
   applyExpireReservations,
 } from '../core/commands/presence.ts';
 import { applyGameAction, type GameActionOutcome } from '../core/game/session.ts';
+import { autoStartGame } from '../core/game/session.ts';
+import { getGameModule, DEFAULT_GAME_ID } from '../core/game/registry.ts';
 import { buildGameStatePayload } from '../core/game/views.ts';
 import { findRoomIdByCode } from '../core/roomLookup.ts';
 import { buildRoomSnapshot } from '../core/snapshot.ts';
@@ -85,6 +87,8 @@ export const WS_CLOSE_ROOM_CLOSED = 4003;
 
 const DEFAULT_HOST_TRANSFER_DELAY_MS = 30_000;
 const DEFAULT_RESERVATION_SWEEP_MS = 30_000;
+/** 全员就绪后自动开局倒计时（秒） */
+export const AUTO_START_DELAY_MS = 5_000;
 
 /**
  * Origin 校验（SPEC §9.5）：
@@ -117,8 +121,11 @@ export class WsGateway {
   readonly #playerSockets = new Map<string, WebSocket>();
   /** roomId → 房主断线自动转让计时器 */
   readonly #hostTransferTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  /** roomId → 全员就绪自动开局计时器 */
+  readonly #autoStartTimers = new Map<string, ReturnType<typeof setTimeout>>();
   readonly #messageLimiter = new RateLimiter(DEFAULT_RULES.messagesPerConnection);
   readonly #chatLimiter = new RateLimiter(DEFAULT_RULES.chat);
+  readonly #gameActionLimiter = new RateLimiter(DEFAULT_RULES.gameAction);
   readonly #joinLimiter = new RateLimiter(DEFAULT_RULES.joinAttempt);
   readonly #reservationSweeper: ReturnType<typeof setInterval>;
   #sweeping = false;
@@ -172,6 +179,7 @@ export class WsGateway {
           if (result.outcome.forfeit) {
             this.applyGameOutcome(roomId, result.outcome.forfeit);
           }
+          this.#checkAutoStart(roomId);
         } catch (err) {
           this.#deps.logger.error('reservation_sweep_failed', {
             roomId,
@@ -234,6 +242,7 @@ export class WsGateway {
       });
       if (!result) return;
       this.broadcastToRoom(roomId, 'room_snapshot', result.outcome.snapshot, result.roomSeq);
+      this.#checkAutoStart(roomId);
       if (result.outcome.wasHost) {
         this.#scheduleHostTransfer(roomId, playerId);
       }
@@ -257,6 +266,7 @@ export class WsGateway {
         .then((result) => {
           if (result) {
             this.broadcastToRoom(roomId, 'room_snapshot', result.outcome.snapshot, result.roomSeq);
+            this.#checkAutoStart(roomId);
           }
         })
         .catch((err: Error) => {
@@ -264,6 +274,79 @@ export class WsGateway {
         });
     }, delay);
     this.#hostTransferTimers.set(roomId, timer);
+  }
+
+  /** 取消房间的自动开局倒计时 */
+  #clearAutoStart(roomId: string): void {
+    const timer = this.#autoStartTimers.get(roomId);
+    if (timer) {
+      clearTimeout(timer);
+      this.#autoStartTimers.delete(roomId);
+    }
+  }
+
+  /**
+   * 全员就绪自动开局（房间级"准备"机制）：
+   * LOBBY/POST_GAME 且在线玩家数达标且全部就绪 → 启动 5 秒倒计时自动开局；
+   * 期间条件被破坏（取消准备/加入离开/配置变更/开局了）→ 取消倒计时。
+   * 每次广播 room_snapshot 后调用，以新快照为准做幂等判定。
+   */
+  #checkAutoStart(roomId: string): void {
+    const row = this.#deps.db
+      .prepare(
+        `SELECT r.status AS status, r.game_id AS game_id,
+                COUNT(CASE WHEN m.seat_role = 'player' AND m.connection_status = 'CONNECTED' AND m.ready = 1 THEN 1 END) AS ready_online,
+                COUNT(CASE WHEN m.seat_role = 'player' AND m.connection_status = 'CONNECTED' THEN 1 END) AS online
+         FROM rooms r
+         LEFT JOIN room_members m ON m.room_id = r.id
+         WHERE r.id = ?`,
+      )
+      .get(roomId) as
+      | { status: string; game_id: string | null; ready_online: number; online: number }
+      | undefined;
+    if (!row) {
+      this.#clearAutoStart(roomId);
+      return;
+    }
+    if (row.status !== 'LOBBY' && row.status !== 'POST_GAME') {
+      this.#clearAutoStart(roomId);
+      return;
+    }
+    const moduleId = row.game_id ?? DEFAULT_GAME_ID;
+    const module = getGameModule(moduleId);
+    if (
+      !module ||
+      row.online < module.manifest.minPlayers ||
+      row.online > module.manifest.maxPlayers ||
+      row.ready_online !== row.online ||
+      row.online === 0
+    ) {
+      this.#clearAutoStart(roomId);
+      return;
+    }
+    if (this.#autoStartTimers.has(roomId)) return; // 已在倒计时
+    const timer = setTimeout(() => {
+      this.#autoStartTimers.delete(roomId);
+      void this.#deps.executor
+        .executeInternal({
+          roomId,
+          handler: (tx) => autoStartGame(tx, roomId),
+        })
+        .then((result) => {
+          if (!result || result.outcome === null) return;
+          this.broadcastToRoom(
+            roomId,
+            'room_snapshot',
+            buildRoomSnapshot(this.#deps.db, roomId),
+            result.roomSeq,
+          );
+          this.applyGameOutcome(roomId, result.outcome.begin);
+        })
+        .catch((err: Error) => {
+          this.#deps.logger.error('auto_start_failed', { message: err.message });
+        });
+    }, AUTO_START_DELAY_MS);
+    this.#autoStartTimers.set(roomId, timer);
   }
 
   async #onMessage(
@@ -439,6 +522,7 @@ export class WsGateway {
     }, { requestId, roomSeq: result.roomSeq });
 
     this.broadcastToRoom(roomId, 'room_snapshot', result.outcome.snapshot, result.roomSeq);
+    this.#checkAutoStart(roomId);
   }
 
   async #handleJoinRoom(
@@ -488,6 +572,15 @@ export class WsGateway {
     if (!result.replayed) {
       this.broadcastToRoom(roomId, 'room_snapshot', result.outcome.snapshot, result.roomSeq);
       this.#broadcastChat(roomId, [result.outcome.sysChat]);
+    }
+    this.#checkAutoStart(roomId);
+
+    // Late joiners during an active game need their current player/spectator view immediately;
+    // otherwise the client can enter the room but stay stuck on the game loading screen until
+    // the next game event happens.
+    const gameState = buildGameStatePayload(this.#deps.db, roomId, result.outcome.playerId);
+    if (gameState) {
+      this.#send(socket, 'game_state', gameState, { requestId });
     }
   }
 
@@ -584,6 +677,7 @@ export class WsGateway {
       this.broadcastToRoom(roomId, 'room_snapshot', result.outcome.snapshot, result.roomSeq);
       this.#broadcastChat(roomId, [result.outcome.sysChat]);
     }
+    this.#checkAutoStart(roomId);
   }
 
   async #handleRoomCommand(
@@ -652,6 +746,7 @@ export class WsGateway {
     }
 
     this.broadcastToRoom(roomId, 'room_snapshot', result.outcome.snapshot, result.roomSeq);
+    this.#checkAutoStart(roomId);
     if (result.outcome.sysChat) {
       this.#broadcastChat(roomId, [result.outcome.sysChat]);
     }
@@ -674,6 +769,7 @@ export class WsGateway {
         clearTimeout(timer);
         this.#hostTransferTimers.delete(roomId);
       }
+      this.#clearAutoStart(roomId);
       const subs = this.#roomSubscribers.get(roomId);
       if (subs) {
         for (const sub of [...subs]) {
@@ -699,6 +795,12 @@ export class WsGateway {
       return;
     }
 
+    const limit = this.#gameActionLimiter.tryAcquire(`${roomId}/${playerId}`);
+    if (!limit.ok) {
+      this.#sendError(socket, requestId, 'RATE_LIMITED', { retryAfterMs: limit.retryAfterMs });
+      return;
+    }
+
     const result = await this.#deps.executor.executeOnRoom({
       roomId,
       actorScope: `player:${playerId}`,
@@ -713,7 +815,6 @@ export class WsGateway {
     if (result.replayed) return;
     this.applyGameOutcome(roomId, result.outcome);
   }
-
   /**
    * 一次已落库的对局变更 → 对外同步（也供 TimerRunner 回调复用）：
    * 各订阅者定向 game_state + 公开 game_event + 系统聊天 +
@@ -734,6 +835,7 @@ export class WsGateway {
     if (outcome.finished) {
       const snapshot = buildRoomSnapshot(this.#deps.db, roomId);
       this.broadcastToRoom(roomId, 'room_snapshot', snapshot, snapshot.seq);
+      this.#checkAutoStart(roomId);
     }
     if (outcome.timersChanged) {
       this.#deps.onTimersChanged?.();
@@ -884,6 +986,10 @@ export class WsGateway {
       clearTimeout(timer);
     }
     this.#hostTransferTimers.clear();
+    for (const timer of this.#autoStartTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.#autoStartTimers.clear();
     for (const client of this.#wss.clients) {
       client.close(1001, 'server shutting down');
     }

@@ -7,8 +7,8 @@ import assert from 'node:assert/strict';
 import { openDb, closeDb, type Db } from '../src/persistence/db.ts';
 import { migrate } from '../src/persistence/migrator.ts';
 import { RoomCommandExecutor, CommandError } from '../src/core/executor.ts';
-import { prepareCreateRoom, applyCreateRoom } from '../src/core/commands/createRoom.ts';
 import { applyJoinRoom, type JoinRoomOutcome } from '../src/core/commands/joinRoom.ts';
+import { seedRoom } from './helpers/seedRoom.ts';
 import { applyResumeRoom } from '../src/core/commands/resumeRoom.ts';
 import { applyLeaveRoom } from '../src/core/commands/leaveRoom.ts';
 import { applyRoomCommand } from '../src/core/commands/roomCommand.ts';
@@ -34,21 +34,14 @@ async function setup(password?: string): Promise<Ctx> {
   const db = openDb({ path: ':memory:' });
   migrate(db);
   const executor = new RoomCommandExecutor(db);
-  const { roomId } = prepareCreateRoom();
-  const created = await executor.executeCreate({
-    roomId,
-    actorScope: 'conn:test',
-    requestId: nextReq(),
-    handler: (tx) =>
-      applyCreateRoom(tx, roomId, { nickname: '房主', ...(password ? { password } : {}) }),
-  });
+  const seeded = seedRoom(db, { ...(password ? { password } : {}) });
   return {
     db,
     executor,
-    roomId,
-    roomCode: created.outcome.roomCode,
-    hostId: created.outcome.playerId,
-    hostToken: created.outcome.resumeToken,
+    roomId: seeded.roomId,
+    roomCode: seeded.roomCode,
+    hostId: seeded.hostId,
+    hostToken: seeded.hostResumeToken,
   };
 }
 

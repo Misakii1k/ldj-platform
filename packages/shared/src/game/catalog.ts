@@ -1,12 +1,22 @@
-﻿/**
+import type { GameRulesetSpec, GameSetupSpec } from './rules/setup.ts';
+
+/**
  * 首页游戏目录：同时供客户端展示和服务端校验使用。
- * `playable` 必须有对应的服务端 GameModule；`coming_soon` 只能展示，不能建房。
+ * `playable` 必须有对应的服务端 GameModule；其他状态均不能建房。
  */
-export const GAME_AVAILABILITY = ['playable', 'coming_soon'] as const;
+export const GAME_AVAILABILITY = ['playable', 'coming_soon', 'internal_prototype', 'blocked_rights'] as const;
 export type GameAvailability = (typeof GAME_AVAILABILITY)[number];
 
 export const GAME_THEMES = ['berry', 'sunset', 'mint', 'violet', 'ocean'] as const;
 export type GameTheme = (typeof GAME_THEMES)[number];
+
+export const GAME_BOT_SUPPORT = ['none', 'rule', 'rule_and_llm'] as const;
+export type GameBotSupport = (typeof GAME_BOT_SUPPORT)[number];
+
+export interface GameVisualTheme {
+  accent: GameTheme;
+  surface: 'cards' | 'social' | 'board';
+}
 
 export interface GameCatalogEntry {
   id: string;
@@ -17,7 +27,25 @@ export interface GameCatalogEntry {
   summary: string;
   tags: readonly string[];
   theme: GameTheme;
+  rulesets: readonly GameRulesetSpec[];
+  setup: GameSetupSpec;
+  botSupport: GameBotSupport;
+  visualTheme: GameVisualTheme;
   comingSoonMessage?: string;
+}
+
+function defaultSetup(
+  rulesetId: string,
+  label: string,
+  options: GameSetupSpec['options'] = [],
+  moduleConfig: Readonly<Record<string, string | number | boolean>> = {},
+): GameSetupSpec {
+  return {
+    rulesets: [{ id: rulesetId, label }],
+    defaultRulesetId: rulesetId,
+    options,
+    defaultConfig: { rulesetId, ...moduleConfig },
+  };
 }
 
 export const GAME_CATALOG = [
@@ -26,54 +54,67 @@ export const GAME_CATALOG = [
     displayName: '谁是卧底',
     minPlayers: 4,
     maxPlayers: 12,
-    availability: 'playable',
-    summary: '每个人拿到一个词，用机智发言找出隐藏在人群中的卧底。',
+    availability: 'internal_prototype',
+    summary: '每人获得专属词条，用巧妙描述传递信息，找出隐藏在人群中的卧底！',
     tags: ['推理', '轻松', '语言表达'],
     theme: 'berry',
+    rulesets: [{ id: 'undercover_classic_v1', label: '平台经典兼容基线' }],
+    setup: defaultSetup('undercover_classic_v1', '平台经典兼容基线', [
+      { key: 'speechSeconds', kind: 'integer', label: '发言时间（秒）', defaultValue: 60, min: 30, max: 90, step: 30 },
+      { key: 'voteSeconds', kind: 'integer', label: '投票时间（秒）', defaultValue: 45, min: 30, max: 60, step: 15 },
+    ], { speechSeconds: 60, voteSeconds: 45 }),
+    botSupport: 'rule_and_llm',
+    visualTheme: { accent: 'berry', surface: 'social' },
+    comingSoonMessage: '内部原型，尚未通过发布准入',
   },
   {
     id: 'uno',
     displayName: 'UNO',
     minPlayers: 2,
     maxPlayers: 6,
-    availability: 'playable',
-    summary: '颜色、数字与行动牌快速接力，最后一张牌别忘了喊 UNO。',
+    availability: 'blocked_rights',
+    summary: '颜色、数字与功能卡牌的激情碰撞！最后一张牌时刻别忘了高喊 UNO！',
     tags: ['卡牌', '轻松', '快节奏'],
     theme: 'sunset',
-    comingSoonMessage: '正在准备卡牌与规则支持',
+    rulesets: [{ id: 'uno_legacy_platform_v1', label: 'Legacy 兼容基线' }],
+    setup: defaultSetup('uno_legacy_platform_v1', 'Legacy 兼容基线', [], { variant: 'standard' }),
+    botSupport: 'rule_and_llm',
+    visualTheme: { accent: 'sunset', surface: 'cards' },
+    comingSoonMessage: '权利证据未完成，暂不开放',
   },
   {
     id: 'landlord',
     displayName: '斗地主',
     minPlayers: 3,
     maxPlayers: 3,
-    availability: 'playable',
-    summary: '经典三人牌局，叫分、配合与出牌节奏缺一不可。',
+    availability: 'internal_prototype',
+    summary: '经典三人欢乐对决，叫分抢庄、妙算牌型与队友默契缺一不可！',
     tags: ['卡牌', '策略', '经典'],
     theme: 'mint',
-    comingSoonMessage: '正在准备牌局与结算支持',
+    rulesets: [{ id: 'landlord_legacy_platform_v1', label: 'Legacy 兼容基线' }],
+    setup: defaultSetup('landlord_legacy_platform_v1', 'Legacy 兼容基线', [], { variant: 'standard' }),
+    botSupport: 'rule_and_llm',
+    visualTheme: { accent: 'mint', surface: 'cards' },
+    comingSoonMessage: '内部原型，尚未通过发布准入',
   },
   {
     id: 'werewolf',
     displayName: '狼人杀',
     minPlayers: 6,
     maxPlayers: 12,
-    availability: 'playable',
-    summary: '白天推理、夜晚行动，在真话与谎言之间找出同伴。',
+    availability: 'internal_prototype',
+    summary: '暗夜交锋，白天博弈！用逻辑与敏锐洞察在真伪间探寻胜利之光。',
     tags: ['推理', '阵营', '社交'],
     theme: 'violet',
-    comingSoonMessage: '正在准备角色与夜晚流程',
-  },
-  {
-    id: 'avalon',
-    displayName: '阿瓦隆',
-    minPlayers: 5,
-    maxPlayers: 10,
-    availability: 'coming_soon',
-    summary: '组队、投票与隐藏身份，忠臣和邪恶阵营都在等待时机。',
-    tags: ['阵营', '推理', '角色'],
-    theme: 'ocean',
-    comingSoonMessage: '正在准备任务与角色支持',
+    rulesets: [{ id: 'werewolf_legacy_platform_v2', label: 'Legacy v2 兼容基线' }],
+    setup: defaultSetup('werewolf_legacy_platform_v2', 'Legacy v2 兼容基线', [
+      { key: 'pace', kind: 'select', label: '对局节奏', defaultValue: 'standard', choices: [{ value: 'fast', label: '快速' }, { value: 'standard', label: '标准' }, { value: 'relaxed', label: '轻松' }] },
+      { key: 'witchSelfSave', kind: 'select', label: '女巫自救', defaultValue: 'first_night', choices: [{ value: 'first_night', label: '仅首夜' }, { value: 'never', label: '禁止' }, { value: 'always', label: '允许' }] },
+      { key: 'winCondition', kind: 'select', label: '胜负条件', defaultValue: 'numbers', choices: [{ value: 'numbers', label: '屠边人数' }, { value: 'roles', label: '屠神规则' }] },
+    ], { preset: 'classic', pace: 'standard', witchSelfSave: 'first_night', winCondition: 'numbers' }),
+    botSupport: 'rule_and_llm',
+    visualTheme: { accent: 'violet', surface: 'social' },
+    comingSoonMessage: '内部原型，尚未通过发布准入',
   },
 ] as const satisfies readonly GameCatalogEntry[];
 
@@ -88,17 +129,15 @@ export function matchesPlayerCount(game: GameCatalogEntry, playerCount: number):
   return Number.isInteger(playerCount) && playerCount >= game.minPlayers && playerCount <= game.maxPlayers;
 }
 
-/**
- * 返回适合当前人数的游戏；未选择人数时按目录顺序返回全部游戏。
- * 目录本身保证已上线游戏排在即将推出游戏之前。
- */
+/** 返回生产目录中适合当前人数的可展示游戏。 */
 export function listGamesForPlayerCount(playerCount: number | null | undefined): readonly GameCatalogEntry[] {
-  if (playerCount === null || playerCount === undefined) return GAME_CATALOG;
-  return GAME_CATALOG.filter((game) => matchesPlayerCount(game, playerCount));
+  const catalog: readonly GameCatalogEntry[] = GAME_CATALOG;
+  const visible = catalog.filter((game) => game.availability === 'playable' || game.availability === 'coming_soon');
+  if (playerCount === null || playerCount === undefined) return visible;
+  return visible.filter((game) => matchesPlayerCount(game, playerCount));
 }
 
-/** 兼容旧客户端与历史房间时使用的默认首发游戏。 */
-export const DEFAULT_PLAYABLE_GAME_ID: GameId = 'undercover';
+export const DEFAULT_PLAYABLE_GAME_ID: GameId | null = null;
 
 export function listGameCatalog(): readonly GameCatalogEntry[] {
   return GAME_CATALOG;
@@ -116,4 +155,3 @@ export function getPlayableGameCatalogEntry(id: string | null | undefined): Game
 export function isKnownGameId(id: string): id is GameId {
   return getGameCatalogEntry(id) !== undefined;
 }
-

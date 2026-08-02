@@ -41,6 +41,7 @@ interface MemberRow {
   connection_status: string;
   is_bot: number;
   bot_kind: string | null;
+  ready: number;
 }
 
 interface PublicRoomRow {
@@ -80,21 +81,22 @@ export function listOpenRoomSummaries(db: Db): PublicRoomSummary[] {
     )
     .all() as unknown as PublicRoomRow[];
 
-  return rows.map((row) => {
+  return rows.flatMap((row) => {
     const gameId = row.game_id ?? DEFAULT_PLAYABLE_GAME_ID;
     const game = getGameCatalogEntry(gameId);
+    if (!game) return [];
 
-    return {
+    return [{
       roomCode: row.room_code,
-      gameId,
-      gameName: game?.displayName ?? gameId,
+      gameId: game.id,
+      gameName: game.displayName,
       status: row.status,
       playerCount: row.player_count,
-      maxPlayers: game?.maxPlayers ?? 0,
+      maxPlayers: game.maxPlayers,
       spectatorCount: row.spectator_count,
       requiresPassword: row.requires_password === 1,
       updatedAt: row.updated_at,
-    };
+    }];
   });
 }
 
@@ -106,9 +108,14 @@ export function buildRoomSnapshot(db: Db, roomId: string): RoomSnapshotView {
     throw new Error(`房间不存在：${roomId}`);
   }
 
+  const game = getGameCatalogEntry(room.game_id);
+  if (!game) {
+    throw new Error(`房间游戏不存在：${String(room.game_id)}`);
+  }
+
   const memberRows = db
     .prepare(
-      `SELECT player_id, nickname, seat_role, seat, connection_status, is_bot, bot_kind
+      `SELECT player_id, nickname, seat_role, seat, connection_status, is_bot, bot_kind, ready
        FROM room_members WHERE room_id = ? AND connection_status != 'KICKED'
        ORDER BY joined_at ASC`,
     )
@@ -123,13 +130,14 @@ export function buildRoomSnapshot(db: Db, roomId: string): RoomSnapshotView {
     connectionStatus: m.connection_status as MemberConnectionStatus,
     // 真人为 null；机器人缺失 bot_kind 时按 rule 处理（与 listBotMembers 一致）
     botKind: m.is_bot === 1 ? (m.bot_kind === 'llm' ? 'llm' : 'rule') : null,
+    ready: m.ready === 1,
   }));
 
   return {
     roomCode: room.code,
     status: room.status as RoomStatus,
     seq: room.seq,
-    gameId: room.game_id,
+    gameId: game.id,
     config: JSON.parse(room.config_json),
     members,
   };

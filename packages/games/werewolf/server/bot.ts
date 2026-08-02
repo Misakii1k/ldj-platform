@@ -1,68 +1,87 @@
-/**
- * 狼人杀机器人策略（测试用陪练）。
- *
- * 夜晚：狼随机杀一个非狼、预言家随机查一个没查过的人、女巫不救也不毒
- * （不救不毒是刻意的——女巫用药后夜晚流程分支更多，陪练先保证流程能往下走）。
- * 白天：确认信息、轮到就结束发言、投票随机投一个非自己的存活者。
- */
 import type { BotDecisionInput } from '@ldj/shared';
 import type { WerewolfAction, WerewolfPlayerView } from './module.ts';
 
-/** 存活且不是自己的玩家 */
-function otherAliveIds(view: WerewolfPlayerView, selfId: string): string[] {
-  return view.players.filter((p) => p.alive && p.playerId !== selfId).map((p) => p.playerId);
+function choose(ids: readonly string[], input: BotDecisionInput<unknown>): string | null {
+  return ids.length === 0 ? null : ids[input.random.nextInt(0, ids.length)]!;
 }
 
-function pickRandom(ids: readonly string[], random: BotDecisionInput<unknown>['random']): string | null {
-  if (ids.length === 0) return null;
-  return ids[random.nextInt(0, ids.length)]!;
+function aliveOthers(view: WerewolfPlayerView, playerId: string): string[] {
+  return view.players.filter((player) => player.alive && player.playerId !== playerId).map((player) => player.playerId);
 }
 
 export function pickWerewolfBotAction(
   input: BotDecisionInput<WerewolfPlayerView>,
 ): WerewolfAction | null {
-  const { view, playerId, random } = input;
+  const { view, playerId } = input;
   const me = view.me;
-  if (!me || !me.alive || view.phase === 'game_over') return null;
+  if (!me || me.forfeited || view.phase === 'game_over') return null;
 
   switch (view.phase) {
+    case 'role_reveal':
+      return me.confirmedRole ? null : { type: 'confirm_role' };
+
     case 'night': {
+      if (!me.alive) return null;
       if (me.role === 'wolf') {
-        // 狼队友不能杀；击杀目标由狼队任一成员提交即可，重复提交会被 reduce 覆盖
-        const targets = otherAliveIds(view, playerId).filter(
-          (id) => !me.wolfTeammateIds.includes(id),
+        if (me.hasNightVoted) return null;
+        const target = choose(
+          aliveOthers(view, playerId).filter((id) => !me.wolfTeammateIds.includes(id)),
+          input,
         );
-        const target = pickRandom(targets, random);
         return target ? { type: 'night_kill', targetPlayerId: target } : null;
       }
       if (me.role === 'seer') {
-        // 已查验过的夜晚不再出手（reduce 会拒绝，白提交一次日志噪音）
-        if (me.seerResult !== null) return null;
-        const target = pickRandom(otherAliveIds(view, playerId), random);
+        if (me.seerCheckedThisNight) return null;
+        const target = choose(aliveOthers(view, playerId), input);
         return target ? { type: 'seer_check', targetPlayerId: target } : null;
       }
       if (me.role === 'witch') {
-        // 先答解药、再答毒药：两个决定都做完夜晚才算完整（nightComplete）
-        if (!me.witchSaveUsed && me.nightVictimId !== null) {
-          return { type: 'witch_save', save: false };
-        }
-        return { type: 'witch_poison', targetPlayerId: null };
+        if (me.nightVictimId === null) return null;
+        if (me.witchSaveDecision === null) return { type: 'witch_save', save: false };
+        if (!me.witchPoisonDecided) return { type: 'witch_poison', targetPlayerId: null };
       }
-      return null; // 村民夜晚无动作
+      if (me.role === 'guard') {
+        if (me.guardDecided) return null;
+        const target = choose(
+          aliveOthers(view, playerId).filter((id) => id !== me.lastGuardTargetId),
+          input,
+        );
+        return { type: 'guard_guard', targetPlayerId: target };
+      }
+      return null;
     }
 
+    case 'hunter_shot':
+      if (me.pendingShoot) {
+        const target = choose(aliveOthers(view, playerId), input);
+        return { type: 'hunter_shoot', targetPlayerId: target };
+      }
+      return null;
+
     case 'day_announcement':
-      return { type: 'finish_speech' };
+      return me.alive && !me.confirmedAnnouncement ? { type: 'confirm_announcement' } : null;
 
     case 'discussion':
       return view.currentSpeakerId === playerId ? { type: 'finish_speech' } : null;
 
-    case 'voting': {
-      const target = pickRandom(otherAliveIds(view, playerId), random);
-      return target ? { type: 'day_vote', targetPlayerId: target } : null;
+    case 'voting':
+    case 'runoff_voting': {
+      if (!me.alive || me.idiotRevealed || me.hasVoted) return null;
+      const target = choose(
+        aliveOthers(view, playerId).filter(
+          (id) =>
+            view.phase !== 'runoff_voting' ||
+            view.runoffCandidates.includes(id),
+        ),
+        input,
+      );
+      return { type: 'day_vote', targetPlayerId: target };
     }
 
-    default:
+    case 'last_words':
+      return me.lastWordsPending ? { type: 'finish_last_words' } : null;
+
+    case 'vote_result':
       return null;
   }
 }

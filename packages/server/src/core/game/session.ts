@@ -190,6 +190,8 @@ export function applySessionAction(
       now,
       session.room_id,
     );
+    // 对局结束回到结算等待：全员准备状态清零，等待重新准备再来一局
+    db.prepare(`UPDATE room_members SET ready = 0 WHERE room_id = ?`).run(session.room_id);
     timersChanged = true;
   }
 
@@ -267,17 +269,29 @@ export function startGame(tx: TxContext, roomId: string, gameConfig: unknown): S
   const players = (
     db
       .prepare(
-        `SELECT player_id FROM room_members
+        `SELECT player_id, ready FROM room_members
          WHERE room_id = ? AND seat_role = 'player' AND connection_status = 'CONNECTED'
          ORDER BY seat ASC`,
       )
-      .all(roomId) as { player_id: string }[]
+      .all(roomId) as { player_id: string; ready: number }[]
   ).map((r) => r.player_id);
   if (players.length < module.manifest.minPlayers || players.length > module.manifest.maxPlayers) {
     throw new CommandError(
       'ACTION_NOT_ALLOWED',
       `在线玩家需为 ${module.manifest.minPlayers}–${module.manifest.maxPlayers} 人（当前 ${players.length}）`,
     );
+  }
+  // 全员就绪校验：未准备的在线玩家不能开局
+  const notReadyCount = (
+    db
+      .prepare(
+        `SELECT COUNT(*) AS n FROM room_members
+         WHERE room_id = ? AND seat_role = 'player' AND connection_status = 'CONNECTED' AND ready = 0`,
+      )
+      .get(roomId) as { n: number }
+  ).n;
+  if (notReadyCount > 0) {
+    throw new CommandError('ACTION_NOT_ALLOWED', `还有 ${notReadyCount} 名玩家未准备`);
   }
 
   let config: unknown;
@@ -349,6 +363,7 @@ export function abortGame(
     session.id,
   );
   db.prepare(`UPDATE rooms SET status = 'POST_GAME', updated_at = ? WHERE id = ?`).run(now, roomId);
+  db.prepare(`UPDATE room_members SET ready = 0 WHERE room_id = ?`).run(roomId);
   const text = '房主已终止本局';
   const info = db
     .prepare(
@@ -372,7 +387,72 @@ export function returnToLobby(tx: TxContext, roomId: string): void {
   if (room.status !== 'POST_GAME') {
     throw new CommandError('ACTION_NOT_ALLOWED', '只能在结算页返回大厅');
   }
+  // 回大厅等同新的一轮等待：重置全员准备
+  db.prepare(`UPDATE room_members SET ready = 0 WHERE room_id = ?`).run(roomId);
   db.prepare(`UPDATE rooms SET status = 'LOBBY', updated_at = ? WHERE id = ?`).run(now, roomId);
+}
+
+/**
+ * 自动开局（全员就绪 + 人数达标时由 gateway 延迟任务触发）：
+ * POST_GAME 先转 LOBBY 再开局，配置沿用房间 config 中的 gameConfig（可能不存在）。
+ * 返回 null 表示条件已不满足（幂等复检），调用方不广播。
+ */
+export function autoStartGame(
+  tx: TxContext,
+  roomId: string,
+): StartGameOutcome | null {
+  const { db, now } = tx;
+  const room = db.prepare('SELECT status, game_id FROM rooms WHERE id = ?').get(roomId) as
+    | { status: string; game_id: string | null }
+    | undefined;
+  if (!room) throw new CommandError('ROOM_NOT_FOUND');
+  if (room.status !== 'LOBBY' && room.status !== 'POST_GAME') return null;
+  if (getActiveSession(db, roomId)) return null;
+  const moduleId = room.game_id ?? DEFAULT_GAME_ID;
+  const module = requireModule(moduleId);
+
+  // 幂等复检：在线玩家数达标且全员就绪，否则放弃
+  const players = (
+    db
+      .prepare(
+        `SELECT player_id, ready FROM room_members
+         WHERE room_id = ? AND seat_role = 'player' AND connection_status = 'CONNECTED'
+         ORDER BY seat ASC`,
+      )
+      .all(roomId) as { player_id: string; ready: number }[]
+  ).map((r) => r.player_id);
+  if (players.length < module.manifest.minPlayers || players.length > module.manifest.maxPlayers) {
+    return null;
+  }
+  const notReadyCount = (
+    db
+      .prepare(
+        `SELECT COUNT(*) AS n FROM room_members
+         WHERE room_id = ? AND seat_role = 'player' AND connection_status = 'CONNECTED' AND ready = 0`,
+      )
+      .get(roomId) as { n: number }
+  ).n;
+  if (notReadyCount > 0) return null;
+
+  if (room.status === 'POST_GAME') {
+    db.prepare(`UPDATE rooms SET status = 'LOBBY', updated_at = ? WHERE id = ?`).run(now, roomId);
+  }
+  const config = parseRoomGameConfig(db, roomId);
+  return startGame(tx, roomId, config);
+}
+
+/** 房间 config_json 里的游戏配置（update_config 保存），无则返回空配置 */
+function parseRoomGameConfig(db: Db, roomId: string): unknown {
+  const row = db.prepare('SELECT config_json FROM rooms WHERE id = ?').get(roomId) as
+    | { config_json: string }
+    | undefined;
+  if (!row) return {};
+  try {
+    const parsed = JSON.parse(row.config_json) as Record<string, unknown>;
+    return parsed.gameConfig ?? {};
+  } catch {
+    return {};
+  }
 }
 
 /**

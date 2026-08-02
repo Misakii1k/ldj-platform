@@ -6,11 +6,14 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { once } from 'node:events';
 import { WebSocket } from 'ws';
 import { PROTOCOL_VERSION } from '@ldj/shared';
 import { createApp, type App } from '../src/app.ts';
 import { createLogger } from '../src/boot/logger.ts';
 import type { ServerConfig } from '../src/config.ts';
+import { DEFAULT_RULES } from '../src/gateway/rateLimit.ts';
+import { seedRoom } from './helpers/seedRoom.ts';
 
 function testConfig(): ServerConfig {
   return {
@@ -20,7 +23,8 @@ function testConfig(): ServerConfig {
     publicBaseUrl: null,
     logLevel: 'error',
     allowedOrigins: [],
-    llm: { baseUrl: null, apiKey: null, model: 'test-model', timeoutMs: 5000 },
+    allowPrivateLlmUpstream: false,
+    llm: { provider: 'openai', baseUrl: null, apiKey: null, model: 'test-model', thinkingDepth: 'off', timeoutMs: 5000 },
     adminToken: null,
   };
 }
@@ -45,6 +49,15 @@ interface Envelope {
 
 let reqCounter = 0;
 
+function isRetryableConnectError(err: unknown): boolean {
+  const code = typeof err === 'object' && err !== null ? (err as { code?: unknown }).code : undefined;
+  return code === 'EADDRINUSE';
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolvePromise) => setTimeout(resolvePromise, ms));
+}
+
 /** 消息队列式客户端（同 gatewayM2）：所有服务端消息入队，支持按条件等待 */
 class Client {
   readonly socket: WebSocket;
@@ -66,10 +79,22 @@ class Client {
   }
 
   static async connect(app: App): Promise<Client> {
-    const socket = new WebSocket(`ws://127.0.0.1:${app.port()}/`);
-    const client = new Client(socket);
-    await client.waitFor((e) => e.type === 'welcome');
-    return client;
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const socket = new WebSocket(`ws://127.0.0.1:${app.port()}/`);
+      const client = new Client(socket);
+      try {
+        await Promise.race([
+          client.waitFor((e) => e.type === 'welcome'),
+          once(socket, 'error').then(([err]) => { throw err as Error; }),
+        ]);
+        return client;
+      } catch (err) {
+        socket.close();
+        if (!isRetryableConnectError(err) || attempt === 5) throw err;
+        await delay(20 + attempt * 20);
+      }
+    }
+    throw new Error('unreachable connect retry state');
   }
 
   send(type: string, payload: unknown): string {
@@ -116,23 +141,48 @@ interface GameRoom {
   tokens: string[];
 }
 
-/** 建房 + 加入至 n 名玩家（可选一名观战者），全部真实 WS 连接 */
+async function resumeSeededHost(
+  app: App,
+  options: { nickname?: string; gameId?: string } = {},
+): Promise<{ host: Client; roomCode: string; hostId: string; hostToken: string }> {
+  const seeded = seedRoom(app.db, options);
+  const host = await Client.connect(app);
+  const resumed = await host.request('resume_room', {
+    roomCode: seeded.roomCode,
+    playerId: seeded.hostId,
+    resumeToken: seeded.hostResumeToken,
+  });
+  assert.equal(resumed.type, 'ack');
+  await host.waitFor((e) => e.type === 'room_snapshot');
+  return {
+    host,
+    roomCode: seeded.roomCode,
+    hostId: seeded.hostId,
+    hostToken: seeded.hostResumeToken,
+  };
+}
+
+/** 注入历史房间 + 加入至 n 名玩家（可选一名观战者），全部走真实 WS */
 async function setupGameRoom(
   app: App,
   playerCount: number,
   withSpectator = false,
+  gameId?: string,
 ): Promise<GameRoom & { spectator?: Client }> {
-  const host = await Client.connect(app);
-  const created = await host.request('create_room', { nickname: '房主' });
-  assert.equal(created.type, 'ack');
-  const roomCode = String(created.payload.roomCode);
+  const seeded = await resumeSeededHost(app, { ...(gameId ? { gameId } : {}) });
+  const { host, roomCode } = seeded;
   const clients = [host];
-  const playerIds = [String(created.payload.playerId)];
-  const tokens = [String(created.payload.resumeToken)];
+  const playerIds = [seeded.hostId];
+  const tokens = [seeded.hostToken];
+  // 全员就绪（房间级"准备"机制：先准备再开局）
+  const hostReady = await host.request('room_command', { command: 'ready', ready: true });
+  assert.equal(hostReady.type, 'ack');
   for (let i = 2; i <= playerCount; i++) {
     const c = await Client.connect(app);
     const ack = await c.request('join_room', { roomCode, nickname: `玩家${i}` });
     assert.equal(ack.type, 'ack');
+    const readyAck = await c.request('room_command', { command: 'ready', ready: true });
+    assert.equal(readyAck.type, 'ack');
     clients.push(c);
     playerIds.push(String(ack.payload.playerId));
     tokens.push(String(ack.payload.resumeToken));
@@ -226,6 +276,63 @@ test('game_action 闭环：确认看词 → 广播新视角与 game_event；无�
     const evt = await room.host.waitFor((e) => e.type === 'game_event');
     const events = (evt.payload.events as { type: string }[]).map((x) => x.type);
     assert.ok(events.length >= 1);
+  } finally {
+    await app.shutdown();
+  }
+});
+
+test('狼人杀真实 WS：建房开局、身份隔离、全员确认并进入首夜', async () => {
+  const app = await startApp();
+  try {
+    const room = await setupGameRoom(app, 6, true, 'werewolf');
+    const started = await room.host.request('room_command', { command: 'start_game' });
+    assert.equal(started.type, 'ack');
+
+    const rolesByPlayer = new Map<string, string>();
+    const teammateIdsByPlayer = new Map<string, string[]>();
+    for (let index = 0; index < room.clients.length; index += 1) {
+      const playerId = room.playerIds[index]!;
+      const state = await room.clients[index]!.waitGameState((view) => view.phase === 'role_reveal');
+      assert.equal(state.payload.role, 'player');
+      const view = state.payload.view as {
+        me: { playerId: string; role: string; wolfTeammateIds: string[] };
+        players: { revealedRole: string | null }[];
+        reveal: unknown;
+      };
+      assert.equal(view.me.playerId, playerId);
+      assert.equal(view.reveal, null);
+      assert.ok(view.players.every((player) => player.revealedRole === null));
+      rolesByPlayer.set(playerId, view.me.role);
+      teammateIdsByPlayer.set(playerId, view.me.wolfTeammateIds);
+    }
+
+    const wolves = [...rolesByPlayer.entries()].filter(([, role]) => role === 'wolf').map(([id]) => id);
+    assert.equal(wolves.length, 2);
+    assert.equal([...rolesByPlayer.values()].filter((role) => role === 'seer').length, 1);
+    assert.equal([...rolesByPlayer.values()].filter((role) => role === 'witch').length, 1);
+
+    for (const playerId of room.playerIds) {
+      const expected = wolves.includes(playerId) ? wolves.filter((id) => id !== playerId) : [];
+      assert.deepEqual(teammateIdsByPlayer.get(playerId), expected);
+    }
+
+    const spectatorState = await room.spectator!.waitGameState((view) => view.phase === 'role_reveal');
+    assert.equal(spectatorState.payload.role, 'spectator');
+    assert.equal((spectatorState.payload.view as { me?: unknown }).me, undefined);
+    const spectatorRaw = JSON.stringify(spectatorState.payload.view);
+    for (const role of ['wolf', 'seer', 'witch', 'villager']) assert.ok(!spectatorRaw.includes(`"${role}"`));
+
+    for (const client of room.clients) {
+      const ack = await client.request('game_action', { type: 'confirm_role' });
+      assert.equal(ack.type, 'ack');
+    }
+    for (const client of room.clients) {
+      const night = await client.waitGameState((view) => view.phase === 'night');
+      assert.equal(night.payload.status, 'ACTIVE');
+      assert.equal((night.payload.view as { day: number }).day, 1);
+    }
+    const spectatorNight = await room.spectator!.waitGameState((view) => view.phase === 'night');
+    assert.equal((spectatorNight.payload.view as { day: number }).day, 1);
   } finally {
     await app.shutdown();
   }
@@ -356,6 +463,187 @@ test('§6.7 保留期满：扫描将成员置 EXPIRED 并在对局内判负退�
     });
     assert.equal(deniedResume.type, 'error');
     assert.equal(deniedResume.payload.code, 'RESERVATION_EXPIRED');
+  } finally {
+    await app.shutdown();
+  }
+});
+
+test('UNO start_game broadcasts multi-window public fields without leaking hands', async () => {
+  const app = await startApp();
+  try {
+    const seeded = await resumeSeededHost(app, { nickname: 'UNO房主', gameId: 'uno' });
+    const { host, roomCode, hostId } = seeded;
+
+    const guest = await Client.connect(app);
+    const joined = await guest.request('join_room', { roomCode, nickname: 'UNO玩家2' });
+    assert.equal(joined.type, 'ack');
+    const guestId = String(joined.payload.playerId);
+
+    const spectator = await Client.connect(app);
+    const watched = await spectator.request('join_room', { roomCode, nickname: 'UNO观众', asSpectator: true });
+    assert.equal(watched.type, 'ack');
+    assert.equal(watched.payload.seatRole, 'spectator');
+
+    await host.request('room_command', { command: 'ready', ready: true });
+    await guest.request('room_command', { command: 'ready', ready: true });
+
+    const ack = await host.request('room_command', { command: 'start_game' });
+    assert.equal(ack.type, 'ack');
+
+    const hostState = await host.waitGameState((v) => v.gameId === 'uno');
+    const guestState = await guest.waitGameState((v) => v.gameId === 'uno');
+    const spectatorState = await spectator.waitGameState((v) => v.gameId === 'uno');
+
+    assert.equal(hostState.payload.role, 'player');
+    assert.equal(guestState.payload.role, 'player');
+    assert.equal(spectatorState.payload.role, 'spectator');
+
+    const hostView = hostState.payload.view as {
+      gameId: string;
+      phase: string;
+      players: { playerId: string; handCount: number; isCurrentPlayer: boolean }[];
+      topDiscard: { id: string };
+      currentPlayerId: string;
+      currentPlayerIndex: number;
+      nextPlayerId: string;
+      deckCount: number;
+      discardCount: number;
+      lastPlayed: unknown;
+      lastPlayedCard: unknown;
+      lastPlayedBy: unknown;
+      me: { playerId: string; hand: { id: string }[]; playableCardIds: string[]; isCurrentPlayer: boolean };
+    };
+    const guestView = guestState.payload.view as typeof hostView;
+    const spectatorView = spectatorState.payload.view as Omit<typeof hostView, 'me'> & { me?: unknown };
+
+    assert.equal(hostView.phase, 'playing');
+    assert.equal(hostView.currentPlayerId, hostId);
+    assert.equal(hostView.currentPlayerIndex, 0);
+    assert.equal(hostView.nextPlayerId, guestId);
+    assert.equal(hostView.deckCount, 93);
+    assert.equal(hostView.discardCount, 1);
+    assert.equal(hostView.lastPlayed, null);
+    assert.equal(hostView.lastPlayedCard, null);
+    assert.equal(hostView.lastPlayedBy, null);
+    assert.equal(hostView.me.playerId, hostId);
+    assert.equal(hostView.me.hand.length, 7);
+    assert.equal(hostView.me.isCurrentPlayer, true);
+    assert.ok(Array.isArray(hostView.me.playableCardIds));
+    assert.deepEqual(hostView.players.map((p) => ({ id: p.playerId, handCount: p.handCount, current: p.isCurrentPlayer })), [
+      { id: hostId, handCount: 7, current: true },
+      { id: guestId, handCount: 7, current: false },
+    ]);
+
+    assert.equal(guestView.me.playerId, guestId);
+    assert.equal(guestView.me.hand.length, 7);
+    assert.equal(guestView.me.isCurrentPlayer, false);
+    assert.equal(spectatorView.me, undefined);
+    assert.equal(spectatorView.topDiscard.id, hostView.topDiscard.id);
+    assert.equal(spectatorView.deckCount, 93);
+    assert.equal(spectatorView.discardCount, 1);
+
+    const hostRaw = JSON.stringify(hostState.payload);
+    const guestRaw = JSON.stringify(guestState.payload);
+    const spectatorRaw = JSON.stringify(spectatorState.payload);
+    for (const card of guestView.me.hand) assert.equal(hostRaw.includes(card.id), false, 'host view must not include guest hand cards');
+    for (const card of hostView.me.hand) assert.equal(guestRaw.includes(card.id), false, 'guest view must not include host hand cards');
+    for (const card of [...hostView.me.hand, ...guestView.me.hand]) {
+      assert.equal(spectatorRaw.includes(card.id), false, 'spectator view must not include any hand cards');
+    }
+  } finally {
+    await app.shutdown();
+  }
+});
+
+test('UNO start_game retry with the same requestId is idempotent', async () => {
+  const app = await startApp();
+  try {
+    const seeded = await resumeSeededHost(app, { nickname: 'UNO host', gameId: 'uno' });
+    const { host, roomCode } = seeded;
+
+    const guest = await Client.connect(app);
+    const joined = await guest.request('join_room', { roomCode, nickname: 'UNO guest' });
+    assert.equal(joined.type, 'ack');
+    await guest.request('room_command', { command: 'ready', ready: true });
+    await host.request('room_command', { command: 'ready', ready: true });
+
+    const requestId = `uno-start-retry-${++reqCounter}`;
+    const sendStart = () => host.socket.send(JSON.stringify({
+      v: PROTOCOL_VERSION,
+      type: 'room_command',
+      requestId,
+      payload: { command: 'start_game' },
+    }));
+
+    sendStart();
+    const first = await host.waitFor((e) => e.requestId === requestId && (e.type === 'ack' || e.type === 'error'));
+    assert.equal(first.type, 'ack');
+    await host.waitGameState((view) => view.gameId === 'uno');
+    await guest.waitGameState((view) => view.gameId === 'uno');
+
+    sendStart();
+    const replay = await host.waitFor((e) => e.requestId === requestId && (e.type === 'ack' || e.type === 'error'));
+    assert.equal(replay.type, 'ack');
+    assert.equal(replay.roomSeq, first.roomSeq);
+
+    const row = app.db
+      .prepare(`SELECT COUNT(*) AS count
+                FROM game_sessions sessions
+                JOIN rooms room ON room.id = sessions.room_id
+                WHERE room.code = ?`)
+      .get(roomCode) as { count: number };
+    assert.equal(row.count, 1);
+  } finally {
+    await app.shutdown();
+  }
+});
+
+test('in-game spectator join receives immediate game_state snapshot', async () => {
+  const app = await startApp();
+  try {
+    const seeded = await resumeSeededHost(app, { nickname: 'UNO房主', gameId: 'uno' });
+    const { host, roomCode } = seeded;
+
+    const guest = await Client.connect(app);
+    const joined = await guest.request('join_room', { roomCode, nickname: 'UNO玩家2' });
+    assert.equal(joined.type, 'ack');
+    await guest.request('room_command', { command: 'ready', ready: true });
+    await host.request('room_command', { command: 'ready', ready: true });
+
+    const started = await host.request('room_command', { command: 'start_game' });
+    assert.equal(started.type, 'ack');
+    await host.waitGameState((view) => view.gameId === 'uno');
+
+    const spectator = await Client.connect(app);
+    const requestId = spectator.send('join_room', { roomCode, nickname: '中途观战', asSpectator: true });
+    const ack = await spectator.waitFor((e) => e.requestId === requestId && (e.type === 'ack' || e.type === 'error'));
+    assert.equal(ack.type, 'ack');
+    assert.equal(ack.payload.seatRole, 'spectator');
+
+    const state = await spectator.waitFor((e) => e.type === 'game_state' && e.requestId === requestId);
+    assert.equal(state.payload.role, 'spectator');
+    assert.equal(state.payload.moduleId, 'uno');
+    assert.equal((state.payload.view as { gameId: string }).gameId, 'uno');
+  } finally {
+    await app.shutdown();
+  }
+});
+
+test('game_action rate limit returns RATE_LIMITED after per-player burst', async () => {
+  const app = await startApp();
+  try {
+    const room = await setupGameRoom(app, 4);
+    await room.host.request('room_command', { command: 'start_game' });
+
+    for (let i = 0; i < DEFAULT_RULES.gameAction.max; i += 1) {
+      const ack = await room.host.request('game_action', { type: 'confirm_word' });
+      assert.equal(ack.type, 'ack');
+    }
+
+    const blocked = await room.host.request('game_action', { type: 'confirm_word' });
+    assert.equal(blocked.type, 'error');
+    assert.equal(blocked.payload.code, 'RATE_LIMITED');
+    assert.equal(typeof blocked.payload.retryAfterMs, 'number');
   } finally {
     await app.shutdown();
   }
