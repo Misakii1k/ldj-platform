@@ -31,6 +31,21 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolvePromise) => setTimeout(resolvePromise, ms));
 }
 
+/** join/resume 被服务端限流拒绝时抛出；带 retryAfterMs 供退避重试。 */
+export class RoomJoinError extends Error {
+  readonly code: string;
+  readonly retryAfterMs: number | undefined;
+
+  constructor(ack: Envelope, action: string) {
+    const code = String(ack.payload.code ?? 'UNKNOWN');
+    const retryAfterMs = typeof ack.payload.retryAfterMs === 'number' ? ack.payload.retryAfterMs : undefined;
+    super(`${action} 失败：${code} ${String(ack.payload.message ?? '')}`);
+    this.name = 'RoomJoinError';
+    this.code = code;
+    this.retryAfterMs = retryAfterMs;
+  }
+}
+
 export class WsClient {
   readonly socket: WebSocket;
   readonly #queue: Envelope[] = [];
@@ -160,20 +175,22 @@ export class RoomDriver {
     playerId: string,
     resumeToken: string,
   ): Promise<RoomDriver> {
-    const client = await WsClient.connect(url);
-    const ack = await client.request('resume_room', {
-      roomCode,
-      playerId,
-      resumeToken,
-      lastSeq: null,
-      chatCursor: null,
+    return this.#withJoinRetry(`resume:${playerId}`, async () => {
+      const client = await WsClient.connect(url);
+      const ack = await client.request('resume_room', {
+        roomCode,
+        playerId,
+        resumeToken,
+        lastSeq: null,
+        chatCursor: null,
+      });
+      if (ack.type === 'error') {
+        client.close();
+        throw new RoomJoinError(ack, 'resume_room');
+      }
+      await client.waitFor((e) => e.type === 'room_snapshot');
+      return new RoomDriver(client, roomCode, playerId);
     });
-    if (ack.type === 'error') {
-      client.close();
-      throw new Error(`resume_room 失败：${ack.payload.code} ${ack.payload.message ?? ''}`);
-    }
-    await client.waitFor((e) => e.type === 'room_snapshot');
-    return new RoomDriver(client, roomCode, playerId);
   }
 
   /** 直接 join_room（房主以外的新连接）。 */
@@ -183,19 +200,35 @@ export class RoomDriver {
     nickname: string,
     options: { asSpectator?: boolean; ready?: boolean } = {},
   ): Promise<RoomDriver> {
-    const client = await WsClient.connect(url);
-    const ack = await client.request('join_room', {
-      roomCode,
-      nickname,
-      ...(options.asSpectator ? { asSpectator: true } : {}),
+    return this.#withJoinRetry(`join:${nickname}`, async () => {
+      const client = await WsClient.connect(url);
+      const ack = await client.request('join_room', {
+        roomCode,
+        nickname,
+        ...(options.asSpectator ? { asSpectator: true } : {}),
+      });
+      if (ack.type === 'error') {
+        client.close();
+        throw new RoomJoinError(ack, 'join_room');
+      }
+      const playerId = String(ack.payload.playerId);
+      if (options.ready) await client.request('room_command', { command: 'ready', ready: true });
+      return new RoomDriver(client, roomCode, playerId);
     });
-    if (ack.type === 'error') {
-      client.close();
-      throw new Error(`join_room 失败：${ack.payload.code} ${ack.payload.message ?? ''}`);
+  }
+
+  /** E2E 套件连跑会触发服务端 join 限流（10 次/分钟/IP，resume 与 join 共用同一限流器）；按 retryAfterMs 退避重试。 */
+  static async #withJoinRetry<T>(tag: string, fn: () => Promise<T>): Promise<T> {
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      try {
+        return await fn();
+      } catch (err) {
+        if (!(err instanceof RoomJoinError) || err.retryAfterMs === undefined) throw err;
+        if (attempt === 7) throw err;
+        await delay(err.retryAfterMs + 150);
+      }
     }
-    const playerId = String(ack.payload.playerId);
-    if (options.ready) await client.request('room_command', { command: 'ready', ready: true });
-    return new RoomDriver(client, roomCode, playerId);
+    throw new Error(`unreachable join retry state (${tag})`);
   }
 
   ready(ready = true): Promise<Envelope> {

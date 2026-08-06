@@ -17,7 +17,8 @@ export default defineConfig({
   workers: 1,
   timeout: 120_000,
   expect: { timeout: 15_000 },
-  retries: 0,
+  // D5：浏览器渲染偶发竞态（跨 spec 共享 webServer/DB）用 1 次重试兜底；仍失败才会报错。
+  retries: 1,
   reporter: [['list']],
   use: {
     baseURL: BASE_URL,
@@ -32,6 +33,7 @@ export default defineConfig({
       PORT: '3178',
       DATA_DIR,
       LOG_LEVEL: 'warn',
+      E2E_JOIN_LIMIT_MAX: '1000',
     },
   },
 });

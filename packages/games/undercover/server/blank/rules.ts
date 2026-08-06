@@ -370,13 +370,17 @@ function settleVotes(
     const hadPending = s.guess !== null && s.guess.status === 'pending';
     deferOrFinalize(s, winner!, events, effects);
     if (hadPending && s.deferredOutcome !== null) return;
+    // 无待定猜词时 deferOrFinalize 走 finishGame：phase 置 game_over、deadlineAt 清空。
+    // 终局后 result 计时器既不会被消费，schedule_timer 契约也要求 deadlineAt 为有效时间戳（不得为 null）。
   }
-  effects.push({
-    type: 'schedule_timer',
-    timerId: blankResultTimerId(s.round, kind),
-    deadlineAt: s.deadlineAt,
-    action: { type: 'vote_result_elapsed', round: s.round },
-  });
+  if (pendingNext !== 'game_over') {
+    effects.push({
+      type: 'schedule_timer',
+      timerId: blankResultTimerId(s.round, kind),
+      deadlineAt: s.deadlineAt,
+      action: { type: 'vote_result_elapsed', round: s.round },
+    });
+  }
 }
 
 // —— 猜词校验（NORM-001/002） ——

@@ -72,6 +72,8 @@ export interface WsGatewayDeps {
    * 纯函数 reduce 不能主动通知"轮到你了"，所以每次落库后都要问一遍。
    */
   onBotTrigger?: (roomId: string) => void;
+  /** join/resume 限流配额覆盖（E2E/CI 放宽用；不设则用 DEFAULT_RULES.joinAttempt） */
+  joinLimitMax?: number;
 }
 
 interface ConnectionState {
@@ -134,11 +136,19 @@ export class WsGateway {
   readonly #messageLimiter = new RateLimiter(DEFAULT_RULES.messagesPerConnection);
   readonly #chatLimiter = new RateLimiter(DEFAULT_RULES.chat);
   readonly #gameActionLimiter = new RateLimiter(DEFAULT_RULES.gameAction);
-  readonly #joinLimiter = new RateLimiter(DEFAULT_RULES.joinAttempt);
+  readonly #joinLimiter: RateLimiter;
   readonly #reservationSweeper: ReturnType<typeof setInterval>;
   #sweeping = false;
 
   constructor(deps: WsGatewayDeps) {
+    this.#deps = deps;
+    // join/resume 限流配额覆盖（E2E/CI 放宽用；不设则用 DEFAULT_RULES.joinAttempt）
+    const joinMax = deps.joinLimitMax ?? DEFAULT_RULES.joinAttempt.max;
+    this.#joinLimiter = new RateLimiter(
+      joinMax === DEFAULT_RULES.joinAttempt.max
+        ? DEFAULT_RULES.joinAttempt
+        : { windowMs: DEFAULT_RULES.joinAttempt.windowMs, max: joinMax },
+    );
     this.#deps = deps;
     this.#wss = new WebSocketServer({
       server: deps.server,

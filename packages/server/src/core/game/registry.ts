@@ -9,17 +9,18 @@ import {
 } from '@ldj/game-undercover/server';
 import { unoVersionedModule, unoHouseModule } from '@ldj/game-uno/server';
 import { landlordModule } from '@ldj/game-landlord/server';
-import { werewolfModule } from '@ldj/game-werewolf/server';
+import { werewolfModule, werewolfV2Module } from '@ldj/game-werewolf/server';
 import type { SessionRow } from './session.ts';
 
 export type ErasedGameModule = GameModule<unknown, unknown, unknown, unknown, unknown, unknown, unknown>;
 export type RegisteredGameModule = ErasedGameModule | AnyGameModuleV2;
 
 /** legacy 模块的规则集别名：迁移回填与恢复期按此把 module_id 归一化为权威 ruleset_id。
- *  狼人杀 legacy 模块同时承载两个已注册规则集（config.rulesetId 区分），因此注册两条。 */
+ *  狼人杀 legacy 模块与 open-kill v2 模块并行注册：v2 模块自带 registeredRulesets，
+ *  legacy 别名只保留 legacy 规则集（否则 (werewolf, open_kill) 重复注册抛错）。 */
 const LEGACY_RULESET_ALIASES: Readonly<Record<string, readonly string[]>> = {
   landlord: ['landlord_legacy_platform_v1'],
-  werewolf: ['werewolf_legacy_platform_v2', 'werewolf_platform_open_kill_v1'],
+  werewolf: ['werewolf_legacy_platform_v2'],
 };
 
 const MODULES: RegisteredGameModule[] = [
@@ -29,6 +30,7 @@ const MODULES: RegisteredGameModule[] = [
   unoHouseModule,
   landlordModule,
   werewolfModule,
+  werewolfV2Module,
 ];
 
 function keyOf(gameId: string, rulesetId: string): string {

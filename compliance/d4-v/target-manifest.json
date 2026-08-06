@@ -6,12 +6,57 @@
     "rulesetId": "werewolf_platform_open_kill_v1",
     "engineContractVersion": 2
   },
+  "lockupMetadata": {
+    "lockedAt": "2026-08-06",
+    "lockedOnCommit": "b9bf4586cd1942fcc6cfdd3dc6dfccae5b833d7f",
+    "lockedInWorkingTree": "commit A（D4 全绿不可变基线）工作树字节",
+    "hashRule": "sha256 of exact current file bytes, lowercase hex (match compliance/d4/third-game-baseline.json measurementRules.hashRule)",
+    "lineCountRule": "raw LF line count per baseline rawLineCountRule (empty file = 0; non-empty adds one when final byte is not LF)",
+    "effectiveNonTestLineCountRule": "effectiveNonTestLoc per fixed scripts/d4/measure-loc.mjs (excludes test/generated/blank/pure-type/static word bank lines)",
+    "auditNote": "审计增强字段，measure-loc 只读 targetSourceFiles[].path/role，读取语义不受影响。P1a 完成后由主模型在 commit B 上以 measure-loc --target 重测并覆盖为权威终稿值。"
+  },
   "targetSourceFiles": [
-    { "path": "packages/games/werewolf/server/v2/types.ts", "role": "target_types" },
-    { "path": "packages/games/werewolf/server/v2/schemas.ts", "role": "target_schemas" },
-    { "path": "packages/games/werewolf/server/v2/rules.ts", "role": "target_rules" },
-    { "path": "packages/games/werewolf/server/v2/module.ts", "role": "target_module" },
-    { "path": "packages/games/werewolf/server/v2/bot.ts", "role": "target_rule_bot" },
-    { "path": "packages/games/werewolf/server/v2/botPrompt.ts", "role": "target_llm_prompt" }
+    {
+      "path": "packages/games/werewolf/server/v2/types.ts",
+      "role": "target_types",
+      "sha256": "b20c9f67c5705a8b36c672bf3879382bf9f0f0a9ce12fa17790c3e8d68e3f549",
+      "lineCount": 220,
+      "effectiveNonTestLineCount": 1
+    },
+    {
+      "path": "packages/games/werewolf/server/v2/schemas.ts",
+      "role": "target_schemas",
+      "sha256": "94df90c76087321a9128130de4e9b7f30450755f307705aa9def0024a7d0ea4c",
+      "lineCount": 101,
+      "effectiveNonTestLineCount": 90
+    },
+    {
+      "path": "packages/games/werewolf/server/v2/rules.ts",
+      "role": "target_rules",
+      "sha256": "f9eced90358e99345fe723a24b10d2fb6e617a8e02540e9cdbe9ee1df5714594",
+      "lineCount": 633,
+      "effectiveNonTestLineCount": 603
+    },
+    {
+      "path": "packages/games/werewolf/server/v2/module.ts",
+      "role": "target_module",
+      "sha256": "29676587392ffc972cc3e5327d0672a0c13154405fbabf24c65ecf971527f54d",
+      "lineCount": 41,
+      "effectiveNonTestLineCount": 37
+    },
+    {
+      "path": "packages/games/werewolf/server/v2/bot.ts",
+      "role": "target_rule_bot",
+      "sha256": "4e5deff199bbde39500744db56abe91d1fb2bea35f023593a06f219097d467b1",
+      "lineCount": 67,
+      "effectiveNonTestLineCount": 63
+    },
+    {
+      "path": "packages/games/werewolf/server/v2/botPrompt.ts",
+      "role": "target_llm_prompt",
+      "sha256": "e6185b44914b00b6879c29fb17b809863d28f9bbe8a65097067b6c3c46a5f226",
+      "lineCount": 79,
+      "effectiveNonTestLineCount": 75
+    }
   ]
 }

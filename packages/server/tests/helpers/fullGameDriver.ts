@@ -31,6 +31,8 @@ const silentLogger = createLogger('error', {}, () => {});
 
 export interface FullGameMatrixOptions {
   gameId: 'uno' | 'undercover' | 'werewolf' | 'landlord';
+  /** 可选规则集 id：start_game 载荷带 gameConfig:{rulesetId}；缺省保持 {}（兼容旧调用） */
+  rulesetId?: string;
   /** 真实玩家（全程被动，只占席位；动作全部由机器人驱动） */
   humanCount: number;
   /** 规则机器人数量（驱动对局） */
@@ -55,6 +57,8 @@ export interface FullGameMatrixResult {
   sessionStatus: string | null;
   finalSeq: number;
   finalRoomSeq: number;
+  /** 终局会话实际落库的规则集 id（无则 null，兼容 legacy 会话） */
+  finalRulesetId: string | null;
   /** 驱动过程中累计的虚拟时间（毫秒）：动作步进 + 计时器调度时长 */
   virtualTimeMs: number;
 }
@@ -90,7 +94,12 @@ function cleanupDb(path: string): void {
   }
 }
 
-async function createDriver(gameId: FullGameMatrixOptions['gameId'], humanCount: number, botCount: number): Promise<Driver> {
+async function createDriver(
+  gameId: FullGameMatrixOptions['gameId'],
+  humanCount: number,
+  botCount: number,
+  rulesetId?: string,
+): Promise<Driver> {
   const dbPath = tempDbPath();
   const db = openDb({ path: dbPath });
   migrate(db);
@@ -120,7 +129,15 @@ async function createDriver(gameId: FullGameMatrixOptions['gameId'], humanCount:
     roomId,
     actorScope: 'conn:host-start',
     requestId: nextReq(),
-    handler: (tx) => applyRoomCommand(tx, roomId, hostId, { command: 'start_game' }, {}),
+    handler: (tx) => applyRoomCommand(
+      tx,
+      roomId,
+      hostId,
+      rulesetId === undefined
+        ? { command: 'start_game' }
+        : { command: 'start_game', gameConfig: { rulesetId } },
+      {},
+    ),
   });
   return { db, executor, roomId, playerIds, roomCode, dbPath };
 }
@@ -173,6 +190,11 @@ function planBotAction(
   if (!module.pickBotAction) return null;
   for (const player of players) {
     const view = module.getPlayerView(state, player.playerId);
+    // 已淘汰成员按模块自身视角排除：reducer 侧一律拒绝已淘汰者动作，
+    // 个别规则策略漏检（如 blank 投票策略），驱动器在规划期过滤，避免无效动作无限重试。
+    // 仅当 me.alive 显式为 false 时跳过；UNO/landlord 等无 alive 字段的模块不受影响。
+    const me = (view as { me?: { alive?: unknown } | null }).me;
+    if (me !== null && me !== undefined && me.alive === false) continue;
     const random = createSeededRandom(`matrix:${player.playerId}:${step}`);
     const input: BotDecisionInput<unknown> = { view, playerId: player.playerId, random };
     try {
@@ -231,8 +253,8 @@ async function crashAndRecover(driver: Driver): Promise<Driver> {
  * 关闭→重开→恢复→逐字段比较，再继续下一动作。
  */
 export async function driveFullGameWithCrashMatrix(options: FullGameMatrixOptions): Promise<FullGameMatrixResult> {
-  const { gameId, humanCount, botCount, crashEveryStep, maxSteps, maxVirtualTimeMs } = options;
-  let driver = await createDriver(gameId, humanCount, botCount);
+  const { gameId, humanCount, botCount, crashEveryStep, maxSteps, maxVirtualTimeMs, rulesetId } = options;
+  let driver = await createDriver(gameId, humanCount, botCount, rulesetId);
   const dbPath = driver.dbPath;
   let steps = 0;
   let resultRows = 0;
@@ -240,6 +262,7 @@ export async function driveFullGameWithCrashMatrix(options: FullGameMatrixOption
   let sessionStatus: string | null = null;
   let finalSeq = 0;
   let finalRoomSeq = 0;
+  let finalRulesetId: string | null = null;
   let finished = false;
   // 虚拟时间累计：动作步进 + 计时器调度时长；anchor 记录上一个被消费计时器的调度时刻
   let virtualTimeMs = 0;
@@ -267,6 +290,7 @@ export async function driveFullGameWithCrashMatrix(options: FullGameMatrixOption
           finished = ended.status === 'FINISHED';
           sessionStatus = ended.status;
           finalSeq = ended.last_seq;
+          finalRulesetId = ended.ruleset_id ?? null;
           const room = driver.db.prepare('SELECT seq FROM rooms WHERE id = ?').get(driver.roomId) as { seq: number };
           finalRoomSeq = room.seq;
           resultRows = (driver.db.prepare(
@@ -353,6 +377,7 @@ export async function driveFullGameWithCrashMatrix(options: FullGameMatrixOption
     if (final) {
       sessionStatus = sessionStatus ?? final.status;
       finalSeq = final.last_seq;
+      finalRulesetId = final.ruleset_id ?? null;
       const room = driver.db.prepare('SELECT seq FROM rooms WHERE id = ?').get(driver.roomId) as { seq: number };
       finalRoomSeq = room.seq;
       resultRows = (driver.db.prepare(
@@ -369,7 +394,7 @@ export async function driveFullGameWithCrashMatrix(options: FullGameMatrixOption
       );
     }
     assertVirtualTimeCap();
-    return { steps, finished, resultRows, pendingTimersAtEnd, sessionStatus, finalSeq, finalRoomSeq, virtualTimeMs };
+    return { steps, finished, resultRows, pendingTimersAtEnd, sessionStatus, finalSeq, finalRoomSeq, finalRulesetId, virtualTimeMs };
   } finally {
     closeDb(driver.db);
     cleanupDb(dbPath);
@@ -380,5 +405,5 @@ export async function driveFullGameWithCrashMatrix(options: FullGameMatrixOption
 export function describeFinish(result: FullGameMatrixResult): string {
   return `steps=${result.steps} finished=${result.finished} status=${result.sessionStatus} ` +
     `resultRows=${result.resultRows} pendingTimers=${result.pendingTimersAtEnd} seq=${result.finalSeq} ` +
-    `virtualTimeMs=${result.virtualTimeMs}`;
+    `ruleset=${result.finalRulesetId ?? '<legacy>'} virtualTimeMs=${result.virtualTimeMs}`;
 }

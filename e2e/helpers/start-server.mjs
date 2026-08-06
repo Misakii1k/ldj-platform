@@ -23,6 +23,9 @@ const child = spawn(process.execPath, ['packages/server/src/index.ts'], {
     PORT: '3178',
     DATA_DIR,
     LOG_LEVEL: 'warn',
+    // E2E 套件会大量 resume/join（全套件远超 10 次/分钟/IP 的生产限流）：
+    // 放宽 join 限流配额，避免 CI 连跑被限流击穿。
+    E2E_JOIN_LIMIT_MAX: '1000',
   },
 });
 

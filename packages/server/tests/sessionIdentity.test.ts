@@ -13,7 +13,7 @@ import { seedRoom } from './helpers/seedRoom.ts';
 import { applyJoinRoom } from '../src/core/commands/joinRoom.ts';
 import { applyRoomCommand } from '../src/core/commands/roomCommand.ts';
 import { startGame, getActiveSession, type SessionRow } from '../src/core/game/session.ts';
-import { getSessionGameModule, getDefaultRuleset, resolveRulesetForStart } from '../src/core/game/registry.ts';
+import { getSessionGameModule, getDefaultRuleset, getGameModule, resolveRulesetForStart } from '../src/core/game/registry.ts';
 
 function freshDb(): Db {
   const db = openDb({ path: ':memory:' });
@@ -119,6 +119,59 @@ test('狼人双规则集：legacy 默认与 open-kill 配置均正确解析', as
   assert.ok(sessionB);
   assert.equal(sessionB.ruleset_id, 'werewolf_platform_open_kill_v1');
   assert.equal(getSessionGameModule(sessionB)?.manifest.id, 'werewolf');
+  closeDb(db);
+});
+
+test('D5 P1a 注册断言：open_kill 解析到 v2 模块、legacy 仍解析到 legacy 模块', async () => {
+  const db = freshDb();
+  const executor = new RoomCommandExecutor(db);
+
+  // legacy 开局（config 不带 rulesetId）→ legacy 模块（无 versioned identity）
+  const roomA = await makeRoomWithPlayers(db, executor, 'werewolf', 6);
+  await executor.executeOnRoom({
+    roomId: roomA.roomId,
+    actorScope: 'conn:host-a',
+    requestId: 'start-a-d5',
+    handler: (tx) => startGame(tx, roomA.roomId, { preset: 'classic', pace: 'fast', witchSelfSave: 'first_night', winCondition: 'numbers' }),
+  });
+  const sessionA = getActiveSession(db, roomA.roomId);
+  assert.ok(sessionA);
+  assert.equal(sessionA.ruleset_id, 'werewolf_legacy_platform_v2');
+  const legacyModule = getSessionGameModule(sessionA);
+  assert.ok(legacyModule);
+  assert.ok(!('identity' in legacyModule), 'legacy 规则集必须解析到 legacy 模块（不得是 versioned）');
+
+  // open-kill 开局（config.rulesetId = werewolf_platform_open_kill_v1）→ v2 模块
+  const roomB = await makeRoomWithPlayers(db, executor, 'werewolf', 6);
+  await executor.executeOnRoom({
+    roomId: roomB.roomId,
+    actorScope: 'conn:host-b',
+    requestId: 'start-b-d5',
+    handler: (tx) =>
+      startGame(tx, roomB.roomId, {
+        rulesetId: 'werewolf_platform_open_kill_v1',
+        preset: 'classic',
+        pace: 'fast',
+        witchSelfSave: 'first_night',
+        winCondition: 'numbers',
+      }),
+  });
+  const sessionB = getActiveSession(db, roomB.roomId);
+  assert.ok(sessionB);
+  assert.equal(sessionB.ruleset_id, 'werewolf_platform_open_kill_v1');
+  const v2Module = getSessionGameModule(sessionB);
+  assert.ok(v2Module, 'open_kill 必须能解析到模块');
+  assert.ok('identity' in v2Module, 'open_kill 规则集必须解析到 v2 模块');
+  if ('identity' in v2Module) {
+    assert.equal(v2Module.identity.rulesetId, 'werewolf_platform_open_kill_v1');
+    assert.equal(v2Module.identity.engineContractVersion, 2);
+    assert.equal(v2Module.identity.viewVersion, 1);
+  }
+
+  // 注册表精确解析：legacy 规则集仍落在 legacy 模块
+  const directLegacy = getGameModule('werewolf', 'werewolf_legacy_platform_v2');
+  assert.ok(directLegacy);
+  assert.ok(!('identity' in directLegacy), 'werewolf_legacy_platform_v2 必须解析到 legacy 模块');
   closeDb(db);
 });
 

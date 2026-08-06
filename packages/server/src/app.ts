@@ -197,6 +197,9 @@ export function createApp(
     ...(tuning?.reservationSweepMs !== undefined
       ? { reservationSweepMs: tuning.reservationSweepMs }
       : {}),
+    ...(config.joinLimitMax !== undefined && config.joinLimitMax !== null
+      ? { joinLimitMax: config.joinLimitMax }
+      : {}),
   });
   const timerRunner = new TimerRunner(db, executor, (roomId, outcome) => {
     try {

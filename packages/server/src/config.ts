@@ -44,6 +44,11 @@ export interface ServerConfig {
    * 之所以要这道关：设置里含 API 密钥，而局域网内谁都能访问这个端口。
    */
   adminToken: string | null;
+  /**
+   * join/resume 限流配额覆盖（E2E/CI 放宽用；默认 10 次/分钟/IP，SPEC §9.5）。
+   * 只读配置，不新增设置键；缺省时保持生产限流。
+   */
+  joinLimitMax?: number | null;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
@@ -105,5 +110,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
       timeoutMs: llmTimeout,
     },
     adminToken: (env.ADMIN_TOKEN ?? '').trim() || null,
+    joinLimitMax: env.E2E_JOIN_LIMIT_MAX === undefined
+      ? null
+      : (() => {
+          const n = Number(env.E2E_JOIN_LIMIT_MAX);
+          if (!Number.isInteger(n) || n < 1 || n > 10_000) {
+            throw new Error(`非法 join 限流配额：${env.E2E_JOIN_LIMIT_MAX}`);
+          }
+          return n;
+        })(),
   };
 }

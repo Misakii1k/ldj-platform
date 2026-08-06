@@ -1,15 +1,19 @@
 /**
- * D4-UI3：狼人杀 12 人审判桌 skeleton 真实 Chromium 验收。
+ * D5 P1a：werewolf v2 真实引擎 12 人审判桌 Chromium 验收。
  *
- * 服务端说明：werewolf 服务端 registry 不修改。v2 未注册，采用已注册的 legacy
- * `werewolf_platform_open_kill_v1` 规则集（getSessionGameModule 可解析，start_game 成功链）。
- * 本门只验收 tabletop skeleton：12 席位 SeatRing dense 几何、无交叠、浏览器视角隐私。
+ * 服务端说明：werewolf_platform_open_kill_v1 已注册到 werewolfV2Module（engineContractVersion 2 /
+ * viewVersion 1 / schemaVersion 1）。本门真实跑 v2 引擎：start_game 按 (moduleId, rulesetId)
+ * 路由到 v2 模块，Node 侧 host 与浏览器玩家经真实 WS game_action 确认身份，v2 reducer 受理后
+ * 回发视角。同时验收 tabletop skeleton：12 席位 SeatRing dense 几何、无交叠、浏览器视角隐私。
  *
  * 房间构成：12 人（11 个 Node 侧玩家 + 1 个浏览器玩家同房）——seedRoom 直插 12 人（全员
  * CONNECTED + ready），房主经真实 WS resume + ready + start_game，浏览器玩家经本地会话
  * resume 加入；其余玩家保持服务端 CONNECTED 席位。
  *
  * 验证（真实 Chromium 断言）：
+ * - v2 引擎判别：game_state 携带 engineContractVersion 2 / viewVersion 1 / rulesetId
+ *   werewolf_platform_open_kill_v1，view.schemaVersion = 1（v2 模块视图身份）。
+ * - 真实动作：host 与浏览器玩家 confirm_role 被 v2 reducer 受理（confirmedRolePlayerIds 更新）。
  * - SeatRing dense：`.seat-ring.is-dense`、`.seat-chip` 计数 12、aria-label 审判桌共 12 席位。
  * - 几何：席位中心两两距离 > 席位宽度（无交叠保证由 dense 半径公式给出），且全部位于环形内。
  * - 隐私：role_reveal 阶段无任何 `.seat-chip__role`（他人身份绝不进入 DOM）；页面唯一身份
@@ -47,8 +51,8 @@ async function prepareBrowser(browser: Browser, me: BrowserMe): Promise<Page> {
   return page;
 }
 
-test.describe('D4-UI3 狼人杀 12 人审判桌', () => {
-  test('12 人局：SeatRing dense 几何无交叠 + 浏览器视角隐私（宽视口 1280×800）', async ({ browser }) => {
+test.describe('D5 P1a 狼人杀 12 人审判桌（v2 引擎）', () => {
+  test('12 人局：v2 引擎判别 + 真实 confirm_role + SeatRing dense 几何无交叠 + 浏览器视角隐私（宽视口 1280×800）', async ({ browser }) => {
     // 12 人房（11 Node 侧 + 1 浏览器同房）；房主经真实 WS 开局
     const seeded = seedRoom(DB_PATH, {
       gameId: 'werewolf',
@@ -67,7 +71,15 @@ test.describe('D4-UI3 狼人杀 12 人审判桌', () => {
       ).toBe('ack');
       const hostState = await host.waitGameState((v) => v.gameId === 'werewolf');
       expect(hostState.payload.role).toBe('player');
-      expect((hostState.payload.view as { phase?: string }).phase).toBe('role_reveal');
+
+      // —— v2 引擎判别：版本化判别符 + schemaVersion 1 ——
+      expect(hostState.payload.engineContractVersion).toBe(2);
+      expect(hostState.payload.viewVersion).toBe(1);
+      expect(hostState.payload.rulesetId).toBe('werewolf_platform_open_kill_v1');
+      const hostView = hostState.payload.view as Record<string, unknown>;
+      expect(hostView.schemaVersion).toBe(1);
+      expect(hostView.rulesetId).toBe('werewolf_platform_open_kill_v1');
+      expect(hostView.phase).toBe('role_reveal');
 
       // 浏览器玩家加入
       const browserPlayer = seeded.players[1]!;
@@ -86,6 +98,23 @@ test.describe('D4-UI3 狼人杀 12 人审判桌', () => {
       await expect(page.locator('.seat-ring').first()).toHaveAttribute('aria-label', '审判桌，共 12 个席位');
       await expect(page.locator('.seat-chip')).toHaveCount(12);
       await expect(page.getByText('12 人局').first()).toBeVisible();
+
+      // —— 真实 v2 引擎动作：host 与浏览器玩家 confirm_role 被 v2 reducer 受理 ——
+      const confirmAck = await host.gameAction({ type: 'confirm_role' });
+      expect(
+        confirmAck.type,
+        `host confirm_role 应 ack：${confirmAck.payload.code ?? ''} ${confirmAck.payload.message ?? ''}`,
+      ).toBe('ack');
+      await page.getByRole('button', { name: '我已记住身份' }).click();
+      await host.waitGameState(
+        (v) =>
+          Array.isArray(v.confirmedRolePlayerIds)
+          && (v.confirmedRolePlayerIds as string[]).includes(host.playerId)
+          && (v.confirmedRolePlayerIds as string[]).includes(browserPlayer.playerId),
+        15_000,
+      );
+      await expect(page.getByRole('button', { name: '我已记住身份' })).toHaveCount(0);
+
       // 阶段可能是 role_reveal（relaxed 45s）或已推进到 night；两者都是 skeleton 有效态
       const phaseText = (await page.locator('.moon-header h1').textContent())?.trim() ?? '';
       expect(['身份确认', '夜晚行动']).toContain(phaseText);

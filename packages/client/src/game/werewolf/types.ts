@@ -94,7 +94,10 @@ export interface WerewolfMe {
 
 export interface WerewolfView {
   gameId: 'werewolf';
-  schemaVersion: 4;
+  /** legacy（服务端模块 schema v4）与 v2（open-kill schema v1）共用同一客户端视图形状。 */
+  schemaVersion: 4 | 1;
+  /** v2 视图在顶层携带规则集身份；legacy 视图不携带此键。 */
+  rulesetId?: 'werewolf_platform_open_kill_v1';
   phase: WerewolfPhase;
   day: number;
   players: WerewolfPlayer[];
@@ -213,15 +216,15 @@ function parseMe(value: unknown): WerewolfMe | null {
   };
 }
 
-export function parseWerewolfView(value: unknown): WerewolfView | null {
+export function parseWerewolfView(value: unknown, role?: 'player' | 'spectator'): WerewolfView | null {
   if (!isRecord(value) || !hasOnlyKeys(value, [
-    'gameId', 'schemaVersion', 'phase', 'day', 'players', 'config', 'confirmedRolePlayerIds',
+    'gameId', 'rulesetId', 'schemaVersion', 'phase', 'day', 'players', 'config', 'confirmedRolePlayerIds',
     'announcementConfirmedPlayerIds', 'lastNightDeaths', 'speakingOrder', 'currentSpeakerId',
     'lastWordsPlayerId', 'deadlineAt', 'votesSubmitted', 'votesExpected', 'runoffCandidates',
     'lastVoteSummary', 'pendingShooterId', 'winner', 'aborted', 'reveal', 'me',
   ])) return null;
   const {
-    gameId, schemaVersion, phase, day, players, config, confirmedRolePlayerIds, announcementConfirmedPlayerIds,
+    gameId, rulesetId, schemaVersion, phase, day, players, config, confirmedRolePlayerIds, announcementConfirmedPlayerIds,
     lastNightDeaths, speakingOrder, currentSpeakerId, lastWordsPlayerId, deadlineAt, votesSubmitted,
     votesExpected, runoffCandidates, lastVoteSummary, pendingShooterId, winner, aborted, reveal, me,
   } = value;
@@ -231,7 +234,10 @@ export function parseWerewolfView(value: unknown): WerewolfView | null {
   const deaths = asStringArray(lastNightDeaths);
   const speakers = asStringArray(speakingOrder);
   const runoff = asStringArray(runoffCandidates);
-  if (gameId !== 'werewolf' || schemaVersion !== 4 || !isPhase(phase) || typeof day !== 'number') return null;
+  if (gameId !== 'werewolf' || (schemaVersion !== 4 && schemaVersion !== 1) || !isPhase(phase) || typeof day !== 'number') return null;
+  const isV2 = schemaVersion === 1;
+  if (isV2 && rulesetId !== 'werewolf_platform_open_kill_v1') return null;
+  if (!isV2 && rulesetId !== undefined) return null;
   if (!Array.isArray(players) || parsedPlayers.some((player) => player === null)) return null;
   if (!isRecord(config) || !hasOnlyKeys(config, [
     'rulesetId', 'preset', 'pace', 'witchSelfSave', 'winCondition', 'wolfKillScope', 'roles',
@@ -242,6 +248,7 @@ export function parseWerewolfView(value: unknown): WerewolfView | null {
   if (config.winCondition !== 'numbers' && config.winCondition !== 'roles') return null;
   if (config.wolfKillScope !== 'non_wolf' && config.wolfKillScope !== 'any') return null;
   if ((config.rulesetId === 'werewolf_legacy_platform_v2') !== (config.wolfKillScope === 'non_wolf')) return null;
+  if (isV2 && config.rulesetId !== 'werewolf_platform_open_kill_v1') return null;
   if (!isRecord(config.roles) || !hasOnlyKeys(config.roles, ['guard', 'hunter', 'idiot']) || typeof config.roles.guard !== 'boolean' || typeof config.roles.hunter !== 'boolean' || typeof config.roles.idiot !== 'boolean') return null;
   if (!confirmedRoles || !confirmedAnnouncements || !deaths || !speakers || !runoff) return null;
   if (currentSpeakerId !== null && typeof currentSpeakerId !== 'string') return null;
@@ -253,6 +260,9 @@ export function parseWerewolfView(value: unknown): WerewolfView | null {
   if (typeof pendingShooterId !== 'string' && pendingShooterId !== null) return null;
   const summary = lastVoteSummary === null ? null : parseVoteSummary(lastVoteSummary);
   if (lastVoteSummary !== null && summary === null) return null;
+  // 角色判别：player 必须携带本人视角，spectator 不得携带（与 v2 wire 形状一致）。
+  if (role === 'player' && (me === undefined || me === null)) return null;
+  if (role === 'spectator' && me !== undefined) return null;
   const parsedMe = parseMe(me);
   if (me !== null && me !== undefined && parsedMe === null) return null;
 
@@ -270,8 +280,12 @@ export function parseWerewolfView(value: unknown): WerewolfView | null {
     parsedReveal = { roles: reveal.roles as Record<string, WerewolfRole>, voteHistory: records as WerewolfVoteRecord[] };
   }
 
+  // 判别已保证：isV2 → rulesetId === 'werewolf_platform_open_kill_v1'；legacy → undefined。
+  const v2RulesetId: 'werewolf_platform_open_kill_v1' | undefined =
+    rulesetId === undefined ? undefined : ('werewolf_platform_open_kill_v1' as const);
+
   return {
-    gameId, schemaVersion, phase, day, players: parsedPlayers as WerewolfPlayer[],
+    gameId, schemaVersion, ...(v2RulesetId === undefined ? {} : { rulesetId: v2RulesetId }), phase, day, players: parsedPlayers as WerewolfPlayer[],
     config: {
       rulesetId: config.rulesetId,
       preset: config.preset,
