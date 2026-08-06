@@ -2,10 +2,13 @@
  * 纯函数 reducer：处理收到的 server envelope（Task 1）。
  * 不执行副作用，只返回新状态 + 副作用提示；由 Provider 解释执行。
  */
-import type {
-  ChatMessageView,
-  RoomSnapshotView,
-  ServerEnvelope,
+import {
+  PROTOCOL_VERSION,
+  SERVER_MESSAGE_TYPES,
+  type ChatMessageView,
+  type RoomSnapshotView,
+  type ServerEnvelope,
+  type ServerMessageType,
 } from '@ldj/shared';
 import type {
   ConnectionSnapshot,
@@ -14,10 +17,14 @@ import type {
 } from './types.ts';
 import {
   INITIAL_CONNECTION_STATE,
+  withConnState,
 } from './types.ts';
 import {
   parseGameStatePayload,
 } from '../game/types.ts';
+import {
+  parseGameView,
+} from '../game/viewRegistry.ts';
 
 // —— payload 形状的最小校验（不引入 zod） ——
 
@@ -85,6 +92,35 @@ function parseErrorPayload(p: unknown): {
   };
 }
 
+/**
+ * 严格解析服务端 envelope（D3 Task 9）：不再直接 `JSON.parse(...) as ServerEnvelope`。
+ * 校验协议版本、消息类型、requestId、roomSeq 与 serverNow 边界；失败返回 null。
+ */
+export function parseServerEnvelope(raw: string): ServerEnvelope | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!isObject(parsed)) return null;
+  const { v, type, requestId, roomSeq, serverNow, payload } = parsed;
+  if (v !== PROTOCOL_VERSION) return null;
+  if (typeof type !== 'string' || !(SERVER_MESSAGE_TYPES as readonly string[]).includes(type)) return null;
+  if (requestId !== undefined && typeof requestId !== 'string') return null;
+  if (roomSeq !== undefined && (!Number.isSafeInteger(roomSeq) || (roomSeq as number) < 0)) return null;
+  if (!Number.isSafeInteger(serverNow) || (serverNow as number) < 0) return null;
+  const envelope: ServerEnvelope = {
+    v,
+    type: type as ServerMessageType,
+    serverNow: serverNow as number,
+    payload,
+  };
+  if (requestId !== undefined) envelope.requestId = requestId as string;
+  if (roomSeq !== undefined) envelope.roomSeq = roomSeq as number;
+  return envelope;
+}
+
 /** 合并聊天消息（按 cursor 去重，按 cursor 排序） */
 function mergeChat(existing: ChatMessageView[], incoming: ChatMessageView[]): {
   messages: ChatMessageView[];
@@ -141,8 +177,7 @@ export function applyEnvelope(
       if (!payload) return { state, effects };
       return {
         state: {
-          ...state,
-          connState: state.connState === 'reconnecting' ? 'connected' : 'connected',
+          ...withConnState(state, 'connected'),
           serverVersion: payload.serverVersion,
           connectionId: payload.connectionId,
           llmAvailable: payload.llmAvailable,
@@ -170,10 +205,10 @@ export function applyEnvelope(
         ...(payload.retryAfterMs !== undefined ? { retryAfterMs: payload.retryAfterMs } : {}),
         ...(payload.currentSeq !== undefined ? { currentSeq: payload.currentSeq } : {}),
       };
-      let nextState = { ...state, lastError };
+      let nextState: ConnectionSnapshot = { ...state, lastError };
       // STALE_CLIENT_STATE → 自动 resync（§9.4）
       if (payload.code === 'STALE_CLIENT_STATE') {
-        nextState = { ...nextState, connState: 'server_recovering' };
+        nextState = withConnState(nextState, 'server_recovering');
         effects.push({ type: 'send_resync' });
         if (payload.currentSeq !== undefined) {
           nextState = { ...nextState, roomSeq: payload.currentSeq };
@@ -185,20 +220,18 @@ export function applyEnvelope(
     case 'room_snapshot': {
       const payload = parseRoomSnapshot(envelope.payload);
       if (!payload) return { state, effects };
-      const nextState: ConnectionSnapshot = {
+      const incomingSeq = envelope.roomSeq ?? payload.seq;
+      if (state.roomSeq !== null && incomingSeq < state.roomSeq) {
+        return { state, effects };
+      }
+      const nextState: ConnectionSnapshot = withConnState({
         ...state,
         room: payload,
-        // room_snapshot 是权威更新；roomSeq 来自 envelope 或 payload
-        roomSeq: envelope.roomSeq ?? payload.seq,
-        connState: state.connState === 'server_recovering' || state.connState === 'reconnecting'
-          ? 'synced'
-          : 'synced',
+        // room_snapshot 是权威恢复基线；允许跳号但不再触发重复 resync。
+        roomSeq: incomingSeq,
         closeReason: null,
-      };
-      // 如果 envelope.roomSeq 与 payload.seq 不一致，检测 gap
-      if (envelope.roomSeq !== undefined && envelope.roomSeq > (state.roomSeq ?? -1) + 1) {
-        effects.push({ type: 'send_resync' });
-      }
+      }, 'synced');
+      // 权威完整快照可直接建立跳号后的恢复基线，不再要求第二轮 resync。
       return { state: nextState, effects };
     }
 
@@ -215,10 +248,23 @@ export function applyEnvelope(
     case 'game_state': {
       const payload = parseGameStatePayload(envelope.payload);
       if (!payload) return { state, effects };
+      if (
+        envelope.roomSeq !== undefined
+        && state.roomSeq !== null
+        && envelope.roomSeq < state.roomSeq
+      ) return { state, effects };
+      // 未经运行时验证的服务器对象不得进入渲染：解析失败走重同步路径，
+      // 保留旧视角而不是用坏帧覆盖。
+      const parsed = parseGameView(payload);
+      if (!parsed.ok) {
+        effects.push({ type: 'send_resync' });
+        return { state, effects };
+      }
+      const sequenced = applyRoomSeq(state, envelope, effects);
       return {
         state: {
-          ...state,
-          game: payload,
+          ...sequenced,
+          game: { ...payload, view: parsed.view },
         },
         effects,
       };
@@ -251,7 +297,7 @@ export function applyEnvelope(
 
     case 'resync_required': {
       // 服务端要求客户端重同步
-      let nextState = { ...state, connState: 'server_recovering' as const };
+      let nextState = withConnState(state, 'server_recovering');
       effects.push({ type: 'send_resync' });
       const payload = parseErrorPayload(envelope.payload);
       if (payload?.currentSeq !== undefined) {

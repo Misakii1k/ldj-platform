@@ -33,10 +33,12 @@ function apply(state: WerewolfState, by: Actor, action: WerewolfAction): Werewol
 }
 
 const BASE_CONFIG: WerewolfConfig = {
+  rulesetId: 'werewolf_legacy_platform_v2',
   preset: 'classic',
   pace: 'standard',
   witchSelfSave: 'first_night',
   winCondition: 'numbers',
+  wolfKillScope: 'non_wolf',
   roles: { guard: false, hunter: false, idiot: false },
 };
 
@@ -329,7 +331,7 @@ test('idiot: revealed idiot still survives wolf kill by normal death', () => {
 
 // ---------------------------------------------------------------- 迁移
 
-test('migrateSnapshot: v2 → v3 fills new fields and keeps the rest', () => {
+test('migrateSnapshot: v2 → v4 fills new fields and keeps the rest', () => {
   const v2 = {
     schemaVersion: 2,
     phase: 'night',
@@ -368,7 +370,9 @@ test('migrateSnapshot: v2 → v3 fills new fields and keeps the rest', () => {
     aborted: false,
   };
   const migrated = migrateSnapshot(2, v2);
-  assert.equal(migrated.schemaVersion, 3);
+  assert.equal(migrated.schemaVersion, 4);
+  assert.equal(migrated.config.rulesetId, 'werewolf_legacy_platform_v2');
+  assert.equal(migrated.config.wolfKillScope, 'non_wolf');
   assert.equal(migrated.night.guardDecided, true);
   assert.equal(migrated.night.guardTargetId, null);
   assert.equal(migrated.lastGuardTargetId, null);
@@ -378,7 +382,7 @@ test('migrateSnapshot: v2 → v3 fills new fields and keeps the rest', () => {
   assert.equal(migrated.night.killTargetId, 'v1');
 });
 
-test('migrateSnapshot: v1 → v3 chains legacy fields through v2 defaults', () => {
+test('migrateSnapshot: v1 → v4 chains legacy fields through v2/v3 defaults', () => {
   const v1 = {
     schemaVersion: 1,
     phase: 'night',
@@ -404,7 +408,9 @@ test('migrateSnapshot: v1 → v3 chains legacy fields through v2 defaults', () =
   };
 
   const migrated = migrateSnapshot(1, v1);
-  assert.equal(migrated.schemaVersion, 3);
+  assert.equal(migrated.schemaVersion, 4);
+  assert.equal(migrated.config.rulesetId, 'werewolf_legacy_platform_v2');
+  assert.equal(migrated.config.wolfKillScope, 'non_wolf');
   assert.deepEqual(migrated.config.roles, { guard: false, hunter: false, idiot: false });
   assert.deepEqual(migrated.night.wolfVotes, { w1: 'v1' });
   assert.deepEqual(migrated.night.seerResult, { night: 2, playerId: 'w1', team: 'wolves' });

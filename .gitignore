@@ -34,3 +34,9 @@ poc/m0/poc.vacuum.db
 research/quarantined/**/dist/
 research/quarantined/**/generated/
 research/quarantined/**/*.zip
+
+# Playwright 运行时产物（临时数据库与报告，不入库）
+e2e/.tmp-data/
+e2e/.tmp-data-dbg/
+test-results/
+playwright-report/

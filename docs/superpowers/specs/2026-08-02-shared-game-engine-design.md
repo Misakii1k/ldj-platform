@@ -870,7 +870,7 @@ canAcknowledge
 
 - D1 规则与合规基线：冻结 ruleset、授权证据、禁入矩阵和目录状态，不修改引擎。
 - D2 低风险规则原语：只提取确定性随机、座位轮转、牌区基础操作和可见性工具，不引入外部模型或统一全部 UI。
-- D3 迁移与兼容：迁移 `uno_legacy_platform_v1` 和 `undercover_classic_v1`，完成黄金回放、快照和视角兼容。
+- D3 迁移与兼容：迁移 `uno_legacy_platform_v1` 和 `undercover_classic_v1`，完成黄金回放、快照和视角兼容。**状态：已完成（2026-08-04，结果见 `docs/superpowers/reports/2026-08-04-d3-migration-compatibility-results.md`）**；D3 只证明兼容，未构成 D4 授权。
 - D4 新增能力：独立交付 UNO 新平台规则、白板与异步裁判、统一桌面和第三游戏验证；每项具有独立上线门。
 
 未经 D1 批准，不得稳定原语 API；未经 D3 批准，不得用新规则替换兼容基线。

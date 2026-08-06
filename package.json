@@ -19,6 +19,8 @@
     "test": "tsx --test \"packages/**/tests/**/*.test.ts\" && node --test scripts/tests/**/*.test.mjs",
     "compliance:d1": "node scripts/d1-compliance.mjs .",
     "baseline:d1": "tsx scripts/generate-d1-baselines.ts",
+    "test:e2e": "playwright test",
+    "playwright:install": "playwright install chromium",
     "ci": "npm run typecheck && npm run lint && npm run test && npm run compliance:d1",
     "dev:server": "node packages/server/src/index.ts",
     "build": "npm run build -w @ldj/client",
@@ -26,6 +28,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@playwright/test": "^1.62.1",
     "@types/node": "^24.1.0",
     "eslint": "^9.32.0",
     "tsx": "^4.23.1",

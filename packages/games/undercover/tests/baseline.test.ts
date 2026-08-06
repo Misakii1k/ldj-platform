@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import {
   generateUndercoverBaseline,
@@ -8,6 +9,12 @@ import {
 } from '../../../../scripts/generate-d1-baselines.ts';
 
 const fixtureUrl = new URL('./fixtures/d1/undercover-classic-v1.json', import.meta.url);
+const FROZEN_FIXTURE_SHA256 = '38b011909f2945140a3007cfefb052cc47dfcbccc270869bdf3ec5897508ae68';
+
+test('D1 谁是卧底 fixture 字节哈希保持冻结', async () => {
+  const raw = await readFile(fixtureUrl);
+  assert.equal(createHash('sha256').update(raw).digest('hex'), FROZEN_FIXTURE_SHA256);
+});
 
 test('D1 谁是卧底 classic 基线可由当前模块现场完整重生成', async () => {
   const raw = await readFile(fixtureUrl, 'utf8');

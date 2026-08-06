@@ -201,6 +201,35 @@ test('executeOnRoom seq increments and idempotent receipt returns first result',
   db.close();
 });
 
+test('executeOnRoom：回执安全投影不改变首次结果，重试只恢复投影', async () => {
+  const { db, executor } = setup();
+  const created = seedExecutorRoom(db);
+  const roomId = created.outcome.roomId;
+  let executions = 0;
+  const run = () => executor.executeOnRoom({
+    roomId,
+    actorScope: `player:${created.outcome.playerId}`,
+    requestId: 'req-projected',
+    receiptOutcome: (outcome: { ack: string; privateEvents: string[] }) => ({
+      ...outcome,
+      privateEvents: [],
+    }),
+    handler: () => {
+      executions += 1;
+      return { ack: 'ok', privateEvents: ['secret'] };
+    },
+  });
+
+  const first = await run();
+  assert.equal(first.replayed, false);
+  assert.deepEqual(first.outcome, { ack: 'ok', privateEvents: ['secret'] });
+  const replay = await run();
+  assert.equal(replay.replayed, true);
+  assert.deepEqual(replay.outcome, { ack: 'ok', privateEvents: [] });
+  assert.equal(executions, 1);
+  db.close();
+});
+
 test('executeOnRoom：handler 抛错时事务回滚，seq 不变', async () => {
   const { db, executor } = setup();
   const created = seedExecutorRoom(db);

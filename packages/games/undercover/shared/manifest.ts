@@ -11,6 +11,8 @@ export const UNDERCOVER_MANIFEST = {
   minPlayers: 4,
   maxPlayers: 12,
   stateSchemaVersion: 1,
-} as const satisfies GameManifest;
+  /** D4-B：该游戏声明的全部规则集（classic 兼容基线 + 白板平台变体并行注册）。 */
+  rulesets: ['undercover_classic_v1', 'undercover_blank_v1'],
+} as const satisfies GameManifest & { rulesets: readonly string[] };
 
 export type UndercoverManifest = typeof UNDERCOVER_MANIFEST;

@@ -7,10 +7,16 @@ import { MotionProvider } from './motion/MotionContext.tsx';
 import { GameHomePage } from './app/GameHomePage.tsx';
 import { RoomPage } from './room/RoomPage.tsx';
 import { GamePage } from './game/GamePage.tsx';
+import { TabletopStatusBanner } from './game/TabletopStatusBanner.tsx';
 
 function Router() {
   const { state, me, reset, resync } = useConnection();
-  const { connState, room, game } = state;
+  const { connState, room, game, isRefreshing, isRecovering } = state;
+
+  // D4-UI0：断线重连 / 服务端恢复期间，只要已有内容（房间或对局）就保留当前
+  // 渲染视图并在顶部叠一条非模态状态横幅，而不是用全屏 loader 替换桌子。
+  const hasContent = room !== null || game !== null;
+  const showBanner = isRefreshing || isRecovering;
 
   if (connState === 'seat_expired') {
     return (
@@ -31,7 +37,7 @@ function Router() {
     );
   }
 
-  if (connState === 'reconnecting') {
+  if (connState === 'reconnecting' && !hasContent) {
     return (
       <main className="app loading-screen" aria-live="polite" aria-busy="true">
         <h1>局域网桌游平台</h1>
@@ -41,7 +47,7 @@ function Router() {
     );
   }
 
-  if (connState === 'server_recovering') {
+  if (connState === 'server_recovering' && !hasContent) {
     return (
       <main className="app loading-screen" aria-live="polite" aria-busy="true">
         <h1>正在重新同步</h1>
@@ -52,37 +58,43 @@ function Router() {
 
   if (me === null) return <GameHomePage />;
 
+  let view;
   if (room === null) {
-    return (
+    view = (
       <main className="app loading-screen">
         <h1>局域网桌游平台</h1>
         <p className="loading">正在恢复房间…</p>
         <button type="button" className="text-btn" onClick={reset}>放弃恢复，返回首页</button>
       </main>
     );
-  }
-
-  if (room.status === 'CLOSED') {
-    return (
+  } else if (room.status === 'CLOSED') {
+    view = (
       <main className="app error-screen">
         <h1>房间已关闭</h1>
         <button type="button" className="primary-btn" onClick={reset}>返回首页</button>
       </main>
     );
-  }
-
-  if (room.status === 'IN_GAME') {
-    if (game !== null) return <GamePage />;
-    return (
+  } else if (room.status === 'IN_GAME') {
+    view = game !== null ? <GamePage /> : (
       <main className="app loading-screen" aria-live="polite" aria-busy="true">
         <h1>对局已开始</h1>
         <p className="loading">正在同步牌局数据…</p>
         <button type="button" className="primary-btn" onClick={resync}>重新同步</button>
       </main>
     );
+  } else {
+    view = <RoomPage />;
   }
 
-  return <RoomPage />;
+  if (showBanner) {
+    return (
+      <>
+        <TabletopStatusBanner state={state} />
+        {view}
+      </>
+    );
+  }
+  return view;
 }
 
 export function App() {

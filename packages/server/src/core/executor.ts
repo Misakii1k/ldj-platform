@@ -41,10 +41,30 @@ interface ReceiptRow {
 export class RoomCommandExecutor {
   readonly #db: Db;
   readonly #queues: RoomQueues;
+  readonly #postCommit: ((roomId: string, outcome: unknown) => void) | undefined;
 
-  constructor(db: Db, queues: RoomQueues = new RoomQueues()) {
+  constructor(
+    db: Db,
+    queues: RoomQueues = new RoomQueues(),
+    postCommit?: (roomId: string, outcome: unknown) => void,
+  ) {
     this.#db = db;
     this.#queues = queues;
+    this.#postCommit = postCommit;
+  }
+
+  /**
+   * 事务提交后的尽力而为回调（D4-A1）：外部裁判任务在房间事务提交后落库，
+   * 绝不参与房间事务。回调抛错被吞掉，不影响已提交的命令结果
+   * （任务创建失败不影响已提交房间事务，状态 errored 可重试）。
+   */
+  #runPostCommit(roomId: string, outcome: unknown): void {
+    if (!this.#postCommit) return;
+    try {
+      this.#postCommit(roomId, outcome);
+    } catch {
+      // post-commit 失败不影响已提交事务
+    }
   }
 
   /**
@@ -57,6 +77,11 @@ export class RoomCommandExecutor {
     actorScope: string;
     requestId: string;
     bumpSeq?: boolean;
+    /**
+     * 幂等回执的安全投影。首次调用仍返回完整 outcome；重复 requestId 只需要恢复 ACK 所需字段，
+     * 因此秘密事件等仅供首次提交后定向广播的数据必须在这里移除。
+     */
+    receiptOutcome?: (outcome: T) => T;
     handler: (tx: TxContext) => T;
   }): Promise<ExecuteResult<T>> {
     const db = this.#db;
@@ -93,11 +118,20 @@ export class RoomCommandExecutor {
             opts.roomId,
           );
         }
+        const receiptOutcome = opts.receiptOutcome?.(result) ?? result;
         db.prepare(
           'INSERT INTO command_receipts (room_id, actor_scope, request_id, room_seq, outcome_json, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-        ).run(opts.roomId, opts.actorScope, opts.requestId, roomSeq, JSON.stringify(result ?? null), now);
+        ).run(
+          opts.roomId,
+          opts.actorScope,
+          opts.requestId,
+          roomSeq,
+          JSON.stringify(receiptOutcome ?? null),
+          now,
+        );
         return result;
       });
+      this.#runPostCommit(opts.roomId, outcome);
       return { roomSeq, outcome, replayed: false };
     });
   }
@@ -132,7 +166,11 @@ export class RoomCommandExecutor {
         );
         return result;
       });
-      return applied && outcome !== null ? { roomSeq, outcome } : null;
+      if (applied && outcome !== null) {
+        this.#runPostCommit(opts.roomId, outcome);
+        return { roomSeq, outcome };
+      }
+      return null;
     });
   }
 

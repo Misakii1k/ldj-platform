@@ -1,4 +1,5 @@
 import type { GameRulesetSpec, GameSetupSpec } from './rules/setup.ts';
+import { buildRulesetRegistry, type GameRulesetEntry, type RulesetRegistry } from './rulesetRegistry.ts';
 
 /**
  * 首页游戏目录：同时供客户端展示和服务端校验使用。
@@ -39,9 +40,10 @@ function defaultSetup(
   label: string,
   options: GameSetupSpec['options'] = [],
   moduleConfig: Readonly<Record<string, string | number | boolean>> = {},
+  extraRulesets: readonly GameRulesetSpec[] = [],
 ): GameSetupSpec {
   return {
-    rulesets: [{ id: rulesetId, label }],
+    rulesets: [{ id: rulesetId, label }, ...extraRulesets],
     defaultRulesetId: rulesetId,
     options,
     defaultConfig: { rulesetId, ...moduleConfig },
@@ -76,8 +78,13 @@ export const GAME_CATALOG = [
     summary: '颜色、数字与功能卡牌的激情碰撞！最后一张牌时刻别忘了高喊 UNO！',
     tags: ['卡牌', '轻松', '快节奏'],
     theme: 'sunset',
-    rulesets: [{ id: 'uno_legacy_platform_v1', label: 'Legacy 兼容基线' }],
-    setup: defaultSetup('uno_legacy_platform_v1', 'Legacy 兼容基线', [], { variant: 'standard' }),
+    rulesets: [
+      { id: 'uno_legacy_platform_v1', label: 'Legacy 兼容基线' },
+      { id: 'uno_platform_house_v1', label: '平台房规' },
+    ],
+    setup: defaultSetup('uno_legacy_platform_v1', 'Legacy 兼容基线', [], { variant: 'standard' }, [
+      { id: 'uno_platform_house_v1', label: '平台房规' },
+    ]),
     botSupport: 'rule_and_llm',
     visualTheme: { accent: 'sunset', surface: 'cards' },
     comingSoonMessage: '权利证据未完成，暂不开放',
@@ -106,12 +113,17 @@ export const GAME_CATALOG = [
     summary: '暗夜交锋，白天博弈！用逻辑与敏锐洞察在真伪间探寻胜利之光。',
     tags: ['推理', '阵营', '社交'],
     theme: 'violet',
-    rulesets: [{ id: 'werewolf_legacy_platform_v2', label: 'Legacy v2 兼容基线' }],
+    rulesets: [
+      { id: 'werewolf_legacy_platform_v2', label: 'Legacy v2 兼容基线' },
+      { id: 'werewolf_platform_open_kill_v1', label: '开放夜刀' },
+    ],
     setup: defaultSetup('werewolf_legacy_platform_v2', 'Legacy v2 兼容基线', [
       { key: 'pace', kind: 'select', label: '对局节奏', defaultValue: 'standard', choices: [{ value: 'fast', label: '快速' }, { value: 'standard', label: '标准' }, { value: 'relaxed', label: '轻松' }] },
       { key: 'witchSelfSave', kind: 'select', label: '女巫自救', defaultValue: 'first_night', choices: [{ value: 'first_night', label: '仅首夜' }, { value: 'never', label: '禁止' }, { value: 'always', label: '允许' }] },
       { key: 'winCondition', kind: 'select', label: '胜负条件', defaultValue: 'numbers', choices: [{ value: 'numbers', label: '屠边人数' }, { value: 'roles', label: '屠神规则' }] },
-    ], { preset: 'classic', pace: 'standard', witchSelfSave: 'first_night', winCondition: 'numbers' }),
+    ], { preset: 'classic', pace: 'standard', witchSelfSave: 'first_night', winCondition: 'numbers' }, [
+      { id: 'werewolf_platform_open_kill_v1', label: '开放夜刀' },
+    ]),
     botSupport: 'rule_and_llm',
     visualTheme: { accent: 'violet', surface: 'social' },
     comingSoonMessage: '内部原型，尚未通过发布准入',
@@ -119,6 +131,41 @@ export const GAME_CATALOG = [
 ] as const satisfies readonly GameCatalogEntry[];
 
 export type GameId = (typeof GAME_CATALOG)[number]['id'];
+
+/** 依据规则集 ID 推断其在平台中的类别（legacy/classic 兼容基线 vs 平台变体）。 */
+function classifyRulesetKind(rulesetId: string): GameRulesetEntry['kind'] {
+  return rulesetId.includes('legacy') || rulesetId.includes('classic')
+    ? 'legacy_compatibility'
+    : 'platform_variant';
+}
+
+function catalogEntriesForGame(game: GameCatalogEntry): readonly GameRulesetEntry[] {
+  return game.rulesets.map((ruleset) => ({
+    gameId: game.id,
+    rulesetId: ruleset.id,
+    kind: classifyRulesetKind(ruleset.id),
+    defaultForGame: ruleset.id === game.setup.defaultRulesetId,
+  }));
+}
+
+/**
+ * 用共享规则集注册表校验目录：每款游戏至少一个规则集、规则集 ID 每游戏唯一、必须有默认规则集。
+ * 传入非法目录（空规则集、重复 ID、缺默认）会直接抛错。
+ */
+export function buildCatalogRulesetRegistry(
+  catalog: readonly GameCatalogEntry[] = GAME_CATALOG,
+): RulesetRegistry {
+  const entries = catalog.flatMap((game) => {
+    if (game.rulesets.length === 0) {
+      throw new Error(`目录游戏 ${game.id} 没有任何规则集`);
+    }
+    return catalogEntriesForGame(game);
+  });
+  return buildRulesetRegistry(entries);
+}
+
+/** 模块加载时即校验目录规则集一致性；目录非法直接抛错。 */
+export const CATALOG_RULESET_REGISTRY: RulesetRegistry = buildCatalogRulesetRegistry();
 
 /** 首页提供的精确人数筛选项。 */
 export const PLAYER_COUNT_OPTIONS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;

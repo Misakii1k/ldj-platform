@@ -29,6 +29,30 @@
             "rightsApprover": null,
             "rulesApprover": null
           }
+        },
+        {
+          "rulesetId": "undercover_blank_v1",
+          "kind": "platform_variant",
+          "releaseStatus": "internal_prototype",
+          "sourceDocuments": [
+            "compliance/rules/undercover_blank_v1.json",
+            "docs/superpowers/specs/2026-08-02-shared-game-engine-design.md#已确认的谁是卧底规则集"
+          ],
+          "includedExtensions": [],
+          "excludedExtensions": [],
+          "digitalAdaptations": [
+            "白板仅一名且没有词，整局只有一次主动或最终猜词机会",
+            "blank-normalization-v1 与主备异步裁判结果按提交时间追溯",
+            "最终猜词限时 30 秒，规则机器人跳过最终猜词，结果应用后清除任务明文"
+          ],
+          "rights": {
+            "status": "unverified",
+            "recordId": null,
+            "scope": null,
+            "expiresAt": null,
+            "rightsApprover": null,
+            "rulesApprover": null
+          }
         }
       ]
     },
@@ -49,6 +73,30 @@
           "digitalAdaptations": [
             "当前实现只冻结为迁移兼容基线",
             "黄金回放不证明新平台规则正确"
+          ],
+          "rights": {
+            "status": "unverified",
+            "recordId": null,
+            "scope": null,
+            "expiresAt": null,
+            "rightsApprover": null,
+            "rulesApprover": null
+          }
+        },
+        {
+          "rulesetId": "uno_platform_house_v1",
+          "kind": "platform_variant",
+          "releaseStatus": "blocked_rights",
+          "sourceDocuments": [
+            "compliance/rules/uno_platform_house_v1.json",
+            "docs/superpowers/specs/2026-08-02-shared-game-engine-design.md#已确认的-uno-平台规则集"
+          ],
+          "includedExtensions": [],
+          "excludedExtensions": [],
+          "digitalAdaptations": [
+            "独立平台变体，不替换 uno_legacy_platform_v1，也不称为标准规则",
+            "采用 15 秒普通回合托管、5 秒 UNO 竞速与罚牌响应窗口",
+            "支持动态完整牌组扩展以及个人或固定四人团队的多小局累计低分结算"
           ],
           "rights": {
             "status": "unverified",
@@ -96,6 +144,30 @@
           "includedExtensions": [],
           "excludedExtensions": [],
           "digitalAdaptations": ["当前实现仅作为 D1 盘点对象，不在 D2 或 D3 迁移范围"],
+          "rights": {
+            "status": "unverified",
+            "recordId": null,
+            "scope": null,
+            "expiresAt": null,
+            "rightsApprover": null,
+            "rulesApprover": null
+          }
+        },
+        {
+          "rulesetId": "werewolf_platform_open_kill_v1",
+          "kind": "platform_variant",
+          "releaseStatus": "internal_prototype",
+          "sourceDocuments": [
+            "packages/games/werewolf/server/module.ts",
+            "packages/games/werewolf/tests/openKill.test.ts"
+          ],
+          "includedExtensions": [],
+          "excludedExtensions": [],
+          "digitalAdaptations": [
+            "夜间击杀票可投任意存活玩家，包括自己与同伴；由 wolfKillScope=any 承载",
+            "werewolf_legacy_platform_v2 的 non_wolf 夜刀语义保持不变，旧快照迁移后仍为 non_wolf",
+            "守卫不能自守、不能连续两夜守同一人与女巫自救限制均未随本规则集放开"
+          ],
           "rights": {
             "status": "unverified",
             "recordId": null,

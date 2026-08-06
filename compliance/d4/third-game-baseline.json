@@ -1,0 +1,216 @@
+{
+  "schemaVersion": 1,
+  "frozenAt": "2026-08-05",
+  "baselineKind": "d4_third_game_content_hash_provisional",
+  "candidate": {
+    "gameId": "werewolf",
+    "rulesetId": "werewolf_platform_open_kill_v1",
+    "rulesetKind": "platform_variant",
+    "productStatus": "internal_prototype",
+    "thirdGameValidationCandidate": true,
+    "legacyRuleset": {
+      "rulesetId": "werewolf_legacy_platform_v2",
+      "requiredSemanticState": "semantically_frozen",
+      "frozenWolfKillScope": "non_wolf",
+      "migrationRequirement": "Snapshots migrated from schema versions 1, 2, or 3 must remain werewolf_legacy_platform_v2 with wolfKillScope=non_wolf."
+    },
+    "candidateRuleDelta": "wolfKillScope=any permits each wolf to target any living player, including self and wolf teammates.",
+    "unchangedRuleBoundaries": [
+      "Guard self-protection remains forbidden.",
+      "Guarding the same target on consecutive nights remains forbidden.",
+      "Witch self-save remains constrained by witchSelfSave.",
+      "Guard, antidote, poison, hunter, idiot, discussion, ballot, runoff, and win resolution remain server-authoritative."
+    ],
+    "claims": {
+      "playable": false,
+      "rightsApproved": false,
+      "rulesApproved": false,
+      "releaseApproved": false,
+      "officialRuleset": false,
+      "authorizationGranted": false
+    }
+  },
+  "authoritySources": [
+    {
+      "path": "docs/superpowers/specs/2026-08-02-shared-game-engine-design.md",
+      "sections": [
+        "原语成熟度",
+        "候选原语",
+        "阶段 6：第三款游戏验证",
+        "验收指标"
+      ],
+      "authority": "highest_priority_design"
+    },
+    {
+      "path": "compliance/d1/game-admission.json",
+      "entry": "games[gameId=werewolf].rulesets[rulesetId=werewolf_platform_open_kill_v1]",
+      "authority": "current_open_kill_compliance_entry"
+    }
+  ],
+  "sourceFiles": [
+    {
+      "path": "packages/games/werewolf/server/module.ts",
+      "role": "current_game_module",
+      "sha256": "ad15db058f175fe440ede8f409a29f537326656d9f7ce8c0222682785c824f21",
+      "lineCount": 1570,
+      "effectiveNonTestLineCount": 1233
+    },
+    {
+      "path": "packages/games/werewolf/server/bot.ts",
+      "role": "current_rule_bot",
+      "sha256": "273dda5e48f1c4b11c45b14362da7a4280f1e7ad6f998d18e50219bdabe1b1f8",
+      "lineCount": 94,
+      "effectiveNonTestLineCount": 80
+    },
+    {
+      "path": "packages/games/werewolf/server/botPrompt.ts",
+      "role": "current_llm_prompt",
+      "sha256": "1abb1c08bb68eeb30307fdd841f1861f2523a10693a728f59ea1bffb2be86906",
+      "lineCount": 201,
+      "effectiveNonTestLineCount": 175
+    },
+    {
+      "path": "packages/games/werewolf/shared/manifest.ts",
+      "role": "current_manifest",
+      "sha256": "d6cb97e1802ca3562ea2a48b244cb0541dc2e2012d847c4d85ff4f248802765c",
+      "lineCount": 16,
+      "effectiveNonTestLineCount": 12
+    },
+    {
+      "path": "packages/games/werewolf/tests/botPrompt.test.ts",
+      "role": "current_bot_prompt_tests",
+      "sha256": "6da496b460905bfd0f967da914f216623a3a154a0dd9e1e545773b14e4bf616d",
+      "lineCount": 103,
+      "effectiveNonTestLineCount": 0
+    },
+    {
+      "path": "packages/games/werewolf/tests/manifest.test.ts",
+      "role": "current_manifest_tests",
+      "sha256": "e74b00bfb5d75b009bdcd5f95160a25dfd5a0484fb4e0bd3262274c24122deae",
+      "lineCount": 13,
+      "effectiveNonTestLineCount": 0
+    },
+    {
+      "path": "packages/games/werewolf/tests/module.test.ts",
+      "role": "current_module_tests",
+      "sha256": "be3c04cf617122f0cd168a38e2effaf66b95c86c7d0290c54cba16778b9e3e69",
+      "lineCount": 296,
+      "effectiveNonTestLineCount": 0
+    },
+    {
+      "path": "packages/games/werewolf/tests/openKill.test.ts",
+      "role": "current_open_kill_tests",
+      "sha256": "9d99b037ef05541863fb00f1f335f1f3991c922b0f0dff2c5c0af3461fd81317",
+      "lineCount": 241,
+      "effectiveNonTestLineCount": 0
+    },
+    {
+      "path": "packages/games/werewolf/tests/roles.test.ts",
+      "role": "current_role_and_migration_tests",
+      "sha256": "7ea7ec9352bd0e3e6ed50daf502bc4b9babce6ceb26f442d8ec6665cd544b357",
+      "lineCount": 422,
+      "effectiveNonTestLineCount": 0
+    }
+  ],
+  "measurementRules": {
+    "unit": "effective non-test TypeScript lines",
+    "excluded": [
+      "test files",
+      "generated files",
+      "blank lines",
+      "pure type declarations (import type statements, interface blocks, and type aliases with no runtime emission)",
+      "static content (static word banks such as the ROLE_NAMES display-name map)"
+    ],
+    "baselineMode": "content-hash provisional",
+    "requiredReductionPercent": 40,
+    "comparisonBaseline": "current legacy open-kill implementation",
+    "comparisonUnit": "Effective non-test TypeScript lines implementing the same frozen functional inventory in the current legacy open-kill implementation and the target implementation.",
+    "comparisonTool": "One fixed, versioned measurement script must be executed unchanged against immutable baseline and target commits. Git commits are forbidden in this task, so the frozen content hashes below are provisional evidence of the present working-tree bytes only.",
+    "reductionFormula": "((baselineEffectiveLoc - targetEffectiveLoc) / baselineEffectiveLoc) * 100",
+    "passCondition": "reductionPercent >= requiredReductionPercent",
+    "rawLineCountRule": "For a non-empty file, count LF bytes and add one only when the final byte is not LF; an empty file has zero raw lines. No newline normalization is performed.",
+    "hashRule": "Source sha256 values are SHA-256 of the exact current file bytes, lowercase hexadecimal, computed read-only from the working tree.",
+    "effectiveNonTestLineCountRule": "For a TypeScript file, count physical lines then exclude: (a) blank lines; (b) lines inside pure type declarations, i.e. import type statements, interface blocks from the interface keyword until braces balance back to zero, and type aliases from the type keyword until a line ends with ';' and braces balance back to zero; (c) static word banks, i.e. contiguous const data maps of fixed display strings such as ROLE_NAMES in server/botPrompt.ts. Static data that directly drives runtime behavior (the PACE_MS timing table, prompt templates) is retained. Test files have zero effective non-test lines.",
+    "functionalInventory": [
+      "strict manifest, configuration, and action contracts",
+      "authoritative rulesetId to wolfKillScope mapping and contradictory-input rejection",
+      "deterministic role allocation and role confirmation",
+      "night kill, seer, witch, guard, hunter, and idiot behavior",
+      "day announcement, ordered discussion, normal voting, runoff voting, vote result, and last words",
+      "numbers and roles win conditions, result production, and forfeit handling",
+      "phase timers, stale-token rejection, deterministic timeout fallback, and effect emission",
+      "player and spectator view redaction plus terminal reveal",
+      "snapshot migration from versions 1 through 4 with frozen legacy semantics",
+      "rule-bot and LLM-prompt candidates aligned with reducer legality"
+    ]
+  },
+  "sevenInfrastructure": {
+    "categories": [
+      {
+        "id": "room",
+        "label": "房间",
+        "requirement": "direct_reuse_without_copying"
+      },
+      {
+        "id": "transactions",
+        "label": "事务",
+        "requirement": "direct_reuse_without_copying"
+      },
+      {
+        "id": "recovery",
+        "label": "恢复",
+        "requirement": "direct_reuse_without_copying"
+      },
+      {
+        "id": "broadcast",
+        "label": "广播",
+        "requirement": "direct_reuse_without_copying"
+      },
+      {
+        "id": "timers",
+        "label": "计时器",
+        "requirement": "direct_reuse_without_copying"
+      },
+      {
+        "id": "botDriver",
+        "label": "机器人驱动",
+        "requirement": "direct_reuse_without_copying"
+      },
+      {
+        "id": "tabletopSkeleton",
+        "label": "桌面骨架",
+        "requirement": "direct_reuse_without_copying"
+      }
+    ],
+    "categoryCount": 7,
+    "requiredDirectReuse": 6,
+    "zeroCopyRequirement": true,
+    "currentDirectReuseMeasurement": null,
+    "escapeHooksAllowed": 0,
+    "escapeHooksDefinition": "Any interface that lets a game bypass primitive invariants, directly modify primitive internal state, or inject a game-ID branch."
+  },
+  "acceptance": {
+    "fullRulesClosure": "The candidate must complete a pure-rules full-game loop from createInitialState to a single official result through the module template and contract tests.",
+    "contractTests": "Config and action strict parsing, initial-state serializability, reduce input immutability, same-seed determinism, rejected actions not advancing state, all views satisfying their schema, snapshot save/load/replay, and bot actions always chosen from legal candidates.",
+    "viewPrivacy": "Player and spectator views must not leak secrets; the spectator view stays redacted until the terminal reveal.",
+    "tabletopStrictRegistration": "All tabletop and game registration must use the strict manifest and action contract without bypassing the module template.",
+    "deterministicReplay": "Fixed-seed deterministic replay, snapshot recovery, immutability, and perspective-leakage validation must pass together with UNO and Undercover regressions.",
+    "noNewGameIdBranches": "No new game-id branch may be added to the execution platform, shared primitives, or shared UI.",
+    "reuseCountAndLocTarget": "At least 6 of the 7 infrastructure categories must be directly reused without copying, and effective non-test TypeScript LOC for the same functional inventory must be reduced by at least 40 percent versus the current legacy open-kill implementation.",
+    "stablePrimitivePromotionBlockedUntil": "authoritative commit-based baseline available"
+  },
+  "nonGoals": [
+    "No change to werewolf_legacy_platform_v2 semantics: wolfKillScope=non_wolf stays frozen for the legacy ruleset and for all migrated snapshots.",
+    "No playable or rights change: the candidate stays internal_prototype; playable, rights-approval, rules-approval, release-approval, official-rules, and authorization claims all remain false.",
+    "No Wolfcha copying: no Wolfcha source code, assets, brand, audio, avatars, or dependency stack may be brought into the project.",
+    "No unapproved roles: only the approved role pool (wolf, villager, seer, witch, guard, hunter, idiot) may be used; no new roles without approval."
+  ],
+  "limitations": {
+    "contentHashBaselineProvisional": true,
+    "reason": "This task forbids commits and all Git state changes, so the frozen content hashes are evidence of the present working-tree bytes only and cannot substitute for immutable baseline and target commits.",
+    "authoritativeComparisonRequired": "The final D4 reduction result must be produced by the fixed measurement script comparing an immutable baseline commit with an immutable target commit for the same functional inventory.",
+    "stablePrimitiveV1DeclarationAllowed": false,
+    "stablePrimitiveV1Gate": "Stable primitive v1 cannot be declared until the authoritative commit-based comparison is available and every stable-primitive maturity, replay, recovery, immutability, view-leakage, bot-legality, reuse, no-game-ID-branch, and zero-escape-hook criterion passes.",
+    "productGate": "This baseline does not change catalog, rights, rules approval, release approval, or playable status."
+  }
+}

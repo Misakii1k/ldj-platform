@@ -113,16 +113,20 @@ test('migrate：v4 既有数据经 v5/v6 安全升级且重复执行幂等', () 
      VALUES ('finished-result', 'finished-session', 'richman', '{"winner":"p1"}', ?)`,
   ).run(now);
 
-  assert.deepEqual(migrate(db), [5, 6]);
+  // v7 重建 game_sessions 后：已 ABORTED/FINISHED 的历史行不被反转（与 v5 退役语义一致）；
+  // 只有仍处于活动态的未注册 module 会话会被标 SUSPENDED + FAILED_RULESET_UNAVAILABLE。
+  // D4-A1：v8 追加 adjudication_tasks（普通 CREATE TABLE，不触碰既有数据）。
+  assert.deepEqual(migrate(db), [5, 6, 7, 8]);
   assert.deepEqual(migrate(db), []);
   assert.equal(
     (db.prepare("SELECT status FROM rooms WHERE id = 'removed-room'").get() as { status: string }).status,
     'CLOSED',
   );
-  assert.equal(
-    (db.prepare("SELECT status FROM game_sessions WHERE id = 'removed-session'").get() as { status: string }).status,
-    'ABORTED',
-  );
+  const removedSession = db
+    .prepare("SELECT status, failure FROM game_sessions WHERE id = 'removed-session'")
+    .get() as { status: string; failure: string | null };
+  assert.equal(removedSession.status, 'ABORTED');
+  assert.equal(removedSession.failure, null);
   assert.equal(
     (db.prepare("SELECT status FROM timers WHERE session_id = 'removed-session'").get() as { status: string }).status,
     'cancelled',
@@ -201,8 +205,8 @@ test('一个房间最多一个活动对局（部分唯一索引）', () => {
   const insertSession = (id: string, status: string) =>
     db
       .prepare(
-        `INSERT INTO game_sessions (id, room_id, module_id, module_version, state_schema_version, status, snapshot_json, seed, rng_state_json, created_at, updated_at)
-         VALUES (?, 'r1', 'undercover', '1.0.0', 1, ?, '{}', 'seed', '{}', ?, ?)`,
+        `INSERT INTO game_sessions (id, room_id, module_id, module_version, state_schema_version, status, snapshot_json, seed, rng_state_json, ruleset_id, created_at, updated_at)
+         VALUES (?, 'r1', 'undercover', '1.0.0', 1, ?, '{}', 'seed', '{}', 'undercover_classic_v1', ?, ?)`,
       )
       .run(id, status, now, now);
 

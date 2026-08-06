@@ -3,7 +3,14 @@
  * 纯函数：不做 I/O，不用 Date.now()/Math.random()；时间与随机全部来自 GameContext；
  * 计时与系统消息以 effect 描述。reduce 不修改传入状态（先克隆再变更）。
  */
-import type { GameContext, GameEffect, GameModule, ReduceResult } from '@ldj/shared';
+import {
+  nextTurnParticipant,
+  rotateTurnOrder,
+  type GameContext,
+  type GameEffect,
+  type GameModule,
+  type ReduceResult,
+} from '@ldj/shared';
 import { UNDERCOVER_MANIFEST } from '../shared/manifest.ts';
 import { WORD_BANK, WORD_BANK_VERSION } from './words.ts';
 import {
@@ -66,20 +73,17 @@ function checkWinner(state: UndercoverState): UndercoverRole | null {
 
 /** 按席位环序找 fromId 之后第一名存活玩家（fromId 自身可以已淘汰） */
 function nextAliveAfter(state: UndercoverState, fromId: string): string {
-  const bySeat = Object.entries(state.players).sort(([, a], [, b]) => a.seat - b.seat);
-  const start = bySeat.findIndex(([id]) => id === fromId);
-  for (let step = 1; step <= bySeat.length; step++) {
-    const [id, p] = bySeat[(start + step) % bySeat.length]!; // 模运索引必在界内
-    if (p.alive) return id;
-  }
-  throw new Error('没有存活玩家可作为发言者');
+  const bySeat = Object.entries(state.players)
+    .sort(([, a], [, b]) => a.seat - b.seat)
+    .map(([id]) => id);
+  return nextTurnParticipant(bySeat, fromId, {
+    isEligible: (playerId) => state.players[playerId]!.alive,
+  });
 }
 
 /** 存活玩家按席位顺时针，从 firstId 开始旋转（§6.1 发言顺序） */
 function buildSpeakingOrder(state: UndercoverState, firstId: string): string[] {
-  const alive = alivePlayerIds(state);
-  const at = alive.indexOf(firstId);
-  return [...alive.slice(at), ...alive.slice(0, at)];
+  return rotateTurnOrder(alivePlayerIds(state), firstId);
 }
 
 function currentPhaseTimerId(state: UndercoverState): string | null {

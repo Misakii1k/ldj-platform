@@ -22,8 +22,8 @@ import type { RoomCommandExecutor, TxContext } from '../executor.ts';
 import { CommandError } from '../executor.ts';
 import { createSeededRandom } from '@ldj/shared';
 import { listBotMembers, type BotMemberRow } from '../commands/bots.ts';
-import { getGameModule, type ErasedGameModule } from './registry.ts';
-import { applySessionAction, getActiveSession, type GameActionOutcome } from './session.ts';
+import { getSessionGameModule, type RegisteredGameModule } from './registry.ts';
+import { applySessionAction, getActiveSession, loadSessionState, type GameActionOutcome } from './session.ts';
 import type { LlmClient } from './llmClient.ts';
 
 /**
@@ -57,7 +57,7 @@ interface SessionPeek {
   sessionId: string;
   lastSeq: number;
   moduleId: string;
-  module: ErasedGameModule;
+  module: RegisteredGameModule;
   state: unknown;
 }
 
@@ -73,14 +73,14 @@ interface PlannedAction {
 function peekSession(db: Db, roomId: string): SessionPeek | null {
   const session = getActiveSession(db, roomId);
   if (!session || session.status !== 'ACTIVE') return null;
-  const module = getGameModule(session.module_id);
+  const module = getSessionGameModule(session);
   if (!module?.pickBotAction) return null;
   return {
     sessionId: session.id,
     lastSeq: session.last_seq,
     moduleId: session.module_id,
     module,
-    state: JSON.parse(session.snapshot_json),
+    state: loadSessionState(session, module).state,
   };
 }
 

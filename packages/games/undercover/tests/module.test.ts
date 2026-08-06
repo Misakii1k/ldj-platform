@@ -416,12 +416,49 @@ test('玩家视角：看得到自己的词，看不到他人角色/词语；淘�
   d.toSpeaking();
   const spy = at(d.undercoverIds(), 0);
   const civ = at(d.civilianIds(), 0);
+  const beforeViewBuild = structuredClone(d.state);
 
   const civView = undercoverModule.getPlayerView(d.state, civ);
+  const unknownView = undercoverModule.getPlayerView(d.state, 'not-seated');
+  assert.deepEqual(d.state, beforeViewBuild);
   assert.equal(civView.me?.word, d.state.civilianWord);
   assert.equal(civView.me?.role, null); // 存活期间不直接显示阵营
+  assert.equal(unknownView.me, null);
   assert.ok(civView.players.every((p) => p.revealedRole === null));
   assert.equal(civView.reveal, null);
+  assert.deepEqual(Object.keys(civView).slice(0, -1), [
+    'phase',
+    'round',
+    'players',
+    'speakingOrder',
+    'currentSpeakerId',
+    'deadlineAt',
+    'votesSubmitted',
+    'votesExpected',
+    'runoffCandidates',
+    'confirmedPlayerIds',
+    'lastVoteSummary',
+    'winner',
+    'aborted',
+    'reveal',
+  ]);
+  assert.equal(Object.keys(civView).at(-1), 'me');
+  assert.deepEqual(Object.keys(civView.players[0]!), [
+    'playerId',
+    'seat',
+    'alive',
+    'exitReason',
+    'revealedRole',
+  ]);
+  assert.deepEqual(Object.keys(civView.me!), [
+    'playerId',
+    'word',
+    'role',
+    'alive',
+    'confirmed',
+    'hasVoted',
+    'myVote',
+  ]);
   // 平民视角序列化后不得出现卧底词
   assert.ok(!JSON.stringify(civView).includes(d.state.undercoverWord));
 
@@ -429,11 +466,15 @@ test('玩家视角：看得到自己的词，看不到他人角色/词语；淘�
   assert.equal(spyView.me?.word, d.state.undercoverWord);
   assert.ok(!JSON.stringify(spyView).includes(d.state.civilianWord));
 
-  // 观战视角：无词语、无角色
+  // 观战视角：无词语、无角色、无 me 字段
   const specView = undercoverModule.getSpectatorView(d.state);
   const specJson = JSON.stringify(specView);
+  assert.equal('me' in specView, false);
+  assert.deepEqual(Object.keys(specView), Object.keys(civView).slice(0, -1));
   assert.ok(!specJson.includes(d.state.civilianWord));
   assert.ok(!specJson.includes(d.state.undercoverWord));
+  assert.equal(specJson.includes('pendingOutcome'), false);
+  assert.equal(specJson.includes('"votes"'), false);
 
   // 淘汰后：公开其阵营但不公开词语；本人可见自己阵营
   d.ok(d.system(), { type: 'player_forfeited', playerIds: [civ] });

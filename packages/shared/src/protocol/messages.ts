@@ -73,6 +73,15 @@ export const joinRoomPayloadSchema = z
   .strict();
 export type JoinRoomPayload = z.infer<typeof joinRoomPayloadSchema>;
 
+/** 客户端最后接受的版本化游戏视角身份，用于决定能否增量补发公开事件。 */
+export const gameResumeIdentitySchema = z
+  .object({
+    sessionId: z.string().min(1).max(64),
+    viewVersion: z.number().int().positive(),
+  })
+  .strict();
+export type GameResumeIdentity = z.infer<typeof gameResumeIdentitySchema>;
+
 /** resume_room payload（FR-ID-002：房间码 + PlayerId + resumeToken 缺一不可） */
 export const resumeRoomPayloadSchema = z
   .object({
@@ -81,6 +90,7 @@ export const resumeRoomPayloadSchema = z
     resumeToken: z.string().min(16).max(128),
     lastSeq: z.number().int().nonnegative().nullable().optional().default(null),
     chatCursor: z.number().int().nonnegative().nullable().optional().default(null),
+    game: gameResumeIdentitySchema.nullable().optional(),
   })
   .strict();
 export type ResumeRoomPayload = z.infer<typeof resumeRoomPayloadSchema>;
@@ -154,6 +164,7 @@ export const resyncPayloadSchema = z
   .object({
     lastSeq: z.number().int().nonnegative().nullable(),
     chatCursor: z.number().int().nonnegative().nullable(),
+    game: gameResumeIdentitySchema.nullable().optional(),
   })
   .strict();
 export type ResyncPayload = z.infer<typeof resyncPayloadSchema>;

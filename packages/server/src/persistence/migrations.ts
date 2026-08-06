@@ -208,4 +208,109 @@ WHERE game_id = 'richman'
 ALTER TABLE room_members ADD COLUMN ready INTEGER NOT NULL DEFAULT 0;
 `,
   },
+  {
+    version: 7,
+    name: 'add-session-ruleset-identity',
+    // 重建 game_sessions：引入权威 ruleset_id、SUSPENDED 状态与失败列。
+    // migrator 在每次迁移的事务外先关闭外键、提交后恢复（PRAGMA foreign_keys
+    // 在事务内是 no-op），所以这里的 PRAGMA 语句仅作文档性兜底；
+    // DROP 父表不会级联删除 game_events/timers/game_results 等子表行。
+    //
+    // ruleset_id 回填优先级：
+    // 1. V2 快照信封顶层 $.rulesetId（UNO / 卧底 versioned module）
+    // 2. 按 module_id 兜底：undercover / uno / landlord / werewolf。
+    //    werewolf 只显式识别 config.rulesetId = 'werewolf_platform_open_kill_v1'，
+    //    其余（含缺失）一律视为 legacy 基线 'werewolf_legacy_platform_v2'。
+    // 3. 仍为空则 'unregistered_module'，随后整行标记 SUSPENDED。
+    // json_extract 对原始 legacy JSON 缺路径返回 NULL，属预期，不中断迁移。
+    up: `
+PRAGMA foreign_keys = OFF;
+
+CREATE TABLE game_sessions_new (
+  id                   TEXT PRIMARY KEY,
+  room_id              TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+  module_id            TEXT NOT NULL,
+  module_version       TEXT NOT NULL,
+  state_schema_version INTEGER NOT NULL,
+  status               TEXT NOT NULL CHECK (status IN ('PREPARING','ACTIVE','RECOVERING','SUSPENDED','FINISHED','ABORTED')),
+  snapshot_json        TEXT NOT NULL,
+  seed                 TEXT NOT NULL,
+  rng_state_json       TEXT NOT NULL,
+  last_seq             INTEGER NOT NULL DEFAULT 0,
+  created_at           INTEGER NOT NULL,
+  updated_at           INTEGER NOT NULL,
+  ruleset_id           TEXT NOT NULL,
+  failure              TEXT,
+  failure_details_json TEXT
+);
+
+INSERT INTO game_sessions_new (id, room_id, module_id, module_version, state_schema_version, status, snapshot_json, seed, rng_state_json, last_seq, created_at, updated_at, ruleset_id, failure, failure_details_json)
+SELECT id, room_id, module_id, module_version, state_schema_version, status, snapshot_json, seed, rng_state_json, last_seq, created_at, updated_at,
+  COALESCE(
+    json_extract(snapshot_json, '$.rulesetId'),
+    CASE module_id
+      WHEN 'undercover' THEN 'undercover_classic_v1'
+      WHEN 'uno' THEN 'uno_legacy_platform_v1'
+      WHEN 'landlord' THEN 'landlord_legacy_platform_v1'
+      WHEN 'werewolf' THEN
+        CASE WHEN json_extract(snapshot_json, '$.config.rulesetId') = 'werewolf_platform_open_kill_v1' THEN 'werewolf_platform_open_kill_v1'
+             ELSE 'werewolf_legacy_platform_v2' END
+      ELSE NULL
+    END,
+    'unregistered_module'
+  ), NULL, NULL
+FROM game_sessions;
+
+-- 未注册模块的会话：仅仍处于活动态（PREPARING/ACTIVE/RECOVERING）的标记 SUSPENDED；
+-- 已 ABORTED/FINISHED 的历史行不反转（与 v5 退役语义一致），也不占用活动位。
+UPDATE game_sessions_new
+SET status = 'SUSPENDED',
+    failure = 'FAILED_RULESET_UNAVAILABLE',
+    failure_details_json = '{"reason":"module_unregistered_at_migration"}'
+WHERE module_id NOT IN ('uno','undercover','werewolf','landlord')
+  AND status IN ('PREPARING','ACTIVE','RECOVERING');
+
+DROP TABLE game_sessions;
+ALTER TABLE game_sessions_new RENAME TO game_sessions;
+CREATE UNIQUE INDEX idx_sessions_one_active ON game_sessions(room_id)
+  WHERE status IN ('PREPARING','ACTIVE','RECOVERING','SUSPENDED');
+PRAGMA foreign_keys = ON;
+
+-- 迁移后外键完整性哨兵：存在任何违规即抛错，整条迁移回滚
+SELECT json('foreign_key_violation')
+WHERE EXISTS (SELECT 1 FROM pragma_foreign_key_check);
+`,
+  },
+  {
+    version: 8,
+    name: 'add-adjudication-tasks',
+    // D4-A1：持久化外部裁判任务。
+    // 任务行在房间事务提交后创建（post-commit，独立于房间事务），
+    // 结果按 task_id exactly-once 回灌：同 task_id 第二次到达被丢弃。
+    // input_plaintext_json 仅 pending/running 需要，结果应用后擦除。
+    // 普通 CREATE TABLE，无特殊外键处理；迁移器在迁移期间已保持 foreign_keys OFF。
+    up: `
+CREATE TABLE adjudication_tasks (
+  task_id              TEXT PRIMARY KEY,
+  session_id           TEXT NOT NULL REFERENCES game_sessions(id) ON DELETE CASCADE,
+  ruleset_id           TEXT NOT NULL,
+  task_type            TEXT NOT NULL,
+  submitted_at_seq     INTEGER NOT NULL,
+  eligibility_digest   TEXT NOT NULL,
+  input_digest         TEXT NOT NULL,
+  input_plaintext_json TEXT,          -- 仅 pending/running 需要；结果应用后擦除
+  status               TEXT NOT NULL CHECK (status IN ('pending','running','done','discarded','errored')),
+  primary_attempt_json TEXT,
+  fallback_attempt_json TEXT,
+  result_json          TEXT,
+  created_at           INTEGER NOT NULL,
+  updated_at           INTEGER NOT NULL
+);
+CREATE INDEX idx_adjudication_tasks_session ON adjudication_tasks(session_id, status);
+
+-- 迁移后外键完整性哨兵：存在任何违规即抛错，整条迁移回滚
+SELECT json('foreign_key_violation')
+WHERE EXISTS (SELECT 1 FROM pragma_foreign_key_check);
+`,
+  },
 ];

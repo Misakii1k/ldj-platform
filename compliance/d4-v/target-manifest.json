@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-08-05",
+  "candidate": {
+    "gameId": "werewolf",
+    "rulesetId": "werewolf_platform_open_kill_v1",
+    "engineContractVersion": 2
+  },
+  "targetSourceFiles": [
+    { "path": "packages/games/werewolf/server/v2/types.ts", "role": "target_types" },
+    { "path": "packages/games/werewolf/server/v2/schemas.ts", "role": "target_schemas" },
+    { "path": "packages/games/werewolf/server/v2/rules.ts", "role": "target_rules" },
+    { "path": "packages/games/werewolf/server/v2/module.ts", "role": "target_module" },
+    { "path": "packages/games/werewolf/server/v2/bot.ts", "role": "target_rule_bot" },
+    { "path": "packages/games/werewolf/server/v2/botPrompt.ts", "role": "target_llm_prompt" }
+  ]
+}

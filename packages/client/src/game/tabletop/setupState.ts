@@ -53,5 +53,6 @@ export function readRoomGameConfig(setup: GameSetupSpec, roomConfig: unknown): S
 
 export function buildModuleConfig(setup: GameSetupSpec, config: SetupConfig): SetupConfig {
   const allowed = new Set(setup.options.map((option) => option.key));
+  if (setup.rulesets.length > 1) allowed.add('rulesetId');
   return Object.fromEntries(Object.entries(config).filter(([key]) => allowed.has(key)));
 }

@@ -11,12 +11,13 @@ import {
   type ReactNode,
 } from 'react';
 import { PROTOCOL_VERSION, type ServerEnvelope } from '@ldj/shared';
-import { applyEnvelope } from './envelopeReducer.ts';
+import { applyEnvelope, parseServerEnvelope } from './envelopeReducer.ts';
 import { ServerError, type ClientError } from '../shared-ui/errors.ts';
 import {
   INITIAL_CONNECTION_STATE,
   ME_STORAGE_KEY,
   isStateDependent,
+  withConnState,
   type ClientMessageType,
   type ConnectionApi,
   type ConnectionSnapshot,
@@ -71,6 +72,13 @@ function parseErrorToClientError(payload: unknown): ClientError {
     ...(typeof payload.retryAfterMs === 'number' ? { retryAfterMs: payload.retryAfterMs } : {}),
     ...(typeof payload.currentSeq === 'number' ? { currentSeq: payload.currentSeq } : {}),
   };
+}
+
+function gameResumeIdentity(state: ConnectionSnapshot): { sessionId: string; viewVersion: number } | null {
+  const game = state.game;
+  return game && game.engineContractVersion === 2 && typeof game.viewVersion === 'number'
+    ? { sessionId: game.sessionId, viewVersion: game.viewVersion }
+    : null;
 }
 
 export function ConnectionProvider({ children }: { children: ReactNode }) {
@@ -185,6 +193,7 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
           sendRaw('resync', {
             lastSeq: stateRef.current.roomSeq,
             chatCursor: stateRef.current.chatCursor,
+            game: gameResumeIdentity(stateRef.current),
           });
           break;
         case 'clear_local_session':
@@ -227,12 +236,10 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
     };
 
     socket.onmessage = (event) => {
-      try {
-        const envelope = JSON.parse(event.data as string) as ServerEnvelope;
-        processEnvelope(envelope);
-      } catch {
-        // 忽略无法解析的消息
-      }
+      // 严格 envelope 校验：版本/类型/序号/时间戳不合法的一律丢弃（D3 Task 9）。
+      const envelope = parseServerEnvelope(event.data as string);
+      if (envelope === null) return;
+      processEnvelope(envelope);
     };
 
     socket.onclose = (event) => {
@@ -263,8 +270,7 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
           ? (prev.connState === 'seat_expired' ? 'seat_expired' : 'reconnecting')
           : (code === WS_CLOSE_SESSION_REPLACED ? 'seat_expired' : prev.connState);
         const next: ConnectionSnapshot = {
-          ...prev,
-          connState: nextConnState,
+          ...withConnState(prev, nextConnState),
           closeReason: closeReason ?? prev.closeReason,
         };
         stateRef.current = next;
@@ -321,6 +327,7 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
         resumeToken: m.resumeToken,
         lastSeq: stateRef.current.roomSeq,
         chatCursor: stateRef.current.chatCursor,
+        game: gameResumeIdentity(stateRef.current),
       }).then(
         () => { /* resume 成功，reducer 会处理后续 room_snapshot */ },
         () => {
@@ -334,13 +341,14 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
   // 手动 resync
   const resync = useCallback(() => {
     setState(prev => {
-      const next: ConnectionSnapshot = { ...prev, connState: 'server_recovering' };
+      const next: ConnectionSnapshot = withConnState(prev, 'server_recovering');
       stateRef.current = next;
       return next;
     });
     sendRaw('resync', {
       lastSeq: stateRef.current.roomSeq,
       chatCursor: stateRef.current.chatCursor,
+      game: gameResumeIdentity(stateRef.current),
     });
   }, [sendRaw]);
 

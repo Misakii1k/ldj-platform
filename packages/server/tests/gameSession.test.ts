@@ -15,6 +15,8 @@ import {
   applyGameAction,
   forfeitPlayers,
   getActiveSession,
+  loadSessionState,
+  type GameActionOutcome,
 } from '../src/core/game/session.ts';
 import { consumeDueTimer, TimerRunner } from '../src/core/game/timerRunner.ts';
 import { getGameModule, DEFAULT_GAME_ID } from '../src/core/game/registry.ts';
@@ -82,7 +84,7 @@ function roomStatus(db: Db, roomId: string): string {
 function snapshotState(db: Db, roomId: string): Record<string, unknown> {
   const session = getActiveSession(db, roomId);
   assert.ok(session, '应存在活动对局');
-  return JSON.parse(session.snapshot_json) as Record<string, unknown>;
+  return loadSessionState(session).state as Record<string, unknown>;
 }
 
 async function assertCommandError(fn: () => Promise<unknown>, code: string): Promise<void> {
@@ -100,6 +102,10 @@ test('start_game：会话落库、房间 IN_GAME、begin 已投递并挂起看�
     const outcome = started.outcome.gameStarted;
     assert.ok(outcome);
     assert.equal(outcome.moduleId, DEFAULT_GAME_ID);
+    assert.equal(outcome.begin.roomSeq, started.roomSeq);
+    assert.equal(outcome.begin.versioned, true);
+    assert.equal(outcome.begin.rulesetId, 'undercover_classic_v1');
+    assert.equal(outcome.begin.viewVersion, 1);
     assert.deepEqual([...outcome.playerIds].sort(), [...ctx.playerIds].sort());
     assert.equal(roomStatus(ctx.db, ctx.roomId), 'IN_GAME');
 
@@ -330,7 +336,8 @@ test('forfeitPlayers：席位保留期满批量退出进入对局；全员退出
 test('TimerRunner：到期计时器自动消费并回调；重复/取消不再触发', async () => {
   const ctx = await setupRoom(4);
   try {
-    await startGameAs(ctx, ctx.hostId);
+    const started = await startGameAs(ctx, ctx.hostId);
+    const startedRoomSeq = started.roomSeq;
     const session = getActiveSession(ctx.db, ctx.roomId);
     assert.ok(session);
     // 把看词计时器改成立即到期
@@ -338,9 +345,9 @@ test('TimerRunner：到期计时器自动消费并回调；重复/取消不再�
       .prepare(`UPDATE timers SET deadline_at = ? WHERE session_id = ? AND timer_id = 'reveal'`)
       .run(Date.now() - 1, session.id);
 
-    const outcomes: string[] = [];
-    const runner = new TimerRunner(ctx.db, ctx.executor, (roomId, outcome) => {
-      outcomes.push(`${roomId}:${outcome.seq}`);
+    const outcomes: GameActionOutcome[] = [];
+    const runner = new TimerRunner(ctx.db, ctx.executor, (_roomId, outcome) => {
+      outcomes.push(outcome);
     });
     runner.start();
     // 等待 runner 消费（reveal_timeout → speaking）
@@ -349,6 +356,11 @@ test('TimerRunner：到期计时器自动消费并回调；重复/取消不再�
     }
     runner.stop();
     assert.ok(outcomes.length >= 1, '计时器应已消费');
+    const timerOutcome = outcomes[0]!;
+    const roomSeq = (ctx.db.prepare('SELECT seq FROM rooms WHERE id = ?').get(ctx.roomId) as { seq: number }).seq;
+    assert.equal(timerOutcome.roomSeq, roomSeq);
+    assert.ok(timerOutcome.roomSeq > startedRoomSeq, '计时动作必须推进真实 roomSeq');
+    assert.equal(timerOutcome.versioned, true);
     const state = snapshotState(ctx.db, ctx.roomId);
     assert.equal(state.phase, 'speaking');
     const reveal = ctx.db

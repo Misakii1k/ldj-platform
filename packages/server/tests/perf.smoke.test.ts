@@ -16,6 +16,7 @@ import { createApp, type App } from '../src/app.ts';
 import { createLogger } from '../src/boot/logger.ts';
 import type { ServerConfig } from '../src/config.ts';
 import { seedRoom } from './helpers/seedRoom.ts';
+import { loadSessionState, type SessionRow } from '../src/core/game/session.ts';
 
 // —— 常量 ——
 
@@ -253,13 +254,14 @@ class Client {
 function findUndercoverId(app: App, roomId: string): string | null {
   const row = app.db
     .prepare(
-      `SELECT snapshot_json FROM game_sessions
+      `SELECT * FROM game_sessions
        WHERE room_id = ? AND status = 'ACTIVE'
        ORDER BY id DESC LIMIT 1`,
     )
-    .get(roomId) as { snapshot_json: string } | undefined;
+    .get(roomId) as SessionRow | undefined;
   if (!row) return null;
-  const state = JSON.parse(row.snapshot_json) as {
+  // V2 会话的 snapshot_json 是版本化信封，统一走会话状态入口解出 raw state。
+  const state = loadSessionState(row).state as {
     players: Record<string, { role: string; alive: boolean }>;
   };
   for (const [id, p] of Object.entries(state.players)) {

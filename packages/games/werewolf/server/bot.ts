@@ -9,6 +9,15 @@ function aliveOthers(view: WerewolfPlayerView, playerId: string): string[] {
   return view.players.filter((player) => player.alive && player.playerId !== playerId).map((player) => player.playerId);
 }
 
+/** 夜刀候选与 reducer 合法性保持一致：开放夜刀允许自己与同伴 */
+function wolfKillCandidates(view: WerewolfPlayerView, playerId: string): string[] {
+  const me = view.me;
+  if (view.config.wolfKillScope === 'any') {
+    return view.players.filter((player) => player.alive).map((player) => player.playerId);
+  }
+  return aliveOthers(view, playerId).filter((id) => !(me?.wolfTeammateIds ?? []).includes(id));
+}
+
 export function pickWerewolfBotAction(
   input: BotDecisionInput<WerewolfPlayerView>,
 ): WerewolfAction | null {
@@ -24,10 +33,7 @@ export function pickWerewolfBotAction(
       if (!me.alive) return null;
       if (me.role === 'wolf') {
         if (me.hasNightVoted) return null;
-        const target = choose(
-          aliveOthers(view, playerId).filter((id) => !me.wolfTeammateIds.includes(id)),
-          input,
-        );
+        const target = choose(wolfKillCandidates(view, playerId), input);
         return target ? { type: 'night_kill', targetPlayerId: target } : null;
       }
       if (me.role === 'seer') {
@@ -68,11 +74,12 @@ export function pickWerewolfBotAction(
     case 'runoff_voting': {
       if (!me.alive || me.idiotRevealed || me.hasVoted) return null;
       const target = choose(
-        aliveOthers(view, playerId).filter(
-          (id) =>
-            view.phase !== 'runoff_voting' ||
-            view.runoffCandidates.includes(id),
-        ),
+        aliveOthers(view, playerId).filter((id) => {
+          const candidate = view.players.find((player) => player.playerId === id);
+          return !candidate?.idiotRevealed && (
+            view.phase !== 'runoff_voting' || view.runoffCandidates.includes(id)
+          );
+        }),
         input,
       );
       return { type: 'day_vote', targetPlayerId: target };

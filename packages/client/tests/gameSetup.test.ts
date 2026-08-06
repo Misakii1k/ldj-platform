@@ -40,6 +40,13 @@ test('房间配置只合并 setup 已知的合法游戏字段', () => {
   }), { rulesetId: 'quick', pace: 'fast', rounds: 4, private: false });
   assert.deepEqual(readRoomGameConfig(setup, null), setup.defaultConfig);
   assert.deepEqual(buildModuleConfig(setup, { rulesetId: 'quick', pace: 'fast', rounds: 4, private: false }), {
-    pace: 'fast', rounds: 4, private: false,
+    rulesetId: 'quick', pace: 'fast', rounds: 4, private: false,
+  });
+});
+
+test('单规则集模块仍只接收模块选项，不额外透传目录身份', () => {
+  const single = { ...setup, rulesets: [setup.rulesets[0]!] };
+  assert.deepEqual(buildModuleConfig(single, setup.defaultConfig), {
+    pace: 'normal', rounds: 3, private: true,
   });
 });

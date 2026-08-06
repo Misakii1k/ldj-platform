@@ -40,8 +40,9 @@ import {
 } from '../core/commands/presence.ts';
 import { applyGameAction, type GameActionOutcome } from '../core/game/session.ts';
 import { autoStartGame } from '../core/game/session.ts';
-import { getGameModule, DEFAULT_GAME_ID } from '../core/game/registry.ts';
-import { buildGameStatePayload } from '../core/game/views.ts';
+import { getGameModule, getDefaultRuleset, DEFAULT_GAME_ID } from '../core/game/registry.ts';
+import { isVersionedEventEnvelope } from '../core/game/eventEnvelope.ts';
+import { buildGameStatePayload, type GameStatePayload } from '../core/game/views.ts';
 import { findRoomIdByCode } from '../core/roomLookup.ts';
 import { buildRoomSnapshot } from '../core/snapshot.ts';
 import { RateLimiter, DEFAULT_RULES } from './rateLimit.ts';
@@ -89,6 +90,13 @@ const DEFAULT_HOST_TRANSFER_DELAY_MS = 30_000;
 const DEFAULT_RESERVATION_SWEEP_MS = 30_000;
 /** 全员就绪后自动开局倒计时（秒） */
 export const AUTO_START_DELAY_MS = 5_000;
+/** D3 重连只对最多 50 个房间序号的小缺口回放公开游戏事件。 */
+export const MAX_PUBLIC_GAME_EVENT_REPLAY_GAP = 50;
+
+interface GameResumeIdentity {
+  readonly sessionId: string;
+  readonly viewVersion: number;
+}
 
 /**
  * Origin 校验（SPEC §9.5）：
@@ -313,7 +321,7 @@ export class WsGateway {
       return;
     }
     const moduleId = row.game_id ?? DEFAULT_GAME_ID;
-    const module = getGameModule(moduleId);
+    const module = getGameModule(moduleId, getDefaultRuleset(moduleId));
     if (
       !module ||
       row.online < module.manifest.minPlayers ||
@@ -407,7 +415,13 @@ export class WsGateway {
           );
           break;
         case 'game_action':
-          await this.#handleGameAction(socket, state, envelope.requestId, envelope.payload);
+          await this.#handleGameAction(
+            socket,
+            state,
+            envelope.requestId,
+            envelope.payload,
+            envelope.expectedSeq,
+          );
           break;
         case 'chat_send':
           await this.#handleChatSend(socket, state, envelope.requestId, envelope.payload);
@@ -577,11 +591,8 @@ export class WsGateway {
 
     // Late joiners during an active game need their current player/spectator view immediately;
     // otherwise the client can enter the room but stay stuck on the game loading screen until
-    // the next game event happens.
-    const gameState = buildGameStatePayload(this.#deps.db, roomId, result.outcome.playerId);
-    if (gameState) {
-      this.#send(socket, 'game_state', gameState, { requestId });
-    }
+    // the next game event happens. 附带本次 join 提交后的房间序号作为基线。
+    this.#sendCurrentGameState(socket, roomId, result.outcome.playerId, requestId, result.roomSeq);
   }
 
   async #handleResumeRoom(
@@ -629,16 +640,14 @@ export class WsGateway {
       seatRole: result.outcome.seatRole,
     }, { requestId, roomSeq: result.roomSeq });
 
-    // 恢复者补发（FR-REC-003 顺序）：快照 → 个人/观战视角 → 游标后聊天增量
+    // 房间级广播：成员回到 CONNECTED 对所有订阅者可见（FR-REC-004）
     this.broadcastToRoom(roomId, 'room_snapshot', result.outcome.snapshot, result.roomSeq);
-    const gameState = buildGameStatePayload(this.#deps.db, roomId, result.outcome.playerId);
-    if (gameState) {
-      this.#send(socket, 'game_state', gameState, { requestId });
-    }
-    const missed = listChatAfter(this.#deps.db, roomId, payload.data.chatCursor);
-    if (missed.length > 0) {
-      this.#send(socket, 'chat_batch', { messages: missed });
-    }
+    // 恢复者补发统一基线：权威快照 → 可选公开事件增量 → 最新个人/观战视角 → 聊天增量。
+    // 快照已随房间广播下发，这里不再重复发送。
+    this.#sendResyncBundle(socket, state, requestId, {
+      ...payload.data,
+      game: payload.data.game ?? null,
+    }, { includeSnapshot: false });
   }
 
   async #handleLeaveRoom(
@@ -788,6 +797,7 @@ export class WsGateway {
     state: ConnectionState,
     requestId: string,
     rawPayload: unknown,
+    expectedSeq: number | undefined,
   ): Promise<void> {
     const { roomId, playerId } = state;
     if (roomId === null || playerId === null) {
@@ -805,7 +815,21 @@ export class WsGateway {
       roomId,
       actorScope: `player:${playerId}`,
       requestId,
-      handler: (tx) => applyGameAction(tx, roomId, playerId, rawPayload, requestId),
+      receiptOutcome: (outcome: GameActionOutcome) => ({
+        ...outcome,
+        publicEvents: [],
+        privateEvents: [],
+        events: [],
+        systemChats: [],
+      }),
+      handler: (tx) => {
+        // receipt 查询由 executor 在进入 handler 前完成，因此相同 requestId 的重试
+        // 即使携带过期 expectedSeq，也会优先返回第一次已提交的 ACK。
+        if (expectedSeq !== undefined && expectedSeq !== tx.roomSeq - 1) {
+          throw new CommandError('STALE_CLIENT_STATE');
+        }
+        return applyGameAction(tx, roomId, playerId, rawPayload, requestId);
+      },
     });
 
     this.#send(socket, 'ack', { seq: result.outcome.seq, finished: result.outcome.finished }, {
@@ -821,14 +845,8 @@ export class WsGateway {
    * 终局时房间快照（IN_GAME → POST_GAME）+ 计时器对表。
    */
   applyGameOutcome(roomId: string, outcome: GameActionOutcome): void {
-    this.broadcastGameViews(roomId);
-    if (outcome.events.length > 0) {
-      this.broadcastToRoom(roomId, 'game_event', {
-        sessionId: outcome.sessionId,
-        seq: outcome.seq,
-        events: outcome.events,
-      });
-    }
+    this.broadcastGameViews(roomId, outcome.roomSeq);
+    this.#broadcastGameEvents(roomId, outcome);
     if (outcome.systemChats.length > 0) {
       this.#broadcastChat(roomId, outcome.systemChats);
     }
@@ -847,8 +865,37 @@ export class WsGateway {
     }
   }
 
+  /**
+   * 按接收者分流版本化事件：公开事件对全房间可见，私有事件只发送 event 本体给目标玩家。
+   * recipients 永不进入 wire；观战者和非目标玩家只会看到公开事件。
+   */
+  #broadcastGameEvents(roomId: string, outcome: GameActionOutcome): void {
+    const subs = this.#roomSubscribers.get(roomId);
+    if (!subs) return;
+    for (const socket of subs) {
+      if (socket.readyState !== WebSocket.OPEN) continue;
+      const state = this.#states.get(socket);
+      if (!state) continue;
+      const privateEvents = state.playerId === null
+        ? []
+        : outcome.privateEvents
+            .filter((entry) => entry.recipients.includes(state.playerId!))
+            .map((entry) => entry.event);
+      const events = [...outcome.publicEvents, ...privateEvents];
+      if (events.length === 0) continue;
+      this.#send(socket, 'game_event', {
+        sessionId: outcome.sessionId,
+        moduleId: outcome.moduleId,
+        seq: outcome.seq,
+        ...(outcome.rulesetId === null ? {} : { rulesetId: outcome.rulesetId }),
+        ...(outcome.viewVersion === null ? {} : { viewVersion: outcome.viewVersion }),
+        events,
+      }, { roomSeq: outcome.roomSeq });
+    }
+  }
+
   /** 向房间每个订阅者按其身份下发 game_state（G-04：视角白名单在服务端完成） */
-  broadcastGameViews(roomId: string): void {
+  broadcastGameViews(roomId: string, roomSeq?: number): void {
     const subs = this.#roomSubscribers.get(roomId);
     if (!subs) return;
     for (const socket of subs) {
@@ -856,7 +903,7 @@ export class WsGateway {
       const st = this.#states.get(socket);
       if (!st) continue;
       const payload = buildGameStatePayload(this.#deps.db, roomId, st.playerId);
-      if (payload) this.#send(socket, 'game_state', payload);
+      if (payload) this.#send(socket, 'game_state', payload, roomSeq === undefined ? {} : { roomSeq });
     }
   }
 
@@ -898,6 +945,102 @@ export class WsGateway {
     }
   }
 
+  #sendCurrentGameState(
+    socket: WebSocket,
+    roomId: string,
+    playerId: string | null,
+    requestId: string,
+    roomSeq: number,
+  ): GameStatePayload | null {
+    const gameState = buildGameStatePayload(this.#deps.db, roomId, playerId);
+    if (gameState) this.#send(socket, 'game_state', gameState, { requestId, roomSeq });
+    return gameState;
+  }
+
+  #replayPublicGameEvents(
+    socket: WebSocket,
+    roomId: string,
+    requestId: string,
+    lastSeq: number | null,
+    identity: GameResumeIdentity | null,
+    gameState: GameStatePayload | null,
+    currentRoomSeq: number,
+  ): void {
+    if (
+      lastSeq === null
+      || identity === null
+      || gameState === null
+      || gameState.engineContractVersion !== 2
+      || gameState.viewVersion !== identity.viewVersion
+      || gameState.sessionId !== identity.sessionId
+    ) return;
+    const gap = currentRoomSeq - lastSeq;
+    if (gap <= 0 || gap > MAX_PUBLIC_GAME_EVENT_REPLAY_GAP) return;
+
+    const rows = this.#deps.db.prepare(
+      `SELECT seq, events_json
+       FROM game_events
+       WHERE session_id = ?
+       ORDER BY seq ASC`,
+    ).all(identity.sessionId) as { seq: number; events_json: string }[];
+    const replayable = rows.flatMap((row) => {
+      const parsed = JSON.parse(row.events_json) as unknown;
+      if (!isVersionedEventEnvelope(parsed)) return [];
+      if (parsed.roomSeq <= lastSeq || parsed.roomSeq > currentRoomSeq) return [];
+      return [{ sessionSeq: row.seq, envelope: parsed }];
+    });
+    let previousRoomSeq = lastSeq;
+    for (const entry of replayable) {
+      if (entry.envelope.roomSeq <= previousRoomSeq) return;
+      previousRoomSeq = entry.envelope.roomSeq;
+    }
+    for (const entry of replayable) {
+      if (entry.envelope.publicEvents.length === 0) continue;
+      this.#send(socket, 'game_event', {
+        sessionId: identity.sessionId,
+        moduleId: gameState.moduleId,
+        seq: entry.sessionSeq,
+        rulesetId: entry.envelope.rulesetId,
+        viewVersion: identity.viewVersion,
+        events: entry.envelope.publicEvents,
+      }, { requestId, roomSeq: entry.envelope.roomSeq });
+    }
+  }
+
+  #sendResyncBundle(
+    socket: WebSocket,
+    state: ConnectionState,
+    requestId: string,
+    input: {
+      readonly lastSeq: number | null;
+      readonly chatCursor: number | null;
+      readonly game: GameResumeIdentity | null;
+    },
+    options: { readonly includeSnapshot?: boolean } = {},
+  ): void {
+    const roomId = state.roomId;
+    if (roomId === null) return;
+    const snapshot = buildRoomSnapshot(this.#deps.db, roomId);
+    if (options.includeSnapshot !== false) {
+      this.#send(socket, 'room_snapshot', snapshot, { requestId, roomSeq: snapshot.seq });
+    }
+    const gameState = buildGameStatePayload(this.#deps.db, roomId, state.playerId);
+    this.#replayPublicGameEvents(
+      socket,
+      roomId,
+      requestId,
+      input.lastSeq,
+      input.game,
+      gameState,
+      snapshot.seq,
+    );
+    if (gameState) this.#send(socket, 'game_state', gameState, { requestId, roomSeq: snapshot.seq });
+    const missed = listChatAfter(this.#deps.db, roomId, input.chatCursor);
+    if (missed.length > 0) {
+      this.#send(socket, 'chat_batch', { messages: missed }, { requestId });
+    }
+  }
+
   /** resync：只读直查，不入队（§9.2） */
   #handleResync(
     socket: WebSocket,
@@ -915,15 +1058,10 @@ export class WsGateway {
       this.#sendError(socket, requestId, 'ACTION_NOT_ALLOWED');
       return;
     }
-    const snapshot = buildRoomSnapshot(this.#deps.db, roomId);
-    this.#send(socket, 'room_snapshot', snapshot, { requestId, roomSeq: snapshot.seq });
-    // 同步补发个人/观战视角（FR-REC-003）
-    const gameState = buildGameStatePayload(this.#deps.db, roomId, state.playerId);
-    if (gameState) {
-      this.#send(socket, 'game_state', gameState, { requestId });
-    }
-    const missed = listChatAfter(this.#deps.db, roomId, payload.data.chatCursor);
-    this.#send(socket, 'chat_batch', { messages: missed }, { requestId });
+    this.#sendResyncBundle(socket, state, requestId, {
+      ...payload.data,
+      game: payload.data.game ?? null,
+    });
   }
 
   #nicknameOf(roomId: string, playerId: string): string | null {

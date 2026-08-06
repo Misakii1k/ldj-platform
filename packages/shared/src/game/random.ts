@@ -32,22 +32,25 @@ export interface SeededRandom extends RandomSource {
 }
 
 export function createSeededRandom(seed: string, cursor = 0): SeededRandom {
-  const next = mulberry32(hashSeed(seed));
-  let used = 0;
-  // 快进到指定游标
-  for (; used < cursor; used++) next();
+  if (!Number.isSafeInteger(cursor) || cursor < 0) throw new RangeError('cursor 必须是非负安全整数');
+  const cursorState = (hashSeed(seed) + Math.imul(cursor >>> 0, 0x6d2b79f5)) >>> 0;
+  const next = mulberry32(cursorState);
+  let used = cursor;
 
   const draw = (): number => {
+    if (used >= Number.MAX_SAFE_INTEGER) throw new RangeError('cursor 已达到安全整数上限');
     used += 1;
     return next();
   };
 
   return {
     nextInt(minInclusive, maxExclusive) {
-      if (!Number.isInteger(minInclusive) || !Number.isInteger(maxExclusive))
-        throw new RangeError('nextInt 需要整数边界');
+      if (!Number.isSafeInteger(minInclusive) || !Number.isSafeInteger(maxExclusive))
+        throw new RangeError('nextInt 需要安全整数边界');
       if (maxExclusive <= minInclusive) throw new RangeError('nextInt 区间为空');
-      return minInclusive + Math.floor(draw() * (maxExclusive - minInclusive));
+      const width = maxExclusive - minInclusive;
+      if (!Number.isSafeInteger(width)) throw new RangeError('nextInt 区间宽度必须是安全整数');
+      return minInclusive + Math.floor(draw() * width);
     },
     shuffle(items) {
       // Fisher–Yates；对 n 个元素固定消耗 n-1 次抽取，保证游标可预测

@@ -3,11 +3,15 @@
  * 白名单式重建：从内部状态挑选可见字段，绝不序列化后"删字段"。
  * 任意玩家视角不得包含其他存活玩家的角色或词语（§6.10 不变量）。
  */
-import type {
-  UndercoverPhase,
-  UndercoverRole,
-  UndercoverState,
-  VoteSummary,
+import { z } from 'zod';
+import { canObserve, canObserveAll, type ObservationContext } from '@ldj/shared';
+import {
+  undercoverPhaseSchema,
+  undercoverRoleSchema,
+  type UndercoverPhase,
+  type UndercoverRole,
+  type UndercoverState,
+  type VoteSummary,
 } from './state.ts';
 
 export interface PublicPlayerInfo {
@@ -58,6 +62,57 @@ export interface UndercoverPlayerView extends UndercoverPublicView {
 
 export type UndercoverSpectatorView = UndercoverPublicView;
 
+const playerIdSchema = z.string().min(1).max(64);
+const publicPlayerInfoSchema = z.object({
+  playerId: playerIdSchema,
+  seat: z.number().int().nonnegative(),
+  alive: z.boolean(),
+  exitReason: z.enum(['voted_out', 'disconnect_timeout']).nullable(),
+  revealedRole: undercoverRoleSchema.nullable(),
+}).strict();
+const voteSummaryViewSchema = z.object({
+  round: z.number().int().positive(),
+  kind: z.enum(['normal', 'runoff']),
+  outcome: z.enum(['eliminated', 'tie', 'no_votes', 'runoff_tie']),
+  eliminatedPlayerId: playerIdSchema.nullable(),
+  eliminatedRole: undercoverRoleSchema.nullable(),
+  tally: z.record(playerIdSchema, z.number().int().positive()),
+}).strict();
+const revealSchema = z.object({
+  civilianWord: z.string().min(1),
+  undercoverWord: z.string().min(1),
+  roles: z.record(playerIdSchema, undercoverRoleSchema),
+}).strict();
+export const undercoverPublicViewSchema = z.object({
+  phase: undercoverPhaseSchema,
+  round: z.number().int().nonnegative(),
+  players: z.array(publicPlayerInfoSchema),
+  speakingOrder: z.array(playerIdSchema),
+  currentSpeakerId: playerIdSchema.nullable(),
+  deadlineAt: z.number().int().nullable(),
+  votesSubmitted: z.number().int().nonnegative(),
+  votesExpected: z.number().int().nonnegative(),
+  runoffCandidates: z.array(playerIdSchema),
+  confirmedPlayerIds: z.array(playerIdSchema),
+  lastVoteSummary: voteSummaryViewSchema.nullable(),
+  winner: undercoverRoleSchema.nullable(),
+  aborted: z.boolean(),
+  reveal: revealSchema.nullable(),
+}).strict();
+const selfViewSchema = z.object({
+  playerId: playerIdSchema,
+  word: z.string().min(1).nullable(),
+  role: undercoverRoleSchema.nullable(),
+  alive: z.boolean(),
+  confirmed: z.boolean(),
+  hasVoted: z.boolean(),
+  myVote: playerIdSchema.nullable(),
+}).strict();
+export const undercoverPlayerViewSchema = undercoverPublicViewSchema.extend({
+  me: selfViewSchema.nullable(),
+}).strict();
+export const undercoverSpectatorViewSchema = undercoverPublicViewSchema;
+
 function isGameOver(state: UndercoverState): boolean {
   return state.phase === 'game_over';
 }
@@ -71,7 +126,18 @@ function inVotingPhase(state: UndercoverState): boolean {
   return state.phase === 'voting' || state.phase === 'runoff_voting';
 }
 
-export function buildPublicView(state: UndercoverState): UndercoverPublicView {
+function observationContext(
+  role: ObservationContext['role'],
+  revealed: boolean,
+  playerId?: string,
+): ObservationContext {
+  return playerId === undefined ? { role, revealed } : { role, playerId, revealed };
+}
+
+function buildPublicViewFor(
+  state: UndercoverState,
+  recipient: ObservationContext,
+): UndercoverPublicView {
   const over = isGameOver(state);
   const aliveIds = Object.entries(state.players)
     .filter(([, p]) => p.alive)
@@ -84,8 +150,11 @@ export function buildPublicView(state: UndercoverState): UndercoverPublicView {
       seat: p.seat,
       alive: p.alive,
       exitReason: p.exitReason ?? null,
-      // 白名单：仅已淘汰者公开阵营；游戏结束后全公开
-      revealedRole: !p.alive || over ? p.role : null,
+      revealedRole: canObserve(
+        'after_reveal',
+        { ...recipient, revealed: !p.alive || over },
+        playerId,
+      ) ? p.role : null,
     }));
 
   return {
@@ -102,7 +171,7 @@ export function buildPublicView(state: UndercoverState): UndercoverPublicView {
     lastVoteSummary: state.lastVoteSummary ? { ...state.lastVoteSummary, tally: { ...state.lastVoteSummary.tally } } : null,
     winner: state.winner,
     aborted: state.aborted,
-    reveal: over
+    reveal: canObserve('after_reveal', { ...recipient, revealed: over })
       ? {
           civilianWord: state.civilianWord,
           undercoverWord: state.undercoverWord,
@@ -112,10 +181,18 @@ export function buildPublicView(state: UndercoverState): UndercoverPublicView {
   };
 }
 
+export function buildPublicView(state: UndercoverState): UndercoverPublicView {
+  return buildPublicViewFor(
+    state,
+    observationContext('spectator', isGameOver(state)),
+  );
+}
+
 export function buildPlayerView(state: UndercoverState, playerId: string): UndercoverPlayerView {
-  const base = buildPublicView(state);
+  const recipient = observationContext('participant', isGameOver(state), playerId);
+  const base = buildPublicViewFor(state, recipient);
   const entry = state.players[playerId];
-  if (!entry) return { ...base, me: null };
+  if (!entry || !canObserve('owner_only', recipient, playerId)) return { ...base, me: null };
 
   const over = isGameOver(state);
   const myWord = entry.role === 'undercover' ? state.undercoverWord : state.civilianWord;
@@ -124,7 +201,11 @@ export function buildPlayerView(state: UndercoverState, playerId: string): Under
     me: {
       playerId,
       word: myWord,
-      role: !entry.alive || over ? entry.role : null,
+      role: canObserveAll(
+        ['owner_only', 'after_reveal'],
+        { ...recipient, revealed: !entry.alive || over },
+        playerId,
+      ) ? entry.role : null,
       alive: entry.alive,
       confirmed: state.confirmedPlayerIds.includes(playerId),
       hasVoted: playerId in state.votes,
@@ -134,5 +215,8 @@ export function buildPlayerView(state: UndercoverState, playerId: string): Under
 }
 
 export function buildSpectatorView(state: UndercoverState): UndercoverSpectatorView {
-  return buildPublicView(state);
+  return buildPublicViewFor(
+    state,
+    observationContext('spectator', isGameOver(state)),
+  );
 }

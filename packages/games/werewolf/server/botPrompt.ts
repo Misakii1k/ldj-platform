@@ -27,9 +27,17 @@ function board(view: WerewolfPlayerView, me: string): string {
     .join('；');
 }
 
-function roleBrief(role: WerewolfRole): string {
-  const common = '你在玩狼人杀。狼人夜里共同投票击杀，好人阵营通过发言、预言家查验和女巫药剂找出狼人；狼人全灭则好人胜，狼人数量达到其他存活玩家数量则狼人胜。';
-  if (role === 'wolf') return `${common} 你是狼人，夜间每名狼人独立投票，最高票目标被袭击；平票按座位顺序确定。`;
+function roleBrief(view: WerewolfPlayerView, role: WerewolfRole): string {
+  const win = view.config.winCondition === 'roles'
+    ? '狼人全灭则好人胜；若预言家、女巫等神职全部出局，或平民全部出局，则狼人胜（屠神规则）。'
+    : '狼人全灭则好人胜，狼人数量达到其他存活玩家数量则狼人胜。';
+  const common = `你在玩狼人杀。狼人夜里投票击杀，好人阵营通过发言、预言家查验和女巫药剂找出狼人；${win}`;
+  if (role === 'wolf') {
+    const scope = view.config.wolfKillScope === 'any'
+      ? '本局夜刀可以投给任意存活玩家，包括你自己和狼同伴。'
+      : '本局夜刀不能投给狼同伴，也不能投给自己。';
+    return `${common} 你是狼人，夜间每名狼人独立投票，最高票目标被袭击；平票按座位顺序确定。${scope}`;
+  }
   if (role === 'seer') return `${common} 你是预言家，每夜查验一名其他存活玩家，历次查验结果仅你可见。`;
   if (role === 'witch') return `${common} 你是女巫，解药和毒药各一瓶；同夜不能同时使用，首夜后不能自救。`;
   if (role === 'guard') return `${common} 你是守卫，每夜可守护一名其他存活玩家（也可以跳过）；被守住的玩家当夜不被狼人袭击，但挡不住女巫的毒药；不能连续两夜守护同一人。`;
@@ -60,7 +68,7 @@ export function buildWerewolfBotPrompt(
   const { view, playerId } = input;
   const me = view.me;
   if (!me || me.forfeited || view.phase === 'game_over') return null;
-  const brief = roleBrief(me.role);
+  const brief = roleBrief(view, me.role);
   const header = `你是${seatName(view, playerId)}，身份是${ROLE_NAMES[me.role]}。当前第 ${view.day} 天，场上：${board(view, playerId)}。`;
   const others = aliveOthers(view, playerId);
 
@@ -77,7 +85,9 @@ export function buildWerewolfBotPrompt(
     case 'night': {
       if (!me.alive) return null;
       if (me.role === 'wolf' && !me.hasNightVoted) {
-        const targets = others.filter((player) => !me.wolfTeammateIds.includes(player.playerId));
+        const targets = view.config.wolfKillScope === 'any'
+          ? view.players.filter((player) => player.alive)
+          : others.filter((player) => !me.wolfTeammateIds.includes(player.playerId));
         if (targets.length === 0) return null;
         return {
           roleBrief: brief,
@@ -160,9 +170,11 @@ export function buildWerewolfBotPrompt(
 
     case 'voting':
     case 'runoff_voting': {
-      if (!me.alive || me.hasVoted) return null;
+      if (!me.alive || me.idiotRevealed || me.hasVoted) return null;
       const candidates = others.filter(
-        (player) => view.phase !== 'runoff_voting' || view.runoffCandidates.includes(player.playerId),
+        (player) => !player.idiotRevealed && (
+          view.phase !== 'runoff_voting' || view.runoffCandidates.includes(player.playerId)
+        ),
       );
       return {
         roleBrief: brief,

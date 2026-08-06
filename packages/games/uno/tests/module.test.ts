@@ -42,6 +42,12 @@ function state(hand: UnoCard[], top: UnoCard): UnoState {
   };
 }
 
+function assertNoCardAdapterFields(value: unknown): void {
+  const serialized = JSON.stringify(value);
+  assert.equal(serialized.includes('"zones"'), false);
+  assert.equal(serialized.includes('"definitionId"'), false);
+}
+
 test('UNO 发牌、牌数和私有视图正确', () => {
   const initial = unoModule.createInitialState(ctx, ['a', 'b'], { variant: 'standard' });
   assert.equal(initial.hands.a!.length, 7);
@@ -49,11 +55,15 @@ test('UNO 发牌、牌数和私有视图正确', () => {
   assert.equal(initial.deck.length + initial.discardPile.length + initial.hands.a!.length + initial.hands.b!.length, 108);
   assert.equal(new Set([...initial.deck, ...initial.discardPile, ...initial.hands.a!, ...initial.hands.b!].map((c) => c.id)).size, 108);
 
+  const beforeViewBuild = structuredClone(initial);
   const a = unoModule.getPlayerView(initial, 'a');
   const b = unoModule.getPlayerView(initial, 'b');
+  const unknown = unoModule.getPlayerView(initial, 'not-seated');
   const spectator = unoModule.getSpectatorView(initial);
+  assert.deepEqual(initial, beforeViewBuild);
   assert.equal(a.me?.hand.length, 7);
   assert.equal(b.me?.hand.length, 7);
+  assert.equal(unknown.me, null);
   assert.equal('hands' in spectator, false);
   assert.equal('me' in spectator, false);
   assert.equal(spectator.lastPlayed, null);
@@ -62,10 +72,56 @@ test('UNO 发牌、牌数和私有视图正确', () => {
   assert.equal(spectator.currentPlayerIndex, 0);
   assert.equal(spectator.nextPlayerId, 'b');
   assert.deepEqual(spectator.players.map((p) => p.isCurrentPlayer), [true, false]);
+  assert.deepEqual(Object.keys(spectator), [
+    'gameId',
+    'phase',
+    'players',
+    'topDiscard',
+    'currentColor',
+    'currentPlayerId',
+    'currentPlayerIndex',
+    'nextPlayerId',
+    'direction',
+    'pendingDraw',
+    'winnerId',
+    'deckCount',
+    'discardCount',
+    'lastPlayed',
+    'lastPlayedCard',
+    'lastPlayedBy',
+  ]);
+  assert.deepEqual(Object.keys(a), [...Object.keys(spectator), 'me']);
+  assert.deepEqual(Object.keys(a.me!), [
+    'playerId',
+    'hand',
+    'hasDrawnThisTurn',
+    'isCurrentPlayer',
+    'playableCardIds',
+  ]);
 
   const legacySnapshot = { ...initial };
   delete legacySnapshot.lastPlayed;
   assert.equal(unoModule.getSpectatorView(legacySnapshot).lastPlayed, null);
+});
+
+test('UNO 初始化拒绝重复玩家且不消耗随机', () => {
+  let shuffleCalls = 0;
+  const countingContext: GameContext = {
+    now: 1,
+    random: {
+      nextInt: () => 0,
+      shuffle: <T>(items: readonly T[]) => {
+        shuffleCalls += 1;
+        return [...items];
+      },
+    },
+  };
+
+  assert.throws(
+    () => unoModule.createInitialState(countingContext, ['a', 'a'], { variant: 'standard' }),
+    /UNO 玩家不能重复/,
+  );
+  assert.equal(shuffleCalls, 0);
 });
 
 test('UNO begin 可重复执行且不会重置对局', () => {
@@ -132,6 +188,157 @@ test('UNO 公开视图展示最近出牌且不泄露其他玩家手牌', () => {
   assert.equal(JSON.stringify(aView).includes('b-secret'), false);
   assert.equal(JSON.stringify(bView).includes('b-secret'), true);
   assert.equal(JSON.stringify(bView).includes('blue9-secret'), false);
+});
+
+test('UNO 普通摸牌从牌堆头追加到手牌尾且不洗牌', () => {
+  let shuffleCalls = 0;
+  const drawContext: GameContext = {
+    now: 1,
+    random: {
+      nextInt: () => 0,
+      shuffle: <T>(items: readonly T[]) => {
+        shuffleCalls += 1;
+        return [...items];
+      },
+    },
+  };
+  const current = state(
+    [card('held', 'number', 'green', 4)],
+    card('top', 'number', 'red', 3),
+  );
+  current.deck = [
+    card('draw-1', 'number', 'blue', 1),
+    card('draw-2', 'number', 'yellow', 2),
+  ];
+  const before = structuredClone(current);
+
+  const result = unoModule.reduce(drawContext, current, actor('a'), { type: 'draw_card' });
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+
+  assert.deepEqual(result.state.hands.a?.map((item) => item.id), ['held', 'draw-1']);
+  assert.deepEqual(result.state.deck.map((item) => item.id), ['draw-2']);
+  assert.deepEqual(result.state.discardPile.map((item) => item.id), ['top']);
+  assert.deepEqual(result.state.hands.b?.map((item) => item.id), ['b-secret']);
+  assert.equal(result.state.hasDrawnThisTurn, true);
+  assert.deepEqual(result.events, [{ type: 'card_drawn', playerId: 'a', count: 1 }]);
+  assert.equal(shuffleCalls, 0);
+  assert.deepEqual(current, before);
+  assertNoCardAdapterFields(result.state);
+  assertNoCardAdapterFields(result.events);
+});
+
+test('UNO 罚摸可跨弃牌回收边界并保留不足时部分成功语义', () => {
+  const shuffleInputs: string[][] = [];
+  const drawContext: GameContext = {
+    now: 1,
+    random: {
+      nextInt: () => 0,
+      shuffle: <T>(items: readonly T[]) => {
+        shuffleInputs.push((items as readonly UnoCard[]).map((item) => item.id));
+        return [...items].reverse();
+      },
+    },
+  };
+  const current = state(
+    [card('held', 'number', 'green', 4)],
+    card('top', 'number', 'red', 3),
+  );
+  current.currentPlayerId = 'b';
+  current.pendingDraw = 4;
+  current.deck = [card('deck-last', 'number', 'blue', 1)];
+  current.discardPile = [
+    card('recycle-1', 'number', 'green', 7),
+    card('recycle-2', 'number', 'yellow', 8),
+    card('top', 'number', 'red', 3),
+  ];
+  const before = structuredClone(current);
+
+  const result = unoModule.reduce(drawContext, current, actor('b'), { type: 'draw_card' });
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+
+  assert.deepEqual(result.state.hands.b?.map((item) => item.id), [
+    'b-secret',
+    'deck-last',
+    'recycle-2',
+    'recycle-1',
+  ]);
+  assert.deepEqual(result.state.deck, []);
+  assert.deepEqual(result.state.discardPile.map((item) => item.id), ['top']);
+  assert.deepEqual(shuffleInputs, [['recycle-1', 'recycle-2']]);
+  assert.equal(result.state.pendingDraw, 0);
+  assert.equal(result.state.currentPlayerId, 'a');
+  assert.equal(result.state.hasDrawnThisTurn, false);
+  assert.deepEqual(result.events, [{ type: 'card_drawn', playerId: 'b', count: 3 }]);
+  assert.deepEqual(current, before);
+});
+
+test('UNO 只剩弃牌顶牌时摸零张并保留 legacy 回合状态', () => {
+  let shuffleCalls = 0;
+  const drawContext: GameContext = {
+    now: 1,
+    random: {
+      nextInt: () => 0,
+      shuffle: <T>(items: readonly T[]) => {
+        shuffleCalls += 1;
+        return [...items];
+      },
+    },
+  };
+  const current = state(
+    [card('held', 'number', 'green', 4)],
+    card('top', 'number', 'red', 3),
+  );
+  current.deck = [];
+  const before = structuredClone(current);
+
+  const result = unoModule.reduce(drawContext, current, actor('a'), { type: 'draw_card' });
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+
+  assert.deepEqual(result.state.hands.a?.map((item) => item.id), ['held']);
+  assert.deepEqual(result.state.deck, []);
+  assert.deepEqual(result.state.discardPile.map((item) => item.id), ['top']);
+  assert.equal(result.state.hasDrawnThisTurn, true);
+  assert.deepEqual(result.events, [{ type: 'card_drawn', playerId: 'a', count: 0 }]);
+  assert.equal(shuffleCalls, 0);
+  assert.deepEqual(current, before);
+});
+
+test('UNO 出牌按实例移动并保持事件、视角和输入结构', () => {
+  const current = state(
+    [
+      card('before', 'number', 'blue', 1),
+      card('play', 'number', 'red', 5),
+      card('after', 'number', 'green', 6),
+    ],
+    card('top', 'number', 'red', 3),
+  );
+  current.discardPile = [
+    card('discard-old', 'number', 'yellow', 2),
+    card('top', 'number', 'red', 3),
+  ];
+  const before = structuredClone(current);
+
+  const result = unoModule.reduce(ctx, current, actor('a'), { type: 'play_card', cardId: 'play' });
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+
+  assert.deepEqual(result.state.hands.a?.map((item) => item.id), ['before', 'after']);
+  assert.deepEqual(result.state.discardPile.map((item) => item.id), ['discard-old', 'top', 'play']);
+  assert.deepEqual(result.events, [{ type: 'card_played', playerId: 'a', card: card('play', 'number', 'red', 5) }]);
+  assert.deepEqual(result.state.lastPlayed, {
+    playerId: 'a',
+    card: card('play', 'number', 'red', 5),
+    declaredColor: null,
+    resultingColor: 'red',
+  });
+  assert.deepEqual(current, before);
+  assertNoCardAdapterFields(result.state);
+  assertNoCardAdapterFields(result.events);
+  assertNoCardAdapterFields(unoModule.getPlayerView(result.state, 'a'));
+  assertNoCardAdapterFields(unoModule.getSpectatorView(result.state));
 });
 
 test('UNO 行动牌推进、罚摸与清空手牌获胜', () => {

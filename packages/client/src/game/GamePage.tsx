@@ -6,6 +6,7 @@ import { lazy, Suspense, useEffect } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
 import { useBackground } from '../shared-ui/BackgroundContext.tsx';
 import { asPlayerView } from './types.ts';
+import { parseGameView } from './viewRegistry.ts';
 import { GamePhaseRail } from './GameChrome.tsx';
 import { GameChatDrawer } from './GameChatDrawer.tsx';
 import { WordRevealView } from './WordRevealView.tsx';
@@ -17,9 +18,15 @@ import { GameLeaveButton } from './GameLeaveButton.tsx';
 
 const UnoGamePage = lazy(() => import('./NewGamePages.tsx').then((module) => ({ default: module.UnoGamePage })));
 const LandlordGamePage = lazy(() => import('./NewGamePages.tsx').then((module) => ({ default: module.LandlordGamePage })));
-const WerewolfGamePage = lazy(() => import('./NewGamePages.tsx').then((module) => ({ default: module.WerewolfGamePage })));
+const WerewolfGamePage = lazy(() => import('./werewolf/WerewolfGamePage.tsx').then((module) => ({ default: module.WerewolfGamePage })));
+const UnoHouseStage = lazy(() => import('./uno/stage/UnoHouseStage.tsx').then((module) => ({ default: module.UnoHouseStage })));
+const UndercoverBlankStage = lazy(() => import('./undercover/stage/UndercoverBlankStage.tsx').then((module) => ({ default: module.UndercoverBlankStage })));
 
 type ActiveGame = NonNullable<ReturnType<typeof useConnection>['state']['game']>;
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
 
 function GameLoadingCard({ children }: { children: React.ReactNode }) {
   return (
@@ -100,17 +107,36 @@ export function GamePage() {
 
   let content;
   switch (game.moduleId) {
-    case 'uno':
-      content = <UnoGamePage view={game.view as Record<string, unknown>} />;
+    case 'uno': {
+      const parsed = parseGameView(game);
+      if (!parsed.ok) {
+        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        break;
+      }
+      const v = parsed.view;
+      content = isRecord(v) && v.rulesetId === 'uno_platform_house_v1'
+        ? <UnoHouseStage view={v as unknown as import('./uno/types.ts').UnoHousePlayerView} />
+        : <UnoGamePage view={v as Record<string, unknown>} />;
       break;
+    }
     case 'landlord':
       content = <LandlordGamePage view={game.view as Record<string, unknown>} />;
       break;
     case 'werewolf':
       content = <WerewolfGamePage view={game.view as Record<string, unknown>} />;
       break;
-    case 'undercover':
-      return <UndercoverGamePage game={game} />;
+    case 'undercover': {
+      const parsed = parseGameView(game);
+      if (!parsed.ok) {
+        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        break;
+      }
+      const v = parsed.view;
+      content = isRecord(v) && v.rulesetId === 'undercover_blank_v1'
+        ? <UndercoverBlankStage view={v as unknown as import('./undercover/types.ts').BlankPlayerView} />
+        : <UndercoverGamePage game={game} />;
+      break;
+    }
     default:
       return <GameLoadingCard>暂不支持的游戏：{game.moduleId}</GameLoadingCard>;
   }

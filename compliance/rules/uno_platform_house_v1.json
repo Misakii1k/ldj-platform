@@ -1,0 +1,306 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "uno_platform_house_v1",
+  "gameId": "uno",
+  "kind": "platform_variant",
+  "releaseStatus": "blocked_rights",
+  "sourceDocuments": [
+    "docs/superpowers/specs/2026-08-02-shared-game-engine-design.md#已确认的-uno-平台规则集",
+    "packages/games/uno/server/module.ts",
+    "packages/games/uno/server/bot.ts",
+    "packages/games/uno/shared/manifest.ts"
+  ],
+  "policyVersions": {
+    "rulesetPolicy": "uno-platform-house-v1",
+    "legacyBaseline": "uno-legacy-platform-v1-d1"
+  },
+  "differences": [
+    {
+      "differenceId": "UNO-DIFF-001",
+      "classification": "KEEP_COMPAT",
+      "baselineRulesetId": "uno-legacy-platform-v1-d1",
+      "baselineBehavior": "A legal play is determined from color, face, or wild status, and wild cards require a declared color.",
+      "targetBehavior": "Retain the legacy card-matching and declared-color compatibility core as the base legality rule.",
+      "relatedClauseIds": ["UNO-HOUSE-BASE-001"]
+    },
+    {
+      "differenceId": "UNO-DIFF-002",
+      "classification": "CHANGE_RULESET",
+      "baselineRulesetId": "uno-legacy-platform-v1-d1",
+      "baselineBehavior": "After drawing, only the drawn-state flow is represented and the legacy bot may play a legal card or pass.",
+      "targetBehavior": "After drawing, the player may choose any legal card already in hand or the newly drawn card.",
+      "relatedClauseIds": ["UNO-HOUSE-BASE-001"]
+    },
+    {
+      "differenceId": "UNO-DIFF-003",
+      "classification": "CHANGE_RULESET",
+      "baselineRulesetId": "uno-legacy-platform-v1-d1",
+      "baselineBehavior": "There is no authoritative 15-second ordinary-turn timeout or mild auto-play transition.",
+      "targetBehavior": "Add the 15-second timeout, conservative legal-card selection, no-legal-card auto-draw, and atomic automatic UNO declaration.",
+      "relatedClauseIds": ["UNO-HOUSE-BASE-002", "UNO-HOUSE-BASE-003"]
+    },
+    {
+      "differenceId": "UNO-DIFF-004",
+      "classification": "KEEP_COMPAT",
+      "baselineRulesetId": "uno-legacy-platform-v1-d1",
+      "baselineBehavior": "In two-player play, reverse advances two seats and therefore acts as skip.",
+      "targetBehavior": "Retain reverse-as-skip for two-player individual mode.",
+      "relatedClauseIds": ["UNO-HOUSE-BASE-004"]
+    },
+    {
+      "differenceId": "UNO-DIFF-005",
+      "classification": "REMOVE_PLAYABLE",
+      "baselineRulesetId": "uno-legacy-platform-v1-d1",
+      "baselineBehavior": "A player may call UNO only after reaching one card, with no pre-call intent or missed-call race.",
+      "targetBehavior": "Do not expose the legacy one-card call flow as the house ruleset; replace it with pre-call, supplement, and catch-race transitions.",
+      "relatedClauseIds": ["UNO-HOUSE-UNO-001", "UNO-HOUSE-UNO-002", "UNO-HOUSE-UNO-003", "UNO-HOUSE-UNO-004"]
+    },
+    {
+      "differenceId": "UNO-DIFF-006",
+      "classification": "CHANGE_RULESET",
+      "baselineRulesetId": "uno-legacy-platform-v1-d1",
+      "baselineBehavior": "A pending draw must be accepted; draw penalties do not stack and +4 has no challenge evidence or challenge action.",
+      "targetBehavior": "Add directional +2/+4 stacking, challenge eligibility closure rules, fixed response windows, and challenge outcomes.",
+      "relatedClauseIds": ["UNO-HOUSE-PENALTY-001", "UNO-HOUSE-PENALTY-002", "UNO-HOUSE-PENALTY-003", "UNO-HOUSE-PENALTY-004", "UNO-HOUSE-PENALTY-005"]
+    },
+    {
+      "differenceId": "UNO-DIFF-007",
+      "classification": "REMOVE_PLAYABLE",
+      "baselineRulesetId": "uno-legacy-platform-v1-d1",
+      "baselineBehavior": "Playing any last card, including +2 or +4, ends the game before the next player receives a terminal penalty.",
+      "targetBehavior": "Do not carry that terminal behavior into the house ruleset; settle a fixed terminal draw before round scoring.",
+      "relatedClauseIds": ["UNO-HOUSE-TERMINAL-001"]
+    },
+    {
+      "differenceId": "UNO-DIFF-008",
+      "classification": "REMOVE_PLAYABLE",
+      "baselineRulesetId": "uno-legacy-platform-v1-d1",
+      "baselineBehavior": "The legacy result contains only the first player who empties a hand and has no hand-point ranking, teams, rounds, or match ledger.",
+      "targetBehavior": "Replace winner-only settlement with card scoring, competition ranking, four-player teams, and 1/3/5/7-round cumulative low-score results.",
+      "relatedClauseIds": ["UNO-HOUSE-SCORE-001", "UNO-HOUSE-SCORE-002", "UNO-HOUSE-TEAM-001", "UNO-HOUSE-TEAM-002", "UNO-HOUSE-MATCH-001", "UNO-HOUSE-MATCH-002"]
+    },
+    {
+      "differenceId": "UNO-DIFF-009",
+      "classification": "CHANGE_RULESET",
+      "baselineRulesetId": "uno-legacy-platform-v1-d1",
+      "baselineBehavior": "Initialization searches for a number card as the first discard and falls back to red for a wild.",
+      "targetBehavior": "Allow any first discard, suppress its effect, and use deterministic randomness to choose a color for wild or +4.",
+      "relatedClauseIds": ["UNO-HOUSE-DECK-001"]
+    },
+    {
+      "differenceId": "UNO-DIFF-010",
+      "classification": "KEEP_COMPAT",
+      "baselineRulesetId": "uno-legacy-platform-v1-d1",
+      "baselineBehavior": "When the draw pile is empty, the top discard is retained and recyclable discards are shuffled into the draw pile.",
+      "targetBehavior": "Retain top-discard preservation and deterministic recycling before considering deck expansion.",
+      "relatedClauseIds": ["UNO-HOUSE-DECK-002"]
+    },
+    {
+      "differenceId": "UNO-DIFF-011",
+      "classification": "REMOVE_PLAYABLE",
+      "baselineRulesetId": "uno-legacy-platform-v1-d1",
+      "baselineBehavior": "When no cards can be recycled, a requested draw may complete only partially or draw zero; total cards remain fixed at 108.",
+      "targetBehavior": "Remove partial-draw behavior from the house ruleset by adding and shuffling complete 108-card generations until the draw can finish.",
+      "relatedClauseIds": ["UNO-HOUSE-DECK-003", "UNO-HOUSE-DECK-004"]
+    },
+    {
+      "differenceId": "UNO-DIFF-012",
+      "classification": "CHANGE_RULESET",
+      "baselineRulesetId": "uno-legacy-platform-v1-d1",
+      "baselineBehavior": "The manifest limits the compatibility implementation to 2–6 players without an individual/team mode distinction.",
+      "targetBehavior": "Individual mode supports 2–10 players, while team mode is exactly four players in alternating seats.",
+      "relatedClauseIds": ["UNO-HOUSE-SCORE-002", "UNO-HOUSE-TEAM-001"]
+    }
+  ],
+  "clauses": [
+    {
+      "clauseId": "UNO-HOUSE-GOV-001",
+      "sourceSection": "UNO platform ruleset introduction (lines 695–699)",
+      "sourceText": "Treat this ruleset as a separately named platform variant, never as an official or exact standard ruleset.",
+      "transitionIds": ["uno.house.ruleset.lock_identity", "uno.house.admission.reject_standard_claim"],
+      "plannedTestIds": ["uno_house_identity_is_platform_variant_test", "uno_house_rejects_official_standard_label_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-GOV-002",
+      "sourceSection": "UNO platform ruleset introduction (lines 699–701)",
+      "sourceText": "Lock only mapped rules and explicit pregame snapshot configuration; undecided boundaries block admission, semantic changes require versioning, and legacy remains the compatibility baseline until all gates pass.",
+      "transitionIds": ["uno.house.config.lock_snapshot", "uno.house.admission.fail_closed_unmapped_rule", "uno.house.version.reject_in_place_semantic_change", "uno.house.registry.preserve_legacy_baseline"],
+      "plannedTestIds": ["uno_house_locks_explicit_config_in_snapshot_test", "uno_house_unmapped_boundary_blocks_admission_test", "uno_house_semantic_change_requires_new_ruleset_id_test", "uno_house_does_not_replace_legacy_before_gates_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-GOV-003",
+      "sourceSection": "UNO migration requirement (line 701)",
+      "sourceText": "Classify every legacy-to-house difference as KEEP_COMPAT, CHANGE_RULESET, or REMOVE_PLAYABLE; legacy golden replay proves compatibility only.",
+      "transitionIds": ["uno.house.trace.validate_legacy_differences", "uno.house.admission.separate_compatibility_from_correctness"],
+      "plannedTestIds": ["uno_house_difference_table_is_complete_and_closed_enum_test", "uno_house_legacy_golden_is_not_house_correctness_evidence_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-BASE-001",
+      "sourceSection": "Base turns (line 705)",
+      "sourceText": "After drawing, the current player may play any card in hand that is legal under the current color or face rule.",
+      "transitionIds": ["uno.house.turn.draw_one", "uno.house.turn.play_any_legal_after_draw"],
+      "plannedTestIds": ["uno_house_after_draw_can_play_preexisting_legal_card_test", "uno_house_after_draw_rejects_illegal_card_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-BASE-002",
+      "sourceSection": "Base turns (lines 706–708)",
+      "sourceText": "At the 15-second ordinary-turn deadline, mild auto-play chooses a legal card by conservative priority; if none exists it draws one and ends without a follow-up play.",
+      "transitionIds": ["uno.house.turn.schedule_ordinary_deadline_15s", "uno.house.timeout.choose_conservative_legal_card", "uno.house.timeout.draw_one_and_end_turn"],
+      "plannedTestIds": ["uno_house_ordinary_turn_timeout_is_15_seconds_test", "uno_house_timeout_uses_conservative_legal_priority_test", "uno_house_timeout_without_legal_card_draws_and_does_not_play_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-BASE-003",
+      "sourceSection": "Base turns (line 709)",
+      "sourceText": "If mild auto-play leaves exactly one card, the card play and UNO declaration commit atomically.",
+      "transitionIds": ["uno.house.timeout.play_and_auto_call_uno_atomic"],
+      "plannedTestIds": ["uno_house_timeout_one_card_remainder_auto_calls_uno_atomically_test", "uno_house_timeout_non_one_card_remainder_does_not_auto_call_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-BASE-004",
+      "sourceSection": "Base turns (line 710)",
+      "sourceText": "In two-player individual mode, reverse skips the opponent and returns action to its player.",
+      "transitionIds": ["uno.house.turn.apply_two_player_reverse_as_skip"],
+      "plannedTestIds": ["uno_house_two_player_reverse_skips_opponent_test", "uno_house_multiplayer_reverse_changes_direction_without_extra_skip_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-UNO-001",
+      "sourceSection": "UNO declaration (lines 714–715)",
+      "sourceText": "A player with exactly two cards may pre-call UNO only after selecting a legal play; the pre-call lasts for that turn and cannot be cancelled.",
+      "transitionIds": ["uno.house.uno.set_precall_for_selected_legal_card", "uno.house.uno.expire_precall_at_turn_end", "uno.house.uno.reject_precall_cancel"],
+      "plannedTestIds": ["uno_house_precall_requires_two_cards_and_legal_selection_test", "uno_house_precall_expires_after_current_turn_test", "uno_house_precall_cannot_be_cancelled_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-UNO-002",
+      "sourceSection": "UNO declaration (line 716)",
+      "sourceText": "After pre-calling, selection may move among legal cards; illegal cards remain visible but disabled.",
+      "transitionIds": ["uno.house.uno.change_precall_legal_selection", "uno.house.view.expose_illegal_card_as_disabled"],
+      "plannedTestIds": ["uno_house_precall_can_switch_between_legal_cards_test", "uno_house_precall_illegal_cards_remain_visible_and_unselectable_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-UNO-003",
+      "sourceSection": "UNO declaration (lines 717–720)",
+      "sourceText": "Without a pre-call, reaching one card opens a 5-second race in which the player may supplement the call and others may catch the highlighted target; server transaction order decides, a successful catch draws two, and an incorrect catch is unpenalized.",
+      "transitionIds": ["uno.house.uno.open_missed_call_window_5s", "uno.house.uno.submit_supplement", "uno.house.uno.submit_catch", "uno.house.uno.resolve_race_by_commit_order", "uno.house.uno.apply_successful_catch_draw_two", "uno.house.uno.ignore_incorrect_catch"],
+      "plannedTestIds": ["uno_house_missing_precall_opens_five_second_race_test", "uno_house_supplement_wins_when_committed_first_test", "uno_house_catch_wins_when_committed_first_and_draws_two_test", "uno_house_wrong_catch_has_no_penalty_test", "uno_house_catch_view_highlights_target_with_audio_cue_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-UNO-004",
+      "sourceSection": "UNO declaration (lines 721–722)",
+      "sourceText": "The next turn runs concurrently; its effective play or draw closes the race early, while an untouched 5-second expiry closes it without penalty.",
+      "transitionIds": ["uno.house.uno.run_next_turn_during_race", "uno.house.uno.close_window_on_next_effective_action", "uno.house.uno.expire_window_without_penalty"],
+      "plannedTestIds": ["uno_house_next_player_can_act_during_uno_race_test", "uno_house_next_effective_play_closes_uno_race_test", "uno_house_next_effective_draw_closes_uno_race_test", "uno_house_uno_race_natural_expiry_has_no_penalty_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-PENALTY-001",
+      "sourceSection": "Draw chain and challenge (lines 726–728)",
+      "sourceText": "+2 may receive +2 or +4, a +4 upgrades a +2 chain to +4-only, and a +4 chain never accepts +2.",
+      "transitionIds": ["uno.house.penalty.stack_draw2", "uno.house.penalty.upgrade_draw2_chain_with_draw4", "uno.house.penalty.stack_draw4", "uno.house.penalty.reject_draw2_on_draw4_chain"],
+      "plannedTestIds": ["uno_house_draw2_accepts_draw2_test", "uno_house_draw2_accepts_draw4_and_upgrades_chain_test", "uno_house_draw4_accepts_draw4_test", "uno_house_draw4_rejects_draw2_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-PENALTY-002",
+      "sourceSection": "Draw chain and challenge (lines 729–731)",
+      "sourceText": "Only the first +4 played from ordinary state is challengeable; a second +4 or a +4 used on a +2 chain permanently closes challenge for that chain.",
+      "transitionIds": ["uno.house.challenge.open_for_initial_draw4", "uno.house.challenge.close_after_second_draw4", "uno.house.challenge.close_for_draw4_on_draw2_chain"],
+      "plannedTestIds": ["uno_house_first_ordinary_draw4_opens_challenge_test", "uno_house_second_draw4_closes_challenge_test", "uno_house_draw4_on_draw2_chain_is_not_challengeable_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-PENALTY-003",
+      "sourceSection": "Draw chain and challenge (lines 732–733)",
+      "sourceText": "A player who cannot or will not stack draws the whole accumulated penalty, is skipped, and cannot play after that penalty draw.",
+      "transitionIds": ["uno.house.penalty.accept_accumulated_draw", "uno.house.penalty.skip_accepting_player", "uno.house.penalty.forbid_play_after_penalty_draw"],
+      "plannedTestIds": ["uno_house_accept_penalty_draws_full_accumulation_and_skips_test", "uno_house_penalty_draw_never_enters_after_draw_play_phase_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-PENALTY-004",
+      "sourceSection": "Draw chain and challenge (lines 734–735)",
+      "sourceText": "A successful +4 challenge makes its player draw four, voids the chosen color, and lets the challenger act; failure makes the challenger draw six and skip.",
+      "transitionIds": ["uno.house.challenge.resolve_success_draw4_to_source", "uno.house.challenge.void_declared_color", "uno.house.challenge.restore_challenger_turn", "uno.house.challenge.resolve_failure_draw6_and_skip"],
+      "plannedTestIds": ["uno_house_successful_draw4_challenge_penalizes_source_and_restores_turn_test", "uno_house_successful_challenge_voids_declared_color_test", "uno_house_failed_draw4_challenge_draws_six_and_skips_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-PENALTY-005",
+      "sourceSection": "Draw chain and challenge (line 736)",
+      "sourceText": "Both +4 and +2 response windows last 5 seconds; expiry automatically accepts the accumulated penalty.",
+      "transitionIds": ["uno.house.penalty.schedule_draw2_response_5s", "uno.house.penalty.schedule_draw4_response_5s", "uno.house.penalty.timeout_accept_accumulated_draw"],
+      "plannedTestIds": ["uno_house_draw2_response_window_is_five_seconds_test", "uno_house_draw4_response_window_is_five_seconds_test", "uno_house_penalty_timeout_auto_accepts_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-TERMINAL-001",
+      "sourceSection": "Terminal settlement (lines 740–742)",
+      "sourceText": "A last-card +2 or +4 cannot be stacked or challenged; the next player draws exactly two or four before settlement, and those cards count in final hand points.",
+      "transitionIds": ["uno.house.terminal.lock_draw_penalty", "uno.house.terminal.apply_fixed_draw_before_round_settlement", "uno.house.terminal.include_drawn_cards_in_score"],
+      "plannedTestIds": ["uno_house_terminal_draw2_forbids_stack_and_draws_two_before_scoring_test", "uno_house_terminal_draw4_forbids_challenge_and_stack_and_draws_four_before_scoring_test", "uno_house_terminal_penalty_cards_count_in_final_score_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-SCORE-001",
+      "sourceSection": "Scoring and ranking (line 743)",
+      "sourceText": "Score number cards at face value, skip/reverse/+2 at 20, and wild/+4 at 50.",
+      "transitionIds": ["uno.house.score.value_number_face", "uno.house.score.value_action_twenty", "uno.house.score.value_wild_fifty"],
+      "plannedTestIds": ["uno_house_scores_number_cards_by_face_test", "uno_house_scores_action_cards_as_twenty_test", "uno_house_scores_wild_cards_as_fifty_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-SCORE-002",
+      "sourceSection": "Scoring and ranking (lines 744 and 749)",
+      "sourceText": "Individual mode supports 2–10 players and ranks ascending remaining-hand totals with shared competition ranks for ties.",
+      "transitionIds": ["uno.house.config.validate_individual_players_2_to_10", "uno.house.result.rank_individual_low_score", "uno.house.result.assign_shared_competition_rank"],
+      "plannedTestIds": ["uno_house_individual_accepts_two_to_ten_players_test", "uno_house_individual_rejects_out_of_range_players_test", "uno_house_individual_ranks_low_score_first_test", "uno_house_individual_ties_share_competition_rank_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-TEAM-001",
+      "sourceSection": "Team mode (line 745)",
+      "sourceText": "Team mode is exactly four players with partners in alternating seats; partner hands stay hidden and strategy communication is server-forbidden during play.",
+      "transitionIds": ["uno.house.config.validate_four_player_teams", "uno.house.setup.assign_alternating_partners", "uno.house.view.hide_partner_hand", "uno.house.communication.reject_strategy_text"],
+      "plannedTestIds": ["uno_house_team_mode_requires_exactly_four_players_test", "uno_house_team_partners_are_alternating_seats_test", "uno_house_team_partner_hand_is_hidden_test", "uno_house_team_strategy_chat_is_rejected_server_side_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-TEAM-002",
+      "sourceSection": "Team mode (line 746)",
+      "sourceText": "A round ends when either teammate empties a hand; sum both teammates' remaining points, award the lower score, and record equal scores as a draw.",
+      "transitionIds": ["uno.house.round.end_on_team_member_empty", "uno.house.score.sum_team_hands", "uno.house.result.resolve_team_low_score_or_draw"],
+      "plannedTestIds": ["uno_house_team_round_ends_when_either_partner_empties_test", "uno_house_team_score_sums_both_hands_test", "uno_house_team_lower_score_wins_test", "uno_house_team_equal_score_is_draw_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-MATCH-001",
+      "sourceSection": "Multi-round match (line 747)",
+      "sourceText": "The host selects 1, 3, 5, or 7 rounds before play, and the match ranks cumulative totals from low to high.",
+      "transitionIds": ["uno.house.config.lock_round_count", "uno.house.match.accumulate_round_scores", "uno.house.result.rank_match_low_score"],
+      "plannedTestIds": ["uno_house_round_count_accepts_one_three_five_seven_test", "uno_house_round_count_rejects_other_values_test", "uno_house_match_accumulates_and_ranks_low_score_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-MATCH-002",
+      "sourceSection": "Multi-round match (line 748)",
+      "sourceText": "Choose the first-round starter randomly; each later round starts with the player who emptied a hand in the prior round.",
+      "transitionIds": ["uno.house.round.choose_first_starter_randomly", "uno.house.round.carry_previous_finisher_as_starter"],
+      "plannedTestIds": ["uno_house_first_round_starter_uses_deterministic_random_test", "uno_house_later_round_starts_with_previous_finisher_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-DECK-001",
+      "sourceSection": "Deck setup (lines 753–754)",
+      "sourceText": "Any card may be the opening discard without applying its effect; if it is wild or +4, deterministic randomness selects the initial color.",
+      "transitionIds": ["uno.house.deck.move_any_opening_discard_without_effect", "uno.house.deck.choose_initial_wild_color_deterministically"],
+      "plannedTestIds": ["uno_house_any_opening_discard_has_no_action_effect_test", "uno_house_opening_wild_color_uses_deterministic_random_test", "uno_house_opening_draw4_color_uses_deterministic_random_without_penalty_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-DECK-002",
+      "sourceSection": "Deck recycling (line 755)",
+      "sourceText": "When the draw pile empties, retain the top discard and shuffle all other discards back into the draw pile.",
+      "transitionIds": ["uno.house.deck.recycle_discards_keep_top", "uno.house.deck.shuffle_recycled_cards"],
+      "plannedTestIds": ["uno_house_recycle_keeps_top_discard_test", "uno_house_recycle_shuffles_all_other_discards_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-DECK-003",
+      "sourceSection": "Dynamic deck expansion (lines 756–757)",
+      "sourceText": "If available cards still cannot complete any normal or penalty draw, add a complete uniquely identified 108-card generation and shuffle it with available cards; repeat as often as needed within a round.",
+      "transitionIds": ["uno.house.deck.detect_insufficient_available_cards", "uno.house.deck.add_full_108_card_generation", "uno.house.deck.shuffle_generation_with_available_cards", "uno.house.deck.repeat_expansion_until_draw_complete"],
+      "plannedTestIds": ["uno_house_insufficient_normal_draw_adds_complete_generation_test", "uno_house_insufficient_penalty_draw_adds_complete_generation_test", "uno_house_expansion_shuffles_new_and_existing_available_cards_test", "uno_house_round_can_expand_multiple_generations_test", "uno_house_expansion_always_completes_requested_draw_test"]
+    },
+    {
+      "clauseId": "UNO-HOUSE-DECK-004",
+      "sourceSection": "Dynamic deck expansion (line 758)",
+      "sourceText": "Each new round discards prior generations and starts from one standard 108-card deck.",
+      "transitionIds": ["uno.house.deck.reset_new_round_to_single_generation"],
+      "plannedTestIds": ["uno_house_new_round_resets_to_exactly_108_cards_test", "uno_house_new_round_does_not_carry_expanded_generations_test"]
+    }
+  ]
+}

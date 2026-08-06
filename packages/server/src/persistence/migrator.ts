@@ -28,14 +28,22 @@ export function migrate(db: Db, migrations: Migration[] = MIGRATIONS): number[] 
     if (m.version < maxApplied) {
       throw new Error(`迁移版本回退：${m.version} < 已应用最高版本 ${maxApplied}`);
     }
-    withTransaction(db, () => {
-      db.exec(m.up);
-      db.prepare('INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)').run(
-        m.version,
-        m.name,
-        Date.now(),
-      );
-    });
+    // 表重建类迁移（如 v7）需要 DROP 被外键引用的父表。
+    // PRAGMA foreign_keys 在事务内是 no-op，必须在事务外先关闭、提交后再恢复，
+    // 否则 DROP 父表会级联删除子表行（或对 NO ACTION 子表直接失败）。
+    db.exec('PRAGMA foreign_keys = OFF');
+    try {
+      withTransaction(db, () => {
+        db.exec(m.up);
+        db.prepare('INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)').run(
+          m.version,
+          m.name,
+          Date.now(),
+        );
+      });
+    } finally {
+      db.exec('PRAGMA foreign_keys = ON');
+    }
     applied.add(m.version);
     newlyApplied.push(m.version);
   }

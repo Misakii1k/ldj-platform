@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { canObserve, type ObservationContext } from '../src/game/rules/visibility.ts';
+import { canObserve, canObserveAll, type ObservationContext } from '../src/game/rules/visibility.ts';
 
 const owner: ObservationContext = { role: 'participant', playerId: 'owner', revealed: false };
 const other: ObservationContext = { role: 'participant', playerId: 'other', revealed: false };
@@ -34,4 +34,14 @@ test('after_reveal 仅在接收者可见阶段公开', () => {
   assert.equal(canObserve('after_reveal', owner), false);
   assert.equal(canObserve('after_reveal', { ...owner, revealed: true }), true);
   assert.equal(canObserve('after_reveal', { ...spectator, revealed: true }), true);
+});
+
+test('组合策略必须全部满足，且不修改接收者上下文', () => {
+  const context: ObservationContext = { role: 'participant', playerId: 'owner', revealed: true };
+  const before = structuredClone(context);
+  assert.equal(canObserveAll(['owner_only', 'after_reveal'], context, 'owner'), true);
+  assert.equal(canObserveAll(['owner_only', 'after_reveal'], { ...context, revealed: false }, 'owner'), false);
+  assert.equal(canObserveAll(['owner_only', 'after_reveal'], context, 'other'), false);
+  assert.equal(canObserveAll([], context, 'owner'), true);
+  assert.deepEqual(context, before);
 });

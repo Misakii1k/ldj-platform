@@ -5,15 +5,35 @@
  */
 import { randomUUID } from 'node:crypto';
 import {
+  assertPrivateGameEvents,
   createSeededRandom,
+  isAdjudicationTaskEffect,
+  isVersionedGameModule,
   type Actor,
+  type AdjudicationTaskEffect,
   type ChatMessageView,
   type GameContext,
+  type GameEffect,
+  type PrivateGameEvent,
+} from '@ldj/shared';
+import {
+  GameInternalError,
+  sanitizeFailureDetails,
+  type SuspendedReasonCode,
 } from '@ldj/shared';
 import type { Db } from '../../persistence/db.ts';
+import { withTransaction } from '../../persistence/db.ts';
 import type { TxContext } from '../executor.ts';
 import { CommandError } from '../executor.ts';
-import { getGameModule, DEFAULT_GAME_ID, type ErasedGameModule } from './registry.ts';
+import { getGameModule, getSessionGameModule, resolveRulesetForStart, DEFAULT_GAME_ID, type RegisteredGameModule } from './registry.ts';
+import { createEventEnvelope, type EffectReceipt } from './eventEnvelope.ts';
+import {
+  createSnapshotEnvelope,
+  isSnapshotEnvelopeV2,
+  parseSnapshotEnvelope,
+  type SnapshotEnvelopeV2,
+} from './snapshotEnvelope.ts';
+import { createStateDigest } from './stateDigest.ts';
 
 export interface SessionRow {
   id: string;
@@ -26,6 +46,9 @@ export interface SessionRow {
   seed: string;
   rng_state_json: string;
   last_seq: number;
+  /** D4-F1：权威规则集身份（migration v7 后必填） */
+  ruleset_id?: string;
+  failure?: string | null;
 }
 
 /** 一次成功 reduce 的落库结果；gateway 据此广播视角/事件，timer runner 据此对表 */
@@ -34,12 +57,23 @@ export interface GameActionOutcome {
   moduleId: string;
   /** 本次动作在事件流水中的序号 */
   seq: number;
-  /** 模块事件（公开语义，gateway 过滤后转发） */
+  /** V2 快照信封；legacy 会话保持 false */
+  readonly versioned: boolean;
+  /** 本次动作的公开事件；events 为兼容别名 */
+  readonly publicEvents: unknown[];
+  readonly privateEvents: PrivateGameEvent[];
+  readonly rulesetId: string | null;
+  readonly viewVersion: number | null;
+  /** 本次已提交的房间级序号 */
+  readonly roomSeq: number;
+  /** 模块事件（公开语义，legacy gateway 兼容别名） */
   events: unknown[];
   /** 已写入聊天流的系统消息（gateway 直接以 chat_batch 广播） */
   systemChats: ChatMessageView[];
   /** timers 表有变更（需要重新对表） */
   timersChanged: boolean;
+  /** D4-A1：本次动作声明的外部裁判任务（平台在事务提交后落库，不参与房间事务） */
+  readonly adjudicationEffects?: readonly AdjudicationTaskEffect[];
   finished: boolean;
   aborted: boolean;
 }
@@ -48,21 +82,74 @@ export function getActiveSession(db: Db, roomId: string): SessionRow | undefined
   return db
     .prepare(
       `SELECT * FROM game_sessions
-       WHERE room_id = ? AND status IN ('PREPARING','ACTIVE','RECOVERING')`,
+       WHERE room_id = ? AND status IN ('PREPARING','ACTIVE','RECOVERING','SUSPENDED')`,
     )
     .get(roomId) as SessionRow | undefined;
 }
 
-function requireModule(moduleId: string): ErasedGameModule {
+function requireModule(moduleId: string): RegisteredGameModule {
   const module = getGameModule(moduleId);
   if (!module) throw new CommandError('INTERNAL_ERROR', `未注册的游戏模块：${moduleId}`);
   return module;
 }
 
+/** D4-F1：会话级模块解析，以持久化 ruleset_id 为权威；缺失/未注册即失败关闭。 */
+function requireSessionModule(session: SessionRow): RegisteredGameModule {
+  const module = getSessionGameModule(session);
+  if (!module) {
+    throw new CommandError(
+      'INTERNAL_ERROR',
+      `会话 ${session.id} 的规则集不可用：${session.ruleset_id ?? '<missing>'}`,
+    );
+  }
+  return module;
+}
+
 /** rng_state_json 只保存抽取游标；相同 (seed, cursor) 序列一致（§8.5） */
 function parseRngCursor(json: string): number {
-  const parsed = JSON.parse(json) as { cursor?: number };
-  return typeof parsed.cursor === 'number' ? parsed.cursor : 0;
+  const parsed = JSON.parse(json) as { cursor?: unknown };
+  if (!Number.isSafeInteger(parsed.cursor) || (parsed.cursor as number) < 0) {
+    throw new Error('随机状态游标无效');
+  }
+  return parsed.cursor as number;
+}
+
+function moduleSnapshotIdentity(module: Extract<RegisteredGameModule, { readonly identity: unknown }>) {
+  return {
+    gameId: module.manifest.id,
+    rulesetId: module.identity.rulesetId,
+    schemaVersion: module.manifest.stateSchemaVersion,
+  };
+}
+
+function participantIdsFromState(state: unknown): string[] {
+  if (typeof state !== 'object' || state === null) return [];
+  const players = (state as { players?: unknown }).players;
+  if (Array.isArray(players) && players.every((entry) => typeof entry === 'string')) return [...players];
+  if (typeof players === 'object' && players !== null && !Array.isArray(players)) return Object.keys(players);
+  return [];
+}
+
+export interface LoadedSessionState {
+  readonly state: unknown;
+  readonly rngCursor: number;
+  readonly snapshot: SnapshotEnvelopeV2 | null;
+}
+
+/** 单一会话状态入口：V2 严格验证信封，legacy 维持原始 JSON。 */
+export function loadSessionState(session: SessionRow, module = requireSessionModule(session)): LoadedSessionState {
+  const parsed: unknown = JSON.parse(session.snapshot_json);
+  const legacyCursor = parseRngCursor(session.rng_state_json);
+  if (!isVersionedGameModule(module)) return { state: parsed, rngCursor: legacyCursor, snapshot: null };
+  if (!isSnapshotEnvelopeV2(parsed)) {
+    // 历史 raw snapshot 的显式转换由启动恢复负责；普通动作路径不得静默包装。
+    throw new Error('版本化会话缺少快照信封');
+  }
+  const snapshot = parseSnapshotEnvelope(parsed, moduleSnapshotIdentity(module));
+  if (snapshot.rngState.cursor !== legacyCursor) throw new Error('快照与随机状态游标不一致');
+  const state = module.parseState(snapshot.state);
+  module.assertInvariants(state);
+  return { state, rngCursor: snapshot.rngState.cursor, snapshot };
 }
 
 function isZodError(err: unknown): boolean {
@@ -70,8 +157,46 @@ function isZodError(err: unknown): boolean {
 }
 
 /**
+ * D4-F2：把内部规则故障持久化为 SUSPENDED + 类型化失败码。
+ * 在外层动作事务已回滚后单独提交（内部故障不产生任何动作写入）。
+ * 不取消 pending 计时器：SUSPENDED 期间计时器不触发，
+ * 重启恢复时按既有 RECOVERING 流程重挂，保证可确定性续跑。
+ */
+function writeSuspended(
+  db: Db,
+  session: SessionRow,
+  reason: SuspendedReasonCode,
+  error: unknown,
+  seq: number,
+): void {
+  try {
+    withTransaction(db, () => {
+      db.prepare(
+        `UPDATE game_sessions
+         SET status = 'SUSPENDED', failure = ?, failure_details_json = ?, updated_at = ?
+         WHERE id = ?`,
+      ).run(
+        reason,
+        sanitizeFailureDetails(reason, error, {
+          sessionId: session.id,
+          moduleId: session.module_id,
+          rulesetId: session.ruleset_id ?? '',
+          seq,
+        }),
+        Date.now(),
+        session.id,
+      );
+    });
+  } catch {
+    // 写 SUSPENDED 失败不掩盖原始内部故障；由调用方按内部错误继续处理。
+  }
+}
+
+/**
  * 在事务内应用一个已解析会话上的动作：reduce → 事件流水 → 快照 → effects → 结果。
  * reduce 拒绝时抛 CommandError（不产生任何写入，由外层事务回滚保证）。
+ * 内部故障（reduce 抛错 / schema / invariant / 未知 effect / 不可序列化）：
+ * 原事务回滚，会话置 SUSPENDED + 类型化失败码，并以内部错误向外抛出。
  */
 export function applySessionAction(
   tx: TxContext,
@@ -79,9 +204,9 @@ export function applySessionAction(
   actor: Actor,
   rawAction: unknown,
   requestId: string | null,
+  module: RegisteredGameModule = requireSessionModule(session),
 ): GameActionOutcome {
-  const { db, now } = tx;
-  const module = requireModule(session.module_id);
+  const { db } = tx;
 
   let action: unknown;
   try {
@@ -91,35 +216,95 @@ export function applySessionAction(
     throw err;
   }
 
-  const random = createSeededRandom(session.seed, parseRngCursor(session.rng_state_json));
-  const ctx: GameContext = { now, random };
-  const state: unknown = JSON.parse(session.snapshot_json);
+  const seq = session.last_seq + 1;
+  try {
+    return applySessionActionCore(tx, session, module, action, actor, requestId, seq);
+  } catch (err) {
+    // 用户输入拒绝（CommandError）不暂停会话。
+    if (err instanceof CommandError) throw err;
+    const reason: SuspendedReasonCode =
+      err instanceof GameInternalError
+        ? err.reason
+        : isZodError(err)
+          ? 'SUSPENDED_STATE_SCHEMA'
+          : 'SUSPENDED_REDUCE_FAULT';
+    writeSuspended(db, session, reason, err, seq);
+    // 对外保持内部错误不透明：客户端只收到稳定错误码，细节留在 failure 列诊断。
+    throw new CommandError('INTERNAL_ERROR', '对局内部错误，已暂停');
+  }
+}
 
-  const result = module.reduce(ctx, state, actor, action);
-  if (!result.ok) {
+function applySessionActionCore(
+  tx: TxContext,
+  session: SessionRow,
+  module: RegisteredGameModule,
+  action: unknown,
+  actor: Actor,
+  requestId: string | null,
+  seq: number,
+): GameActionOutcome {
+  const { db, now } = tx;
+  const loaded = loadSessionState(session, module);
+  const random = createSeededRandom(session.seed, loaded.rngCursor);
+  const rngCursorBefore = random.getCursor();
+  const ctx: GameContext = { now, random };
+  const state = loaded.state;
+
+  const rawResult = module.reduce(ctx, state, actor, action);
+  if (!rawResult.ok) {
     // 模块 code 不进错误码表；统一映射为 ACTION_NOT_ALLOWED，message 保留模块文案
-    throw new CommandError('ACTION_NOT_ALLOWED', result.message);
+    throw new CommandError('ACTION_NOT_ALLOWED', rawResult.message);
   }
 
-  // 事件流水（§10.2 game_events）：完整记录 actor/action/events，供审计与重放
-  const seq = session.last_seq + 1;
-  db.prepare(
-    `INSERT INTO game_events (session_id, seq, request_id, command_time, actor_json, action_json, events_json)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-  ).run(
-    session.id,
-    seq,
-    requestId,
-    now,
-    JSON.stringify(actor),
-    JSON.stringify(action),
-    JSON.stringify(result.events),
-  );
+  let nextState: unknown;
+  let events: readonly unknown[];
+  let privateEvents: readonly PrivateGameEvent[] = [];
+  let effects: readonly GameEffect[];
+  let gameResult: unknown;
+  if ('nextState' in rawResult) {
+    if (!isVersionedGameModule(module)) {
+      throw new CommandError('INTERNAL_ERROR', '游戏模块契约与 reduce 结果不一致');
+    }
+    nextState = module.parseState(rawResult.nextState);
+    module.assertInvariants(nextState);
+    assertPrivateGameEvents(rawResult.privateEvents, participantIdsFromState(nextState));
+    events = rawResult.publicEvents;
+    privateEvents = rawResult.privateEvents;
+    effects = rawResult.effects;
+    gameResult = rawResult.resultCandidate;
+  } else {
+    nextState = rawResult.state;
+    events = rawResult.events;
+    effects = rawResult.effects;
+    if (!('getResult' in module)) {
+      throw new CommandError('INTERNAL_ERROR', '游戏模块契约与 reduce 结果不一致');
+    }
+    gameResult = module.getResult(nextState);
+  }
 
   // effects：计时器/系统消息全部与状态同事务落库（§5.8、§10.3）
   const systemChats: ChatMessageView[] = [];
+  const effectReceipts: EffectReceipt[] = [];
+  const adjudicationEffects: AdjudicationTaskEffect[] = [];
   let timersChanged = false;
-  for (const effect of result.effects) {
+  for (const [effectIndex, effect] of effects.entries()) {
+    // D4-A1：外部裁判任务（平台级 effect，不在 GameEffect 基联合中）先于
+    // 类型化 switch 单独处理，保证既有 effect 的判别联合收窄不受影响。
+    // 只登记 receipt（kind 'none'，receiptId = taskId）并做参数校验；
+    // 真实落库在房间事务提交后由 executor post-commit 回调完成。
+    if ((effect as { type?: unknown }).type === 'enqueue_adjudication') {
+      const taskEffect = effect as unknown as AdjudicationTaskEffect;
+      if (
+        !isAdjudicationTaskEffect(taskEffect)
+        || taskEffect.sessionId !== session.id
+        || taskEffect.submittedAtSeq < 1
+      ) {
+        throw new GameInternalError('SUSPENDED_UNKNOWN_EFFECT', '外部裁判任务 effect 参数无效');
+      }
+      adjudicationEffects.push(taskEffect);
+      effectReceipts.push({ effectIndex, kind: 'none', receiptId: taskEffect.taskId });
+      continue;
+    }
     switch (effect.type) {
       case 'schedule_timer':
         db.prepare(
@@ -129,6 +314,7 @@ export function applySessionAction(
            DO UPDATE SET deadline_at = excluded.deadline_at, action_json = excluded.action_json, status = 'pending'`,
         ).run(session.id, effect.timerId, effect.deadlineAt, JSON.stringify(effect.action));
         timersChanged = true;
+        effectReceipts.push({ effectIndex, kind: 'timer', receiptId: `${effect.timerId}:pending` });
         break;
       case 'cancel_timer':
         db.prepare(
@@ -136,6 +322,7 @@ export function applySessionAction(
            WHERE session_id = ? AND timer_id = ? AND status = 'pending'`,
         ).run(session.id, effect.timerId);
         timersChanged = true;
+        effectReceipts.push({ effectIndex, kind: 'timer', receiptId: `${effect.timerId}:cancelled` });
         break;
       case 'system_message': {
         const info = db
@@ -151,13 +338,58 @@ export function applySessionAction(
           text: effect.text,
           at: now,
         });
+        effectReceipts.push({ effectIndex, kind: 'chat', receiptId: String(info.lastInsertRowid) });
         break;
       }
+      default:
+        // D4-F2：未知 effect 是规则模块内部故障，失败关闭并暂停会话。
+        throw new GameInternalError(
+          'SUSPENDED_UNKNOWN_EFFECT',
+          `未知 effect 类型：${String((effect as { type?: unknown }).type)}`,
+        );
     }
   }
 
-  // 每个已接受的变更都写最新快照（§10.1）
-  const gameResult = module.getResult(result.state);
+  // 每个已接受的变更都写最新快照（§10.1）。V2 在原 JSON 列内写版本化信封。
+  const rngCursorAfter = random.getCursor();
+  const versioned = isVersionedGameModule(module);
+  const snapshotJson = versioned
+    ? JSON.stringify(createSnapshotEnvelope({
+        ...moduleSnapshotIdentity(module),
+        createdAtSequence: seq,
+        rngState: { cursor: rngCursorAfter },
+        state: nextState,
+      }))
+    : JSON.stringify(nextState);
+  const persistedEvents = versioned
+    ? createEventEnvelope({
+        rulesetId: module.identity.rulesetId,
+        roomSeq: tx.roomSeq,
+        publicEvents: events,
+        privateEvents,
+        effects,
+        effectReceipts,
+        resultCandidate: gameResult,
+        rngCursorBefore,
+        rngCursorAfter,
+        nextStateDigest: createStateDigest(nextState),
+      })
+    : events;
+
+  // 事件流水（§10.2 game_events）：完整记录 actor/action/版本化输出，供审计与重放。
+  db.prepare(
+    `INSERT INTO game_events (session_id, seq, request_id, command_time, actor_json, action_json, events_json)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    session.id,
+    seq,
+    requestId,
+    now,
+    JSON.stringify(actor),
+    JSON.stringify(action),
+    JSON.stringify(persistedEvents),
+  );
+
   const finished = gameResult !== null;
   // 约定：结果对象可携带 aborted 标记（如全员退出，§6.7）；缺省视为正常结束
   const aborted = finished && (gameResult as { aborted?: boolean }).aborted === true;
@@ -167,8 +399,8 @@ export function applySessionAction(
      SET snapshot_json = ?, rng_state_json = ?, last_seq = ?, status = ?, updated_at = ?
      WHERE id = ?`,
   ).run(
-    JSON.stringify(result.state),
-    JSON.stringify({ cursor: random.getCursor() }),
+    snapshotJson,
+    JSON.stringify({ cursor: rngCursorAfter }),
     seq,
     finished ? (aborted ? 'ABORTED' : 'FINISHED') : session.status,
     now,
@@ -196,8 +428,8 @@ export function applySessionAction(
   }
 
   // 内存中的行同步推进，便于同事务内连续应用（如 start → begin）
-  session.snapshot_json = JSON.stringify(result.state);
-  session.rng_state_json = JSON.stringify({ cursor: random.getCursor() });
+  session.snapshot_json = snapshotJson;
+  session.rng_state_json = JSON.stringify({ cursor: rngCursorAfter });
   session.last_seq = seq;
   if (finished) session.status = aborted ? 'ABORTED' : 'FINISHED';
 
@@ -205,9 +437,16 @@ export function applySessionAction(
     sessionId: session.id,
     moduleId: session.module_id,
     seq,
-    events: result.events,
+    versioned,
+    publicEvents: [...events],
+    privateEvents: [...privateEvents],
+    rulesetId: versioned ? module.identity.rulesetId : null,
+    viewVersion: versioned ? module.identity.viewVersion : null,
+    roomSeq: tx.roomSeq,
+    events: [...events],
     systemChats,
     timersChanged,
+    adjudicationEffects,
     finished,
     aborted,
   };
@@ -233,6 +472,44 @@ export function applyGameAction(
     throw new CommandError('ACTION_NOT_ALLOWED', '当前没有进行中的对局');
   }
   return applySessionAction(tx, session, { kind: 'player', playerId }, rawAction, requestId);
+}
+
+/**
+ * D4-A1：外部裁判结果再入房间串行事务链。
+ * 结果以 system 动作 external_task_result 经 executor.executeInternal 进入；
+ * 平台层 exactly-once 由 taskQueue 的 adjudication_tasks 行状态保证
+ * （done/discarded 后丢弃），这里只负责把有效结果交给模块 reducer 应用，
+ * 绝不直接修改权威状态。
+ */
+export function applyExternalTaskResult(
+  tx: TxContext,
+  sessionId: string,
+  taskId: string,
+  expectedSequence: number,
+  result: unknown,
+  resolveModule: (session: SessionRow) => RegisteredGameModule | undefined = getSessionGameModule,
+): GameActionOutcome {
+  const session = tx.db
+    .prepare('SELECT * FROM game_sessions WHERE id = ?')
+    .get(sessionId) as SessionRow | undefined;
+  if (!session) {
+    throw new CommandError('ACTION_NOT_ALLOWED', '外部裁判结果对应的会话不存在');
+  }
+  const module = resolveModule(session);
+  if (!module) {
+    throw new CommandError(
+      'INTERNAL_ERROR',
+      `外部裁判结果无法应用：规则集不可用 ${session.ruleset_id ?? '<missing>'}`,
+    );
+  }
+  return applySessionAction(
+    tx,
+    session,
+    { kind: 'system', source: 'recovery' },
+    { type: 'external_task_result', taskId, expectedSequence, result },
+    taskId,
+    module,
+  );
 }
 
 export interface StartGameOutcome {
@@ -263,7 +540,17 @@ export function startGame(tx: TxContext, roomId: string, gameConfig: unknown): S
   }
 
   const moduleId = room.game_id ?? DEFAULT_GAME_ID;
-  const module = requireModule(moduleId);
+  // D4-F1：先解析权威规则集，再按 (gameId, rulesetId) 取模块。
+  // 这样同一游戏可并行承载 legacy 与版本化规则集；未指定 rulesetId 仍走游戏默认。
+  // rulesetId 是平台元数据，不属于模块 config；解析后从传给模块的配置中剥离，
+  // 避免 strict 模块 schema（如卧底）拒绝未知键。
+  const rulesetId = resolveRulesetForStart(moduleId, gameConfig ?? {});
+  const module = getGameModule(moduleId, rulesetId);
+  if (!module) {
+    throw new CommandError('INTERNAL_ERROR', `规则集模块不可用：${moduleId}/${rulesetId}`);
+  }
+  const moduleConfig = (gameConfig as Record<string, unknown> | null | undefined) ?? {};
+  const { rulesetId: _platformRuleset, ...restConfig } = moduleConfig;
 
   // 开局重新校验连接状态（§5.9/D-6）：只有在线玩家参与本局
   const players = (
@@ -296,7 +583,7 @@ export function startGame(tx: TxContext, roomId: string, gameConfig: unknown): S
 
   let config: unknown;
   try {
-    config = module.parseConfig(gameConfig ?? {});
+    config = module.parseConfig(restConfig);
   } catch (err) {
     if (isZodError(err)) throw new CommandError('INVALID_MESSAGE', '游戏配置无效');
     throw err;
@@ -307,20 +594,33 @@ export function startGame(tx: TxContext, roomId: string, gameConfig: unknown): S
   const seed = randomUUID();
   const random = createSeededRandom(seed);
   const initialState = module.createInitialState({ now, random }, players, config);
+  if (isVersionedGameModule(module)) {
+    module.assertInvariants(module.parseState(initialState));
+  }
+  const initialCursor = random.getCursor();
+  const initialSnapshotJson = isVersionedGameModule(module)
+    ? JSON.stringify(createSnapshotEnvelope({
+        ...moduleSnapshotIdentity(module),
+        createdAtSequence: 0,
+        rngState: { cursor: initialCursor },
+        state: initialState,
+      }))
+    : JSON.stringify(initialState);
 
   db.prepare(
     `INSERT INTO game_sessions
-       (id, room_id, module_id, module_version, state_schema_version, status, snapshot_json, seed, rng_state_json, last_seq, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, 0, ?, ?)`,
+       (id, room_id, module_id, module_version, state_schema_version, status, snapshot_json, seed, rng_state_json, ruleset_id, last_seq, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, 0, ?, ?)`,
   ).run(
     sessionId,
     roomId,
     moduleId,
     module.manifest.version,
     module.manifest.stateSchemaVersion,
-    JSON.stringify(initialState),
+    initialSnapshotJson,
     seed,
-    JSON.stringify({ cursor: random.getCursor() }),
+    JSON.stringify({ cursor: initialCursor }),
+    rulesetId,
     now,
     now,
   );

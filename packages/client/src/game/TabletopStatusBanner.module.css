@@ -1,0 +1,64 @@
+/**
+ * D4-UI0：连接状态横幅样式（仅本组件使用，不写入全局 styles.css）。
+ * 视觉上与全屏 loader 区分，作为顶部信息条叠在既有内容之上。
+ */
+.statusBar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  color: #5b4636;
+  background: linear-gradient(180deg, #fdf6e3, #f7ecd3);
+  border-bottom: 1px solid #e2cfa0;
+  box-shadow: 0 1px 4px rgba(90, 60, 20, 0.12);
+}
+
+.dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  flex: none;
+  border-radius: 50%;
+  background: #c8a24a;
+  box-shadow: 0 0 0 3px rgba(200, 162, 74, 0.25);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.message {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.resyncButton {
+  flex: none;
+  padding: 0.3rem 0.8rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: #fff;
+  background: #c8a24a;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.resyncButton:hover {
+  background: #b08d3a;
+}
+
+.resyncButton:active {
+  background: #99782f;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}

@@ -1,0 +1,198 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "undercover_blank_v1",
+  "gameId": "undercover",
+  "kind": "platform_variant",
+  "releaseStatus": "internal_prototype",
+  "sourceDocuments": [
+    "docs/superpowers/specs/2026-08-02-shared-game-engine-design.md#已确认的谁是卧底规则集",
+    "docs/superpowers/specs/2026-08-02-shared-game-engine-design.md#外部模型失败策略",
+    "docs/superpowers/plans/2026-08-05-d4-new-capabilities-master-plan.md",
+    "packages/games/undercover/server/module.ts",
+    "packages/games/undercover/shared/manifest.ts"
+  ],
+  "policyVersions": {
+    "normalizationPolicy": "blank-normalization-v1",
+    "adjudicationPolicy": "blank-adjudication-v1"
+  },
+  "digitalBoundaries": {
+    "normalization": {
+      "policyVersion": "blank-normalization-v1",
+      "unicodeForm": "NFC",
+      "trimOuterWhitespace": true,
+      "collapseUnicodeWhitespaceToAsciiSpace": true,
+      "latinLowercase": true,
+      "retainPunctuation": true,
+      "simplifiedTraditionalConversion": false,
+      "minimumCodePoints": 1,
+      "maximumCodePoints": 64,
+      "rejectControlCharacters": true,
+      "rejectNewlines": true,
+      "localSynonymInference": false
+    },
+    "finalGuessSeconds": 30,
+    "ruleBotActiveGuessPolicy": "never_submit",
+    "ruleBotFinalGuessPolicy": "skip",
+    "ruleBotReceivesStandardAnswer": false,
+    "taskPlaintextRetention": "erase_after_result_applied",
+    "providerInputFields": [
+      "normalizedStandardAnswer",
+      "normalizedGuess",
+      "adjudicationPolicyVersion"
+    ]
+  },
+  "differences": [
+    {
+      "differenceId": "UNDERCOVER-BLANK-DIFF-001",
+      "classification": "CHANGE_RULESET",
+      "baselineRulesetId": "undercover_classic_v1",
+      "baselineBehavior": "Classic assigns one or two word-bearing undercover players alongside civilians.",
+      "targetBehavior": "Blank mode assigns exactly one no-word blank, no word-bearing undercover, and one shared civilian word to everyone else.",
+      "relatedClauseIds": ["UNDERCOVER-BLANK-ROLE-001", "UNDERCOVER-BLANK-ROLE-002"]
+    },
+    {
+      "differenceId": "UNDERCOVER-BLANK-DIFF-002",
+      "classification": "KEEP_COMPAT",
+      "baselineRulesetId": "undercover_classic_v1",
+      "baselineBehavior": "The compatibility engine supports 4–12 players and server-timed speaking and ballots.",
+      "targetBehavior": "Retain the 4–12 player range and reusable ordinary speaking/ballot flow while changing blank-specific outcomes.",
+      "relatedClauseIds": ["UNDERCOVER-BLANK-SETUP-001", "UNDERCOVER-BLANK-ASYNC-001"]
+    },
+    {
+      "differenceId": "UNDERCOVER-BLANK-DIFF-003",
+      "classification": "CHANGE_RULESET",
+      "baselineRulesetId": "undercover_classic_v1",
+      "baselineBehavior": "Classic has no secret word-guess opportunity or asynchronous adjudication.",
+      "targetBehavior": "Add one active-or-final guess opportunity, normalization, exact/main/fallback adjudication, async continuation, and provisional-result override.",
+      "relatedClauseIds": ["UNDERCOVER-BLANK-GUESS-001", "UNDERCOVER-BLANK-GUESS-002", "UNDERCOVER-BLANK-FINAL-001", "UNDERCOVER-BLANK-ADJ-001", "UNDERCOVER-BLANK-ADJ-002", "UNDERCOVER-BLANK-ASYNC-001", "UNDERCOVER-BLANK-ASYNC-002"]
+    }
+  ],
+  "clauses": [
+    {
+      "clauseId": "UNDERCOVER-BLANK-GOV-001",
+      "sourceSection": "Undercover ruleset split (lines 762–767)",
+      "sourceText": "Keep classic and blank as separate rulesets; blank stays non-playable until independent acceptance, and role semantics cannot be changed by mutable configuration.",
+      "transitionIds": ["undercover.blank.registry.register_separate_ruleset", "undercover.blank.admission.block_until_independent_acceptance", "undercover.blank.config.reject_role_semantic_override"],
+      "plannedTestIds": ["undercover_blank_registers_separately_from_classic_test", "undercover_blank_is_not_playable_before_acceptance_test", "undercover_blank_rejects_mutable_role_semantics_test"]
+    },
+    {
+      "clauseId": "UNDERCOVER-BLANK-GOV-002",
+      "sourceSection": "Undercover locked configuration (line 767)",
+      "sourceText": "Lock identity reveal timing and any other permitted pregame identity settings into the opening snapshot for the whole game.",
+      "transitionIds": ["undercover.blank.config.lock_reveal_mode_in_snapshot", "undercover.blank.config.reject_midgame_identity_change"],
+      "plannedTestIds": ["undercover_blank_reveal_mode_is_snapshot_locked_test", "undercover_blank_midgame_identity_config_change_is_rejected_test"]
+    },
+    {
+      "clauseId": "UNDERCOVER-BLANK-SETUP-001",
+      "sourceSection": "Blank setup (line 783)",
+      "sourceText": "The host may select blank mode for 4–12 players; 5–8 is a nonbinding balance hint.",
+      "transitionIds": ["undercover.blank.config.select_mode", "undercover.blank.config.validate_players_4_to_12", "undercover.blank.view.show_balance_hint_5_to_8"],
+      "plannedTestIds": ["undercover_blank_accepts_four_to_twelve_players_test", "undercover_blank_rejects_players_outside_range_test", "undercover_blank_shows_five_to_eight_balance_hint_without_enforcement_test"]
+    },
+    {
+      "clauseId": "UNDERCOVER-BLANK-ROLE-001",
+      "sourceSection": "Blank roles (lines 784–785)",
+      "sourceText": "Assign exactly one blank and no word-bearing undercover; every other player is a civilian holding the same civilian word.",
+      "transitionIds": ["undercover.blank.setup.assign_exactly_one_blank", "undercover.blank.setup.assign_shared_word_to_all_civilians", "undercover.blank.invariant.reject_worded_undercover"],
+      "plannedTestIds": ["undercover_blank_assigns_exactly_one_blank_test", "undercover_blank_assigns_no_worded_undercover_test", "undercover_blank_civilians_share_one_word_test"]
+    },
+    {
+      "clauseId": "UNDERCOVER-BLANK-ROLE-002",
+      "sourceSection": "Blank roles (line 786)",
+      "sourceText": "The blank belongs to the undercover side and receives no word rather than an empty word value.",
+      "transitionIds": ["undercover.blank.setup.create_no_word_secret", "undercover.blank.result.map_blank_to_undercover_side"],
+      "plannedTestIds": ["undercover_blank_secret_is_explicit_no_word_variant_test", "undercover_blank_counts_as_undercover_side_test"]
+    },
+    {
+      "clauseId": "UNDERCOVER-BLANK-WIN-001",
+      "sourceSection": "Blank win condition (line 787)",
+      "sourceText": "When only the blank and one civilian remain, the blank wins immediately unless an earlier valid pending guess still controls finalization.",
+      "transitionIds": ["undercover.blank.win.detect_blank_plus_one_civilian", "undercover.blank.result.record_or_finalize_blank_survival_win"],
+      "plannedTestIds": ["undercover_blank_wins_at_blank_plus_one_civilian_test", "undercover_blank_does_not_win_before_threshold_test", "undercover_blank_survival_outcome_stays_provisional_when_earlier_guess_pending_test"]
+    },
+    {
+      "clauseId": "UNDERCOVER-BLANK-GUESS-001",
+      "sourceSection": "Active guess opportunity (lines 788–789)",
+      "sourceText": "The blank has one total secret guess opportunity and may use it while alive during speaking, ordinary voting, or runoff voting after word reveal, but not during settlement.",
+      "transitionIds": ["undercover.blank.guess.initialize_single_unused_opportunity", "undercover.blank.guess.submit_active_secret_guess", "undercover.blank.guess.freeze_submission_eligibility", "undercover.blank.guess.reject_phase_or_settlement_submission"],
+      "plannedTestIds": ["undercover_blank_has_exactly_one_guess_opportunity_test", "undercover_blank_can_guess_in_each_approved_active_phase_test", "undercover_blank_guess_is_secret_test", "undercover_blank_cannot_guess_before_speaking_or_during_settlement_test", "undercover_blank_second_guess_is_rejected_test"]
+    },
+    {
+      "clauseId": "UNDERCOVER-BLANK-GUESS-002",
+      "sourceSection": "Active guess outcome (line 790)",
+      "sourceText": "An active correct guess wins immediately according to its submission time; an active wrong guess eliminates the blank immediately and consumes the opportunity permanently.",
+      "transitionIds": ["undercover.blank.guess.apply_active_equivalent_win", "undercover.blank.guess.apply_active_not_equivalent_elimination", "undercover.blank.guess.consume_opportunity_permanently"],
+      "plannedTestIds": ["undercover_blank_active_correct_guess_wins_test", "undercover_blank_active_wrong_guess_eliminates_blank_test", "undercover_blank_wrong_guess_never_restores_opportunity_test"]
+    },
+    {
+      "clauseId": "UNDERCOVER-BLANK-FINAL-001",
+      "sourceSection": "Final guess trigger and reveal (lines 791–792)",
+      "sourceText": "If a blank who never guessed is voted out, open one 30-second final guess; in immediate-reveal mode reveal the blank identity before this phase, and otherwise preserve the configured reveal timing.",
+      "transitionIds": ["undercover.blank.final.open_after_voted_out_unused_opportunity", "undercover.blank.final.schedule_deadline_30s", "undercover.blank.final.reveal_identity_before_guess_when_immediate", "undercover.blank.final.preserve_delayed_reveal_mode"],
+      "plannedTestIds": ["undercover_blank_voted_out_unused_opportunity_opens_final_guess_test", "undercover_blank_final_guess_deadline_is_thirty_seconds_test", "undercover_blank_immediate_mode_reveals_identity_before_final_guess_test", "undercover_blank_delayed_mode_does_not_reveal_identity_early_test", "undercover_blank_no_final_guess_after_active_submission_test"]
+    },
+    {
+      "clauseId": "UNDERCOVER-BLANK-FINAL-002",
+      "sourceSection": "Approved blank digital boundary",
+      "sourceText": "The final guess may be submitted once or explicitly skipped; timeout or skip is wrong, and the rule bot never actively guesses and skips its final chance without receiving the answer.",
+      "transitionIds": ["undercover.blank.final.submit_once", "undercover.blank.final.skip_as_incorrect", "undercover.blank.final.timeout_as_incorrect", "undercover.blank.bot.never_submit_active_guess", "undercover.blank.bot.skip_final_without_answer"],
+      "plannedTestIds": ["undercover_blank_final_guess_submits_once_test", "undercover_blank_final_skip_is_incorrect_test", "undercover_blank_final_timeout_is_incorrect_test", "undercover_blank_rule_bot_never_actively_guesses_test", "undercover_blank_rule_bot_skips_final_without_standard_answer_test"]
+    },
+    {
+      "clauseId": "UNDERCOVER-BLANK-NORM-001",
+      "sourceSection": "Guess normalization (line 793) and approved normalization policy",
+      "sourceText": "Under blank-normalization-v1 apply NFC, trim outer whitespace, collapse Unicode whitespace to one ASCII space, and lowercase Latin letters while retaining punctuation and making no simplified/traditional conversion or local synonym inference.",
+      "transitionIds": ["undercover.blank.normalization.apply_nfc", "undercover.blank.normalization.trim_outer_whitespace", "undercover.blank.normalization.collapse_unicode_whitespace", "undercover.blank.normalization.lowercase_latin", "undercover.blank.normalization.retain_punctuation", "undercover.blank.normalization.preserve_han_script_form"],
+      "plannedTestIds": ["blank_normalization_v1_applies_nfc_test", "blank_normalization_v1_trims_and_collapses_unicode_whitespace_test", "blank_normalization_v1_lowercases_latin_test", "blank_normalization_v1_retains_punctuation_test", "blank_normalization_v1_does_not_convert_simplified_traditional_test", "blank_normalization_v1_does_not_infer_synonyms_test"]
+    },
+    {
+      "clauseId": "UNDERCOVER-BLANK-NORM-002",
+      "sourceSection": "Approved normalization input boundary",
+      "sourceText": "Accept normalized guess input only at 1–64 Unicode code points and reject all control characters and newlines.",
+      "transitionIds": ["undercover.blank.normalization.count_unicode_code_points", "undercover.blank.normalization.reject_empty_or_over_64", "undercover.blank.normalization.reject_controls_or_newlines"],
+      "plannedTestIds": ["blank_normalization_v1_accepts_one_to_sixty_four_code_points_test", "blank_normalization_v1_rejects_empty_input_test", "blank_normalization_v1_rejects_over_sixty_four_code_points_test", "blank_normalization_v1_counts_non_bmp_as_one_code_point_test", "blank_normalization_v1_rejects_control_characters_and_newlines_test"]
+    },
+    {
+      "clauseId": "UNDERCOVER-BLANK-ADJ-001",
+      "sourceSection": "Guess adjudication (lines 793–794) and external model failure policy (lines 660–678)",
+      "sourceText": "After normalization, exact equality is equivalent; otherwise call the main model, and call an independent fallback only when the main result is uncertain or fails. Only equivalent is correct; no explicit equivalent after fallback is wrong.",
+      "transitionIds": ["undercover.blank.adjudication.resolve_local_exact", "undercover.blank.adjudication.invoke_main", "undercover.blank.adjudication.invoke_independent_fallback_on_nonfinal", "undercover.blank.adjudication.map_only_equivalent_to_correct", "undercover.blank.adjudication.fail_closed_as_wrong"],
+      "plannedTestIds": ["undercover_blank_local_exact_match_is_equivalent_without_provider_test", "undercover_blank_nonexact_invokes_main_provider_test", "undercover_blank_main_uncertain_or_failure_invokes_independent_fallback_test", "undercover_blank_main_definite_not_equivalent_does_not_invoke_fallback_test", "undercover_blank_only_equivalent_is_correct_test", "undercover_blank_two_nonfinal_provider_results_are_wrong_test"]
+    },
+    {
+      "clauseId": "UNDERCOVER-BLANK-ADJ-002",
+      "sourceSection": "External adjudication privacy policy (lines 669–676) and approved provider boundary",
+      "sourceText": "Providers receive only the normalized standard answer, normalized guess, and versioned instructions, with structured timeout-bound output; the fallback cannot see the main verdict, and credentials, headers, chat, room, nickname, role, ballot, and other secrets are excluded from requests and logs.",
+      "transitionIds": ["undercover.blank.adjudication.build_minimal_provider_payload", "undercover.blank.adjudication.enforce_structured_timeout_output", "undercover.blank.adjudication.isolate_fallback_from_main", "undercover.blank.adjudication.redact_credentials_headers_and_game_secrets"],
+      "plannedTestIds": ["undercover_blank_provider_payload_contains_only_approved_fields_test", "undercover_blank_provider_output_is_structured_and_timeout_bounded_test", "undercover_blank_fallback_cannot_observe_main_verdict_test", "undercover_blank_provider_logs_exclude_credentials_headers_and_game_secrets_test"]
+    },
+    {
+      "clauseId": "UNDERCOVER-BLANK-ASYNC-001",
+      "sourceSection": "Async continuation (line 795)",
+      "sourceText": "An adjudication task runs outside the room transaction and does not pause ordinary speaking, voting, or runoff flow while its result is pending.",
+      "transitionIds": ["undercover.blank.adjudication.enqueue_outside_room_transaction", "undercover.blank.flow.continue_while_guess_pending"],
+      "plannedTestIds": ["undercover_blank_pending_adjudication_does_not_block_speaking_test", "undercover_blank_pending_adjudication_does_not_block_voting_or_runoff_test"]
+    },
+    {
+      "clauseId": "UNDERCOVER-BLANK-ASYNC-002",
+      "sourceSection": "Submission-time trace and provisional override (line 796)",
+      "sourceText": "Freeze eligibility and ordering at submission; later ordinary outcomes remain provisional, and an earlier valid equivalent result overrides any provisional ordinary result produced after submission.",
+      "transitionIds": ["undercover.blank.guess.freeze_submission_sequence_and_eligibility", "undercover.blank.result.record_provisional_ordinary_outcome", "undercover.blank.result.override_provisional_with_earlier_equivalent_guess", "undercover.blank.result.finalize_after_pending_guess_resolves"],
+      "plannedTestIds": ["undercover_blank_submission_freezes_eligibility_and_sequence_test", "undercover_blank_pending_guess_makes_later_ordinary_result_provisional_test", "undercover_blank_earlier_equivalent_guess_overrides_provisional_result_test", "undercover_blank_wrong_guess_confirms_or_continues_ordinary_outcome_test"]
+    },
+    {
+      "clauseId": "UNDERCOVER-BLANK-TASK-001",
+      "sourceSection": "External task recovery policy (line 680)",
+      "sourceText": "Give every adjudication task a unique taskId, discard results arriving after final settlement, resume unfinished tasks after restart without consuming another guess, and never call providers again during event replay.",
+      "transitionIds": ["undercover.blank.task.assign_unique_id", "undercover.blank.task.ignore_result_after_final", "undercover.blank.task.resume_after_restart", "undercover.blank.task.preserve_single_opportunity_on_recovery", "undercover.blank.task.suppress_provider_call_on_replay"],
+      "plannedTestIds": ["undercover_blank_adjudication_task_id_is_unique_test", "undercover_blank_late_result_after_final_is_ignored_test", "undercover_blank_restart_resumes_task_without_second_opportunity_test", "undercover_blank_event_replay_makes_zero_provider_calls_test"]
+    },
+    {
+      "clauseId": "UNDERCOVER-BLANK-TASK-002",
+      "sourceSection": "Approved adjudication retention boundary",
+      "sourceText": "Persist plaintext answer and guess only while needed by a pending task; after the adjudication result is applied, erase both plaintexts and retain only digests, classification, and bounded audit metadata.",
+      "transitionIds": ["undercover.blank.task.persist_minimum_pending_plaintext", "undercover.blank.task.erase_plaintext_after_result_applied", "undercover.blank.task.retain_digest_verdict_and_bounded_audit"],
+      "plannedTestIds": ["undercover_blank_pending_task_persists_only_required_plaintext_test", "undercover_blank_applied_task_erases_answer_and_guess_plaintext_test", "undercover_blank_applied_task_retains_only_bounded_audit_metadata_test"]
+    }
+  ]
+}

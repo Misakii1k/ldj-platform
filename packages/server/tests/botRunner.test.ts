@@ -15,7 +15,7 @@ import { RoomCommandExecutor } from '../src/core/executor.ts';
 import { applyRoomCommand } from '../src/core/commands/roomCommand.ts';
 import { seedRoom } from './helpers/seedRoom.ts';
 import { BotRunner } from '../src/core/game/botRunner.ts';
-import { getActiveSession } from '../src/core/game/session.ts';
+import { getActiveSession, type GameActionOutcome } from '../src/core/game/session.ts';
 import { createLogger } from '../src/boot/logger.ts';
 import type { BotKind } from '@ldj/shared';
 
@@ -59,7 +59,10 @@ async function addBots(ctx: Ctx, n: number, kind: BotKind = 'rule'): Promise<voi
 }
 
 /** 建一个 runner，thinkDelayMs=0 让它同步跑完 */
-function makeRunner(ctx: Ctx, onOutcome: () => void = () => {}): BotRunner {
+function makeRunner(
+  ctx: Ctx,
+  onOutcome: (roomId: string, outcome: GameActionOutcome) => void = () => {},
+): BotRunner {
   return new BotRunner({
     db: ctx.db,
     executor: ctx.executor,
@@ -80,9 +83,10 @@ test('BotRunner：一屋子规则机器人能把谁是卧底打完', async () =>
     assert.ok(before, '开局后应有活跃会话');
     assert.equal(before.status, 'ACTIVE');
 
-    let outcomes = 0;
-    const runner = makeRunner(ctx, () => {
-      outcomes++;
+    const outcomes: GameActionOutcome[] = [];
+    const runner = makeRunner(ctx, (roomId, outcome) => {
+      assert.equal(roomId, ctx.roomId);
+      outcomes.push(outcome);
     });
 
     // 反复触发：每次 trigger 最多推进 MAX_BOT_STEPS_PER_TRIGGER 步，
@@ -97,7 +101,16 @@ test('BotRunner：一屋子规则机器人能把谁是卧底打完', async () =>
       lastSeq = session.last_seq;
     }
 
-    assert.ok(outcomes > 0, '机器人应至少落库过一个动作');
+    assert.ok(outcomes.length > 0, '机器人应至少落库过一个动作');
+    const finalRoomSeq = (ctx.db.prepare('SELECT seq FROM rooms WHERE id = ?').get(ctx.roomId) as { seq: number }).seq;
+    assert.equal(outcomes.at(-1)!.roomSeq, finalRoomSeq);
+    for (let index = 1; index < outcomes.length; index += 1) {
+      assert.equal(
+        outcomes[index]!.roomSeq,
+        outcomes[index - 1]!.roomSeq + 1,
+        '每个 bot 动作必须占用连续的真实 roomSeq',
+      );
+    }
     const after = getActiveSession(ctx.db, ctx.roomId);
     // 要么对局已结束（会话不再 ACTIVE），要么 seq 前进了
     if (after) {

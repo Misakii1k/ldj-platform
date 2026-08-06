@@ -26,3 +26,11 @@ export function canObserve(
   if (policy === 'owner_only') return recipient.playerId === ownerId;
   return recipient.playerId !== undefined && recipient.playerId !== ownerId;
 }
+
+export function canObserveAll(
+  policies: readonly VisibilityPolicy[],
+  recipient: ObservationContext,
+  ownerId?: string,
+): boolean {
+  return policies.every((policy) => canObserve(policy, recipient, ownerId));
+}

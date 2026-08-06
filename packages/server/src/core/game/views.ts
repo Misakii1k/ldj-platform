@@ -3,17 +3,24 @@
  * 针对单一接收者生成完整游戏视角——参局玩家用 getPlayerView（含自己的词），
  * 观战者与非参局成员用 getSpectatorView；秘密数据永不出服务端白名单。
  */
+import { isVersionedGameModule, parseTabletopView, TABLETOP_VIEW_VERSION, type StandardTabletopViewV1 } from '@ldj/shared';
 import type { Db } from '../../persistence/db.ts';
-import { getGameModule } from './registry.ts';
-import type { SessionRow } from './session.ts';
+import { getSessionGameModule } from './registry.ts';
+import { loadSessionState, type SessionRow } from './session.ts';
 
 export interface GameStatePayload {
   sessionId: string;
   moduleId: string;
-  /** ACTIVE / FINISHED / ABORTED（RECOVERING 恢复完成前不下发） */
+  /** ACTIVE / FINISHED / ABORTED / SUSPENDED（RECOVERING 恢复完成前不下发） */
   status: string;
   /** 接收者身份：决定客户端渲染玩家视角还是观战视角 */
   role: 'player' | 'spectator';
+  rulesetId?: string;
+  engineContractVersion?: number;
+  viewVersion?: number;
+  /** D4-T：模块声明桌面契约时下发标准桌面视角 */
+  tabletopVersion?: typeof TABLETOP_VIEW_VERSION;
+  tabletop?: StandardTabletopViewV1;
   view: unknown;
 }
 
@@ -37,11 +44,12 @@ export function buildGameStatePayload(
        ORDER BY created_at DESC, rowid DESC LIMIT 1`,
     )
     .get(roomId) as SessionRow | undefined;
+  // RECOVERING 恢复完成前不下发；SUSPENDED 下发供客户端展示暂停/等待恢复层。
   if (!session || session.status === 'RECOVERING') return null;
 
-  const module = getGameModule(session.module_id);
+  const module = getSessionGameModule(session);
   if (!module) return null;
-  const state: unknown = JSON.parse(session.snapshot_json);
+  const state = loadSessionState(session, module).state;
 
   const seatRole =
     playerId === null
@@ -53,11 +61,31 @@ export function buildGameStatePayload(
         )?.seat_role ?? null);
   const asPlayer = seatRole === 'player' && playerId !== null;
 
+  // D4-T：模块声明桌面契约时，标准桌面视角必须严格通过解析（失败关闭）。
+  const tabletopProjection = isVersionedGameModule(module) ? module.tabletopProjection : undefined;
+  let tabletop: StandardTabletopViewV1 | undefined;
+  if (tabletopProjection) {
+    const raw = asPlayer
+      ? tabletopProjection.getPlayerTabletopView(state, playerId)
+      : tabletopProjection.getSpectatorTabletopView(state);
+    tabletop = parseTabletopView(raw);
+  }
+
   return {
     sessionId: session.id,
     moduleId: session.module_id,
     status: session.status,
     role: asPlayer ? 'player' : 'spectator',
+    ...(isVersionedGameModule(module)
+      ? {
+          rulesetId: module.identity.rulesetId,
+          engineContractVersion: module.identity.engineContractVersion,
+          viewVersion: module.identity.viewVersion,
+        }
+      : {}),
+    ...(tabletop !== undefined
+      ? { tabletopVersion: TABLETOP_VIEW_VERSION, tabletop }
+      : {}),
     view: asPlayer ? module.getPlayerView(state, playerId) : module.getSpectatorView(state),
   };
 }

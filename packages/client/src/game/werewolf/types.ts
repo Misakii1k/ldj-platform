@@ -17,12 +17,16 @@ export type WerewolfTeam = 'wolves' | 'village';
 export type WerewolfExitReason = 'night_kill' | 'poisoned' | 'voted_out' | 'hunter_shot' | 'disconnect_timeout';
 export type WerewolfVoteKind = 'normal' | 'runoff';
 export type WerewolfVoteOutcome = 'eliminated' | 'idiot_saved' | 'tie' | 'no_votes' | 'runoff_tie';
+export type WerewolfWolfKillScope = 'non_wolf' | 'any';
+export type WerewolfRulesetId = 'werewolf_legacy_platform_v2' | 'werewolf_platform_open_kill_v1';
 
 export interface WerewolfConfigView {
+  rulesetId: WerewolfRulesetId;
   preset: 'classic' | 'advanced';
   pace: 'fast' | 'standard' | 'relaxed';
   witchSelfSave: 'first_night' | 'never' | 'always';
   winCondition: 'numbers' | 'roles';
+  wolfKillScope: WerewolfWolfKillScope;
   roles: {
     guard: boolean;
     hunter: boolean;
@@ -90,7 +94,7 @@ export interface WerewolfMe {
 
 export interface WerewolfView {
   gameId: 'werewolf';
-  schemaVersion: 3;
+  schemaVersion: 4;
   phase: WerewolfPhase;
   day: number;
   players: WerewolfPlayer[];
@@ -120,6 +124,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function hasOnlyKeys(value: Record<string, unknown>, allowed: readonly string[]): boolean {
+  const allowedSet = new Set(allowed);
+  return Object.keys(value).every((key) => allowedSet.has(key));
+}
+
 function isPhase(value: unknown): value is WerewolfPhase {
   return typeof value === 'string' && WEREWOLF_PHASES.includes(value as WerewolfPhase);
 }
@@ -144,7 +153,9 @@ function asStringRecord(value: unknown): Record<string, string> | null {
 }
 
 function parsePlayer(value: unknown): WerewolfPlayer | null {
-  if (!isRecord(value)) return null;
+  if (!isRecord(value) || !hasOnlyKeys(value, [
+    'playerId', 'alive', 'seat', 'forfeited', 'exitReason', 'revealedRole', 'idiotRevealed',
+  ])) return null;
   const { playerId, alive, seat, forfeited, exitReason, revealedRole, idiotRevealed } = value;
   if (typeof playerId !== 'string' || typeof alive !== 'boolean' || typeof seat !== 'number' || typeof forfeited !== 'boolean') return null;
   if (exitReason !== null && exitReason !== 'night_kill' && exitReason !== 'poisoned' && exitReason !== 'voted_out' && exitReason !== 'hunter_shot' && exitReason !== 'disconnect_timeout') return null;
@@ -153,8 +164,9 @@ function parsePlayer(value: unknown): WerewolfPlayer | null {
   return { playerId, alive, seat, forfeited, exitReason, revealedRole, idiotRevealed };
 }
 
-function parseVoteSummary(value: unknown): WerewolfVoteSummary | null {
-  if (!isRecord(value)) return null;
+function parseVoteSummary(value: unknown, voteRecord = false): WerewolfVoteSummary | null {
+  const keys = ['day', 'kind', 'outcome', 'tally', 'abstained', 'eliminatedPlayerId'];
+  if (!isRecord(value) || !hasOnlyKeys(value, voteRecord ? [...keys, 'votes'] : keys)) return null;
   const { day, kind, outcome, tally, abstained, eliminatedPlayerId } = value;
   if (typeof day !== 'number' || (kind !== 'normal' && kind !== 'runoff')) return null;
   if (outcome !== 'eliminated' && outcome !== 'idiot_saved' && outcome !== 'tie' && outcome !== 'no_votes' && outcome !== 'runoff_tie') return null;
@@ -164,8 +176,14 @@ function parseVoteSummary(value: unknown): WerewolfVoteSummary | null {
 }
 
 function parseMe(value: unknown): WerewolfMe | null {
-  if (value === null) return null;
-  if (!isRecord(value)) return null;
+  if (value === null || value === undefined) return null;
+  if (!isRecord(value) || !hasOnlyKeys(value, [
+    'playerId', 'role', 'alive', 'forfeited', 'confirmedRole', 'confirmedAnnouncement', 'canAct',
+    'hasVoted', 'myVote', 'lastWordsPending', 'wolfTeammateIds', 'wolfVotes', 'hasNightVoted',
+    'seerResults', 'seerCheckedThisNight', 'nightVictimId', 'witchSaveUsed', 'witchPoisonUsed',
+    'witchSaveDecision', 'witchPoisonDecided', 'witchCanSelfSave', 'guardTargetId', 'guardDecided',
+    'lastGuardTargetId', 'pendingShoot', 'idiotRevealed',
+  ])) return null;
   const {
     playerId, role, alive, forfeited, confirmedRole, confirmedAnnouncement, canAct, hasVoted, myVote,
     lastWordsPending, wolfTeammateIds, wolfVotes, hasNightVoted, seerResults, seerCheckedThisNight,
@@ -196,7 +214,12 @@ function parseMe(value: unknown): WerewolfMe | null {
 }
 
 export function parseWerewolfView(value: unknown): WerewolfView | null {
-  if (!isRecord(value)) return null;
+  if (!isRecord(value) || !hasOnlyKeys(value, [
+    'gameId', 'schemaVersion', 'phase', 'day', 'players', 'config', 'confirmedRolePlayerIds',
+    'announcementConfirmedPlayerIds', 'lastNightDeaths', 'speakingOrder', 'currentSpeakerId',
+    'lastWordsPlayerId', 'deadlineAt', 'votesSubmitted', 'votesExpected', 'runoffCandidates',
+    'lastVoteSummary', 'pendingShooterId', 'winner', 'aborted', 'reveal', 'me',
+  ])) return null;
   const {
     gameId, schemaVersion, phase, day, players, config, confirmedRolePlayerIds, announcementConfirmedPlayerIds,
     lastNightDeaths, speakingOrder, currentSpeakerId, lastWordsPlayerId, deadlineAt, votesSubmitted,
@@ -208,13 +231,18 @@ export function parseWerewolfView(value: unknown): WerewolfView | null {
   const deaths = asStringArray(lastNightDeaths);
   const speakers = asStringArray(speakingOrder);
   const runoff = asStringArray(runoffCandidates);
-  if (gameId !== 'werewolf' || schemaVersion !== 3 || !isPhase(phase) || typeof day !== 'number') return null;
+  if (gameId !== 'werewolf' || schemaVersion !== 4 || !isPhase(phase) || typeof day !== 'number') return null;
   if (!Array.isArray(players) || parsedPlayers.some((player) => player === null)) return null;
-  if (!isRecord(config) || (config.preset !== 'classic' && config.preset !== 'advanced')) return null;
+  if (!isRecord(config) || !hasOnlyKeys(config, [
+    'rulesetId', 'preset', 'pace', 'witchSelfSave', 'winCondition', 'wolfKillScope', 'roles',
+  ]) || (config.preset !== 'classic' && config.preset !== 'advanced')) return null;
+  if (config.rulesetId !== 'werewolf_legacy_platform_v2' && config.rulesetId !== 'werewolf_platform_open_kill_v1') return null;
   if (config.pace !== 'fast' && config.pace !== 'standard' && config.pace !== 'relaxed') return null;
   if (config.witchSelfSave !== 'first_night' && config.witchSelfSave !== 'never' && config.witchSelfSave !== 'always') return null;
   if (config.winCondition !== 'numbers' && config.winCondition !== 'roles') return null;
-  if (!isRecord(config.roles) || typeof config.roles.guard !== 'boolean' || typeof config.roles.hunter !== 'boolean' || typeof config.roles.idiot !== 'boolean') return null;
+  if (config.wolfKillScope !== 'non_wolf' && config.wolfKillScope !== 'any') return null;
+  if ((config.rulesetId === 'werewolf_legacy_platform_v2') !== (config.wolfKillScope === 'non_wolf')) return null;
+  if (!isRecord(config.roles) || !hasOnlyKeys(config.roles, ['guard', 'hunter', 'idiot']) || typeof config.roles.guard !== 'boolean' || typeof config.roles.hunter !== 'boolean' || typeof config.roles.idiot !== 'boolean') return null;
   if (!confirmedRoles || !confirmedAnnouncements || !deaths || !speakers || !runoff) return null;
   if (currentSpeakerId !== null && typeof currentSpeakerId !== 'string') return null;
   if (lastWordsPlayerId !== null && typeof lastWordsPlayerId !== 'string') return null;
@@ -226,14 +254,14 @@ export function parseWerewolfView(value: unknown): WerewolfView | null {
   const summary = lastVoteSummary === null ? null : parseVoteSummary(lastVoteSummary);
   if (lastVoteSummary !== null && summary === null) return null;
   const parsedMe = parseMe(me);
-  if (me !== null && parsedMe === null) return null;
+  if (me !== null && me !== undefined && parsedMe === null) return null;
 
   let parsedReveal: WerewolfView['reveal'] = null;
   if (reveal !== null) {
-    if (!isRecord(reveal) || !isRecord(reveal.roles) || !Array.isArray(reveal.voteHistory)) return null;
+    if (!isRecord(reveal) || !hasOnlyKeys(reveal, ['roles', 'voteHistory']) || !isRecord(reveal.roles) || !Array.isArray(reveal.voteHistory)) return null;
     if (!Object.values(reveal.roles).every(isRole)) return null;
     const records = reveal.voteHistory.map((item) => {
-      const summaryItem = parseVoteSummary(item);
+      const summaryItem = parseVoteSummary(item, true);
       if (!summaryItem || !isRecord(item.votes)) return null;
       if (!Object.values(item.votes).every((vote) => vote === null || typeof vote === 'string')) return null;
       return { ...summaryItem, votes: item.votes as Record<string, string | null> };
@@ -245,10 +273,12 @@ export function parseWerewolfView(value: unknown): WerewolfView | null {
   return {
     gameId, schemaVersion, phase, day, players: parsedPlayers as WerewolfPlayer[],
     config: {
+      rulesetId: config.rulesetId,
       preset: config.preset,
       pace: config.pace,
       witchSelfSave: config.witchSelfSave,
       winCondition: config.winCondition,
+      wolfKillScope: config.wolfKillScope,
       roles: {
         guard: config.roles.guard,
         hunter: config.roles.hunter,

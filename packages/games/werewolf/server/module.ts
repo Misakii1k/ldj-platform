@@ -3,7 +3,7 @@ import { WEREWOLF_MANIFEST } from '../shared/manifest.ts';
 import { pickWerewolfBotAction } from './bot.ts';
 import { buildWerewolfBotPrompt } from './botPrompt.ts';
 
-export const WEREWOLF_STATE_SCHEMA_VERSION = 3 as const;
+export const WEREWOLF_STATE_SCHEMA_VERSION = 4 as const;
 
 export type WerewolfRole = 'wolf' | 'villager' | 'seer' | 'witch' | 'guard' | 'hunter' | 'idiot';
 export type WerewolfTeam = 'wolves' | 'village';
@@ -11,6 +11,15 @@ export type WerewolfPreset = 'classic' | 'advanced';
 export type WerewolfPace = 'fast' | 'standard' | 'relaxed';
 export type WerewolfWitchSelfSave = 'first_night' | 'never' | 'always';
 export type WerewolfWinCondition = 'numbers' | 'roles';
+export type WerewolfRulesetId =
+  | 'werewolf_legacy_platform_v2'
+  | 'werewolf_platform_open_kill_v1';
+/**
+ * 夜间击杀票的合法目标范围。
+ * `non_wolf`：werewolf_legacy_platform_v2 冻结语义，狼人不能投同伴，也不能自刀。
+ * `any`：werewolf_platform_open_kill_v1，狼人可以投任意存活玩家，包括自己与同伴。
+ */
+export type WerewolfWolfKillScope = 'non_wolf' | 'any';
 
 /** 扩展角色池开关：开启则各入池 1 张（默认全关） */
 export interface WerewolfRolePool {
@@ -38,10 +47,12 @@ export type WerewolfExitReason =
   | 'disconnect_timeout';
 
 export interface WerewolfConfig {
+  rulesetId: WerewolfRulesetId;
   preset: WerewolfPreset;
   pace: WerewolfPace;
   witchSelfSave: WerewolfWitchSelfSave;
   winCondition: WerewolfWinCondition;
+  wolfKillScope: WerewolfWolfKillScope;
   roles: WerewolfRolePool;
 }
 
@@ -457,6 +468,8 @@ function startNight(
 }
 
 function wolfTargetCandidates(state: WerewolfState): string[] {
+  // 开放夜刀规则集允许把票投给任意存活玩家（含自己与同伴）；legacy 基线仍排除狼人。
+  if (state.config.wolfKillScope === 'any') return aliveIds(state);
   return aliveIds(state).filter((id) => state.players[id]?.role !== 'wolf');
 }
 
@@ -860,7 +873,7 @@ function playerId(input: unknown): string {
 function parseConfig(input: unknown): WerewolfConfig {
   const raw = input === undefined ? {} : input;
   if (!isRecord(raw)) throw new Error('Invalid config');
-  exactKeys(raw, ['preset', 'pace', 'witchSelfSave', 'winCondition', 'roles']);
+  exactKeys(raw, ['rulesetId', 'preset', 'pace', 'witchSelfSave', 'winCondition', 'wolfKillScope', 'roles']);
   const preset = raw.preset ?? 'classic';
   const pace = raw.pace ?? 'standard';
   if (preset !== 'classic' && preset !== 'advanced') throw new Error('Invalid preset');
@@ -871,6 +884,19 @@ function parseConfig(input: unknown): WerewolfConfig {
   }
   const winCondition = raw.winCondition ?? 'numbers';
   if (winCondition !== 'numbers' && winCondition !== 'roles') throw new Error('Invalid winCondition');
+  if (raw.wolfKillScope !== undefined && raw.wolfKillScope !== 'non_wolf' && raw.wolfKillScope !== 'any') {
+    throw new Error('Invalid wolfKillScope');
+  }
+  const rulesetId = raw.rulesetId ?? (raw.wolfKillScope === 'any'
+    ? 'werewolf_platform_open_kill_v1'
+    : 'werewolf_legacy_platform_v2');
+  if (rulesetId !== 'werewolf_legacy_platform_v2' && rulesetId !== 'werewolf_platform_open_kill_v1') {
+    throw new Error('Invalid rulesetId');
+  }
+  const wolfKillScope: WerewolfWolfKillScope = rulesetId === 'werewolf_platform_open_kill_v1' ? 'any' : 'non_wolf';
+  if (raw.wolfKillScope !== undefined && raw.wolfKillScope !== wolfKillScope) {
+    throw new Error('rulesetId 与 wolfKillScope 不匹配');
+  }
   const rolesRaw = isRecord(raw.roles) ? raw.roles : {};
   exactKeys(rolesRaw, ['guard', 'hunter', 'idiot']);
   const roles: WerewolfRolePool = {
@@ -878,7 +904,7 @@ function parseConfig(input: unknown): WerewolfConfig {
     hunter: rolesRaw.hunter === true,
     idiot: rolesRaw.idiot === true,
   };
-  return { preset, pace, witchSelfSave, winCondition, roles };
+  return { rulesetId, preset, pace, witchSelfSave, winCondition, wolfKillScope, roles };
 }
 
 function parseAction(input: unknown): WerewolfAction {
@@ -1051,7 +1077,7 @@ function migrateV1(snapshot: unknown) {
     phase: old.phase,
     day: old.day,
     players,
-    config: { preset: 'classic', pace: 'standard', witchSelfSave: 'first_night', winCondition: 'numbers', roles: { guard: false, hunter: false, idiot: false } },
+    config: { preset: 'classic', pace: 'standard', witchSelfSave: 'first_night', winCondition: 'numbers' },
     confirmedRolePlayerIds: Object.keys(players),
     announcementConfirmedPlayerIds: [],
     night: {
@@ -1082,8 +1108,8 @@ function migrateV1(snapshot: unknown) {
   };
 }
 
-/** v2 快照（无守卫/猎人/白痴）：补新字段并升级 schemaVersion */
-function migrateV2(snapshot: unknown): WerewolfState {
+/** v2 快照（无守卫/猎人/白痴）：补新字段并升级到 v3 */
+function migrateV2(snapshot: unknown) {
   if (!isRecord(snapshot) || snapshot.schemaVersion !== 2 || !isRecord(snapshot.players) || !isRecord(snapshot.night)) {
     throw new Error('Invalid werewolf v2 snapshot');
   }
@@ -1091,7 +1117,7 @@ function migrateV2(snapshot: unknown): WerewolfState {
     phase: WerewolfPhase;
     day: number;
     players: Record<string, { role: WerewolfRole; alive: boolean; seat: number; forfeited: boolean; exitReason: WerewolfExitReason | null }>;
-    config: WerewolfConfig;
+    config: Omit<WerewolfConfig, 'rulesetId' | 'roles' | 'wolfKillScope'>;
     confirmedRolePlayerIds: string[];
     announcementConfirmedPlayerIds: string[];
     night: WerewolfNightState;
@@ -1114,7 +1140,7 @@ function migrateV2(snapshot: unknown): WerewolfState {
   };
   return {
     ...old,
-    schemaVersion: WEREWOLF_STATE_SCHEMA_VERSION,
+    schemaVersion: 3,
     players: Object.fromEntries(
       Object.entries(old.players).map(([id, player]) => [id, { ...player, idiotRevealed: false }]),
     ),
@@ -1122,6 +1148,25 @@ function migrateV2(snapshot: unknown): WerewolfState {
     night: { ...old.night, guardDecided: true, guardTargetId: null },
     lastGuardTargetId: null,
     pendingShoot: null,
+  };
+}
+
+/** v3 快照（无规则集身份与 wolfKillScope）：锁定为 legacy 的 non_wolf 夜刀语义 */
+function migrateV3(snapshot: unknown): WerewolfState {
+  if (!isRecord(snapshot) || snapshot.schemaVersion !== 3 || !isRecord(snapshot.players) || !isRecord(snapshot.config)) {
+    throw new Error('Invalid werewolf v3 snapshot');
+  }
+  const old = snapshot as unknown as Omit<WerewolfState, 'schemaVersion' | 'config'> & {
+    config: Omit<WerewolfConfig, 'rulesetId' | 'wolfKillScope'>;
+  };
+  return {
+    ...old,
+    schemaVersion: WEREWOLF_STATE_SCHEMA_VERSION,
+    config: {
+      ...old.config,
+      rulesetId: 'werewolf_legacy_platform_v2',
+      wolfKillScope: 'non_wolf',
+    },
   };
 }
 
@@ -1321,7 +1366,8 @@ export const werewolfModule: GameModule<
         if (self.role !== 'wolf') return deny('只有狼人可以投击杀票');
         if (actorId in state.night.wolfVotes) return deny('本夜击杀票已经锁定');
         const target = state.players[action.targetPlayerId];
-        if (!target?.alive || target.role === 'wolf') return deny('击杀目标无效');
+        if (!target?.alive) return deny('击杀目标无效');
+        if (state.config.wolfKillScope !== 'any' && target.role === 'wolf') return deny('击杀目标无效');
         s.night.wolfVotes[actorId] = action.targetPlayerId;
         if (allWolvesVoted(s)) s.night.killTargetId = selectWolfTarget(s, false);
       } else if (action.type === 'seer_check') {
@@ -1490,13 +1536,27 @@ export const werewolfModule: GameModule<
 
   migrateSnapshot(fromVersion, snapshot) {
     if (fromVersion === WEREWOLF_STATE_SCHEMA_VERSION) {
-      if (!isRecord(snapshot) || snapshot.schemaVersion !== WEREWOLF_STATE_SCHEMA_VERSION) {
-        throw new Error('Invalid werewolf v3 snapshot');
+      if (
+        !isRecord(snapshot) ||
+        snapshot.schemaVersion !== WEREWOLF_STATE_SCHEMA_VERSION ||
+        !isRecord(snapshot.config)
+      ) {
+        throw new Error('Invalid werewolf v4 snapshot');
       }
-      return structuredClone(snapshot) as unknown as WerewolfState;
+      const snapshotConfig = snapshot.config;
+      if (!['rulesetId', 'preset', 'pace', 'witchSelfSave', 'winCondition', 'wolfKillScope', 'roles']
+        .every((key) => key in snapshotConfig)) {
+        throw new Error('Invalid werewolf v4 snapshot');
+      }
+      const config = parseConfig(snapshotConfig);
+      return {
+        ...structuredClone(snapshot),
+        config,
+      } as unknown as WerewolfState;
     }
-    if (fromVersion === 2) return migrateV2(snapshot);
-    if (fromVersion === 1) return migrateV2(migrateV1(snapshot));
+    if (fromVersion === 3) return migrateV3(snapshot);
+    if (fromVersion === 2) return migrateV3(migrateV2(snapshot));
+    if (fromVersion === 1) return migrateV3(migrateV2(migrateV1(snapshot)));
     throw new Error(`无法从狼人杀状态版本 ${fromVersion} 迁移`);
   },
 

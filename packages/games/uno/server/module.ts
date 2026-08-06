@@ -1,4 +1,18 @@
-﻿import type { Actor, GameContext, GameModule, ReduceResult } from '@ldj/shared';
+﻿import {
+  canObserve,
+  dealCards,
+  drawCards as drawZoneCards,
+  moveCards,
+  nextTurnParticipant,
+  recycleDiscardKeepingTop,
+  shuffleCards,
+  type Actor,
+  type CardMoveResult,
+  type CardZoneState,
+  type GameContext,
+  type GameModule,
+  type ReduceResult,
+} from '@ldj/shared';
 import { UNO_MANIFEST } from '../shared/manifest.ts';
 import { pickUnoBotAction } from './bot.ts';
 import { buildUnoBotPrompt } from './botPrompt.ts';
@@ -99,6 +113,54 @@ function clone(state: UnoState): UnoState {
   };
 }
 
+const DECK_ZONE = 'deck';
+const DISCARD_ZONE = 'discardPile';
+
+function handZone(playerId: string): string {
+  return `hand:${playerId}`;
+}
+
+function toCardZones(
+  deck: readonly UnoCard[],
+  discardPile: readonly UnoCard[],
+  hands: Readonly<Record<string, readonly UnoCard[]>>,
+): CardZoneState<string, UnoCard> {
+  return {
+    zones: {
+      [DECK_ZONE]: deck,
+      [DISCARD_ZONE]: discardPile,
+      ...Object.fromEntries(
+        Object.entries(hands).map(([playerId, hand]) => [handZone(playerId), hand]),
+      ),
+    },
+  };
+}
+
+function zoneCards(
+  zones: CardZoneState<string, UnoCard>,
+  zone: string,
+): readonly UnoCard[] {
+  const cards = zones.zones[zone];
+  if (!cards) throw new Error(`UNO 缺少牌区：${zone}`);
+  return cards;
+}
+
+function applyCardZones(state: UnoState, zones: CardZoneState<string, UnoCard>): void {
+  state.deck = [...zoneCards(zones, DECK_ZONE)];
+  state.discardPile = [...zoneCards(zones, DISCARD_ZONE)];
+  state.hands = Object.fromEntries(
+    state.players.map((playerId) => [playerId, [...zoneCards(zones, handZone(playerId))]]),
+  );
+}
+
+function requireCardMove(
+  result: CardMoveResult<string, UnoCard>,
+  operation: string,
+): Extract<CardMoveResult<string, UnoCard>, { readonly ok: true }> {
+  if (!result.ok) throw new Error(`UNO ${operation}违反牌区不变量：${result.error}`);
+  return result;
+}
+
 function actorPlayer(actor: Actor): string | null {
   return actor.kind === 'player' ? actor.playerId : null;
 }
@@ -145,9 +207,10 @@ function isPlayable(card: UnoCard, top: UnoCard, currentColor: UnoColor): boolea
 }
 
 function nextPlayer(state: UnoState, steps = 1): string {
-  const currentIndex = state.players.indexOf(state.currentPlayerId);
-  const index = (currentIndex + steps * state.direction + state.players.length * 10) % state.players.length;
-  return state.players[index]!;
+  return nextTurnParticipant(state.players, state.currentPlayerId, {
+    direction: state.direction,
+    steps,
+  });
 }
 
 function drawCards(
@@ -158,21 +221,32 @@ function drawCards(
 ): { state: UnoState; drawn: UnoCard[] } {
   const nextState = clone(state);
   const drawn: UnoCard[] = [];
-  let deck = [...nextState.deck];
-  let discard = [...nextState.discardPile];
-  for (let index = 0; index < count; index++) {
-    if (deck.length === 0 && discard.length > 1) {
-      const top = discard.at(-1)!;
-      deck = random.shuffle(discard.slice(0, -1));
-      discard = [top];
+  let zones = toCardZones(nextState.deck, nextState.discardPile, nextState.hands);
+
+  for (let index = 0; index < count; index += 1) {
+    if (zoneCards(zones, DECK_ZONE).length === 0) {
+      const recycled = recycleDiscardKeepingTop(
+        zones,
+        DECK_ZONE,
+        DISCARD_ZONE,
+        random,
+      );
+      if (!recycled.ok) {
+        if (recycled.error === 'NO_RECYCLABLE_CARDS') break;
+        throw new Error(`UNO 回收违反牌区不变量：${recycled.error}`);
+      }
+      zones = recycled.state;
     }
-    const card = deck.shift();
-    if (!card) break;
-    drawn.push(card);
+
+    const moved = requireCardMove(
+      drawZoneCards(zones, DECK_ZONE, handZone(playerId), 1),
+      '摸牌',
+    );
+    zones = moved.state;
+    drawn.push(...moved.cards);
   }
-  nextState.deck = deck;
-  nextState.discardPile = discard;
-  nextState.hands[playerId] = [...(nextState.hands[playerId] ?? []), ...drawn];
+
+  applyCardZones(nextState, zones);
   return { state: nextState, drawn };
 }
 
@@ -247,25 +321,39 @@ export const unoModule: GameModule<
     if (players.length < UNO_MANIFEST.minPlayers || players.length > UNO_MANIFEST.maxPlayers) {
       throw new Error('UNO 人数不合法');
     }
-    const deck = ctx.random.shuffle(buildDeck());
-    const hands: Record<string, UnoCard[]> = Object.fromEntries(players.map((id) => [id, []]));
-    for (let round = 0; round < 7; round++) {
-      for (const playerId of players) hands[playerId]!.push(deck.shift()!);
-    }
-    let firstIndex = deck.findIndex((card) => card.kind === 'number');
+    if (new Set(players).size !== players.length) throw new Error('UNO 玩家不能重复');
+    const shuffledDeck = shuffleCards(buildDeck(), ctx.random);
+    const emptyHands: Record<string, UnoCard[]> = Object.fromEntries(
+      players.map((id) => [id, []]),
+    );
+    let zones = toCardZones(shuffledDeck, [], emptyHands);
+    zones = requireCardMove(
+      dealCards(zones, DECK_ZONE, players.map(handZone), 7),
+      '初始发牌',
+    ).state;
+
+    const deckAfterDeal = zoneCards(zones, DECK_ZONE);
+    let firstIndex = deckAfterDeal.findIndex((card) => card.kind === 'number');
     if (firstIndex < 0) firstIndex = 0;
-    const [first] = deck.splice(firstIndex, 1);
+    const first = deckAfterDeal[firstIndex]!;
+    zones = requireCardMove(
+      moveCards(zones, DECK_ZONE, DISCARD_ZONE, [first.id]),
+      '建立首弃牌',
+    ).state;
+
     return {
       schemaVersion: 1,
       phase: 'playing',
       players: [...players],
-      deck,
-      discardPile: [first!],
-      hands,
+      deck: [...zoneCards(zones, DECK_ZONE)],
+      discardPile: [...zoneCards(zones, DISCARD_ZONE)],
+      hands: Object.fromEntries(
+        players.map((playerId) => [playerId, [...zoneCards(zones, handZone(playerId))]]),
+      ),
       playerState: Object.fromEntries(players.map((id) => [id, { unoCalled: false }])),
       currentPlayerId: players[0]!,
       direction: 1,
-      currentColor: cardColor(first!) ?? 'red',
+      currentColor: cardColor(first) ?? 'red',
       pendingDraw: 0,
       hasDrawnThisTurn: false,
       winnerId: null,
@@ -329,8 +417,16 @@ export const unoModule: GameModule<
       }
 
       const nextState = clone(state);
-      nextState.hands[playerId] = nextState.hands[playerId]!.filter((candidate) => candidate.id !== card.id);
-      nextState.discardPile = [...nextState.discardPile, card];
+      const moved = requireCardMove(
+        moveCards(
+          toCardZones(nextState.deck, nextState.discardPile, nextState.hands),
+          handZone(playerId),
+          DISCARD_ZONE,
+          [card.id],
+        ),
+        '出牌',
+      );
+      applyCardZones(nextState, moved.state);
       nextState.currentColor = action.declaredColor ?? cardColor(card)!;
       nextState.lastPlayed = {
         playerId,
@@ -369,11 +465,14 @@ export const unoModule: GameModule<
     return deny('未知动作');
   },
   getPlayerView(state: UnoState, playerId: string): UnoPlayerView {
-    const hand = state.hands[playerId] ?? [];
+    const recipient = { role: 'participant' as const, playerId, revealed: state.phase === 'game_over' };
+    const ownsPrivateView = canObserve('owner_only', recipient, playerId)
+      && state.players.includes(playerId);
+    const hand = ownsPrivateView ? state.hands[playerId] ?? [] : [];
     const top = state.discardPile.at(-1)!;
     return {
       ...publicView(state),
-      me: state.players.includes(playerId)
+      me: ownsPrivateView
         ? {
             playerId,
             hand,

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import {
   generateUnoBaseline,
@@ -8,6 +9,12 @@ import {
 } from '../../../../scripts/generate-d1-baselines.ts';
 
 const fixtureUrl = new URL('./fixtures/d1/uno-legacy-platform-v1.json', import.meta.url);
+const FROZEN_FIXTURE_SHA256 = 'e29db1cc2a9ac3e9bf38ea39ce75bcae1aeab66ebd8f491f4cdc8758701da9e6';
+
+test('D1 UNO fixture 字节哈希保持冻结', async () => {
+  const raw = await readFile(fixtureUrl);
+  assert.equal(createHash('sha256').update(raw).digest('hex'), FROZEN_FIXTURE_SHA256);
+});
 
 test('D1 UNO legacy 基线可由当前模块现场完整重生成', async () => {
   const raw = await readFile(fixtureUrl, 'utf8');

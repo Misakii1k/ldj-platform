@@ -39,6 +39,11 @@ test('GAME_CATALOG：客户端目录配置可转换为现有模块配置', () =>
   const werewolf = GAME_CATALOG.find((game) => game.id === 'werewolf')!;
   assert.equal(werewolf.setup.defaultConfig.pace, 'standard');
   assert.equal(werewolf.setup.defaultConfig.witchSelfSave, 'first_night');
+  assert.deepEqual(werewolf.setup.rulesets.map((ruleset) => ruleset.id), [
+    'werewolf_legacy_platform_v2',
+    'werewolf_platform_open_kill_v1',
+  ]);
+  assert.equal(werewolf.setup.options.some((option) => option.key === 'wolfKillScope'), false);
 });
 
 test('GAME_CATALOG：D1 规则集 ID 与目录状态已冻结', () => {

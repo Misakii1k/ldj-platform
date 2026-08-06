@@ -1,4 +1,10 @@
-import type { LlmProviderType, ThinkingDepth } from '@ldj/shared';
+import {
+  parseAdjudicationClassification,
+  type AdjudicationClassification,
+  type AdjudicationProviderPayload,
+  type LlmProviderType,
+  type ThinkingDepth,
+} from '@ldj/shared';
 import { normalizeLlmBaseUrl } from './llmBaseUrl.ts';
 
 export interface LlmInferenceRequestInput {
@@ -147,4 +153,45 @@ export function parseModelPage(body: unknown): { ids: string[]; nextUrl: string 
       ? `?after_id=${encodeURIComponent(lastId)}`
       : null,
   };
+}
+
+/**
+ * D4-A2：白板猜词裁判系统提示词（隐私红线）。
+ * 只包含判断职责、六类分类解释与严格 JSON 输出要求；
+ * 不得包含 room/player/nickname/role/chat/ballot、密钥、请求头等任何上下文。
+ */
+export function buildAdjudicationSystemPrompt(): string {
+  return [
+    '你是白板猜词的外部裁判，负责判断玩家给出的答案是否与标准答案同义。',
+    '你的输入只有标准答案与玩家答案两段文本，没有其他任何上下文信息。',
+    '你必须只输出一个严格 JSON 对象：{"classification":"..."}，不得包含任何其他文字、注释或格式。',
+    'classification 只能是以下六类之一，请选择最贴切的一类：',
+    '1. equivalent：两段文本意思相同，可以互相替换；',
+    '2. not_equivalent：两段文本意思不同；',
+    '3. uncertain：信息不足，无法确定是否同义；',
+    '4. provider_error：你的服务内部出现错误，无法完成判断；',
+    '5. timeout：无法在规定时限内给出答复；',
+    '6. invalid_response：输入异常、格式不对或不可用。',
+    '除非确实无法判断，否则请直接给出结论，不要输出额外解释。',
+  ].join('\n');
+}
+
+/**
+ * D4-A2：裁判用户提示词（最小化）。
+ * 只包含两个归一化文本与政策版本；主/备请求均从同一最小输入重新构造。
+ */
+export function buildAdjudicationUserPrompt(payload: AdjudicationProviderPayload): string {
+  return `标准答案：${payload.normalizedStandardAnswer}\n玩家答案：${payload.normalizedGuess}\n裁决政策版本：${payload.adjudicationPolicyVersion}`;
+}
+
+/** 严格解析模型文本；只接受无额外字段的 JSON classification 对象。 */
+export function parseAdjudicationResponse(value: unknown): AdjudicationClassification | null {
+  if (typeof value !== 'string') return parseAdjudicationClassification(value);
+  const text = value.trim();
+  if (text === '') return null;
+  try {
+    return parseAdjudicationClassification(JSON.parse(text));
+  } catch {
+    return null;
+  }
 }

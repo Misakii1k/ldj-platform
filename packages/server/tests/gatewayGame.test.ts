@@ -6,16 +6,22 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { existsSync, unlinkSync } from 'node:fs';
 import { once } from 'node:events';
 import { WebSocket } from 'ws';
-import { PROTOCOL_VERSION } from '@ldj/shared';
+import { PROTOCOL_VERSION, type PrivateGameEvent } from '@ldj/shared';
 import { createApp, type App } from '../src/app.ts';
 import { createLogger } from '../src/boot/logger.ts';
 import type { ServerConfig } from '../src/config.ts';
 import { DEFAULT_RULES } from '../src/gateway/rateLimit.ts';
 import { seedRoom } from './helpers/seedRoom.ts';
+import { createStateDigest } from '../src/core/game/stateDigest.ts';
+import type { UnoState } from '../../games/uno/server/module.ts';
 
-function testConfig(): ServerConfig {
+function testConfig(overrides: Partial<ServerConfig> = {}): ServerConfig {
   return {
     host: '127.0.0.1',
     port: 0,
@@ -26,7 +32,22 @@ function testConfig(): ServerConfig {
     allowPrivateLlmUpstream: false,
     llm: { provider: 'openai', baseUrl: null, apiKey: null, model: 'test-model', thinkingDepth: 'off', timeoutMs: 5000 },
     adminToken: null,
+    ...overrides,
   };
+}
+
+function tempDbPath(): string {
+  return join(tmpdir(), `ldj-gateway-game-${randomUUID()}.db`);
+}
+
+function cleanupDb(path: string): void {
+  for (const file of [path, `${path}-wal`, `${path}-shm`]) {
+    try {
+      if (existsSync(file)) unlinkSync(file);
+    } catch {
+      // 测试清理失败不覆盖主要断言。
+    }
+  }
 }
 
 async function startApp(tuning?: {
@@ -35,6 +56,13 @@ async function startApp(tuning?: {
 }): Promise<App> {
   const logger = createLogger('error', {}, () => {});
   const app = createApp(testConfig(), logger, undefined, tuning);
+  await app.listen();
+  return app;
+}
+
+async function startFileApp(dbPath: string): Promise<App> {
+  const logger = createLogger('error', {}, () => {});
+  const app = createApp(testConfig({ dbPath }), logger);
   await app.listen();
   return app;
 }
@@ -97,9 +125,19 @@ class Client {
     throw new Error('unreachable connect retry state');
   }
 
-  send(type: string, payload: unknown): string {
-    const requestId = `ggame-${++reqCounter}`;
-    this.socket.send(JSON.stringify({ v: PROTOCOL_VERSION, type, requestId, payload }));
+  send(
+    type: string,
+    payload: unknown,
+    extra: { requestId?: string; expectedSeq?: number } = {},
+  ): string {
+    const requestId = extra.requestId ?? `ggame-${++reqCounter}`;
+    this.socket.send(JSON.stringify({
+      v: PROTOCOL_VERSION,
+      type,
+      requestId,
+      payload,
+      ...(extra.expectedSeq === undefined ? {} : { expectedSeq: extra.expectedSeq }),
+    }));
     return requestId;
   }
 
@@ -268,14 +306,421 @@ test('game_action 闭环：确认看词 → 广播新视角与 game_event；无�
       assert.equal(ack.type, 'ack');
       assert.ok(Number(ack.payload.seq) >= 2);
     }
-    // 全员确认 → 进入发言阶段的 game_state 广播到每个客户端
+    // 全员确认 → 进入发言阶段的 game_state 广播到每个客户端，且带提交后的 roomSeq。
+    const speakingStates: Envelope[] = [];
     for (const c of room.clients) {
-      await c.waitGameState((v) => v.phase === 'speaking');
+      speakingStates.push(await c.waitGameState((v) => v.phase === 'speaking'));
     }
-    // 公开事件广播（phase_changed）
+    const committedRoomSeq = speakingStates[0]!.roomSeq;
+    assert.equal(typeof committedRoomSeq, 'number');
+    for (const state of speakingStates) assert.equal(state.roomSeq, committedRoomSeq);
+    // 公开事件广播（phase_changed），与 game_state 使用同一 roomSeq。
     const evt = await room.host.waitFor((e) => e.type === 'game_event');
+    assert.equal(evt.roomSeq, committedRoomSeq);
+    assert.equal(evt.payload.moduleId, 'undercover');
+    assert.equal(evt.payload.rulesetId, 'undercover_classic_v1');
+    assert.equal(evt.payload.viewVersion, 1);
     const events = (evt.payload.events as { type: string }[]).map((x) => x.type);
     assert.ok(events.length >= 1);
+  } finally {
+    await app.shutdown();
+  }
+});
+
+test('D3 game_action：stale 新请求零写入，同 requestId 重试优先返回首次 ACK', async () => {
+  const app = await startApp();
+  try {
+    const room = await setupGameRoom(app, 4);
+    const startAck = await room.host.request('room_command', { command: 'start_game' });
+    assert.equal(startAck.type, 'ack');
+    const baselineRoomSeq = startAck.roomSeq!;
+    const roomId = (app.db.prepare('SELECT id FROM rooms WHERE code = ?').get(room.roomCode) as { id: string }).id;
+    const session = app.db.prepare(
+      `SELECT id, snapshot_json, rng_state_json, last_seq FROM game_sessions WHERE room_id = ? AND status = 'ACTIVE'`,
+    ).get(roomId) as { id: string; snapshot_json: string; rng_state_json: string; last_seq: number };
+    const baseline = {
+      snapshot: session.snapshot_json,
+      rng: session.rng_state_json,
+      seq: session.last_seq,
+      events: (app.db.prepare('SELECT COUNT(*) AS n FROM game_events WHERE session_id = ?').get(session.id) as { n: number }).n,
+      timers: JSON.stringify(app.db.prepare(
+        'SELECT timer_id, deadline_at, action_json, status FROM timers WHERE session_id = ? ORDER BY timer_id',
+      ).all(session.id)),
+    };
+
+    const staleRequestId = room.host.send(
+      'game_action',
+      { type: 'confirm_word' },
+      { expectedSeq: baselineRoomSeq - 1 },
+    );
+    const stale = await room.host.waitFor(
+      (e) => e.requestId === staleRequestId && (e.type === 'ack' || e.type === 'error'),
+    );
+    assert.equal(stale.type, 'error');
+    assert.equal(stale.payload.code, 'STALE_CLIENT_STATE');
+    assert.equal(stale.payload.currentSeq, baselineRoomSeq);
+    const afterStale = app.db.prepare(
+      `SELECT snapshot_json, rng_state_json, last_seq FROM game_sessions WHERE id = ?`,
+    ).get(session.id) as { snapshot_json: string; rng_state_json: string; last_seq: number };
+    assert.equal(afterStale.snapshot_json, baseline.snapshot);
+    assert.equal(afterStale.rng_state_json, baseline.rng);
+    assert.equal(afterStale.last_seq, baseline.seq);
+    assert.equal(
+      (app.db.prepare('SELECT COUNT(*) AS n FROM game_events WHERE session_id = ?').get(session.id) as { n: number }).n,
+      baseline.events,
+    );
+    assert.equal(
+      JSON.stringify(app.db.prepare(
+        'SELECT timer_id, deadline_at, action_json, status FROM timers WHERE session_id = ? ORDER BY timer_id',
+      ).all(session.id)),
+      baseline.timers,
+    );
+    assert.equal(
+      (app.db.prepare('SELECT seq FROM rooms WHERE id = ?').get(roomId) as { seq: number }).seq,
+      baselineRoomSeq,
+    );
+
+    const requestId = `d3-action-retry-${++reqCounter}`;
+    room.host.send('game_action', { type: 'confirm_word' }, { requestId, expectedSeq: baselineRoomSeq });
+    const first = await room.host.waitFor(
+      (e) => e.requestId === requestId && (e.type === 'ack' || e.type === 'error'),
+    );
+    assert.equal(first.type, 'ack');
+    const afterFirst = app.db.prepare(
+      `SELECT snapshot_json, rng_state_json, last_seq FROM game_sessions WHERE id = ?`,
+    ).get(session.id) as { snapshot_json: string; rng_state_json: string; last_seq: number };
+    const eventsAfterFirst = (app.db.prepare(
+      'SELECT COUNT(*) AS n FROM game_events WHERE session_id = ?',
+    ).get(session.id) as { n: number }).n;
+
+    room.host.send('game_action', { type: 'confirm_word' }, { requestId, expectedSeq: 0 });
+    const replay = await room.host.waitFor(
+      (e) => e.requestId === requestId && (e.type === 'ack' || e.type === 'error'),
+    );
+    assert.equal(replay.type, 'ack');
+    assert.equal(replay.roomSeq, first.roomSeq);
+    assert.deepEqual(replay.payload, first.payload);
+    const afterReplay = app.db.prepare(
+      `SELECT snapshot_json, rng_state_json, last_seq FROM game_sessions WHERE id = ?`,
+    ).get(session.id) as { snapshot_json: string; rng_state_json: string; last_seq: number };
+    assert.equal(afterReplay.snapshot_json, afterFirst.snapshot_json);
+    assert.equal(afterReplay.rng_state_json, afterFirst.rng_state_json);
+    assert.equal(afterReplay.last_seq, afterFirst.last_seq);
+    assert.equal(
+      (app.db.prepare('SELECT COUNT(*) AS n FROM game_events WHERE session_id = ?').get(session.id) as { n: number }).n,
+      eventsAfterFirst,
+    );
+    const receipt = app.db.prepare(
+      `SELECT outcome_json FROM command_receipts
+       WHERE room_id = ? AND actor_scope = ? AND request_id = ?`,
+    ).get(roomId, `player:${room.hostId}`, requestId) as { outcome_json: string };
+    assert.equal(receipt.outcome_json.includes('privateEvents'), true);
+    assert.deepEqual((JSON.parse(receipt.outcome_json) as { privateEvents: unknown[] }).privateEvents, []);
+  } finally {
+    await app.shutdown();
+  }
+});
+
+test('D3 game_action：重启后相同 requestId 仍只返回首次 ACK 且不重复落库', async () => {
+  const dbPath = tempDbPath();
+  let app: App | null = null;
+  try {
+    app = await startFileApp(dbPath);
+    const room = await setupGameRoom(app, 4);
+    const startAck = await room.host.request('room_command', { command: 'start_game' });
+    assert.equal(startAck.type, 'ack');
+    const requestId = `d3-restart-action-${++reqCounter}`;
+    room.host.send('game_action', { type: 'confirm_word' }, {
+      requestId,
+      expectedSeq: startAck.roomSeq!,
+    });
+    const first = await room.host.waitFor(
+      (e) => e.requestId === requestId && (e.type === 'ack' || e.type === 'error'),
+    );
+    assert.equal(first.type, 'ack');
+    const firstRoomSeq = first.roomSeq!;
+    const sessionBefore = app.db.prepare(
+      `SELECT id, last_seq, snapshot_json, rng_state_json
+       FROM game_sessions
+       WHERE room_id = (SELECT id FROM rooms WHERE code = ?)`,
+    ).get(room.roomCode) as {
+      id: string;
+      last_seq: number;
+      snapshot_json: string;
+      rng_state_json: string;
+    };
+    const eventCountBefore = (app.db.prepare(
+      'SELECT COUNT(*) AS n FROM game_events WHERE session_id = ?',
+    ).get(sessionBefore.id) as { n: number }).n;
+    await app.shutdown();
+    app = null;
+
+    app = await startFileApp(dbPath);
+    const back = await Client.connect(app);
+    const resume = await back.request('resume_room', {
+      roomCode: room.roomCode,
+      playerId: room.hostId,
+      resumeToken: room.tokens[0],
+    });
+    assert.equal(resume.type, 'ack');
+    await back.waitFor((e) => e.type === 'room_snapshot');
+    await back.waitFor((e) => e.type === 'game_state');
+    back.send('game_action', { type: 'confirm_word' }, { requestId, expectedSeq: 0 });
+    const replay = await back.waitFor(
+      (e) => e.requestId === requestId && (e.type === 'ack' || e.type === 'error'),
+    );
+    assert.equal(replay.type, 'ack');
+    assert.equal(replay.roomSeq, firstRoomSeq);
+    assert.deepEqual(replay.payload, first.payload);
+    const after = app.db.prepare(
+      `SELECT last_seq, snapshot_json, rng_state_json FROM game_sessions WHERE id = ?`,
+    ).get(sessionBefore.id) as { last_seq: number; snapshot_json: string; rng_state_json: string };
+    assert.equal(after.last_seq, sessionBefore.last_seq);
+    assert.equal(after.snapshot_json, sessionBefore.snapshot_json);
+    assert.equal(after.rng_state_json, sessionBefore.rng_state_json);
+    assert.equal(
+      (app.db.prepare('SELECT COUNT(*) AS n FROM game_events WHERE session_id = ?').get(sessionBefore.id) as { n: number }).n,
+      eventCountBefore,
+    );
+  } finally {
+    if (app) await app.shutdown();
+    cleanupDb(dbPath);
+  }
+});
+
+test('D3 重连小缺口：resume 按序补发公开事件后给最新视角，不重放私有事件', async () => {
+  const app = await startApp();
+  try {
+    const room = await setupGameRoom(app, 4);
+    const startAck = await room.host.request('room_command', { command: 'start_game' });
+    assert.equal(startAck.type, 'ack');
+    const sessionRow = app.db.prepare(
+      `SELECT id FROM game_sessions
+       WHERE room_id = (SELECT id FROM rooms WHERE code = ?)`,
+    ).get(room.roomCode) as { id: string };
+
+    // 两名玩家确认（无事件），随后断线的 p4 客户端停在 roomSeq = S+2。
+    const p1 = await room.clients[0]!.request('game_action', { type: 'confirm_word' });
+    assert.equal(p1.type, 'ack');
+    const p2 = await room.clients[1]!.request('game_action', { type: 'confirm_word' });
+    assert.equal(p2.type, 'ack');
+    const lastSeq = p2.roomSeq!;
+    room.clients[3]!.socket.terminate();
+
+    // 到期 reveal 计时器补执行产生公开 phase_changed 事件。
+    app.db.prepare(
+      `UPDATE timers SET deadline_at = ? WHERE session_id = ? AND timer_id = 'reveal'`,
+    ).run(Date.now() - 1, sessionRow.id);
+    app.timerRunner.notifyChanged();
+    for (const c of room.clients.slice(0, 3)) {
+      await c.waitGameState((v) => v.phase === 'speaking');
+    }
+    const revealRow = app.db.prepare(
+      `SELECT events_json FROM game_events WHERE session_id = ? ORDER BY seq DESC LIMIT 1`,
+    ).get(sessionRow.id) as { events_json: string };
+    const revealEnvelope = JSON.parse(revealRow.events_json) as {
+      roomSeq: number;
+      publicEvents: { type: string }[];
+    };
+    assert.deepEqual(revealEnvelope.publicEvents.map((event) => event.type), ['phase_changed']);
+
+    const back = await Client.connect(app);
+    const requestId = back.send('resume_room', {
+      roomCode: room.roomCode,
+      playerId: room.playerIds[3],
+      resumeToken: room.tokens[3],
+      lastSeq,
+      chatCursor: null,
+      game: { sessionId: sessionRow.id, viewVersion: 1 },
+    });
+    const ack = await back.waitFor(
+      (e) => e.requestId === requestId && (e.type === 'ack' || e.type === 'error'),
+    );
+    assert.equal(ack.type, 'ack');
+    const currentSeq = ack.roomSeq!;
+    // resume 的 room_snapshot 是房间广播，不携带 requestId。
+    const snapshot = await back.waitFor((e) => e.type === 'room_snapshot');
+    assert.equal(snapshot.roomSeq, currentSeq);
+
+    const replay = await back.waitFor(
+      (e) => e.requestId === requestId && e.type === 'game_event',
+    );
+    assert.equal(replay.roomSeq, revealEnvelope.roomSeq);
+    assert.ok(replay.roomSeq > lastSeq && replay.roomSeq <= currentSeq);
+    assert.equal(replay.payload.sessionId, sessionRow.id);
+    assert.equal(replay.payload.moduleId, 'undercover');
+    assert.equal(replay.payload.rulesetId, 'undercover_classic_v1');
+    assert.equal(replay.payload.viewVersion, 1);
+    assert.deepEqual(
+      (replay.payload.events as { type: string }[]).map((event) => event.type),
+      ['phase_changed'],
+    );
+    assert.equal(JSON.stringify(replay.payload).includes('recipients'), false);
+
+    const state = await back.waitFor(
+      (e) => e.requestId === requestId && e.type === 'game_state',
+    );
+    assert.equal(state.roomSeq, currentSeq);
+    assert.equal((state.payload.view as { phase: string }).phase, 'speaking');
+  } finally {
+    await app.shutdown();
+  }
+});
+
+test('D3 重连大缺口/视角变化：只回最新完整视角，不重放任何游戏事件', async () => {
+  const app = await startApp();
+  try {
+    const room = await setupGameRoom(app, 4);
+    const startAck = await room.host.request('room_command', { command: 'start_game' });
+    assert.equal(startAck.type, 'ack');
+    const sessionRow = app.db.prepare(
+      `SELECT id FROM game_sessions
+       WHERE room_id = (SELECT id FROM rooms WHERE code = ?)`,
+    ).get(room.roomCode) as { id: string };
+    const lastSeq = startAck.roomSeq!;
+
+    // 断开 p2 后再推进若干步（p2 的确认缺席，reveal 计时器兜底推进）。
+    room.clients[1]!.socket.terminate();
+    app.db.prepare(
+      `UPDATE timers SET deadline_at = ? WHERE session_id = ? AND timer_id = 'reveal'`,
+    ).run(Date.now() - 1, sessionRow.id);
+    app.timerRunner.notifyChanged();
+    await room.clients[0]!.waitGameState((v) => v.phase === 'speaking');
+
+    const back = await Client.connect(app);
+    // 视角版本不匹配：不得重放，只回完整视角。
+    const req = back.send('resume_room', {
+      roomCode: room.roomCode,
+      playerId: room.playerIds[1],
+      resumeToken: room.tokens[1],
+      lastSeq,
+      chatCursor: null,
+      game: { sessionId: sessionRow.id, viewVersion: 99 },
+    });
+    const ack = await back.waitFor(
+      (e) => e.requestId === req && (e.type === 'ack' || e.type === 'error'),
+    );
+    assert.equal(ack.type, 'ack');
+    const currentSeq = ack.roomSeq!;
+    const snapshot = await back.waitFor((e) => e.type === 'room_snapshot');
+    assert.equal(snapshot.roomSeq, currentSeq);
+    const state = await back.waitFor(
+      (e) => e.requestId === req && e.type === 'game_state',
+    );
+    assert.equal(state.roomSeq, currentSeq);
+    assert.equal((state.payload.view as { phase: string }).phase, 'speaking');
+
+    let strayEvent: Envelope | null = null;
+    await new Promise<void>((resolvePromise) => {
+      const timer = setTimeout(() => {
+        strayEvent = null;
+        resolvePromise();
+      }, 250);
+      void back.waitFor((e) => e.requestId === req && e.type === 'game_event', 300).then(
+        (e) => {
+          clearTimeout(timer);
+          strayEvent = e;
+          resolvePromise();
+        },
+        () => {
+          clearTimeout(timer);
+          strayEvent = null;
+          resolvePromise();
+        },
+      );
+    });
+    assert.equal(strayEvent, null, '视角版本不匹配时不得重放事件');
+  } finally {
+    await app.shutdown();
+  }
+});
+
+test('D3 重连大缺口（>50）：只回完整视角，不重放任何游戏事件', async () => {
+  const app = await startApp();
+  try {
+    const room = await setupGameRoom(app, 4);
+    const startAck = await room.host.request('room_command', { command: 'start_game' });
+    assert.equal(startAck.type, 'ack');
+    const session = app.db.prepare(
+      `SELECT id, last_seq FROM game_sessions
+       WHERE room_id = (SELECT id FROM rooms WHERE code = ?)`,
+    ).get(room.roomCode) as { id: string; last_seq: number };
+    const roomRow = app.db.prepare('SELECT id, seq FROM rooms WHERE code = ?').get(room.roomCode) as {
+      id: string;
+      seq: number;
+    };
+    // 合成 60 条公开事件并把房间序号推进到超过缺口阈值。
+    const base = roomRow.seq + 1;
+    for (let index = 1; index <= 60; index += 1) {
+      app.db.prepare(
+        `INSERT INTO game_events (session_id, seq, command_time, actor_json, action_json, events_json)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      ).run(
+        session.id,
+        session.last_seq + index,
+        Date.now(),
+        JSON.stringify({ kind: 'system', source: 'admin' }),
+        JSON.stringify({ type: 'noop' }),
+        JSON.stringify({
+          engineContractVersion: 2,
+          rulesetId: 'undercover_classic_v1',
+          roomSeq: base + index - 1,
+          publicEvents: [{ type: `synthetic_${index}` }],
+          privateEvents: [],
+          effects: [],
+          effectReceipts: [],
+          resultCandidate: null,
+          rngCursorBefore: 0,
+          rngCursorAfter: 0,
+          nextStateDigest: 'a'.repeat(64),
+        }),
+      );
+    }
+    app.db.prepare('UPDATE rooms SET seq = ? WHERE id = ?').run(base + 59, roomRow.id);
+
+    const lastSeq = startAck.roomSeq!;
+    const back = await Client.connect(app);
+    const req = back.send('resume_room', {
+      roomCode: room.roomCode,
+      playerId: room.playerIds[1],
+      resumeToken: room.tokens[1],
+      lastSeq,
+      chatCursor: null,
+      game: { sessionId: session.id, viewVersion: 1 },
+    });
+    const ack = await back.waitFor(
+      (e) => e.requestId === req && (e.type === 'ack' || e.type === 'error'),
+    );
+    assert.equal(ack.type, 'ack');
+    const currentSeq = ack.roomSeq!;
+    assert.ok(currentSeq - lastSeq > 50, '合成缺口必须超过阈值');
+    const snapshot = await back.waitFor((e) => e.type === 'room_snapshot');
+    assert.equal(snapshot.roomSeq, currentSeq);
+    const state = await back.waitFor(
+      (e) => e.requestId === req && e.type === 'game_state',
+    );
+    assert.equal(state.roomSeq, currentSeq);
+
+    let strayEvent: Envelope | null = null;
+    await new Promise<void>((resolvePromise) => {
+      const timer = setTimeout(() => {
+        strayEvent = null;
+        resolvePromise();
+      }, 250);
+      void back.waitFor((e) => e.requestId === req && e.type === 'game_event', 300).then(
+        (e) => {
+          clearTimeout(timer);
+          strayEvent = e;
+          resolvePromise();
+        },
+        () => {
+          clearTimeout(timer);
+          strayEvent = null;
+          resolvePromise();
+        },
+      );
+    });
+    assert.equal(strayEvent, null, '超过 50 的缺口不得重放任何事件');
   } finally {
     await app.shutdown();
   }
@@ -412,9 +857,17 @@ test('TimerRunner 接入 app：看词计时器到期 → 自动进入发言并�
     app.db.prepare(`UPDATE timers SET deadline_at = ? WHERE timer_id = 'reveal'`).run(Date.now() - 1);
     app.timerRunner.notifyChanged();
 
+    const states: Envelope[] = [];
     for (const c of room.clients) {
-      await c.waitGameState((v) => v.phase === 'speaking');
+      states.push(await c.waitGameState((v) => v.phase === 'speaking'));
     }
+    const committedRoomSeq = states[0]!.roomSeq;
+    assert.equal(typeof committedRoomSeq, 'number');
+    for (const state of states) assert.equal(state.roomSeq, committedRoomSeq);
+    const timerEvent = await room.host.waitFor(
+      (e) => e.type === 'game_event' && (e.payload.events as { type: string }[]).some((event) => event.type === 'phase_changed'),
+    );
+    assert.equal(timerEvent.roomSeq, committedRoomSeq);
   } finally {
     await app.shutdown();
   }
@@ -463,6 +916,207 @@ test('§6.7 保留期满：扫描将成员置 EXPIRED 并在对局内判负退�
     });
     assert.equal(deniedResume.type, 'error');
     assert.equal(deniedResume.payload.code, 'RESERVATION_EXPIRED');
+  } finally {
+    await app.shutdown();
+  }
+});
+
+test('D3 V2 私有事件仅定向目标玩家，观战者和非目标玩家不可见', async () => {
+  const app = await startApp();
+  try {
+    const room = await setupGameRoom(app, 4, true);
+    await room.host.request('room_command', { command: 'start_game' });
+    for (const client of room.clients) await client.waitFor((e) => e.type === 'game_state');
+    await room.spectator!.waitFor((e) => e.type === 'game_state');
+
+    const session = app.db.prepare(
+      `SELECT id, last_seq FROM game_sessions WHERE room_id = ? AND status = 'ACTIVE'`,
+    ).get(
+      (app.db.prepare('SELECT id FROM rooms WHERE code = ?').get(room.roomCode) as { id: string }).id,
+    ) as { id: string; last_seq: number };
+    const roomRow = app.db.prepare('SELECT id, seq FROM rooms WHERE code = ?').get(room.roomCode) as {
+      id: string;
+      seq: number;
+    };
+    const privateEvents: PrivateGameEvent[] = [
+      { recipients: [room.playerIds[1]!], event: { type: 'secret_probe', value: 'only-player-2' } },
+    ];
+    app.ws.applyGameOutcome(roomRow.id, {
+      sessionId: session.id,
+      moduleId: 'undercover',
+      seq: session.last_seq + 1,
+      versioned: true,
+      publicEvents: [{ type: 'public_probe' }],
+      privateEvents,
+      rulesetId: 'undercover_classic_v1',
+      viewVersion: 1,
+      roomSeq: roomRow.seq + 1,
+      events: [{ type: 'public_probe' }],
+      systemChats: [],
+      timersChanged: false,
+      finished: false,
+      aborted: false,
+    });
+
+    const hostEvent = await room.host.waitFor((e) => e.type === 'game_event');
+    const targetEvent = await room.clients[1]!.waitFor((e) => e.type === 'game_event');
+    const otherEvent = await room.clients[2]!.waitFor((e) => e.type === 'game_event');
+    const spectatorEvent = await room.spectator!.waitFor((e) => e.type === 'game_event');
+    assert.deepEqual(hostEvent.payload.events, [{ type: 'public_probe' }]);
+    assert.deepEqual(targetEvent.payload.events, [
+      { type: 'public_probe' },
+      { type: 'secret_probe', value: 'only-player-2' },
+    ]);
+    assert.deepEqual(otherEvent.payload.events, [{ type: 'public_probe' }]);
+    assert.deepEqual(spectatorEvent.payload.events, [{ type: 'public_probe' }]);
+    for (const event of [hostEvent, targetEvent, otherEvent, spectatorEvent]) {
+      assert.equal(event.roomSeq, roomRow.seq + 1);
+      assert.equal(JSON.stringify(event.payload).includes('recipients'), false);
+    }
+  } finally {
+    await app.shutdown();
+  }
+});
+
+test('D3 UNO 终局 game_action 重试只保留一条结果、事件和状态推进', async () => {
+  const app = await startApp();
+  try {
+    const room = await setupGameRoom(app, 2, false, 'uno');
+    const startAck = await room.host.request('room_command', { command: 'start_game' });
+    assert.equal(startAck.type, 'ack');
+    await room.host.waitGameState((view) => view.gameId === 'uno');
+    const roomRow = app.db.prepare('SELECT id, seq FROM rooms WHERE code = ?').get(room.roomCode) as {
+      id: string;
+      seq: number;
+    };
+    const session = app.db.prepare(
+      `SELECT id, snapshot_json, rng_state_json, last_seq FROM game_sessions WHERE room_id = ? AND status = 'ACTIVE'`,
+    ).get(roomRow.id) as {
+      id: string;
+      snapshot_json: string;
+      rng_state_json: string;
+      last_seq: number;
+    };
+    const envelope = JSON.parse(session.snapshot_json) as {
+      state: UnoState;
+      stateDigest: string;
+    };
+    const originalState = structuredClone(envelope.state);
+    const top = envelope.state.discardPile.at(-1)!;
+    const winningCard = envelope.state.hands[room.hostId]!.find((card) => {
+      const color = 'color' in card ? card.color : null;
+      return card.kind === 'wild'
+        || card.kind === 'wild4'
+        || color === envelope.state.currentColor
+        || color === ('color' in top ? top.color : null)
+        || (
+          card.kind === top.kind
+          && card.kind !== 'number'
+        )
+        || (
+          card.kind === 'number'
+          && top.kind === 'number'
+          && card.value === top.value
+        );
+    }) ?? envelope.state.hands[room.hostId]![0]!;
+    const others = envelope.state.players.filter((playerId) => playerId !== room.hostId);
+    envelope.state.hands = {
+      [room.hostId]: [winningCard],
+      ...Object.fromEntries(others.map((playerId) => [
+        playerId,
+        (originalState.hands[playerId] ?? []).filter((card) => card.id !== winningCard.id),
+      ])),
+    };
+    envelope.state.discardPile = originalState.discardPile.filter((card) => card.id !== winningCard.id);
+    const retainedIds = new Set([
+      ...envelope.state.discardPile.map((card) => card.id),
+      ...Object.values(envelope.state.hands).flat().map((card) => card.id),
+    ]);
+    envelope.state.deck = [
+      ...originalState.deck,
+      ...originalState.hands[room.hostId]!,
+    ].filter((card) => !retainedIds.has(card.id));
+    envelope.state.currentPlayerId = room.hostId;
+    envelope.state.currentColor = 'color' in winningCard ? winningCard.color : 'red';
+    envelope.state.pendingDraw = 0;
+    envelope.state.hasDrawnThisTurn = false;
+    envelope.state.winnerId = null;
+    envelope.state.phase = 'playing';
+    envelope.state.lastPlayed = null;
+    envelope.stateDigest = createStateDigest(envelope.state);
+    app.db.prepare('UPDATE game_sessions SET snapshot_json = ? WHERE id = ?').run(
+      JSON.stringify(envelope),
+      session.id,
+    );
+
+    const requestId = `d3-uno-terminal-${++reqCounter}`;
+    room.host.send('game_action', {
+      type: 'play_card',
+      cardId: winningCard.id,
+      ...(
+        winningCard.kind === 'wild' || winningCard.kind === 'wild4'
+          ? { declaredColor: 'red' }
+          : {}
+      ),
+    }, {
+      requestId,
+      expectedSeq: roomRow.seq,
+    });
+    const first = await room.host.waitFor(
+      (e) => e.requestId === requestId && (e.type === 'ack' || e.type === 'error'),
+    );
+    assert.equal(first.type, 'ack');
+    assert.equal(first.payload.finished, true);
+    const after = app.db.prepare(
+      `SELECT status, last_seq, snapshot_json, rng_state_json FROM game_sessions WHERE id = ?`,
+    ).get(session.id) as {
+      status: string;
+      last_seq: number;
+      snapshot_json: string;
+      rng_state_json: string;
+    };
+    const eventCount = (app.db.prepare(
+      'SELECT COUNT(*) AS n FROM game_events WHERE session_id = ?',
+    ).get(session.id) as { n: number }).n;
+    assert.equal(after.status, 'FINISHED');
+    assert.equal(
+      (app.db.prepare('SELECT COUNT(*) AS n FROM game_results WHERE session_id = ?').get(session.id) as { n: number }).n,
+      1,
+    );
+
+    room.host.send('game_action', {
+      type: 'play_card',
+      cardId: winningCard.id,
+      ...(
+        winningCard.kind === 'wild' || winningCard.kind === 'wild4'
+          ? { declaredColor: 'red' }
+          : {}
+      ),
+    }, {
+      requestId,
+      expectedSeq: 0,
+    });
+    const replay = await room.host.waitFor(
+      (e) => e.requestId === requestId && (e.type === 'ack' || e.type === 'error'),
+    );
+    assert.equal(replay.type, 'ack');
+    assert.equal(replay.roomSeq, first.roomSeq);
+    assert.deepEqual(replay.payload, first.payload);
+    const repeated = app.db.prepare(
+      `SELECT status, last_seq, snapshot_json, rng_state_json FROM game_sessions WHERE id = ?`,
+    ).get(session.id) as typeof after;
+    assert.equal(repeated.status, after.status);
+    assert.equal(repeated.last_seq, after.last_seq);
+    assert.equal(repeated.snapshot_json, after.snapshot_json);
+    assert.equal(repeated.rng_state_json, after.rng_state_json);
+    assert.equal(
+      (app.db.prepare('SELECT COUNT(*) AS n FROM game_events WHERE session_id = ?').get(session.id) as { n: number }).n,
+      eventCount,
+    );
+    assert.equal(
+      (app.db.prepare('SELECT COUNT(*) AS n FROM game_results WHERE session_id = ?').get(session.id) as { n: number }).n,
+      1,
+    );
   } finally {
     await app.shutdown();
   }

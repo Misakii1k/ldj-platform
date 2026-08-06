@@ -50,6 +50,10 @@ export interface LastError {
 /** 连接快照：reducer 管理的完整状态 */
 export interface ConnectionSnapshot {
   connState: ConnState;
+  /** connState === 'reconnecting'：断线自动重连中（D4-UI0 派生标志） */
+  isRefreshing: boolean;
+  /** connState === 'server_recovering'：服务端恢复对局状态中（D4-UI0 派生标志） */
+  isRecovering: boolean;
   serverVersion: string | null;
   connectionId: string | null;
   room: RoomSnapshotView | null;
@@ -68,8 +72,32 @@ export interface ConnectionSnapshot {
   llmAvailable: boolean;
 }
 
+/**
+ * 由 connState 纯派生标志（D4-UI0）。
+ * 组件据此决定：已有 room/game 内容时保留当前视图并显示横幅，
+ * 而不是用全屏 loader 替换已渲染的对局/房间。
+ */
+export function derivedFlags(
+  connState: ConnState,
+): Pick<ConnectionSnapshot, 'isRefreshing' | 'isRecovering'> {
+  return {
+    isRefreshing: connState === 'reconnecting',
+    isRecovering: connState === 'server_recovering',
+  };
+}
+
+/** 设置 connState 并同步派生标志（保持快照自洽；状态机迁移本身不变） */
+export function withConnState(
+  state: ConnectionSnapshot,
+  connState: ConnState,
+): ConnectionSnapshot {
+  return { ...state, connState, ...derivedFlags(connState) };
+}
+
 export const INITIAL_CONNECTION_STATE: ConnectionSnapshot = {
   connState: 'connecting',
+  isRefreshing: false,
+  isRecovering: false,
   serverVersion: null,
   connectionId: null,
   room: null,
