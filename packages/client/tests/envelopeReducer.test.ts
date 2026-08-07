@@ -68,7 +68,7 @@ test('D3：旧 room_snapshot 不得覆盖更新基线', () => {
   assert.deepEqual(result.effects, [{ type: 'send_resync' }]);
 });
 
-test('D3：旧 game_state 不得覆盖更新视角', () => {
+test('D3：旧 game_state 不得覆盖更新视角，且主动重同步请求当前权威视角', () => {
   const current = {
     ...INITIAL_CONNECTION_STATE,
     roomSeq: 10,
@@ -76,7 +76,33 @@ test('D3：旧 game_state 不得覆盖更新视角', () => {
   };
   const result = applyEnvelope(current, envelope('game_state', game('word_reveal'), 9));
   assert.equal(result.state, current);
-  assert.deepEqual(result.effects, []);
+  assert.deepEqual(result.effects, [{ type: 'send_resync' }]);
+});
+
+test('D7：room_snapshot payload 坏损不静默丢帧，触发重同步', () => {
+  const current = {
+    ...INITIAL_CONNECTION_STATE,
+    connState: 'synced' as const,
+    roomSeq: 5,
+    room: room(5),
+  };
+  const malformed = { roomCode: 'ABCDE', status: 'IN_GAME', seq: 'not-a-number', members: [] };
+  const result = applyEnvelope(current, envelope('room_snapshot', malformed, 6));
+  assert.equal(result.state, current);
+  assert.deepEqual(result.effects, [{ type: 'send_resync' }]);
+});
+
+test('D7：game_state payload 坏损不静默丢帧，触发重同步', () => {
+  const current = {
+    ...INITIAL_CONNECTION_STATE,
+    connState: 'synced' as const,
+    roomSeq: 5,
+    game: game('speaking'),
+  };
+  const malformed = { sessionId: 1, moduleId: 'undercover', status: 'ACTIVE', role: 'player' };
+  const result = applyEnvelope(current, envelope('game_state', malformed, 6));
+  assert.equal(result.state, current);
+  assert.deepEqual(result.effects, [{ type: 'send_resync' }]);
 });
 
 test('D3：权威 room_snapshot 跳号建立基线，不触发重复 resync', () => {

@@ -219,7 +219,11 @@ export function applyEnvelope(
 
     case 'room_snapshot': {
       const payload = parseRoomSnapshot(envelope.payload);
-      if (!payload) return { state, effects };
+      if (!payload) {
+        // 权威基线帧坏损：不静默丢帧，主动重同步等下一次完整快照，避免永久停留恢复态。
+        effects.push({ type: 'send_resync' });
+        return { state, effects };
+      }
       const incomingSeq = envelope.roomSeq ?? payload.seq;
       if (state.roomSeq !== null && incomingSeq < state.roomSeq) {
         // 丢弃旧快照前主动重同步，避免成员列表因一次乱序永久停留在旧状态。
@@ -249,12 +253,21 @@ export function applyEnvelope(
 
     case 'game_state': {
       const payload = parseGameStatePayload(envelope.payload);
-      if (!payload) return { state, effects };
+      if (!payload) {
+        // payload 坏损：不静默丢帧，主动重同步等权威视角，避免对局中永久缺视图。
+        effects.push({ type: 'send_resync' });
+        return { state, effects };
+      }
       if (
         envelope.roomSeq !== undefined
         && state.roomSeq !== null
         && envelope.roomSeq < state.roomSeq
-      ) return { state, effects };
+      ) {
+        // 旧帧不覆盖新基线，但这是唯一可能“丢帧后无人补位”的路径（房间静止时
+        // 不会再有新帧）；主动重同步请求当前权威视角，而不是静默停留。
+        effects.push({ type: 'send_resync' });
+        return { state, effects };
+      }
       // 未经运行时验证的服务器对象不得进入渲染：解析失败走重同步路径，
       // 保留旧视角而不是用坏帧覆盖。
       const parsed = parseGameView(payload);
