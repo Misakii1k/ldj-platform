@@ -93,6 +93,7 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
   const shouldReconnectRef = useRef(true);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resumeAttemptedRef = useRef(false);
+  const resumeRecoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { stateRef.current = state; }, [state]);
   useEffect(() => { meRef.current = me; }, [me]);
@@ -297,6 +298,10 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
     connect();
     return () => {
       shouldReconnectRef.current = false;
+      if (resumeRecoveryTimerRef.current !== null) {
+        clearTimeout(resumeRecoveryTimerRef.current);
+        resumeRecoveryTimerRef.current = null;
+      }
       if (reconnectTimerRef.current !== null) {
         clearTimeout(reconnectTimerRef.current);
         reconnectTimerRef.current = null;
@@ -329,7 +334,27 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
         chatCursor: stateRef.current.chatCursor,
         game: gameResumeIdentity(stateRef.current),
       }).then(
-        () => { /* resume 成功，reducer 会处理后续 room_snapshot */ },
+        () => {
+          // resume ACK 与 room_snapshot / game_state 是独立 envelope；若广播基线因乱序/丢帧未到，
+          // 或已进入对局但视角帧未到达，主动补一次权威恢复（覆盖“正在恢复房间…”与
+          // “对局已开始/正在同步牌局数据…”两种停留态；重发的帧携带当前 roomSeq 可自愈陈旧丢弃）。
+          if (resumeRecoveryTimerRef.current !== null) clearTimeout(resumeRecoveryTimerRef.current);
+          resumeRecoveryTimerRef.current = setTimeout(() => {
+            const s = stateRef.current;
+            const meStillHere = meRef.current?.roomCode === m.roomCode;
+            const stuck =
+              s.room === null
+              || (s.room !== null && s.room.status === 'IN_GAME' && s.game === null);
+            if (meStillHere && stuck) {
+              sendRaw('resync', {
+                lastSeq: s.roomSeq,
+                chatCursor: s.chatCursor,
+                game: gameResumeIdentity(s),
+              });
+            }
+            resumeRecoveryTimerRef.current = null;
+          }, 1_000);
+        },
         () => {
           // resume 失败：清空 me，回到连接页
           setMeState(null);

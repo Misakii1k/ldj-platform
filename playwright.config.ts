@@ -17,8 +17,8 @@ export default defineConfig({
   workers: 1,
   timeout: 120_000,
   expect: { timeout: 15_000 },
-  // D5：浏览器渲染偶发竞态（跨 spec 共享 webServer/DB）用 1 次重试兜底；仍失败才会报错。
-  retries: 1,
+  // 产品链必须首轮通过，禁止用自动重试掩盖恢复或时序问题。
+  retries: 0,
   reporter: [['list']],
   use: {
     baseURL: BASE_URL,
@@ -27,7 +27,8 @@ export default defineConfig({
   webServer: {
     command: 'node e2e/helpers/start-server.mjs',
     url: `${BASE_URL}/health/live`,
-    reuseExistingServer: true,
+    // 每次 Playwright 运行都重启并清空独立 E2E 服务，避免跨运行的本地进程/数据库污染恢复链路。
+    reuseExistingServer: false,
     timeout: 60_000,
     env: {
       PORT: '3178',

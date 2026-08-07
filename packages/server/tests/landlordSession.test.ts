@@ -54,7 +54,13 @@ async function startLandlord(ctx: Ctx): Promise<void> {
     roomId: ctx.roomId,
     actorScope: `conn:${ctx.hostId}`,
     requestId: nextReq(),
-    handler: (tx) => applyRoomCommand(tx, ctx.roomId, ctx.hostId, { command: 'start_game' }),
+    handler: (tx) => applyRoomCommand(tx, ctx.roomId, ctx.hostId, {
+      command: 'start_game',
+      gameConfig: {
+        rulesetId: 'landlord_legacy_platform_v1',
+        variant: 'standard',
+      },
+    }),
   });
   assert.equal(started.outcome.gameStarted?.moduleId, 'landlord');
 }

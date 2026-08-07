@@ -37,15 +37,29 @@ async function prepareBrowser(browser: Browser, me: BrowserMe): Promise<Page> {
   return page;
 }
 
-/** 确定性 seed：重试 seedActiveSession 直到 players[1]（浏览器玩家）拿到目标角色。 */
+/** 确定性选择：从真实初始状态中挑出目标角色的非房主玩家作为浏览器身份。 */
 function seedBlankGameWithRole(role: 'blank' | 'civilian', count = 4): SeededSession {
   for (let attempt = 0; attempt < 16; attempt += 1) {
     const seeded = seedActiveSession(DB_PATH, { module: blankModule, count, config: BLANK_CONFIG });
     const state = seeded.state as { players: Record<string, { role: string }> };
-    const browserId = seeded.players[1]!.playerId;
-    if (state.players[browserId]?.role === role) return seeded;
+    const host = seeded.players.find((player) => player.playerId === seeded.hostId)!;
+    const browserPlayer = seeded.players.find(
+      (player) => player.playerId !== seeded.hostId && state.players[player.playerId]?.role === role,
+    );
+    if (browserPlayer) {
+      return {
+        ...seeded,
+        players: [
+          host,
+          browserPlayer,
+          ...seeded.players.filter(
+            (player) => player.playerId !== host.playerId && player.playerId !== browserPlayer.playerId,
+          ),
+        ],
+      };
+    }
   }
-  throw new Error(`无法在重试次数内让 players[1] 获得角色 ${role}`);
+  throw new Error(`无法选择非房主角色 ${role}`);
 }
 
 /**
@@ -167,8 +181,6 @@ test.describe('D4-B-UI undercover_blank_v1', () => {
 
     const { host, civilians } = await makeCivilians(target);
     try {
-      const drive = driveBlankToFinalGuess(host, civilians, browserId);
-
       // 无词视角：白板显式无词，平民词绝不进入 DOM
       await expect(page.locator('.blank-word-card__blank')).toBeVisible({ timeout: 20_000 });
       await expect(page.getByText('你是白板').first()).toBeVisible();
@@ -176,6 +188,9 @@ test.describe('D4-B-UI undercover_blank_v1', () => {
 
       // 确认就绪（真实 confirm_word）
       await page.getByRole('button', { name: '我已记下，确认就绪' }).click();
+
+      // Node 侧在浏览器确认后驱动平民；白板轮次由浏览器动作推进。
+      const drive = driveBlankToFinalGuess(host, civilians, browserId);
 
       // 发言阶段：等浏览器（白板）发言轮次并结束发言（真实 finish_speech）
       await page.getByRole('button', { name: '结束发言' }).waitFor({ timeout: 90_000 });
@@ -194,13 +209,18 @@ test.describe('D4-B-UI undercover_blank_v1', () => {
       await expect(page.getByRole('alert')).toBeVisible({ timeout: 15_000 });
       await expect(page.getByRole('textbox', { name: '主动猜词输入' })).toHaveValue(longGuess);
 
+      // 在投票提交前注册终局等待，避免 30 秒终局猜词瞬态已自动结算后才开始观察。
+      const finalGuessVisible = page.locator('.blank-final-guess').waitFor({ timeout: 60_000 });
+
       // 白板投票（真实 cast_vote）
       await page.locator('.blank-voting__options button').first().click();
 
       // 终局猜词：30 秒倒计时 + 白板被淘汰进入
-      await page.locator('.blank-final-guess').waitFor({ timeout: 60_000 });
+      await finalGuessVisible;
       const timerText = (await page.locator('.blank-final-guess__timer').textContent())?.trim() ?? '';
       expect(timerText, `倒计时文案应为「剩余 N 秒」，收到：${timerText}`).toMatch(/^剩余 \d+ 秒$/);
+
+      await drive;
 
       // skip 是真实 game_action：跳过终局猜词 → 平民方获胜（host 权威 game_state）
       await page.getByRole('button', { name: '跳过' }).click();
@@ -211,8 +231,6 @@ test.describe('D4-B-UI undercover_blank_v1', () => {
       expect((over.payload.view as { winner?: string }).winner).toBe('civilian');
       // 浏览器进入结算页（对局已结算）
       await expect(page.getByText('对局已结算').first()).toBeVisible({ timeout: 20_000 });
-
-      await drive;
       await page.context().close();
     } finally {
       for (const civ of civilians) civ.client.close();

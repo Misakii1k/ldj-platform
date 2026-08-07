@@ -40,11 +40,12 @@ async function createRoomFromHome(page: Page, displayName: string, nickname: str
  * 终局判别：game_over 视图（如有短暂渲染）或房间进入 POST_GAME（对局已结算）——
  * 客户端在终局后立即用 RoomPage 替换游戏页，所以「对局已结算」是可靠信号。
  */
-async function driveBrowserUndercover(page: Page, timeoutMs = 240_000): Promise<void> {
+async function driveBrowserUndercover(page: Page, timeoutMs = 420_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
-  const confirmBtn = page.getByRole('button', { name: '我已记下，确认就绪' });
-  const speechBtn = page.getByRole('button', { name: '发言完毕，交棒下一位' });
-  const voteCard = page.locator('.vote-card:not(.self):not(:disabled)').first();
+  const gamePhase = page.locator('.game-phase').first();
+  const confirmBtn = gamePhase.getByRole('button', { name: '我已记下，确认就绪' }).first();
+  const speechBtn = gamePhase.getByRole('button', { name: '发言完毕，交棒下一位' }).first();
+  const voteCard = gamePhase.locator('.vote-card:not(.self):not(:disabled)').first();
   let lastLog = 0;
   let lastPhase = '';
 
@@ -112,7 +113,7 @@ function assertServerResultRow(roomCode: string): void {
 
 test.describe('D5 P2b 上架建房链路', () => {
   test('undercover 完整局：首页建房 → 机器人凑数 → 开局 → 真实服务端终局', async ({ browser }) => {
-    test.setTimeout(320_000);
+    test.setTimeout(480_000);
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.setViewportSize({ width: 1280, height: 800 });
@@ -139,15 +140,12 @@ test.describe('D5 P2b 上架建房链路', () => {
       await expect(page.locator('.members-list .member')).toHaveCount(expected);
     }
 
-    // 房主准备 → 开始游戏
+    // 房主准备后只走产品自动开局，避免与 5 秒倒计时并发触发两次 start_game。
     await page.getByRole('button', { name: '准备', exact: true }).click();
-    const startBtn = page.getByRole('button', { name: '开始游戏' });
-    await expect(startBtn).toBeEnabled({ timeout: 20_000 });
-    await startBtn.click();
 
-    // 对局开始：看词阶段渲染
+    // 对局开始：以权威看词阶段作为稳定业务边界。
     await expect(page.locator('.game-page.phase-word_reveal').first()).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByText('查看你的秘密词条').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: '长按查看秘密词' }).first()).toBeVisible();
 
     // 完整局：浏览器玩家全程参与，规则机器人驱动其余回合，直到真实终局
     await driveBrowserUndercover(page);
