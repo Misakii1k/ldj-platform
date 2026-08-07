@@ -103,11 +103,11 @@ export const GAME_CATALOG = [
     tags: ['卡牌', '策略', '经典'],
     theme: 'mint',
     rulesets: [
+      { id: 'landlord_platform_v1', label: '平台规则' },
       { id: 'landlord_legacy_platform_v1', label: 'Legacy 兼容基线' },
-      { id: 'landlord_platform_v1', label: '平台规则' },
     ],
-    setup: defaultSetup('landlord_legacy_platform_v1', 'Legacy 兼容基线', [], { variant: 'standard' }, [
-      { id: 'landlord_platform_v1', label: '平台规则' },
+    setup: defaultSetup('landlord_platform_v1', '平台规则', [], { variant: 'standard' }, [
+      { id: 'landlord_legacy_platform_v1', label: 'Legacy 兼容基线' },
     ]),
     botSupport: 'rule_and_llm',
     visualTheme: { accent: 'mint', surface: 'cards' },

@@ -28,8 +28,8 @@ const MODULES: RegisteredGameModule[] = [
   blankModule,
   unoVersionedModule,
   unoHouseModule,
-  landlordModule,
   landlordPlatformModule,
+  landlordModule,
   werewolfModule,
   werewolfV2Module,
 ];

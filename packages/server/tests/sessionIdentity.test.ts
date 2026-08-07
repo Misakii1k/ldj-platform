@@ -178,7 +178,7 @@ test('D5 P1a 注册断言：open_kill 解析到 v2 模块、legacy 仍解析到 
 test('getDefaultRuleset / resolveRulesetForStart 与目录默认一致', () => {
   assert.equal(getDefaultRuleset('undercover'), 'undercover_classic_v1');
   assert.equal(getDefaultRuleset('uno'), 'uno_legacy_platform_v1');
-  assert.equal(getDefaultRuleset('landlord'), 'landlord_legacy_platform_v1');
+  assert.equal(getDefaultRuleset('landlord'), 'landlord_platform_v1');
   assert.equal(getDefaultRuleset('werewolf'), 'werewolf_legacy_platform_v2');
   assert.equal(resolveRulesetForStart('werewolf', {}), 'werewolf_legacy_platform_v2');
   assert.equal(resolveRulesetForStart('werewolf', { rulesetId: 'werewolf_platform_open_kill_v1' }), 'werewolf_platform_open_kill_v1');
@@ -201,8 +201,9 @@ test('D5 P2a 注册断言：landlord_platform_v1 解析到 v2 平台模块、leg
     assert.equal(platformModule.identity.viewVersion, 1);
   }
 
-  // 开局解析：默认仍是 legacy；显式 rulesetId 解析到平台规则集
-  assert.equal(resolveRulesetForStart('landlord', {}), 'landlord_legacy_platform_v1');
+  // 开局解析：新建房默认进入平台规则；显式 legacy 仍保留兼容路径
+  assert.equal(resolveRulesetForStart('landlord', {}), 'landlord_platform_v1');
+  assert.equal(resolveRulesetForStart('landlord', { rulesetId: 'landlord_legacy_platform_v1' }), 'landlord_legacy_platform_v1');
   assert.equal(resolveRulesetForStart('landlord', { rulesetId: 'landlord_platform_v1' }), 'landlord_platform_v1');
   assert.throws(() => resolveRulesetForStart('landlord', { rulesetId: 'werewolf_platform_open_kill_v1' }), /未注册|声明/);
 });

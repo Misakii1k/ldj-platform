@@ -40,6 +40,15 @@ test('GAME_CATALOG：客户端目录配置可转换为现有模块配置', () =>
     'undercover_classic_v1',
     'undercover_blank_v1',
   ]);
+  const landlord = GAME_CATALOG.find((game) => game.id === 'landlord')!;
+  assert.deepEqual(landlord.setup.defaultConfig, {
+    rulesetId: 'landlord_platform_v1',
+    variant: 'standard',
+  });
+  assert.deepEqual(landlord.rulesets.map((ruleset) => ruleset.id), [
+    'landlord_platform_v1',
+    'landlord_legacy_platform_v1',
+  ]);
   const werewolf = GAME_CATALOG.find((game) => game.id === 'werewolf')!;
   assert.equal(werewolf.setup.defaultConfig.pace, 'standard');
   assert.equal(werewolf.setup.defaultConfig.witchSelfSave, 'first_night');
@@ -56,7 +65,7 @@ test('GAME_CATALOG：D1 规则集 ID 与目录状态已冻结', () => {
     [
       { id: 'undercover', availability: 'playable', rulesetId: 'undercover_classic_v1' },
       { id: 'uno', availability: 'blocked_rights', rulesetId: 'uno_legacy_platform_v1' },
-      { id: 'landlord', availability: 'playable', rulesetId: 'landlord_legacy_platform_v1' },
+      { id: 'landlord', availability: 'playable', rulesetId: 'landlord_platform_v1' },
       { id: 'werewolf', availability: 'playable', rulesetId: 'werewolf_legacy_platform_v2' },
     ],
   );

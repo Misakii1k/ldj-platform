@@ -119,9 +119,15 @@ export function GamePage() {
         : <UnoGamePage view={v as Record<string, unknown>} />;
       break;
     }
-    case 'landlord':
-      content = <LandlordGamePage view={game.view as Record<string, unknown>} />;
+    case 'landlord': {
+      const parsed = parseGameView(game);
+      if (!parsed.ok) {
+        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        break;
+      }
+      content = <LandlordGamePage view={parsed.view as Record<string, unknown>} />;
       break;
+    }
     case 'werewolf': {
       // 按 viewVersion 判别：v2（open-kill）走严格解析（失败关闭），legacy 透传后仍由 WerewolfGamePage 校验。
       const parsed = parseGameView(game);

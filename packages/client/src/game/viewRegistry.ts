@@ -1,13 +1,14 @@
 /**
  * 版本化游戏视角解析注册表（D3 Task 9，D5 P1a 扩展）。
  * 以 moduleId + rulesetId + viewVersion 判别：只有注册的组合才走严格解析，
- * 未注册的 V2 游戏组合失败关闭；legacy 斗地主/狼人杀保持兼容透传。
+ * 未注册的 V2 游戏组合失败关闭；legacy 斗地主/狼人杀无判别符时保持兼容透传。
  */
 import { parseUndercoverView } from './undercover/types.ts';
 import { parseBlankView } from './undercover/types.ts';
 import { parseUnoView } from './uno/types.ts';
 import { parseUnoHouseView } from './uno/types.ts';
 import { parseWerewolfView } from './werewolf/types.ts';
+import { parseLandlordPlatformView } from './landlord/types.ts';
 import type { GameStatePayload } from './types.ts';
 
 interface GameViewParser {
@@ -36,6 +37,10 @@ const REGISTRY: Readonly<Record<string, GameViewParser>> = {
     parsePlayerView: (view) => parseWerewolfView(view, 'player'),
     parseSpectatorView: (view) => parseWerewolfView(view, 'spectator'),
   },
+  'landlord:landlord_platform_v1:1': {
+    parsePlayerView: (view) => parseLandlordPlatformView(view, 'player'),
+    parseSpectatorView: (view) => parseLandlordPlatformView(view, 'spectator'),
+  },
 };
 
 /** 已迁移到 V2 的游戏：缺失版本化判别符时必须失败关闭，不能静默降级。 */
@@ -57,7 +62,7 @@ export function parseGameView(payload: GameStatePayload): ViewParseResult {
       // 已迁移的 V2 游戏缺失版本化判别符：失败关闭，不能静默降级。
       return { ok: false };
     }
-    // legacy（斗地主/狼人杀）保持现有兼容解析路径，不进入 D3 严格门。
+    // legacy（斗地主/狼人杀）无版本化判别符时保持现有兼容路径。
     return { ok: true, view: payload.view };
   }
   const parser = REGISTRY[`${payload.moduleId}:${payload.rulesetId}:${payload.viewVersion}`];
