@@ -208,6 +208,25 @@ test('D5 P2a 注册断言：landlord_platform_v1 解析到 v2 平台模块、leg
   assert.throws(() => resolveRulesetForStart('landlord', { rulesetId: 'werewolf_platform_open_kill_v1' }), /未注册|声明/);
 });
 
+test('D6：斗地主默认切换不改写显式 legacy 会话身份', async () => {
+  const db = freshDb();
+  const executor = new RoomCommandExecutor(db);
+  const { roomId } = await makeRoomWithPlayers(db, executor, 'landlord', 3);
+  await executor.executeOnRoom({
+    roomId,
+    actorScope: 'conn:host',
+    requestId: 'start-landlord-legacy',
+    handler: (tx) => startGame(tx, roomId, { rulesetId: 'landlord_legacy_platform_v1', variant: 'standard' }),
+  });
+  const session = getActiveSession(db, roomId);
+  assert.ok(session);
+  assert.equal(session.ruleset_id, 'landlord_legacy_platform_v1');
+  const module = getSessionGameModule(session);
+  assert.ok(module);
+  assert.ok(!('identity' in module), '显式 legacy 会话必须继续解析到 legacy 模块');
+  closeDb(db);
+});
+
 test('SUSPENDED 会话占用活动位，且无规则集解析时失败关闭', async () => {
   const db = freshDb();
   const executor = new RoomCommandExecutor(db);

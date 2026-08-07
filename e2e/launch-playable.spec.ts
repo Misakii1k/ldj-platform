@@ -179,7 +179,8 @@ test.describe('D5 P2b 上架建房链路', () => {
     await context.close();
   });
 
-  test('landlord 建房：首页可见且可创建房间（legacy 与 platform_v1 均已登记）', async ({ browser }) => {
+  test('landlord 建房：首页规则选择器默认 platform_v1 且保留 legacy 选项', async ({ browser }) => {
+    test.setTimeout(120_000);
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.setViewportSize({ width: 1280, height: 800 });
@@ -196,6 +197,10 @@ test.describe('D5 P2b 上架建房链路', () => {
     await expect(page.locator('.room-code')).toBeVisible();
     await expect(page.getByText('斗地主 · 房间大厅')).toBeVisible();
 
+    const ruleset = page.getByRole('combobox', { name: '规则预设' });
+    await expect(ruleset).toHaveValue('landlord_platform_v1');
+    await expect(ruleset.locator('option')).toHaveCount(2);
+    await expect(ruleset.locator('option').nth(1)).toHaveText('Legacy 兼容基线');
     await context.close();
   });
 

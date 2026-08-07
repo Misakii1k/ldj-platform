@@ -242,7 +242,11 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
 
   return (
     <Shell title="斗地主" subtitle={landlordSubtitle(view, members)} variant="landlord">
-      <section className={`landlord-table phase-${view.phase}`}>
+      <section
+        className={`landlord-table phase-${view.phase}`}
+        data-ruleset-id={view.rulesetId ?? 'landlord_legacy_platform_v1'}
+        data-schema-version={view.schemaVersion ?? 'legacy'}
+      >
         <div className="landlord-players">
           {view.players.map((p: AnyView) => {
             const bidding = p.playerId === view.currentBidderId;
