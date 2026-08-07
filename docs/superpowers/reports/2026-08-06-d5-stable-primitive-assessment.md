@@ -46,3 +46,26 @@
 3. **GAP-3（P1a 客户端连锁）**：v2 客户端 view 接线 + `e2e/werewolf-tabletop.spec.ts` 真实跑 v2 引擎 + 恢复/视角泄漏/机器人完整局对 v2 再确认，闭合 C5 中 tabletopSkeleton 对 v2 的消费。
 
 以上三项全部闭合后，方可按 baseline L213 声明稳定原语 v1；本窗口结论为 **DEFERRED**（现状 = 除 P1a/commit B 依赖外的成熟度门证据齐备）。
+
+## D5 P3 最终复核（2026-08-07）
+
+**最终裁决：稳定原语 v1 — DECLARED。**
+
+P1 时的三个缺口均已闭合，且 P2 后全量质量门未发现新的阻断项：
+
+| 缺口 | 最终证据 | 判定 |
+| --- | --- | --- |
+| GAP-1：v2 平台注册 | commit B `c50a98af35c974fcaf035c80c1a1e9cd8314b4ea` 注册 `werewolfV2Module`；`sessionIdentity.test.ts` 断言 open-kill→v2、legacy→legacy；完整 CI 通过 | **闭合** |
+| GAP-2：权威 commit 对比 | 不可变 baseline commit A `b9bf4586cd1942fcc6cfdd3dc6dfccae5b833d7f`；commit B 与 checkpoint C `3e24e2f7a7be6994f6acc596830e2677d8cc0fe3` 上固定脚本均得到 `baselineAllMatch=true`、1500→869、`reduction=42.07%`，要求 ≥40% | **闭合** |
+| GAP-3：客户端接线与真实开局 | discriminator-driven view registry 已注册 `werewolf:werewolf_platform_open_kill_v1:1`；Chromium `werewolf-tabletop.spec.ts` 真实确认 engine 2/view 1/ruleset，12 席位、动作与隐私断言通过 | **闭合** |
+
+最终成熟度复核：
+
+- C1：UNO/卧底回归随 `npm run ci` 全量通过；两份 D1 fixture SHA-256 保持冻结。
+- C2/C5：狼人 v2 真实复用房间、事务、恢复、广播、计时器、机器人驱动、桌面骨架，达到 7/7（最低要求 6/7）；P2 新增斗地主 v2 进一步验证同一模板可接入第四款游戏。
+- C3/C4：契约、确定性重放、崩溃恢复、不可变性、视角泄漏、机器人合法性均在全量套件内通过，机器人与真人仍共用 `parseAction` + `reduce` 权威入口。
+- C6：冻结 9 文件逐字节匹配；server core/shared primitives 无新增 werewolf game-id 逃生分支；v2 模块不导入 server core/persistence/gateway，逃生钩子为 0。
+- C7：权威 LOC 门 42.07% PASS。
+- C8：新行为使用独立规则集和版本身份，legacy 语义与 v1–v8 迁移边界保持冻结，未新增 v9。
+
+声明范围仅覆盖当前 `GameModuleV2` 稳定原语契约及上述复用边界；不把任何具体游戏规则宣称为官方规则，也不改变 UNO 的 `blocked_rights` 状态。
