@@ -8,7 +8,7 @@ import {
   blankModule,
 } from '@ldj/game-undercover/server';
 import { unoVersionedModule, unoHouseModule } from '@ldj/game-uno/server';
-import { landlordModule } from '@ldj/game-landlord/server';
+import { landlordModule, landlordPlatformModule } from '@ldj/game-landlord/server';
 import { werewolfModule, werewolfV2Module } from '@ldj/game-werewolf/server';
 import type { SessionRow } from './session.ts';
 
@@ -29,6 +29,7 @@ const MODULES: RegisteredGameModule[] = [
   unoVersionedModule,
   unoHouseModule,
   landlordModule,
+  landlordPlatformModule,
   werewolfModule,
   werewolfV2Module,
 ];

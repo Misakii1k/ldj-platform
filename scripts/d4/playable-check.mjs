@@ -1,11 +1,13 @@
 /**
- * D4-TOOLS：playable 准入检查。
+ * D4-TOOLS：playable 准入检查（D5 P2b 语义调整）。
  * 按引擎设计「上架准入」清单校验目录：
  *   - compliance/d1/game-admission.json 中任何 catalogStatus/releaseStatus === 'playable'
  *     都必须带完整授权证据（rights 已批准且五个字段齐备），否则列出现状并失败；
  *   - compliance/d4/third-game-baseline.json 的 candidate.claims.playable 必须为 false；
  *   - 共享 GAME_CATALOG 若把某游戏标记为 playable，台账必须同步。
- * 当前输出必须为「无 playable」。
+ * pass 语义（经主模型批准的 scripts 白名单扩展）：由「必须无 playable」改为
+ * 「存在 playable 时必须带完整授权证据」——pass = 无 claimViolations 且无 errors，
+ * playableGames/playableRulesets 只作报告，不再单独构成失败。
  * 用法：node scripts/d4/playable-check.mjs [root]
  */
 import { readFile, stat } from 'node:fs/promises';
@@ -87,15 +89,17 @@ export async function runPlayableCheck(root) {
     }
   }
 
-  const pass = playableGames.length === 0
-    && playableRulesets.length === 0
-    && claimViolations.length === 0
-    && errors.length === 0;
+  const pass = claimViolations.length === 0 && errors.length === 0;
   return { pass, playableGames, playableRulesets, claimViolations, errors };
 }
 
 export function cliMessage(result) {
-  if (result.pass) return '无 playable';
+  if (result.pass) {
+    const games = result.playableGames.join(', ');
+    const rulesets = result.playableRulesets.join(', ');
+    if (games === '' && rulesets === '') return '无 playable';
+    return `playable 声明均带完整授权证据（游戏: ${games || '无'}；规则集: ${rulesets || '无'}）`;
+  }
   const parts = [
     ...result.playableGames.map((id) => `playable 游戏: ${id}`),
     ...result.playableRulesets.map((id) => `playable 规则集: ${id}`),

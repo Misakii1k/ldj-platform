@@ -185,6 +185,28 @@ test('getDefaultRuleset / resolveRulesetForStart 与目录默认一致', () => {
   assert.throws(() => resolveRulesetForStart('werewolf', { rulesetId: 'uno_legacy_platform_v1' }), /未注册|声明/);
 });
 
+test('D5 P2a 注册断言：landlord_platform_v1 解析到 v2 平台模块、legacy 仍解析到 legacy 模块', () => {
+  // 注册表精确解析：legacy 规则集仍落在 legacy 模块
+  const legacyModule = getGameModule('landlord', 'landlord_legacy_platform_v1');
+  assert.ok(legacyModule);
+  assert.ok(!('identity' in legacyModule), 'landlord_legacy_platform_v1 必须解析到 legacy 模块（不得是 versioned）');
+
+  // landlord_platform_v1 → 平台 v2 模块（registry 第二笔）
+  const platformModule = getGameModule('landlord', 'landlord_platform_v1');
+  assert.ok(platformModule, 'landlord_platform_v1 必须能解析到模块');
+  assert.ok('identity' in platformModule, 'landlord_platform_v1 必须解析到 v2 模块');
+  if ('identity' in platformModule) {
+    assert.equal(platformModule.identity.rulesetId, 'landlord_platform_v1');
+    assert.equal(platformModule.identity.engineContractVersion, 2);
+    assert.equal(platformModule.identity.viewVersion, 1);
+  }
+
+  // 开局解析：默认仍是 legacy；显式 rulesetId 解析到平台规则集
+  assert.equal(resolveRulesetForStart('landlord', {}), 'landlord_legacy_platform_v1');
+  assert.equal(resolveRulesetForStart('landlord', { rulesetId: 'landlord_platform_v1' }), 'landlord_platform_v1');
+  assert.throws(() => resolveRulesetForStart('landlord', { rulesetId: 'werewolf_platform_open_kill_v1' }), /未注册|声明/);
+});
+
 test('SUSPENDED 会话占用活动位，且无规则集解析时失败关闭', async () => {
   const db = freshDb();
   const executor = new RoomCommandExecutor(db);

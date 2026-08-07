@@ -222,6 +222,8 @@ export function applyEnvelope(
       if (!payload) return { state, effects };
       const incomingSeq = envelope.roomSeq ?? payload.seq;
       if (state.roomSeq !== null && incomingSeq < state.roomSeq) {
+        // 丢弃旧快照前主动重同步，避免成员列表因一次乱序永久停留在旧状态。
+        effects.push({ type: 'send_resync' });
         return { state, effects };
       }
       const nextState: ConnectionSnapshot = withConnState({

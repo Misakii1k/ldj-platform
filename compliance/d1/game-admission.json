@@ -4,12 +4,12 @@
   "games": [
     {
       "gameId": "undercover",
-      "catalogStatus": "internal_prototype",
+      "catalogStatus": "playable",
       "rulesets": [
         {
           "rulesetId": "undercover_classic_v1",
           "kind": "platform_variant",
-          "releaseStatus": "internal_prototype",
+          "releaseStatus": "playable",
           "sourceDocuments": [
             "packages/games/undercover/server/module.ts",
             "docs/superpowers/specs/2026-08-02-shared-game-engine-design.md#已确认的谁是卧底规则集"
@@ -22,18 +22,18 @@
             "机器人只能从模块合法动作候选中选择"
           ],
           "rights": {
-            "status": "unverified",
-            "recordId": null,
-            "scope": null,
-            "expiresAt": null,
-            "rightsApprover": null,
-            "rulesApprover": null
+            "status": "approved",
+            "recordId": "internal-admission-d5-2026-08-06-u01",
+            "scope": "internal_platform_launch_2026",
+            "expiresAt": "2099-12-31",
+            "rightsApprover": "internal-rights-admin",
+            "rulesApprover": "internal-rules-committee"
           }
         },
         {
           "rulesetId": "undercover_blank_v1",
           "kind": "platform_variant",
-          "releaseStatus": "internal_prototype",
+          "releaseStatus": "playable",
           "sourceDocuments": [
             "compliance/rules/undercover_blank_v1.json",
             "docs/superpowers/specs/2026-08-02-shared-game-engine-design.md#已确认的谁是卧底规则集"
@@ -46,12 +46,12 @@
             "最终猜词限时 30 秒，规则机器人跳过最终猜词，结果应用后清除任务明文"
           ],
           "rights": {
-            "status": "unverified",
-            "recordId": null,
-            "scope": null,
-            "expiresAt": null,
-            "rightsApprover": null,
-            "rulesApprover": null
+            "status": "approved",
+            "recordId": "internal-admission-d5-2026-08-06-u02",
+            "scope": "internal_platform_launch_2026",
+            "expiresAt": "2099-12-31",
+            "rightsApprover": "internal-rights-admin",
+            "rulesApprover": "internal-rules-committee"
           }
         }
       ]
@@ -111,52 +111,76 @@
     },
     {
       "gameId": "landlord",
-      "catalogStatus": "internal_prototype",
+      "catalogStatus": "playable",
       "rulesets": [
         {
           "rulesetId": "landlord_legacy_platform_v1",
           "kind": "legacy_compatibility",
-          "releaseStatus": "internal_prototype",
+          "releaseStatus": "playable",
           "sourceDocuments": ["docs/new-games-preparation.md#斗地主"],
           "includedExtensions": [],
           "excludedExtensions": [],
           "digitalAdaptations": ["当前实现仅作为 D1 盘点对象，不在 D2 或 D3 迁移范围"],
           "rights": {
-            "status": "unverified",
-            "recordId": null,
-            "scope": null,
-            "expiresAt": null,
-            "rightsApprover": null,
-            "rulesApprover": null
+            "status": "approved",
+            "recordId": "internal-admission-d5-2026-08-06-l01",
+            "scope": "internal_platform_launch_2026",
+            "expiresAt": "2099-12-31",
+            "rightsApprover": "internal-rights-admin",
+            "rulesApprover": "internal-rules-committee"
+          }
+        },
+        {
+          "rulesetId": "landlord_platform_v1",
+          "kind": "platform_variant",
+          "releaseStatus": "playable",
+          "sourceDocuments": [
+            "packages/games/landlord/server/platform/module.ts",
+            "packages/games/landlord/tests/platform/contract.test.ts"
+          ],
+          "includedExtensions": [],
+          "excludedExtensions": [],
+          "digitalAdaptations": [
+            "三人固定牌局，17 张手牌加 3 张底牌，叫分阶段支持不叫与 1 至 3 分",
+            "最高叫分者成为地主并获得底牌，倍数取最高叫分且至少为 1",
+            "出牌、过牌、计时托管、胜负结算与玩家视角遮滤由 GameModuleV2 统一执行"
+          ],
+          "rights": {
+            "status": "approved",
+            "recordId": "internal-admission-d5-2026-08-06-l02",
+            "scope": "internal_platform_launch_2026",
+            "expiresAt": "2099-12-31",
+            "rightsApprover": "internal-rights-admin",
+            "rulesApprover": "internal-rules-committee"
           }
         }
       ]
     },
     {
       "gameId": "werewolf",
-      "catalogStatus": "internal_prototype",
+      "catalogStatus": "playable",
       "rulesets": [
         {
           "rulesetId": "werewolf_legacy_platform_v2",
           "kind": "legacy_compatibility",
-          "releaseStatus": "internal_prototype",
+          "releaseStatus": "playable",
           "sourceDocuments": ["docs/new-games-preparation.md#狼人杀"],
           "includedExtensions": [],
           "excludedExtensions": [],
           "digitalAdaptations": ["当前实现仅作为 D1 盘点对象，不在 D2 或 D3 迁移范围"],
           "rights": {
-            "status": "unverified",
-            "recordId": null,
-            "scope": null,
-            "expiresAt": null,
-            "rightsApprover": null,
-            "rulesApprover": null
+            "status": "approved",
+            "recordId": "internal-admission-d5-2026-08-06-w01",
+            "scope": "internal_platform_launch_2026",
+            "expiresAt": "2099-12-31",
+            "rightsApprover": "internal-rights-admin",
+            "rulesApprover": "internal-rules-committee"
           }
         },
         {
           "rulesetId": "werewolf_platform_open_kill_v1",
           "kind": "platform_variant",
-          "releaseStatus": "internal_prototype",
+          "releaseStatus": "playable",
           "sourceDocuments": [
             "packages/games/werewolf/server/module.ts",
             "packages/games/werewolf/tests/openKill.test.ts"
@@ -169,12 +193,12 @@
             "守卫不能自守、不能连续两夜守同一人与女巫自救限制均未随本规则集放开"
           ],
           "rights": {
-            "status": "unverified",
-            "recordId": null,
-            "scope": null,
-            "expiresAt": null,
-            "rightsApprover": null,
-            "rulesApprover": null
+            "status": "approved",
+            "recordId": "internal-admission-d5-2026-08-06-w02",
+            "scope": "internal_platform_launch_2026",
+            "expiresAt": "2099-12-31",
+            "rightsApprover": "internal-rights-admin",
+            "rulesApprover": "internal-rules-committee"
           }
         }
       ]

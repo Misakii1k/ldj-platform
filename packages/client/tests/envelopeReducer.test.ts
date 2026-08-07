@@ -65,7 +65,7 @@ test('D3：旧 room_snapshot 不得覆盖更新基线', () => {
   };
   const result = applyEnvelope(current, envelope('room_snapshot', room(9), 9));
   assert.equal(result.state, current);
-  assert.deepEqual(result.effects, []);
+  assert.deepEqual(result.effects, [{ type: 'send_resync' }]);
 });
 
 test('D3：旧 game_state 不得覆盖更新视角', () => {

@@ -40,8 +40,8 @@ test('undercover_blank_registers_separately_from_classic_test', () => {
 test('undercover_blank_is_not_playable_before_acceptance_test', () => {
   const entry = GAME_CATALOG.find((game) => game.id === 'undercover');
   assert.ok(entry);
-  assert.notEqual(entry!.availability, 'playable', 'blank 未独立验收前不得 playable');
-  assert.equal(entry!.availability, 'internal_prototype');
+  // D5 P2b：undercover 已整款上架（classic + blank 两 ruleset 均 playable，台账带授权证据）
+  assert.equal(entry!.availability, 'playable', 'undercover 整款上架后 availability 应为 playable');
 });
 
 test('undercover_blank_rejects_mutable_role_semantics_test', () => {

@@ -84,6 +84,40 @@ test('D3 矩阵：卧底每个 accepted 动作后崩溃恢复，与不中断 ora
   assert.ok(result.steps >= 10, `逐动作崩溃局应有足够步数：${result.steps}`);
 });
 
+test('D5 P2a 矩阵：landlord_platform_v1 纯规则机器人完整局收束，结果恰写一次且无残留计时器', async () => {
+  const result = await driveFullGameWithCrashMatrix({
+    gameId: 'landlord',
+    rulesetId: 'landlord_platform_v1',
+    humanCount: 1,
+    botCount: 2,
+    crashEveryStep: false,
+    maxSteps: 2000,
+  });
+  assert.equal(result.finished, true, `landlord 平台局应打完：${JSON.stringify(result)}`);
+  assert.equal(result.sessionStatus, 'FINISHED');
+  assert.equal(result.finalRulesetId, 'landlord_platform_v1', '必须真实按 landlord_platform_v1 规则集开局');
+  assert.equal(result.resultRows, 1, '终局必须恰有一条正式结果');
+  assert.equal(result.pendingTimersAtEnd, 0, '终局不得残留 pending 计时器');
+  assert.ok(result.steps > 0);
+});
+
+test('D5 P2a 矩阵：landlord_platform_v1 每个 accepted 动作后崩溃恢复，与不中断 oracle 一致并继续收束', async () => {
+  const result = await driveFullGameWithCrashMatrix({
+    gameId: 'landlord',
+    rulesetId: 'landlord_platform_v1',
+    humanCount: 1,
+    botCount: 2,
+    crashEveryStep: true,
+    maxSteps: 2000,
+  });
+  assert.equal(result.finished, true, `landlord 平台局逐动作崩溃后应继续收束：${JSON.stringify(result)}`);
+  assert.equal(result.sessionStatus, 'FINISHED');
+  assert.equal(result.finalRulesetId, 'landlord_platform_v1', '必须真实按 landlord_platform_v1 规则集开局');
+  assert.equal(result.resultRows, 1);
+  assert.equal(result.pendingTimersAtEnd, 0);
+  assert.ok(result.steps >= 10, `逐动作崩溃局应有足够步数：${result.steps}`);
+});
+
 test('D5 P1b 矩阵：blank（undercover_blank_v1）逐动作崩溃恢复，与不中断 oracle 一致并继续收束', async () => {
   const result = await driveFullGameWithCrashMatrix({
     gameId: 'undercover',

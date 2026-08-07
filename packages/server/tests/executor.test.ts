@@ -136,25 +136,35 @@ test('create_room：未开放或未定的游戏不能创建房间', async () => 
   }
 });
 
-test('D1：证据未批准的游戏不能通过默认生产路径新建房间', async () => {
+test('create_room：D5 上架三款可建房，uno 权利阻断仍拒绝', async () => {
   const { db, executor } = setup();
   try {
-    for (const gameId of ['undercover', 'uno', 'landlord', 'werewolf'] as const) {
-      const { roomId } = prepareCreateRoom();
-      await assert.rejects(
-        executor.executeCreate({
-          roomId,
-          actorScope: `conn:${gameId}`,
-          requestId: `req-d1-${gameId}`,
-          handler: (tx) => applyCreateRoom(tx, roomId, { nickname: '房主', gameId }),
-        }),
-        (error: unknown) => {
-          assert.ok(error instanceof CommandError);
-          assert.equal(error.code, 'ACTION_NOT_ALLOWED');
-          assert.equal(error.message, '所选游戏暂未开放');
-          return true;
-        },
-      );
+    // uno 权利证据未完成 → 保持 blocked_rights，create_room 拒绝
+    const { roomId } = prepareCreateRoom();
+    await assert.rejects(
+      executor.executeCreate({
+        roomId,
+        actorScope: 'conn:uno',
+        requestId: 'req-d5-uno',
+        handler: (tx) => applyCreateRoom(tx, roomId, { nickname: '房主', gameId: 'uno' }),
+      }),
+      (error: unknown) => {
+        assert.ok(error instanceof CommandError);
+        assert.equal(error.code, 'ACTION_NOT_ALLOWED');
+        assert.equal(error.message, '所选游戏暂未开放');
+        return true;
+      },
+    );
+    // undercover / landlord / werewolf 已 playable → 允许建房
+    for (const gameId of ['undercover', 'landlord', 'werewolf'] as const) {
+      const okRoomId = prepareCreateRoom().roomId;
+      const created = await executor.executeCreate({
+        roomId: okRoomId,
+        actorScope: `conn:${gameId}`,
+        requestId: `req-d5-${gameId}`,
+        handler: (tx) => applyCreateRoom(tx, okRoomId, { nickname: '房主', gameId }),
+      });
+      assert.equal(created.outcome.snapshot.gameId, gameId);
     }
   } finally {
     db.close();
