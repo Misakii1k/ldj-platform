@@ -22,6 +22,18 @@
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --touch-size: 44px;
+  /* 对局纸牌派对调色板：唯一权威来源。对局内浮层（如聊天入口）挂在各游戏页根节点之外，
+     令牌必须在全局作用域可用，否则浮层会退化成无边框无底色的裸控件。 */
+  --game-paper: #fff4df;
+  --game-surface: #fffdf7;
+  --game-ink: #292722;
+  --game-muted: #716b61;
+  --game-line: #292722;
+  --game-green: #08715d;
+  --game-green-dark: #055848;
+  --game-coral: #ef513d;
+  --game-yellow: #f7c84b;
+  --game-purple: #7358a7;
 }
 
 html, body {
@@ -3678,16 +3690,6 @@ p { margin: 0.5rem 0; }
 }
 /* —— 谁是卧底对局：机密推理桌 —— */
 .game-page {
-  --game-paper: #fff4df;
-  --game-surface: #fffdf7;
-  --game-ink: #292722;
-  --game-muted: #716b61;
-  --game-line: #292722;
-  --game-green: #08715d;
-  --game-green-dark: #055848;
-  --game-coral: #ef513d;
-  --game-yellow: #f7c84b;
-  --game-purple: #7358a7;
   position: relative;
   isolation: isolate;
   min-height: 100vh;
@@ -4366,7 +4368,7 @@ p { margin: 0.5rem 0; }
   animation-duration: 28s;
 }
 
-.game-page:has(.game-action-dock) .game-chat-trigger {
+.game-page:has(.game-action-dock) ~ .game-chat-trigger {
   bottom: calc(var(--safe-bottom) + 88px);
 }
 
@@ -4494,7 +4496,7 @@ p { margin: 0.5rem 0; }
 }
 
 @media (max-width: 430px) {
-  .game-page:has(.game-action-dock) .game-chat-trigger {
+  .game-page:has(.game-action-dock) ~ .game-chat-trigger {
     bottom: calc(var(--safe-bottom) + 84px);
   }
 

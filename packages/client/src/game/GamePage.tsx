@@ -95,7 +95,6 @@ function UndercoverGamePage({ game }: { game: ActiveGame }) {
         {view.phase !== 'game_over' && <GamePhaseRail phase={view.phase} />}
         {phaseView}
       </div>
-      <GameChatDrawer />
     </main>
   );
 }

@@ -84,6 +84,16 @@ test.describe('D6 landlord_platform_v1 客户端产品闭环', () => {
       await expect(page.locator('.landlord-hand__card')).toHaveCount(17);
       await expect(page.locator('.landlord-players .new-player-chip')).toHaveCount(3);
 
+      // 聊天入口只允许一个，且必须解析到游戏调色板令牌（防止挂载在 .game-page 外退化为裸文字）。
+      const chatTrigger = page.locator('.game-chat-trigger');
+      await expect(chatTrigger).toHaveCount(1);
+      const chatStyle = await chatTrigger.evaluate((el) => {
+        const style = getComputedStyle(el);
+        return { background: style.backgroundColor, borderWidth: style.borderTopWidth };
+      });
+      expect(chatStyle.background).toBe('rgb(239, 81, 61)');
+      expect(chatStyle.borderWidth).toBe('3px');
+
       // 房主不叫，叫分权转给浏览器玩家；浏览器真实点击 3 分。
       const hostBid = await host.gameAction({ type: 'bid_score', score: 0 });
       expect(hostBid.type).toBe('ack');
