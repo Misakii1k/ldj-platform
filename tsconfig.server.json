@@ -22,6 +22,12 @@
       ],
       "@ldj/game-werewolf/server": [
         "./packages/games/werewolf/server/index.ts"
+      ],
+      "@ldj/game-durian/server": [
+        "./packages/games/durian/server/index.ts"
+      ],
+      "@ldj/game-loveletter/server": [
+        "./packages/games/loveletter/server/index.ts"
       ]
     }
   },

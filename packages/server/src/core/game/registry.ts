@@ -10,6 +10,8 @@ import {
 import { unoVersionedModule, unoHouseModule } from '@ldj/game-uno/server';
 import { landlordModule, landlordPlatformModule } from '@ldj/game-landlord/server';
 import { werewolfModule, werewolfV2Module } from '@ldj/game-werewolf/server';
+import { durianModule } from '@ldj/game-durian/server';
+import { loveLetterModule } from '@ldj/game-loveletter/server';
 import type { SessionRow } from './session.ts';
 
 export type ErasedGameModule = GameModule<unknown, unknown, unknown, unknown, unknown, unknown, unknown>;
@@ -32,6 +34,8 @@ const MODULES: RegisteredGameModule[] = [
   landlordModule,
   werewolfModule,
   werewolfV2Module,
+  durianModule,
+  loveLetterModule,
 ];
 
 function keyOf(gameId: string, rulesetId: string): string {

@@ -202,6 +202,65 @@
           }
         }
       ]
+    },
+    {
+      "gameId": "durian",
+      "catalogStatus": "coming_soon",
+      "rulesets": [
+        {
+          "rulesetId": "durian_orchard_v1",
+          "kind": "platform_variant",
+          "releaseStatus": "coming_soon",
+          "sourceDocuments": [
+            "packages/games/durian/server/module.ts",
+            "docs/game-library/桌游平台游戏库资料/08_Durian/01_游戏规则.md"
+          ],
+          "includedExtensions": [],
+          "excludedExtensions": [],
+          "digitalAdaptations": [
+            "先到先得按铃：首个合法按铃者锁定订单，关闭窗口后不可再抢",
+            "超卖判定与怒气累计由服务端权威裁决，怒气封顶 7 即终局"
+          ],
+          "rights": {
+            "status": "unverified",
+            "recordId": "",
+            "scope": "internal_platform_launch_2026",
+            "expiresAt": "",
+            "rightsApprover": "",
+            "rulesApprover": ""
+          }
+        }
+      ]
+    },
+    {
+      "gameId": "loveletter",
+      "catalogStatus": "coming_soon",
+      "rulesets": [
+        {
+          "rulesetId": "loveletter_classic16_v1",
+          "kind": "platform_variant",
+          "releaseStatus": "coming_soon",
+          "sourceDocuments": [
+            "packages/games/loveletter/server/module.ts",
+            "docs/game-library/桌游平台游戏库资料/06_情书/01_游戏规则.md"
+          ],
+          "includedExtensions": [],
+          "excludedExtensions": [],
+          "digitalAdaptations": [
+            "经典 16 张（守卫×5 牧师×2 男爵×2 侍女×2 王子×2 国王×1 伯爵夫人×1 公主×1）",
+            "摸 1 打 1；伯爵夫人强制；王子可自选；弃公主即淘汰；牌库耗尽先比手牌再比弃牌",
+            "好感阈值 2 人 7 / 3 人 5 / 4 人 4；断线自动打最低合法牌"
+          ],
+          "rights": {
+            "status": "unverified",
+            "recordId": "",
+            "scope": "internal_platform_launch_2026",
+            "expiresAt": "",
+            "rightsApprover": "",
+            "rulesApprover": ""
+          }
+        }
+      ]
     }
   ],
   "forbidden": {

@@ -389,7 +389,7 @@ test('注册表：默认游戏可查、manifest 一致', () => {
 test('注册表：上架游戏可建房（playable + 模块存在），uno 权利阻断不可建房', async () => {
   const { listGameManifests } = await import('../src/core/game/registry.ts');
   const manifests = listGameManifests();
-  assert.deepEqual(manifests.map((manifest) => manifest.id), ['undercover', 'uno', 'landlord', 'werewolf']);
+  assert.deepEqual(manifests.map((manifest) => manifest.id), ['undercover', 'uno', 'landlord', 'werewolf', 'durian', 'loveletter']);
   const playable = GAME_CATALOG.filter((game) => String(game.availability) === 'playable');
   assert.deepEqual(playable.map((game) => game.id).sort(), ['landlord', 'undercover', 'werewolf']);
   // 每款 playable 游戏都必须同时存在注册模块（create_room 准入依赖两者同时满足）
@@ -399,4 +399,9 @@ test('注册表：上架游戏可建房（playable + 模块存在），uno 权�
   }
   // uno 权利阻断：目录不可建房，模块仅供历史恢复
   assert.equal(getPlayableGameCatalogEntry('uno'), undefined);
+  // coming_soon：目录可见但不可建房（create_room 同时要求 playable 目录与注册模块）
+  assert.equal(getPlayableGameCatalogEntry('durian'), undefined);
+  assert.equal(getPlayableGameCatalogEntry('loveletter'), undefined);
+  assert.ok(getGameModule('durian'), 'durian 应注册模块（coming_soon 到 playable 前置）');
+  assert.ok(getGameModule('loveletter'), 'loveletter 应注册模块（coming_soon 到 playable 前置）');
 });

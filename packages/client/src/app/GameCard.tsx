@@ -12,6 +12,8 @@ function gameMark(gameId: string): string {
     case 'uno': return 'UNO';
     case 'landlord': return '斗';
     case 'werewolf': return '狼';
+    case 'durian': return '榴';
+    case 'loveletter': return '情';
     default: return '玩';
   }
 }

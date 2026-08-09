@@ -25,7 +25,12 @@ test('GAME_CATALOG：游戏 ID 唯一且人数范围有效', () => {
 
 test('GAME_CATALOG：现有内部模块保留机器人能力声明', () => {
   for (const game of GAME_CATALOG) {
-    assert.equal(game.botSupport, 'rule_and_llm');
+    if (game.id === 'durian' || game.id === 'loveletter') {
+      // D7-C 新接入游戏按计划不提供机器人（botSupport: 'none'）
+      assert.equal(game.botSupport, 'none', `${game.id} 应声明不提供机器人`);
+    } else {
+      assert.equal(game.botSupport, 'rule_and_llm', `${game.id} 应保留机器人能力`);
+    }
   }
 });
 
@@ -67,6 +72,8 @@ test('GAME_CATALOG：D1 规则集 ID 与目录状态已冻结', () => {
       { id: 'uno', availability: 'blocked_rights', rulesetId: 'uno_legacy_platform_v1' },
       { id: 'landlord', availability: 'playable', rulesetId: 'landlord_platform_v1' },
       { id: 'werewolf', availability: 'playable', rulesetId: 'werewolf_legacy_platform_v2' },
+      { id: 'durian', availability: 'coming_soon', rulesetId: 'durian_orchard_v1' },
+      { id: 'loveletter', availability: 'coming_soon', rulesetId: 'loveletter_classic16_v1' },
     ],
   );
 });
@@ -97,12 +104,12 @@ test('GAME_CATALOG：D1 无默认可玩游戏', () => {
   assert.equal(DEFAULT_PLAYABLE_GAME_ID, null);
 });
 
-test('listGamesForPlayerCount：生产目录展示 playable、隐藏内部或权利阻断项', () => {
+test('listGamesForPlayerCount：生产目录展示 playable 与 coming_soon，隐藏内部或权利阻断项', () => {
   const all = listGamesForPlayerCount(null);
-  assert.deepEqual(all.map((game) => game.id).sort(), ['landlord', 'undercover', 'werewolf']);
-  assert.deepEqual(listGamesForPlayerCount(4).map((game) => game.id).sort(), ['undercover']);
-  assert.deepEqual(listGamesForPlayerCount(3).map((game) => game.id).sort(), ['landlord']);
+  assert.deepEqual(all.map((game) => game.id).sort(), ['durian', 'landlord', 'loveletter', 'undercover', 'werewolf']);
+  assert.deepEqual(listGamesForPlayerCount(4).map((game) => game.id).sort(), ['durian', 'loveletter', 'undercover']);
+  assert.deepEqual(listGamesForPlayerCount(3).map((game) => game.id).sort(), ['durian', 'landlord', 'loveletter']);
   assert.deepEqual(listGamesForPlayerCount(12).map((game) => game.id).sort(), ['undercover', 'werewolf']);
-  assert.deepEqual(listGamesForPlayerCount(2), []);
+  assert.deepEqual(listGamesForPlayerCount(2).map((game) => game.id).sort(), ['durian', 'loveletter']);
   assert.deepEqual(PLAYER_COUNT_OPTIONS, [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
 });
