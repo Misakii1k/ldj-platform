@@ -1,74 +1,49 @@
-import { LOVELETTER_ROLES, type LoveLetterAction, type LoveLetterCard, type LoveLetterConfig, type LoveLetterRole } from './types.ts';
+/** loveletter_classic16_v1 — strict zod schemas（config/action）。状态形状校验由 invariant 承担。 */
+import { z } from 'zod';
+import { LOVELETTER_ROLES, type LoveLetterAction, type LoveLetterConfig } from './types.ts';
 
-const ROLE_VALUES: Record<LoveLetterRole, LoveLetterCard['value']> = {
-  guard: 1, priest: 2, baron: 3, handmaid: 4, prince: 5, king: 6, countess: 7, princess: 8,
-};
+const ROLE_VALUES = { guard: 1, priest: 2, baron: 3, handmaid: 4, prince: 5, king: 6, countess: 7, princess: 8 } as const;
+const pid = z.string().min(1, { message: '玩家 ID 无效' }).max(64, { message: '玩家 ID 无效' });
+const role = z.enum(LOVELETTER_ROLES, { message: '角色无效' });
 
-function object(input: unknown, label: string): Record<string, unknown> {
-  if (typeof input !== 'object' || input === null || Array.isArray(input)) throw new Error(`${label} 必须是对象`);
-  return input as Record<string, unknown>;
-}
+const cardSchema = z.object({
+  id: pid,
+  role,
+  value: z.number().int().min(1).max(8),
+}).strict('角色牌 字段无效').refine((card) => card.value === ROLE_VALUES[card.role], { message: '角色牌点数无效' });
 
-function exactKeys(value: Record<string, unknown>, allowed: readonly string[], required: readonly string[], label: string): void {
-  if (Object.keys(value).some((key) => !allowed.includes(key)) || required.some((key) => !(key in value))) {
-    throw new Error(`${label} 字段无效`);
+const deckSchema = z.array(cardSchema)
+  .length(16, { message: '牌序必须包含 16 张牌' })
+  .refine((cards) => new Set(cards.map((card) => card.id)).size === cards.length, { message: '角色牌 ID 重复' });
+
+const loveLetterConfigSchema = z.object({
+  rulesetId: z.literal('loveletter_classic16_v1').optional(),
+  deckOrder: deckSchema.optional(),
+  futureDeckOrders: z.array(deckSchema).optional(),
+}).strict('配置 字段无效');
+
+const loveLetterActionSchema = z.object({
+  type: z.literal('play_card', { message: '动作类型无效' }),
+  playerId: pid,
+  cardId: pid,
+  targetPlayerId: pid.optional(),
+  guessedRole: role.optional(),
+}).strict('动作 字段无效');
+
+function parseOrThrow<T>(schema: z.ZodType<unknown>, input: unknown, label: string): T {
+  const result = schema.safeParse(input);
+  if (!result.success) {
+    const issue = result.error.issues[0]!;
+    // 多余字段统一报「字段无效」，与既有测试断言一致。
+    throw new Error(issue.code === 'unrecognized_keys' ? `${label} 字段无效` : issue.message);
   }
-}
-
-function playerId(input: unknown): string {
-  if (typeof input !== 'string' || input.length < 1 || input.length > 64) throw new Error('玩家 ID 无效');
-  return input;
-}
-
-function role(input: unknown): LoveLetterRole {
-  if (typeof input !== 'string' || !LOVELETTER_ROLES.includes(input as LoveLetterRole)) throw new Error('角色无效');
-  return input as LoveLetterRole;
-}
-
-function card(input: unknown): LoveLetterCard {
-  const value = object(input, '角色牌');
-  exactKeys(value, ['id', 'role', 'value'], ['id', 'role', 'value'], '角色牌');
-  if (typeof value.id !== 'string' || value.id.length < 1 || value.id.length > 64) throw new Error('角色牌 ID 无效');
-  const parsedRole = role(value.role);
-  if (value.value !== ROLE_VALUES[parsedRole]) throw new Error('角色牌点数无效');
-  return { id: value.id, role: parsedRole, value: ROLE_VALUES[parsedRole] };
-}
-
-function deck(input: unknown): LoveLetterCard[] {
-  if (!Array.isArray(input) || input.length !== 16) throw new Error('牌序必须包含 16 张牌');
-  const cards = input.map(card);
-  if (new Set(cards.map((entry) => entry.id)).size !== cards.length) throw new Error('角色牌 ID 重复');
-  return cards;
+  return result.data as T;
 }
 
 export function parseLoveLetterConfig(input: unknown): LoveLetterConfig {
-  if (input === undefined) return {};
-  const value = object(input, '配置');
-  exactKeys(value, ['rulesetId', 'deckOrder', 'futureDeckOrders'], [], '配置');
-  if (value.rulesetId !== undefined && value.rulesetId !== 'loveletter_classic16_v1') throw new Error('规则集无效');
-  const deckOrder = value.deckOrder === undefined ? undefined : deck(value.deckOrder);
-  let futureDeckOrders: LoveLetterCard[][] | undefined;
-  if (value.futureDeckOrders !== undefined) {
-    if (!Array.isArray(value.futureDeckOrders)) throw new Error('后续牌序无效');
-    futureDeckOrders = value.futureDeckOrders.map(deck);
-  }
-  return {
-    ...(value.rulesetId === undefined ? {} : { rulesetId: value.rulesetId }),
-    ...(deckOrder ? { deckOrder } : {}),
-    ...(futureDeckOrders ? { futureDeckOrders } : {}),
-  };
+  return parseOrThrow<LoveLetterConfig>(loveLetterConfigSchema, input ?? {}, '配置');
 }
 
 export function parseLoveLetterAction(input: unknown): LoveLetterAction {
-  const value = object(input, '动作');
-  exactKeys(value, ['type', 'playerId', 'cardId', 'targetPlayerId', 'guessedRole'], ['type', 'playerId', 'cardId'], '动作');
-  if (value.type !== 'play_card') throw new Error('动作类型无效');
-  if (typeof value.cardId !== 'string' || value.cardId.length < 1 || value.cardId.length > 64) throw new Error('角色牌 ID 无效');
-  return {
-    type: value.type,
-    playerId: playerId(value.playerId),
-    cardId: value.cardId,
-    ...(value.targetPlayerId === undefined ? {} : { targetPlayerId: playerId(value.targetPlayerId) }),
-    ...(value.guessedRole === undefined ? {} : { guessedRole: role(value.guessedRole) }),
-  };
+  return parseOrThrow<LoveLetterAction>(loveLetterActionSchema, input, '动作');
 }

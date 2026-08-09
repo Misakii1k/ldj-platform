@@ -1,10 +1,61 @@
-import type {
-  Inspection,
-  LoveLetterCard,
-  LoveLetterPlayerView,
-  LoveLetterPublicView,
-  LoveLetterState,
-} from './types.ts';
+import { z } from 'zod';
+import { LOVELETTER_ROLES } from './types.ts';
+import type { LoveLetterPlayerView, LoveLetterPublicView, LoveLetterState } from './types.ts';
+
+const pid = z.string().min(1).max(64);
+const role = z.enum(LOVELETTER_ROLES);
+
+const cardSchema = z.object({
+  id: pid,
+  role,
+  value: z.number().int().min(1).max(8),
+}).strict();
+
+const inspectionSchema = z.object({
+  viewerId: pid,
+  targetPlayerId: pid,
+  role,
+  round: z.number().int().nonnegative(),
+}).strict();
+
+const loveLetterPublicViewSchema = z.object({
+  gameId: z.literal('loveletter'),
+  rulesetId: z.literal('loveletter_classic16_v1'),
+  schemaVersion: z.literal(1),
+  phase: z.enum(['playing', 'game_over']),
+  players: z.array(z.object({
+    playerId: pid,
+    handCount: z.number().int().nonnegative(),
+    discarded: z.array(cardSchema),
+  }).strict()),
+  round: z.number().int().min(1),
+  deckCount: z.number().int().nonnegative(),
+  removedCards: z.array(cardSchema),
+  eliminatedPlayers: z.array(pid),
+  protectedPlayers: z.array(pid),
+  currentPlayerId: pid.nullable(),
+  affection: z.record(pid, z.number().int().nonnegative()),
+  affectionTarget: z.number().int().min(1),
+  roundWinners: z.array(pid),
+  winners: z.array(pid),
+}).strict();
+
+const loveLetterPlayerViewSchema = loveLetterPublicViewSchema.extend({
+  me: z.object({
+    playerId: pid,
+    hand: z.array(cardSchema),
+    inspections: z.array(inspectionSchema),
+  }).strict().nullable(),
+});
+
+function parseOrThrow<T>(schema: z.ZodType<unknown>, input: unknown, label: string): T {
+  const result = schema.safeParse(input);
+  if (!result.success) {
+    const issue = result.error.issues[0]!;
+    throw new Error(issue.code === 'unrecognized_keys' ? `${label} 字段无效` : issue.message);
+  }
+  return result.data as T;
+}
 
 function buildPublicView(state: LoveLetterState): LoveLetterPublicView {
   return {
@@ -47,69 +98,10 @@ export function buildLoveLetterSpectatorView(state: LoveLetterState): LoveLetter
   return buildPublicView(state);
 }
 
-function record(input: unknown, label: string): Record<string, unknown> {
-  if (typeof input !== 'object' || input === null || Array.isArray(input)) throw new Error(`${label} 必须是对象`);
-  return input as Record<string, unknown>;
-}
-
-function stringArray(input: unknown, label: string): string[] {
-  if (!Array.isArray(input) || input.some((item) => typeof item !== 'string')) throw new Error(`${label} 无效`);
-  return [...input];
-}
-
-function numberRecord(input: unknown, label: string): Record<string, number> {
-  const value = record(input, label);
-  if (Object.values(value).some((item) => !Number.isInteger(item) || (item as number) < 0)) throw new Error(`${label} 无效`);
-  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, item as number]));
-}
-
-function parsePublic(input: unknown): LoveLetterPublicView {
-  const value = record(input, '情书视图');
-  const expected = ['gameId', 'rulesetId', 'schemaVersion', 'phase', 'players', 'round', 'deckCount', 'removedCards', 'eliminatedPlayers', 'protectedPlayers', 'currentPlayerId', 'affection', 'affectionTarget', 'roundWinners', 'winners'];
-  if (Object.keys(value).length !== expected.length || expected.some((key) => !(key in value))) throw new Error('情书视图字段无效');
-  if (value.gameId !== 'loveletter' || value.rulesetId !== 'loveletter_classic16_v1' || value.schemaVersion !== 1) throw new Error('情书视图身份无效');
-  if (value.phase !== 'playing' && value.phase !== 'game_over') throw new Error('情书阶段无效');
-  if (!Number.isInteger(value.round) || (value.round as number) < 1 || !Number.isInteger(value.deckCount) || (value.deckCount as number) < 0) throw new Error('情书轮次无效');
-  if (!Number.isInteger(value.affectionTarget) || (value.affectionTarget as number) < 1) throw new Error('好感阈值无效');
-  if (value.currentPlayerId !== null && typeof value.currentPlayerId !== 'string') throw new Error('当前玩家无效');
-  if (!Array.isArray(value.players) || !Array.isArray(value.removedCards)) throw new Error('情书牌区无效');
-  return {
-    gameId: value.gameId,
-    rulesetId: value.rulesetId,
-    schemaVersion: value.schemaVersion,
-    phase: value.phase,
-    players: structuredClone(value.players) as LoveLetterPublicView['players'],
-    round: value.round as number,
-    deckCount: value.deckCount as number,
-    removedCards: structuredClone(value.removedCards) as LoveLetterCard[],
-    eliminatedPlayers: stringArray(value.eliminatedPlayers, '淘汰列表'),
-    protectedPlayers: stringArray(value.protectedPlayers, '保护列表'),
-    currentPlayerId: value.currentPlayerId,
-    affection: numberRecord(value.affection, '好感'),
-    affectionTarget: value.affectionTarget as number,
-    roundWinners: stringArray(value.roundWinners, '轮次赢家'),
-    winners: stringArray(value.winners, '赢家'),
-  };
-}
-
 export function parseLoveLetterSpectatorView(input: unknown): LoveLetterPublicView {
-  return parsePublic(input);
+  return parseOrThrow<LoveLetterPublicView>(loveLetterPublicViewSchema, input, '情书视图');
 }
 
 export function parseLoveLetterPlayerView(input: unknown): LoveLetterPlayerView {
-  const value = record(input, '情书玩家视图');
-  if (!('me' in value)) throw new Error('情书玩家视图缺少 me');
-  const { me, ...publicValue } = value;
-  const parsed = parsePublic(publicValue);
-  if (me === null) return { ...parsed, me: null };
-  const self = record(me, '情书本人视图');
-  if (Object.keys(self).length !== 3 || typeof self.playerId !== 'string' || !Array.isArray(self.hand) || !Array.isArray(self.inspections)) throw new Error('情书本人视图无效');
-  return {
-    ...parsed,
-    me: {
-      playerId: self.playerId,
-      hand: structuredClone(self.hand) as LoveLetterCard[],
-      inspections: structuredClone(self.inspections) as Inspection[],
-    },
-  };
+  return parseOrThrow<LoveLetterPlayerView>(loveLetterPlayerViewSchema, input, '情书玩家视图');
 }
