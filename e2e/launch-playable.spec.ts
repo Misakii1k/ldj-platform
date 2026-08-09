@@ -43,35 +43,24 @@ async function createRoomFromHome(page: Page, displayName: string, nickname: str
 async function driveBrowserUndercover(page: Page, timeoutMs = 420_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   const gamePhase = page.locator('.game-phase').first();
-  const confirmBtn = gamePhase.getByRole('button', { name: '我已记下，确认就绪' }).first();
-  const speechBtn = gamePhase.getByRole('button', { name: '发言完毕，交棒下一位' }).first();
-  const voteCard = gamePhase.locator('.vote-card:not(.self):not(:disabled)').first();
+  // 动作按可访问名称从页面定位；阶段容器会随服务端视角切换，不作为动作作用域。
+  const confirmBtn = page.getByRole('button', { name: '我已记下，确认就绪' }).first();
+  const speechBtn = page.getByRole('button', { name: '发言完毕，交棒下一位' }).first();
+  const voteCard = page.locator('.vote-card:not(.self):not(:disabled)').first();
   let lastLog = 0;
   let lastPhase = '';
 
   while (Date.now() < deadline) {
+    // 对局结束：客户端切回房间大厅（POST_GAME/ABORTED），.room-page 可见即终局。
+    // isVisible 无自动等待，不会像 textContent 那样为等待挂载卡住整个循环。
+    if (await page.locator('.room-page').isVisible().catch(() => false)) return;
     if (await page.locator('.game-phase.game-over').isVisible().catch(() => false)) return;
-    const roomStatus = await page.locator('.room-status').textContent().catch(() => '');
-    if (roomStatus.includes('对局已结算')) return;
 
-    // 每 10 秒打一次对局状态探针（阶段/按钮可点性/连接状态）
-    if (Date.now() - lastLog > 10_000) {
-      lastLog = Date.now();
-      const phase = (await page.locator('.game-phase').first().getAttribute('class').catch(() => 'unknown')) ?? 'unknown';
-      const conn = await page.locator('.game-header').textContent().catch(() => '');
-      const confirmState = await confirmBtn.isVisible().catch(() => false);
-      const speechState = await speechBtn.isEnabled().catch(() => false);
-      const voteCount = await voteCard.count().catch(() => 0);
-      if (phase !== lastPhase) {
-        lastPhase = phase;
-        console.log(`[drive-undercover] phase=${phase} confirm=${confirmState} speech=${speechState} voteCards=${voteCount} conn=${(conn ?? '').slice(0, 40)}`);
-      }
-    }
-
+    // 动作优先于慢速探测，避免发言/投票窗口被错过。
     const confirmed = await confirmBtn.isVisible().catch(() => false)
       && await confirmBtn.isEnabled().catch(() => false);
     if (confirmed) {
-      await confirmBtn.click();
+      await confirmBtn.click().catch(() => {});
       await page.waitForTimeout(400);
       continue;
     }
@@ -79,15 +68,28 @@ async function driveBrowserUndercover(page: Page, timeoutMs = 420_000): Promise<
     const mySpeechTurn = await speechBtn.isVisible().catch(() => false)
       && await speechBtn.isEnabled().catch(() => false);
     if (mySpeechTurn) {
-      await speechBtn.click();
+      await speechBtn.click().catch(() => {});
       await page.waitForTimeout(400);
       continue;
     }
 
     if (await voteCard.count().catch(() => 0) > 0) {
-      await voteCard.click();
+      await voteCard.click().catch(() => {});
       await page.waitForTimeout(400);
       continue;
+    }
+
+    // 每 10 秒打一次对局状态探针（仅日志，不参与驱动决策）
+    if (Date.now() - lastLog > 10_000) {
+      lastLog = Date.now();
+      const phase = (await gamePhase.getAttribute('class').catch(() => 'unknown')) ?? 'unknown';
+      const confirmState = await confirmBtn.isVisible().catch(() => false);
+      const speechState = await speechBtn.isVisible().catch(() => false);
+      const voteCount = await voteCard.count().catch(() => 0);
+      if (phase !== lastPhase) {
+        lastPhase = phase;
+        console.log(`[drive-undercover] phase=${phase} confirm=${confirmState} speech=${speechState} voteCards=${voteCount}`);
+      }
     }
 
     await page.waitForTimeout(200);

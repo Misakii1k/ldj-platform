@@ -1888,8 +1888,24 @@ p { margin: 0.5rem 0; }
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  /* 目录数量不足一整轮时收拢轨道，避免筛选后留下无意义空列。 */
+  .game-grid[data-game-count="1"] {
+    grid-template-columns: minmax(0, 760px);
+    justify-content: center;
+  }
+
+  .game-grid[data-game-count="2"],
+  .game-grid[data-game-count="3"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .game-card--featured {
     grid-column: span 2;
+  }
+
+  .game-grid[data-game-count="1"] .game-card--featured,
+  .game-grid[data-game-count="2"] .game-card--featured {
+    grid-column: span 1;
   }
 
   .game-card:not(.game-card--featured) {
@@ -2796,28 +2812,34 @@ p { margin: 0.5rem 0; }
   font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 }
 
+/* 边角装饰方块：仅在留白足够（≥1600px，见下方同名断点）时出现，
+   否则近乎满幅的布局会把它们裁成碎边，看着像渲染缺陷而不是点缀。 */
 .room-page::before,
 .room-page::after {
+  display: none;
   position: absolute;
   z-index: -1;
-  width: clamp(100px, 13vw, 190px);
-  height: clamp(100px, 13vw, 190px);
+  width: clamp(100px, 8vw, 150px);
+  height: clamp(100px, 8vw, 150px);
   border: 3px solid rgba(49, 45, 40, 0.76);
   content: "";
   pointer-events: none;
 }
 
+/* 旋转会让方块的外接盒每侧多出约 20px，内缩量必须大于这个溢出，否则仍会被视口裁边。 */
 .room-page::before {
   top: clamp(190px, 24vw, 350px);
-  right: clamp(-105px, -4vw, -56px);
+  right: clamp(30px, 2.4vw, 46px);
   background: var(--room-green);
+  opacity: .82;
   transform: rotate(24deg);
 }
 
 .room-page::after {
   bottom: 82px;
-  left: clamp(-100px, -4vw, -54px);
+  left: clamp(30px, 2.4vw, 46px);
   background: var(--room-yellow);
+  opacity: .82;
   transform: rotate(-17deg);
 }
 
@@ -4035,6 +4057,35 @@ p { margin: 0.5rem 0; }
   max-width: none;
 }
 
+/* 本局规则面板：在房间页内改用房间纸牌配色，避免牌桌深绿主题混入 */
+.room-layout .tabletop-setup {
+  --tabletop-ink: var(--room-ink);
+  --tabletop-accent: var(--room-coral);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items: start;
+  margin: 0;
+  padding: clamp(16px, 1.3vw, 22px);
+  border-width: 3px;
+  border-radius: 20px;
+  background: #fffaf0;
+  box-shadow: 7px 8px 0 var(--room-ink);
+}
+
+.room-layout .tabletop-setup__heading {
+  display: grid;
+  grid-column: 1 / -1;
+  justify-content: start;
+  gap: 2px;
+}
+
+.room-layout .tabletop-setup__heading > span {
+  color: var(--home-green);
+}
+
+.room-layout .tabletop-setup small {
+  color: var(--room-muted);
+}
+
 /* 头部 */
 .room-layout .room-header {
   align-items: center;
@@ -4070,12 +4121,12 @@ p { margin: 0.5rem 0; }
   letter-spacing: -.07em;
 }
 
-.room-hero__title em {
+.room-hero__title span {
   color: var(--home-coral);
   font-style: normal;
 }
 
-.room-hero__lede {
+.room-hero__description {
   max-width: 34rem;
   margin: 16px 0 0;
   color: var(--home-muted);
@@ -4106,7 +4157,7 @@ p { margin: 0.5rem 0; }
   font-size: clamp(1.8rem, 7vw, 2.7rem);
 }
 
-.room-code-card .room-copy-btn {
+.room-code-card .room-code-card__copy {
   min-height: 42px;
   margin-top: 4px;
   padding: 7px 12px;
@@ -4143,7 +4194,7 @@ p { margin: 0.5rem 0; }
   line-height: 1.1;
 }
 
-.room-panel__mark {
+.room-panel__glyph {
   font-size: 1.5rem;
 }
 
@@ -4158,10 +4209,17 @@ p { margin: 0.5rem 0; }
 }
 
 .room-content-grid .member {
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   gap: 8px;
   padding: 8px 6px;
   border: 1.5px solid color-mix(in srgb, var(--game-accent, #146e59) 28%, transparent);
   background: rgba(255, 253, 248, .72);
+}
+
+/* 操作按钮与状态徽标同排，避免"我"这一行比邻居高一截 */
+.room-content-grid .member-actions {
+  grid-column: auto;
+  flex-wrap: nowrap;
 }
 
 .room-content-grid .member-seat {
@@ -4185,24 +4243,24 @@ p { margin: 0.5rem 0; }
 }
 
 /* 房主操作台 */
-.room-host-console {
+.room-console {
   grid-template-columns: 1fr;
   margin-top: 0;
   gap: 12px;
 }
 
-.room-host-console__head {
+.room-console__head {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.room-host-console__eyebrow {
+.room-console__eyebrow {
   margin: 0;
   color: var(--home-green);
 }
 
-.room-host-console__title {
+.room-console__title {
   margin: 0;
   font-family: ui-serif, 'Songti SC', serif;
   font-weight: 900;
@@ -4212,7 +4270,7 @@ p { margin: 0.5rem 0; }
   gap: 10px;
 }
 
-.room-action-btn {
+.room-inline-btn {
   width: auto;
   min-height: 44px;
   margin-top: 0;
@@ -4227,6 +4285,12 @@ p { margin: 0.5rem 0; }
   .room-page.game-home-page {
     padding-right: clamp(42px, 4vw, 76px);
     padding-left: clamp(42px, 4vw, 76px);
+  }
+
+  /* 此宽度下 1440px 容器两侧留出真实空白，装饰方块才不会被裁成碎边。 */
+  .room-page::before,
+  .room-page::after {
+    display: block;
   }
 
   .room-hero {
@@ -7469,6 +7533,7 @@ html[data-motion-level="off"] *::after {
 .seat-chip__mark { margin-right: 4px; color: #8ab59c; }
 .seat-chip__role { color: var(--wolf-copper); font-size: .72rem; font-weight: 900; }
 .seat-chip__badges { display: flex; flex-wrap: wrap; gap: 4px; min-height: 18px; }
+.seat-chip__badges:empty { display: none; min-height: 0; }
 .seat-chip__badge { padding: 2px 6px; border: 1px solid rgba(237,241,229,.28); border-radius: 999px; color: var(--wolf-moon); font-size: .62rem; font-weight: 900; }
 .seat-chip__badge--ally { color: #ffbcc3; border-color: rgba(168,61,70,.7); background: rgba(168,61,70,.2); }
 .seat-chip__badge--speaking { color: #241b0f; border-color: var(--wolf-copper); background: var(--wolf-copper); }
@@ -7528,6 +7593,17 @@ html[data-motion-level="off"] *::after {
 .werewolf-actions__hint,
 .werewolf-actions--waiting p { margin: 0 0 12px; color: var(--wolf-muted); line-height: 1.55; }
 .werewolf-actions--waiting p { margin: 0; }
+.werewolf-actions__busy {
+  margin: 0 0 14px;
+  padding: 8px 11px;
+  border: 1px solid rgba(198,154,88,.38);
+  border-radius: 10px;
+  color: var(--wolf-copper);
+  background: rgba(198,154,88,.1);
+  font-size: .78rem;
+  font-weight: 850;
+}
+.werewolf-actions__busy::before { margin-right: 7px; content: "●"; animation: wolf-busy 1s ease-in-out infinite; }
 .werewolf-actions__options { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 9px; }
 .werewolf-actions button {
   min-height: 46px;
@@ -7542,7 +7618,9 @@ html[data-motion-level="off"] *::after {
   cursor: pointer;
 }
 .werewolf-actions button:hover:not(:disabled) { border-color: var(--wolf-copper); color: #241b0f; background: var(--wolf-copper); transform: translateY(-1px); }
+.werewolf-actions button:active:not(:disabled) { transform: translateY(1px); }
 .werewolf-actions button:disabled { cursor: wait; opacity: .55; }
+.werewolf-actions[data-busy="true"] button:disabled { border-color: rgba(198,154,88,.34); opacity: .72; }
 .werewolf-actions button:focus-visible,
 .private-role-panel button:focus-visible,
 .werewolf-stage .game-leave__button:focus-visible { outline: 3px solid #f8df9a; outline-offset: 3px; }
@@ -7563,6 +7641,7 @@ html[data-motion-level="off"] *::after {
 .werewolf-stage__fallback h1 { color: var(--wolf-moon); font-family: ui-serif, "Songti SC", serif; }
 
 @keyframes wolf-urgent { 50% { box-shadow: 0 0 22px rgba(168,61,70,.48); } }
+@keyframes wolf-busy { 50% { opacity: .3; } }
 
 @media (max-width: 760px) {
   .werewolf-stage { padding-inline: 10px; }
@@ -7580,7 +7659,7 @@ html[data-motion-level="off"] *::after {
   .seat-ring__table { display: none; }
   .seat-ring__list { position: static; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .seat-chip,
-  .seat-ring.is-dense .seat-chip { position: relative; inset: auto; width: auto; min-height: 98px; padding: 12px 12px 11px; transform: none; border-radius: 14px; }
+  .seat-ring.is-dense .seat-chip { position: relative; inset: auto; width: auto; min-height: 82px; padding: 9px 11px; transform: none; border-radius: 14px; }
   .seat-ring.is-dense .seat-chip__name { font-size: .94rem; }
   .seat-ring.is-dense .seat-chip__status { font-size: .68rem; }
   .seat-ring.is-dense .seat-chip__badge { padding-inline: 6px; font-size: .62rem; }

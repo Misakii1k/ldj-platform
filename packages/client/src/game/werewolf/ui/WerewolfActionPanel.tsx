@@ -17,7 +17,8 @@ export function WerewolfActionPanel({ groups, waitingHint, busy, onAct }: Werewo
   }
 
   return (
-    <section className="werewolf-actions" aria-label="可执行操作">
+    <section className="werewolf-actions" aria-label="可执行操作" aria-busy={busy} data-busy={busy || undefined}>
+      {busy && <p className="werewolf-actions__busy" role="status">正在提交本次选择…</p>}
       {groups.map((group) => (
         <div key={group.id} className="werewolf-actions__group">
           <h2>{group.title}</h2>

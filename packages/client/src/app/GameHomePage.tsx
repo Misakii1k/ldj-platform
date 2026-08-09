@@ -111,7 +111,7 @@ export function GameHomePage() {
               适合当前人数的可玩游戏正在全力准备中，不妨看看即将登场的特色玩法。
             </p>
           )}
-          <div className="game-grid">
+          <div className="game-grid" data-game-count={games.length}>
             {games.map((game) => (
               <GameCard key={`${game.id}-${selectedCount ?? 'all'}`} game={game} onCreate={openCreateSheet} />
             ))}
