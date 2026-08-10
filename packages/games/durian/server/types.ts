@@ -63,6 +63,7 @@ export interface DurianState {
 }
 
 export type DurianAction =
+  | { type: 'begin' }
   | { type: 'submit_order'; playerId: string; optionIndex: 0 | 1 }
   | { type: 'ring_bell'; playerId: string }
   | { type: 'resolve_bell'; playerId: string }

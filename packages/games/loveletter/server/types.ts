@@ -60,7 +60,9 @@ export interface PlayCardAction {
   guessedRole?: LoveLetterRole;
 }
 
-export type LoveLetterAction = PlayCardAction;
+export type LoveLetterAction =
+  | { type: 'begin' }
+  | PlayCardAction;
 
 export type LoveLetterEvent =
   | { type: 'card_played'; playerId: string; role: LoveLetterRole }

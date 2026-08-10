@@ -7674,6 +7674,159 @@ html[data-motion-level="off"] *::after {
   .seat-ring__list { grid-template-columns: 1fr; }
 }
 
+/* —— Durian 榴莲店长桌面（D7-C，TabletopShell 消费方） —— */
+.durian-page__bar,
+.loveletter-page__bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 2px 4px 10px;
+}
+
+.durian-page__rules,
+.loveletter-page__rules {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255,248,232,.32);
+  border-radius: 12px;
+  color: var(--tabletop-paper);
+  background: rgba(5,23,19,.56);
+  font: inherit;
+  font-size: .8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.durian-order {
+  display: grid;
+  gap: 10px;
+  margin: 14px;
+  padding: 16px;
+  border: 1px solid rgba(232,189,98,.45);
+  border-radius: 18px;
+  background: rgba(232,189,98,.08);
+}
+
+.durian-order__eyebrow { color: var(--tabletop-gold); font-size: .7rem; font-weight: 900; letter-spacing: .14em; }
+.durian-order__options { display: flex; flex-wrap: wrap; gap: 10px; }
+.durian-order__option {
+  display: grid;
+  min-width: 120px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255,248,232,.1);
+}
+.durian-order__option strong { font-size: 1.05rem; }
+.durian-order__option span { color: #c4d5cf; font-size: .78rem; }
+
+.durian-board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  margin: 0 14px 14px;
+}
+.durian-demand,
+.durian-anger {
+  padding: 12px 14px;
+  border: 1px solid rgba(255,248,232,.16);
+  border-radius: 14px;
+  background: rgba(5,23,19,.5);
+}
+.durian-board__label { display: block; margin-bottom: 8px; color: #c4d5cf; font-size: .72rem; }
+.durian-demand__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.durian-demand__chip { padding: 4px 8px; border-radius: 999px; background: rgba(255,248,232,.1); font-size: .76rem; }
+.durian-demand__chip strong { color: var(--tabletop-gold); }
+.durian-anger { text-align: center; }
+.durian-anger strong { color: var(--tabletop-gold); font-size: 1.2rem; }
+
+.durian-bell {
+  margin: 0 14px 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+.durian-bell--open { color: #241b0f; background: var(--tabletop-gold); }
+.durian-bell--locked { color: #241b0f; background: var(--tabletop-accent); }
+
+.durian-private {
+  margin: 0 14px 14px;
+  padding: 12px 14px;
+  border: 1px dashed rgba(232,189,98,.4);
+  border-radius: 14px;
+}
+.durian-private__cards { display: flex; flex-wrap: wrap; gap: 6px; }
+.durian-private__card { padding: 5px 9px; border-radius: 999px; background: rgba(255,248,232,.1); font-size: .76rem; }
+
+.durian-over,
+.loveletter-over { margin: 14px; padding: 18px; border: 1px solid rgba(232,189,98,.5); border-radius: 18px; background: rgba(232,189,98,.1); text-align: center; }
+.durian-over h2,
+.loveletter-over h2 { margin: 0 0 8px; color: var(--tabletop-gold); font-family: ui-serif, "Songti SC", serif; }
+
+/* —— 情书 密函手牌桌面（D7-C，TabletopShell 消费方） —— */
+.loveletter-afc { margin: 14px; padding: 12px 14px; border: 1px solid rgba(255,248,232,.16); border-radius: 14px; background: rgba(5,23,19,.5); }
+.loveletter-afc__label { color: #c4d5cf; font-size: .72rem; }
+.loveletter-afc__rows { display: grid; gap: 6px; margin-top: 8px; }
+.loveletter-afc__row { display: flex; justify-content: space-between; padding: 6px 10px; border-radius: 10px; background: rgba(255,248,232,.08); }
+.loveletter-afc__row.is-out { opacity: .5; }
+.loveletter-afc__row strong { font-size: .86rem; }
+.loveletter-afc__row span { color: var(--tabletop-gold); font-size: .8rem; }
+
+.loveletter-table { display: flex; gap: 12px; margin: 0 14px 14px; }
+.loveletter-table__pile { flex: 1; padding: 12px 14px; border: 1px solid rgba(255,248,232,.16); border-radius: 14px; background: rgba(5,23,19,.5); }
+.loveletter-table__label { display: block; margin-bottom: 8px; color: #c4d5cf; font-size: .72rem; }
+.loveletter-table__removed { display: flex; flex-wrap: wrap; gap: 4px; }
+.loveletter-mini-card { padding: 3px 7px; border-radius: 8px; background: rgba(255,248,232,.12); font-size: .7rem; }
+
+.loveletter-hand { margin: 0 14px 14px; }
+.loveletter-hand__label { display: block; margin-bottom: 8px; color: #c4d5cf; font-size: .72rem; }
+.loveletter-hand__cards { display: flex; flex-wrap: wrap; gap: 8px; }
+.loveletter-card {
+  display: grid;
+  width: 84px;
+  min-height: 116px;
+  align-content: start;
+  gap: 4px;
+  padding: 10px;
+  border: 2px solid rgba(255,248,232,.3);
+  border-radius: 12px;
+  color: var(--tabletop-paper);
+  background: linear-gradient(150deg, rgba(255,248,232,.16), rgba(5,23,19,.7));
+  font: inherit;
+  cursor: pointer;
+}
+.loveletter-card__value { color: var(--tabletop-gold); font-size: 1.15rem; font-weight: 900; }
+.loveletter-card strong { font-size: .86rem; }
+.loveletter-card.is-selected { border-color: var(--tabletop-gold); box-shadow: 0 0 0 2px rgba(232,189,98,.35), 0 6px 18px rgba(0,0,0,.3); transform: translateY(-4px); }
+
+.loveletter-target,
+.loveletter-guess { margin: 0 14px 14px; }
+.loveletter-target__options { display: flex; flex-wrap: wrap; gap: 8px; }
+.loveletter-target__options button {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255,248,232,.3);
+  border-radius: 12px;
+  color: var(--tabletop-paper);
+  background: rgba(5,23,19,.56);
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.loveletter-target__options button.is-selected { border-color: var(--tabletop-gold); color: #241b0f; background: var(--tabletop-gold); }
+
+.loveletter-inspect { margin: 0 14px 14px; padding: 12px 14px; border: 1px dashed rgba(232,189,98,.4); border-radius: 14px; }
+.loveletter-inspect ul { margin: 8px 0 0; padding: 0; list-style: none; }
+.loveletter-inspect li { padding: 4px 0; color: #c4d5cf; font-size: .8rem; }
+
+@media (max-width: 560px) {
+  .durian-board { grid-template-columns: 1fr; }
+  .loveletter-table { flex-direction: column; }
+  .loveletter-card { width: 72px; min-height: 102px; }
+}
+
+
 /* —— uno_platform_house_v1 主舞台（D4-U-UI） —— */
 .uno-house-stage {
   display: grid;

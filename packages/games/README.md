@@ -17,3 +17,14 @@
 - registry 继续保留模块，只服务于历史恢复和模块回归，不构成产品发布结论。
 - D1 只冻结当前兼容语义，不修改游戏规则、服务端执行链或模块契约。
 - 任何重新开放动作都必须经过独立的权利审批和规则审批，不得在 D1 中完成。
+
+## D7-C 新增：durian 与 loveletter
+
+| 模块 | 规则集 | 人数 | 机器人 | 准入状态 |
+| --- | --- | --- | --- | --- |
+| `durian` | `durian_orchard_v1`（原创榴莲果园经营） | 2–7 | `none` | playable（internal-admission-d7-2026-08-09-d01） |
+| `loveletter` | `loveletter_classic16_v1`（经典 16 张密函） | 2–4 | `none` | playable（internal-admission-d7-2026-08-09-l01） |
+
+两款均为 GameModuleV2：`schemas.ts` 严格 zod 校验、纯函数 `rules.ts`、独立视图解析、
+客户端页面首次接入 `TabletopShell/PlayerStrip/ActionDock/GameDrawer` 共用桌面框架。
+规则来源见 `docs/game-library/桌游平台游戏库资料/06_情书` 与 `08_Durian`。

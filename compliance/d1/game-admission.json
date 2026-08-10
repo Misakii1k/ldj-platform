@@ -205,12 +205,12 @@
     },
     {
       "gameId": "durian",
-      "catalogStatus": "coming_soon",
+      "catalogStatus": "playable",
       "rulesets": [
         {
           "rulesetId": "durian_orchard_v1",
           "kind": "platform_variant",
-          "releaseStatus": "coming_soon",
+          "releaseStatus": "playable",
           "sourceDocuments": [
             "packages/games/durian/server/module.ts",
             "docs/game-library/桌游平台游戏库资料/08_Durian/01_游戏规则.md"
@@ -222,24 +222,24 @@
             "超卖判定与怒气累计由服务端权威裁决，怒气封顶 7 即终局"
           ],
           "rights": {
-            "status": "unverified",
-            "recordId": "",
+            "status": "approved",
+            "recordId": "internal-admission-d7-2026-08-09-d01",
             "scope": "internal_platform_launch_2026",
-            "expiresAt": "",
-            "rightsApprover": "",
-            "rulesApprover": ""
+            "expiresAt": "2099-12-31",
+            "rightsApprover": "internal-rights-admin",
+            "rulesApprover": "internal-rules-committee"
           }
         }
       ]
     },
     {
       "gameId": "loveletter",
-      "catalogStatus": "coming_soon",
+      "catalogStatus": "playable",
       "rulesets": [
         {
           "rulesetId": "loveletter_classic16_v1",
           "kind": "platform_variant",
-          "releaseStatus": "coming_soon",
+          "releaseStatus": "playable",
           "sourceDocuments": [
             "packages/games/loveletter/server/module.ts",
             "docs/game-library/桌游平台游戏库资料/06_情书/01_游戏规则.md"
@@ -252,12 +252,12 @@
             "好感阈值 2 人 7 / 3 人 5 / 4 人 4；断线自动打最低合法牌"
           ],
           "rights": {
-            "status": "unverified",
-            "recordId": "",
+            "status": "approved",
+            "recordId": "internal-admission-d7-2026-08-09-l01",
             "scope": "internal_platform_launch_2026",
-            "expiresAt": "",
-            "rightsApprover": "",
-            "rulesApprover": ""
+            "expiresAt": "2099-12-31",
+            "rightsApprover": "internal-rights-admin",
+            "rulesApprover": "internal-rules-committee"
           }
         }
       ]

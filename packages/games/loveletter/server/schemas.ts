@@ -22,13 +22,16 @@ const loveLetterConfigSchema = z.object({
   futureDeckOrders: z.array(deckSchema).optional(),
 }).strict('配置 字段无效');
 
-const loveLetterActionSchema = z.object({
-  type: z.literal('play_card', { message: '动作类型无效' }),
-  playerId: pid,
-  cardId: pid,
-  targetPlayerId: pid.optional(),
-  guessedRole: role.optional(),
-}).strict('动作 字段无效');
+const loveLetterActionSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('play_card', { message: '动作类型无效' }),
+    playerId: pid,
+    cardId: pid,
+    targetPlayerId: pid.optional(),
+    guessedRole: role.optional(),
+  }).strict('动作 字段无效'),
+  z.object({ type: z.literal('begin') }).strict('动作 字段无效'),
+]);
 
 function parseOrThrow<T>(schema: z.ZodType<unknown>, input: unknown, label: string): T {
   const result = schema.safeParse(input);

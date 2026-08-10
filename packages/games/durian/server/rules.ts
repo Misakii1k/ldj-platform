@@ -138,6 +138,8 @@ function settlePenalty(state: DurianState, penalizedPlayerId: string): DurianEve
 export function reduceDurianState(state: DurianState, actionInput: DurianAction | unknown): DurianReduceResult {
   let action: DurianAction;
   try { action = parseDurianAction(actionInput); } catch (error) { return deny(error instanceof Error ? error.message : '动作无效'); }
+  // 平台开局投递的 begin 为幂等系统动作：不推进状态。
+  if (action.type === 'begin') return { ok: true, nextState: state, events: [] };
   if (state.phase === 'game_over') return deny('本局已经结束');
   if (!state.players.includes(action.playerId)) return deny('只有参局玩家可以操作');
   const next = structuredClone(state);

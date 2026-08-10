@@ -27,6 +27,7 @@ const durianConfigSchema = z.object({
 }).strict('配置 字段无效');
 
 const durianActionSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('begin') }).strict('动作 字段无效'),
   z.object({
     type: z.literal('submit_order'),
     playerId: pid,

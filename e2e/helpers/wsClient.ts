@@ -148,6 +148,35 @@ export class WsClient {
     );
   }
 
+  /**
+   * 读取满足谓词的最新一帧 game_state（不阻塞、不消费队列中间帧）：
+   * 从队尾扫描，命中即移除该帧之前的所有 game_state 并返回最后一帧；
+   * 无命中返回 null。用于驱动循环读取“当前权威状态”，避免按序消费旧帧造成竞态。
+   */
+  latestGameState(
+    predicate: (view: Record<string, unknown>) => boolean,
+  ): Envelope | null {
+    let latestIndex = -1;
+    for (let i = this.#queue.length - 1; i >= 0; i -= 1) {
+      const entry = this.#queue[i]!;
+      if (entry.type === 'game_state' && predicate((entry.payload.view ?? {}) as Record<string, unknown>)) {
+        latestIndex = i;
+        break;
+      }
+    }
+    if (latestIndex < 0) return null;
+    // 原地移除 latestIndex 之前的所有 game_state，保留最新一帧与其余消息。
+    let removed = 0;
+    for (let i = 0; i < latestIndex - removed; i += 1) {
+      if (this.#queue[i]!.type === 'game_state') {
+        this.#queue.splice(i, 1);
+        removed += 1;
+        i -= 1;
+      }
+    }
+    return this.#queue.find((entry) => entry.type === 'game_state') ?? null;
+  }
+
   close(): void {
     try {
       this.socket.close();

@@ -7,6 +7,7 @@ import {
   type LoveLetterReduceResult,
   type LoveLetterRole,
   type LoveLetterState,
+  type PlayCardAction,
 } from './types.ts';
 
 const COUNTS: Record<LoveLetterRole, number> = {
@@ -199,7 +200,7 @@ function princeDiscard(
 
 function requiredTarget(
   state: LoveLetterState,
-  action: LoveLetterAction,
+  action: PlayCardAction,
   role: LoveLetterRole,
 ): string | null | undefined {
   if (TARGET_OTHER.has(role)) {
@@ -260,6 +261,8 @@ function advanceTurn(state: LoveLetterState, from: string): void {
 export function reduceLoveLetterState(state: LoveLetterState, actionInput: LoveLetterAction | unknown): LoveLetterReduceResult {
   let action: LoveLetterAction;
   try { action = parseLoveLetterAction(actionInput); } catch (error) { return deny(error instanceof Error ? error.message : '动作无效'); }
+  // 平台开局投递的 begin 为幂等系统动作：不推进状态。
+  if (action.type === 'begin') return { ok: true, nextState: state, events: [] };
   if (state.phase === 'game_over') return deny('本局已经结束');
   if (action.playerId !== state.currentPlayerId) return deny('还没轮到你');
   if (!isAlive(state, action.playerId)) return deny('已淘汰玩家不能操作');

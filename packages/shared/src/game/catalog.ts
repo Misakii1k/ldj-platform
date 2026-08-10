@@ -140,7 +140,7 @@ export const GAME_CATALOG = [
     displayName: 'Durian：榴莲店长',
     minPlayers: 2,
     maxPlayers: 7,
-    availability: 'coming_soon',
+    availability: 'playable',
     summary: '原创水果卡牌经营对局：按铃接单、管理库存与怒气，小心超卖赔穿！',
     tags: ['卡牌', '经营', '原创'],
     theme: 'ocean',
@@ -150,14 +150,13 @@ export const GAME_CATALOG = [
     setup: defaultSetup('durian_orchard_v1', '平台规则'),
     botSupport: 'none',
     visualTheme: { accent: 'ocean', surface: 'board' },
-    comingSoonMessage: '店长正在完成最后的进货验收',
   },
   {
     id: 'loveletter',
     displayName: '情书：密函心意',
     minPlayers: 2,
     maxPlayers: 4,
-    availability: 'coming_soon',
+    availability: 'playable',
     summary: '经典 16 张密函手牌：揣测心意、淘汰对手，把情书送到公主手中。',
     tags: ['卡牌', '推理', '经典'],
     theme: 'sunset',
@@ -167,7 +166,6 @@ export const GAME_CATALOG = [
     setup: defaultSetup('loveletter_classic16_v1', '平台规则'),
     botSupport: 'none',
     visualTheme: { accent: 'sunset', surface: 'cards' },
-    comingSoonMessage: '授权核验完成后即可开局',
   },
 ] as const satisfies readonly GameCatalogEntry[];
 

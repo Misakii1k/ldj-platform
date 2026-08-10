@@ -211,7 +211,7 @@ test.describe('D5 P2b 上架建房链路', () => {
     await page.goto(BASE_URL);
 
     await expect(homeCard(page, 'UNO')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: '创建房间' })).toHaveCount(3);
+    await expect(page.getByRole('button', { name: '创建房间' })).toHaveCount(5);
 
     await context.close();
   });

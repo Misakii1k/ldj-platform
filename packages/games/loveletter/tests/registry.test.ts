@@ -7,10 +7,10 @@ import {
   getSessionGameModule,
 } from '../../../server/src/core/game/registry.ts';
 
-test('loveletter 注册：目录条目声明 coming_soon 与 botSupport none', () => {
+test('loveletter 注册：目录条目声明 playable 与 botSupport none', () => {
   const entry = GAME_CATALOG.find((game) => game.id === 'loveletter');
   assert.ok(entry, '目录应包含 loveletter');
-  assert.equal(entry!.availability, 'coming_soon');
+  assert.equal(entry!.availability, 'playable');
   assert.equal(entry!.botSupport, 'none');
   assert.equal(entry!.setup.defaultRulesetId, 'loveletter_classic16_v1');
   assert.deepEqual(entry!.rulesets.map((ruleset) => ruleset.id), ['loveletter_classic16_v1']);

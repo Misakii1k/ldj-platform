@@ -9,6 +9,8 @@ import { parseUnoView } from './uno/types.ts';
 import { parseUnoHouseView } from './uno/types.ts';
 import { parseWerewolfView } from './werewolf/types.ts';
 import { parseLandlordPlatformView } from './landlord/types.ts';
+import { parseDurianView } from './durian/types.ts';
+import { parseLoveLetterView } from './loveletter/types.ts';
 import type { GameStatePayload } from './types.ts';
 
 interface GameViewParser {
@@ -41,10 +43,18 @@ const REGISTRY: Readonly<Record<string, GameViewParser>> = {
     parsePlayerView: (view) => parseLandlordPlatformView(view, 'player'),
     parseSpectatorView: (view) => parseLandlordPlatformView(view, 'spectator'),
   },
+  'durian:durian_orchard_v1:1': {
+    parsePlayerView: (view) => parseDurianView(view, 'player'),
+    parseSpectatorView: (view) => parseDurianView(view, 'spectator'),
+  },
+  'loveletter:loveletter_classic16_v1:1': {
+    parsePlayerView: (view) => parseLoveLetterView(view, 'player'),
+    parseSpectatorView: (view) => parseLoveLetterView(view, 'spectator'),
+  },
 };
 
 /** 已迁移到 V2 的游戏：缺失版本化判别符时必须失败关闭，不能静默降级。 */
-const VERSIONED_MODULE_IDS = new Set(['undercover', 'uno']);
+const VERSIONED_MODULE_IDS = new Set(['undercover', 'uno', 'durian', 'loveletter']);
 
 export type ViewParseResult =
   | { ok: true; view: unknown }

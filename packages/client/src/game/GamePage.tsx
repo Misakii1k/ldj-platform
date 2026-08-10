@@ -21,6 +21,8 @@ const LandlordGamePage = lazy(() => import('./NewGamePages.tsx').then((module) =
 const WerewolfGamePage = lazy(() => import('./werewolf/WerewolfGamePage.tsx').then((module) => ({ default: module.WerewolfGamePage })));
 const UnoHouseStage = lazy(() => import('./uno/stage/UnoHouseStage.tsx').then((module) => ({ default: module.UnoHouseStage })));
 const UndercoverBlankStage = lazy(() => import('./undercover/stage/UndercoverBlankStage.tsx').then((module) => ({ default: module.UndercoverBlankStage })));
+const DurianGamePage = lazy(() => import('./durian/DurianGamePage.tsx').then((module) => ({ default: module.DurianGamePage })));
+const LoveLetterGamePage = lazy(() => import('./loveletter/LoveLetterGamePage.tsx').then((module) => ({ default: module.LoveLetterGamePage })));
 
 type ActiveGame = NonNullable<ReturnType<typeof useConnection>['state']['game']>;
 
@@ -147,6 +149,24 @@ export function GamePage() {
       content = isRecord(v) && v.rulesetId === 'undercover_blank_v1'
         ? <UndercoverBlankStage view={v as unknown as import('./undercover/types.ts').BlankPlayerView} />
         : <UndercoverGamePage game={game} />;
+      break;
+    }
+    case 'durian': {
+      const parsed = parseGameView(game);
+      if (!parsed.ok) {
+        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        break;
+      }
+      content = <DurianGamePage view={parsed.view as import('./durian/types.ts').DurianPlayerView} />;
+      break;
+    }
+    case 'loveletter': {
+      const parsed = parseGameView(game);
+      if (!parsed.ok) {
+        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        break;
+      }
+      content = <LoveLetterGamePage view={parsed.view as import('./loveletter/types.ts').LoveLetterPlayerView} />;
       break;
     }
     default:

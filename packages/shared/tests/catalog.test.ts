@@ -72,20 +72,22 @@ test('GAME_CATALOG：D1 规则集 ID 与目录状态已冻结', () => {
       { id: 'uno', availability: 'blocked_rights', rulesetId: 'uno_legacy_platform_v1' },
       { id: 'landlord', availability: 'playable', rulesetId: 'landlord_platform_v1' },
       { id: 'werewolf', availability: 'playable', rulesetId: 'werewolf_legacy_platform_v2' },
-      { id: 'durian', availability: 'coming_soon', rulesetId: 'durian_orchard_v1' },
-      { id: 'loveletter', availability: 'coming_soon', rulesetId: 'loveletter_classic16_v1' },
+      { id: 'durian', availability: 'playable', rulesetId: 'durian_orchard_v1' },
+      { id: 'loveletter', availability: 'playable', rulesetId: 'loveletter_classic16_v1' },
     ],
   );
 });
 
 test('GAME_CATALOG：证据未批准的游戏不能作为 playable 建房', () => {
-  // D5 上架：undercover / werewolf / landlord 三款 playable；uno 权利证据未完成保持 blocked_rights
+  // D7-C 上架：durian / loveletter 经准入记录转 playable；uno 权利证据未完成保持 blocked_rights
   const playableIds = GAME_CATALOG.filter((game) => game.availability === 'playable').map((game) => game.id).sort();
-  assert.deepEqual(playableIds, ['landlord', 'undercover', 'werewolf']);
+  assert.deepEqual(playableIds, ['durian', 'landlord', 'loveletter', 'undercover', 'werewolf']);
   assert.equal(getPlayableGameCatalogEntry('uno'), undefined);
   assert.equal(getPlayableGameCatalogEntry('undercover')?.id, 'undercover');
   assert.equal(getPlayableGameCatalogEntry('werewolf')?.id, 'werewolf');
   assert.equal(getPlayableGameCatalogEntry('landlord')?.id, 'landlord');
+  assert.equal(getPlayableGameCatalogEntry('durian')?.id, 'durian');
+  assert.equal(getPlayableGameCatalogEntry('loveletter')?.id, 'loveletter');
   assert.equal(getPlayableGameCatalogEntry('unknown_game'), undefined);
 });
 

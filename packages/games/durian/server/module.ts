@@ -37,7 +37,7 @@ function parseState(input: unknown): DurianState {
 }
 
 function playerMatches(actor: Actor, action: DurianAction): boolean {
-  return actor.kind === 'player' && actor.playerId === action.playerId;
+  return actor.kind === 'player' && 'playerId' in action && actor.playerId === action.playerId;
 }
 
 function result(state: DurianState): DurianResult | null {
@@ -73,7 +73,8 @@ export const durianModule: GameModuleV2<
     return state;
   },
   reduce(_ctx, state, actor, action) {
-    if (!playerMatches(actor, action)) {
+    // 平台开局 begin 为系统动作（无 playerId），不参与玩家身份匹配。
+    if (action.type !== 'begin' && !playerMatches(actor, action)) {
       return { ok: false, code: 'ACTION_NOT_ALLOWED', message: '动作玩家与连接身份不一致' };
     }
     const reduced = reduceDurianState(state, action);
