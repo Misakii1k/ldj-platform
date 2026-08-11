@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { GameCatalogEntry } from '@ldj/shared';
 import { Plus, Users } from 'lucide-react';
 
@@ -34,6 +35,7 @@ function availabilityLabel(game: GameCatalogEntry): string {
 export function GameCard({ game, onCreate }: GameCardProps) {
   const isPlayable = game.availability === 'playable';
   const isFeatured = game.id === 'undercover';
+  const [imgError, setImgError] = useState(false);
 
   return (
     <article className={`game-card game-card--${game.theme} ${isFeatured ? 'game-card--featured' : ''}`}>
@@ -48,8 +50,22 @@ export function GameCard({ game, onCreate }: GameCardProps) {
         </span>
       </div>
       <div className="game-card__illustration" aria-hidden="true">
-        <span className="game-card__card game-card__card--back">?</span>
-        <span className="game-card__card game-card__card--front">{gameMark(game.id)}</span>
+        {!imgError ? (
+          <div className="game-card__icon-wrap">
+            <div className="game-card__icon-glow" />
+            <img
+              src={`/icons/${game.id}.png`}
+              alt={game.displayName}
+              className="game-card__icon-img"
+              onError={() => setImgError(true)}
+            />
+          </div>
+        ) : (
+          <>
+            <span className="game-card__card game-card__card--back">?</span>
+            <span className="game-card__card game-card__card--front">{gameMark(game.id)}</span>
+          </>
+        )}
       </div>
       <h3>{game.displayName}</h3>
       <p className="game-card__summary">{game.summary}</p>
@@ -69,3 +85,4 @@ export function GameCard({ game, onCreate }: GameCardProps) {
     </article>
   );
 }
+

@@ -12,6 +12,11 @@ import { landlordModule, landlordPlatformModule } from '@ldj/game-landlord/serve
 import { werewolfModule, werewolfV2Module } from '@ldj/game-werewolf/server';
 import { durianModule } from '@ldj/game-durian/server';
 import { loveLetterModule } from '@ldj/game-loveletter/server';
+import { cheeseThiefModule } from '@ldj/game-cheese-thief/server';
+import { gooseRelayModule } from '@ldj/game-goose-relay/server';
+import { nightTestimonyModule } from '@ldj/game-night-testimony/server';
+import { bellClashModule } from '@ldj/game-bell-clash/server';
+import { echoJudgeModule } from '@ldj/game-echo-judge/server';
 import type { SessionRow } from './session.ts';
 
 export type ErasedGameModule = GameModule<unknown, unknown, unknown, unknown, unknown, unknown, unknown>;
@@ -36,6 +41,11 @@ const MODULES: RegisteredGameModule[] = [
   werewolfV2Module,
   durianModule,
   loveLetterModule,
+  cheeseThiefModule,
+  gooseRelayModule,
+  nightTestimonyModule,
+  bellClashModule,
+  echoJudgeModule,
 ];
 
 function keyOf(gameId: string, rulesetId: string): string {

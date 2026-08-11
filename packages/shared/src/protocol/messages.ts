@@ -98,6 +98,9 @@ export type ResumeRoomPayload = z.infer<typeof resumeRoomPayloadSchema>;
 /** leave_room payload（无字段；actor 由服务端连接上下文推导） */
 export const leaveRoomPayloadSchema = z.object({}).strict();
 
+/** room_status payload（心跳查询，无字段；actor 由服务端连接上下文推导） */
+export const roomStatusPayloadSchema = z.object({}).strict();
+
 /** room_command payload（§9.2：准备/开局/终止/返回大厅/踢人/转让房主/修改配置/关闭房间） */
 export const roomCommandPayloadSchema = z.discriminatedUnion('command', [
   // 准备/取消准备（LOBBY/POST_GAME，全员可发）

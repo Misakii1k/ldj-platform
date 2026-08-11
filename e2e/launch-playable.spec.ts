@@ -211,7 +211,8 @@ test.describe('D5 P2b 上架建房链路', () => {
     await page.goto(BASE_URL);
 
     await expect(homeCard(page, 'UNO')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: '创建房间' })).toHaveCount(5);
+    // G2-B 上架后 playable 10 款（含奶酪大盗、以鹅传鹅、暗夜证词、铃铛对决、伪人测试）
+    await expect(page.getByRole('button', { name: '创建房间' })).toHaveCount(10);
 
     await context.close();
   });

@@ -911,3 +911,55 @@ test('POST /api/settings/llm/test 错误响应只包含 error 和 message', asyn
     await new Promise<void>((resolve) => upstream.close(() => resolve()));
   }
 });
+
+// ==================== 设置写接口每 IP 限流（SPEC §9.5） ====================
+
+test('设置写接口每 IP 限流：超限 429，读接口与 health 不受影响', async () => {
+  const app = await startApp();
+  try {
+    // 基线：health 探针与读接口正常
+    assert.equal((await request(app.port(), 'GET', '/health/live')).status, 200);
+    assert.equal((await request(app.port(), 'GET', '/health/ready')).status, 200);
+    assert.equal((await request(app.port(), 'GET', '/api/settings/llm')).status, 200);
+
+    // 连续 PUT 超过 20 次/分钟 → 第 21 次 429 + retryAfterMs
+    let last: HttpResponse = { status: 0, body: null, headers: {} };
+    for (let i = 0; i < 21; i++) {
+      last = await request(app.port(), 'PUT', '/api/settings/llm', {
+        baseUrl: `http://127.0.0.1:${11000 + i}/v1`,
+      });
+    }
+    assert.equal(last.status, 429);
+    const limited = last.body as Record<string, unknown>;
+    assert.equal(limited.error, 'RATE_LIMITED');
+    assert.equal(typeof limited.retryAfterMs, 'number');
+
+    // 限流不波及读接口与 health 探针
+    assert.equal((await request(app.port(), 'GET', '/health/live')).status, 200);
+    assert.equal((await request(app.port(), 'GET', '/health/ready')).status, 200);
+    assert.equal((await request(app.port(), 'GET', '/api/settings/llm')).status, 200);
+
+    // 同一 IP 的其他写端点（模型目录/诊断）共享配额
+    const models = await request(app.port(), 'POST', '/api/settings/llm/models', {});
+    assert.equal(models.status, 429);
+    assert.equal((models.body as Record<string, unknown>).error, 'RATE_LIMITED');
+    const diag = await request(app.port(), 'POST', '/api/settings/llm/test', {});
+    assert.equal(diag.status, 429);
+    assert.equal((diag.body as Record<string, unknown>).error, 'RATE_LIMITED');
+  } finally {
+    await app.shutdown();
+  }
+});
+
+test('设置写限流器按服务器实例隔离：新实例配额独立', async () => {
+  // 每个 createHttpServer 实例有独立限流器：上一用例消耗的配额不影响新实例
+  const app = await startApp();
+  try {
+    const res = await request(app.port(), 'PUT', '/api/settings/llm', {
+      baseUrl: 'http://127.0.0.1:13000/v1',
+    });
+    assert.equal(res.status, 200);
+  } finally {
+    await app.shutdown();
+  }
+});

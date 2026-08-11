@@ -11,6 +11,11 @@ import { parseWerewolfView } from './werewolf/types.ts';
 import { parseLandlordPlatformView } from './landlord/types.ts';
 import { parseDurianView } from './durian/types.ts';
 import { parseLoveLetterView } from './loveletter/types.ts';
+import { parseCheeseThiefView } from './cheese-thief/types.ts';
+import { parseGooseRelayView } from './goose-relay/types.ts';
+import { parseNightTestimonyView } from './night-testimony/types.ts';
+import { parseBellClashView } from './bell-clash/types.ts';
+import { parseEchoJudgeView } from './echo-judge/types.ts';
 import type { GameStatePayload } from './types.ts';
 
 interface GameViewParser {
@@ -51,10 +56,30 @@ const REGISTRY: Readonly<Record<string, GameViewParser>> = {
     parsePlayerView: (view) => parseLoveLetterView(view, 'player'),
     parseSpectatorView: (view) => parseLoveLetterView(view, 'spectator'),
   },
+  'cheese-thief:cheese_thief_classic_v1:1': {
+    parsePlayerView: (view) => parseCheeseThiefView(view, 'player'),
+    parseSpectatorView: (view) => parseCheeseThiefView(view, 'spectator'),
+  },
+  'goose-relay:goose_relay_classic_v1:1': {
+    parsePlayerView: (view) => parseGooseRelayView(view, 'player'),
+    parseSpectatorView: (view) => parseGooseRelayView(view, 'spectator'),
+  },
+  'night-testimony:night_testimony_v1:1': {
+    parsePlayerView: (view) => parseNightTestimonyView(view, 'player'),
+    parseSpectatorView: (view) => parseNightTestimonyView(view, 'spectator'),
+  },
+  'bell-clash:bell_clash_v1:1': {
+    parsePlayerView: (view) => parseBellClashView(view, 'player'),
+    parseSpectatorView: (view) => parseBellClashView(view, 'spectator'),
+  },
+  'echo-judge:echo_judge_v1:1': {
+    parsePlayerView: (view) => parseEchoJudgeView(view, 'player'),
+    parseSpectatorView: (view) => parseEchoJudgeView(view, 'spectator'),
+  },
 };
 
 /** 已迁移到 V2 的游戏：缺失版本化判别符时必须失败关闭，不能静默降级。 */
-const VERSIONED_MODULE_IDS = new Set(['undercover', 'uno', 'durian', 'loveletter']);
+const VERSIONED_MODULE_IDS = new Set(['undercover', 'uno', 'durian', 'loveletter', 'cheese-thief', 'goose-relay', 'night-testimony', 'bell-clash', 'echo-judge']);
 
 export type ViewParseResult =
   | { ok: true; view: unknown }

@@ -140,7 +140,8 @@ export type ClientMessageType =
   | 'room_command'
   | 'game_action'
   | 'chat_send'
-  | 'resync';
+  | 'resync'
+  | 'room_status';
 
 /** 状态依赖型命令：需要附带 expectedSeq */
 export function isStateDependent(type: ClientMessageType): boolean {

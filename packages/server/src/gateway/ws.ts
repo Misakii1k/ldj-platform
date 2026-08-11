@@ -16,6 +16,7 @@ import {
   roomCommandPayloadSchema,
   chatSendPayloadSchema,
   resyncPayloadSchema,
+  roomStatusPayloadSchema,
   makeErrorPayload,
   MAX_MESSAGE_BYTES,
   PROTOCOL_VERSION,
@@ -438,6 +439,9 @@ export class WsGateway {
           break;
         case 'resync':
           this.#handleResync(socket, state, envelope.requestId, envelope.payload);
+          break;
+        case 'room_status':
+          this.#handleRoomStatus(socket, state, envelope.requestId, envelope.payload);
           break;
         default:
           this.#sendError(socket, envelope.requestId, 'ACTION_NOT_ALLOWED');
@@ -1072,6 +1076,38 @@ export class WsGateway {
       ...payload.data,
       game: payload.data.game ?? null,
     });
+  }
+
+  /** room_status：心跳只读查询，返回最小权威状态（D7-A §6 遗留修复） */
+  #handleRoomStatus(
+    socket: WebSocket,
+    state: ConnectionState,
+    requestId: string,
+    rawPayload: unknown,
+  ): void {
+    const payload = roomStatusPayloadSchema.safeParse(rawPayload);
+    if (!payload.success) {
+      this.#sendError(socket, requestId, 'INVALID_MESSAGE');
+      return;
+    }
+    const { roomId } = state;
+    if (roomId === null) {
+      this.#sendError(socket, requestId, 'ACTION_NOT_ALLOWED', { message: '不在房间中' });
+      return;
+    }
+    const row = this.#deps.db
+      .prepare('SELECT code, status, seq FROM rooms WHERE id = ?')
+      .get(roomId) as { code: string; status: string; seq: number } | undefined;
+    if (!row) {
+      this.#sendError(socket, requestId, 'ACTION_NOT_ALLOWED', { message: '房间不存在' });
+      return;
+    }
+    this.#send(
+      socket,
+      'ack',
+      { roomCode: row.code, status: row.status, roomSeq: row.seq },
+      { requestId, roomSeq: row.seq },
+    );
   }
 
   #nicknameOf(roomId: string, playerId: string): string | null {

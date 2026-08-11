@@ -8,6 +8,8 @@
 > **时点声明**：本报告只描述 **2026-07-29 当时的工作树**，不是 2026-08-02 当前工作树的完整安全复审。报告中的行号和“通过”结论均应按历史证据理解。
 >
 > **后续变化（2026-08-02 核验）**：`packages/server/src/gateway/http.ts` 当前为 `MAX_BODY_BYTES = 16 * 1024`，设置写入、模型目录和连接诊断 JSON 请求共用 **16 KiB** 上限；`packages/server/tests/gatewaySettings.test.ts` 当前以 `> 16 KiB` 用例验证 413，并在本次单独运行中 30/30 通过。因此，下文记载的 1 KiB 是审计时实现，**不得作为当前事实或当前验收阈值引用**。设置接口此后还有功能与安全改动，当前发布前仍需重新执行完整安全审计。
+>
+> **复审（2026-08-09）**：针对 2026-08-09 当前工作树（含设置面板/模型目录/连接诊断等新增上游）的完整安全复审已追加于文末「复审（2026-08-09）」章节，结论：10 项全部通过，未发现 P0。
 
 ## 总结
 
@@ -352,3 +354,101 @@
 - `packages/server/src/core/game/llmClient.ts:110` — `Authorization: Bearer ${apiKey}` 通过 HTTPS 请求头发送，仅当 `apiKey` 非空时设置；本地默认走 HTTP（用户自配端点），上云前需替换为 HTTPS（SPEC §13.5 已要求）。
 - `packages/server/src/core/commands/resumeRoom.ts:44-58` — 成员不存在、被踢、token 不符统一返回 `INVALID_RESUME_TOKEN`，不泄露区分信息，符合 SEC 设计。
 - `packages/server/src/core/commands/roomCommand.ts:97-101` — 被踢者 `resume_token_hash` 设为 `'revoked'`，防止被踢后用旧 token 重新加入。
+
+---
+
+# 复审（2026-08-09）
+
+**审计日期**：2026-08-09
+**审计范围**：D8 工程加固期间对当前工作树的 §14.1 完整安全复审
+**审计依据**：SPEC §14.1 安全检查清单（tasks.md Task 3/4/5）
+**审计方式**：只读取证（Grep/Read），证据引用形如 `file:line`；新增/变更路径为审计重点
+
+## 复审结论
+
+| 项 | 结果 | P0 数 |
+|---|------|------|
+| 1. 输入校验 | 通过 | 0 |
+| 2. CORS 与 Origin 校验 | 通过 | 0 |
+| 3. 密码哈希 | 通过 | 0 |
+| 4. 日志脱敏 | 通过 | 0 |
+| 5. WS 鉴权 | 通过 | 0 |
+| 6. 限流 | 通过 | 0 |
+| 7. SQL 注入 | 通过 | 0 |
+| 8. XSS | 通过 | 0 |
+| 9. 目录穿越 | 通过 | 0 |
+| 10. 错误信息泄漏 | 通过 | 0 |
+
+**复审结论**：2026-08-09 当前工作树未发现 P0 缺陷，10 项全部通过。与 2026-07-29 相比，新增面（LLM 设置面板、模型目录代理、连接诊断、安全上游请求器）均得到同等或更严格的防护；历史观察 B-1 已确认解决。
+
+## 与上次审计相比的变更面与逐项核验
+
+### 1. 输入校验 — 通过
+
+- `http.ts:69` `MAX_BODY_BYTES = 16 * 1024`：设置写入/模型目录/连接诊断共用 16 KiB 上限（1 KiB 历史证据已失效）；`readJsonBody` 超限 reject `BODY_TOO_LARGE` → 413。
+- 新增上游 URL 规范化 `core/llmBaseUrl.ts`：仅放行 `http:`/`https:`，拒绝携带凭据、query 与 hash；`normalizeLlmBaseUrl` 在设置写入与模型目录输入归一化路径中均被调用。
+- `core/llmModelCatalog.ts:46-64` `normalizeInput`：provider 枚举、baseUrl 非空且可解析、apiKey 类型、timeoutMs 1–120000 整数。
+- `core/settings.ts:127-131` `parseProfilesJson(strict)`：profilesJson 必须为合法 JSON 数组，非法即 `SettingsError`。
+- 原有 `messages.ts` zod `.strict()`、`config.ts` 范围校验保持（见历史审计 §1）。
+
+### 2. CORS 与 Origin 校验 — 通过
+
+- `http.ts:228` `setSecurityHeaders`：`X-Content-Type-Options: nosniff`、CSP `default-src 'self'; img-src 'self' data:; connect-src 'self' ws: wss:`、`Referrer-Policy: no-referrer`；每个响应先调用。
+- `http.ts:151-171` `authorizeSettingsWrite`：Origin 不在允许集 → 403；设 `ADMIN_TOKEN` 则必须带 `x-admin-token`；未设则仅本机（`isLocalAddress`）可写。
+- `ws.ts` `isOriginAllowed`/`verifyClient` 未变（见历史审计 §2）。
+
+### 3. 密码哈希 — 通过
+
+- `core/ids.ts` scrypt（N=16384, r=8, p=1, 16 字节盐）+ `timingSafeEqual`；公开摘要仅暴露布尔 `requires_password`（见历史审计 §3，无变更）。
+
+### 4. 日志脱敏 — 通过
+
+- `boot/logger.ts:11` `SENSITIVE_KEY_PARTS` 含 `password/token/secret/word/snapshot` 等；递归 `redact`（深度 6）。
+- `core/llmConnectionTest.ts`：无任何 `logger.*` 调用携带 `apiKey`；测试断言响应不含 `PRIVATE_REPLY` 与草稿密钥。
+- `core/llmModelCatalog.ts`：错误映射为通用用户文案，不含上游响应体。
+- 历史观察 **B-2 维持原决定**：`'word'` 键过宽属偏保守脱敏（安全侧无负面影响），不修改以避免削弱脱敏强度。
+
+### 5. WS 鉴权 — 通过
+
+- `#bindPlayer` + `actorScope` 由服务端连接状态推导，不接受客户端自报（见历史审计 §5，无变更）。
+- 计划新增的只读 `room_status` 心跳查询将走既有绑定检查与 `#messageLimiter`（见 D8 心跳计划）。
+
+### 6. 限流 — 通过（含本轮加固）
+
+- **历史观察 B-1 已解决**：`ws.ts:138` `#gameActionLimiter` 已实例化，`ws.ts:818` 在 `#handleGameAction` 按 `${roomId}/${playerId}` 限流（D4/D5 期间落实）。
+- 本轮新增 HTTP 写接口限流（SPEC §9.5）：`rateLimit.ts` `DEFAULT_RULES.settingsWrite = { 60_000ms, max: 20 }`；`http.ts:240` 每服务器实例一个 `RateLimiter`，`http.ts:281/366/471` 分别在 `PUT /api/settings/llm`、`POST /api/settings/llm/test`、`POST /api/settings/llm/models` 入口按每 IP 限流，超限 429 + `retryAfterMs`；`/health/live`、`/health/ready` 与读接口不受限。`gatewaySettings.test.ts` 新增 2 用例，32/32 通过。
+- 原有 chat/join/message 限流保持（见历史审计 §6）。
+
+### 7. SQL 注入 — 通过
+
+- `db.exec(` 11 处全部为静态字面量（PRAGMA/事务/迁移）；`db.prepare(` 91 处全部参数化 `?`。
+- 模板插值仅 `ACTIVE_MEMBER_STATUSES` 等代码内常量（见历史审计 §7 方法复核）。
+
+### 8. XSS — 通过
+
+- `packages/client/src` 全局搜索 `dangerouslySetInnerHTML`：0 匹配（含新增游戏页面目录）。
+- 聊天文本经 `chatTextSchema` NFC 规范化、按纯文本存储渲染（见历史审计 §8）。
+
+### 9. 目录穿越 — 通过
+
+- `http.ts:527` `candidate.startsWith(staticRoot + sep)`：`resolve(staticRoot)` → `normalize(join(...))` → 前缀校验；`decodeURIComponent` 后再校验可防编码绕过（见历史审计 §9，逻辑未变）。
+
+### 10. 错误信息泄漏 — 通过
+
+- `http.ts` 各端点 catch：`BODY_TOO_LARGE`/`INVALID_JSON`/`SettingsError` → 映射短文案；未知错误 → `INTERNAL_ERROR` 通用文案，不回传 `err.message`/stack。
+- 新增端点错误映射：`LlmConnectionTestError`/`LlmModelCatalogError` → 枚举码 + 通用文案；测试断言上游错误体 `PRIVATE_UPSTREAM_ERROR` 与密钥不出现在响应中。
+- `ws.ts`：`CommandError` → code+message；未知异常 → 仅 `INTERNAL_ERROR`（见历史审计 §10）。
+- **SSRF 面复核（新增）**：`core/safeUpstream.ts` 统一请求器——先 DNS 解析全部地址，逐一按 IP 阻断环回/私网/保留段（默认 `allowPrivateNetwork=false`），分页强制同源（`llmModelCatalog.ts:108-109`），`redirect: 'manual'`，响应 256 KiB 上限，支持 abort 传播。模型目录与连接诊断均走该路径。
+
+## P0 缺陷汇总（2026-08-09 复审）
+
+| # | 描述 | 位置 | 修复状态 |
+|---|------|------|---------|
+| （无） | — | — | — |
+
+无 P0 缺陷。
+
+## 本轮修复/加固记录（随复审落地）
+
+1. HTTP 设置写接口每 IP 限流（1c，SPEC §9.5）：`rateLimit.ts` + `http.ts` + 2 新测试，32/32 绿。
+2. 历史观察 B-1 确认已解决（`#gameActionLimiter` 已在 ws.ts 实例化并生效），本轮无需再修。

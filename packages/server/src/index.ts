@@ -8,6 +8,7 @@ import { dirname, resolve } from 'node:path';
 import qrcode from 'qrcode-terminal';
 import { loadConfig } from './config.ts';
 import { createLogger } from './boot/logger.ts';
+import { startPerfStats } from './boot/perfStats.ts';
 import { buildEntryUrls } from './boot/lan.ts';
 import { createApp, SERVER_VERSION } from './app.ts';
 
@@ -17,6 +18,9 @@ const clientDist = resolve(here, '../../client/dist');
 async function main(): Promise<void> {
   const config = loadConfig();
   const logger = createLogger(config.logLevel, { app: 'ldj-server', version: SERVER_VERSION });
+
+  // NFR-005/006：仅 PERF_STATS_INTERVAL_MS 设置时向 stdout 输出采样，供压测解析
+  startPerfStats();
 
   const app = createApp(config, logger, existsSync(clientDist) ? clientDist : undefined);
   await app.listen();

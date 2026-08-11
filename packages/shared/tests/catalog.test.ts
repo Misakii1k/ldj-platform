@@ -25,8 +25,8 @@ test('GAME_CATALOG：游戏 ID 唯一且人数范围有效', () => {
 
 test('GAME_CATALOG：现有内部模块保留机器人能力声明', () => {
   for (const game of GAME_CATALOG) {
-    if (game.id === 'durian' || game.id === 'loveletter') {
-      // D7-C 新接入游戏按计划不提供机器人（botSupport: 'none'）
+    if (game.id === 'durian' || game.id === 'loveletter' || game.id === 'cheese-thief' || game.id === 'goose-relay' || game.id === 'night-testimony' || game.id === 'bell-clash' || game.id === 'echo-judge') {
+      // D7-C/G2-B 新接入游戏按计划不提供机器人（botSupport: 'none'）
       assert.equal(game.botSupport, 'none', `${game.id} 应声明不提供机器人`);
     } else {
       assert.equal(game.botSupport, 'rule_and_llm', `${game.id} 应保留机器人能力`);
@@ -74,20 +74,30 @@ test('GAME_CATALOG：D1 规则集 ID 与目录状态已冻结', () => {
       { id: 'werewolf', availability: 'playable', rulesetId: 'werewolf_legacy_platform_v2' },
       { id: 'durian', availability: 'playable', rulesetId: 'durian_orchard_v1' },
       { id: 'loveletter', availability: 'playable', rulesetId: 'loveletter_classic16_v1' },
+      { id: 'cheese-thief', availability: 'playable', rulesetId: 'cheese_thief_classic_v1' },
+      { id: 'goose-relay', availability: 'playable', rulesetId: 'goose_relay_classic_v1' },
+      { id: 'night-testimony', availability: 'playable', rulesetId: 'night_testimony_v1' },
+      { id: 'bell-clash', availability: 'playable', rulesetId: 'bell_clash_v1' },
+      { id: 'echo-judge', availability: 'playable', rulesetId: 'echo_judge_v1' },
     ],
   );
 });
 
 test('GAME_CATALOG：证据未批准的游戏不能作为 playable 建房', () => {
-  // D7-C 上架：durian / loveletter 经准入记录转 playable；uno 权利证据未完成保持 blocked_rights
+  // G2-B 上架：8 款经准入记录转 playable；uno 权利证据未完成保持 blocked_rights
   const playableIds = GAME_CATALOG.filter((game) => game.availability === 'playable').map((game) => game.id).sort();
-  assert.deepEqual(playableIds, ['durian', 'landlord', 'loveletter', 'undercover', 'werewolf']);
+  assert.deepEqual(playableIds, ['bell-clash', 'cheese-thief', 'durian', 'echo-judge', 'goose-relay', 'landlord', 'loveletter', 'night-testimony', 'undercover', 'werewolf']);
   assert.equal(getPlayableGameCatalogEntry('uno'), undefined);
   assert.equal(getPlayableGameCatalogEntry('undercover')?.id, 'undercover');
   assert.equal(getPlayableGameCatalogEntry('werewolf')?.id, 'werewolf');
   assert.equal(getPlayableGameCatalogEntry('landlord')?.id, 'landlord');
   assert.equal(getPlayableGameCatalogEntry('durian')?.id, 'durian');
   assert.equal(getPlayableGameCatalogEntry('loveletter')?.id, 'loveletter');
+  assert.equal(getPlayableGameCatalogEntry('cheese-thief')?.id, 'cheese-thief');
+  assert.equal(getPlayableGameCatalogEntry('goose-relay')?.id, 'goose-relay');
+  assert.equal(getPlayableGameCatalogEntry('night-testimony')?.id, 'night-testimony');
+  assert.equal(getPlayableGameCatalogEntry('bell-clash')?.id, 'bell-clash');
+  assert.equal(getPlayableGameCatalogEntry('echo-judge')?.id, 'echo-judge');
   assert.equal(getPlayableGameCatalogEntry('unknown_game'), undefined);
 });
 
@@ -108,10 +118,11 @@ test('GAME_CATALOG：D1 无默认可玩游戏', () => {
 
 test('listGamesForPlayerCount：生产目录展示 playable 与 coming_soon，隐藏内部或权利阻断项', () => {
   const all = listGamesForPlayerCount(null);
-  assert.deepEqual(all.map((game) => game.id).sort(), ['durian', 'landlord', 'loveletter', 'undercover', 'werewolf']);
-  assert.deepEqual(listGamesForPlayerCount(4).map((game) => game.id).sort(), ['durian', 'loveletter', 'undercover']);
-  assert.deepEqual(listGamesForPlayerCount(3).map((game) => game.id).sort(), ['durian', 'landlord', 'loveletter']);
-  assert.deepEqual(listGamesForPlayerCount(12).map((game) => game.id).sort(), ['undercover', 'werewolf']);
-  assert.deepEqual(listGamesForPlayerCount(2).map((game) => game.id).sort(), ['durian', 'loveletter']);
+  assert.deepEqual(all.map((game) => game.id).sort(), ['bell-clash', 'cheese-thief', 'durian', 'echo-judge', 'goose-relay', 'landlord', 'loveletter', 'night-testimony', 'undercover', 'werewolf']);
+  assert.deepEqual(listGamesForPlayerCount(4).map((game) => game.id).sort(), ['bell-clash', 'cheese-thief', 'durian', 'echo-judge', 'loveletter', 'night-testimony', 'undercover']);
+  assert.deepEqual(listGamesForPlayerCount(3).map((game) => game.id).sort(), ['bell-clash', 'durian', 'echo-judge', 'landlord', 'loveletter', 'night-testimony']);
+  assert.deepEqual(listGamesForPlayerCount(12).map((game) => game.id).sort(), ['echo-judge', 'undercover', 'werewolf']);
+  assert.deepEqual(listGamesForPlayerCount(2).map((game) => game.id).sort(), ['bell-clash', 'durian', 'loveletter']);
+  assert.deepEqual(listGamesForPlayerCount(5).map((game) => game.id).sort(), ['bell-clash', 'cheese-thief', 'durian', 'echo-judge', 'goose-relay', 'night-testimony', 'undercover']);
   assert.deepEqual(PLAYER_COUNT_OPTIONS, [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
 });

@@ -109,26 +109,41 @@ chmod +x ~/.termux/boot/start-ldj.sh
 
 ## 7. 备份与恢复
 
+平台提供 `backup` / `restore` 命令脚本（SPEC §10.6 / R1.1），基于 SQLite `VACUUM INTO`
+在线一致性快照 + `PRAGMA quick_check` 完整性校验。
+
 ### 在线备份（服务运行中）
 
 ```sh
-node -e "const {DatabaseSync}=require('node:sqlite'); const db=new DatabaseSync('data/platform.db'); db.exec(\"VACUUM INTO 'data/platform.db.bak'\"); console.log('备份完成')"
+node packages/server/scripts/backup.mjs --verify
+# 备份完成: data/platform.db.bak.<时间戳>
+# 校验通过: PRAGMA quick_check = ok
 ```
+
+- `--db <路径>`：指定源库（默认 `data/platform.db`）
+- `--out <路径>`：指定备份路径（默认 `data/platform.db.bak.<时间戳>`，单文件、无 WAL 侧写）
+- `--verify`：备份后立即打开备份执行 `PRAGMA quick_check`
 
 ### 离线备份（停止服务后）
 
 ```sh
 npm run dev:server  # Ctrl+C 停止
-cp data/platform.db data/platform.db.bak
+node packages/server/scripts/backup.mjs --verify
+npm run dev:server
 ```
 
 ### 恢复
 
 ```sh
 # 停止服务端
-cp data/platform.db.bak data/platform.db
+node packages/server/scripts/restore.mjs --from data/platform.db.bak.<时间戳> --verify
+# 恢复完成: data/platform.db
+# 校验通过: 恢复后的数据库 PRAGMA quick_check = ok
 npm run dev:server
 ```
+
+恢复会先校验备份、拷贝到目标库、清除目标残留的 `-wal`/`-shm` 侧写，再校验恢复结果；
+备份校验失败时不会覆盖目标。
 
 ### 迁移到新设备
 

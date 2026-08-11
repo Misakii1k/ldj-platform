@@ -23,6 +23,7 @@
     "playwright:install": "playwright install chromium",
     "ci": "npm run typecheck && npm run lint && npm run test && npm run compliance:d1 && npm run build && npm run test:e2e",
     "dev:server": "node packages/server/src/index.ts",
+    "perf:load": "node packages/server/scripts/perf.mjs",
     "build": "npm run build -w @ldj/client",
     "start:prod": "node packages/server/src/index.ts"
   },

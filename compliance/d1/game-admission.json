@@ -261,6 +261,168 @@
           }
         }
       ]
+    },
+    {
+      "gameId": "cheese-thief",
+      "catalogStatus": "playable",
+      "rulesets": [
+        {
+          "rulesetId": "cheese_thief_classic_v1",
+          "kind": "platform_variant",
+          "releaseStatus": "playable",
+          "sourceDocuments": [
+            "packages/games/cheese-thief/server/module.ts",
+            "packages/games/cheese-thief/RULES_ORIGINAL.md",
+            "docs/game-library/桌游平台游戏库资料/07_奶酪大盗/01_游戏规则.md"
+          ],
+          "includedExtensions": [],
+          "excludedExtensions": [],
+          "digitalAdaptations": [
+            "机制忠实原版《Cheese Thief》（栢龙玩具/Jolly Thinkers）；名称/卡面/文案为原创表达，不复制原版美术文本",
+            "规则基线 2026-08-10 调研：核心流程 A/B 级（官方 App 元数据+摩点页+多源交叉）；共犯配置/身份卡/4 人变体 B/C 级",
+            "整夜未盗→全员获胜、狗先投票为顺序标记：原版细则未获取，平台裁定并如实标注",
+            "线下桌游辅助定位：App 管随机/私密分发/计时/投票/判定，讨论在线下进行"
+          ],
+          "rights": {
+            "status": "approved",
+            "recordId": "internal-admission-g2-2026-08-10-c01",
+            "scope": "internal_platform_launch_2026",
+            "expiresAt": "2099-12-31",
+            "rightsApprover": "internal-rights-admin",
+            "rulesApprover": "internal-rules-committee"
+          }
+        }
+      ]
+    },
+    {
+      "gameId": "goose-relay",
+      "catalogStatus": "playable",
+      "rulesets": [
+        {
+          "rulesetId": "goose_relay_classic_v1",
+          "kind": "platform_variant",
+          "releaseStatus": "playable",
+          "sourceDocuments": [
+            "packages/games/goose-relay/server/module.ts",
+            "packages/games/goose-relay/RULES_ORIGINAL.md",
+            "docs/game-library/桌游平台游戏库资料/01_以鹅传鹅/01_游戏规则.md"
+          ],
+          "includedExtensions": [],
+          "excludedExtensions": [],
+          "digitalAdaptations": [
+            "机制忠实原版《以鹅传鹅》（地核桌游）；名称/卡面/文案为原创表达，不复制原版美术文本",
+            "规则基线 2026-08-10 调研：B/C 级多源交叉（桌游星期六参数、高斯Goh 实况简介、官方教学视频存在）",
+            "原版含计分但细则缺失：计分平台裁定（胜方+1/+2、负方−1）；恶鹅配置为推广版推断",
+            "线下桌游辅助定位：App 管案情私密分发/传递顺序与计时/指认推进/投票/判定，传递为线下肢体比划"
+          ],
+          "rights": {
+            "status": "approved",
+            "recordId": "internal-admission-g2-2026-08-10-g01",
+            "scope": "internal_platform_launch_2026",
+            "expiresAt": "2099-12-31",
+            "rightsApprover": "internal-rights-admin",
+            "rulesApprover": "internal-rules-committee"
+          }
+        }
+      ]
+    },
+    {
+      "gameId": "night-testimony",
+      "catalogStatus": "playable",
+      "rulesets": [
+        {
+          "rulesetId": "night_testimony_v1",
+          "kind": "platform_variant",
+          "releaseStatus": "playable",
+          "sourceDocuments": [
+            "packages/games/night-testimony/server/module.ts",
+            "packages/games/night-testimony/RULES_ORIGINAL.md",
+            "docs/game-library/桌游平台游戏库资料/04_囚徒之夜/01_游戏规则.md"
+          ],
+          "includedExtensions": [],
+          "excludedExtensions": [],
+          "digitalAdaptations": [
+            "机制忠实原版《囚徒之夜》（台湾嘴嘴出版社）；罪刑卡名称为原创表达，不复制原版卡面文本",
+            "规则基线 2026-08-10 调研：A/B 级（官方产品页明文玩法/组件/胜负 + 高斯Goh 实况交叉）",
+            "每人 3 YES + 1 NO 标记；YES 公开轨迹/NO 收回；问答结束=某玩家 YES 用完或问满 N 问",
+            "票出囚犯→狱警胜；票出狱警→猜全部罪行，全对单独胜否则囚犯胜",
+            "线下桌游辅助定位：App 管身份/罪行私密分发、标记管理、轨迹公开、计时/投票/猜罪判定"
+          ],
+          "rights": {
+            "status": "approved",
+            "recordId": "internal-admission-g2-2026-08-10-n01",
+            "scope": "internal_platform_launch_2026",
+            "expiresAt": "2099-12-31",
+            "rightsApprover": "internal-rights-admin",
+            "rulesApprover": "internal-rules-committee"
+          }
+        }
+      ]
+    },
+    {
+      "gameId": "bell-clash",
+      "catalogStatus": "playable",
+      "rulesets": [
+        {
+          "rulesetId": "bell_clash_v1",
+          "kind": "platform_variant",
+          "releaseStatus": "playable",
+          "sourceDocuments": [
+            "packages/games/bell-clash/server/module.ts",
+            "packages/games/bell-clash/RULES_ORIGINAL.md"
+          ],
+          "includedExtensions": [],
+          "excludedExtensions": [],
+          "digitalAdaptations": [
+            "机制忠实原版《Ding! 眼急脑快》（HUCH 原版 + 一刻馆）：UNO 式出牌（同色/同数字）+ 行动短语卡 + 按铃抢回合，每人 8 张先打完者胜",
+            "规则基线 2026-08-10 调研：C 级（高斯Goh 实况简介逐字说明 + 析弈讲规则标题）；纠正资料库'图案/颜色抢答'误判",
+            "牌库为平台原创设计（4 色×数字 1-8 各 2 张 + 每色自编短语卡 2 张），不复制原版牌表",
+            "错误拍铃罚摸一张、无人拍铃计时器兜底：原版细则未获取，平台裁定并如实标注",
+            "线下桌游辅助定位：App 管发牌/出牌合法性/摸牌/按铃窗口计时/终局判定，短语口头触发由线下判断"
+          ],
+          "rights": {
+            "status": "approved",
+            "recordId": "internal-admission-g2-2026-08-10-b01",
+            "scope": "internal_platform_launch_2026",
+            "expiresAt": "2099-12-31",
+            "rightsApprover": "internal-rights-admin",
+            "rulesApprover": "internal-rules-committee"
+          }
+        }
+      ]
+    },
+    {
+      "gameId": "echo-judge",
+      "catalogStatus": "playable",
+      "rulesets": [
+        {
+          "rulesetId": "echo_judge_v1",
+          "kind": "platform_variant",
+          "releaseStatus": "playable",
+          "sourceDocuments": [
+            "packages/games/echo-judge/server/module.ts",
+            "packages/games/echo-judge/RULES_ORIGINAL.md"
+          ],
+          "includedExtensions": [],
+          "excludedExtensions": [],
+          "digitalAdaptations": [
+            "机制忠实原版《伪人测试》判官模式（摩点「易溶Studio」2025 众筹）：判官出题、秘密分配身份、伪人获触发词卡、依次回答、判官指认",
+            "规则基线 2026-08-10 调研：B/C 级（smzdm 规则转载 + 搜狐推荐文 + B站教学视频标题；官方规则书未获取）",
+            "计分 B/C 级：判官抓对 +1、被抓伪人 −1、隐藏成功 +2；判官抓错扣分原版未明确→平台裁定 −1",
+            "触发词库为原创表达（不复制原版词卡）；伪人数量按人数档（3-4:1、5-8:2、9-12:3）平台裁定",
+            "判官轮换跳过伪人；高分/团队模式标注为后续扩展",
+            "线下桌游辅助定位：App 管身份/触发词私密分发、出题/回答计时、指认、计分与终局判定"
+          ],
+          "rights": {
+            "status": "approved",
+            "recordId": "internal-admission-g2-2026-08-10-e01",
+            "scope": "internal_platform_launch_2026",
+            "expiresAt": "2099-12-31",
+            "rightsApprover": "internal-rights-admin",
+            "rulesApprover": "internal-rules-committee"
+          }
+        }
+      ]
     }
   ],
   "forbidden": {

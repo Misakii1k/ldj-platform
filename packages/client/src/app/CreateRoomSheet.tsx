@@ -103,12 +103,23 @@ export function CreateRoomSheet({ game, onClose }: CreateRoomSheetProps) {
             autoComplete="new-password"
           />
         </label>
+        {!isWerewolf && (
+          <div className="room-sheet__overview" aria-label="玩法速览">
+            <p>{game.summary}</p>
+            <ul className="room-sheet__tags" aria-label="玩法标签">
+              {game.tags.map((tag) => <li key={tag}>{tag}</li>)}
+            </ul>
+            {game.botSupport === 'none' && (
+              <p className="room-sheet__note">本玩法暂不支持机器人，需要好友全部真人入座。</p>
+            )}
+          </div>
+        )}
         {isWerewolf && (
           <fieldset className="room-sheet__field room-sheet__roles">
             <legend>扩展角色池 <em>(开启则各入池 1 张)</em></legend>
             <label className="room-sheet__check">
               <input type="checkbox" checked={roleGuard} onChange={(e) => setRoleGuard(e.target.checked)} />
-              <span><b>守卫</b>守中狼刀 → 平安夜；不能连续守同一人</span>
+              <span><b>守卫</b>守中狼刀可保平安夜；不能连续两夜守同一人</span>
             </label>
             <label className="room-sheet__check">
               <input type="checkbox" checked={roleHunter} onChange={(e) => setRoleHunter(e.target.checked)} />

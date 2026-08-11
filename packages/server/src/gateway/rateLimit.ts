@@ -19,6 +19,8 @@ export const DEFAULT_RULES = {
   joinAttempt: { windowMs: 60_000, max: 10 },
   /** 单连接消息总量硬限（防洪泛） */
   messagesPerConnection: { windowMs: 1_000, max: 40 },
+  /** HTTP 设置写接口（PUT llm / POST test / POST models）20 次 / 分钟 / IP */
+  settingsWrite: { windowMs: 60_000, max: 20 },
 } as const satisfies Record<string, RateLimitRule>;
 
 interface WindowState {

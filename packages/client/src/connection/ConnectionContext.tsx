@@ -23,6 +23,7 @@ import {
   type ConnectionSnapshot,
   type Me,
 } from './types.ts';
+import { isRoomStatusStale } from './staleness.ts';
 
 const ConnectionContext = createContext<ConnectionApi | null>(null);
 
@@ -38,6 +39,8 @@ const WS_CLOSE_ROOM_CLOSED = 4003;
 const SEND_TIMEOUT_MS = 10_000;
 const INITIAL_BACKOFF_MS = 1000;
 const MAX_BACKOFF_MS = 30_000;
+/** 心跳轮询间隔：房间内周期性查询权威状态（D7-A §6 遗留修复） */
+const ROOM_STATUS_POLL_MS = 15_000;
 
 function generateRequestId(): string {
   return `r_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
@@ -362,6 +365,37 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
       );
     }
   }, [state.connState, send]);
+
+  // 心跳：周期性查询权威房间状态（D7-A §6 遗留修复）。
+  // 覆盖「浏览器停在 LOBBY/POST_GAME 但房间实际已 IN_GAME」的静默丢广播停留态：
+  // 心跳返回权威状态后，本地非 IN_GAME 而权威 IN_GAME → 主动补一次权威恢复。
+  useEffect(() => {
+    if (state.connState !== 'connected' || meRef.current === null) return;
+    const roomCode = meRef.current.roomCode;
+    const timer = setInterval(() => {
+      void send('room_status', {})
+        .then((envelope) => {
+          const s = stateRef.current;
+          if (meRef.current?.roomCode !== roomCode) return; // 房间已切换，丢弃
+          const payload = (envelope.payload ?? {}) as { roomCode?: string; status?: string };
+          if (payload.roomCode !== roomCode) return;
+          if (s.room !== null && isRoomStatusStale(s.room.status, payload.status ?? '')) {
+            const next = withConnState(s, 'server_recovering');
+            stateRef.current = next;
+            setState(next);
+            sendRaw('resync', {
+              lastSeq: s.roomSeq,
+              chatCursor: s.chatCursor,
+              game: gameResumeIdentity(s),
+            });
+          }
+        })
+        .catch(() => {
+          // 心跳失败静默（断线/超时由既有重连路径处理）
+        });
+    }, ROOM_STATUS_POLL_MS);
+    return () => clearInterval(timer);
+  }, [state.connState, send, sendRaw]);
 
   // 手动 resync
   const resync = useCallback(() => {

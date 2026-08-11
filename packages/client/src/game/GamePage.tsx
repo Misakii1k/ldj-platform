@@ -14,7 +14,10 @@ import { SpeakingView } from './SpeakingView.tsx';
 import { VotingView } from './VotingView.tsx';
 import { VoteResultView } from './VoteResultView.tsx';
 import { GameOverView } from './GameOverView.tsx';
-import { GameLeaveButton } from './GameLeaveButton.tsx';
+import { nameFor } from './useGameAction.ts';
+import { TabletopOvalShell, type PlayerSeat } from '../shared-ui/TabletopOvalShell.tsx';
+
+
 
 const UnoGamePage = lazy(() => import('./NewGamePages.tsx').then((module) => ({ default: module.UnoGamePage })));
 const LandlordGamePage = lazy(() => import('./NewGamePages.tsx').then((module) => ({ default: module.LandlordGamePage })));
@@ -23,6 +26,11 @@ const UnoHouseStage = lazy(() => import('./uno/stage/UnoHouseStage.tsx').then((m
 const UndercoverBlankStage = lazy(() => import('./undercover/stage/UndercoverBlankStage.tsx').then((module) => ({ default: module.UndercoverBlankStage })));
 const DurianGamePage = lazy(() => import('./durian/DurianGamePage.tsx').then((module) => ({ default: module.DurianGamePage })));
 const LoveLetterGamePage = lazy(() => import('./loveletter/LoveLetterGamePage.tsx').then((module) => ({ default: module.LoveLetterGamePage })));
+const CheeseThiefGamePage = lazy(() => import('./cheese-thief/CheeseThiefGamePage.tsx').then((module) => ({ default: module.CheeseThiefGamePage })));
+const GooseRelayGamePage = lazy(() => import('./goose-relay/GooseRelayGamePage.tsx').then((module) => ({ default: module.GooseRelayGamePage })));
+const NightTestimonyGamePage = lazy(() => import('./night-testimony/NightTestimonyGamePage.tsx').then((module) => ({ default: module.NightTestimonyGamePage })));
+const BellClashGamePage = lazy(() => import('./bell-clash/BellClashGamePage.tsx').then((module) => ({ default: module.BellClashGamePage })));
+const EchoJudgeGamePage = lazy(() => import('./echo-judge/EchoJudgeGamePage.tsx').then((module) => ({ default: module.EchoJudgeGamePage })));
 
 type ActiveGame = NonNullable<ReturnType<typeof useConnection>['state']['game']>;
 
@@ -42,6 +50,7 @@ function GameLoadingCard({ children }: { children: React.ReactNode }) {
 
 function UndercoverGamePage({ game }: { game: ActiveGame }) {
   const view = asPlayerView(game.view);
+  const { state } = useConnection();
   const { setAtmosphere } = useBackground();
 
   useEffect(() => {
@@ -78,28 +87,31 @@ function UndercoverGamePage({ game }: { game: ActiveGame }) {
       phaseView = <div className="game-loading-card">未知阶段</div>;
   }
 
+  const members = state.room?.members ?? [];
+  const seats: PlayerSeat[] = (view.players || []).map((p) => ({
+    id: p.playerId,
+    name: nameFor(members, p.playerId),
+    isCurrentTurn: p.playerId === view.currentSpeakerId,
+    isEliminated: !p.alive,
+  }));
+
   return (
-    <main className={`game-page phase-${view.phase}`}>
-      <div className="game-page-decor game-page-decor-left" aria-hidden="true" />
-      <div className="game-page-decor game-page-decor-right" aria-hidden="true" />
-      <div className="game-shell">
-        <header className="game-header">
-          <div className="game-brand-mark" aria-hidden="true"><span /><span /><span /></div>
-          <div className="game-header-copy">
-            <span className="game-title">谁是卧底</span>
-            <span className="game-round">第 {view.round} 轮 · 找出那个人</span>
-          </div>
-          <div className="game-header-actions">
-            {game.role === 'spectator' && <span className="spectator-badge">观战</span>}
-            <GameLeaveButton className="game-leave--undercover" />
-          </div>
-        </header>
-        {view.phase !== 'game_over' && <GamePhaseRail phase={view.phase} />}
-        {phaseView}
-      </div>
-    </main>
+    <TabletopOvalShell
+      title="谁是卧底"
+      subtitle={`第 ${view.round} 轮 · 找出隐藏卧底`}
+      theme="mystery"
+      players={seats}
+      currentUserId={view.me?.playerId}
+      centerArena={
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+          {view.phase !== 'game_over' && <GamePhaseRail phase={view.phase} />}
+          {phaseView}
+        </div>
+      }
+    />
   );
 }
+
 
 export function GamePage() {
   const { state } = useConnection();
@@ -167,6 +179,51 @@ export function GamePage() {
         break;
       }
       content = <LoveLetterGamePage view={parsed.view as import('./loveletter/types.ts').LoveLetterPlayerView} />;
+      break;
+    }
+    case 'cheese-thief': {
+      const parsed = parseGameView(game);
+      if (!parsed.ok) {
+        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        break;
+      }
+      content = <CheeseThiefGamePage view={parsed.view as import('./cheese-thief/types.ts').CheeseThiefPlayerView} />;
+      break;
+    }
+    case 'goose-relay': {
+      const parsed = parseGameView(game);
+      if (!parsed.ok) {
+        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        break;
+      }
+      content = <GooseRelayGamePage view={parsed.view as import('./goose-relay/types.ts').GooseRelayPlayerView} />;
+      break;
+    }
+    case 'night-testimony': {
+      const parsed = parseGameView(game);
+      if (!parsed.ok) {
+        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        break;
+      }
+      content = <NightTestimonyGamePage view={parsed.view as import('./night-testimony/types.ts').NightTestimonyPlayerView} />;
+      break;
+    }
+    case 'bell-clash': {
+      const parsed = parseGameView(game);
+      if (!parsed.ok) {
+        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        break;
+      }
+      content = <BellClashGamePage view={parsed.view as import('./bell-clash/types.ts').BellClashPlayerView} />;
+      break;
+    }
+    case 'echo-judge': {
+      const parsed = parseGameView(game);
+      if (!parsed.ok) {
+        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        break;
+      }
+      content = <EchoJudgeGamePage view={parsed.view as import('./echo-judge/types.ts').EchoJudgePlayerView} />;
       break;
     }
     default:

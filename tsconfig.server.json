@@ -28,6 +28,21 @@
       ],
       "@ldj/game-loveletter/server": [
         "./packages/games/loveletter/server/index.ts"
+      ],
+      "@ldj/game-cheese-thief/server": [
+        "./packages/games/cheese-thief/server/index.ts"
+      ],
+      "@ldj/game-goose-relay/server": [
+        "./packages/games/goose-relay/server/index.ts"
+      ],
+      "@ldj/game-night-testimony/server": [
+        "./packages/games/night-testimony/server/index.ts"
+      ],
+      "@ldj/game-bell-clash/server": [
+        "./packages/games/bell-clash/server/index.ts"
+      ],
+      "@ldj/game-echo-judge/server": [
+        "./packages/games/echo-judge/server/index.ts"
       ]
     }
   },

@@ -15,6 +15,7 @@ import {
 } from '../core/llmConnectionTest.ts';
 import { fetchLlmModels, LlmModelCatalogError } from '../core/llmModelCatalog.ts';
 import { normalizeLlmBaseUrl } from '../core/llmBaseUrl.ts';
+import { DEFAULT_RULES, RateLimiter } from './rateLimit.ts';
 import { isOriginAllowed } from './ws.ts';
 
 const MIME: Record<string, string> = {
@@ -235,6 +236,20 @@ function setSecurityHeaders(res: http.ServerResponse): void {
 
 export function createHttpServer(deps: HttpDeps): http.Server {
   const staticRoot = deps.staticDir ? resolve(deps.staticDir) : null;
+  // 设置写接口每 IP 限流（SPEC §9.5）；/health/* 与读接口不限
+  const settingsWriteLimiter = new RateLimiter(DEFAULT_RULES.settingsWrite);
+
+  const rateLimitSettingsWrite = (req: http.IncomingMessage, res: http.ServerResponse): boolean => {
+    const key = `ip:${req.socket.remoteAddress ?? 'unknown'}`;
+    const result = settingsWriteLimiter.tryAcquire(key);
+    if (result.ok) return true;
+    sendJson(res, 429, {
+      error: 'RATE_LIMITED',
+      message: '设置操作过于频繁，请稍后再试',
+      retryAfterMs: result.retryAfterMs,
+    });
+    return false;
+  };
 
   return http.createServer((req, res) => {
     setSecurityHeaders(res);
@@ -263,6 +278,7 @@ export function createHttpServer(deps: HttpDeps): http.Server {
         res.end('Method Not Allowed');
         return;
       }
+      if (!rateLimitSettingsWrite(req, res)) return;
       const authorizationError = authorizeSettingsWrite(req, deps);
       if (authorizationError !== null) {
         sendJson(res, authorizationError.status, { error: 'FORBIDDEN', message: authorizationError.message });
@@ -347,6 +363,7 @@ export function createHttpServer(deps: HttpDeps): http.Server {
         res.end('Method Not Allowed');
         return;
       }
+      if (!rateLimitSettingsWrite(req, res)) return;
       const authorizationError = authorizeSettingsWrite(req, deps);
       if (authorizationError !== null) {
         sendJson(res, authorizationError.status, { error: 'FORBIDDEN', message: authorizationError.message });
@@ -451,6 +468,7 @@ export function createHttpServer(deps: HttpDeps): http.Server {
       }
 
       if (req.method === 'PUT') {
+        if (!rateLimitSettingsWrite(req, res)) return;
         // 写入鉴权：设了口令就验口令，没设就只信本机（见 isLocalAddress）
         const authorizationError = authorizeSettingsWrite(req, deps);
         if (authorizationError !== null) {

@@ -2,12 +2,17 @@
  * 性能压测脚本（NFR-001~009 验证）。
  *
  * 模拟 12 路 WebSocket 连接 + 8 机器人，跑完 3 局「谁是卧底」完整对局，
- * 采集客户端侧请求延迟、RPS 与对局完成数。
+ * 采集客户端侧请求延迟、RPS、对局完成数，以及服务端 RSS/CPU 采样
+ * （服务端以 PERF_STATS_INTERVAL_MS 启动，perf-stats 行由本脚本解析）。
  *
  * 约束：
  * - 仅用 Node 内置模块（Node 24+ 全局 WebSocket）
  * - .mjs（ESM）
- * - 不修改其他文件
+ * - 不修改其他文件（报告写 perf-report.json 于仓库根）
+ *
+ * 用法：
+ *   node packages/server/scripts/perf.mjs                    # 3 局基线（NFR-005）
+ *   node packages/server/scripts/perf.mjs --long-run-minutes 30  # 30 分钟长跑（NFR-006）
  *
  * 适配说明：谁是卧底上限 12 人（minPlayers=4, maxPlayers=12），
  * 故 4 名真人玩家 + 8 名机器人 = 12 人参局，另有 8 路观战连接，合计 12 路 WebSocket。
@@ -31,15 +36,36 @@ const WS_CONNECTIONS = HUMAN_PLAYERS + SPECTATORS; // 12
 const BOT_COUNT = 8;
 const MAX_GAMES = 3;
 const READY_TIMEOUT_MS = 30_000;
-const GLOBAL_TIMEOUT_MS = 10 * 60 * 1000;
-const PER_GAME_TIMEOUT_MS = 120_000;
+const GLOBAL_TIMEOUT_MS = 20 * 60 * 1000;
+const PER_GAME_TIMEOUT_MS = 300_000;
 const P95_THRESHOLD_MS = 200;
+/** NFR-005：低资源主机完成 3 局后服务端 RSS ≤ 200 MB */
+const SERVER_RSS_LIMIT_MB = 200;
+/** NFR-006：30 分钟重复开局/结束，强制稳定期前后 RSS 增长 ≤ 30 MB */
+const NFR006_GROWTH_LIMIT_MB = 30;
+/** 服务端采样间隔：以 PERF_STATS_INTERVAL_MS 环境变量启动子进程 */
+const PERF_STATS_INTERVAL_MS = 2000;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '../../..');
 const SERVER_ENTRY = 'packages/server/src/index.ts';
 const REPORT_PATH = resolve(PROJECT_ROOT, 'perf-report.json');
 const DATA_PATH = resolve(PROJECT_ROOT, DATA_DIR);
+const CRASH_LOG_PATH = resolve(PROJECT_ROOT, '.perf-crash.log');
+
+// —— 命令行参数 ——
+
+/** 读取 --long-run-minutes <n>；未提供或非法返回 0（普通 3 局模式） */
+function parseLongRunMinutes() {
+  const args = process.argv.slice(2);
+  const idx = args.indexOf('--long-run-minutes');
+  if (idx === -1) return 0;
+  const raw = args[idx + 1];
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+const LONG_RUN_MINUTES = parseLongRunMinutes();
 
 // —— 全局指标 ——
 
@@ -47,6 +73,7 @@ let globalReqCounter = 0;
 const sendTimestamps = new Map(); // requestId → sentAt
 const latencies = []; // 每条 send→ack 的延迟（ms）
 let totalMessagesSent = 0;
+const failureReasons = []; // 首个失败原因（写入报告，避免 process.exit 丢弃缓冲 stdout）
 
 function recordSend(requestId) {
   sendTimestamps.set(requestId, Date.now());
@@ -303,13 +330,31 @@ async function main() {
 
   const server = spawn('node', [SERVER_ENTRY], {
     cwd: PROJECT_ROOT,
-    env: { ...process.env, PORT: String(PORT), DATA_DIR, LOG_LEVEL: 'warn' },
+    env: {
+      ...process.env,
+      PORT: String(PORT),
+      DATA_DIR,
+      LOG_LEVEL: 'warn',
+      PERF_STATS_INTERVAL_MS: String(PERF_STATS_INTERVAL_MS),
+      // 12 人合法秒加超过防爆破 join 配额（10 次/分/IP），压测场景放宽
+      E2E_JOIN_LIMIT_MAX: '100',
+    },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 
   let serverCrashed = false;
-  server.stdout.on('data', () => {
-    // 静默：LOG_LEVEL=warn 已压制大部分输出
+  // 服务端采样：解析 [perf-stats] rss=<bytes> cpu=<百分比> 行；其余输出保持静默
+  const serverStats = []; // { rss, cpu, t }
+  let serverStdoutBuf = '';
+  server.stdout.on('data', (chunk) => {
+    serverStdoutBuf += chunk.toString();
+    let nl;
+    while ((nl = serverStdoutBuf.indexOf('\n')) !== -1) {
+      const line = serverStdoutBuf.slice(0, nl).trim();
+      serverStdoutBuf = serverStdoutBuf.slice(nl + 1);
+      const m = line.match(/^\[perf-stats\] rss=(\d+) cpu=([\d.]+)$/);
+      if (m) serverStats.push({ rss: Number(m[1]), cpu: Number(m[2]), t: Date.now() });
+    }
   });
   server.stderr.on('data', (chunk) => {
     const text = chunk.toString().trim();
@@ -439,25 +484,63 @@ async function main() {
 
   console.log(`8 个机器人已添加（rule=${ruleBotCount}, llm=${llmBotCount}），开始三局对局...`);
 
-  // —— 三局完整对局 ——
+  // 每局前 4 名真人玩家准备（ready 为全员命令；机器人加入时 ready=1 且跨局保持）
+  async function readyHumans() {
+    for (let i = 0; i < HUMAN_PLAYERS; i++) {
+      try {
+        const ack = await clients[i].request('room_command', { command: 'ready', ready: true });
+        if (ack.type === 'error') throw new Error(ack.payload?.code ?? 'ready 失败');
+      } catch (err) {
+        console.error(`玩家 ${i + 1} 准备失败: ${err.message}`);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // —— 完整对局（默认 3 局；长跑模式持续到 --long-run-minutes 截止） ——
 
   const totalStart = Date.now();
+  const longRunDeadline = LONG_RUN_MINUTES > 0 ? totalStart + LONG_RUN_MINUTES * 60_000 : 0;
   let gamesCompleted = 0;
   const perGameDurations = [];
+  // NFR-006 稳定期采样：长跑模式下首局完成与最后一局完成的 RSS
+  let stabilizationStartRss = null;
+  let stabilizationEndRss = null;
+  // NFR-005 采样：第 3 局完成时的服务端 RSS
+  let rssAfterThirdGame = null;
 
-  for (let g = 0; g < MAX_GAMES; g++) {
+  const latestServerRss = () =>
+    serverStats.length > 0 ? serverStats[serverStats.length - 1].rss : null;
+
+  for (let g = 0; ; g++) {
+    const wantMinGames = g < MAX_GAMES;
+    const wantLongRun = longRunDeadline !== 0 && Date.now() < longRunDeadline;
+    if (!wantMinGames && !wantLongRun) break;
+
     // 清空各客户端队列中残留的旧帧，避免 waitFor 拿到上一局的 game_over
     for (const c of clients) c.drainQueue();
+
+    // 每局开局前准备真人（return_to_lobby 已重置真人 ready；机器人保持就绪）
+    if (!(await readyHumans())) {
+      console.error('真人准备失败，终止测试');
+      failureReasons.push(`第 ${g + 1} 局真人准备失败`);
+      break;
+    }
 
     // 开局
     try {
       const ack = await host.request('room_command', { command: 'start_game' });
       if (ack.type === 'error') {
-        console.error(`第 ${g + 1} 局开局失败: ${ack.payload?.code}`);
+        const reason = `第 ${g + 1} 局开局失败: ${ack.payload?.code} ${ack.payload?.message ?? ''}`;
+        console.error(reason);
+        failureReasons.push(reason);
         break;
       }
     } catch (err) {
-      console.error(`第 ${g + 1} 局开局异常: ${err.message}`);
+      const reason = `第 ${g + 1} 局开局异常: ${err.message}`;
+      console.error(reason);
+      failureReasons.push(reason);
       break;
     }
 
@@ -472,7 +555,9 @@ async function main() {
       );
       gameOver = true;
     } catch (err) {
-      console.error(`第 ${g + 1} 局等待 game_over 超时: ${err.message}`);
+      const reason = `第 ${g + 1} 局等待 game_over 超时: ${err.message}`;
+      console.error(reason);
+      failureReasons.push(reason);
     }
 
     const gameDuration = Date.now() - gameStart;
@@ -481,29 +566,40 @@ async function main() {
     if (gameOver) {
       gamesCompleted++;
       console.log(`第 ${g + 1} 局完成（${(gameDuration / 1000).toFixed(1)}s）`);
+      if (stabilizationStartRss === null) stabilizationStartRss = latestServerRss();
+      stabilizationEndRss = latestServerRss();
+      if (gamesCompleted === MAX_GAMES && rssAfterThirdGame === null) {
+        rssAfterThirdGame = latestServerRss();
+      }
     } else {
       console.error(`第 ${g + 1} 局未完成，终止测试`);
       break;
     }
 
-    // 非最后一局：返回大厅准备下一局
-    if (g < MAX_GAMES - 1) {
-      try {
-        const ack = await host.request('room_command', { command: 'return_to_lobby' });
-        if (ack.type === 'error') {
-          console.error(`返回大厅失败: ${ack.payload?.code}`);
-          break;
-        }
-      } catch (err) {
-        console.error(`返回大厅异常: ${err.message}`);
+    // 还有下一局才返回大厅；无下一局则结束
+    const willContinue =
+      g + 1 < MAX_GAMES || (longRunDeadline !== 0 && Date.now() < longRunDeadline);
+    if (!willContinue) break;
+
+    try {
+      const ack = await host.request('room_command', { command: 'return_to_lobby' });
+      if (ack.type === 'error') {
+        const reason = `返回大厅失败: ${ack.payload?.code} ${ack.payload?.message ?? ''}`;
+        console.error(reason);
+        failureReasons.push(reason);
         break;
       }
-      // 重置客户端自动出招状态
-      for (const c of clients) {
-        c.drainQueue();
-      }
-      await sleep(200);
+    } catch (err) {
+      const reason = `返回大厅异常: ${err.message}`;
+      console.error(reason);
+      failureReasons.push(reason);
+      break;
     }
+    // 重置客户端自动出招状态
+    for (const c of clients) {
+      c.drainQueue();
+    }
+    await sleep(200);
   }
 
   const totalDurationMs = Date.now() - totalStart;
@@ -519,6 +615,23 @@ async function main() {
   const rps = totalDurationS > 0 ? totalMessagesSent / totalDurationS : 0;
   const memMB = process.memoryUsage().rss / (1024 * 1024);
 
+  // —— 服务端采样统计（NFR-005/006） ——
+
+  const rssSamples = serverStats.map((s) => s.rss);
+  const serverRssFirst = rssSamples.length > 0 ? rssSamples[0] : 0;
+  const serverRssEnd = rssSamples.length > 0 ? rssSamples[rssSamples.length - 1] : 0;
+  const serverRssPeak = rssSamples.length > 0 ? Math.max(...rssSamples) : 0;
+  const serverRssAfter3GamesMB = (rssAfterThirdGame ?? serverRssEnd) / (1024 * 1024);
+  const serverRssGrowthMB = (serverRssEnd - serverRssFirst) / (1024 * 1024);
+  const cpuAvgPct =
+    serverStats.length > 0
+      ? serverStats.reduce((acc, s) => acc + s.cpu, 0) / serverStats.length
+      : 0;
+  const stabilityGrowthMB =
+    stabilizationStartRss !== null && stabilizationEndRss !== null
+      ? (stabilizationEndRss - stabilizationStartRss) / (1024 * 1024)
+      : 0;
+
   // —— 输出报告 ——
 
   console.log();
@@ -531,6 +644,14 @@ async function main() {
   console.log(`延迟 p95: ${p95}ms`);
   console.log(`延迟 p99: ${p99}ms`);
   console.log(`客户端进程内存: ${memMB.toFixed(1)} MB`);
+  console.log(`服务端采样数: ${serverStats.length}`);
+  console.log(`服务端 RSS（第 3 局后）: ${serverRssAfter3GamesMB.toFixed(1)} MB`);
+  console.log(`服务端 RSS 峰值: ${(serverRssPeak / (1024 * 1024)).toFixed(1)} MB`);
+  console.log(`服务端 RSS 增长: ${serverRssGrowthMB.toFixed(1)} MB`);
+  console.log(`服务端 CPU 平均占用: ${cpuAvgPct.toFixed(2)}%`);
+  if (LONG_RUN_MINUTES > 0) {
+    console.log(`长跑稳定期 RSS 增长: ${stabilityGrowthMB.toFixed(1)} MB`);
+  }
   if (perGameDurations.length > 0) {
     console.log(
       `各局耗时: ${perGameDurations.map((d) => (d / 1000).toFixed(1) + 's').join(', ')}`,
@@ -557,6 +678,18 @@ async function main() {
       latency: { p50, p95, p99 },
       clientMemoryMB: Number(memMB.toFixed(2)),
       perGameDurationsMs: perGameDurations,
+      serverRssAfter3GamesMB: Number(serverRssAfter3GamesMB.toFixed(2)),
+      serverRssEndMB: Number((serverRssEnd / (1024 * 1024)).toFixed(2)),
+      serverRssPeakMB: Number((serverRssPeak / (1024 * 1024)).toFixed(2)),
+      serverRssGrowthMB: Number(serverRssGrowthMB.toFixed(2)),
+      serverCpuAvgPct: Number(cpuAvgPct.toFixed(2)),
+      stabilityGrowthMB: Number(stabilityGrowthMB.toFixed(2)),
+    },
+    serverSampling: {
+      enabled: serverStats.length > 0,
+      intervalMs: PERF_STATS_INTERVAL_MS,
+      samples: serverStats.length,
+      longRunMinutes: LONG_RUN_MINUTES,
     },
     dataPoints: {
       latencies: sortedLatencies,
@@ -565,7 +698,10 @@ async function main() {
       p95Exceeded: p95 > P95_THRESHOLD_MS,
       serverCrashed,
       gamesIncomplete: gamesCompleted < MAX_GAMES,
+      serverRssExceeded: serverRssAfter3GamesMB > SERVER_RSS_LIMIT_MB,
+      stabilityGrowthExceeded: LONG_RUN_MINUTES > 0 && stabilityGrowthMB > NFR006_GROWTH_LIMIT_MB,
     },
+    failureReasons,
   };
   writeFileSync(REPORT_PATH, JSON.stringify(report, null, 2));
   console.log(`\n详细报告已写入: ${REPORT_PATH}`);
@@ -585,12 +721,25 @@ async function main() {
     console.error(`失败: 对局完成数 ${gamesCompleted} < ${MAX_GAMES}`);
     exitCode = 1;
   }
+  if (serverRssAfter3GamesMB > SERVER_RSS_LIMIT_MB) {
+    console.error(
+      `失败: NFR-005 服务端 RSS ${serverRssAfter3GamesMB.toFixed(1)}MB > ${SERVER_RSS_LIMIT_MB}MB`,
+    );
+    exitCode = 1;
+  }
+  if (LONG_RUN_MINUTES > 0 && stabilityGrowthMB > NFR006_GROWTH_LIMIT_MB) {
+    console.error(
+      `失败: NFR-006 稳定期 RSS 增长 ${stabilityGrowthMB.toFixed(1)}MB > ${NFR006_GROWTH_LIMIT_MB}MB`,
+    );
+    exitCode = 1;
+  }
 
   // —— 清理 ——
 
   await cleanup(server, clients);
 
-  process.exit(exitCode);
+  // 用 exitCode 让进程自然退出（冲洗 stdout 缓冲），而非 process.exit 直接截断
+  process.exitCode = exitCode;
 }
 
 // —— 清理 ——
@@ -628,7 +777,24 @@ async function cleanup(server, clients) {
 
 // —— 入口 ——
 
+process.on('unhandledRejection', (reason) => {
+  const msg = `unhandledRejection: ${reason instanceof Error ? reason.stack : String(reason)}`;
+  console.error(msg);
+  try {
+    writeFileSync(CRASH_LOG_PATH, msg);
+  } catch {
+    // 忽略
+  }
+  process.exit(1);
+});
+
 main().catch((err) => {
-  console.error('压测脚本异常:', err);
+  const msg = `压测脚本异常: ${err instanceof Error ? err.stack : String(err)}`;
+  console.error(msg);
+  try {
+    writeFileSync(CRASH_LOG_PATH, msg);
+  } catch {
+    // 忽略
+  }
   process.exit(1);
 });

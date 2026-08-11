@@ -1,4 +1,4 @@
-import { GameLeaveButton } from '../../GameLeaveButton.tsx';
+import { TabletopOvalShell, type PlayerSeat } from '../../../shared-ui/TabletopOvalShell.tsx';
 import type { WerewolfPresentationModel } from '../presentation.ts';
 import { GameOverReveal } from './GameOverReveal.tsx';
 import { MoonPhaseHeader } from './MoonPhaseHeader.tsx';
@@ -16,35 +16,53 @@ interface WerewolfStageProps {
 }
 
 export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfStageProps) {
-  return (
-    <main className={`werewolf-stage phase-${model.phase}`} data-mood={model.mood}>
-      <div className="werewolf-stage__veil" aria-hidden="true" />
-      <div className="werewolf-stage__inner">
-        <div className="werewolf-stage__top">
-          <MoonPhaseHeader
-            dayLabel={model.dayLabel}
-            phaseLabel={model.phaseLabel}
-            narrative={model.narrative}
-            mood={model.mood}
-            deadlineAt={model.deadlineAt}
-            spectator={model.spectator}
-          />
-          <GameLeaveButton />
-        </div>
+  const seats: PlayerSeat[] = model.seats.map((s) => ({
+    id: s.playerId,
+    name: s.name,
+    isCurrentTurn: s.isSpeaking,
+    isSpeaking: s.isSpeaking,
+    isEliminated: !s.alive,
+    roleTag: s.revealedRoleLabel ?? undefined,
+    badge: s.statusLabel,
+  }));
 
-        <SeatRing seats={model.seats} mood={model.mood} />
+  const centerArena = (
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+      <MoonPhaseHeader
+        dayLabel={model.dayLabel}
+        phaseLabel={model.phaseLabel}
+        narrative={model.narrative}
+        mood={model.mood}
+        deadlineAt={model.deadlineAt}
+        spectator={model.spectator}
+      />
+      <SeatRing seats={model.seats} mood={model.mood} />
+      {error && <p className="game-error werewolf-stage__error" role="alert">{error}</p>}
+    </div>
+  );
 
-        <div className="werewolf-stage__panels">
-          <PrivateRolePanel self={model.self} synced={synced} />
-          <div className="werewolf-stage__column">
-            <WerewolfActionPanel groups={model.actionGroups} waitingHint={model.waitingHint} busy={busy} onAct={onAct} />
-            <VoteLedger progress={model.voteProgress} ledger={model.voteLedger} />
-            <GameOverReveal reveal={model.reveal} />
-          </div>
-        </div>
-
-        {error && <p className="game-error werewolf-stage__error" role="alert">{error}</p>}
+  const bottomBar = (
+    <div className="werewolf-stage__panels" style={{ width: '100%', maxWidth: '800px' }}>
+      <PrivateRolePanel self={model.self} synced={synced} />
+      <div className="werewolf-stage__column" style={{ flex: 1 }}>
+        <WerewolfActionPanel groups={model.actionGroups} waitingHint={model.waitingHint} busy={busy} onAct={onAct} />
+        <VoteLedger progress={model.voteProgress} ledger={model.voteLedger} />
+        <GameOverReveal reveal={model.reveal} />
       </div>
-    </main>
+    </div>
+  );
+
+  return (
+    <TabletopOvalShell
+      title="狼人杀"
+      subtitle={`${model.dayLabel} · ${model.phaseLabel}`}
+      theme="mystery"
+      players={seats}
+      currentUserId={model.self?.playerId}
+      centerArena={centerArena}
+      bottomBar={bottomBar}
+      phaseBannerText={model.narrative}
+    />
   );
 }
+

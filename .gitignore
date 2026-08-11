@@ -40,3 +40,9 @@ e2e/.tmp-data/
 e2e/.tmp-data-dbg/
 test-results/
 playwright-report/
+
+# Mimosa 安全扫描内部状态（工具运行产物，不入库）
+.mimosa/
+
+# 阶段验收截图（可视化产物，由报告文档引用，不入库）
+d7-shots/

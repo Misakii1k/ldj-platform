@@ -422,8 +422,9 @@ function applySessionActionCore(
       now,
       session.room_id,
     );
-    // 对局结束回到结算等待：全员准备状态清零，等待重新准备再来一局
-    db.prepare(`UPDATE room_members SET ready = 0 WHERE room_id = ?`).run(session.room_id);
+    // 对局结束回到结算等待：真人准备状态清零，等待重新准备再来一局；
+    // 机器人保持就绪（无法自己点准备，加入时即 ready=1）
+    db.prepare(`UPDATE room_members SET ready = 0 WHERE room_id = ? AND is_bot = 0`).run(session.room_id);
     timersChanged = true;
   }
 
@@ -663,7 +664,8 @@ export function abortGame(
     session.id,
   );
   db.prepare(`UPDATE rooms SET status = 'POST_GAME', updated_at = ? WHERE id = ?`).run(now, roomId);
-  db.prepare(`UPDATE room_members SET ready = 0 WHERE room_id = ?`).run(roomId);
+  // 机器人保持就绪（同 returnToLobby 语义）
+  db.prepare(`UPDATE room_members SET ready = 0 WHERE room_id = ? AND is_bot = 0`).run(roomId);
   const text = '房主已终止本局';
   const info = db
     .prepare(
@@ -687,8 +689,9 @@ export function returnToLobby(tx: TxContext, roomId: string): void {
   if (room.status !== 'POST_GAME') {
     throw new CommandError('ACTION_NOT_ALLOWED', '只能在结算页返回大厅');
   }
-  // 回大厅等同新的一轮等待：重置全员准备
-  db.prepare(`UPDATE room_members SET ready = 0 WHERE room_id = ?`).run(roomId);
+  // 回大厅等同新的一轮等待：重置真人准备（机器人保持就绪——它们无法自己点准备，
+  // 加入时即 ready=1，跨局沿用；否则带机器人的房间永远无法"再来一局"）
+  db.prepare(`UPDATE room_members SET ready = 0 WHERE room_id = ? AND is_bot = 0`).run(roomId);
   db.prepare(`UPDATE rooms SET status = 'LOBBY', updated_at = ? WHERE id = ?`).run(now, roomId);
 }
 

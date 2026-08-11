@@ -36,11 +36,11 @@ function nextReq(): string {
 }
 
 /** 建房 + 补齐到 n 名在线玩家 */
-async function setupRoom(playerCount: number): Promise<Ctx> {
+async function setupRoom(playerCount: number, gameId = 'undercover'): Promise<Ctx> {
   const db = openDb({ path: ':memory:' });
   migrate(db);
   const executor = new RoomCommandExecutor(db);
-  const seeded = seedRoom(db);
+  const seeded = seedRoom(db, { gameId, config: { gameConfig: {} } });
   const { roomId, roomCode, hostId } = seeded;
   const playerIds = [hostId];
   for (let i = 2; i <= playerCount; i++) {
@@ -389,9 +389,9 @@ test('注册表：默认游戏可查、manifest 一致', () => {
 test('注册表：上架游戏可建房（playable + 模块存在），uno 权利阻断不可建房', async () => {
   const { listGameManifests } = await import('../src/core/game/registry.ts');
   const manifests = listGameManifests();
-  assert.deepEqual(manifests.map((manifest) => manifest.id), ['undercover', 'uno', 'landlord', 'werewolf', 'durian', 'loveletter']);
+  assert.deepEqual(manifests.map((manifest) => manifest.id), ['undercover', 'uno', 'landlord', 'werewolf', 'durian', 'loveletter', 'cheese-thief', 'goose-relay', 'night-testimony', 'bell-clash', 'echo-judge']);
   const playable = GAME_CATALOG.filter((game) => String(game.availability) === 'playable');
-  assert.deepEqual(playable.map((game) => game.id).sort(), ['durian', 'landlord', 'loveletter', 'undercover', 'werewolf']);
+  assert.deepEqual(playable.map((game) => game.id).sort(), ['bell-clash', 'cheese-thief', 'durian', 'echo-judge', 'goose-relay', 'landlord', 'loveletter', 'night-testimony', 'undercover', 'werewolf']);
   // 每款 playable 游戏都必须同时存在注册模块（create_room 准入依赖两者同时满足）
   for (const game of playable) {
     assert.ok(getGameModule(game.id), `${game.id} 应注册模块以支持建房`);
@@ -399,4 +399,34 @@ test('注册表：上架游戏可建房（playable + 模块存在），uno 权�
   }
   // uno 权利阻断：目录不可建房，模块仅供历史恢复
   assert.equal(getPlayableGameCatalogEntry('uno'), undefined);
+});
+
+test('forfeitPlayers：echo-judge 对局中退出能被模块处理（不抛 Invalid discriminator）', async () => {
+  const ctx = await setupRoom(4, 'echo-judge');
+  try {
+    // 用 echo-judge 的默认配置开局
+    const started = await ctx.executor.executeOnRoom({
+      roomId: ctx.roomId,
+      actorScope: 'conn:host',
+      requestId: nextReq(),
+      handler: (tx) =>
+        applyRoomCommand(tx, ctx.roomId, ctx.hostId, {
+          command: 'start_game',
+          gameConfig: { rulesetId: 'echo_judge_v1', answerSeconds: 1, judgmentSeconds: 1 },
+        }),
+    });
+    assert.ok(started.outcome.gameStarted, `echo-judge 应能开局：${JSON.stringify(started.outcome)}`);
+    assert.equal(started.outcome.gameStarted.moduleId, 'echo-judge');
+
+    // 席位保留期退出：投递 player_forfeited 给模块（sweep 的入口）
+    const out = await ctx.executor.executeInternal({
+      roomId: ctx.roomId,
+      handler: (tx) => forfeitPlayers(tx, ctx.roomId, [ctx.playerIds[1]!, ctx.playerIds[2]!]),
+    });
+    // 关键断言：forfeit 动作必须被模块接受（不再抛 Invalid discriminator），对局结束或继续均合法
+    assert.ok(out, 'forfeit 应产生结果');
+    assert.equal(out.outcome.finished, true, '退出导致对局结束');
+  } finally {
+    closeDb(ctx.db);
+  }
 });

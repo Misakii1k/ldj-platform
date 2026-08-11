@@ -1,0 +1,14 @@
+{
+  "name": "@ldj/game-echo-judge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./manifest": "./shared/manifest.ts",
+    "./server": "./server/index.ts"
+  },
+  "dependencies": {
+    "@ldj/shared": "*",
+    "zod": "^3.25.76"
+  }
+}

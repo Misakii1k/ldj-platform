@@ -13,6 +13,7 @@ export const CLIENT_MESSAGE_TYPES = [
   'game_action',
   'chat_send',
   'resync',
+  'room_status',
 ] as const;
 export type ClientMessageType = (typeof CLIENT_MESSAGE_TYPES)[number];
 

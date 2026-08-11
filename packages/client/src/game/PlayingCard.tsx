@@ -278,12 +278,24 @@ export function PlayingCard({ rank, suit, className }: PlayingCardProps) {
       role="img"
       aria-label={isJoker ? (rank === 'BJ' ? '大王' : '小王') : `${suit === 'hearts' ? '♥' : suit === 'diamonds' ? '♦' : suit === 'spades' ? '♠' : '♣'}${rank}`}
     >
-      {/* 卡面背景 */}
-      <rect x="1" y="1" width="248" height="358" rx="16" ry="16"
-        fill="#fffcf7" stroke={color} strokeWidth="1.5" strokeOpacity=".18" />
-      {/* 内边框 */}
-      <rect x="5" y="5" width="240" height="350" rx="13" ry="13"
-        fill="none" stroke={color} strokeWidth=".6" strokeOpacity=".08" />
+      <defs>
+        <linearGradient id="card-surface-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="60%" stopColor="#fffcf5" />
+          <stop offset="100%" stopColor="#f7f0e3" />
+        </linearGradient>
+        <linearGradient id="card-bevel-grad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.9)" />
+          <stop offset="100%" stopColor="rgba(49,45,40,0.25)" />
+        </linearGradient>
+      </defs>
+
+      {/* 2.5D 实体卡面底层与边框 */}
+      <rect x="2" y="2" width="246" height="356" rx="16" ry="16"
+        fill="url(#card-surface-grad)" stroke="#312d28" strokeWidth="3" />
+      {/* 2.5D 高光压痕内框 */}
+      <rect x="7" y="7" width="236" height="346" rx="12" ry="12"
+        fill="none" stroke="url(#card-bevel-grad)" strokeWidth="1.8" />
 
       {/* 角标 */}
       <Corner rank={rank} suit={suit} color={color} />
@@ -348,12 +360,12 @@ export function CardBack({ className }: { className?: string }) {
           <stop offset="100%" stopColor="#7c2d12" />
         </linearGradient>
       </defs>
-      <rect x="1" y="1" width="248" height="358" rx="16" ry="16"
-        fill="url(#card-back-grad)" stroke="#b69550" strokeWidth="2" />
+      <rect x="2" y="2" width="246" height="356" rx="16" ry="16"
+        fill="url(#card-back-grad)" stroke="#312d28" strokeWidth="3" />
       <rect x="12" y="12" width="226" height="336" rx="10" ry="10"
         fill="url(#card-back-pattern)" opacity=".5" />
       <rect x="12" y="12" width="226" height="336" rx="10" ry="10"
-        fill="none" stroke="#fde68a" strokeWidth="1.5" opacity=".45" />
+        fill="none" stroke="#fde68a" strokeWidth="2" opacity=".6" />
       {/* 中央装饰 */}
       <text
         x="125" y="175"
@@ -363,7 +375,7 @@ export function CardBack({ className }: { className?: string }) {
         fontFamily="Georgia, serif"
         textAnchor="middle"
         dominantBaseline="central"
-        opacity=".3"
+        opacity=".35"
       >
         ♠
       </text>
@@ -371,15 +383,16 @@ export function CardBack({ className }: { className?: string }) {
         x="125" y="195"
         fill="#fde68a"
         fontSize="12"
-        fontWeight="700"
-        fontFamily="Arial, sans-serif"
+        fontWeight="800"
+        fontFamily="'Microsoft YaHei', sans-serif"
         textAnchor="middle"
         dominantBaseline="central"
         letterSpacing="3"
-        opacity=".25"
+        opacity=".3"
       >
         闹一桌
       </text>
     </svg>
   );
 }
+
