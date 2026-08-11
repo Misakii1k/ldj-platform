@@ -36,7 +36,6 @@ const WS_CONNECTIONS = HUMAN_PLAYERS + SPECTATORS; // 12
 const BOT_COUNT = 8;
 const MAX_GAMES = 3;
 const READY_TIMEOUT_MS = 30_000;
-const GLOBAL_TIMEOUT_MS = 20 * 60 * 1000;
 const PER_GAME_TIMEOUT_MS = 300_000;
 const P95_THRESHOLD_MS = 200;
 /** NFR-005：低资源主机完成 3 局后服务端 RSS ≤ 200 MB */
@@ -66,6 +65,8 @@ function parseLongRunMinutes() {
 }
 
 const LONG_RUN_MINUTES = parseLongRunMinutes();
+/** 全局超时：长跑模式 = 长跑时长 + 5 分钟缓冲；普通模式 20 分钟 */
+const GLOBAL_TIMEOUT_MS = (LONG_RUN_MINUTES > 0 ? LONG_RUN_MINUTES + 5 : 20) * 60 * 1000;
 
 // —— 全局指标 ——
 
