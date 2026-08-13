@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useConnection } from './connection/useConnection.ts';
 import { ConnectionProvider } from './connection/ConnectionContext.tsx';
 import { ToastProvider } from './shared-ui/ToastContext.tsx';
@@ -12,6 +13,14 @@ import { TabletopStatusBanner } from './game/TabletopStatusBanner.tsx';
 function Router() {
   const { state, me, reset, resync } = useConnection();
   const { connState, room, game, isRefreshing, isRecovering } = state;
+
+  // 邀请深链消费完成：一旦建立身份（加入成功/恢复席位），把 /join/房间码 从地址栏清掉，
+  // 避免刷新后再次弹出加入层。
+  useEffect(() => {
+    if (me !== null && window.location.pathname.startsWith('/join/')) {
+      window.history.replaceState(null, '', '/');
+    }
+  }, [me]);
 
   // D4-UI0：断线重连 / 服务端恢复期间，只要已有内容（房间或对局）就保留当前
   // 渲染视图并在顶部叠一条非模态状态横幅，而不是用全屏 loader 替换桌子。

@@ -1,12 +1,8 @@
 import type { Actor, GameContext, GameModuleV2 } from '@ldj/shared';
 import { NIGHT_TESTIMONY_MANIFEST } from '../shared/manifest.ts';
 import { parseNightTestimonyAction, parseNightTestimonyConfig } from './schemas.ts';
-import {
-  assignWardenAndCrimes,
-  assertNightTestimonyInvariants,
-  createNightTestimonyState,
-  reduceNightTestimonyState,
-} from './rules.ts';
+import { pickNightTestimonyBotAction } from './bot.ts';
+import { assignWardenAndCrimes, assertNightTestimonyInvariants, createNightTestimonyState, reduceNightTestimonyState } from './rules.ts';
 import {
   buildNightTestimonyPlayerView,
   buildNightTestimonySpectatorView,
@@ -115,4 +111,7 @@ export const nightTestimonyModule: GameModuleV2<
   },
   getPlayerView: buildNightTestimonyPlayerView,
   getSpectatorView: buildNightTestimonySpectatorView,
+  pickBotAction(input) {
+    return pickNightTestimonyBotAction(input);
+  },
 };

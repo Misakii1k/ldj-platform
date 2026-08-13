@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, Gamepad2, LogIn, Settings } from 'lucide-react';
 import {
   listGamesForPlayerCount,
@@ -24,6 +24,17 @@ export function GameHomePage() {
   const [selectedCount, setSelectedCount] = useState<PlayerCount | null>(null);
   const [selectedGame, setSelectedGame] = useState<GameCatalogEntry | null>(null);
   const [activeSheet, setActiveSheet] = useState<ActiveSheet>(null);
+  /** 邀请深链（/join/AB2CD）预填的房间码；null 表示本次加入未指定 */
+  const [inviteRoomCode, setInviteRoomCode] = useState<string | null>(null);
+
+  // 邀请深链：/join/5位房间码 → 打开加入弹层并预填房间码
+  useEffect(() => {
+    const match = window.location.pathname.match(/^\/join\/([A-HJ-NP-Z2-9]{5})$/i);
+    if (match) {
+      setInviteRoomCode(match[1]!.toUpperCase());
+      setActiveSheet('join');
+    }
+  }, []);
 
   const games = useMemo(() => listGamesForPlayerCount(selectedCount), [selectedCount]);
   const playableGames = games.filter((game) => game.availability === 'playable');
@@ -147,7 +158,15 @@ export function GameHomePage() {
       {activeSheet === 'create' && selectedGame && (
         <CreateRoomSheet game={selectedGame} onClose={closeSheet} />
       )}
-      {activeSheet === 'join' && <JoinRoomSheet onClose={closeSheet} />}
+      {activeSheet === 'join' && (
+        <JoinRoomSheet
+          initialRoomCode={inviteRoomCode ?? undefined}
+          onClose={() => {
+            setInviteRoomCode(null);
+            closeSheet();
+          }}
+        />
+      )}
       {activeSheet === 'settings' && <SettingsSheet onClose={closeSheet} />}
     </main>
   );

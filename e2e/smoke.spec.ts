@@ -74,7 +74,7 @@ test('smoke：Node WS 建房开局 + 浏览器加入渲染', async ({ browser })
   expect(hiddenWord).toBe('长按查看秘密词');
 
   // 回合信息渲染（第 0 轮）确认浏览器已进入该房间的对局页
-  await expect(page.getByText('第 0 轮 · 找出那个人')).toBeVisible();
+  await expect(page.getByText('第 0 轮 · 找出隐藏卧底')).toBeVisible();
 
   host.client.close();
   await page.context().close();

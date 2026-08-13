@@ -3,6 +3,7 @@
  * 同步未完成（connState !== 'synced'）时禁用会改变状态的按钮，但聊天草稿保留。
  */
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { useConnection } from '../connection/useConnection.ts';
 import { useToast } from '../shared-ui/ToastContext.tsx';
 import { describeError } from '../shared-ui/errors.ts';
@@ -157,6 +158,12 @@ export function RoomPage() {
     );
   }
 
+  function handleCopyInvite() {
+    if (room === null) return;
+    void navigator.clipboard?.writeText(`${window.location.origin}/join/${room.roomCode}`);
+    showToast('邀请链接已复制', 'success');
+  }
+
   function handleCloseRoom() {
     setConfirmClose(false);
     void doRoomCommand({ command: 'close_room' }, '关闭房间');
@@ -273,7 +280,22 @@ export function RoomPage() {
                 <span>复制房间码</span><span aria-hidden="true">↗</span>
               </button>
             </div>
-            <div className="game-card__ticket" aria-label="当前游戏">卧</div>
+            <div className="room-invite">
+              <QRCodeSVG
+                value={`${window.location.origin}/join/${room.roomCode}`}
+                size={128}
+                className="room-invite__qr"
+                role="img"
+                aria-label="邀请二维码：扫码直达本房间加入页"
+              />
+              <div className="room-invite__text">
+                <span className="room-invite__label">扫码加入</span>
+                <button type="button" className="game-card__action room-invite__copy" aria-label="复制邀请链接" onClick={handleCopyInvite}>
+                  <span>复制邀请链接</span><span aria-hidden="true">↗</span>
+                </button>
+              </div>
+            </div>
+            <div className="game-card__ticket" aria-label="当前游戏">{roomGame.displayName.slice(0, 1)}</div>
           </div>
         </section>
 

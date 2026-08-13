@@ -13,6 +13,8 @@ import {
   parseEchoJudgePlayerView,
   parseEchoJudgeSpectatorView,
 } from './views.ts';
+import { pickEchoJudgeBotAction } from './bot.ts';
+import type { BotDecisionInput } from '@ldj/shared';
 import type {
   EchoJudgeAction,
   EchoJudgeConfig,
@@ -105,4 +107,7 @@ export const echoJudgeModule: GameModuleV2<
   },
   getPlayerView: buildEchoJudgePlayerView,
   getSpectatorView: buildEchoJudgeSpectatorView,
+  pickBotAction(input: BotDecisionInput<EchoJudgePlayerView>) {
+    return pickEchoJudgeBotAction(input);
+  },
 };

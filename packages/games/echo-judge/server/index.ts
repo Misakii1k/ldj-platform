@@ -1,4 +1,5 @@
 export { echoJudgeModule, ECHO_JUDGE_VERSIONED_IDENTITY } from './module.ts';
+export { pickEchoJudgeBotAction } from './bot.ts';
 export * from './types.ts';
 export * from './schemas.ts';
 export * from './rules.ts';

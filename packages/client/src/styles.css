@@ -4253,6 +4253,61 @@ p { margin: 0.5rem 0; }
   padding: 7px 12px;
 }
 
+/* Hero：房间码卡片 —— 邀请二维码与链接分享 */
+.room-invite {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid color-mix(in srgb, var(--home-muted) 35%, transparent);
+}
+
+.room-invite__qr {
+  flex: none;
+  width: 128px;
+  height: 128px;
+  padding: 6px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.room-invite__text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.room-invite__label {
+  color: var(--home-muted);
+  font-size: .82rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+.room-invite__copy {
+  min-height: 42px;
+  padding: 7px 12px;
+}
+
+@media (max-width: 420px) {
+  .room-invite {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .room-invite__qr {
+    align-self: center;
+    width: 116px;
+    height: 116px;
+  }
+  .room-invite__text {
+    align-items: center;
+  }
+}
+
 /* 面板通用（成员 / 聊天） */
 .room-panel {
   min-height: 0;
@@ -7295,7 +7350,7 @@ html[data-motion-level="off"] *::after {
 
 .tabletop-shell {
   min-height: 100dvh;
-  padding: calc(var(--safe-top) + 12px) 12px calc(var(--safe-bottom) + 104px);
+  padding: calc(var(--safe-top) + 12px) 12px calc(var(--safe-bottom) + 12px);
   color: var(--tabletop-paper);
   background: radial-gradient(circle at 20% 0, #2d6a59 0, transparent 34%), linear-gradient(145deg, #173f35, #0d2722 72%);
 }
@@ -7371,14 +7426,12 @@ html[data-motion-level="off"] *::after {
 }
 
 .tabletop-action-dock {
-  position: fixed;
+  position: relative;
   z-index: 30;
-  right: 12px;
-  bottom: calc(var(--safe-bottom) + 12px);
-  left: 12px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) repeat(2, auto);
   gap: 10px;
+  width: min(100%, 560px);
   max-width: 560px;
   margin: auto;
   padding: 12px;
@@ -7486,10 +7539,9 @@ html[data-motion-level="off"] *::after {
 .tabletop-setup small { color: #617069; font-weight: 500; }
 
 @media (orientation: landscape) and (max-height: 520px) {
-  .tabletop-shell { padding-bottom: calc(var(--safe-bottom) + 76px); }
+  .tabletop-shell { padding-bottom: calc(var(--safe-bottom) + 8px); }
   .tabletop-player-strip { margin-block: 8px; }
   .tabletop-surface { min-height: 42dvh; }
-  .tabletop-action-dock { right: 16px; left: auto; width: min(52vw, 560px); }
 }
 
 @media (min-width: 760px) {
@@ -8615,6 +8667,7 @@ html[data-motion-level="off"] *::after {
 /* 沉浸式椭圆桌区域 */
 .tabletop-arena-container {
   flex: 1;
+  min-height: 0;
   position: relative;
   display: flex;
   align-items: center;

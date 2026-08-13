@@ -1,3 +1,4 @@
+import { pickBellClashBotAction } from './bot.ts';
 import type { Actor, GameContext, GameModuleV2 } from '@ldj/shared';
 import { BELL_CLASH_MANIFEST } from '../shared/manifest.ts';
 import { parseBellClashAction, parseBellClashConfig } from './schemas.ts';
@@ -119,4 +120,7 @@ export const bellClashModule: GameModuleV2<
   },
   getPlayerView: buildBellClashPlayerView,
   getSpectatorView: buildBellClashSpectatorView,
+  pickBotAction(input) {
+    return pickBellClashBotAction(input);
+  },
 };

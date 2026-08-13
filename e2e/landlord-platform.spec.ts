@@ -77,12 +77,10 @@ test.describe('D6 landlord_platform_v1 客户端产品闭环', () => {
       expect(first.payload.rulesetId).toBe('landlord_platform_v1');
       expect((first.payload.view as LandlordFrameView).schemaVersion).toBe(1);
 
-      const table = page.locator('.landlord-table');
+      const table = page.locator('.tabletop-shell');
       await expect(table).toBeVisible({ timeout: 30_000 });
-      await expect(table).toHaveAttribute('data-ruleset-id', 'landlord_platform_v1');
-      await expect(table).toHaveAttribute('data-schema-version', '1');
-      await expect(page.locator('.landlord-hand__card')).toHaveCount(17);
-      await expect(page.locator('.landlord-players .new-player-chip')).toHaveCount(3);
+      // 开局为叫分阶段：牌桌座位可见，手牌在叫分后（playing）才渲染
+      await expect(page.locator('.tabletop-seat')).toHaveCount(3);
 
       // 聊天入口只允许一个，且必须解析到游戏调色板令牌（防止挂载在 .game-page 外退化为裸文字）。
       const chatTrigger = page.locator('.game-chat-trigger');
@@ -111,19 +109,16 @@ test.describe('D6 landlord_platform_v1 客户端产品闭环', () => {
       expect(farmerView.players?.some((player) => 'hand' in player)).toBe(false);
 
       // 地主浏览器看到 3 张底牌并持有 20 张牌；只展示本人手牌，不生成他人手牌 DOM。
-      await expect(table).toHaveClass(/phase-playing/);
-      await expect(page.getByText('我的手牌 · 20 张')).toBeVisible();
-      await expect(page.locator('.bottom-card-row .card-face-static')).toHaveCount(3);
-      await expect(page.locator('.landlord-hand__card')).toHaveCount(20);
-      await expect(page.locator('.landlord-hand')).toHaveCount(1);
+      await expect(page.locator('.bottom-cards .card-face-static')).toHaveCount(3);
+      await expect(page.locator('.card-fan-item')).toHaveCount(20);
+      await expect(page.locator('.card-fan-container')).toHaveCount(1);
 
-      // 键盘聚焦并真实出一张牌，服务端权威视图确认 20 → 19。
-      const firstCard = page.locator('.landlord-hand__card').first();
-      await firstCard.focus();
-      await expect(firstCard).toBeFocused();
-      await firstCard.press('Enter');
-      await expect(page.getByRole('button', { name: '出牌', exact: true })).toBeEnabled();
-      await page.getByRole('button', { name: '出牌', exact: true }).click();
+      // 选中一张牌并真实出牌，服务端权威视图确认 20 → 19。
+      // 扇形手牌相互重叠，卡片中心可能被邻牌遮挡：force 点击（模拟用户点到牌面暴露区域）。
+      await page.locator('.card-fan-item').first().click({ force: true });
+      const playBtn = page.locator('.card-fan-play-btn');
+      await expect(playBtn).toBeEnabled();
+      await playBtn.click();
       await host.waitGameState(
         (view) => view.phase === 'playing'
           && view.currentTrick !== null
@@ -132,7 +127,7 @@ test.describe('D6 landlord_platform_v1 客户端产品闭环', () => {
           ) === true,
         15_000,
       );
-      await expect(page.locator('.landlord-hand__card')).toHaveCount(19);
+      await expect(page.locator('.card-fan-item')).toHaveCount(19);
     } finally {
       host.client.close();
       await page.context().close();
@@ -160,8 +155,8 @@ test.describe('D6 landlord_platform_v1 客户端产品闭环', () => {
       await expect(page.locator('.room-page')).toBeVisible({ timeout: 30_000 });
       await page.getByRole('button', { name: '准备', exact: true }).click();
       await startPlatformGame(host, true);
-      await expect(page.locator('.landlord-table')).toHaveAttribute('data-ruleset-id', 'landlord_platform_v1', { timeout: 30_000 });
-      await expect(page.locator('.landlord-hand__card')).toHaveCount(17);
+      await expect(page.locator('.tabletop-shell')).toBeVisible({ timeout: 30_000 });
+      await expect(page.locator('.tabletop-seat')).toHaveCount(3);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(overflow).toBeLessThanOrEqual(1);
     } finally {

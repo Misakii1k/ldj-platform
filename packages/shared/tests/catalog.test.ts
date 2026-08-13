@@ -24,10 +24,14 @@ test('GAME_CATALOG：游戏 ID 唯一且人数范围有效', () => {
 });
 
 test('GAME_CATALOG：现有内部模块保留机器人能力声明', () => {
+  const ruleOnlyGames = new Set(['cheese-thief', 'goose-relay', 'night-testimony', 'bell-clash', 'echo-judge']);
   for (const game of GAME_CATALOG) {
-    if (game.id === 'durian' || game.id === 'loveletter' || game.id === 'cheese-thief' || game.id === 'goose-relay' || game.id === 'night-testimony' || game.id === 'bell-clash' || game.id === 'echo-judge') {
-      // D7-C/G2-B 新接入游戏按计划不提供机器人（botSupport: 'none'）
+    if (game.id === 'durian' || game.id === 'loveletter') {
+      // 早期接入游戏仍不提供机器人（botSupport: 'none'）
       assert.equal(game.botSupport, 'none', `${game.id} 应声明不提供机器人`);
+    } else if (ruleOnlyGames.has(game.id)) {
+      // G2-B 新接入游戏提供规则机器人（测试陪练，凑人数用）
+      assert.equal(game.botSupport, 'rule', `${game.id} 应声明规则机器人`);
     } else {
       assert.equal(game.botSupport, 'rule_and_llm', `${game.id} 应保留机器人能力`);
     }

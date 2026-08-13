@@ -55,7 +55,9 @@ export function LoveLetterGamePage({ view }: Props) {
           .map((player) => player.playerId);
   // 目标合法性：守卫/牧师/男爵/国王无合法目标时可无目标打出；王子可选自己。
   const needsTargetChoice = needsTarget && targetOptions.length > 0;
-  const canPlay = myTurn && selectedCard !== null && (!needsTargetChoice || targetId !== null) && (!isGuard || guessedRole !== null);
+  const canPlay = myTurn && selectedCard !== null
+    && (!needsTargetChoice || targetId !== null)
+    && (!isGuard || !needsTargetChoice || guessedRole !== null);
 
   function resetSelection() {
     setSelectedCardId(null);
@@ -69,8 +71,8 @@ export function LoveLetterGamePage({ view }: Props) {
       type: 'play_card',
       playerId: myId,
       cardId: selectedCard.id,
-      ...(needsTarget && targetId ? { targetPlayerId: targetId } : {}),
-      ...(isGuard && guessedRole ? { guessedRole } : {}),
+      ...(needsTargetChoice && targetId ? { targetPlayerId: targetId } : {}),
+      ...(isGuard && needsTargetChoice && guessedRole ? { guessedRole } : {}),
     });
     resetSelection();
   }
@@ -182,7 +184,7 @@ export function LoveLetterGamePage({ view }: Props) {
             </section>
           )}
 
-          {selectedCard && isGuard && (
+          {selectedCard && isGuard && needsTargetChoice && (
             <section className="loveletter-guess" aria-label="猜测身份">
               <span className="loveletter-hand__label">猜测目标身份（守卫不能猜守卫）</span>
               <div className="loveletter-target__options">

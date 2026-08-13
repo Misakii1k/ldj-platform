@@ -1,5 +1,6 @@
-import type { Actor, GameContext, GameModuleV2 } from '@ldj/shared';
+import type { Actor, BotDecisionInput, GameContext, GameModuleV2 } from '@ldj/shared';
 import { GOOSE_RELAY_MANIFEST } from '../shared/manifest.ts';
+import { pickGooseRelayBotAction } from './bot.ts';
 import { parseGooseRelayAction, parseGooseRelayConfig } from './schemas.ts';
 import {
   assertGooseRelayInvariants,
@@ -109,4 +110,7 @@ export const gooseRelayModule: GameModuleV2<
   },
   getPlayerView: buildGooseRelayPlayerView,
   getSpectatorView: buildGooseRelaySpectatorView,
+  pickBotAction(input: BotDecisionInput<GooseRelayPlayerView>) {
+    return pickGooseRelayBotAction(input);
+  },
 };

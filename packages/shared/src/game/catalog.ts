@@ -185,7 +185,7 @@ export const GAME_CATALOG = [
       { key: 'discussionSeconds', kind: 'integer', label: '讨论时长（秒）', defaultValue: 120, min: 1, max: 600, step: 1 },
       { key: 'voteSeconds', kind: 'integer', label: '投票时长（秒）', defaultValue: 30, min: 1, max: 600, step: 1 },
     ]),
-    botSupport: 'none',
+    botSupport: 'rule',
     visualTheme: { accent: 'mint', surface: 'board' },
   },
   {
@@ -206,7 +206,7 @@ export const GAME_CATALOG = [
       { key: 'accuseSeconds', kind: 'integer', label: '每人指认时长（秒）', defaultValue: 30, min: 1, max: 600, step: 1 },
       { key: 'voteSeconds', kind: 'integer', label: '投票时长（秒）', defaultValue: 30, min: 1, max: 600, step: 1 },
     ]),
-    botSupport: 'none',
+    botSupport: 'rule',
     visualTheme: { accent: 'sunset', surface: 'board' },
   },
   {
@@ -227,7 +227,7 @@ export const GAME_CATALOG = [
       { key: 'voteSeconds', kind: 'integer', label: '投票时长（秒）', defaultValue: 30, min: 1, max: 600, step: 1 },
       { key: 'questionLimit', kind: 'integer', label: '问答上限（次）', defaultValue: 5, min: 1, max: 12, step: 1 },
     ]),
-    botSupport: 'none',
+    botSupport: 'rule',
     visualTheme: { accent: 'violet', surface: 'board' },
   },
   {
@@ -247,7 +247,7 @@ export const GAME_CATALOG = [
       { key: 'turnSeconds', kind: 'integer', label: '出牌时长（秒）', defaultValue: 30, min: 1, max: 600, step: 1 },
       { key: 'bellSeconds', kind: 'integer', label: '按铃窗口（秒）', defaultValue: 10, min: 1, max: 600, step: 1 },
     ]),
-    botSupport: 'none',
+    botSupport: 'rule',
     visualTheme: { accent: 'berry', surface: 'board' },
   },
   {
@@ -267,7 +267,7 @@ export const GAME_CATALOG = [
       { key: 'judgmentSeconds', kind: 'integer', label: '判官指认时长（秒）', defaultValue: 30, min: 1, max: 600, step: 1 },
       { key: 'judgeWrongPenalty', kind: 'integer', label: '判官抓错扣分', defaultValue: -1, min: -10, max: 0, step: 1 },
     ]),
-    botSupport: 'none',
+    botSupport: 'rule',
     visualTheme: { accent: 'sunset', surface: 'social' },
   },
 ] as const satisfies readonly GameCatalogEntry[];

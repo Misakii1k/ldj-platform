@@ -146,7 +146,7 @@ test.describe('D5 P2b 上架建房链路', () => {
     await page.getByRole('button', { name: '准备', exact: true }).click();
 
     // 对局开始：以权威看词阶段作为稳定业务边界。
-    await expect(page.locator('.game-page.phase-word_reveal').first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('.game-phase.word-reveal').first()).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole('button', { name: '长按查看秘密词' }).first()).toBeVisible();
 
     // 完整局：浏览器玩家全程参与，规则机器人驱动其余回合，直到真实终局

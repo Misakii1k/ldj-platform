@@ -15,6 +15,7 @@ import {
   parseCheeseThiefPlayerView,
   parseCheeseThiefSpectatorView,
 } from './views.ts';
+import { pickCheeseThiefBotAction } from './bot.ts';
 import type {
   CheeseThiefAction,
   CheeseThiefConfig,
@@ -125,4 +126,5 @@ export const cheeseThiefModule: GameModuleV2<
   },
   getPlayerView: buildCheeseThiefPlayerView,
   getSpectatorView: buildCheeseThiefSpectatorView,
+  pickBotAction: pickCheeseThiefBotAction,
 };

@@ -7,6 +7,8 @@ import { makeMeFromRoomAck, parseRoomAck } from './roomAck.ts';
 
 interface JoinRoomSheetProps {
   onClose: () => void;
+  /** 邀请深链（/join/房间码）预填的房间码 */
+  initialRoomCode?: string;
 }
 
 interface LanRoom {
@@ -73,13 +75,13 @@ function roomStatusLabel(status: LanRoom['status']): string {
   return status === 'LOBBY' ? '大厅筹备中' : '激战进行中';
 }
 
-export function JoinRoomSheet({ onClose }: JoinRoomSheetProps) {
+export function JoinRoomSheet({ onClose, initialRoomCode = '' }: JoinRoomSheetProps) {
   const { send, setMe, state } = useConnection();
   const { showToast } = useToast();
   const nicknameRef = useRef<HTMLInputElement | null>(null);
   const roomCodeRef = useRef<HTMLInputElement | null>(null);
   const [nickname, setNickname] = useState('');
-  const [roomCode, setRoomCode] = useState('');
+  const [roomCode, setRoomCode] = useState(initialRoomCode);
   const [password, setPassword] = useState('');
   const [asSpectator, setAsSpectator] = useState(false);
   const [submitting, setSubmitting] = useState(false);

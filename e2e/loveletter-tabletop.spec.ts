@@ -137,26 +137,21 @@ test.describe('D7-C loveletter 完整局', () => {
 
       // 浏览器策略：轮到即按合法顺序出牌（伯爵夫人强制 → 最低点数）
       const deadline = Date.now() + 400_000;
-      let lastLog = 0;
       while (Date.now() < deadline) {
         if (await page.locator('.loveletter-over').isVisible().catch(() => false)) break;
         if (await page.locator('.room-page').isVisible().catch(() => false)) break;
         const isMyTurn = await page.getByText(/轮到你/).first().isVisible().catch(() => false);
-        if (Date.now() - lastLog > 10_000) {
-          lastLog = Date.now();
-          console.log(`[ll-drive] myTurn=${isMyTurn} phase=${(await page.locator('.tabletop-shell__phase').textContent().catch(() => ''))} cards=${await page.locator('.loveletter-card').count().catch(() => 0)}`);
-        }
+        const handCount = await page.locator('.loveletter-card').count().catch(() => 0);
         if (!isMyTurn) {
           await page.waitForTimeout(300);
           continue;
         }
         const handCards = page.locator('.loveletter-card');
-        const count = await handCards.count().catch(() => 0);
-        if (count === 0) { await page.waitForTimeout(300); continue; }
+        if (handCount === 0) { await page.waitForTimeout(300); continue; }
 
         // 逐张尝试：伯爵夫人强制优先，否则按 DOM 顺序轮换；无合法目标的牌跳过。
         const texts: string[] = [];
-        for (let i = 0; i < count; i += 1) {
+        for (let i = 0; i < handCount; i += 1) {
           texts.push((await handCards.nth(i).textContent().catch(() => '')) ?? '');
         }
         const tryOrder = texts.map((_, index) => index);
@@ -171,32 +166,34 @@ test.describe('D7-C loveletter 完整局', () => {
         for (let attempt = 0; attempt < order.length && !played; attempt += 1) {
           const idx = order[attempt]!;
           await handCards.nth(idx).click({ timeout: 1000 }).catch(() => {});
-          await page.waitForTimeout(120);
-          const targetVisible = await page.locator('.loveletter-target').isVisible().catch(() => false);
-          const targetCount = targetVisible
-            ? await page.locator('.loveletter-target__options button').count().catch(() => 0)
-            : -1;
-          if (targetCount > 0) {
-            await page.locator('.loveletter-target__options button').first().click({ timeout: 1000 }).catch(() => {});
+          // 轮询等待目标区出现（点牌后 React 渲染；固定 120ms 单次检测在慢机/牌序差异下会漏，
+          // 导致漏选目标 → 打出按钮保持禁用 → 死循环）。
+          const targetSection = page.locator('.loveletter-target');
+          await targetSection.waitFor({ state: 'visible', timeout: 2000 }).catch(() => {});
+          const targetBtn = targetSection.getByRole('button').first();
+          if (await targetSection.isVisible().catch(() => false) && await targetBtn.count().catch(() => 0) > 0) {
+            await targetBtn.click({ timeout: 1000 }).catch(() => {});
           }
-          // 目标区为空（无合法目标）时规则允许无目标打出，直接进入猜身份/出牌。
-          const guessVisible = await page.locator('.loveletter-guess').isVisible().catch(() => false);
-          if (guessVisible) {
-            const princess = page.getByRole('button', { name: '公主' });
+          // 守卫需猜身份：优先猜「公主」（守卫不能猜守卫）
+          const guessSection = page.locator('.loveletter-guess');
+          if (await guessSection.isVisible().catch(() => false)) {
+            const princess = guessSection.getByRole('button', { name: '公主' });
             if (await princess.count().catch(() => 0) > 0) {
               await princess.click({ timeout: 1000 }).catch(() => {});
+            } else {
+              await guessSection.getByRole('button').first().click({ timeout: 1000 }).catch(() => {});
             }
           }
           const playBtn = page.getByRole('button', { name: /打出「/ });
-          const playable = await playBtn.isEnabled().catch(() => false);
-          if (!playable) {
+          await playBtn.waitFor({ state: 'visible', timeout: 2000 }).catch(() => {});
+          if (!(await playBtn.isEnabled().catch(() => false))) {
             await page.getByRole('button', { name: '重选' }).click({ timeout: 1000 }).catch(() => {});
             continue;
           }
           await playBtn.click({ timeout: 1000 }).catch(() => {});
           await page.waitForTimeout(500);
           const remaining = await page.locator('.loveletter-card').count().catch(() => 0);
-          if (remaining < count) {
+          if (remaining < handCount) {
             played = true;
           } else {
             await page.getByRole('button', { name: '重选' }).click({ timeout: 1000 }).catch(() => {});
