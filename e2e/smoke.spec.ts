@@ -39,7 +39,7 @@ test('smoke：Node WS 建房开局 + 浏览器加入渲染', async ({ browser })
   });
 
   // 2. Node WS：房主 resume → 确认 welcome/ack → ready → start_game
-  //    （applyResumeRoom 会把就绪重置为 0，resume 后需重新 ready）
+  //    （resume 保留已就绪状态：seedRoom(ready:true) 的成员重连后仍是 ready，ready 幂等）
   const host = await RoomDriver.resume(WS_URL, seeded.roomCode, seeded.hostId, seeded.hostResumeToken);
   const readyAck = await host.ready();
   expect(readyAck.type, `ready 应 ack，收到：${readyAck.type} ${readyAck.payload.code ?? ''}`).toBe('ack');

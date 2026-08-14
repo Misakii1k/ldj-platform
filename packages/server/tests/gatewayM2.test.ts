@@ -316,6 +316,48 @@ test('AC-10 断线恢复：连接断开后成员转 DISCONNECTED_RESERVED，凭�
   }
 });
 
+test('断线/重连保留已就绪：ready 后断开 → resume 回 CONNECTED 且 ready 仍为 true（真机切后台/刷新场景）', async () => {
+  const app = await startApp();
+  try {
+    const { host, roomCode } = await createRoomVia(app);
+    const guest = await Client.connect(app);
+    const joinAck = await guest.request('join_room', { roomCode, nickname: '已准备玩家' });
+    const guestId = String(joinAck.payload.playerId);
+    const guestToken = String(joinAck.payload.resumeToken);
+    await host.waitFor((e) => e.type === 'room_snapshot');
+
+    const readyAck = await guest.request('room_command', { command: 'ready', ready: true });
+    assert.equal(readyAck.type, 'ack');
+
+    // 硬断开 → DISCONNECTED_RESERVED（断线不再清 ready）
+    guest.socket.terminate();
+    await host.waitFor((e) => {
+      if (e.type !== 'room_snapshot') return false;
+      const m = (e.payload.members as { playerId: string; connectionStatus: string }[]).find(
+        (x) => x.playerId === guestId,
+      );
+      return m?.connectionStatus === 'DISCONNECTED_RESERVED';
+    });
+
+    // 重连 resume → CONNECTED 且保留已就绪状态
+    const back = await Client.connect(app);
+    const resumeAck = await back.request('resume_room', {
+      roomCode,
+      playerId: guestId,
+      resumeToken: guestToken,
+    });
+    assert.equal(resumeAck.type, 'ack');
+    const snap2 = await back.waitFor((e) => e.type === 'room_snapshot');
+    const member = (snap2.payload.members as { playerId: string; connectionStatus: string; ready: boolean }[]).find(
+      (m) => m.playerId === guestId,
+    );
+    assert.equal(member?.connectionStatus, 'CONNECTED');
+    assert.equal(member?.ready, true, '断线重连后应保留已就绪状态，无需重新点准备');
+  } finally {
+    await app.shutdown();
+  }
+});
+
 test('room_command：expectedSeq 过期 → STALE_CLIENT_STATE 附 currentSeq；踢人后被踢连接关闭（4001）', async () => {
   const app = await startApp();
   try {

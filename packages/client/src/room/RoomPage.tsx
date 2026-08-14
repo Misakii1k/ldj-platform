@@ -222,11 +222,23 @@ export function RoomPage() {
   const minimumPlayersToStart = roomGame.minPlayers;
   const maximumPlayers = roomGame.maxPlayers;
   const notReadyCount = onlinePlayers.filter((p) => !p.ready).length;
+  // 自己是否还没准备：机器人加入即就绪，最容易出现"人数够了但卡在 1 人未准备"的就是房主本人
+  const meNotReady = me !== null && room !== null
+    && (room.members.find((m) => m.playerId === me.playerId)?.ready === false);
   const canStart =
     room.status === 'LOBBY' &&
     onlinePlayers.length >= minimumPlayersToStart &&
     onlinePlayers.length <= maximumPlayers &&
     notReadyCount === 0;
+  const startDisabledReason = !canStart
+    ? meNotReady
+      ? '你还未准备：先点击成员列表中自己（我）的「准备」按钮'
+      : onlinePlayers.length < minimumPlayersToStart
+        ? `需要 ${minimumPlayersToStart}–${maximumPlayers} 名在线玩家（当前 ${onlinePlayers.length}）`
+        : notReadyCount > 0
+          ? `还有 ${notReadyCount} 人未准备`
+          : `需要 ${minimumPlayersToStart}–${maximumPlayers} 名在线玩家`
+    : '';
 
   const botCount = room.members.filter((m) => m.botKind !== null).length;
   // 席位满了就不能再加：服务端也会拒，这里提前禁用避免无效往返
@@ -331,7 +343,7 @@ export function RoomPage() {
                       {m.botKind === 'llm' && <span className="bot-tag bot-tag--llm" title="由大模型决策">AI</span>}
                       {m.botKind === 'rule' && <span className="bot-tag" title="随机合法出牌">机器人</span>}
                     </span>
-                    <span className={'member-status ' + badge.cls}>{badge.label}</span>
+                    <span className={'member-status ' + badge.cls + (isMe && !m.ready && (room.status === 'LOBBY' || room.status === 'POST_GAME') ? ' member-status--me-notready' : '')}>{badge.label}</span>
                     {/* 我自己的准备/取消准备（非机器人；机器人自动就绪） */}
                     {isMe && m.botKind === null && (room.status === 'LOBBY' || room.status === 'POST_GAME') && (
                       <span className="member-actions">
@@ -395,10 +407,13 @@ export function RoomPage() {
               <h2 id="room-actions-title" className="room-console__title">{room.status === 'LOBBY' ? '对局准备中' : '当前状态：' + statusText(room.status)}</h2>
             </div>
           </div>
+          {isHost && room.status === 'LOBBY' && meNotReady && !canStart && (
+            <div className="status-banner room-notready-hint" role="status">⚠️ 你还未准备：点击成员列表中自己（我）的「准备」按钮即可开局</div>
+          )}
           <div className="action-bar room-console__actions">
             <button type="button" className="leave-btn" onClick={handleLeaveRoom} disabled={busy}>离开房间</button>
             {room.status === 'POST_GAME' && isHost && <button type="button" className="game-card__action room-inline-btn" onClick={handleReturnToLobby} disabled={busy || !synced}>返回大厅</button>}
-            {isHost && room.status === 'LOBBY' && <button type="button" className="game-card__action room-inline-btn" onClick={handleStartGame} disabled={busy || !synced || !canStart} title={!canStart ? '需要 ' + minimumPlayersToStart + '–' + maximumPlayers + ' 名在线玩家' + (notReadyCount > 0 ? '，还有 ' + notReadyCount + ' 人未准备' : '') : ''}>开始游戏</button>}
+            {isHost && room.status === 'LOBBY' && <button type="button" className="game-card__action room-inline-btn" onClick={handleStartGame} disabled={busy || !synced || !canStart} title={startDisabledReason}>开始游戏</button>}
             {isHost && room.status === 'LOBBY' && roomGame.botSupport !== 'none' && <button type="button" className="game-card__action room-inline-btn" onClick={() => handleAddBot('rule')} disabled={busy || !synced || seatsFull} title={seatsFull ? '席位已满' : '随机合法出牌规则机器人，适合凑人数试玩'}>添加规则机器人</button>}
             {isHost && room.status === 'LOBBY' && roomGame.botSupport === 'rule_and_llm' && state.llmAvailable && <button type="button" className="game-card__action room-inline-btn" onClick={() => handleAddBot('llm')} disabled={busy || !synced || seatsFull} title={seatsFull ? '席位已满' : '由 AI 大模型智能决策，超时或异常自动降级为规则策略'}>添加 AI 大模型玩家</button>}
             {isHost && room.status === 'LOBBY' && roomGame.botSupport !== 'none' && botCount > 0 && <button type="button" className="game-card__action room-inline-btn" onClick={() => handleRemoveBot()} disabled={busy || !synced} title="移除最后加入的机器人">移除机器人（{botCount}）</button>}

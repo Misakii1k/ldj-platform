@@ -57,8 +57,10 @@ export function applyResumeRoom(
     throw new CommandError('INVALID_RESUME_TOKEN');
   }
 
+  // 重连不撤销已表达的准备意愿：掉线/切后台/刷新 ≠ 撤回"已就绪"。
+  // （开局时 session 会把全员 ready 重置为 0，POST_GAME 需重新准备，此处保留不破坏该流程。）
   db.prepare(
-    `UPDATE room_members SET connection_status = 'CONNECTED', reserved_until = NULL, ready = 0
+    `UPDATE room_members SET connection_status = 'CONNECTED', reserved_until = NULL
      WHERE room_id = ? AND player_id = ?`,
   ).run(roomId, payload.playerId);
   db.prepare('UPDATE rooms SET empty_since = NULL WHERE id = ?').run(roomId);

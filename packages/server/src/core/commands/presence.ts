@@ -103,8 +103,12 @@ export function applyMarkDisconnected(
   const config = parseRoomConfig(room.config_json);
   const reservedUntil = now + config.reservationMinutes * 60_000;
 
+  // 断线不清 ready：断线成员 connection_status 已是 DISCONNECTED_RESERVED，
+  // startGame 的人数/就绪校验只统计 CONNECTED 成员，断线者的 ready 不影响开局；
+  // 真机切后台/锁屏/短暂断网是常态，清 ready 会让每次重连都要重新点准备
+  // （resumeRoom 同样保留 ready，配合实现"重连恢复就绪"）。
   db.prepare(
-    `UPDATE room_members SET connection_status = 'DISCONNECTED_RESERVED', reserved_until = ?, ready = 0
+    `UPDATE room_members SET connection_status = 'DISCONNECTED_RESERVED', reserved_until = ?
      WHERE room_id = ? AND player_id = ?`,
   ).run(reservedUntil, roomId, playerId);
 

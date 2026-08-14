@@ -69,7 +69,9 @@ test.describe('D6 landlord_platform_v1 客户端产品闭环', () => {
     try {
       await page.goto(BASE_URL);
       await expect(page.locator('.room-page')).toBeVisible({ timeout: 30_000 });
-      await page.getByRole('button', { name: '准备', exact: true }).click();
+      // seedRoom(ready:true) 全员已就绪且 resume 保留 ready：按钮可能是"取消准备"，仅在仍显示"准备"时点击
+      const readyBtn = page.getByRole('button', { name: '准备', exact: true });
+      if (await readyBtn.isVisible().catch(() => false)) await readyBtn.click();
       await startPlatformGame(host);
       const first = await host.waitGameState((view) => view.rulesetId === 'landlord_platform_v1');
       expect(first.payload.engineContractVersion).toBe(2);
@@ -153,7 +155,9 @@ test.describe('D6 landlord_platform_v1 客户端产品闭环', () => {
     try {
       await page.goto(BASE_URL);
       await expect(page.locator('.room-page')).toBeVisible({ timeout: 30_000 });
-      await page.getByRole('button', { name: '准备', exact: true }).click();
+      // 同上：全员已就绪时按钮为"取消准备"，仅在仍显示"准备"时点击
+      const readyBtn = page.getByRole('button', { name: '准备', exact: true });
+      if (await readyBtn.isVisible().catch(() => false)) await readyBtn.click();
       await startPlatformGame(host, true);
       await expect(page.locator('.tabletop-shell')).toBeVisible({ timeout: 30_000 });
       await expect(page.locator('.tabletop-seat')).toHaveCount(3);

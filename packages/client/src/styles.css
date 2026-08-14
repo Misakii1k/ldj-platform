@@ -3095,6 +3095,21 @@ p { margin: 0.5rem 0; }
   background: #fff1b8;
 }
 
+/* 房主本人未准备时的高亮引导（机器人就绪后最容易卡在这） */
+.room-notready-hint {
+  color: #8d1f15;
+  background: #ffe2dc;
+  border-color: #b13a2c;
+  margin-bottom: 12px;
+}
+
+.member-status--me-notready {
+  color: #c03124;
+  font-weight: 900;
+  text-decoration: underline wavy #c03124 1px;
+  text-underline-offset: 3px;
+}
+
 .status-banner.reconnecting {
   color: #114e48;
   background: #d9f3e6;
