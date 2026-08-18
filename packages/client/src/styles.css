@@ -5612,48 +5612,53 @@ p { margin: 0.5rem 0; }
 
 .gst-stripes-container {
   position: absolute;
-  inset: -15%;
-  width: 130%;
-  height: 130%;
+  inset: -20%;
+  width: 140%;
+  height: 140%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transform: rotate(-12deg);
+  gap: 6px;
+  transform: rotate(-10deg);
   pointer-events: none;
 }
 
 .gst-stripe {
-  height: 14%;
-  width: 160%;
-  margin-left: -30%;
-  background: linear-gradient(90deg, transparent 0%, rgba(245, 158, 11, 0.95) 20%, rgba(254, 240, 138, 1) 50%, rgba(22, 163, 74, 0.95) 80%, transparent 100%);
-  box-shadow: 0 0 24px rgba(250, 204, 21, 0.6);
+  flex: 1;
+  min-height: 48px;
+  width: 180%;
+  margin-left: -40%;
+  border-top: 2.5px solid rgba(255, 255, 255, 0.35);
+  border-bottom: 7px solid var(--game-line, #292722);
+  box-shadow: 0 8px 0 rgba(41, 39, 34, 0.95), 0 16px 32px rgba(0, 0, 0, 0.45);
   opacity: 0;
   transform: translateX(-100%);
 }
 
 .phase-stripes .gst-stripe,
 .phase-reveal .gst-stripe {
-  animation: gst-stripe-sweep 0.62s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: gst-stripe-sweep 0.66s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.gst-stripe.s1 { animation-delay: 0.02s; }
-.gst-stripe.s2 { animation-delay: 0.08s; background: linear-gradient(90deg, transparent 0%, #15803d 30%, #86efac 60%, transparent 100%); }
-.gst-stripe.s3 { animation-delay: 0.14s; }
-.gst-stripe.s4 { animation-delay: 0.20s; background: linear-gradient(90deg, transparent 0%, #d97706 30%, #fde68a 60%, transparent 100%); }
-.gst-stripe.s5 { animation-delay: 0.26s; }
-.gst-stripe.s6 { animation-delay: 0.32s; }
-.gst-stripe.s7 { animation-delay: 0.38s; }
+/* 红绿蓝黄四色宽条，带有项目的黑色底边与立体投影 */
+.gst-stripe.s1 { animation-delay: 0.02s; background: #ef4d39; } /* 红色 */
+.gst-stripe.s2 { animation-delay: 0.07s; background: #16a34a; } /* 绿色 */
+.gst-stripe.s3 { animation-delay: 0.12s; background: #2563eb; } /* 蓝色 */
+.gst-stripe.s4 { animation-delay: 0.17s; background: #f7c84b; } /* 黄色 */
+.gst-stripe.s5 { animation-delay: 0.22s; background: #ef4d39; } /* 红色 */
+.gst-stripe.s6 { animation-delay: 0.27s; background: #16a34a; } /* 绿色 */
+.gst-stripe.s7 { animation-delay: 0.32s; background: #2563eb; } /* 蓝色 */
+.gst-stripe.s8 { animation-delay: 0.37s; background: #f7c84b; } /* 黄色 */
 
 @keyframes gst-stripe-sweep {
   0% {
     transform: translateX(-100%);
     opacity: 0;
   }
-  30% {
+  25% {
     opacity: 1;
   }
-  70% {
+  75% {
     opacity: 1;
   }
   100% {
@@ -5672,8 +5677,14 @@ p { margin: 0.5rem 0; }
   align-items: center;
   gap: 12px;
   color: #ffffff;
-  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.75);
+  background: rgba(41, 39, 34, 0.95);
+  border: 3.5px solid #f7c84b;
+  border-radius: 28px;
+  padding: 22px 36px;
+  box-shadow: 0 8px 0 #1e1c18, 0 20px 48px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.75);
   opacity: 0;
+  z-index: 10;
 }
 
 .phase-stripes .gst-emblem-box,

@@ -50,7 +50,7 @@ export function GameStartTransition({ active, onComplete }: GameStartTransitionP
       {/* 底部绿色胶囊波纹向全屏极速扩散爆发 */}
       <div className="gst-ripple-blast" />
 
-      {/* 交错倾斜多重光条百叶窗横扫扫屏 */}
+      {/* 交错倾斜红绿蓝黄多重宽条横扫扫屏 */}
       <div className="gst-stripes-container">
         <div className="gst-stripe s1" />
         <div className="gst-stripe s2" />
@@ -59,6 +59,7 @@ export function GameStartTransition({ active, onComplete }: GameStartTransitionP
         <div className="gst-stripe s5" />
         <div className="gst-stripe s6" />
         <div className="gst-stripe s7" />
+        <div className="gst-stripe s8" />
       </div>
 
       {/* 中央对局开启徽章 */}
