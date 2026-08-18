@@ -1,16 +1,16 @@
 /**
- * cheese_thief_classic_v1 客户端主页面（线下辅助形态）。
- * 只消费严格解析后的奶酪大盗视角（cheese-thief/types.ts）。
- * 定位：线下桌游辅助——App 负责私密分发（骰点/身份/共犯）、夜间推进、讨论与投票计时、终局判定；
- * 讨论本身在线下进行（App 不提供聊天/语音）。
- * 视觉：月夜主题——第六时刻夜间时间轴、月面叶脉，共犯/查看/指认以点选芯片完成。
+ * cheese_thief_classic_v1 客户端主页面（线下辅助与模拟模式双模体系）。
+ * 支持「📱 玩家手牌端（3D 骰盅防偷窥）」与「🖥️ 桌面中央端（案发大屏与 TTS 法官）」
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
 import { nameFor, useGameAction } from '../useGameAction.ts';
 import { ActionDock } from '../tabletop/ActionDock.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
+import { CheeseDiceCup3D } from './CheeseDiceCup3D.tsx';
+import { CheeseTabletopArena } from './CheeseTabletopArena.tsx';
+import { useCheeseTTS } from './useCheeseTTS.ts';
 import type { CheeseThiefPlayerView, RoleCard } from './types.ts';
 
 const ROLE_LABELS: Record<RoleCard, string> = {
@@ -49,11 +49,39 @@ export function CheeseThiefGamePage({ view }: Props) {
   const [voteTarget, setVoteTarget] = useState<string | null>(null);
   const [accomplicePicks, setAccomplicePicks] = useState<string[]>([]);
 
-  const myTurnChoose =
-    view.phase === 'hour_choice' && myId !== null && (me?.wakeHour === 0 || me?.wakeHour === undefined);
+  // 模拟模式设备角色：'table' 桌面中央大屏，'player' 玩家手牌端
+  const isSimulator = view.mode === 'simulator';
+  const [deviceRole, setDeviceRole] = useState<'player' | 'table'>(() => {
+    try {
+      const saved = localStorage.getItem('ldj_cheese_device_role');
+      return saved === 'table' ? 'table' : 'player';
+    } catch {
+      return 'player';
+    }
+  });
+
+  const selectDeviceRole = (role: 'player' | 'table') => {
+    setDeviceRole(role);
+    try {
+      localStorage.setItem('ldj_cheese_device_role', role);
+    } catch {
+      // Ignore localStorage errors
+    }
+  };
+
+  const isSimulatorTable = isSimulator && deviceRole === 'table';
+  const isSimulatorPlayer = isSimulator && deviceRole === 'player';
+
+  // 专属 TTS 法官主持 Hook
+  const { ttsEnabled, toggleTts } = useCheeseTTS({
+    phase: view.phase,
+    currentHour: view.currentHour,
+    mode: view.mode,
+    isTable: isSimulatorTable || !isSimulator,
+  });
+
   const myTurnAccomplice =
     view.phase === 'accomplice_select' && me?.isThief === true && myId !== null;
-  // 共犯数量按人数档（5–6 人 1 名、7–8 人 2 名；公开信息）
   const accompliceCount = view.players.length >= 7 ? 2 : 1;
 
   const players = view.players.map((playerId) => {
@@ -65,19 +93,6 @@ export function CheeseThiefGamePage({ view }: Props) {
     }
     return { id: playerId, name: nameFor(members, playerId), status, active: false };
   });
-
-  // 私密身份徽标（只对自己可见的信息展示在个人区域，不放进玩家条）
-  const myRoleLine =
-    me === null
-      ? null
-      : [
-          me.isThief
-            ? '🧀 你是大盗'
-            : me.isAccomplice
-              ? `🤝 你是共犯（大盗及同伙：${(me.knownAccomplices ?? []).map((id) => nameFor(members, id)).join('、')}）`
-              : '🐭 你是贪睡鼠（村民）',
-          me.roleCard !== 'none' ? `🃏 身份卡：${ROLE_LABELS[me.roleCard]}` : null,
-        ].filter(Boolean).join(' · ');
 
   // 主操作
   let primary: Parameters<typeof ActionDock>[0]['primary'] | null = null;
@@ -140,7 +155,7 @@ export function CheeseThiefGamePage({ view }: Props) {
     : view.phase === 'night'
       ? me?.wakeHour === view.currentHour
         ? me.canPeek
-          ? '轮到你的时刻且独醒：请选择查看一位玩家的骰子点数或跳过'
+          ? '轮到你的时刻且独醒：按住目标玩家骰盅偷看其点数，或直接跳过'
           : (me.coWakers ?? []).length > 0
             ? '轮到你的时刻：有其他人同时醒来，互相目击'
             : '轮到你的时刻推进中'
@@ -153,50 +168,115 @@ export function CheeseThiefGamePage({ view }: Props) {
             ? '你已完成投票，等待其他玩家完成投票…'
             : '请选择你怀疑的大盗，或在下方操作栏弃票';
 
+  const headerControls = (
+    <div className="cheese-top-controls">
+      {isSimulator && (
+        <div className="cheese-role-switch" role="group" aria-label="设备用途选择">
+          <button
+            type="button"
+            className={`cheese-role-pill ${deviceRole === 'player' ? 'is-active' : ''}`}
+            onClick={() => selectDeviceRole('player')}
+            title="作为玩家个人手牌设备使用（持在手中）"
+          >
+            <span className="cheese-btn-icon">📱</span>
+            <span className="cheese-btn-text">玩家端</span>
+          </button>
+          <button
+            type="button"
+            className={`cheese-role-pill ${deviceRole === 'table' ? 'is-active' : ''}`}
+            onClick={() => selectDeviceRole('table')}
+            title="作为桌面中央公共案发大屏使用（平放于桌面正中）"
+          >
+            <span className="cheese-btn-icon">🖥️</span>
+            <span className="cheese-btn-text">桌面端</span>
+          </button>
+        </div>
+      )}
+      <button
+        type="button"
+        className={`cheese-tts-icon-btn ${ttsEnabled ? 'is-active' : ''}`}
+        onClick={toggleTts}
+        title={ttsEnabled ? '点击关闭语音法官主持' : '点击开启语音法官主持'}
+      >
+        <span>{ttsEnabled ? '🔊 语音' : '🔇 静音'}</span>
+      </button>
+      <button ref={rulesRef} type="button" className="tabletop-rules-btn" onClick={() => setRulesOpen(true)}>
+        <span className="cheese-btn-icon">📜</span>
+        <span className="cheese-btn-text">本局规则</span>
+      </button>
+    </div>
+  );
+
   return (
     <TabletopShell
       title="奶酪大盗"
-      phase={phaseLabel(view.phase)}
+      phase={`${phaseLabel(view.phase)}${
+        isSimulator ? (deviceRole === 'table' ? ' · 🖥️ 桌面中央端' : ' · 📱 玩家手牌端') : ''
+      }`}
       spectator={isSpectator}
       players={players}
       theme="night"
-      rulesButton={(
-        <button ref={rulesRef} type="button" className="tabletop-rules-btn" onClick={() => setRulesOpen(true)}>
-          本局规则
-        </button>
-      )}
+      hideSeats={isSimulatorTable}
+      rulesButton={headerControls}
       actions={
-        <ActionDock
-          primary={primary ?? { id: 'wait', label: '等待阶段推进', disabled: true, onAction: () => {} }}
-          secondary={secondary}
-          busy={busy}
-          waitingReason={waitingReason ?? undefined}
-        />
+        !isSimulatorTable ? (
+          <ActionDock
+            primary={primary ?? { id: 'wait', label: '等待阶段推进', disabled: true, onAction: () => {} }}
+            secondary={secondary}
+            busy={busy}
+            waitingReason={waitingReason ?? undefined}
+          />
+        ) : undefined
       }
       drawer={rulesOpen && (
         <GameDrawer kind="rules" title="本局规则" triggerRef={rulesRef} onClose={() => setRulesOpen(false)}>
-          <p>掷骰定醒来时刻：1~6 纯随机确定醒来时刻。夜间 1→6 依次推进，独醒且奶酪在场者取走奶酪成为大盗。</p>
-          <p>独醒偷看：轮到自己的时刻，若独醒可查看场上任意一人骰子；若 2 人或以上同醒则互相目击无法查看。</p>
-          <p>共犯：5 人 1 名（大盗选）、6 人 1 名（相识）、7–8 人 2 名（7 人不相识）。共犯胜利条件同大盗。</p>
-          <p>投票：并列最高票一并出局；投中大盗 → 好人胜，否则大盗+共犯胜。</p>
+          <h4>🧀 奶酪大盗规则速览</h4>
+          <p>1. <strong>掷骰定醒来时刻</strong>：每位玩家掷 6 面骰扣在骰盅内，决定夜间第几时刻醒来。</p>
+          <p>2. <strong>夜间时刻推进</strong>：夜间 1→6 时刻依次推进，轮到自己点数时睁眼。独醒且奶酪在场者取走奶酪成为怪盗！</p>
+          <p>3. <strong>独醒偷看</strong>：轮到自己时刻若独醒，可按住任意一位玩家的 3D 骰盅查验其骰子；若多人同醒则互相目击、无法偷看。</p>
+          <p>4. <strong>共犯与胜利</strong>：大盗秘密挑选共犯。白天讨论投票，投中大盗则好人胜，否则大盗与共犯胜。</p>
         </GameDrawer>
       )}
     >
       {error && <p className="game-error" role="alert">{error}</p>}
 
-      {view.phase !== 'game_over' ? (
-        <div className="sg-stage">
+      {/* 🖥️ 桌面端呈现 */}
+      {isSimulatorTable ? (
+        <CheeseTabletopArena
+          view={view}
+          myId={myId}
+          members={members}
+          ttsEnabled={ttsEnabled}
+          onToggleTts={toggleTts}
+          onStealCheese={() => {
+            // 静音偷取：大盗已记录
+          }}
+        />
+      ) : (
+        /* 📱 玩家端呈现 */
+        <div className="sg-stage cheese-player-stage">
           {me && (
-            <section className="cheese-secret-card" aria-label="我的私密信息">
+            <section className="cheese-secret-card" aria-label="我的私密身份与3D骰盅">
               <div className="cheese-secret-card__header">
                 <div className="cheese-secret-card__title-group">
                   <span className="cheese-secret-card__icon" aria-hidden="true">🧀</span>
-                  <h3>我的私密身份与骰子</h3>
+                  <h3>我的私密身份与 3D 骰盅</h3>
                 </div>
-                <span className="cheese-secret-card__privacy-tag">🔒 仅自己可见 · 请勿展示给他人</span>
+                <span className="cheese-secret-card__privacy-tag">🔒 按住掀起 · 松手扣盖防窥</span>
               </div>
 
               <div className="cheese-secret-card__body">
+                {/* 3D 拟真骰盅与骰子 */}
+                <div className="cheese-dice-cup-container">
+                  <CheeseDiceCup3D
+                    diceValue={me.wakeHour}
+                    playerName="我（本局骰点）"
+                    isMe={true}
+                    canInteract={true}
+                    hint="按住骰盅掀开查看"
+                  />
+                </div>
+
                 {/* 身份大胶囊 */}
                 <div className={`cheese-secret-role ${me.isThief ? 'role--thief' : me.isAccomplice ? 'role--accomplice' : 'role--sleeper'}`}>
                   <span className="secret-role-icon">{me.isThief ? '🐭🧀' : me.isAccomplice ? '🤝🐭' : '😴🐭'}</span>
@@ -204,18 +284,12 @@ export function CheeseThiefGamePage({ view }: Props) {
                     <span className="secret-role-label">本局身份</span>
                     <strong>{me.isThief ? '贪吃鼠（怪盗）' : me.isAccomplice ? '共犯老鼠' : '贪睡鼠（村民）'}</strong>
                   </div>
-                </div>
-
-                {/* 投骰醒来时刻卡片 */}
-                {me.wakeHour !== undefined && me.wakeHour >= 1 && (
-                  <div className="cheese-secret-dice">
-                    <span className="secret-dice-label">投骰睁眼时刻</span>
-                    <div className="secret-dice-display">
-                      <span className="secret-dice-icon" aria-hidden="true">🎲</span>
-                      <strong className="secret-dice-num">第 {me.wakeHour} 时刻</strong>
+                  {me.roleCard !== 'none' && (
+                    <div className="secret-role-subtag">
+                      🃏 身份卡：{ROLE_LABELS[me.roleCard]}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* 专属情报条目 */}
@@ -238,6 +312,7 @@ export function CheeseThiefGamePage({ view }: Props) {
             </section>
           )}
 
+          {/* 夜间推进时刻轴 */}
           {view.phase === 'night' && (
             <section className="cheese-night" aria-label="夜间时间轴">
               <div className="cheese-moon" aria-hidden="true"><span className="cheese-moon__glow" /></div>
@@ -258,40 +333,35 @@ export function CheeseThiefGamePage({ view }: Props) {
             </section>
           )}
 
-          {view.phase === 'night' && me?.wakeHour === view.currentHour && (me.coWakers ?? []).length > 0 && (
-            <section className="sg-panel" aria-label="同醒目击">
-              <div className="sg-panel__head">
-                <h3>👀 轮到你的时刻（第 {view.currentHour} 时刻）</h3>
-                <span style={{ color: 'var(--brand-accent, #3b82f6)', fontWeight: 800 }}>多人同时睁眼</span>
-              </div>
-              <p className="sg-hint">
-                你与 <strong>{(me.coWakers ?? []).map((id) => nameFor(members, id)).join('、')}</strong> 在同一时刻醒来，彼此互相目击，无法偷看他人骰子。
-              </p>
-            </section>
-          )}
-
+          {/* 独醒查验：3D 骰盅点击/长按查验他人 */}
           {view.phase === 'night' && me?.canPeek && (
             <section className="sg-panel" aria-label="查看对象选择">
               <div className="sg-panel__head">
-                <h3>🔍 轮到你且独醒！选择查看一位玩家的骰子</h3>
-                <span>或在下方操作栏点击跳过</span>
+                <h3>🔍 轮到你且独醒！按住目标玩家骰盅掀开查验</h3>
+                <span>松手后自动扣盖并提交，或在下方直接跳过</span>
               </div>
-              <div className="sg-chip-row">
+              <div className="cheese-peek-grid">
                 {view.players.filter((id) => id !== myId).map((id) => (
-                  <button
-                    key={id}
-                    type="button"
-                    className={`sg-chip sg-chip--btn ${peekTarget === id ? 'sg-chip--selected' : ''}`}
-                    onClick={() => setPeekTarget(id)}
-                    aria-pressed={peekTarget === id}
-                  >
-                    {peekTarget === id ? '🔍 ' : ''}{nameFor(members, id)}
-                  </button>
+                  <div key={id} className={`cheese-peek-item ${peekTarget === id ? 'is-selected' : ''}`}>
+                    <CheeseDiceCup3D
+                      diceValue={me.peekedHour?.target === id ? me.peekedHour.hour : null}
+                      playerName={nameFor(members, id)}
+                      peekTargetName={nameFor(members, id)}
+                      isMe={false}
+                      canInteract={true}
+                      variant="compact"
+                      onInspectCommit={() => {
+                        setPeekTarget(id);
+                        void act({ type: 'peek_die', playerId: myId!, targetPlayerId: id });
+                      }}
+                    />
+                  </div>
                 ))}
               </div>
             </section>
           )}
 
+          {/* 共犯挑选 */}
           {view.phase === 'accomplice_select' && me?.isThief && myTurnAccomplice && (
             <section className="sg-panel" aria-label="共犯选择">
               <div className="sg-panel__head">
@@ -322,13 +392,14 @@ export function CheeseThiefGamePage({ view }: Props) {
             </section>
           )}
 
+          {/* 天亮讨论 */}
           {view.phase === 'dawn' && (
             <section className="sg-panel cheese-dawn" aria-label="天亮讨论">
               <div className="sg-panel__head">
                 <h3>天亮了！线下自由讨论</h3>
                 <span>讨论计时结束后自动进入投票</span>
               </div>
-              <p className="sg-hint">谁偷走了奶酪？可以撒谎，抓紧问足问题。</p>
+              <p className="sg-hint">桌上的奶酪不见了！谁偷走了奶酪？可以撒谎，抓紧问足问题。</p>
               {(view.revealedCat || view.revealedDog) && (
                 <div className="sg-chip-row">
                   {view.revealedCat && <span className="sg-chip sg-chip--peek">🐱 {nameFor(members, view.revealedCat)} 是猫</span>}
@@ -338,6 +409,7 @@ export function CheeseThiefGamePage({ view }: Props) {
             </section>
           )}
 
+          {/* 投票指认 */}
           {view.phase === 'vote' && myId && (
             <section className="sg-panel" aria-label="投票指认">
               <div className="sg-panel__head">
@@ -366,33 +438,20 @@ export function CheeseThiefGamePage({ view }: Props) {
               </div>
             </section>
           )}
-        </div>
-      ) : (
-        <div className="sg-stage">
-          <div className="winner-hero">
-            <span className="winner-rays" aria-hidden="true" />
-            <h2 className="winner-title">
-              {view.thiefCaught === null
-                ? '整夜无人偷走奶酪，好人们守住了！'
-                : view.thiefCaught
-                  ? '大盗被抓住了！'
-                  : '大盗逃之夭夭！'}
-            </h2>
-            <p>{(view.winners ?? []).map((id) => nameFor(members, id)).join('、')} 获胜</p>
-          </div>
-          {view.reveal && (
-            <section className="sg-panel">
-              <div className="sg-panel__head">
-                <h3>本局揭秘</h3>
-                <span>夜间档案公开</span>
-              </div>
-              <ul className="sg-note-list">
-                <li>大盗：{nameFor(members, view.reveal.thiefId ?? '')}</li>
-                <li>盗取时刻：{view.reveal.stealHour ?? '—'}</li>
-                <li>共犯：{(view.reveal.accomplices ?? []).map((id) => nameFor(members, id)).join('、') || '无'}</li>
-                <li>醒来时刻：{view.players.map((id) => `${nameFor(members, id)}@${view.reveal?.wakeHours?.[id] ?? '?'}`).join('、')}</li>
-              </ul>
-            </section>
+
+          {/* 终局结算 */}
+          {view.phase === 'game_over' && (
+            <div className="winner-hero">
+              <span className="winner-rays" aria-hidden="true" />
+              <h2 className="winner-title">
+                {view.thiefCaught === null
+                  ? '整夜无人偷走奶酪，好人们守住了！'
+                  : view.thiefCaught
+                    ? '大盗被抓住了！'
+                    : '大盗逃之夭夭！'}
+              </h2>
+              <p>{(view.winners ?? []).map((id) => nameFor(members, id)).join('、')} 获胜</p>
+            </div>
           )}
         </div>
       )}

@@ -226,6 +226,16 @@ export const GAME_CATALOG = [
       { id: 'cheese_thief_classic_v1', label: '原版规则基线' },
     ],
     setup: defaultSetup('cheese_thief_classic_v1', '原版规则基线', [
+      {
+        key: 'mode',
+        kind: 'select',
+        label: '对局模式',
+        defaultValue: 'standard',
+        choices: [
+          { value: 'standard', label: '标准模式（系统判定）' },
+          { value: 'simulator', label: '模拟模式（含实体桌面与3D骰盅）' },
+        ],
+      },
       { key: 'roleCards', kind: 'boolean', label: '启用身份卡（猫/狗/白老鼠）', defaultValue: false },
       { key: 'nightHourSeconds', kind: 'integer', label: '每时刻时长（秒）', defaultValue: 10, min: 1, max: 600, step: 1 },
       { key: 'discussionSeconds', kind: 'integer', label: '讨论时长（秒）', defaultValue: 120, min: 1, max: 600, step: 1 },

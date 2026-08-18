@@ -16,6 +16,7 @@ const accompliceRuleSchema = z
 const cheeseThiefConfigSchema = z
   .object({
     rulesetId: z.literal('cheese_thief_classic_v1').optional(),
+    mode: z.enum(['standard', 'simulator']).default('standard'),
     nightHourSeconds: seconds.default(10),
     discussionSeconds: seconds.default(120),
     voteSeconds: seconds.default(30),
@@ -79,6 +80,7 @@ function parseOrThrow<T>(schema: z.ZodType<unknown>, input: unknown, label: stri
 export function parseCheeseThiefConfig(input: unknown): ResolvedCheeseThiefConfig {
   const parsed = parseOrThrow<{
     rulesetId?: 'cheese_thief_classic_v1';
+    mode: 'standard' | 'simulator';
     nightHourSeconds: number;
     discussionSeconds: number;
     voteSeconds: number;
@@ -94,6 +96,7 @@ export function parseCheeseThiefConfig(input: unknown): ResolvedCheeseThiefConfi
   }
   return {
     rulesetId: parsed.rulesetId ?? 'cheese_thief_classic_v1',
+    mode: parsed.mode ?? 'standard',
     nightHourSeconds: parsed.nightHourSeconds,
     discussionSeconds: parsed.discussionSeconds,
     voteSeconds: parsed.voteSeconds,

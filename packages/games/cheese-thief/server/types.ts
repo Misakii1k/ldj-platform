@@ -36,6 +36,8 @@ export interface AccompliceRule {
 
 export interface CheeseThiefConfig {
   rulesetId?: 'cheese_thief_classic_v1';
+  /** 对局模式：standard 纯手机标准模式，simulator 桌面中央+手牌双端模拟模式，默认 standard */
+  mode?: 'standard' | 'simulator';
   /** 每个夜间时刻的展示时长（秒），默认 10 */
   nightHourSeconds?: number;
   /** 天亮讨论时长（秒），默认 120 */
@@ -53,6 +55,7 @@ export interface CheeseThiefConfig {
 /** 解析后的配置：schema default 已补齐，计时器秒数必填 */
 export interface ResolvedCheeseThiefConfig {
   rulesetId?: 'cheese_thief_classic_v1';
+  mode: 'standard' | 'simulator';
   nightHourSeconds: number;
   discussionSeconds: number;
   voteSeconds: number;
@@ -167,6 +170,7 @@ export interface CheeseThiefPublicView {
   schemaVersion: 1;
   phase: CheeseThiefPhase;
   players: string[];
+  mode: 'standard' | 'simulator';
   /** night 阶段当前时刻；其余阶段为 0 */
   currentHour: number;
   /** 是否启用身份卡 */
