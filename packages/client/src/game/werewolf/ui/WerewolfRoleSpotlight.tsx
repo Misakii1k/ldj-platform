@@ -1,6 +1,7 @@
 import React from 'react';
 import type { WerewolfPresentationModel } from '../presentation.ts';
 import { GameIcon } from '../../../shared-ui/GameIcon.tsx';
+import { IdentityFlipCard } from '../../../shared-ui/IdentityFlipCard.tsx';
 
 interface WerewolfRoleSpotlightProps {
   readonly model: WerewolfPresentationModel;
@@ -12,19 +13,21 @@ export function WerewolfRoleSpotlight({ model }: WerewolfRoleSpotlightProps) {
   const isDawn = mood === 'dawn';
   const isRoleReveal = phase === 'role_reveal';
 
-  // 身份确认阶段
+  // 身份确认阶段：使用 3D 哥特暗夜翻牌引擎
   if (isRoleReveal && self) {
+    const isWolf = self.role === 'wolf';
+    const camp = isWolf ? 'evil' : 'good';
     return (
-      <div className="werewolf-spotlight werewolf-spotlight--reveal">
-        <div className="werewolf-spotlight__avatar-frame">
-          <img src={self.artworkUrl} alt={self.roleLabel} className="werewolf-spotlight__img" />
-          <div className="werewolf-spotlight__aura" />
-        </div>
-        <div className="werewolf-spotlight__content">
-          <div className="werewolf-spotlight__tag">你的专属身份</div>
-          <h2 className="werewolf-spotlight__role-name">{self.roleLabel}</h2>
-          <p className="werewolf-spotlight__desc">{self.roleHint}</p>
-        </div>
+      <div className="werewolf-spotlight werewolf-spotlight--reveal-3d">
+        <IdentityFlipCard
+          theme="gothic"
+          roleName={self.roleLabel}
+          roleSubtitle={isWolf ? '狼人阵营 · 夜袭猎杀' : '好人阵营 · 找出伪装'}
+          roleCamp={camp}
+          artworkUrl={self.artworkUrl}
+          secretHints={[self.roleHint]}
+          canInteract={true}
+        />
       </div>
     );
   }

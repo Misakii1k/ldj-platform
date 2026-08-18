@@ -185,9 +185,10 @@ export function HomePartyScene({ selectedCount }: HomePartySceneProps) {
       <div className="home-party-scene__people-layer">
         {CHARACTER_PROFILES.map((profile, index) => {
           const isSeatActive = index < visibleCount;
-          const seatPos = isSeatActive
+          const fallbackPos = { left: '50%', top: '48%', rotate: '0deg', zIndex: 1 };
+          const seatPos = (isSeatActive && activeSeats && activeSeats[index])
             ? activeSeats[index]
-            : { left: '50%', top: '48%', rotate: '0deg', zIndex: 1 };
+            : fallbackPos;
           const isHovered = hoveredPerson === index;
 
           return (

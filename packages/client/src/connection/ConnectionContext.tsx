@@ -408,6 +408,24 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(timer);
   }, [state.connState, send, sendRaw]);
 
+  // 快速自愈：当房间状态为 IN_GAME 但本地 game 为 null 时，自动快速补发 resync，消除人工点击/刷新等待
+  useEffect(() => {
+    if (state.connState !== 'connected' || meRef.current === null) return;
+    if (state.room?.status === 'IN_GAME' && state.game === null) {
+      const timer = setTimeout(() => {
+        const s = stateRef.current;
+        if (s.room?.status === 'IN_GAME' && s.game === null) {
+          sendRaw('resync', {
+            lastSeq: s.roomSeq,
+            chatCursor: s.chatCursor,
+            game: gameResumeIdentity(s),
+          });
+        }
+      }, 280);
+      return () => clearTimeout(timer);
+    }
+  }, [state.connState, state.room?.status, state.game, sendRaw]);
+
   // 手动 resync
   const resync = useCallback(() => {
     setState(prev => {

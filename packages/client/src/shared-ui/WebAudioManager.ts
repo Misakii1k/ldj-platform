@@ -226,6 +226,60 @@ class WebAudioEngine {
       osc.stop(ctx.currentTime + 0.35);
     } catch {}
   }
+
+  /** 骰子在骰盅内摇晃碰撞声 */
+  public playDiceShake() {
+    try {
+      if (this.muted) return;
+      const ctx = this.getContext();
+      if (!ctx) return;
+
+      // 连续 3~4 次快速微碰撞
+      for (let i = 0; i < 4; i++) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'triangle';
+        const baseFreq = 320 + Math.sin(i * 1.5) * 120;
+        osc.frequency.setValueAtTime(baseFreq, ctx.currentTime + i * 0.05);
+        osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.5, ctx.currentTime + i * 0.05 + 0.04);
+
+        gain.gain.setValueAtTime(this.volume * 0.35, ctx.currentTime + i * 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.05 + 0.04);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(ctx.currentTime + i * 0.05);
+        osc.stop(ctx.currentTime + i * 0.05 + 0.04);
+      }
+    } catch {}
+  }
+
+  /** 揭开骰盅/落台清脆声 */
+  public playDiceReveal() {
+    try {
+      if (this.muted) return;
+      const ctx = this.getContext();
+      if (!ctx) return;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(260, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(520, ctx.currentTime + 0.08);
+
+      gain.gain.setValueAtTime(this.volume * 0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.005, ctx.currentTime + 0.08);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.08);
+    } catch {}
+  }
 }
 
 export const webAudio = new WebAudioEngine();

@@ -360,7 +360,10 @@ export class WsGateway {
             buildRoomSnapshot(this.#deps.db, roomId),
             result.roomSeq,
           );
-          this.applyGameOutcome(roomId, result.outcome.begin);
+          this.applyGameOutcome(roomId, {
+            ...result.outcome.begin,
+            roomSeq: result.roomSeq,
+          });
         })
         .catch((err: Error) => {
           this.#deps.logger.error('auto_start_failed', { message: err.message });
@@ -777,7 +780,10 @@ export class WsGateway {
 
     // 开局（FR-HOST-001）：定向下发三类视角 + begin 产生的事件/系统消息/计时器对表
     if (result.outcome.gameStarted) {
-      this.applyGameOutcome(roomId, result.outcome.gameStarted.begin);
+      this.applyGameOutcome(roomId, {
+        ...result.outcome.gameStarted.begin,
+        roomSeq: result.roomSeq,
+      });
     }
     // 终止（FR-HOST-002）：内核级 ABORTED，广播终局视角与系统提示
     if (result.outcome.gameAborted) {

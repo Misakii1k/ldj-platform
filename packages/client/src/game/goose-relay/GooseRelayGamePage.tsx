@@ -376,7 +376,7 @@ export function GooseRelayGamePage({ view }: Props) {
       phase={phaseLabel(view.phase)}
       spectator={isSpectator}
       players={players}
-      theme="sunset"
+      theme="meadow"
       rulesButton={
         <button
           ref={rulesRef}

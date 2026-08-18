@@ -11,6 +11,7 @@ import { nameFor, useGameAction } from '../useGameAction.ts';
 import { ActionDock } from '../tabletop/ActionDock.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
+import { IdentityFlipCard } from '../../shared-ui/IdentityFlipCard.tsx';
 import type { CrimeId, NightTestimonyPlayerView } from './types.ts';
 
 const CRIME_LABELS: Record<CrimeId, string> = {
@@ -163,24 +164,38 @@ export function NightTestimonyGamePage({ view }: Props) {
       {view.phase !== 'game_over' ? (
         <div className="sg-stage">
           {me && (
-            <section className="sg-panel testimony-private" aria-label="我的私密信息">
+            <section className="sg-panel testimony-private" aria-label="我的私密身份">
               <div className="sg-panel__head">
-                <h3>我的私密信息（仅自己可见）</h3>
+                <h3>我的私密档案（按住翻开 · 防窥）</h3>
                 <span>记号余量</span>
               </div>
-              <div className="sg-chip-row">
-                {myIdentityLine && <span className={`sg-chip ${me.isWarden ? 'sg-chip--m' : 'sg-chip--peek'}`}>{myIdentityLine}</span>}
-                <span className="sg-chip testimony-token testimony-token--yes">
-                  {Array.from({ length: 3 }, (_, i) => (
-                    <i key={i} className={i < (me.yesLeft ?? 0) ? 'is-left' : ''} aria-hidden="true">Y</i>
-                  ))}
-                </span>
-                <span className="sg-chip testimony-token testimony-token--no">
-                  {Array.from({ length: 1 }, (_, i) => (
-                    <i key={i} className={i < (me.noLeft ?? 0) ? 'is-left' : ''} aria-hidden="true">N</i>
-                  ))}
-                </span>
-              </div>
+              <IdentityFlipCard
+                theme="prison"
+                variant="compact"
+                roleName={me.isWarden ? '狱警' : me.crime ? CRIME_LABELS[me.crime] : '囚犯'}
+                roleSubtitle={me.isWarden ? '卧底潜伏 · 可撒谎' : '嫌疑囚犯 · 须如实应答'}
+                roleCamp={me.isWarden ? 'evil' : 'good'}
+                secretHints={
+                  me.isWarden
+                    ? ['【绝密】你是潜伏在囚犯中的狱警！回答问题时可以撒谎误导他人，避免被票出。']
+                    : ['你是囚犯！面对其他人的提问必须根据你的真实罪行如实回答 YES/NO。']
+                }
+              >
+                <div className="sg-chip-row" style={{ marginTop: '8px', justifyContent: 'center' }}>
+                  <span className="sg-chip testimony-token testimony-token--yes">
+                    YES 记号余量：
+                    {Array.from({ length: 3 }, (_, i) => (
+                      <i key={i} className={i < (me.yesLeft ?? 0) ? 'is-left' : ''} aria-hidden="true">Y</i>
+                    ))}
+                  </span>
+                  <span className="sg-chip testimony-token testimony-token--no">
+                    NO 记号余量：
+                    {Array.from({ length: 1 }, (_, i) => (
+                      <i key={i} className={i < (me.noLeft ?? 0) ? 'is-left' : ''} aria-hidden="true">N</i>
+                    ))}
+                  </span>
+                </div>
+              </IdentityFlipCard>
             </section>
           )}
 

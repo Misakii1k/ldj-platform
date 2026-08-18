@@ -16425,3 +16425,718 @@ html[data-motion-level="off"] *::after {
   padding: 0;
   line-height: 1.6;
 }
+
+/* ═════════════════════════════════════════════════════════════════════ */
+/* ════════ 通用秘密身份翻牌引擎 (IdentityFlipCard 3D Engine) ════════ */
+/* ═════════════════════════════════════════════════════════════════════ */
+
+.identity-flip-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.identity-flip-container--compact {
+  max-width: 320px;
+}
+
+.identity-flip-card {
+  position: relative;
+  width: 100%;
+  min-height: 240px;
+  perspective: 900px;
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+}
+
+.identity-flip-container--compact .identity-flip-card {
+  min-height: 180px;
+}
+
+.identity-card-inner {
+  position: relative;
+  width: 100%;
+  min-height: 240px;
+  border-radius: 20px;
+  transform-style: preserve-3d;
+  transition: transform 0.36s cubic-bezier(0.2, 0.9, 0.3, 1.15), box-shadow 0.36s ease;
+}
+
+.identity-flip-container--compact .identity-card-inner {
+  min-height: 180px;
+  border-radius: 16px;
+}
+
+.identity-flip-card.is-revealed .identity-card-inner {
+  transform: rotateY(180deg) scale(1.02);
+}
+
+.identity-card-back,
+.identity-card-front {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.identity-flip-container--compact .identity-card-back,
+.identity-flip-container--compact .identity-card-front {
+  border-radius: 16px;
+}
+
+/* ════════ 1. 卡牌背面 (遮蔽态) ════════ */
+.identity-card-back {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  z-index: 2;
+  transform: rotateY(0deg);
+}
+
+.identity-card-back__border {
+  position: relative;
+  margin: 10px;
+  flex: 1;
+  border: 1.5px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.03) 0%, transparent 80%);
+}
+
+.identity-card-back__seal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.identity-card-back__emblem {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.2), 0 4px 12px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.identity-card-back__emblem::after {
+  content: '🔒';
+  font-size: 1.4rem;
+}
+
+.identity-card-back__badge {
+  font-size: 0.95rem;
+  letter-spacing: 2px;
+  color: #cbd5e1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.identity-card-back__action-tip {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tip-press {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #38bdf8;
+  font-weight: 700;
+  animation: pulseTip 2s infinite ease-in-out;
+}
+
+@keyframes pulseTip {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+/* ════════ 2. 卡牌正面 (揭示态) ════════ */
+.identity-card-front {
+  background: linear-gradient(145deg, #1e2433 0%, #111622 100%);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  transform: rotateY(180deg);
+  padding: 16px;
+  justify-content: space-between;
+}
+
+.identity-card-front__aura {
+  position: absolute;
+  inset: -20px;
+  border-radius: 40px;
+  pointer-events: none;
+  opacity: 0.15;
+  filter: blur(24px);
+  background: radial-gradient(circle, #38bdf8 0%, transparent 70%);
+}
+
+.camp-good .identity-card-front__aura { background: radial-gradient(circle, #38bdf8 0%, transparent 70%); }
+.camp-evil .identity-card-front__aura { background: radial-gradient(circle, #f43f5e 0%, transparent 70%); }
+.camp-neutral .identity-card-front__aura { background: radial-gradient(circle, #fbbf24 0%, transparent 70%); }
+.camp-human .identity-card-front__aura { background: radial-gradient(circle, #10b981 0%, transparent 70%); }
+.camp-echo .identity-card-front__aura { background: radial-gradient(circle, #a855f7 0%, transparent 70%); }
+
+.identity-card-lock-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 10px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 10;
+}
+
+.identity-card-lock-btn.is-locked {
+  background: #38bdf8;
+  color: #0f172a;
+  border-color: #7dd3fc;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+}
+
+.identity-card-front__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.identity-card-front__camp-tag {
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 2px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #93c5fd;
+  border: 1px solid rgba(147, 197, 253, 0.3);
+}
+
+.identity-card-front__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  justify-content: center;
+  text-align: center;
+}
+
+.identity-card-front__artwork-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  margin-bottom: 2px;
+}
+
+.identity-card-front__artwork {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.identity-card-front__role-name {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  letter-spacing: 1px;
+}
+
+.identity-card-front__secret-word-box {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1.5px solid #f59e0b;
+  border-radius: 12px;
+  padding: 6px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.2);
+}
+
+.identity-card-front__secret-word-box .secret-label {
+  font-size: 0.72rem;
+  color: #fbbf24;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.identity-card-front__secret-word-box .secret-word {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 2px;
+}
+
+.identity-card-front__hints {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 90%;
+  margin-top: 4px;
+}
+
+.identity-hint-text {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+}
+
+.identity-card-front__footer {
+  text-align: center;
+  font-size: 0.74rem;
+  color: #64748b;
+  padding-top: 4px;
+}
+
+/* ════════ 3. 卡牌主题外观 (Themes) ════════ */
+
+/* 机密档案 (Confidential) */
+.theme-confidential .identity-card-back {
+  background: linear-gradient(135deg, #422006 0%, #291203 100%);
+  border-color: #b45309;
+}
+.theme-confidential .identity-card-back__border {
+  border-color: rgba(245, 158, 11, 0.4);
+}
+.theme-confidential .identity-card-back__emblem::after {
+  content: '📁';
+}
+.theme-confidential .identity-card-back__badge {
+  color: #fde68a;
+}
+.theme-confidential .identity-card-front {
+  background: linear-gradient(145deg, #2e1065 0%, #1e1b4b 100%);
+  border-color: #a855f7;
+}
+
+/* 暗夜哥特 (Gothic 狼人杀) */
+.theme-gothic .identity-card-back {
+  background: radial-gradient(circle, #1e1b4b 0%, #030712 100%);
+  border-color: #6366f1;
+}
+.theme-gothic .identity-card-back__border {
+  border-color: rgba(99, 102, 241, 0.35);
+}
+.theme-gothic .identity-card-back__emblem::after {
+  content: '🐺';
+}
+.theme-gothic .identity-card-back__badge {
+  color: #c7d2fe;
+}
+.theme-gothic .identity-card-front {
+  background: radial-gradient(circle, #18181b 0%, #09090b 100%);
+  border-color: #71717a;
+}
+
+/* 赛博终端 (Cyber 伪人测试) */
+.theme-cyber .identity-card-back {
+  background: linear-gradient(135deg, #042f2e 0%, #022c22 100%);
+  border-color: #14b8a6;
+}
+.theme-cyber .identity-card-back__border {
+  border-color: rgba(20, 184, 166, 0.4);
+}
+.theme-cyber .identity-card-back__emblem::after {
+  content: '🧬';
+}
+.theme-cyber .identity-card-back__badge {
+  color: #99f6e4;
+}
+.theme-cyber .identity-card-front {
+  background: linear-gradient(145deg, #0f172a 0%, #020617 100%);
+  border-color: #06b6d4;
+}
+
+/* 囚徒案卷 (Prison 暗夜证词) */
+.theme-prison .identity-card-back {
+  background: linear-gradient(135deg, #3f3f46 0%, #18181b 100%);
+  border-color: #71717a;
+}
+.theme-prison .identity-card-back__border {
+  border-color: rgba(161, 161, 170, 0.3);
+}
+.theme-prison .identity-card-back__emblem::after {
+  content: '⛓️';
+}
+.theme-prison .identity-card-back__badge {
+  color: #e4e4e7;
+}
+
+/* ════════ 4. 底部确认按钮 ════════ */
+.identity-card-action-bar {
+  width: 100%;
+  margin-top: 14px;
+}
+
+.identity-confirm-btn {
+  width: 100%;
+  padding: 12px 20px;
+  font-size: 0.96rem;
+  font-weight: 800;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: #fff;
+  border: 1px solid #60a5fa;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.identity-confirm-btn:disabled {
+  background: #334155;
+  color: #94a3b8;
+  border-color: #475569;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* ═════════════════════════════════════════════════════════════════════ */
+/* ════════ 通用 3D 骰盅组件 (Shared DiceCup 3D Engine) ══════════════ */
+/* ═════════════════════════════════════════════════════════════════════ */
+
+.shared-dice-cup-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  outline: none;
+  padding: 8px 0;
+}
+
+.shared-dice-cup-scene {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  perspective: 700px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+
+.shared-dice-cup-scene.is-shaking {
+  animation: cupShake 0.45s infinite ease-in-out;
+}
+
+@keyframes cupShake {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-8px) rotate(-6deg); }
+  75% { transform: translateY(-4px) rotate(6deg); }
+}
+
+.shared-dice-cup-wrapper--compact .shared-dice-cup-scene {
+  width: 96px;
+  height: 96px;
+  perspective: 500px;
+}
+
+/* 绒布底座 */
+.shared-cup-base {
+  position: absolute;
+  bottom: 10px;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #2d5a3f 0%, #173824 100%);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.15);
+  border: 3px solid #8b5a2b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-felt .shared-cup-base {
+  background: radial-gradient(circle, #831843 0%, #500724 100%);
+  border-color: #9d174d;
+}
+
+.theme-metal .shared-cup-base {
+  background: radial-gradient(circle, #334155 0%, #0f172a 100%);
+  border-color: #64748b;
+}
+
+.shared-dice-cup-wrapper--compact .shared-cup-base {
+  width: 82px;
+  height: 82px;
+  bottom: 6px;
+  border-width: 2px;
+}
+
+.shared-cup-mat {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 多骰子阵列排列 */
+.shared-dice-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  max-width: 90px;
+}
+
+.shared-dice-cup-wrapper--compact .shared-dice-cluster {
+  max-width: 64px;
+  gap: 4px;
+}
+
+.shared-die-3d {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.shared-die-face {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  background: #ffffff;
+  border-radius: 10px;
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.35), inset 0 2px 4px rgba(255, 255, 255, 0.9);
+}
+
+.shared-dice-cluster.count-2 .shared-die-face,
+.shared-dice-cluster.count-3 .shared-die-face,
+.shared-dice-cluster.count-4 .shared-die-face,
+.shared-dice-cluster.count-5 .shared-die-face,
+.shared-dice-cluster.count-6 .shared-die-face {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+}
+
+.shared-dice-cup-wrapper--compact .shared-die-face {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+}
+
+.shared-dice-cup-wrapper--compact .shared-dice-cluster.count-2 .shared-die-face,
+.shared-dice-cup-wrapper--compact .shared-dice-cluster.count-3 .shared-die-face,
+.shared-dice-cup-wrapper--compact .shared-dice-cluster.count-4 .shared-die-face {
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+}
+
+.shared-die-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1e293b;
+  transform: translate(-50%, -50%);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.shared-die-dot--red {
+  background: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.5), inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.shared-dice-cluster.count-2 .shared-die-dot,
+.shared-dice-cluster.count-3 .shared-die-dot,
+.shared-dice-cluster.count-4 .shared-die-dot,
+.shared-dice-cluster.count-5 .shared-die-dot,
+.shared-dice-cluster.count-6 .shared-die-dot {
+  width: 6px;
+  height: 6px;
+}
+
+.shared-dice-cup-wrapper--compact .shared-die-dot {
+  width: 7px;
+  height: 7px;
+}
+
+.shared-die-number-badge {
+  font-size: 0.76rem;
+  font-weight: 900;
+  color: #fef08a;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+.shared-die-unknown {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 1.8rem;
+  font-weight: 900;
+}
+
+/* 3D 骰盅罩体 */
+.shared-cup-dome {
+  position: absolute;
+  bottom: 12px;
+  width: 108px;
+  height: 112px;
+  background: linear-gradient(135deg, #a05a2c 0%, #683416 60%, #4a220b 100%);
+  border-radius: 48% 48% 16px 16px / 52% 52% 12px 12px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), inset 0 4px 6px rgba(255, 255, 255, 0.25), inset 0 -4px 8px rgba(0, 0, 0, 0.4);
+  border: 3px solid #3e1b09;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 4px 4px;
+  transform-origin: bottom center;
+  transition: transform 0.24s cubic-bezier(0.18, 0.89, 0.32, 1.28), box-shadow 0.24s ease;
+  z-index: 10;
+}
+
+.theme-felt .shared-cup-dome {
+  background: linear-gradient(135deg, #9d174d 0%, #700c36 60%, #4a0422 100%);
+  border-color: #500724;
+}
+
+.theme-metal .shared-cup-dome {
+  background: linear-gradient(135deg, #475569 0%, #1e293b 60%, #0f172a 100%);
+  border-color: #334155;
+}
+
+.shared-dice-cup-wrapper--compact .shared-cup-dome {
+  width: 74px;
+  height: 78px;
+  bottom: 8px;
+  border-width: 2px;
+}
+
+/* 长按掀开状态 */
+.shared-cup-dome.is-lifted {
+  transform: translateY(-84px) rotateX(-24deg) scale(1.06);
+  box-shadow: 0 34px 40px rgba(0, 0, 0, 0.35), inset 0 4px 8px rgba(255, 255, 255, 0.3);
+}
+
+.shared-dice-cup-wrapper--compact .shared-cup-dome.is-lifted {
+  transform: translateY(-56px) rotateX(-22deg) scale(1.06);
+}
+
+.shared-cup-dome__top {
+  width: 22px;
+  height: 14px;
+  border-radius: 50%;
+  background: #f59e0b;
+  border: 2px solid #78350f;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+.shared-cup-dome__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.shared-cup-dome__icon {
+  font-size: 1.4rem;
+}
+
+.shared-cup-dome__label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #fef3c7;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+}
+
+.shared-cup-dome__rim {
+  width: 90%;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* 底部信息 */
+.shared-cup-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  text-align: center;
+}
+
+.shared-cup-owner {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.shared-cup-hint {
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.hint-press {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.hint-lifted {
+  color: #facc15;
+  font-weight: 700;
+}
+
+.shared-cup-shake-btn {
+  margin-top: 4px;
+  padding: 4px 12px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.shared-cup-shake-btn:active {
+  transform: scale(0.95);
+}
+

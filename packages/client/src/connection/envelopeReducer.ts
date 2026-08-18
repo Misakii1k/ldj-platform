@@ -239,8 +239,9 @@ export function applyEnvelope(
         nextGame = null;
       } else if (payload.status === 'IN_GAME' && state.game !== null) {
         // 检查模块是否一致：gameId 为房间当前选定游戏
-        const roomGameId = typeof (payload as Record<string, unknown>).gameId === 'string'
-          ? (payload as Record<string, unknown>).gameId as string
+        const payloadObj = payload as unknown as Record<string, unknown>;
+        const roomGameId = typeof payloadObj.gameId === 'string'
+          ? payloadObj.gameId
           : null;
         if (roomGameId !== null && state.game.moduleId !== roomGameId) {
           nextGame = null;
@@ -279,9 +280,9 @@ export function applyEnvelope(
         envelope.roomSeq !== undefined
         && state.roomSeq !== null
         && envelope.roomSeq < state.roomSeq
+        && state.game !== null
       ) {
-        // 旧帧不覆盖新基线，但这是唯一可能“丢帧后无人补位”的路径（房间静止时
-        // 不会再有新帧）；主动重同步请求当前权威视角，而不是静默停留。
+        // 旧帧不覆盖已有新基线；但若本地 game 为空（刚开局/恢复中等待首帧），必须接收
         effects.push({ type: 'send_resync' });
         return { state, effects };
       }

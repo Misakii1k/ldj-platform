@@ -3,6 +3,7 @@ import { CHARACTERS } from './types.ts';
 import { caseCardSchema } from './schemas.ts';
 import type {
   CaseCard,
+  CharacterId,
   GooseRelayPlayerView,
   GooseRelayPublicView,
   GooseRelayState,
@@ -146,7 +147,7 @@ function buildPlayerMe(state: GooseRelayState, playerId: string): GooseRelayPlay
 
   let observed: CaseCard | null = null;
   // 选卡之后，头鹅始终掌握案情真相卡
-  if (isHead && state.phase !== 'claim_head' && state.phase !== 'pick_cards') {
+  if (isHead && state.phase !== 'pick_cards') {
     observed = { ...state.case };
   }
 

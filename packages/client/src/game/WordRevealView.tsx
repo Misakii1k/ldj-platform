@@ -1,8 +1,9 @@
-/** 看词阶段：按住展示秘密词卡，松开或离开页面立即遮挡。 */
-import { useCallback, useEffect, useState, type CSSProperties } from 'react';
+/** 看词阶段：使用通用 IdentityFlipCard 3D 翻牌引擎展示机密档案，防窥与音效联动。 */
+import { useState, type CSSProperties } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
 import { describeError } from '../shared-ui/errors.ts';
 import { useCountdown } from '../shared-ui/useCountdown.ts';
+import { IdentityFlipCard } from '../shared-ui/IdentityFlipCard.tsx';
 import { GameCountdown, PhaseLead } from './GameChrome.tsx';
 import type { UndercoverPlayerView } from './types.ts';
 
@@ -20,20 +21,8 @@ export function WordRevealView({ view }: Props) {
   const confirmedCount = view.confirmedPlayerIds.length;
   const total = view.players.filter((player) => player.alive).length;
 
-  useEffect(() => {
-    const hide = () => setRevealed(false);
-    const onVisibility = () => { if (document.visibilityState === 'hidden') hide(); };
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('blur', hide);
-    return () => { document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('blur', hide); };
-  }, []);
-
-  const showWord = useCallback(() => { if (myWord !== null) setRevealed(true); }, [myWord]);
-  const hideWord = useCallback(() => setRevealed(false), []);
-
   async function handleConfirm() {
     if (busy || confirmed) return;
-    hideWord();
     setBusy(true);
     setError(null);
     try { await send('game_action', { type: 'confirm_word' }); }
@@ -41,14 +30,16 @@ export function WordRevealView({ view }: Props) {
     finally { setBusy(false); }
   }
 
+  const isBlank = myWord === '';
+
   return (
     <section className="game-phase word-reveal uc-stage__body">
       <div className="game-phase-main-grid">
         <div className="game-phase-left-col">
           <PhaseLead
             eyebrow={`第 ${view.round} 轮 · 悄悄看词`}
-            title={myWord === null ? '全员看词筹备中' : revealed ? myWord : '查看你的秘密词条'}
-            description={me === null ? '你正在观战，词条仅对玩家本人显示。' : '长按词卡悄悄查看，松手立即遮挡，别让旁人看到。'}
+            title={myWord === null ? '全员看词筹备中' : revealed ? (isBlank ? '你是白板' : myWord) : '查看你的机密词条'}
+            description={me === null ? '你正在观战，词条仅对玩家本人显示。' : '按住机密档案卡悄悄翻开，松手立即遮挡，别让旁人看到。'}
             aside={<GameCountdown seconds={countdown.secondsLeft} />}
           />
 
@@ -62,25 +53,23 @@ export function WordRevealView({ view }: Props) {
         </div>
 
         <div className="game-phase-right-col">
-          {myWord !== null ? (
-            <button
-              type="button"
-              className={`word-reveal-box ${revealed ? 'revealed' : 'hidden'}`}
-              onPointerDown={showWord}
-              onPointerUp={hideWord}
-              onPointerLeave={hideWord}
-              onPointerCancel={hideWord}
-              onKeyDown={(event) => { if (event.key === ' ' || event.key === 'Enter') showWord(); }}
-              onKeyUp={hideWord}
-              aria-label="长按查看秘密词"
-            >
-              <span className="secret-card-stamp">机密词条</span>
-              <span className="secret-eye" aria-hidden="true" />
-              {revealed
-                ? <span className="my-word">{myWord}</span>
-                : <span className="word-placeholder">长按查看秘密词</span>}
-              <span className="secret-card-foot">松手立即遮挡</span>
-            </button>
+          {me !== null && myWord !== null ? (
+            <IdentityFlipCard
+              theme="confidential"
+              roleName={isBlank ? '白板' : myWord}
+              roleSubtitle={isBlank ? '特殊身份 · 白板' : '秘密词条'}
+              roleCamp={isBlank ? 'special' : 'neutral'}
+              secretWord={!isBlank && myWord ? myWord : undefined}
+              secretHints={
+                isBlank
+                  ? ['你没有词条！请仔细聆听其他人的描述，推测出词条并伪装自己。']
+                  : ['牢记你的专属词条。在后续发言中适度描述，切勿直接念出。']
+              }
+              confirmed={confirmed}
+              onConfirm={handleConfirm}
+              confirmButtonText="我已记下，确认就绪"
+              onRevealChange={setRevealed}
+            />
           ) : (
             <div className="game-waiting-card">
               <span className="waiting-orbit" aria-hidden="true" />
@@ -91,14 +80,6 @@ export function WordRevealView({ view }: Props) {
         </div>
       </div>
 
-      {me !== null && (
-        <div className="game-action-dock">
-          <button type="button" className="game-primary-action" onClick={handleConfirm} disabled={busy || confirmed}>
-            {confirmed ? '已确认，等待全员就绪' : busy ? '提交中…' : '我已记下，确认就绪'}
-          </button>
-          <span>{confirmed ? '全员就绪后自动进入描述发言' : '只有你看得见，离开页面会自动遮挡'}</span>
-        </div>
-      )}
       {error && <div className="error-banner" role="alert">{error}</div>}
     </section>
   );

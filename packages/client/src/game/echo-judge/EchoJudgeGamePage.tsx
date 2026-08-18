@@ -11,6 +11,7 @@ import { nameFor, useGameAction } from '../useGameAction.ts';
 import { ActionDock } from '../tabletop/ActionDock.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
+import { IdentityFlipCard } from '../../shared-ui/IdentityFlipCard.tsx';
 import type { EchoJudgePlayerView } from './types.ts';
 
 function phaseLabel(phase: EchoJudgePlayerView['phase']): string {
@@ -127,17 +128,27 @@ export function EchoJudgeGamePage({ view }: Props) {
 
       {view.phase !== 'game_over' ? (
         <div className="sg-stage">
-          {me && myIdentityLine && (
-            <section className="sg-panel" aria-label="我的私密信息">
+          {me && (
+            <section className="sg-panel" aria-label="我的私密身份">
               <div className="sg-panel__head">
-                <h3>我的私密信息（仅自己可见）</h3>
-                <span>测谎须知</span>
+                <h3>我的私密身份（按住翻开 · 防窥）</h3>
+                <span>测谎协议</span>
               </div>
-              <div className="sg-chip-row">
-                <span className={`sg-chip ${me.isJudge ? 'sg-chip--active' : me.role === 'impostor' ? 'sg-chip--m' : 'sg-chip--peek'}`}>{myIdentityLine}</span>
-                {me.role === 'impostor' && <span className="sg-chip">把触发词自然藏进回答里</span>}
-                {!me.isJudge && me.role !== 'impostor' && <span className="sg-chip">人类可以撒谎误导判官</span>}
-              </div>
+              <IdentityFlipCard
+                theme="cyber"
+                variant="compact"
+                roleName={me.isJudge ? '判官' : me.role === 'impostor' ? '伪人（Echo）' : '人类'}
+                roleSubtitle={me.isJudge ? '审判者阵营' : me.role === 'impostor' ? '异常伪人阵营' : '正常人类阵营'}
+                roleCamp={me.isJudge ? 'special' : me.role === 'impostor' ? 'echo' : 'human'}
+                secretWord={me.role === 'impostor' && me.triggerWord ? me.triggerWord : undefined}
+                secretHints={
+                  me.isJudge
+                    ? ['向全员出题并聆听回答，指认出将触发词藏进话里的伪人。']
+                    : me.role === 'impostor'
+                      ? ['【绝密】你必须在回答中自然藏入秘密触发词，切勿被判官察觉！']
+                      : ['如实或策略性回答判官题目；人类可以故意撒谎误导判官保护同伴。']
+                }
+              />
             </section>
           )}
 
