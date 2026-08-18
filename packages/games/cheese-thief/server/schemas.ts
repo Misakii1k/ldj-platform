@@ -17,7 +17,7 @@ const cheeseThiefConfigSchema = z
   .object({
     rulesetId: z.literal('cheese_thief_classic_v1').optional(),
     mode: z.enum(['standard', 'simulator']).default('standard'),
-    nightHourSeconds: seconds.default(10),
+    nightHourSeconds: seconds.default(20),
     discussionSeconds: seconds.default(120),
     voteSeconds: seconds.default(30),
     hourChoiceSeconds: seconds.default(30),

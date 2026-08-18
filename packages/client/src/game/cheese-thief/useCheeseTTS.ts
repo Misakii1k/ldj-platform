@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { speakText } from '../../app/tts-settings/ttsManager.ts';
 import type { CheeseThiefPhase } from './types.ts';
 
 interface UseCheeseTTSOptions {
@@ -7,6 +8,7 @@ interface UseCheeseTTSOptions {
   currentHour: number;
   mode: 'standard' | 'simulator';
   isTable: boolean;
+  nightHourSeconds?: number;
 }
 
 export function useCheeseTTS({
@@ -15,16 +17,28 @@ export function useCheeseTTS({
   currentHour,
   mode,
   isTable,
+  nightHourSeconds = 20,
 }: UseCheeseTTSOptions) {
   const [ttsEnabled, setTtsEnabled] = useState(enabled);
-  const [voicesLoaded, setVoicesLoaded] = useState(false);
+  const [_voicesLoaded, setVoicesLoaded] = useState(false);
   const lastSpokenKeyRef = useRef<string>('');
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const countdownTimersRef = useRef<Array<ReturnType<typeof setTimeout>>>([]);
+
+  // 清除未完成的倒计时
+  const clearTimers = useCallback(() => {
+    for (const id of countdownTimersRef.current) {
+      clearTimeout(id);
+    }
+    countdownTimersRef.current = [];
+  }, []);
 
   // 初始化 Web Audio 上下文
   const getAudioContext = useCallback(() => {
     if (!audioCtxRef.current) {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) {
         audioCtxRef.current = new AudioCtx();
       }
@@ -35,26 +49,29 @@ export function useCheeseTTS({
     return audioCtxRef.current;
   }, []);
 
-  // 合成钟声/提示音
-  const playTone = useCallback((freq: number, type: OscillatorType, duration: number, gainVal = 0.2) => {
-    if (!ttsEnabled) return;
-    try {
-      const ctx = getAudioContext();
-      if (!ctx) return;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = type;
-      osc.frequency.setValueAtTime(freq, ctx.currentTime);
-      gain.gain.setValueAtTime(gainVal, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + duration);
-    } catch {
-      // Ignore audio synthesis errors
-    }
-  }, [getAudioContext, ttsEnabled]);
+  // 合成提示音
+  const playTone = useCallback(
+    (freq: number, type: OscillatorType, duration: number, gainVal = 0.2) => {
+      if (!ttsEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch {
+        // Ignore audio errors
+      }
+    },
+    [getAudioContext, ttsEnabled]
+  );
 
   const playNightGong = useCallback(() => {
     playTone(220, 'sine', 1.8, 0.35);
@@ -67,35 +84,32 @@ export function useCheeseTTS({
     setTimeout(() => playTone(1174.66, 'sine', 0.8, 0.4), 400);
   }, [playTone]);
 
-  // 语音播报函数
-  const speak = useCallback((text: string) => {
-    if (!ttsEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    try {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.lang = 'zh-CN';
-      const voices = window.speechSynthesis.getVoices();
-      const zhVoice = voices.find((v) => v.lang.includes('zh') || v.lang.includes('cmn') || v.name.includes('Chinese'));
-      if (zhVoice) {
-        utterance.voice = zhVoice;
-      }
-      window.speechSynthesis.speak(utterance);
-    } catch {
-      // Fallback silently if speech synthesis fails
-    }
-  }, [ttsEnabled]);
+  const playTick = useCallback(() => {
+    playTone(800, 'sine', 0.08, 0.18);
+  }, [playTone]);
+
+  // 语音播报函数（使用用户在设置中选择的 TTS 引擎）
+  const speak = useCallback(
+    (text: string, interrupt = true) => {
+      if (!ttsEnabled) return;
+      void speakText(text, undefined, interrupt);
+    },
+    [ttsEnabled]
+  );
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     const handleVoicesChanged = () => setVoicesLoaded(true);
     window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
-    return () => window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
-  }, []);
+    return () => {
+      window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+      clearTimers();
+    };
+  }, [clearTimers]);
 
-  // 根据阶段和时刻自动播报主持词（仅在模拟模式或桌面端播报）
+  // 根据阶段和时刻自动播报主持词与倒计时
   useEffect(() => {
+    clearTimers();
     if (!ttsEnabled || (mode === 'simulator' && !isTable)) return;
 
     const key = `${phase}-${currentHour}`;
@@ -110,6 +124,37 @@ export function useCheeseTTS({
         playNightGong();
         speak(`现在是夜间 ${currentHour} 点，请 ${currentHour} 点的玩家睁眼。`);
       }
+
+      // 最后 5 秒倒计时播报
+      const hourDuration = Math.max(5, nightHourSeconds);
+      const countdownStartMs = Math.max(0, (hourDuration - 5) * 1000);
+
+      const t5 = setTimeout(() => {
+        playTick();
+        speak('5', false);
+      }, countdownStartMs);
+
+      const t4 = setTimeout(() => {
+        playTick();
+        speak('4', false);
+      }, countdownStartMs + 1000);
+
+      const t3 = setTimeout(() => {
+        playTick();
+        speak('3', false);
+      }, countdownStartMs + 2000);
+
+      const t2 = setTimeout(() => {
+        playTick();
+        speak('2', false);
+      }, countdownStartMs + 3000);
+
+      const t1 = setTimeout(() => {
+        playNightGong();
+        speak('1，请闭眼', false);
+      }, countdownStartMs + 4000);
+
+      countdownTimersRef.current.push(t5, t4, t3, t2, t1);
     } else if (phase === 'accomplice_select') {
       speak('大盗请在暗中确认共犯。');
     } else if (phase === 'dawn') {
@@ -120,17 +165,32 @@ export function useCheeseTTS({
     } else if (phase === 'game_over') {
       speak('投票结束，现在揭晓所有人的骰子与真相！');
     }
-  }, [phase, currentHour, mode, isTable, ttsEnabled, speak, playNightGong, playDawnAlarm]);
+
+    return () => clearTimers();
+  }, [
+    phase,
+    currentHour,
+    mode,
+    isTable,
+    ttsEnabled,
+    nightHourSeconds,
+    speak,
+    playNightGong,
+    playDawnAlarm,
+    playTick,
+    clearTimers,
+  ]);
 
   const toggleTts = useCallback(() => {
     setTtsEnabled((prev) => {
       const next = !prev;
       if (!next && typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
+        clearTimers();
       }
       return next;
     });
-  }, []);
+  }, [clearTimers]);
 
   return {
     ttsEnabled,
@@ -139,6 +199,6 @@ export function useCheeseTTS({
     playTone,
     playDawnAlarm,
     playNightGong,
-    voicesLoaded,
+    playTick,
   };
 }

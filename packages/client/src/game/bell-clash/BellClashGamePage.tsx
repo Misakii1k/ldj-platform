@@ -100,7 +100,7 @@ export function BellClashGamePage({ view }: Props) {
   return (
     <TabletopShell
       title="Ding"
-      phase={view.phase === 'game_over' ? '对局结束' : '出牌对决'}
+      phase={phaseLabel(view.phase)}
       spectator={isSpectator}
       players={players}
       theme="arena"

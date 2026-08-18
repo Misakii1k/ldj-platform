@@ -2,7 +2,7 @@
  * cheese_thief_classic_v1 客户端主页面（线下辅助与模拟模式双模体系）。
  * 支持「📱 玩家手牌端（3D 骰盅防偷窥）」与「🖥️ 桌面中央端（案发大屏与 TTS 法官）」
  */
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
 import { nameFor, useGameAction } from '../useGameAction.ts';
 import { ActionDock } from '../tabletop/ActionDock.tsx';
@@ -69,8 +69,7 @@ export function CheeseThiefGamePage({ view }: Props) {
     }
   };
 
-  const isSimulatorTable = isSimulator && deviceRole === 'table';
-  const isSimulatorPlayer = isSimulator && deviceRole === 'player';
+  const isSimulatorTable = deviceRole === 'table';
 
   // 专属 TTS 法官主持 Hook
   const { ttsEnabled, toggleTts } = useCheeseTTS({
@@ -170,28 +169,26 @@ export function CheeseThiefGamePage({ view }: Props) {
 
   const headerControls = (
     <div className="cheese-top-controls">
-      {isSimulator && (
-        <div className="cheese-role-switch" role="group" aria-label="设备用途选择">
-          <button
-            type="button"
-            className={`cheese-role-pill ${deviceRole === 'player' ? 'is-active' : ''}`}
-            onClick={() => selectDeviceRole('player')}
-            title="作为玩家个人手牌设备使用（持在手中）"
-          >
-            <span className="cheese-btn-icon">📱</span>
-            <span className="cheese-btn-text">玩家端</span>
-          </button>
-          <button
-            type="button"
-            className={`cheese-role-pill ${deviceRole === 'table' ? 'is-active' : ''}`}
-            onClick={() => selectDeviceRole('table')}
-            title="作为桌面中央公共案发大屏使用（平放于桌面正中）"
-          >
-            <span className="cheese-btn-icon">🖥️</span>
-            <span className="cheese-btn-text">桌面端</span>
-          </button>
-        </div>
-      )}
+      <div className="cheese-role-switch" role="group" aria-label="设备用途选择">
+        <button
+          type="button"
+          className={`cheese-role-pill ${deviceRole === 'player' ? 'is-active' : ''}`}
+          onClick={() => selectDeviceRole('player')}
+          title="作为玩家个人手牌设备使用（持在手中）"
+        >
+          <span className="cheese-btn-icon">📱</span>
+          <span className="cheese-btn-text">玩家端</span>
+        </button>
+        <button
+          type="button"
+          className={`cheese-role-pill ${deviceRole === 'table' ? 'is-active' : ''}`}
+          onClick={() => selectDeviceRole('table')}
+          title="作为桌面中央公共案发大屏使用（平放于桌面正中）"
+        >
+          <span className="cheese-btn-icon">🖥️</span>
+          <span className="cheese-btn-text">桌面端</span>
+        </button>
+      </div>
       <button
         type="button"
         className={`cheese-tts-icon-btn ${ttsEnabled ? 'is-active' : ''}`}
@@ -211,7 +208,7 @@ export function CheeseThiefGamePage({ view }: Props) {
     <TabletopShell
       title="奶酪大盗"
       phase={`${phaseLabel(view.phase)}${
-        isSimulator ? (deviceRole === 'table' ? ' · 🖥️ 桌面中央端' : ' · 📱 玩家手牌端') : ''
+        deviceRole === 'table' ? ' · 🖥️ 桌面中央端' : ' · 📱 玩家手牌端'
       }`}
       spectator={isSpectator}
       players={players}

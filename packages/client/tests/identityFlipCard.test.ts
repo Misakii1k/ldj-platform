@@ -35,7 +35,7 @@ test('允许交互时长按可揭开，松开或取消后自动遮蔽防窥', ()
 
 test('观战者或不可交互状态下禁止长按揭开', () => {
   // 观战者
-  let spectatorState = reduceIdentityCardState(INITIAL_IDENTITY_CARD_STATE, {
+  const spectatorState = reduceIdentityCardState(INITIAL_IDENTITY_CARD_STATE, {
     type: 'pointer_down',
     canInteract: true,
     isSpectator: true,
@@ -44,7 +44,7 @@ test('观战者或不可交互状态下禁止长按揭开', () => {
   assert.equal(computeIsRevealed(spectatorState, true), false);
 
   // 不可交互
-  let lockedState = reduceIdentityCardState(INITIAL_IDENTITY_CARD_STATE, {
+  const lockedState = reduceIdentityCardState(INITIAL_IDENTITY_CARD_STATE, {
     type: 'pointer_down',
     canInteract: false,
     isSpectator: false,

@@ -64,7 +64,9 @@ class WebAudioEngine {
 
       osc.start();
       osc.stop(ctx.currentTime + 0.08);
-    } catch {}
+    } catch {
+      // Audio playback blocked or not supported
+    }
   }
 
   /** 开局发牌/洗牌声效 */
@@ -91,7 +93,9 @@ class WebAudioEngine {
         osc.start(ctx.currentTime + i * 0.08);
         osc.stop(ctx.currentTime + i * 0.08 + 0.06);
       }
-    } catch {}
+    } catch {
+      // Audio playback blocked or not supported
+    }
   }
 
   /** 翻牌视听效果 */
@@ -116,7 +120,9 @@ class WebAudioEngine {
 
       osc.start();
       osc.stop(ctx.currentTime + 0.06);
-    } catch {}
+    } catch {
+      // Audio playback blocked or not supported
+    }
   }
 
   /** 抢答/响铃重击 */
@@ -147,7 +153,9 @@ class WebAudioEngine {
       osc2.start();
       osc1.stop(ctx.currentTime + 0.25);
       osc2.stop(ctx.currentTime + 0.25);
-    } catch {}
+    } catch {
+      // Audio playback blocked or not supported
+    }
   }
 
   /** 倒计时滴答 */
@@ -171,7 +179,9 @@ class WebAudioEngine {
 
       osc.start();
       osc.stop(ctx.currentTime + 0.03);
-    } catch {}
+    } catch {
+      // Audio playback blocked or not supported
+    }
   }
 
   /** 胜利号角与欢呼效果 */
@@ -199,7 +209,9 @@ class WebAudioEngine {
         osc.start(ctx.currentTime + idx * 0.1);
         osc.stop(ctx.currentTime + idx * 0.1 + 0.4);
       });
-    } catch {}
+    } catch {
+      // Audio playback blocked or not supported
+    }
   }
 
   /** 失败/炸弹/爆炸音效 */
@@ -224,7 +236,9 @@ class WebAudioEngine {
 
       osc.start();
       osc.stop(ctx.currentTime + 0.35);
-    } catch {}
+    } catch {
+      // Audio playback blocked or not supported
+    }
   }
 
   /** 骰子在骰盅内摇晃碰撞声 */
@@ -253,7 +267,9 @@ class WebAudioEngine {
         osc.start(ctx.currentTime + i * 0.05);
         osc.stop(ctx.currentTime + i * 0.05 + 0.04);
       }
-    } catch {}
+    } catch {
+      // Audio playback blocked or not supported
+    }
   }
 
   /** 揭开骰盅/落台清脆声 */
@@ -278,7 +294,9 @@ class WebAudioEngine {
 
       osc.start();
       osc.stop(ctx.currentTime + 0.08);
-    } catch {}
+    } catch {
+      // Audio playback blocked or not supported
+    }
   }
 }
 

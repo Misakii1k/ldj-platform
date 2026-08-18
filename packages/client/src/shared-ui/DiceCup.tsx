@@ -95,6 +95,7 @@ export function DiceCup({
   className = '',
 }: DiceCupProps) {
   const [isLifted, setIsLifted] = useState(false);
+  const [isLockedOpen, setIsLockedOpen] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
 
   // 归一化点数数组
@@ -103,8 +104,9 @@ export function DiceCup({
   // 环境级安全防窥：切换后台或失焦时自动扣盖
   useEffect(() => {
     const hide = () => {
-      if (isLifted) {
+      if (isLifted || isLockedOpen) {
         setIsLifted(false);
+        setIsLockedOpen(false);
         onInspectCommit?.();
       }
     };
@@ -118,39 +120,59 @@ export function DiceCup({
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('blur', hide);
     };
-  }, [isLifted, onInspectCommit]);
+  }, [isLifted, isLockedOpen, onInspectCommit]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!canInteract) return;
-      e.preventDefault();
+      if (isLockedOpen) return; // 已锁定时点击交给 click
       setIsLifted(true);
       webAudio.playDiceReveal();
       try {
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
           navigator.vibrate(10);
         }
-      } catch {}
+      } catch {
+        // Ignore vibration error
+      }
     },
-    [canInteract]
+    [canInteract, isLockedOpen]
   );
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent) => {
+      if (isLockedOpen) return;
       if (!isLifted) return;
-      e.preventDefault();
       setIsLifted(false);
       onInspectCommit?.();
     },
-    [isLifted, onInspectCommit]
+    [isLifted, isLockedOpen, onInspectCommit]
   );
 
   const handlePointerCancel = useCallback(() => {
+    if (isLockedOpen) return;
     if (isLifted) {
       setIsLifted(false);
       onInspectCommit?.();
     }
-  }, [isLifted, onInspectCommit]);
+  }, [isLifted, isLockedOpen, onInspectCommit]);
+
+  const toggleLockOpen = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!canInteract) return;
+      setIsLockedOpen((prev) => {
+        const next = !prev;
+        if (next) {
+          webAudio.playDiceReveal();
+        } else {
+          onInspectCommit?.();
+        }
+        return next;
+      });
+    },
+    [canInteract, onInspectCommit]
+  );
 
   const handleShakeClick = useCallback(
     (e: React.MouseEvent) => {
@@ -162,7 +184,9 @@ export function DiceCup({
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
           navigator.vibrate([15, 30, 20]);
         }
-      } catch {}
+      } catch {
+        // Ignore vibration error
+      }
       setTimeout(() => {
         setIsShaking(false);
         onShakeCommit?.();
@@ -170,6 +194,8 @@ export function DiceCup({
     },
     [allowShake, canInteract, isShaking, onShakeCommit]
   );
+
+  const currentlyOpen = isLifted || isLockedOpen;
 
   // 渲染单个骰子的点数（国标中式红 1、红 4 点）
   const renderDiceDots = (value: number) => {

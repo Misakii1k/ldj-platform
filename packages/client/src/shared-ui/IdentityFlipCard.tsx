@@ -128,7 +128,9 @@ export function IdentityFlipCard({
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         navigator.vibrate(12);
       }
-    } catch {}
+    } catch {
+      // Ignore vibration error on unsupported platforms
+    }
   }, []);
 
   // 状态变化通知外部

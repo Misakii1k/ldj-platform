@@ -63,8 +63,6 @@ export function NightTestimonyGamePage({ view }: Props) {
     return { id: playerId, name: nameFor(members, playerId), status, active: false };
   });
 
-  const myIdentityLine = me === null ? null : me.isWarden ? '你是狱警，可撒谎' : `你的罪行：${me.crime ? CRIME_LABELS[me.crime] : ''}`;
-
   // 主导动作：按阶段唯一
   let primary: Parameters<typeof ActionDock>[0]['primary'] | null = null;
   let secondary: Parameters<typeof ActionDock>[0]['secondary'] = [];

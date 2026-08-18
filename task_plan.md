@@ -162,6 +162,17 @@ R1（M0–M5）交付后平台继续演进，目标从"一款游戏完整"升级
 - [x] **组件收敛与重构**：RoomCodeCard、ConfirmDialog、TabletopOvalShell、ChatMessageList、GameSetupPanel 统一收敛至 shared-ui，废弃过渡文件已清理
 - [x] **生产就绪（Production Ready）**：前端项目已达到完全可上线的标准
 
+#### D9：秘密身份翻牌引擎（IdentityFlipCard）与轻量 3D 骰盅（DiceCup）落地（2026-08-18）
+- [x] **IdentityFlipCard 通用 3D 翻牌引擎**：`shared-ui/IdentityFlipCard.tsx` + 5 套游戏主题卡背（机密/哥特暗夜/赛博终端/囚徒案卷/古典金纹）+ 混合防窥手势（按住翻开、锁键常驻、失焦/切后台强制遮扣）+ WebAudio 零延迟音效与触觉反馈。
+- [x] **全量核心暗牌游戏接入**：
+  - 谁是卧底（`WordRevealView.tsx`）：confidential 机密档案主题 + 白板/卧底/平民提示；
+  - 狼人杀（`WerewolfRoleSpotlight.tsx`）：gothic 暗夜哥特主题 + 阵营/立绘/技能；
+  - 伪人测试（`EchoJudgeGamePage.tsx`）：cyber 赛博主题 + 触发词/阵营；
+  - 暗夜证词（`NightTestimonyGamePage.tsx`）：prison 囚徒主题 + 罪行/YES/NO 标记；
+  - 奶酪大盗（`CheeseThiefGamePage.tsx`）：classic 主题。
+- [x] **DiceCup 轻量通用 3D 骰盅**：`shared-ui/DiceCup.tsx` 纯 CSS 3D 架构，支持 1~6 粒骰子矩阵排列、木质/绒布/暗黑金属 3 种材质、摇骰动效与 WebAudio 碰撞声（`playDiceShake`）+ 长按掀开/独醒偷看手势。
+- [x] **单测与质量门**：新增 `identityFlipCard.test.ts` 与 `diceCup.test.ts`，1139/1139 单元测试全绿，typecheck/build 100% 成功。
+
 ## 关键决策
 
 | 决策 | 结论 | 依据 |

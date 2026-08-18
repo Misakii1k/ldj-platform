@@ -80,29 +80,38 @@ export function CheeseTabletopArena({
       {/* 中央桌台案发区：大奶酪盘 */}
       <div className="cheese-center-table">
         <div className="cheese-wood-platter">
-          <div className={`cheese-cloth ${isCheeseStolen && (isDawn || isVote || isGameOver) ? 'is-stolen' : ''}`}>
+          <div className={`cheese-cloth ${(stealTapped || isCheeseStolen) && (isDawn || isVote || isGameOver) ? 'is-stolen' : ''}`}>
             {isNight ? (
               <div className="cheese-night-stage">
-                <div className="cheese-model-3d">
-                  <span className="cheese-model-emoji" aria-hidden="true">🧀</span>
-                  <div className="cheese-glow" />
-                </div>
-                {/* 大盗夜间静音触控区（无声无震动，仅供大盗本人按压） */}
-                {isThief && (
-                  <button
-                    type="button"
-                    className={`cheese-steal-silent-btn ${stealTapped ? 'is-stolen-hidden' : ''}`}
-                    onClick={handleStealClick}
-                    title="【大盗专属】悄悄伸手偷走奶酪（完全静音无震动）"
-                  >
-                    <span>{stealTapped ? '✓ 奶酪已悄悄取走' : '✋ 伸手偷走桌面奶酪'}</span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className={`cheese-model-3d-btn ${stealTapped ? 'is-stolen' : ''}`}
+                  onClick={() => {
+                    const next = !stealTapped;
+                    setStealTapped(next);
+                    if (next) onStealCheese?.();
+                  }}
+                  title="【桌面交互】点击伸手偷走/放回奶酪"
+                >
+                  <div className="cheese-model-3d">
+                    <span className="cheese-model-emoji" aria-hidden="true">
+                      {stealTapped ? '🍽️' : '🧀'}
+                    </span>
+                    {!stealTapped && <div className="cheese-glow" />}
+                  </div>
+                  <div className="cheese-steal-status-badge">
+                    {stealTapped ? (
+                      <span className="badge-stolen">✓ 奶酪已被悄悄取走（已隐秘记录）</span>
+                    ) : (
+                      <span className="badge-ready">✋ 触摸/点击偷走奶酪</span>
+                    )}
+                  </div>
+                </button>
                 <p className="cheese-night-guide">
                   {view.currentHour === 0 ? '夜幕降临…准备开始报时' : `当前时刻：${view.currentHour} 点`}
                 </p>
               </div>
-            ) : isCheeseStolen ? (
+            ) : (stealTapped || isCheeseStolen) ? (
               <div className="cheese-stolen-stage">
                 <div className="cheese-stolen-crumbs">
                   <span className="crumbs-emoji">🍽️</span>

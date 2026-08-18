@@ -56,8 +56,6 @@ export function EchoJudgeGamePage({ view }: Props) {
     };
   });
 
-  const myIdentityLine = me === null ? null : me.isJudge ? '你是判官' : me.role === 'impostor' ? `你是伪人（触发词：${me.triggerWord}）` : '你是人类';
-
   // 主导动作：判官出题 / 玩家回答 / 判官指认（指认对象在舞台面板点选，不再塞操作坞）
   let primary: Parameters<typeof ActionDock>[0]['primary'] | null = null;
   const secondary: Parameters<typeof ActionDock>[0]['secondary'] = [];

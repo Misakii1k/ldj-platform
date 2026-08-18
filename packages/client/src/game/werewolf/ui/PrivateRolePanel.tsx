@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import type { WerewolfSelfModel } from '../presentation.ts';
-import { GameIcon } from '../../../shared-ui/GameIcon.tsx';
 
 interface PrivateRolePanelProps {
   readonly self: WerewolfSelfModel | null;
   readonly synced: boolean;
 }
 
-export function PrivateRolePanel({ self, synced }: PrivateRolePanelProps) {
+export function PrivateRolePanel({ self, synced: _synced }: PrivateRolePanelProps) {
   const [revealed, setRevealed] = useState(false);
 
   if (self === null) {
