@@ -611,9 +611,11 @@ export function DurianGamePage({ view }: Props) {
 
               <div className="durian-placements-wrap">
                 {(view.tablePlacements ?? []).length === 0 ? (
-                  <p className="durian-placements-empty">
-                    桌面上暂无出牌，轮到先手玩家开始摸牌！
-                  </p>
+                  <div className="durian-placements-empty">
+                    <span className="durian-placements-empty__icon">🎴</span>
+                    <strong className="durian-placements-empty__title">桌面上暂无出牌</strong>
+                    <span className="durian-placements-empty__desc">轮到先手玩家开始摸牌并选择生效半边</span>
+                  </div>
                 ) : (
                   <div className="durian-placements-grid">
                     {(view.tablePlacements ?? []).map((placement, index) => {
