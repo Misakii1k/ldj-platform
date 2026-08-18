@@ -5612,58 +5612,53 @@ p { margin: 0.5rem 0; }
 
 .gst-stripes-container {
   position: absolute;
-  inset: -20%;
-  width: 140%;
-  height: 140%;
+  inset: -30%;
+  width: 160%;
+  height: 160%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 6px;
-  transform: rotate(-10deg);
+  gap: 2px;
+  transform: rotate(-8deg);
   pointer-events: none;
 }
 
 .gst-stripe {
   flex: 1;
-  min-height: 48px;
-  width: 180%;
-  margin-left: -40%;
-  border-top: 2.5px solid rgba(255, 255, 255, 0.35);
-  border-bottom: 7px solid var(--game-line, #292722);
-  box-shadow: 0 8px 0 rgba(41, 39, 34, 0.95), 0 16px 32px rgba(0, 0, 0, 0.45);
+  min-height: 140px;
+  width: 200%;
+  margin-left: -50%;
+  border: 6px solid var(--game-line, #292722);
+  border-bottom-width: 12px;
+  border-radius: 4px;
+  box-shadow: 0 12px 0 var(--game-line, #292722), 0 28px 56px rgba(0, 0, 0, 0.55);
   opacity: 0;
-  transform: translateX(-100%);
+  transform: translateX(-120%);
 }
 
 .phase-stripes .gst-stripe,
 .phase-reveal .gst-stripe {
-  animation: gst-stripe-sweep 0.66s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: gst-stripe-enter 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* 红绿蓝黄四色宽条，带有项目的黑色底边与立体投影 */
+/* 红绿蓝黄四色宽条，直接铺满全屏作为背景，带有醒目的黑色粗描边与立体投影 */
 .gst-stripe.s1 { animation-delay: 0.02s; background: #ef4d39; } /* 红色 */
-.gst-stripe.s2 { animation-delay: 0.07s; background: #16a34a; } /* 绿色 */
-.gst-stripe.s3 { animation-delay: 0.12s; background: #2563eb; } /* 蓝色 */
-.gst-stripe.s4 { animation-delay: 0.17s; background: #f7c84b; } /* 黄色 */
-.gst-stripe.s5 { animation-delay: 0.22s; background: #ef4d39; } /* 红色 */
-.gst-stripe.s6 { animation-delay: 0.27s; background: #16a34a; } /* 绿色 */
-.gst-stripe.s7 { animation-delay: 0.32s; background: #2563eb; } /* 蓝色 */
-.gst-stripe.s8 { animation-delay: 0.37s; background: #f7c84b; } /* 黄色 */
+.gst-stripe.s2 { animation-delay: 0.05s; background: #16a34a; } /* 绿色 */
+.gst-stripe.s3 { animation-delay: 0.08s; background: #2563eb; } /* 蓝色 */
+.gst-stripe.s4 { animation-delay: 0.11s; background: #f7c84b; } /* 黄色 */
+.gst-stripe.s5 { animation-delay: 0.14s; background: #ef4d39; } /* 红色 */
+.gst-stripe.s6 { animation-delay: 0.17s; background: #16a34a; } /* 绿色 */
+.gst-stripe.s7 { animation-delay: 0.20s; background: #2563eb; } /* 蓝色 */
+.gst-stripe.s8 { animation-delay: 0.23s; background: #f7c84b; } /* 黄色 */
 
-@keyframes gst-stripe-sweep {
+@keyframes gst-stripe-enter {
   0% {
-    transform: translateX(-100%);
+    transform: translateX(-120%);
     opacity: 0;
-  }
-  25% {
-    opacity: 1;
-  }
-  75% {
-    opacity: 1;
   }
   100% {
-    transform: translateX(100%);
-    opacity: 0;
+    transform: translateX(0);
+    opacity: 1;
   }
 }
 
@@ -5998,8 +5993,7 @@ p { margin: 0.5rem 0; }
 .game-phase .result-banner.tie, .game-phase .result-banner.runoff_tie { color: var(--game-ink); background: var(--game-yellow); }
 .game-phase .result-banner.no_votes { color: var(--game-ink); background: #e8e0d4; }
 .eliminated-info { display: grid; grid-template-columns: 48px minmax(0,1fr) auto; gap: 12px; align-items: center; width: 100%; padding: 13px 14px; border: 3px solid var(--game-line, #221e1a); border-radius: 16px; background: #fffdfa; box-shadow: 0 4px 0 var(--game-line, #221e1a); color: var(--game-ink, #221e1a); box-sizing: border-box; }
-.eliminated-avatar, .role-avatar { position: relative; width: 46px; height: 46px; border: 2.5px solid var(--game-line); border-radius: 50%; background: #e7ded2; }
-.eliminated-avatar::after, .role-avatar::after { position: absolute; top: 21px; left: 9px; width: 26px; height: 3px; content: ''; background: var(--game-line); transform: rotate(-35deg); }
+.eliminated-avatar { position: relative; width: 46px; height: 46px; border: 2.5px solid var(--game-line); border-radius: 50%; background: #e7ded2; }
 .eliminated-info > div { display: flex; min-width: 0; flex-direction: column; gap: 1px; }
 .eliminated-info > div span { color: var(--game-muted, #7c7267); font-size: .66rem; font-weight: 700; }
 .eliminated-info > div strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .95rem; font-weight: 900; color: var(--game-ink, #221e1a) !important; }
