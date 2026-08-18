@@ -5,6 +5,7 @@
  * 权限只信服务端连接上下文推导出的 actorPlayerId（FR-HOST-004）。
  */
 import type { BotKind, ChatMessageView, RoomCommandPayload, RoomSnapshotView } from '@ldj/shared';
+import { getGameCatalogEntry } from '@ldj/shared';
 import type { TxContext } from '../executor.ts';
 import { CommandError } from '../executor.ts';
 import { parseRoomConfig } from '../roomConfig.ts';
@@ -130,6 +131,25 @@ export function applyRoomCommand(
       writeAudit(tx, roomId, actorPlayerId, `transfer_host:${payload.targetPlayerId}`, 'ok');
       return { command: payload.command, snapshot: buildRoomSnapshot(db, roomId) };
     }
+    case 'select_game': {
+      let aborted = undefined;
+      if (room.status === 'IN_GAME') {
+        try {
+          aborted = abortGame(tx, roomId);
+        } catch {
+          // 忽略无 session 或已终止的报错
+        }
+      }
+      const newGameId = payload.gameId;
+      const gameEntry = getGameCatalogEntry(newGameId);
+      if (!gameEntry) {
+        throw new CommandError('ACTION_NOT_ALLOWED', '指定的游戏不存在');
+      }
+      db.prepare("UPDATE rooms SET game_id = ?, status = 'LOBBY', config_json = '{}', updated_at = ? WHERE id = ?").run(newGameId, now, roomId);
+      db.prepare('UPDATE room_members SET ready = 0 WHERE room_id = ? AND is_bot = 0').run(roomId);
+      writeAudit(tx, roomId, actorPlayerId, `select_game:${newGameId}`, 'ok');
+      return { command: payload.command, snapshot: buildRoomSnapshot(db, roomId), gameAborted: aborted };
+    }
     case 'update_config': {
       const merged = { ...parseRoomConfig(room.config_json), ...payload.config };
       db.prepare('UPDATE rooms SET config_json = ? WHERE id = ?').run(JSON.stringify(merged), roomId);
@@ -140,7 +160,7 @@ export function applyRoomCommand(
     }
     case 'close_room': {
       if (room.status === 'IN_GAME') {
-        throw new CommandError('ACTION_NOT_ALLOWED', '对局进行中不能直接关闭房间');
+        abortGame(tx, roomId);
       }
       db.prepare('UPDATE rooms SET status = ?, empty_since = ? WHERE id = ?').run('CLOSED', now, roomId);
       writeAudit(tx, roomId, actorPlayerId, 'close_room', 'ok');

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react';
+import { createPortal } from 'react-dom';
 import type { GameDrawerKind } from './types.ts';
 
 interface GameDrawerProps {
@@ -18,12 +19,30 @@ export function GameDrawer({ kind, title, triggerRef, onClose, children }: GameD
     window.addEventListener('keydown', close);
     return () => { window.removeEventListener('keydown', close); triggerRef.current?.focus(); };
   }, [onClose, triggerRef]);
-  return (
-    <div className="tabletop-drawer-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <aside className={`tabletop-drawer tabletop-drawer--${kind}`} role="dialog" aria-modal="true" aria-labelledby={titleId}>
-        <header><h2 id={titleId}>{title}</h2><button ref={closeRef} type="button" onClick={onClose} aria-label="关闭抽屉">×</button></header>
+
+  return createPortal(
+    <div
+      className="tabletop-drawer-backdrop"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <aside
+        className={`tabletop-drawer tabletop-drawer--${kind}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+      >
+        <header>
+          <h2 id={titleId}>{title}</h2>
+          <button ref={closeRef} type="button" onClick={onClose} aria-label="关闭抽屉">
+            ×
+          </button>
+        </header>
         <div className="tabletop-drawer__content">{children}</div>
       </aside>
-    </div>
+    </div>,
+    document.body,
   );
 }

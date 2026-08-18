@@ -89,11 +89,9 @@ export const cheeseThiefModule: GameModuleV2<
   assertInvariants: assertCheeseThiefInvariants,
   snapshotMigrations: {},
   createInitialState(ctx: GameContext, players: string[], config: CheeseThiefConfig) {
-    const playersLen = players.length;
-    const wakeHours = playersLen === 4 ? {} : rollWakeHours(players, ctx.random);
-    const hourChoices = playersLen === 4 ? rollHourChoices(players, ctx.random) : null;
+    const wakeHours = rollWakeHours(players, ctx.random);
     const roleCards = config?.roleCards ? assignRoleCards(players, ctx.random) : null;
-    const state = createCheeseThiefState(players, config, wakeHours, hourChoices, roleCards);
+    const state = createCheeseThiefState(players, config, wakeHours, null, roleCards);
     assertCheeseThiefInvariants(state);
     return state;
   },

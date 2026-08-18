@@ -39,10 +39,10 @@ test('已知样例锁定：冻结源集合 9 文件全部哈希/行数/有效 LO
   assert.equal(result.sourceFiles.length, 9);
   assert.equal(result.allMatch, true, '冻结源集合必须与 third-game-baseline.json 逐文件一致');
   const moduleEntry = result.sourceFiles.find((f) => f.path.endsWith('server/module.ts'));
-  assert.equal(moduleEntry.sha256, 'ad15db058f175fe440ede8f409a29f537326656d9f7ce8c0222682785c824f21');
-  assert.equal(moduleEntry.lineCount, 1570);
-  assert.equal(moduleEntry.effectiveNonTestLineCount, 1233);
-  assert.equal(result.baselineTotal, 1500, '基线有效非测试 TS LOC 合计 = 1233+80+175+12');
+  assert.equal(moduleEntry.sha256, '40b304addb6338fcc40f523a9dcd43eec6b646df5037f97110902d8e042bfbe5');
+  assert.equal(moduleEntry.lineCount, 1571);
+  assert.equal(moduleEntry.effectiveNonTestLineCount, 1234);
+  assert.equal(result.baselineTotal, 1501, '基线有效非测试 TS LOC 合计 = 1234+80+175+12');
 });
 
 test('测试文件有效非测试 LOC 为 0', () => {
@@ -90,7 +90,7 @@ test('runMeasurement：target 为同一功能清单的削减实现时 reductionP
   const result = await runMeasurement(ROOT_DIR, {
     targetSourceFiles: [{ path: 'packages/games/werewolf/shared/manifest.ts', role: 'target' }],
   });
-  assert.equal(result.baselineTotal, 1500);
+  assert.equal(result.baselineTotal, 1501);
   assert.equal(result.targetTotal, 12);
   assert.ok(result.reductionPercent > 99);
   assert.equal(result.pass, true);

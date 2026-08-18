@@ -1,0 +1,819 @@
+{
+  "generatedAt": "2026-08-17T08:29:09.115Z",
+  "strictTouch": false,
+  "games": [
+    {
+      "game": "bell-clash 铃铛对决",
+      "entries": [
+        {
+          "viewport": "320x568",
+          "overflowX": 0,
+          "scrollWidth": 320,
+          "clientWidth": 320,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 89x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 230x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "390x844",
+          "overflowX": 0,
+          "scrollWidth": 390,
+          "clientWidth": 390,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 89x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 300x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "844x390",
+          "overflowX": 0,
+          "scrollWidth": 844,
+          "clientWidth": 844,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34",
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x41"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x41 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "768x1024",
+          "overflowX": 0,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 80x34",
+            "button.tabletop-sound-btn \"音效开\" 80x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 510x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "1280x800",
+          "overflowX": 0,
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 80x34",
+            "button.tabletop-sound-btn \"音效开\" 80x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 510x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        }
+      ]
+    },
+    {
+      "game": "durian Durian 榴莲店长",
+      "entries": [
+        {
+          "viewport": "320x568",
+          "overflowX": 0,
+          "scrollWidth": 320,
+          "clientWidth": 320,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"📜本局规则\" 44x34",
+            "button.game-leave__button \"退出牌局\" 89x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 230x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "390x844",
+          "overflowX": 0,
+          "scrollWidth": 390,
+          "clientWidth": 390,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"📜本局规则\" 44x34",
+            "button.game-leave__button \"退出牌局\" 89x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 300x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "844x390",
+          "overflowX": 0,
+          "scrollWidth": 844,
+          "clientWidth": 844,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"📜本局规则\" 93x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34",
+            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 530x41"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 530x41 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "768x1024",
+          "overflowX": 0,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"📜本局规则\" 93x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 80x34",
+            "button.tabletop-sound-btn \"音效开\" 80x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 510x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "1280x800",
+          "overflowX": 0,
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"📜本局规则\" 93x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 80x34",
+            "button.tabletop-sound-btn \"音效开\" 80x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 510x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        }
+      ]
+    },
+    {
+      "game": "echo-judge 伪人测试",
+      "entries": [
+        {
+          "viewport": "320x568",
+          "overflowX": 0,
+          "scrollWidth": 320,
+          "clientWidth": 320,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 89x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 230x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "390x844",
+          "overflowX": 0,
+          "scrollWidth": 390,
+          "clientWidth": 390,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 89x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 300x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "844x390",
+          "overflowX": 0,
+          "scrollWidth": 844,
+          "clientWidth": 844,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34",
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x41"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x41 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "768x1024",
+          "overflowX": 0,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 80x34",
+            "button.tabletop-sound-btn \"音效开\" 80x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 510x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "1280x800",
+          "overflowX": 0,
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 80x34",
+            "button.tabletop-sound-btn \"音效开\" 80x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 510x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        }
+      ]
+    },
+    {
+      "game": "goose-relay 以鹅传鹅",
+      "entries": [
+        {
+          "viewport": "320x568",
+          "overflowX": 0,
+          "scrollWidth": 320,
+          "clientWidth": 320,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 89x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 230x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "390x844",
+          "overflowX": 0,
+          "scrollWidth": 390,
+          "clientWidth": 390,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 89x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 300x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "844x390",
+          "overflowX": 0,
+          "scrollWidth": 844,
+          "clientWidth": 844,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34",
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x41"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x41 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "768x1024",
+          "overflowX": 0,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 80x34",
+            "button.tabletop-sound-btn \"音效开\" 80x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 510x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "1280x800",
+          "overflowX": 0,
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 80x34",
+            "button.tabletop-sound-btn \"音效开\" 80x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 510x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        }
+      ]
+    },
+    {
+      "game": "cheese-thief 奶酪大盗",
+      "entries": [
+        {
+          "viewport": "320x568",
+          "overflowX": 0,
+          "scrollWidth": 320,
+          "clientWidth": 320,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 89x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 230x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "390x844",
+          "overflowX": 0,
+          "scrollWidth": 390,
+          "clientWidth": 390,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 89x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 300x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "844x390",
+          "overflowX": 0,
+          "scrollWidth": 844,
+          "clientWidth": 844,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34",
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x41"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x41 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "768x1024",
+          "overflowX": 0,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 80x34",
+            "button.tabletop-sound-btn \"音效开\" 80x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 510x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "1280x800",
+          "overflowX": 0,
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 80x34",
+            "button.tabletop-sound-btn \"音效开\" 80x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 510x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        }
+      ]
+    },
+    {
+      "game": "loveletter 情书",
+      "entries": [
+        {
+          "viewport": "320x568",
+          "overflowX": 0,
+          "scrollWidth": 320,
+          "clientWidth": 320,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 89x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 162x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "390x844",
+          "overflowX": 0,
+          "scrollWidth": 390,
+          "clientWidth": 390,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 89x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 232x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "844x390",
+          "overflowX": 0,
+          "scrollWidth": 844,
+          "clientWidth": 844,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34",
+            "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 465x41",
+            "button.tabletop-action \"重选\" 65x41"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 465x41 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "768x1024",
+          "overflowX": 0,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 80x34",
+            "button.tabletop-sound-btn \"音效开\" 80x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 442x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "1280x800",
+          "overflowX": 0,
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 80x34",
+            "button.tabletop-sound-btn \"音效开\" 80x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 442x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        }
+      ]
+    },
+    {
+      "game": "night-testimony 暗夜证词",
+      "entries": [
+        {
+          "viewport": "320x568",
+          "overflowX": 0,
+          "scrollWidth": 320,
+          "clientWidth": 320,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 89x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"在本页选择对象并输入问题\" 230x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "390x844",
+          "overflowX": 0,
+          "scrollWidth": 390,
+          "clientWidth": 390,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 89x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"在本页选择对象并输入问题\" 300x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "844x390",
+          "overflowX": 0,
+          "scrollWidth": 844,
+          "clientWidth": 844,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34",
+            "button.tabletop-action.tabletop-action--primary \"在本页选择对象并输入问题\" 530x41"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"在本页选择对象并输入问题\" 530x41 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "768x1024",
+          "overflowX": 0,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 80x34",
+            "button.tabletop-sound-btn \"音效开\" 80x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"在本页选择对象并输入问题\" 510x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "1280x800",
+          "overflowX": 0,
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-rules-btn \"本局规则\" 71x34",
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 80x34",
+            "button.tabletop-sound-btn \"音效开\" 80x34"
+          ],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"在本页选择对象并输入问题\" 510x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        }
+      ]
+    },
+    {
+      "game": "uno UNO house",
+      "entries": [
+        {
+          "viewport": "320x568",
+          "overflowX": 0,
+          "scrollWidth": 320,
+          "clientWidth": 320,
+          "offenders": [],
+          "smallTargets": [],
+          "primaryActions": [],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "390x844",
+          "overflowX": 0,
+          "scrollWidth": 390,
+          "clientWidth": 390,
+          "offenders": [],
+          "smallTargets": [],
+          "primaryActions": [],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "844x390",
+          "overflowX": 0,
+          "scrollWidth": 844,
+          "clientWidth": 844,
+          "offenders": [],
+          "smallTargets": [],
+          "primaryActions": [],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "768x1024",
+          "overflowX": 0,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "offenders": [],
+          "smallTargets": [],
+          "primaryActions": [],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "1280x800",
+          "overflowX": 0,
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "offenders": [],
+          "smallTargets": [],
+          "primaryActions": [],
+          "seatCollisions": [],
+          "bottomFit": []
+        }
+      ]
+    },
+    {
+      "game": "landlord 斗地主",
+      "entries": [
+        {
+          "viewport": "320x568",
+          "overflowX": 0,
+          "scrollWidth": 320,
+          "clientWidth": 320,
+          "offenders": [],
+          "smallTargets": [
+            "button.game-leave__button \"退出牌局\" 89x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34"
+          ],
+          "primaryActions": [],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "390x844",
+          "overflowX": 0,
+          "scrollWidth": 390,
+          "clientWidth": 390,
+          "offenders": [],
+          "smallTargets": [
+            "button.game-leave__button \"退出牌局\" 89x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34"
+          ],
+          "primaryActions": [],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "844x390",
+          "overflowX": 0,
+          "scrollWidth": 844,
+          "clientWidth": 844,
+          "offenders": [],
+          "smallTargets": [
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
+            "button.tabletop-sound-btn \"音效开\" 44x34"
+          ],
+          "primaryActions": [],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "768x1024",
+          "overflowX": 0,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "offenders": [],
+          "smallTargets": [
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 80x34",
+            "button.tabletop-sound-btn \"音效开\" 80x34"
+          ],
+          "primaryActions": [],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "1280x800",
+          "overflowX": 0,
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "offenders": [],
+          "smallTargets": [
+            "button.game-leave__button \"退出牌局\" 103x34",
+            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 80x34",
+            "button.tabletop-sound-btn \"音效开\" 80x34"
+          ],
+          "primaryActions": [],
+          "seatCollisions": [],
+          "bottomFit": []
+        }
+      ]
+    }
+  ]
+}

@@ -10,10 +10,11 @@ export const UNDERCOVER_STATE_SCHEMA_VERSION = 1;
 
 export const undercoverConfigSchema = z
   .object({
-    speechSeconds: z.union([z.literal(30), z.literal(60), z.literal(90)]).default(60),
+    rulesetId: z.literal('undercover_classic_v1').optional(),
+    speechSeconds: z.union([z.literal(30), z.literal(45), z.literal(60), z.literal(90)]).default(60),
     voteSeconds: z.union([z.literal(30), z.literal(45), z.literal(60)]).default(45),
   })
-  .strict();
+  .passthrough();
 export type UndercoverConfig = z.infer<typeof undercoverConfigSchema>;
 
 // —— 动作（玩家动作 + 系统/计时动作） ——

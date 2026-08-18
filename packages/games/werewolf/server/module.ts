@@ -873,7 +873,7 @@ function playerId(input: unknown): string {
 function parseConfig(input: unknown): WerewolfConfig {
   const raw = input === undefined ? {} : input;
   if (!isRecord(raw)) throw new Error('Invalid config');
-  exactKeys(raw, ['rulesetId', 'preset', 'pace', 'witchSelfSave', 'winCondition', 'wolfKillScope', 'roles']);
+  exactKeys(raw, ['rulesetId', 'preset', 'pace', 'witchSelfSave', 'winCondition', 'wolfKillScope', 'roles', 'guard', 'hunter', 'idiot']);
   const preset = raw.preset ?? 'classic';
   const pace = raw.pace ?? 'standard';
   if (preset !== 'classic' && preset !== 'advanced') throw new Error('Invalid preset');
@@ -899,10 +899,11 @@ function parseConfig(input: unknown): WerewolfConfig {
   }
   const rolesRaw = isRecord(raw.roles) ? raw.roles : {};
   exactKeys(rolesRaw, ['guard', 'hunter', 'idiot']);
+  // 扁平键（目录 setup 选项，客户端统一链路）与旧嵌套 roles 兼容合并：任一为 true 即入池
   const roles: WerewolfRolePool = {
-    guard: rolesRaw.guard === true,
-    hunter: rolesRaw.hunter === true,
-    idiot: rolesRaw.idiot === true,
+    guard: rolesRaw.guard === true || raw.guard === true,
+    hunter: rolesRaw.hunter === true || raw.hunter === true,
+    idiot: rolesRaw.idiot === true || raw.idiot === true,
   };
   return { rulesetId, preset, pace, witchSelfSave, winCondition, wolfKillScope, roles };
 }

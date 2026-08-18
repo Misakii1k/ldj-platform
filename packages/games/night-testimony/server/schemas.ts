@@ -15,7 +15,7 @@ const nightTestimonyConfigSchema = z
     voteSeconds: seconds.default(30),
     questionLimit: z.number().int().min(1).max(12).default(5),
   })
-  .strict('配置 字段无效');
+  .passthrough();
 
 const nightTestimonyActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('begin') }).strict('动作 字段无效'),

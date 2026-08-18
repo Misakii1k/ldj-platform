@@ -43,7 +43,7 @@ const cheeseThiefPlayerViewSchema = cheeseThiefPublicViewSchema.extend({
   me: z
     .object({
       playerId: pid,
-      wakeHour: hour,
+      wakeHour: z.number().int().min(0).max(6),
       hourChoices: z.tuple([hour, hour]).nullable(),
       coWakers: z.array(pid),
       cheeseWasMissing: z.boolean(),
@@ -60,6 +60,7 @@ const cheeseThiefPlayerViewSchema = cheeseThiefPublicViewSchema.extend({
         .object({ target: pid, hour })
         .strict()
         .nullable(),
+      hasVoted: z.boolean(),
     })
     .strict()
     .nullable(),
@@ -150,14 +151,15 @@ export function buildCheeseThiefPlayerView(
       canPeek: canPeekFor(state, playerId),
       peekedHour: peeked && peeked.target !== playerId ? { target: peeked.target, hour: state.wakeHours[peeked.target]! } : null,
       catPeekedHour: catPeeked,
+      hasVoted: state.votes[playerId] !== undefined,
     },
   };
 }
 
-/** 与 rules.canPeek 同口径：供视图展示「可偷看」窗口 */
+/** 与 rules.canPeek 同口径：轮到自己的时刻，若独醒即可查看场上任意一位玩家的骰子点数；若2人或以上同醒则无法查看 */
 function canPeekFor(state: CheeseThiefState, playerId: string): boolean {
-  if (state.phase !== 'night' || state.thiefId === null || !state.cheeseStolen) return false;
-  if (state.wakeHours[playerId] !== state.currentHour || playerId === state.thiefId) return false;
+  if (state.phase !== 'night') return false;
+  if (state.wakeHours[playerId] !== state.currentHour) return false;
   const solo = state.players.filter((id) => state.wakeHours[id] === state.currentHour).length === 1;
   if (!solo) return false;
   return !state.peeks.some((p) => p.viewer === playerId);

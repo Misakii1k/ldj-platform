@@ -2,9 +2,9 @@
  * 游戏页：先按 moduleId 分流到各游戏，再按 phase 渲染对应子视图。
  * game_state payload 经 asPlayerView 解析后分发。
  */
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
-import { useBackground } from '../shared-ui/BackgroundContext.tsx';
+import { GameLeaveButton } from './GameLeaveButton.tsx';
 import { asPlayerView } from './types.ts';
 import { parseGameView } from './viewRegistry.ts';
 import { GamePhaseRail } from './GameChrome.tsx';
@@ -14,8 +14,9 @@ import { SpeakingView } from './SpeakingView.tsx';
 import { VotingView } from './VotingView.tsx';
 import { VoteResultView } from './VoteResultView.tsx';
 import { GameOverView } from './GameOverView.tsx';
+import { TabletopOvalShell } from '../shared-ui/TabletopOvalShell.tsx';
+import { TabletopSettlementDock } from './TabletopSettlementDock.tsx';
 import { nameFor } from './useGameAction.ts';
-import { TabletopOvalShell, type PlayerSeat } from '../shared-ui/TabletopOvalShell.tsx';
 
 
 
@@ -32,6 +33,8 @@ const NightTestimonyGamePage = lazy(() => import('./night-testimony/NightTestimo
 const BellClashGamePage = lazy(() => import('./bell-clash/BellClashGamePage.tsx').then((module) => ({ default: module.BellClashGamePage })));
 const EchoJudgeGamePage = lazy(() => import('./echo-judge/EchoJudgeGamePage.tsx').then((module) => ({ default: module.EchoJudgeGamePage })));
 
+import { GameIcon } from '../shared-ui/GameIcon.tsx';
+
 type ActiveGame = NonNullable<ReturnType<typeof useConnection>['state']['game']>;
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -39,31 +42,132 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 
 function GameLoadingCard({ children }: { children: React.ReactNode }) {
+  const { send, clearMe, resync, state } = useConnection();
+
+  const handleLeave = async () => {
+    try {
+      await send('leave_room', {});
+    } finally {
+      clearMe();
+    }
+  };
+
+  const handleReturnToLobby = async () => {
+    try {
+      await send('room_command', { command: 'return_to_lobby' });
+    } catch {
+      resync();
+    }
+  };
+
   return (
-    <main className="game-page">
+    <main className="game-page error-page-tabletop">
       <div className="game-shell">
-        <div className="game-loading-card">{children}</div>
+        <div className="game-loading-card">
+          <div style={{ marginBottom: '14px', fontWeight: 800 }}>{children}</div>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="confirm-btn confirm-btn--primary"
+              onClick={resync}
+              style={{ fontSize: '0.85rem', padding: '6px 14px' }}
+            >
+              重新同步
+            </button>
+            {state.room && (
+              <button
+                type="button"
+                className="confirm-btn confirm-btn--cancel"
+                onClick={handleReturnToLobby}
+                style={{ fontSize: '0.85rem', padding: '6px 14px' }}
+              >
+                返回房间
+              </button>
+            )}
+            <button
+              type="button"
+              className="confirm-btn confirm-btn--danger"
+              onClick={handleLeave}
+              style={{ fontSize: '0.85rem', padding: '6px 14px' }}
+            >
+              退出主页
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function GameErrorCard({
+  title = '对局数据格式异常',
+  description = '当前对局数据同步出现异常或已发生变动，你可以点击下方按钮重新同步，或返回房间大厅/退出到主页。',
+}: {
+  title?: string;
+  description?: string;
+}) {
+  const { send, resync, clearMe, state } = useConnection();
+
+  const handleReturnToLobby = async () => {
+    try {
+      await send('room_command', { command: 'return_to_lobby' });
+    } catch {
+      resync();
+    }
+  };
+
+  const handleLeave = async () => {
+    try {
+      await send('leave_room', {});
+    } finally {
+      clearMe();
+    }
+  };
+
+  return (
+    <main className="game-page error-page-tabletop">
+      <div className="game-error-panel">
+        <div className="game-error-icon">
+          <GameIcon name="hourglass" size={32} />
+        </div>
+        <h2 className="game-error-title">{title}</h2>
+        <p className="game-error-desc">{description}</p>
+        <div className="game-error-actions">
+          <button type="button" className="confirm-btn confirm-btn--primary" onClick={resync}>
+            重新同步数据
+          </button>
+          {state.room && (
+            <button type="button" className="confirm-btn confirm-btn--cancel" onClick={handleReturnToLobby}>
+              返回房间大厅
+            </button>
+          )}
+          <button type="button" className="confirm-btn confirm-btn--danger" onClick={handleLeave}>
+            <GameIcon name="door_exit" size={15} style={{ marginRight: '6px' }} />
+            退出返回主页
+          </button>
+        </div>
       </div>
     </main>
   );
 }
 
 function UndercoverGamePage({ game }: { game: ActiveGame }) {
-  const view = asPlayerView(game.view);
   const { state } = useConnection();
-  const { setAtmosphere } = useBackground();
+  const view = asPlayerView(game.view);
 
-  useEffect(() => {
-    if (!view) return;
-    if (view.phase === 'word_reveal') setAtmosphere('word_reveal');
-    else if (view.phase === 'speaking') setAtmosphere('speaking');
-    else if (view.phase === 'voting' || view.phase === 'runoff_voting') setAtmosphere('voting');
-    else if (view.phase === 'game_over') setAtmosphere('game_over');
-    else setAtmosphere('idle');
-    return () => setAtmosphere('idle');
-  }, [view?.phase, setAtmosphere]);
+  if (view === null) return <GameErrorCard title="谁是卧底数据格式异常" />;
 
-  if (view === null) return <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+  const members = state.room?.members ?? [];
+  const seats = view.players.map((player) => ({
+    id: player.playerId,
+    name: nameFor(members, player.playerId) || `玩家 ${player.seat}`,
+    isCurrentTurn: player.playerId === view.currentSpeakerId,
+    isSpeaking: view.phase === 'speaking' && player.playerId === view.currentSpeakerId,
+    isEliminated: !player.alive,
+    badge: player.revealedRole !== null
+      ? (player.revealedRole === 'undercover' ? '卧底' : '平民')
+      : undefined,
+  }));
 
   let phaseView;
   switch (view.phase) {
@@ -86,24 +190,17 @@ function UndercoverGamePage({ game }: { game: ActiveGame }) {
     default:
       phaseView = <div className="game-loading-card">未知阶段</div>;
   }
-
-  const members = state.room?.members ?? [];
-  const seats: PlayerSeat[] = (view.players || []).map((p) => ({
-    id: p.playerId,
-    name: nameFor(members, p.playerId),
-    isCurrentTurn: p.playerId === view.currentSpeakerId,
-    isEliminated: !p.alive,
-  }));
-
   return (
     <TabletopOvalShell
       title="谁是卧底"
       subtitle={`第 ${view.round} 轮 · 找出隐藏卧底`}
       theme="mystery"
+      stageFit="arena"
       players={seats}
       currentUserId={view.me?.playerId}
+      topRightControls={<GameLeaveButton />}
       centerArena={
-        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+        <div className="uc-stage" data-uc-phase={view.phase}>
           {view.phase !== 'game_over' && <GamePhaseRail phase={view.phase} />}
           {phaseView}
         </div>
@@ -123,7 +220,7 @@ export function GamePage() {
     case 'uno': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        content = <GameErrorCard title="UNO 牌局数据异常" />;
         break;
       }
       const v = parsed.view;
@@ -135,7 +232,11 @@ export function GamePage() {
     case 'landlord': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        if (isRecord(game.view) && (game.view as any).phase) {
+          content = <LandlordGamePage view={game.view as Record<string, unknown>} />;
+        } else {
+          content = <GameErrorCard title="斗地主数据格式异常" />;
+        }
         break;
       }
       content = <LandlordGamePage view={parsed.view as Record<string, unknown>} />;
@@ -145,7 +246,7 @@ export function GamePage() {
       // 按 viewVersion 判别：v2（open-kill）走严格解析（失败关闭），legacy 透传后仍由 WerewolfGamePage 校验。
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        content = <GameErrorCard title="狼人杀数据格式异常" />;
         break;
       }
       content = <WerewolfGamePage view={parsed.view} />;
@@ -154,7 +255,7 @@ export function GamePage() {
     case 'undercover': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        content = <GameErrorCard title="谁是卧底数据格式异常" />;
         break;
       }
       const v = parsed.view;
@@ -166,7 +267,7 @@ export function GamePage() {
     case 'durian': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        content = <GameErrorCard title="多利安数据格式异常" />;
         break;
       }
       content = <DurianGamePage view={parsed.view as import('./durian/types.ts').DurianPlayerView} />;
@@ -175,7 +276,7 @@ export function GamePage() {
     case 'loveletter': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        content = <GameErrorCard title="情书对局数据格式异常" />;
         break;
       }
       content = <LoveLetterGamePage view={parsed.view as import('./loveletter/types.ts').LoveLetterPlayerView} />;
@@ -184,7 +285,7 @@ export function GamePage() {
     case 'cheese-thief': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        content = <GameErrorCard title="芝士怪盗数据格式异常" />;
         break;
       }
       content = <CheeseThiefGamePage view={parsed.view as import('./cheese-thief/types.ts').CheeseThiefPlayerView} />;
@@ -193,7 +294,7 @@ export function GamePage() {
     case 'goose-relay': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        content = <GameErrorCard title="天鹅接力数据格式异常" />;
         break;
       }
       content = <GooseRelayGamePage view={parsed.view as import('./goose-relay/types.ts').GooseRelayPlayerView} />;
@@ -202,7 +303,7 @@ export function GamePage() {
     case 'night-testimony': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        content = <GameErrorCard title="午夜证词数据格式异常" />;
         break;
       }
       content = <NightTestimonyGamePage view={parsed.view as import('./night-testimony/types.ts').NightTestimonyPlayerView} />;
@@ -211,7 +312,7 @@ export function GamePage() {
     case 'bell-clash': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        content = <GameErrorCard title="德国心脏病数据格式异常" />;
         break;
       }
       content = <BellClashGamePage view={parsed.view as import('./bell-clash/types.ts').BellClashPlayerView} />;
@@ -220,14 +321,22 @@ export function GamePage() {
     case 'echo-judge': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameLoadingCard>对局数据格式异常</GameLoadingCard>;
+        content = <GameErrorCard title="回声法官数据格式异常" />;
         break;
       }
       content = <EchoJudgeGamePage view={parsed.view as import('./echo-judge/types.ts').EchoJudgePlayerView} />;
       break;
     }
     default:
-      return <GameLoadingCard>暂不支持的游戏：{game.moduleId}</GameLoadingCard>;
+      return <GameErrorCard title="暂不支持的游戏" description={`游戏模块 ${game.moduleId} 暂未就绪。`} />;
   }
-  return <Suspense fallback={<GameLoadingCard>正在布置游戏桌…</GameLoadingCard>}><>{content}<GameChatDrawer /></></Suspense>;
+  return (
+    <Suspense fallback={<GameLoadingCard>正在布置游戏桌…</GameLoadingCard>}>
+      <>
+        {content}
+        <TabletopSettlementDock />
+        <GameChatDrawer />
+      </>
+    </Suspense>
+  );
 }

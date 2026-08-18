@@ -52,6 +52,7 @@ export const unoHouseCardSchema: z.ZodType<UnoHouseCard> = z.discriminatedUnion(
 ]);
 
 export const unoHouseConfigSchema: z.ZodType<UnoHouseConfig> = z.object({
+  rulesetId: z.literal('uno_platform_house_v1').optional(),
   mode: unoHouseModeSchema,
   roundCount: unoHouseRoundCountSchema,
 }).strict();

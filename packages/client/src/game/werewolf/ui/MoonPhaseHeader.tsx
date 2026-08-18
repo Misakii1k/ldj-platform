@@ -2,11 +2,11 @@ import { useCountdown } from '../../../shared-ui/useCountdown.ts';
 import type { WerewolfMood } from '../presentation.ts';
 
 const MOON_GLYPHS: Record<WerewolfMood, string> = {
-  dusk: '☾',
-  night: '●',
-  dawn: '◐',
-  day: '○',
-  verdict: '◑',
+  dusk: '🌅',
+  night: '🌙',
+  dawn: '🌄',
+  day: '☀️',
+  verdict: '⚖️',
 };
 
 interface MoonPhaseHeaderProps {

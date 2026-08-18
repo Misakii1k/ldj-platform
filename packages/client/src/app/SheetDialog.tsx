@@ -6,15 +6,19 @@ interface SheetDialogProps {
   onClose: () => void;
   initialFocusRef: { readonly current: HTMLElement | null };
   children: ReactNode;
+  /** 固定底部操作区（P1-5）：提交/取消按钮放这里，不随 Body 滚动 */
+  footer?: ReactNode;
 }
 
-/** 主页弹层共用外壳：移动端底部抽屉，宽屏时居中对话框。 */
+/** 主页弹层共用外壳：移动端底部抽屉，宽屏时居中对话框。
+ *  三段式结构：Header 固定（标题+关闭）、Body 唯一滚动区、Footer 固定（提交动作）。 */
 export function SheetDialog({
   title,
   description,
   onClose,
   initialFocusRef,
   children,
+  footer,
 }: SheetDialogProps) {
   const titleId = useId();
   const descriptionId = useId();
@@ -69,7 +73,8 @@ export function SheetDialog({
             ×
           </button>
         </header>
-        {children}
+        <div className="room-sheet__body">{children}</div>
+        {footer && <footer className="room-sheet__footer">{footer}</footer>}
       </section>
     </div>
   );

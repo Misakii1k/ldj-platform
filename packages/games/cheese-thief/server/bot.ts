@@ -93,7 +93,8 @@ export function pickCheeseThiefBotAction(
     }
 
     case 'vote': {
-      // 50/50 随机：投 / 弃票。view 未暴露是否已投，重复投票由 reducer 拒绝。
+      if (me.hasVoted) return null;
+      // 50/50 随机：投 / 弃票
       if (random.nextInt(0, 2) === 0) {
         const targets = others(view, playerId);
         if (targets.length === 0) return null;

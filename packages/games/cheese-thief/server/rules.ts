@@ -104,11 +104,10 @@ export function createCheeseThiefState(
     typeof configInput === 'object' && configInput !== null && 'accomplicesByPlayers' in configInput
       ? (configInput as ResolvedCheeseThiefConfig)
       : parseCheeseThiefConfig(configInput);
-  if (players.length === 4 && !hourChoices) throw new Error('4 人局需要提供两骰候选时刻');
   if (players.length > 4 && hourChoices) throw new Error('5–8 人局不提供两骰候选');
   for (const id of players) {
-    if (players.length === 4) {
-      const pair = hourChoices![id];
+    if (hourChoices) {
+      const pair = hourChoices[id];
       if (
         !pair ||
         pair.length !== 2 ||
@@ -143,12 +142,12 @@ export function createCheeseThiefState(
   }
   const state: CheeseThiefState = {
     schemaVersion: 1,
-    phase: players.length === 4 ? 'hour_choice' : 'night',
+    phase: hourChoices ? 'hour_choice' : 'night',
     players: [...players],
     config,
     wakeHours: { ...wakeHours },
     hourChoices: hourChoices ? Object.fromEntries(Object.entries(hourChoices)) : null,
-    currentHour: players.length === 4 ? 0 : 1,
+    currentHour: hourChoices ? 0 : 1,
     lastProcessedHour: 0,
     cheeseStolen: false,
     thiefId: null,
@@ -287,12 +286,10 @@ function enterDawn(
   });
 }
 
-/** 该玩家当前是否可执行「偷看骰子」（独醒村民、奶酪已失、尚未看过；当前时刻窗口内） */
+/** 该玩家当前是否可执行「偷看骰子」：轮到自己的时刻，若独醒即可查看场上任意一位玩家的骰子点数；若2人或以上同醒则无法查看 */
 function canPeek(state: CheeseThiefState, playerId: string): boolean {
-  if (state.phase !== 'night' || state.thiefId === null || state.cheeseStolen !== true) {
-    return false;
-  }
-  if (state.wakeHours[playerId] !== state.currentHour || playerId === state.thiefId) return false;
+  if (state.phase !== 'night') return false;
+  if (state.wakeHours[playerId] !== state.currentHour) return false;
   const solo = state.players.filter((id) => state.wakeHours[id] === state.currentHour).length === 1;
   if (!solo) return false;
   return !state.peeks.some((p) => p.viewer === playerId);

@@ -243,7 +243,8 @@ export function runStartupRecovery(db: Db, logger: Logger): RecoverySummary {
   };
 
   // 步骤 1：重置成员连接状态（§10.4.3）
-  // KICKED 保持不变；CONNECTED 是上一进程遗留，降级为 DISCONNECTED_RESERVED。
+  // KICKED 保持不变；真人 CONNECTED 是上一进程遗留，降级为 DISCONNECTED_RESERVED。
+  // 机器人为服务端内部驱动，恒为 CONNECTED 且就绪；
   // 保留 reserved_until：席位保留期跨重启仍有效（FR-ID-003）。
   withTransaction(db, () => {
     const result = db
@@ -251,9 +252,17 @@ export function runStartupRecovery(db: Db, logger: Logger): RecoverySummary {
         `UPDATE room_members
          SET connection_status = 'DISCONNECTED_RESERVED'
          WHERE connection_status = 'CONNECTED'
+           AND is_bot = 0
            AND room_id IN (SELECT id FROM rooms WHERE status != 'CLOSED')`,
       )
       .run();
+    db.prepare(
+      `UPDATE room_members
+       SET connection_status = 'CONNECTED', ready = 1
+       WHERE is_bot = 1
+         AND connection_status != 'KICKED'
+         AND room_id IN (SELECT id FROM rooms WHERE status != 'CLOSED')`,
+    ).run();
     if (result.changes > 0) {
       logger.info('recovery_members_reset', { count: result.changes });
     }

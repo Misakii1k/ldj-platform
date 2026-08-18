@@ -41,6 +41,7 @@ export interface CheeseThiefPlayerView extends CheeseThiefPublicView {
     canPeek: boolean;
     peekedHour: { target: string; hour: number } | null;
     catPeekedHour: { target: string; hour: number } | null;
+    hasVoted: boolean;
   } | null;
 }
 
@@ -52,7 +53,7 @@ const PUBLIC_KEYS = [
 const ME_KEYS = [
   'playerId', 'wakeHour', 'hourChoices', 'coWakers', 'cheeseWasMissing',
   'isThief', 'isAccomplice', 'knownAccomplices', 'roleCard', 'canPeek',
-  'peekedHour', 'catPeekedHour',
+  'peekedHour', 'catPeekedHour', 'hasVoted',
 ] as const;
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -169,12 +170,13 @@ function parsePeekedHour(value: unknown): { target: string; hour: number } | nul
 function parseMe(value: unknown): CheeseThiefPlayerView['me'] {
   if (value === null) return null;
   if (!isObject(value) || !hasExactKeys(value, ME_KEYS) || !isPlayerId(value.playerId)) return null;
-  if (!isHour(value.wakeHour) || (value.wakeHour as number) < 1) return null;
+  if (!isHour(value.wakeHour)) return null;
   const hourChoices = parseHourChoices(value.hourChoices);
   if (hourChoices === null && value.hourChoices !== null) return null;
   if (!isPlayerIds(value.coWakers) || !isBool(value.cheeseWasMissing)) return null;
   if (!isBool(value.isThief) || !isBool(value.isAccomplice) || !isPlayerIds(value.knownAccomplices)) return null;
   if (!isRoleCard(value.roleCard) || !isBool(value.canPeek)) return null;
+  if (!isBool(value.hasVoted)) return null;
   const peekedHour = parsePeekedHour(value.peekedHour);
   if (peekedHour === null && value.peekedHour !== null) return null;
   const catPeekedHour = parsePeekedHour(value.catPeekedHour);
@@ -192,6 +194,7 @@ function parseMe(value: unknown): CheeseThiefPlayerView['me'] {
     canPeek: value.canPeek as boolean,
     peekedHour,
     catPeekedHour,
+    hasVoted: value.hasVoted as boolean,
   };
 }
 

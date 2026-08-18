@@ -103,4 +103,42 @@ export const loveLetterModule: GameModuleV2<
   },
   getPlayerView: buildLoveLetterPlayerView,
   getSpectatorView: buildLoveLetterSpectatorView,
+  pickBotAction(input) {
+    const { view, playerId, random } = input;
+    if (view.phase !== 'playing' || view.currentPlayerId !== playerId || !view.me?.hand || view.me.hand.length === 0) {
+      return null;
+    }
+    const hand = view.me.hand;
+    const hasCountess = hand.some((c) => c.role === 'countess');
+    const hasPrinceOrKing = hand.some((c) => c.role === 'prince' || c.role === 'king');
+    let playable = hand;
+    if (hasCountess && hasPrinceOrKing) {
+      playable = hand.filter((c) => c.role === 'countess');
+    }
+    const card = playable[0] ?? hand[0];
+    if (!card) return null;
+    const otherPlayerIds = view.players
+      .map((p) => p.playerId)
+      .filter((id) => id !== playerId && !view.eliminatedPlayers.includes(id) && !view.protectedPlayers.includes(id));
+    let targetPlayerId: string | undefined;
+    let guessedRole: any;
+    if (['guard', 'priest', 'baron', 'king'].includes(card.role)) {
+      if (otherPlayerIds.length > 0) {
+        targetPlayerId = otherPlayerIds[random.nextInt(0, otherPlayerIds.length)];
+      }
+    } else if (card.role === 'prince') {
+      targetPlayerId = otherPlayerIds.length > 0 ? otherPlayerIds[0] : playerId;
+    }
+    if (card.role === 'guard' && targetPlayerId) {
+      const candidateRoles = ['priest', 'baron', 'handmaid', 'prince', 'king', 'countess', 'princess'];
+      guessedRole = candidateRoles[random.nextInt(0, candidateRoles.length)] as any;
+    }
+    return {
+      type: 'play_card',
+      playerId,
+      cardId: card.id,
+      targetPlayerId,
+      guessedRole,
+    };
+  },
 };

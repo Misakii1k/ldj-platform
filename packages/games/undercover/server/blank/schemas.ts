@@ -8,11 +8,12 @@ export const BLANK_STATE_SCHEMA_VERSION = 1;
 
 const playerIdSchema = z.string().min(1).max(64);
 
-// —— 配置 ——
+import type { BlankAction, BlankConfig, BlankEvent, BlankPlayerView, BlankResult, BlankSpectatorView, BlankState } from './types.ts';
 
-export const blankConfigSchema = z
+export const blankConfigSchema: z.ZodType<BlankConfig, z.ZodTypeDef, unknown> = z
   .object({
-    speechSeconds: z.union([z.literal(30), z.literal(60), z.literal(90)]).default(60),
+    rulesetId: z.literal('undercover_blank_v1').optional(),
+    speechSeconds: z.union([z.literal(30), z.literal(45), z.literal(60), z.literal(90)]).default(60),
     voteSeconds: z.union([z.literal(30), z.literal(45), z.literal(60)]).default(45),
     revealMode: z.enum(['immediate', 'delayed']).default('immediate'),
   })

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CHARACTERS } from './types.ts';
 import { caseCardSchema } from './schemas.ts';
 import type {
   CaseCard,
@@ -8,7 +9,15 @@ import type {
 } from './types.ts';
 
 const pid = z.string().min(1).max(64);
-const phaseEnum = z.enum(['case_view', 'relay', 'discussion', 'accusation', 'vote', 'game_over']);
+const phaseEnum = z.enum([
+  'claim_head',
+  'pick_cards',
+  'relay',
+  'discussion',
+  'accusation',
+  'vote',
+  'game_over',
+]);
 
 const accusationSchema = z
   .object({ playerId: pid, correct: z.boolean() })
@@ -17,7 +26,7 @@ const accusationSchema = z
 const gooseRelayRevealSchema = z
   .object({
     case: caseCardSchema,
-    transmissions: z.array(caseCardSchema),
+    candidateCards: z.array(z.enum(CHARACTERS)),
     evilGeese: z.array(pid),
     accusations: z.array(
       z
@@ -34,15 +43,16 @@ const gooseRelayPublicViewSchema = z
   .object({
     gameId: z.literal('goose-relay'),
     rulesetId: z.literal('goose_relay_classic_v1'),
-    schemaVersion: z.literal(1),
+    schemaVersion: z.literal(2),
     phase: phaseEnum,
     players: z.array(pid),
     lineOrder: z.array(pid),
+    headPlayerId: pid.nullable(),
+    candidateCards: z.array(z.enum(CHARACTERS)),
     currentIndex: z.number().int().nonnegative(),
     currentAccuserIndex: z.number().int().nonnegative(),
     evilCount: z.number().int().nonnegative(),
-    transmissions: z.array(caseCardSchema).nullable(),
-    accusations: z.array(accusationSchema).nullable(),
+    accusations: z.array(accusationSchema),
     caseMatched: z.boolean().nullable(),
     votesCast: z.number().int().nonnegative(),
     winners: z.array(pid),
@@ -78,28 +88,33 @@ function countVotes(state: GooseRelayState): Record<string, number> {
   return counts;
 }
 
+function getPublicCandidateCards(state: GooseRelayState): CharacterId[] {
+  if (
+    state.phase === 'discussion' ||
+    state.phase === 'accusation' ||
+    state.phase === 'vote' ||
+    state.phase === 'game_over'
+  ) {
+    return [...state.candidateCards];
+  }
+  return [];
+}
+
 function buildPublicView(state: GooseRelayState): GooseRelayPublicView {
   const votesCast = Object.keys(state.votes).length;
   return {
     gameId: 'goose-relay',
     rulesetId: 'goose_relay_classic_v1',
-    schemaVersion: 1,
+    schemaVersion: 2,
     phase: state.phase,
     players: [...state.players],
     lineOrder: [...state.lineOrder],
+    headPlayerId: state.headPlayerId,
+    candidateCards: getPublicCandidateCards(state),
     currentIndex: state.currentIndex,
     currentAccuserIndex: state.currentAccuserIndex,
     evilCount: state.evilGeese.length,
-    transmissions:
-      state.phase === 'case_view' || state.phase === 'relay'
-        ? null
-        : state.transmissions
-            .filter((c): c is CaseCard => c !== null)
-            .map((card) => ({ ...card })),
-    accusations:
-      state.phase === 'case_view' || state.phase === 'relay' || state.phase === 'discussion'
-        ? null
-        : state.accusations.map((a) => ({ playerId: a.playerId, correct: a.correct })),
+    accusations: state.accusations.map((a) => ({ playerId: a.playerId, correct: a.correct })),
     caseMatched: state.caseMatched,
     votesCast,
     winners: [...state.winners],
@@ -107,9 +122,7 @@ function buildPublicView(state: GooseRelayState): GooseRelayPublicView {
       state.phase === 'game_over'
         ? {
             case: { ...state.case },
-            transmissions: state.transmissions
-              .filter((c): c is CaseCard => c !== null)
-              .map((card) => ({ ...card })),
+            candidateCards: [...state.candidateCards],
             evilGeese: [...state.evilGeese],
             accusations: state.accusations.map((a) => ({ ...a, guess: { ...a.guess } })),
             voteCounts: countVotes(state),
@@ -121,19 +134,22 @@ function buildPublicView(state: GooseRelayState): GooseRelayPublicView {
 }
 
 function buildPlayerMe(state: GooseRelayState, playerId: string): GooseRelayPlayerView['me'] {
-  const index = state.lineOrder.indexOf(playerId);
-  if (index === -1) return null;
-  const role = index === 0 ? 'head' : state.evilGeese.includes(playerId) ? 'evil' : 'white';
-  let observed: CaseCard | null = null;
-  if (state.phase === 'case_view' || state.phase === 'relay') {
-    if (index === 0) {
-      // 头鹅读卡后始终掌握原始案情
-      observed = { ...state.case };
-    } else if (state.phase === 'relay' && index === state.currentIndex) {
-      const previous = state.transmissions[index - 1];
-      if (previous != null) observed = { ...previous };
-    }
+  if (!state.players.includes(playerId)) return null;
+
+  // 抢头鹅阶段：身份尚未分配
+  if (state.phase === 'claim_head') {
+    return { playerId, role: null, observed: null };
   }
+
+  const isHead = playerId === state.headPlayerId;
+  const role = isHead ? 'head' : state.evilGeese.includes(playerId) ? 'evil' : 'white';
+
+  let observed: CaseCard | null = null;
+  // 选卡之后，头鹅始终掌握案情真相卡
+  if (isHead && state.phase !== 'claim_head' && state.phase !== 'pick_cards') {
+    observed = { ...state.case };
+  }
+
   return { playerId, role, observed };
 }
 
@@ -141,8 +157,19 @@ export function buildGooseRelayPlayerView(
   state: GooseRelayState,
   playerId: string,
 ): GooseRelayPlayerView {
+  const publicView = buildPublicView(state);
+  const isHead = playerId === state.headPlayerId;
+
+  // 选卡定案阶段：仅头鹅（首位玩家）能看到 9 张候选卡进行抽选；
+  // 其他阶段在 discussion 及之后对全员公开 9 张卡，接力期间全员保密。
+  let candidateCards = publicView.candidateCards;
+  if (state.phase === 'pick_cards' && isHead) {
+    candidateCards = [...state.candidateCards];
+  }
+
   return {
-    ...buildPublicView(state),
+    ...publicView,
+    candidateCards,
     me: buildPlayerMe(state, playerId),
   };
 }

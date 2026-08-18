@@ -13,7 +13,7 @@ const bellClashConfigSchema = z
     turnSeconds: seconds.default(30),
     bellSeconds: seconds.default(10),
   })
-  .strict('配置 字段无效');
+  .passthrough();
 
 const bellClashActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('begin') }).strict('动作 字段无效'),

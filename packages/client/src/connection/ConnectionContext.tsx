@@ -84,9 +84,20 @@ function gameResumeIdentity(state: ConnectionSnapshot): { sessionId: string; vie
     : null;
 }
 
+const VIEWING_HOME_KEY = 'ldj:viewing_home';
+
+function loadViewingHomeFromStorage(): boolean {
+  try {
+    return sessionStorage.getItem(VIEWING_HOME_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
 export function ConnectionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ConnectionSnapshot>(INITIAL_CONNECTION_STATE);
   const [me, setMeState] = useState<Me | null>(() => loadMeFromStorage());
+  const [isViewingHome, setIsViewingHomeState] = useState<boolean>(() => loadViewingHomeFromStorage());
 
   const socketRef = useRef<WebSocket | null>(null);
   const stateRef = useRef(state);
@@ -411,17 +422,48 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
     });
   }, [sendRaw]);
 
+  const setViewingHome = useCallback((viewing: boolean) => {
+    setIsViewingHomeState(viewing);
+    try {
+      if (viewing) {
+        sessionStorage.setItem(VIEWING_HOME_KEY, 'true');
+      } else {
+        sessionStorage.removeItem(VIEWING_HOME_KEY);
+      }
+    } catch {
+      // 忽略
+    }
+  }, []);
+
   const setMe = useCallback((newMe: Me) => {
     setMeState(newMe);
+    setIsViewingHomeState(false);
+    try {
+      sessionStorage.removeItem(VIEWING_HOME_KEY);
+    } catch {
+      // 忽略
+    }
   }, []);
 
   const clearMe = useCallback(() => {
     setMeState(null);
+    setIsViewingHomeState(false);
+    try {
+      sessionStorage.removeItem(VIEWING_HOME_KEY);
+    } catch {
+      // 忽略
+    }
   }, []);
 
   // 重置：清空状态回到连接页
   const reset = useCallback(() => {
     setMeState(null);
+    setIsViewingHomeState(false);
+    try {
+      sessionStorage.removeItem(VIEWING_HOME_KEY);
+    } catch {
+      // 忽略
+    }
     shouldReconnectRef.current = true;
     const socket = socketRef.current;
     const isOpen = socket !== null && socket.readyState === WebSocket.OPEN;
@@ -449,6 +491,8 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
   const api: ConnectionApi = {
     state,
     me,
+    isViewingHome,
+    setViewingHome,
     send,
     resync,
     setMe,

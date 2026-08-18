@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { TabletopTheme } from '../../shared-ui/TabletopOvalShell.tsx';
 
 export interface TabletopPlayer {
   readonly id: string;
@@ -19,9 +20,13 @@ export interface TabletopShellProps {
   readonly title: string;
   readonly phase: string;
   readonly spectator?: boolean;
+  /** 游戏专属 felt 主题（未指定时按标题兜底：悬疑夜晚→mystery、法庭→court、扑克→poker、其它→party） */
+  readonly theme?: TabletopTheme;
   readonly players: readonly TabletopPlayer[];
   readonly actions?: ReactNode;
   readonly drawer?: ReactNode;
+  readonly rulesButton?: ReactNode;
+  readonly hideSeats?: boolean;
   readonly children: ReactNode;
 }
 

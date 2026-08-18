@@ -1,33 +1,26 @@
 import test from 'node:test';
 import { deterministicContext, versionedContractAssertions } from '../../../shared/tests/helpers/versionedGameContract.ts';
 import { durianModule } from '../server/module.ts';
+import type { FruitCard } from '../server/types.ts';
 
 const actor = (playerId: string) => ({ kind: 'player' as const, playerId });
-const safeOrder = (id: string) => ({
+const fruitCard = (id: string): FruitCard => ({
   id,
-  options: [
-    { fruit: 'amber_pear' as const, quantity: 1 as const },
-    { fruit: 'cloud_berry' as const, quantity: 1 as const },
-  ] as const,
-  staffEvent: 'mixed_crate' as const,
+  kind: 'fruit',
+  left: { fruit: 'durian', quantity: 3 },
+  right: { fruit: 'durian', quantity: 3 },
 });
+
 const config = {
-  rulesetId: 'durian_orchard_v1',
-  orderDeck: ['one', 'two', 'three', 'four'].map(safeOrder),
+  rulesetId: 'durian_orchard_v1' as const,
+  maxRounds: 1,
+  customDeck: ['c1', 'c2', 'c3', 'c4', 'c5'].map(fruitCard),
 };
+
 const steps = [
-  { actor: actor('a'), action: { type: 'submit_order', playerId: 'a', optionIndex: 0 } },
-  { actor: actor('b'), action: { type: 'ring_bell', playerId: 'b' } },
-  { actor: actor('a'), action: { type: 'resolve_bell', playerId: 'a' } },
-  { actor: actor('b'), action: { type: 'submit_order', playerId: 'b', optionIndex: 0 } },
-  { actor: actor('a'), action: { type: 'ring_bell', playerId: 'a' } },
-  { actor: actor('b'), action: { type: 'resolve_bell', playerId: 'b' } },
-  { actor: actor('a'), action: { type: 'submit_order', playerId: 'a', optionIndex: 0 } },
-  { actor: actor('b'), action: { type: 'ring_bell', playerId: 'b' } },
-  { actor: actor('a'), action: { type: 'resolve_bell', playerId: 'a' } },
-  { actor: actor('b'), action: { type: 'submit_order', playerId: 'b', optionIndex: 0 } },
-  { actor: actor('a'), action: { type: 'ring_bell', playerId: 'a' } },
-  { actor: actor('b'), action: { type: 'resolve_bell', playerId: 'b' } },
+  { actor: actor('a'), action: { type: 'draw_card' as const, playerId: 'a' } },
+  { actor: actor('a'), action: { type: 'place_fruit' as const, playerId: 'a', checkHalf: 'left' as const } },
+  { actor: actor('b'), action: { type: 'challenge' as const, playerId: 'b' } },
 ] as const;
 
 test('Durian 契约套件：identity/initial/viewSchemas', () => {

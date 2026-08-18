@@ -13,6 +13,7 @@ import { useScopedAction } from './useScopedAction.ts';
 export interface MemberLike {
   playerId: string;
   nickname: string;
+  avatar?: string;
 }
 
 export function nameFor(members: readonly MemberLike[], id: string | null | undefined): string {

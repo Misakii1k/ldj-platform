@@ -70,6 +70,7 @@ export interface WerewolfSeatModel {
   readonly isWolfTeammate: boolean;
   readonly idiotRevealed: boolean;
   readonly revealedRoleLabel: string | null;
+  readonly avatar?: string;
 }
 
 export interface WerewolfActionOption {
@@ -85,11 +86,48 @@ export interface WerewolfActionGroup {
   readonly options: readonly WerewolfActionOption[];
 }
 
+export const WEREWOLF_ROLE_ARTWORK: Record<WerewolfRole, string> = {
+  wolf: '/assets/roles/werewolf.png',
+  seer: '/assets/roles/seer.png',
+  witch: '/assets/roles/witch.png',
+  hunter: '/assets/roles/hunter.png',
+  guard: '/assets/roles/guard.png',
+  villager: '/assets/roles/villager.png',
+  idiot: '/assets/roles/idiot.png',
+};
+
+export interface WerewolfTeammateInfo {
+  readonly playerId: string;
+  readonly name: string;
+  readonly seatLabel: string;
+  readonly alive: boolean;
+  readonly targetName?: string | null;
+}
+
+export interface WerewolfSeerCheckInfo {
+  readonly night: number;
+  readonly name: string;
+  readonly seatLabel: string;
+  readonly team: WerewolfTeam;
+  readonly teamLabel: string;
+}
+
 export interface WerewolfSelfModel {
   readonly playerId: string;
+  readonly role: WerewolfRole;
   readonly roleLabel: string;
   readonly roleHint: string;
   readonly alive: boolean;
+  readonly artworkUrl: string;
+  readonly wolfTeammates: readonly WerewolfTeammateInfo[];
+  readonly seerResults: readonly WerewolfSeerCheckInfo[];
+  readonly witchSaveUsed: boolean;
+  readonly witchPoisonUsed: boolean;
+  readonly nightVictimName: string | null;
+  readonly canWitchSelfSave: boolean;
+  readonly lastGuardTargetName: string | null;
+  readonly pendingShoot: boolean;
+  readonly idiotRevealed: boolean;
 }
 
 export interface WerewolfPresentationModel {
@@ -102,6 +140,7 @@ export interface WerewolfPresentationModel {
   readonly spectator: boolean;
   readonly seats: readonly WerewolfSeatModel[];
   readonly self: WerewolfSelfModel | null;
+  readonly activeSpeakerSeat?: WerewolfSeatModel | null;
   readonly actionGroups: readonly WerewolfActionGroup[];
   readonly waitingHint: string | null;
   readonly voteProgress: { readonly submitted: number; readonly expected: number } | null;
@@ -127,7 +166,8 @@ function seatLabelOf(seat: number): string {
 }
 
 function statusLabelOf(view: WerewolfView, playerId: string): string {
-  const player = view.players.find((entry) => entry.playerId === playerId)!;
+  const player = view.players.find((entry) => entry.playerId === playerId);
+  if (!player) return '未知';
   if (!player.alive) {
     const reason = player.exitReason ? EXIT_REASON_LABELS[player.exitReason] : null;
     return reason ? `已出局 · ${reason}` : '已出局';
@@ -424,24 +464,58 @@ export function buildWerewolfPresentation(
     narrative: narrativeOf(view, members),
     deadlineAt: view.deadlineAt,
     spectator: me === null,
-    seats: view.players.map((player) => ({
-      playerId: player.playerId,
-      name: nameFor(members, player.playerId),
-      seatLabel: seatLabelOf(player.seat),
-      alive: player.alive,
-      statusLabel: statusLabelOf(view, player.playerId),
-      isSelf: player.playerId === me?.playerId,
-      isSpeaking: player.playerId === view.currentSpeakerId,
-      isWolfTeammate: (me?.wolfTeammateIds ?? []).includes(player.playerId),
-      idiotRevealed: player.idiotRevealed,
-      revealedRoleLabel: player.revealedRole ? WEREWOLF_ROLE_NAMES[player.revealedRole] : null,
-    })),
+    seats: view.players.map((player) => {
+      const member = members.find((m) => m.playerId === player.playerId);
+      return {
+        playerId: player.playerId,
+        name: nameFor(members, player.playerId),
+        seatLabel: seatLabelOf(player.seat),
+        alive: player.alive,
+        statusLabel: statusLabelOf(view, player.playerId),
+        isSelf: player.playerId === me?.playerId,
+        isSpeaking: player.playerId === view.currentSpeakerId,
+        isWolfTeammate: (me?.wolfTeammateIds ?? []).includes(player.playerId),
+        idiotRevealed: player.idiotRevealed,
+        revealedRoleLabel: player.revealedRole ? WEREWOLF_ROLE_NAMES[player.revealedRole] : null,
+        avatar: member?.avatar,
+      };
+    }),
     self: me
       ? {
           playerId: me.playerId,
+          role: me.role,
           roleLabel: WEREWOLF_ROLE_NAMES[me.role],
           roleHint: roleHintOf(view, members),
           alive: me.alive,
+          artworkUrl: WEREWOLF_ROLE_ARTWORK[me.role] ?? '/assets/roles/villager.png',
+          wolfTeammates: (me.wolfTeammateIds ?? []).map((id) => {
+            const player = view.players.find((p) => p.playerId === id);
+            const targetId = me.wolfVotes?.[id];
+            return {
+              playerId: id,
+              name: nameFor(members, id),
+              seatLabel: player ? seatLabelOf(player.seat) : '',
+              alive: player ? player.alive : false,
+              targetName: targetId ? nameFor(members, targetId) : null,
+            };
+          }),
+          seerResults: (me.seerResults ?? []).map((res) => {
+            const player = view.players.find((p) => p.playerId === res.playerId);
+            return {
+              night: res.night,
+              name: nameFor(members, res.playerId),
+              seatLabel: player ? seatLabelOf(player.seat) : '',
+              team: res.team,
+              teamLabel: teamLabel(res.team),
+            };
+          }),
+          witchSaveUsed: Boolean(me.witchSaveUsed),
+          witchPoisonUsed: Boolean(me.witchPoisonUsed),
+          nightVictimName: me.nightVictimId ? nameFor(members, me.nightVictimId) : null,
+          canWitchSelfSave: Boolean(me.witchCanSelfSave),
+          lastGuardTargetName: me.lastGuardTargetId ? nameFor(members, me.lastGuardTargetId) : null,
+          pendingShoot: Boolean(me.pendingShoot),
+          idiotRevealed: Boolean(me.idiotRevealed),
         }
       : null,
     actionGroups,
@@ -451,7 +525,7 @@ export function buildWerewolfPresentation(
     reveal: view.reveal
       ? {
           headline: view.aborted ? '本局已中止' : `${teamLabel(view.winner)}获胜`,
-          rows: Object.entries(view.reveal.roles).map(([playerId, role]) => ({
+          rows: Object.entries(view.reveal.roles ?? {}).map(([playerId, role]) => ({
             name: nameFor(members, playerId),
             roleLabel: WEREWOLF_ROLE_NAMES[role],
           })),

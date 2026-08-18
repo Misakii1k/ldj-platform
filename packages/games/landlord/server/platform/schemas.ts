@@ -53,7 +53,7 @@ export const platformConfigSchema = z
     rulesetId: z.literal('landlord_platform_v1').optional(),
     variant: z.literal('standard').default('standard'),
   })
-  .strict();
+  .passthrough();
 
 export const platformStateSchema = z
   .object({

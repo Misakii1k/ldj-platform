@@ -38,7 +38,7 @@ export function GamePhaseRail({ phase }: { phase: UndercoverPlayerView['phase'] 
 }
 
 export function PhaseLead({ eyebrow, title, description, aside }: {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   description: string;
   aside?: ReactNode;
@@ -46,7 +46,7 @@ export function PhaseLead({ eyebrow, title, description, aside }: {
   return (
     <div className="phase-lead">
       <div className="phase-lead-copy">
-        <span className="phase-eyebrow">{eyebrow}</span>
+        {eyebrow && <span className="phase-eyebrow">{eyebrow}</span>}
         <h2>{title}</h2>
         <p>{description}</p>
       </div>

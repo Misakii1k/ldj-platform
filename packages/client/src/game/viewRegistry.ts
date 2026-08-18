@@ -60,7 +60,7 @@ const REGISTRY: Readonly<Record<string, GameViewParser>> = {
     parsePlayerView: (view) => parseCheeseThiefView(view, 'player'),
     parseSpectatorView: (view) => parseCheeseThiefView(view, 'spectator'),
   },
-  'goose-relay:goose_relay_classic_v1:1': {
+  'goose-relay:goose_relay_classic_v1:2': {
     parsePlayerView: (view) => parseGooseRelayView(view, 'player'),
     parseSpectatorView: (view) => parseGooseRelayView(view, 'spectator'),
   },

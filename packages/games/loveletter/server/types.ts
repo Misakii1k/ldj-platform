@@ -20,6 +20,8 @@ export interface LoveLetterCard {
 
 export interface LoveLetterConfig {
   rulesetId?: 'loveletter_classic16_v1';
+  affectionTarget?: number;
+  turnSeconds?: number;
   deckOrder?: LoveLetterCard[];
   futureDeckOrders?: LoveLetterCard[][];
 }

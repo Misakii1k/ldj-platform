@@ -6,7 +6,6 @@
  */
 import { useRef, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
-import { GameLeaveButton } from '../GameLeaveButton.tsx';
 import { nameFor, useGameAction } from '../useGameAction.ts';
 import { ActionDock } from '../tabletop/ActionDock.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
@@ -49,7 +48,7 @@ export function BellClashGamePage({ view }: Props) {
   const players = view.players.map((playerId) => {
     let status = '';
     if (view.phase === 'game_over') {
-      status = view.winners.includes(playerId) ? '获胜' : '失败';
+      status = (view.winners ?? []).includes(playerId) ? '获胜' : '失败';
     } else if (playerId === view.currentPlayerId) {
       status = view.bellOpen ? '按铃中' : '出牌中';
     }
@@ -74,7 +73,7 @@ export function BellClashGamePage({ view }: Props) {
       onAction: () => { if (myId) void act({ type: 'ring_bell', playerId: myId }); },
     };
   } else if (isMyTurn && myId) {
-    const selected = selectedIndex !== null ? me?.hand[selectedIndex] : undefined;
+    const selected = selectedIndex !== null ? me?.hand?.[selectedIndex] : undefined;
     const top = view.discardTop;
     const canPlaySelected = selected !== undefined && (top === null || selected.color === top.color || (selected.kind === 'number' && top.kind === 'number' && selected.number === top.number));
     primary = {
@@ -104,6 +103,12 @@ export function BellClashGamePage({ view }: Props) {
       phase={phaseLabel(view.phase)}
       spectator={isSpectator}
       players={players}
+      theme="arena"
+      rulesButton={(
+        <button ref={rulesRef} type="button" className="tabletop-rules-btn" onClick={() => setRulesOpen(true)}>
+          本局规则
+        </button>
+      )}
       actions={
         primary || secondary.length > 0
           ? <ActionDock primary={primary ?? { id: 'wait', label: '等待阶段推进', disabled: true, onAction: () => {} }} secondary={secondary} busy={busy} waitingReason={waitingReason ?? undefined} />
@@ -117,53 +122,65 @@ export function BellClashGamePage({ view }: Props) {
         </GameDrawer>
       )}
     >
-      <header className="durian-page__bar">
-        <GameLeaveButton />
-        <button ref={rulesRef} type="button" className="durian-page__rules" onClick={() => setRulesOpen(true)}>
-          本局规则
-        </button>
-      </header>
-
       {error && <p className="game-error" role="alert">{error}</p>}
 
-      <section className="durian-order" aria-label="弃牌堆顶">
-        <span className="durian-order__eyebrow">弃牌堆顶</span>
-        <div className="bell-top">
-          {view.discardTop ? <span className="bell-card bell-card--top">{topLabel}</span> : <span className="bell-card bell-card--empty">开局</span>}
-          <span className="bell-drawcount">抽牌堆剩余 {view.drawCount} 张</span>
+      {view.phase !== 'game_over' ? (
+        <div className="sg-stage">
+          <section className="sg-panel" aria-label="弃牌堆顶">
+            <div className="sg-panel__head">
+              <h3>弃牌堆顶</h3>
+              <span>抽牌堆剩 {view.drawCount} 张</span>
+            </div>
+            <div className="bell-board">
+              <div className={`bell-card bell-card--top bell-card--c-${view.discardTop?.color ?? 'empty'}`}>
+                <strong>{view.discardTop ? topLabel : '开局'}</strong>
+                <span>{view.discardTop ? (view.discardTop.kind === 'number' ? '数字牌' : '行动短语卡') : '等待首张'}</span>
+              </div>
+            </div>
+          </section>
+
+          {view.bellOpen && (
+            <section className="bell-window" aria-label="按铃窗口">
+              <span className="bell-window__icon" aria-hidden="true">🔔</span>
+              <div className="bell-window__copy">
+                <strong>按铃窗口开启</strong>
+                <span>「{topLabel}」——若有人说了/做了牌上内容，拍铃抢回合（须持有同色短语卡）。</span>
+              </div>
+            </section>
+          )}
+
+          {me && (
+            <section className="sg-panel" aria-label="我的手牌">
+              <div className="sg-panel__head">
+                <h3>我的手牌（仅自己可见）</h3>
+                <span>{(me.hand ?? []).length} 张</span>
+              </div>
+              <div className="bell-hand">
+                {(me.hand ?? []).map((card, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    className={`bell-card bell-card--hand bell-card--c-${card.color} ${selectedIndex === index ? 'is-selected' : ''}`}
+                    onClick={() => setSelectedIndex(selectedIndex === index ? null : index)}
+                    aria-pressed={selectedIndex === index}
+                  >
+                    <strong>{card.kind === 'number' ? card.number : card.phrase}</strong>
+                    <span>{COLOR_LABELS[card.color]}{card.kind === 'number' ? '' : ' · 短语'}</span>
+                  </button>
+                ))}
+              </div>
+              {isMyTurn && <p className="sg-hint">轮到你：点一张同色或同数字的牌打出，或摸一张。</p>}
+            </section>
+          )}
         </div>
-      </section>
-
-      {view.bellOpen && (
-        <section className="cheese-night" aria-label="按铃窗口">
-          <p className="cheese-night__mask">🔔 按铃窗口开启</p>
-          <p className="cheese-night__hint">「{topLabel}」——若有人说了/做了牌上内容，拍铃抢回合（拍铃者须持有同色短语卡）。</p>
-        </section>
-      )}
-
-      {me && (
-        <section className="goose-chain" aria-label="我的手牌">
-          <span className="durian-board__label">我的手牌（仅自己可见）· {me.hand.length} 张</span>
-          <div className="bell-hand">
-            {me.hand.map((card, index) => (
-              <button
-                key={index}
-                type="button"
-                className={`bell-card bell-card--hand ${selectedIndex === index ? 'bell-card--selected' : ''}`}
-                onClick={() => setSelectedIndex(selectedIndex === index ? null : index)}
-              >
-                {cardLabel(card)}
-              </button>
-            ))}
+      ) : (
+        <div className="sg-stage">
+          <div className="winner-hero">
+            <span className="winner-rays" aria-hidden="true" />
+            <h2 className="winner-title">手牌清空！</h2>
+            <p>{(view.winners ?? []).map((id) => nameFor(members, id)).join('、')} 获胜</p>
           </div>
-        </section>
-      )}
-
-      {view.phase === 'game_over' && (
-        <section className="durian-over" aria-label="对局结果">
-          <h2>本局结束</h2>
-          <p>{view.winners.map((id) => nameFor(members, id)).join('、')} 先打完手牌，获胜！</p>
-        </section>
+        </div>
       )}
     </TabletopShell>
   );

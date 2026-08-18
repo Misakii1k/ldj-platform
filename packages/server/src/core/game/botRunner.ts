@@ -33,8 +33,10 @@ import type { LlmClient } from './llmClient.ts';
  */
 const MAX_BOT_STEPS_PER_TRIGGER = 64;
 
-/** 机器人思考延迟：让真人看得清发生了什么，也避免瞬间打完一整局 */
-const BOT_THINK_DELAY_MS = 700;
+/** 机器人思考延迟：测试/联调阶段默认 3 秒（支持 BOT_THINK_DELAY_MS 环境变量调节），让测试者与真人看清局势变化并方便截图 */
+const BOT_THINK_DELAY_MS = process.env.BOT_THINK_DELAY_MS
+  ? Number.parseInt(process.env.BOT_THINK_DELAY_MS, 10)
+  : (process.env.NODE_TEST_CONTEXT || process.env.NODE_ENV === 'test' || process.argv.some(a => a.includes('test')) ? 0 : 3000);
 
 export interface BotRunnerDeps {
   db: Db;
@@ -270,6 +272,15 @@ export class BotRunner {
       if (!planned) return;
       if (this.#stopped) return;
 
+      // 机器人行动前思考延迟：给真人观察、调试或截图的时间（默认 3 秒，支持环境变量/配置调节）
+      if (delay > 0) {
+        await new Promise<void>((resolvePromise) => {
+          const timer = setTimeout(resolvePromise, delay);
+          timer.unref?.();
+        });
+      }
+      if (this.#stopped) return;
+
       let result: { roomSeq: number; outcome: GameActionOutcome } | null;
       try {
         result = await executor.executeInternal({
@@ -292,13 +303,6 @@ export class BotRunner {
 
       // 对局结束，不必再推
       if (result.outcome.finished || result.outcome.aborted) return;
-
-      if (delay > 0) {
-        await new Promise<void>((resolvePromise) => {
-          const timer = setTimeout(resolvePromise, delay);
-          timer.unref?.();
-        });
-      }
     }
 
     // 走到上限说明策略在原地打转：留证据，别静默

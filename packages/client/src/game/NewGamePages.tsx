@@ -1,11 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- 三个新游戏的服务端视图结构不同，此组件按 moduleId 消费运行时视图。 */
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
 import { PlayingCard, CardBack } from './PlayingCard.tsx';
 import { nameFor, useGameAction, type MemberLike } from './useGameAction.ts';
 import { UNO_COLORS, UNO_COLOR_NAMES, cardLabel, colorLabel, type UnoCard } from './uno/types.ts';
 import { TabletopOvalShell, type PlayerSeat } from '../shared-ui/TabletopOvalShell.tsx';
 import { CardFanEngine, type CardItem } from '../shared-ui/CardFanEngine.tsx';
+import { GameLeaveButton } from './GameLeaveButton.tsx';
+import { GameIcon } from '../shared-ui/GameIcon.tsx';
+import { webAudio } from '../shared-ui/WebAudioManager.ts';
+import { useCountdown } from '../shared-ui/useCountdown.ts';
+import { UserAvatar } from '../user/UserAvatar.tsx';
+import { useUserProfile } from '../user/UserProfileContext.tsx';
 
 type AnyView = Record<string, any>;
 
@@ -57,73 +63,108 @@ export function UnoGamePage({ view }: { view: AnyView }) {
   }));
 
   const centerArena = (
-    <div className="uno-center-stage" style={{ textAlign: 'center' }}>
-      <div className="uno-discard-copy">
-        <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>上一张公开牌</span>
-        <h2 style={{ margin: '4px 0', color: '#ffd166' }}>
-          {top ? `${colorLabel(top.color ?? currentColor)} · ${cardFaceLabel(top)}` : '等待首张牌'}
-        </h2>
-        <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.9 }}>
-          {view.lastPlayedBy ? `由 ${nameFor(members, view.lastPlayedBy)} 打出 · ` : ''}
-          当前颜色：{colorLabel(currentColor)} · {directionLabel}
-        </p>
+    <div className="uno-arena-arena" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+      <div className="uno-deck-area" style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+        {/* 摸牌堆 */}
+        <button
+          type="button"
+          className="uno-draw-pile"
+          onClick={() => {
+            if (myTurn && !busy) void act({ type: 'draw_card' });
+          }}
+          disabled={!myTurn || busy}
+          style={{
+            width: '80px',
+            height: '118px',
+            background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+            border: '2px solid #64748b',
+            borderRadius: '12px',
+            color: '#fff',
+            fontWeight: 800,
+            cursor: myTurn ? 'pointer' : 'default',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+          }}
+        >
+          {mustDraw ? `摸 ${view.pendingDraw} 张` : '摸牌'}
+        </button>
+
+        {/* 弃牌堆顶牌 */}
+        <div
+          className={`uno-discard-card uno-card--${currentColor ?? 'wild'}`}
+          style={{
+            width: '80px',
+            height: '118px',
+            borderRadius: '12px',
+            border: '2px solid #ffffff',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 900,
+            fontSize: '1.2rem',
+            boxShadow: '0 6px 18px rgba(0,0,0,0.4)',
+            background: currentColor ? `var(--uno-${currentColor}, #333)` : '#333',
+            color: '#fff',
+          }}
+        >
+          <span>{top ? cardFaceLabel(top) : '空'}</span>
+          {currentColor && <span style={{ fontSize: '0.7rem', opacity: 0.85 }}>{colorLabel(currentColor)}</span>}
+        </div>
       </div>
 
-      {mustDraw && <div style={{ color: '#ef476f', fontWeight: 800, marginTop: '12px' }}>需要摸 {view.pendingDraw} 张罚牌</div>}
-      {error && <div className="game-error" style={{ marginTop: '8px' }}>{error}</div>}
+      <div className="uno-info-bar" style={{ display: 'flex', gap: '16px', fontSize: '0.85rem' }}>
+        <span>方向: <strong>{directionLabel}</strong></span>
+        {view.pendingDraw > 0 && <span style={{ color: '#ef476f' }}>待摸牌: {view.pendingDraw} 张</span>}
+      </div>
+
+      {error && <div className="game-error">{error}</div>}
     </div>
   );
 
   const bottomBar = (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', width: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', width: '100%' }}>
+      {wildCardId && (
+        <div className="uno-color-picker" style={{ display: 'flex', gap: '8px', zIndex: 20 }}>
+          {UNO_COLORS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={`uno-color-btn uno-color-btn--${c}`}
+              style={{ padding: '8px 16px', borderRadius: '16px', fontWeight: 800 }}
+              onClick={() => {
+                void act({ type: 'play_card', cardId: wildCardId, chosenColor: c });
+                setWildCardId(null);
+              }}
+            >
+              {colorLabel(c)}
+            </button>
+          ))}
+        </div>
+      )}
+
       {me && (
         <CardFanEngine
           cards={fanCards}
-          disabled={busy || !myTurn || mustDraw}
-          onPlayCard={(c) => play(c.raw as AnyView)}
-          playButtonText="出牌"
+          disabled={busy || !myTurn}
+          onPlayCard={(card) => {
+            play(card.raw as AnyView);
+          }}
+          playButtonText="打出"
         />
       )}
 
       {myTurn && (
-        <div className="new-game-actions" style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-          <button type="button" disabled={busy} onClick={() => void act({ type: 'draw_card' })}>
-            摸牌
-          </button>
-          {me?.hasDrawnThisTurn && (
-            <button type="button" disabled={busy} onClick={() => void act({ type: 'pass_after_draw' })}>
-              结束回合
-            </button>
-          )}
-          {me?.hand.length === 1 && (
-            <button type="button" className="accent" disabled={busy} onClick={() => void act({ type: 'call_uno' })}>
-              喊 UNO!
-            </button>
-          )}
-        </div>
-      )}
-
-      {wildCardId && (
-        <div className="color-picker" style={{ display: 'flex', gap: '8px', background: 'rgba(0,0,0,0.8)', padding: '10px 16px', borderRadius: '20px' }}>
-          <strong style={{ color: '#fff', alignSelf: 'center' }}>选择颜色:</strong>
-          {UNO_COLORS.map((color) => (
-            <button
-              key={color}
-              type="button"
-              className={`color-${color}`}
-              disabled={busy}
-              onClick={() => {
-                void act({ type: 'play_card', cardId: wildCardId, declaredColor: color });
-                setWildCardId(null);
-              }}
-            >
-              {UNO_COLOR_NAMES[color]}
-            </button>
-          ))}
-          <button type="button" className="color-picker-cancel" onClick={() => setWildCardId(null)}>
-            取消
-          </button>
-        </div>
+        <button
+          type="button"
+          disabled={busy}
+          style={{ padding: '8px 24px', borderRadius: '20px', fontWeight: 800 }}
+          onClick={() => void act({ type: 'draw_card' })}
+        >
+          摸一张牌
+        </button>
       )}
     </div>
   );
@@ -135,21 +176,70 @@ export function UnoGamePage({ view }: { view: AnyView }) {
       theme="poker"
       players={playerSeats}
       currentUserId={me?.playerId}
+      topRightControls={<GameLeaveButton />}
       centerArena={centerArena}
       bottomBar={bottomBar}
-      phaseBannerText={myTurn ? '👉 轮到你的回合' : undefined}
+      phaseBannerText={myTurn ? '轮到你的回合' : undefined}
     />
   );
 }
 
 
-function isRedSuit(suit: string | undefined): boolean {
-  return suit === 'hearts' || suit === 'diamonds';
+const RANK_ORDER: Record<string, number> = {
+  BJ: 17,
+  SJ: 16,
+  '2': 15,
+  A: 14,
+  K: 13,
+  Q: 12,
+  J: 11,
+  '10': 10,
+  '9': 9,
+  '8': 8,
+  '7': 7,
+  '6': 6,
+  '5': 5,
+  '4': 4,
+  '3': 3,
+};
+
+const SUIT_ORDER: Record<string, number> = {
+  spades: 4,
+  hearts: 3,
+  clubs: 2,
+  diamonds: 1,
+};
+
+function comboName(type: string): React.ReactNode {
+  switch (type) {
+    case 'single': return '单张';
+    case 'pair': return '对子';
+    case 'triple': return '三张';
+    case 'triple_single': return '三带一';
+    case 'triple_pair': return '三带对';
+    case 'straight': return '顺子';
+    case 'pair_sequence': return '连对';
+    case 'bomb':
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <GameIcon name="bomb" size={14} />
+          炸弹
+        </span>
+      );
+    case 'rocket':
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <GameIcon name="rocket" size={14} />
+          王炸
+        </span>
+      );
+    default: return type;
+  }
 }
 
-/** 底牌与当前牌型共用的静态牌面，两处渲染逻辑完全一致。 */
-function CardFace({ card }: { card: AnyView }) {
-  return <PlayingCard rank={card.rank} suit={card.suit} className="card-face-static" />;
+/** 底牌与当前牌型共用的静态牌面 */
+function CardFace({ card, className }: { card: AnyView; className?: string }) {
+  return <PlayingCard rank={card.rank} suit={card.suit} className={className ?? 'card-face-static'} />;
 }
 
 function landlordSubtitle(view: AnyView, members: MemberLike[]): string {
@@ -158,143 +248,477 @@ function landlordSubtitle(view: AnyView, members: MemberLike[]): string {
   return `${nameFor(members, view.currentPlayerId)} 的回合 · 倍率 ${view.multiplier}`;
 }
 
+/** 左右对手席位组件 */
+function OpponentStation({
+  player,
+  position,
+  view,
+  members,
+  remainSeconds,
+}: {
+  player: AnyView;
+  position: 'left' | 'right';
+  view: AnyView;
+  members: MemberLike[];
+  remainSeconds: number;
+}) {
+  const isTurn = player.playerId === view.currentPlayerId || player.playerId === view.currentBidderId;
+  const isLandlord = player.playerId === view.landlordId;
+  const name = nameFor(members, player.playerId);
+  const bid = (view.bids || []).find((b: AnyView) => b.playerId === player.playerId);
+
+  let statusBubble: React.ReactNode = null;
+  if (view.phase === 'bidding') {
+    if (bid) {
+      statusBubble = bid.score === 0 ? '不叫' : `${bid.score} 分`;
+    } else if (isTurn) {
+      statusBubble = (
+        <span className="landlord-countdown-pill">
+          <GameIcon name="hourglass" size={12} />
+          {remainSeconds}s
+        </span>
+      );
+    }
+  } else if (view.phase === 'playing') {
+    if (isTurn) {
+      statusBubble = (
+        <span className="landlord-countdown-pill">
+          <GameIcon name="hourglass" size={12} />
+          {remainSeconds}s
+        </span>
+      );
+    }
+  }
+
+  return (
+    <div className={`landlord-opponent landlord-opponent--${position} ${isTurn ? 'is-turn' : ''}`}>
+      {/* 气泡提示 / 倒计时 */}
+      {statusBubble && (
+        <div className={`landlord-bubble landlord-bubble--${position}`}>
+          {statusBubble}
+        </div>
+      )}
+
+      {/* 头像与光圈 */}
+      <div className="landlord-opponent-avatar-box">
+        <UserAvatar
+          avatar={(members as any[]).find((m) => m.playerId === player.playerId)?.avatar ?? 'preset:fox'}
+          nickname={name}
+          size={46}
+          className="landlord-opponent-avatar"
+        />
+        {isTurn && <div className="tabletop-turn-halo" />}
+        <span className="landlord-opponent-hand-count" title="剩余手牌">
+          <GameIcon name="cards_deck" size={11} style={{ marginRight: '3px' }} />
+          {player.handCount}
+        </span>
+      </div>
+
+      {/* 玩家信息 */}
+      <div className="landlord-opponent-info">
+        <span className="landlord-opponent-name" title={name}>{name}</span>
+        {view.landlordId ? (
+          <span className={`landlord-role-badge ${isLandlord ? 'is-landlord' : 'is-farmer'}`}>
+            <GameIcon name={isLandlord ? 'crown' : 'farmer'} size={12} style={{ marginRight: '3px' }} />
+            {isLandlord ? '地主' : '农民'}
+          </span>
+        ) : (
+          <span className="landlord-role-badge">待定</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** 玩家独立出牌与行动展示区（左家在左边、右家在右边、自己在下方） */
+function PlayerActionDrop({
+  playerId,
+  position,
+  view,
+  remainSeconds,
+}: {
+  playerId: string;
+  position: 'left' | 'right' | 'self';
+  view: AnyView;
+  remainSeconds: number;
+}) {
+  const isBidding = view.phase === 'bidding';
+  const isPlaying = view.phase === 'playing';
+  const isCurrentTurn = view.currentPlayerId === playerId || view.currentBidderId === playerId;
+
+  // 叫分阶段
+  if (isBidding) {
+    const bid = (view.bids || []).find((b: AnyView) => b.playerId === playerId);
+    if (bid) {
+      return (
+        <div className={`landlord-drop-zone landlord-drop-zone--${position} is-bidded`}>
+          <span className="landlord-drop-badge landlord-drop-badge--bid">
+            {bid.score === 0 ? '不叫' : `${bid.score} 分`}
+          </span>
+        </div>
+      );
+    }
+    if (isCurrentTurn) {
+      return (
+        <div className={`landlord-drop-zone landlord-drop-zone--${position} is-thinking`}>
+          <span className="landlord-drop-badge landlord-drop-badge--thinking landlord-countdown-badge">
+            <GameIcon name="hourglass" size={13} style={{ marginRight: '3px' }} />
+            {position === 'self' ? `轮到你叫分 (${remainSeconds}s)` : `叫分倒计时 ${remainSeconds}s`}
+          </span>
+        </div>
+      );
+    }
+    return <div className={`landlord-drop-zone landlord-drop-zone--${position} is-empty`} />;
+  }
+
+  // 出牌阶段
+  if (isPlaying) {
+    const isTrickOwner = view.currentTrick && view.currentTrick.playerId === playerId;
+
+    if (isTrickOwner && view.currentTrick) {
+      return (
+        <div className={`landlord-drop-zone landlord-drop-zone--${position} is-played`}>
+          <div className="landlord-drop-combo-header">
+            <span className="landlord-drop-combo-tag">
+              {comboName(view.currentTrick.combo?.type ?? '')}
+            </span>
+          </div>
+          <div className="landlord-drop-cards">
+            {(view.currentTrick.combo?.cards ?? []).map((card: AnyView) => (
+              <CardFace key={card.id} card={card} />
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    if (isCurrentTurn) {
+      return (
+        <div className={`landlord-drop-zone landlord-drop-zone--${position} is-thinking`}>
+          <span className="landlord-drop-badge landlord-drop-badge--thinking landlord-countdown-badge">
+            <GameIcon name="hourglass" size={13} style={{ marginRight: '3px' }} />
+            {position === 'self' ? `轮到你出牌 (${remainSeconds}s)` : `出牌倒计时 ${remainSeconds}s`}
+          </span>
+        </div>
+      );
+    }
+
+    return <div className={`landlord-drop-zone landlord-drop-zone--${position} is-empty`} />;
+  }
+
+  return <div className={`landlord-drop-zone landlord-drop-zone--${position} is-empty`} />;
+}
+
 export function LandlordGamePage({ view }: { view: AnyView }) {
+  const { profile } = useUserProfile();
   const { state } = useConnection();
   const members = state.room?.members ?? [];
   const { act, busy, error } = useGameAction();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const me = view.me;
-  const myTurn = me && view.currentPlayerId === me.playerId;
-  const myBid = me && view.currentBidderId === me.playerId;
+  const myTurn = Boolean(me) && view.currentPlayerId === me?.playerId;
+  const myBid = Boolean(me) && view.currentBidderId === me?.playerId;
 
-  // 座位映射
-  const playerSeats: PlayerSeat[] = (view.players || []).map((p: AnyView) => ({
-    id: p.playerId,
-    name: nameFor(members, p.playerId),
-    isCurrentTurn: p.playerId === view.currentPlayerId || p.playerId === view.currentBidderId,
-    handCount: p.handCount,
-    badge: p.playerId === view.landlordId ? '👑 地主' : '👨‍🌾 农民',
-  }));
+  const countdown = useCountdown(view.deadlineAt);
+  const remainSeconds = countdown.secondsLeft !== null ? Math.max(0, countdown.secondsLeft) : 15;
 
-  // 扇形卡牌映射
-  const fanCards: CardItem[] = (me?.hand || []).map((card: AnyView) => ({
-    id: card.id,
-    label: `${card.rank ?? ''}`,
-    sublabel: card.suit ?? '',
-    colorTheme: isRedSuit(card.suit) ? 'red' : 'blue',
-    raw: card,
-  }));
+  // 整理手牌：按大王>小王>2>A>K>Q>J>10>9>8>7>6>5>4>3 降序排列
+  const sortedHand = useMemo(() => {
+    if (!me?.hand) return [];
+    return [...me.hand].sort((a: AnyView, b: AnyView) => {
+      const diff = (RANK_ORDER[b.rank] ?? 0) - (RANK_ORDER[a.rank] ?? 0);
+      if (diff !== 0) return diff;
+      return (SUIT_ORDER[b.suit] ?? 0) - (SUIT_ORDER[a.suit] ?? 0);
+    });
+  }, [me?.hand]);
+
+  // 映射左家（上家）与右家（下家）
+  const { leftPlayer, rightPlayer } = useMemo(() => {
+    const allPlayers: AnyView[] = view.players || [];
+    const myId = me?.playerId;
+    const myIndex = allPlayers.findIndex((p: AnyView) => p.playerId === myId);
+
+    if (allPlayers.length === 3 && myIndex !== -1) {
+      return {
+        rightPlayer: allPlayers[(myIndex + 1) % 3] ?? null,
+        leftPlayer: allPlayers[(myIndex + 2) % 3] ?? null,
+      };
+    }
+    const others = allPlayers.filter((p: AnyView) => p.playerId !== myId);
+    return {
+      leftPlayer: others[0] ?? null,
+      rightPlayer: others[1] ?? null,
+    };
+  }, [view.players, me?.playerId]);
+
+  const handleCardToggle = (cardId: string) => {
+    if (busy || view.phase !== 'playing') return;
+    webAudio.playCardFlip();
+    setSelectedIds((prev) =>
+      prev.includes(cardId) ? prev.filter((id) => id !== cardId) : [...prev, cardId]
+    );
+  };
+
+  const handlePlaySelected = () => {
+    if (busy || selectedIds.length === 0) return;
+    webAudio.playCardPlay();
+    void act({ type: 'play_combo', cardIds: selectedIds });
+    setSelectedIds([]);
+  };
 
   const centerArena = (
-    <div className="landlord-center-arena" style={{ textAlign: 'center', width: '100%' }}>
-      {/* 地主底牌 */}
-      <div className="bottom-cards" style={{ marginBottom: '16px' }}>
-        <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>
-          {view.landlordId ? '👑 地主底牌' : '👑 地主底牌 · 叫分后公开'}
-        </span>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '6px' }}>
-          {view.landlordId
-            ? view.bottomCards.map((card: AnyView) => <CardFace key={card.id} card={card} />)
-            : [0, 1, 2].map((i) => <CardBack key={i} className="card-face-static" />)}
+    <div className="landlord-battlefield">
+      {/* 桌面背景专属水印：大号“斗地主”艺术书法与小幅“聚乐桌”品牌徽章 */}
+      <div className="landlord-table-watermark" aria-hidden="true">
+        <div className="landlord-table-watermark__logo">
+          <span className="landlord-table-watermark__icon">✦</span>
+          <span>聚乐桌 · 经典棋牌</span>
+        </div>
+        <div className="landlord-table-watermark__title">斗地主</div>
+        <div className="landlord-table-watermark__badge">CLASSIC LANDLORD</div>
+      </div>
+
+      {/* 顶部：地主底牌与倍率 */}
+      <div className="landlord-top-bar">
+        <div className="landlord-bottom-cards-panel bottom-cards">
+          <span className="landlord-bottom-cards-label">
+            <GameIcon name="crown" size={13} style={{ marginRight: '4px' }} />
+            {view.landlordId ? '地主底牌' : '地主底牌 · 叫分后公开'}
+          </span>
+          <div className="landlord-bottom-cards-row">
+            {view.landlordId
+              ? (view.bottomCards ?? []).map((card: AnyView) => <CardFace key={card.id} card={card} className="card-face-static" />)
+              : [0, 1, 2].map((i) => <CardBack key={i} className="card-face-static" />)}
+          </div>
+        </div>
+        <div className="landlord-multiplier-badge">
+          <span>倍率 <strong>x{view.multiplier}</strong></span>
         </div>
       </div>
 
-      {/* 当前桌面牌型组合 */}
-      <div className="current-combo-box" style={{ background: 'rgba(0,0,0,0.5)', padding: '12px 24px', borderRadius: '16px', backdropFilter: 'blur(8px)' }}>
-        {view.phase === 'bidding' ? (
-          <>
-            <strong style={{ color: '#ffd166' }}>📢 叫地主阶段</strong>
-            <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem' }}>
-              {myBid ? '轮到你叫分，请根据手牌选择' : `等待 ${nameFor(members, view.currentBidderId)} 叫分...`}
-            </p>
-          </>
-        ) : view.currentTrick ? (
-          <>
-            <strong style={{ color: '#06d6a0' }}>{nameFor(members, view.currentTrick.playerId)} 打出:</strong>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', margin: '8px 0' }}>
-              {view.currentTrick.combo.cards.map((card: AnyView) => (
-                <CardFace key={card.id} card={card} />
-              ))}
+      {/* 中间战场：左翼（左家头像 + 左家出牌区）+ 中心开阔区 + 右翼（右家出牌区 + 右家头像） */}
+      <div className="landlord-mid-arena">
+        {/* 左家区域（上家）：左侧头像 + 右侧出牌 */}
+        <div className="landlord-station-group landlord-station-group--left">
+          {leftPlayer && (
+            <>
+              <OpponentStation
+                player={leftPlayer}
+                position="left"
+                view={view}
+                members={members}
+                remainSeconds={remainSeconds}
+              />
+              <PlayerActionDrop
+                playerId={leftPlayer.playerId}
+                position="left"
+                view={view}
+                remainSeconds={remainSeconds}
+              />
+            </>
+          )}
+        </div>
+
+        {/* 中心开阔区：若为自由领出回合，显示柔和指引提示 */}
+        <div className="landlord-center-nexus">
+          {view.phase === 'bidding' && (
+            <div className="landlord-nexus-pill">
+              <GameIcon name="horn" size={14} style={{ marginRight: '4px' }} />
+              叫分竞庄中
             </div>
-            <small style={{ color: '#ffd166' }}>牌型: {view.currentTrick.combo.type}</small>
-          </>
-        ) : (
-          <>
-            <strong style={{ color: '#ffd166' }}>🃏 自由出牌</strong>
-            <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem' }}>{nameFor(members, view.currentPlayerId)} 可以出任意合法牌型</p>
-          </>
-        )}
+          )}
+          {view.phase === 'playing' && !view.currentTrick && (
+            <div className="landlord-nexus-pill">
+              <GameIcon name="cards_deck" size={14} style={{ marginRight: '4px' }} />
+              自由出牌轮次
+            </div>
+          )}
+          {error && <div className="game-error landlord-arena-error">{error}</div>}
+        </div>
+
+        {/* 右家区域（下家）：左侧出牌 + 右侧头像 */}
+        <div className="landlord-station-group landlord-station-group--right">
+          {rightPlayer && (
+            <>
+              <PlayerActionDrop
+                playerId={rightPlayer.playerId}
+                position="right"
+                view={view}
+                remainSeconds={remainSeconds}
+              />
+              <OpponentStation
+                player={rightPlayer}
+                position="right"
+                view={view}
+                members={members}
+                remainSeconds={remainSeconds}
+              />
+            </>
+          )}
+        </div>
       </div>
 
-      {error && <div className="game-error" style={{ marginTop: '12px' }}>{error}</div>}
+      {/* 底部：我的出牌展示区（位于操作栏与手牌上方） */}
+      <div className="landlord-self-drop-bar">
+        {me && (
+          <PlayerActionDrop
+            playerId={me.playerId}
+            position="self"
+            view={view}
+            remainSeconds={remainSeconds}
+          />
+        )}
+      </div>
     </div>
   );
 
   const bottomBar = (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', width: '100%' }}>
-      {/* 叫分阶段按钮 */}
-      {view.phase === 'bidding' && myBid && (
-        <div style={{ display: 'flex', gap: '12px' }}>
-          {[0, 1, 2, 3].map((score) => (
-            <button
-              key={score}
-              type="button"
-              disabled={busy}
-              style={{ padding: '8px 16px', borderRadius: '16px', fontWeight: 800 }}
-              onClick={() => void act({ type: 'bid_score', score })}
-            >
-              {score === 0 ? '不叫' : `${score} 分`}
-            </button>
-          ))}
-        </div>
-      )}
+    <div className="landlord-player-dashboard">
+      {/* 自身状态与动作操作栏 */}
+      <div className="landlord-self-bar">
+        {/* 我的身份标识 */}
+        {me && (
+          <div className="landlord-self-badge">
+            <UserAvatar avatar={profile.avatar} nickname={nameFor(members, me.playerId)} size={24} style={{ marginRight: '6px' }} />
+            <span className="landlord-self-name">{nameFor(members, me.playerId)} (我)</span>
+            {view.landlordId && (
+              <span className={`landlord-role-badge ${me.playerId === view.landlordId ? 'is-landlord' : 'is-farmer'}`}>
+                <GameIcon name={me.playerId === view.landlordId ? 'crown' : 'farmer'} size={12} style={{ marginRight: '3px' }} />
+                {me.playerId === view.landlordId ? '地主' : '农民'}
+              </span>
+            )}
+          </div>
+        )}
 
-      {/* 出牌阶段 3D 扇形手牌引擎 */}
-      {me && view.phase === 'playing' && (
-        <CardFanEngine
-          cards={fanCards}
-          selectedCardIds={selectedIds}
-          onSelectCards={(ids) => setSelectedIds(ids)}
-          allowMultiSelect={true}
-          disabled={busy || !myTurn}
-          onPlayCard={() => {
-            void act({ type: 'play_combo', cardIds: selectedIds });
-            setSelectedIds([]);
-          }}
-          playButtonText="出牌"
-        />
-      )}
-
-      {/* 出牌操作逻辑 */}
-      {view.phase === 'playing' && myTurn && (
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button
-            type="button"
-            disabled={busy || !view.currentTrick}
-            onClick={() => void act({ type: 'pass_turn' })}
-          >
-            不出
-          </button>
-          {selectedIds.length > 0 && (
-            <button type="button" disabled={busy} onClick={() => setSelectedIds([])}>
-              取消选择
-            </button>
+        {/* 动作操作面板 */}
+        <div className="landlord-action-dock">
+          {view.phase === 'bidding' && (
+            myBid ? (
+              <div className="landlord-bid-row">
+                <button
+                  type="button"
+                  className="landlord-btn landlord-btn--pass"
+                  disabled={busy}
+                  onClick={() => void act({ type: 'bid_score', score: 0 })}
+                >
+                  不叫
+                </button>
+                {[1, 2, 3].map((score) => (
+                  <button
+                    key={score}
+                    type="button"
+                    className={`landlord-btn ${score === 3 ? 'landlord-btn--primary' : 'landlord-btn--bid'}`}
+                    disabled={busy}
+                    onClick={() => void act({ type: 'bid_score', score })}
+                  >
+                    {score} 分
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="landlord-wait-tag">
+                <GameIcon name="hourglass" size={13} style={{ marginRight: '4px' }} />
+                等待 {nameFor(members, view.currentBidderId)} 叫分 ({remainSeconds}s)
+              </div>
+            )
           )}
+
+          {view.phase === 'playing' && (
+            myTurn ? (
+              <div className="landlord-play-row">
+                <button
+                  type="button"
+                  className="landlord-btn landlord-btn--pass"
+                  disabled={busy || !view.currentTrick}
+                  onClick={() => void act({ type: 'pass_turn' })}
+                  title={!view.currentTrick ? '当前为自由出牌，必须出牌' : '不出本轮'}
+                >
+                  不出
+                </button>
+                {selectedIds.length > 0 && (
+                  <button
+                    type="button"
+                    className="landlord-btn landlord-btn--reset"
+                    disabled={busy}
+                    onClick={() => setSelectedIds([])}
+                  >
+                    重选
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="landlord-btn landlord-btn--primary card-fan-play-btn"
+                  disabled={busy || selectedIds.length === 0}
+                  onClick={handlePlaySelected}
+                >
+                  <GameIcon name="rocket" size={15} style={{ marginRight: '4px' }} />
+                  出牌 {selectedIds.length > 0 ? `(${selectedIds.length}张)` : ''}
+                </button>
+              </div>
+            ) : (
+              <div className="landlord-wait-tag">
+                <GameIcon name="hourglass" size={13} style={{ marginRight: '4px' }} />
+                等待 {nameFor(members, view.currentPlayerId)} 出牌 ({remainSeconds}s)
+              </div>
+            )
+          )}
+
+          {view.phase === 'game_over' && (
+            <div className="landlord-game-over-tag">
+              <GameIcon name="trophy" size={18} style={{ marginRight: '6px' }} />
+              {view.winnerTeam === 'landlord' ? '地主阵营' : '农民阵营'} 获胜！
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 手牌横向展开牌架 */}
+      {me && (
+        <div className="landlord-hand-container card-fan-container">
+          <div className="landlord-hand-rack" role="region" aria-label="我的手牌">
+            {sortedHand.map((card: AnyView, idx: number) => {
+              const isSelected = selectedIds.includes(card.id);
+              return (
+                <button
+                  key={card.id}
+                  type="button"
+                  className={`landlord-hand-card card-fan-item ${isSelected ? 'is-selected' : ''}`}
+                  style={{
+                    zIndex: isSelected ? 100 + idx : idx + 1,
+                  }}
+                  onClick={() => handleCardToggle(card.id)}
+                  title={`${card.rank} ${card.suit ?? ''}`}
+                >
+                  <PlayingCard rank={card.rank} suit={card.suit} />
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
   );
+
+  const seats = useMemo(() => {
+    const allPlayers: AnyView[] = view.players || [];
+    return allPlayers.map((p: AnyView) => ({
+      id: p.playerId,
+      name: nameFor(members, p.playerId),
+      isCurrentTurn: (view.phase === 'bidding' && view.currentBidderId === p.playerId) || (view.phase === 'playing' && view.currentPlayerId === p.playerId),
+      badge: p.playerId === view.landlordId ? '地主' : view.landlordId ? '农民' : undefined,
+    }));
+  }, [view.players, view.phase, view.currentBidderId, view.currentPlayerId, view.landlordId, members]);
 
   return (
     <TabletopOvalShell
       title="斗地主"
       subtitle={landlordSubtitle(view, members)}
       theme="poker"
-      players={playerSeats}
+      players={seats}
       currentUserId={me?.playerId}
+      topRightControls={<GameLeaveButton />}
       centerArena={centerArena}
       bottomBar={bottomBar}
-      phaseBannerText={myTurn ? '👉 轮到你出牌' : myBid ? '📢 轮到你叫分' : undefined}
     />
   );
 }

@@ -138,6 +138,8 @@ export const roomCommandPayloadSchema = z.discriminatedUnion('command', [
     .strict(),
   // 开局（FR-HOST-001）：gameConfig 由游戏模块 parseConfig 把关，内核只透传
   z.object({ command: z.literal('start_game'), gameConfig: z.unknown().optional() }).strict(),
+  // 房主更换游戏
+  z.object({ command: z.literal('select_game'), gameId: z.string().min(1).max(64) }).strict(),
   // 终止本局（FR-HOST-002）：二次确认在客户端完成
   z.object({ command: z.literal('abort_game') }).strict(),
   // POST_GAME → LOBBY（FR-RESULT-004 / D-6）

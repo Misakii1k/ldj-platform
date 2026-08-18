@@ -9,6 +9,8 @@ import { useConnection } from '../../../connection/useConnection.ts';
 import { useCountdown } from '../../../shared-ui/useCountdown.ts';
 import { GameLeaveButton } from '../../GameLeaveButton.tsx';
 import { nameFor, useGameAction, type MemberLike } from '../../useGameAction.ts';
+import { UserAvatar } from '../../../user/UserAvatar.tsx';
+import { useUserProfile } from '../../../user/UserProfileContext.tsx';
 import {
   UNO_COLORS,
   UNO_COLOR_NAMES,
@@ -38,12 +40,12 @@ function scoreTable(
   return (
     <section className="uno-house-scores" aria-label="比分">
       <h2>比分</h2>
-      {roundScores.length > 0 && (
+      {(roundScores ?? []).length > 0 && (
         <table className="uno-house-scores__table">
           <thead>
             <tr>
               <th scope="col">玩家</th>
-              {roundScores.map((_, roundIndex) => (
+              {(roundScores ?? []).map((_, roundIndex) => (
                 <th scope="col" key={roundIndex}>第 {roundIndex + 1} 局</th>
               ))}
               <th scope="col">累计</th>
@@ -53,10 +55,10 @@ function scoreTable(
             {players.map((player) => (
               <tr key={player.playerId}>
                 <th scope="row">{nameFor(members, player.playerId)}</th>
-                {roundScores.map((row, roundIndex) => (
-                  <td key={roundIndex}>{row[players.findIndex((p) => p.playerId === player.playerId)] ?? '—'}</td>
+                {(roundScores ?? []).map((row, roundIndex) => (
+                  <td key={roundIndex}>{row?.[players.findIndex((p) => p.playerId === player.playerId)] ?? '—'}</td>
                 ))}
-                <td>{cumulativeScores[players.findIndex((p) => p.playerId === player.playerId)] ?? '—'}</td>
+                <td>{cumulativeScores?.[players.findIndex((p) => p.playerId === player.playerId)] ?? '—'}</td>
               </tr>
             ))}
           </tbody>
@@ -78,6 +80,7 @@ function scoreTable(
 }
 
 export function UnoHouseStage({ view }: Props) {
+  const { profile } = useUserProfile();
   const { state } = useConnection();
   const members = state.room?.members ?? [];
   const { act, busy, error } = useGameAction();
@@ -85,8 +88,8 @@ export function UnoHouseStage({ view }: Props) {
   const me = view.me;
   const isSpectator = me === null || me === undefined;
   const phase = view.phase;
-  const turnCountdown = useCountdown(view.clockInfo.turnDeadlineAt);
-  const windowCountdown = useCountdown(view.clockInfo.windowDeadlineAt);
+  const turnCountdown = useCountdown(view.clockInfo?.turnDeadlineAt);
+  const windowCountdown = useCountdown(view.clockInfo?.windowDeadlineAt);
 
   const caps = new Set(me?.capabilities ?? []);
   const inWindow = me?.activeWindow !== null && me?.activeWindow !== undefined;
@@ -95,7 +98,7 @@ export function UnoHouseStage({ view }: Props) {
     && me !== null
     && !inWindow
     && !busy
-    && (me.playableCardIds.includes(cardId) || caps.has('canStackPenalty'));
+    && ((me.playableCardIds ?? []).includes(cardId) || caps.has('canStackPenalty'));
 
   const cardColor = (card: UnoCard): string => ('color' in card ? card.color : 'wild');
 
@@ -159,27 +162,37 @@ export function UnoHouseStage({ view }: Props) {
       )}
 
       <section className="uno-house-players" aria-label="玩家状态">
-        {view.players.map((player, index) => (
-          <div
-            key={player.playerId}
-            className={[
-              'uno-house-player',
-              player.isCurrentPlayer ? 'is-current' : '',
-              player.playerId === me?.playerId ? 'is-self' : '',
-              player.unoCalled ? 'is-uno-called' : '',
-            ].filter(Boolean).join(' ')}
-          >
-            <span className="uno-house-player__seat">{index + 1}</span>
-            <strong>{nameFor(members, player.playerId)}</strong>
-            <span>{player.handCount} 张{player.unoCalled ? ' · UNO!' : ''}</span>
-            {player.teamId !== null && <small>队伍 {player.teamId}</small>}
-          </div>
-        ))}
+        {view.players.map((player, index) => {
+          const member = members.find((m) => m.playerId === player.playerId);
+          const isSelf = player.playerId === me?.playerId;
+          return (
+            <div
+              key={player.playerId}
+              className={[
+                'uno-house-player',
+                player.isCurrentPlayer ? 'is-current' : '',
+                isSelf ? 'is-self' : '',
+                player.unoCalled ? 'is-uno-called' : '',
+              ].filter(Boolean).join(' ')}
+            >
+              <UserAvatar
+                avatar={member?.avatar ?? (isSelf ? profile.avatar : 'preset:fox')}
+                nickname={nameFor(members, player.playerId)}
+                size={28}
+                className="uno-house-player__avatar"
+              />
+              <span className="uno-house-player__seat">{index + 1}</span>
+              <strong>{nameFor(members, player.playerId)}</strong>
+              <span>{player.handCount} 张{player.unoCalled ? ' · UNO!' : ''}</span>
+              {player.teamId !== null && <small>队伍 {player.teamId}</small>}
+            </div>
+          );
+        })}
       </section>
 
       <section className="uno-house-center" aria-label="弃牌堆">
         <div className={`uno-house-discard color-${view.currentColor}`}>
-          <strong>{cardLabel(view.topDiscard)}</strong>
+          <strong>{view.topDiscard ? cardLabel(view.topDiscard) : '—'}</strong>
           <small>{colorLabel(view.currentColor)} · {directionLabel}</small>
         </div>
         <p className="uno-house-center__meta">
@@ -192,7 +205,7 @@ export function UnoHouseStage({ view }: Props) {
 
       {!isSpectator && me && (
         <section className="uno-house-hand" aria-label="我的手牌">
-          {me.hand.map((card) => (
+          {(me.hand ?? []).map((card) => (
             <button
               key={card.id}
               type="button"
@@ -260,7 +273,7 @@ export function UnoHouseStage({ view }: Props) {
               质疑 +4
             </button>
           )}
-          {me.hand.length === 0 && <p className="uno-house-actions__hint">无牌可出</p>}
+          {(me.hand ?? []).length === 0 && <p className="uno-house-actions__hint">无牌可出</p>}
         </div>
       )}
 

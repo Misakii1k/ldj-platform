@@ -30,7 +30,6 @@ export function PlayerCountFilter({ selectedCount, onChange }: PlayerCountFilter
       <div className="player-filter__copy">
         <p className="player-filter__eyebrow">按人数筛选</p>
         <h2 id="player-filter-title">今天有几位玩家？</h2>
-        <p>滑动或直接点选人数</p>
       </div>
 
       <div className="player-filter__control">
@@ -53,9 +52,12 @@ export function PlayerCountFilter({ selectedCount, onChange }: PlayerCountFilter
           拖动选择人数
         </label>
         <div className="player-filter__range-track-wrapper" style={rangeStyle}>
-          <span className="player-filter__thumb-tooltip">
-            {selectedCount === null ? `当前 ${sliderValue} 人` : `${selectedCount} 人局`}
-          </span>
+          {/* 未筛选时不显示滑块 tooltip，避免「当前 5 人」误导（列表实际显示全部） */}
+          {selectedCount !== null && (
+            <span className="player-filter__thumb-tooltip">
+              {`${selectedCount} 人局`}
+            </span>
+          )}
           <input
             id="player-count-range"
             className="player-filter__range"

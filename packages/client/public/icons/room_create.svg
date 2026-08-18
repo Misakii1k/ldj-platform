@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="room_create">
+  <rect width="128" height="128" rx="28" fill="#e76835"/>
+  <circle cx="64" cy="64" r="32" fill="#fff"/>
+  <path d="M64 46v36M46 64h36" stroke="#e76835" stroke-width="8" stroke-linecap="round"/>
+</svg>

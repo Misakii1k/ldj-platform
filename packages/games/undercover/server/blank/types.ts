@@ -21,7 +21,8 @@ export type BlankPhase =
   | 'game_over';
 
 export interface BlankConfig {
-  speechSeconds: 30 | 60 | 90;
+  rulesetId?: 'undercover_blank_v1';
+  speechSeconds: 30 | 45 | 60 | 90;
   voteSeconds: 30 | 45 | 60;
   /** GOV-002：身份公开时机，开局写入快照整局锁定。 */
   revealMode: BlankRevealMode;

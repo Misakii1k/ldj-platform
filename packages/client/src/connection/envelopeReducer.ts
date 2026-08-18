@@ -230,9 +230,26 @@ export function applyEnvelope(
         effects.push({ type: 'send_resync' });
         return { state, effects };
       }
+      // D-FIX：房间回到 LOBBY 时强制清空旧对局数据，防止残留的 game 对象
+      // 在下次开局时因 room_snapshot 先于 game_state 到达而用旧数据抢跑渲染崩溃。
+      // 进入 IN_GAME 时，若 game.moduleId 与房间当前游戏不一致（切换了游戏模块），
+      // 同样清空旧对局，让 App.tsx 正确显示 Loading 界面等待新 game_state。
+      let nextGame = state.game;
+      if (payload.status === 'LOBBY' || payload.status === 'CLOSED') {
+        nextGame = null;
+      } else if (payload.status === 'IN_GAME' && state.game !== null) {
+        // 检查模块是否一致：gameId 为房间当前选定游戏
+        const roomGameId = typeof (payload as Record<string, unknown>).gameId === 'string'
+          ? (payload as Record<string, unknown>).gameId as string
+          : null;
+        if (roomGameId !== null && state.game.moduleId !== roomGameId) {
+          nextGame = null;
+        }
+      }
       const nextState: ConnectionSnapshot = withConnState({
         ...state,
         room: payload,
+        game: nextGame,
         // room_snapshot 是权威恢复基线；允许跳号但不再触发重复 resync。
         roomSeq: incomingSeq,
         closeReason: null,

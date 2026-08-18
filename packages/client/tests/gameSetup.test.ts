@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { GameSetupSpec } from '@ldj/shared';
-import { applySetupValue, buildModuleConfig, buildSetupConfig, readRoomGameConfig } from '../src/game/tabletop/setupState.ts';
+import { applySetupValue, buildModuleConfig, buildSetupConfig, readRoomGameConfig } from '../src/shared-ui/setupState.ts';
 
 const setup: GameSetupSpec = {
   rulesets: [

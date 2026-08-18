@@ -1,13 +1,10 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 export type BgMode = 'party' | 'particles' | 'video' | 'minimal';
-export type GamePhaseAtmosphere = 'idle' | 'word_reveal' | 'speaking' | 'voting' | 'game_over';
 
 interface BackgroundContextType {
   bgMode: BgMode;
   setBgMode: (mode: BgMode) => void;
-  atmosphere: GamePhaseAtmosphere;
-  setAtmosphere: (atmosphere: GamePhaseAtmosphere) => void;
 }
 
 const STORAGE_KEY = 'ldj_bg_mode';
@@ -15,8 +12,6 @@ const STORAGE_KEY = 'ldj_bg_mode';
 const BackgroundContext = createContext<BackgroundContextType>({
   bgMode: 'party',
   setBgMode: () => {},
-  atmosphere: 'idle',
-  setAtmosphere: () => {},
 });
 
 export function BackgroundProvider({ children }: { children: ReactNode }) {
@@ -32,8 +27,6 @@ export function BackgroundProvider({ children }: { children: ReactNode }) {
     return 'party';
   });
 
-  const [atmosphere, setAtmosphere] = useState<GamePhaseAtmosphere>('idle');
-
   const setBgMode = (mode: BgMode) => {
     setBgModeState(mode);
     try {
@@ -45,11 +38,10 @@ export function BackgroundProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-bg-mode', bgMode);
-    document.documentElement.setAttribute('data-atmosphere', atmosphere);
-  }, [bgMode, atmosphere]);
+  }, [bgMode]);
 
   return (
-    <BackgroundContext.Provider value={{ bgMode, setBgMode, atmosphere, setAtmosphere }}>
+    <BackgroundContext.Provider value={{ bgMode, setBgMode }}>
       {children}
     </BackgroundContext.Provider>
   );

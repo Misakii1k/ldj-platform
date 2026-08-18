@@ -1,10 +1,15 @@
-import { useRef, useState, type FormEvent } from 'react';
+import { useRef, useState, useEffect, type FormEvent } from 'react';
 import type { GameCatalogEntry } from '@ldj/shared';
 import { useConnection } from '../connection/useConnection.ts';
 import { describeError } from '../shared-ui/errors.ts';
 import { useToast } from '../shared-ui/ToastContext.tsx';
 import { SheetDialog } from './SheetDialog.tsx';
+import { GameSetupPanel } from '../shared-ui/GameSetupPanel.tsx';
+import { buildModuleConfig, buildSetupConfig, type SetupConfig } from '../shared-ui/setupState.ts';
 import { makeMeFromRoomAck, parseRoomAck } from './roomAck.ts';
+
+import { useUserProfile } from '../user/UserProfileContext.tsx';
+import { UserAvatar } from '../user/UserAvatar.tsx';
 
 interface CreateRoomSheetProps {
   game: GameCatalogEntry;
@@ -13,23 +18,21 @@ interface CreateRoomSheetProps {
 
 export function CreateRoomSheet({ game, onClose }: CreateRoomSheetProps) {
   const { send, setMe, state } = useConnection();
+  const { profile, setNickname: saveUserNickname, openProfileModal } = useUserProfile();
   const { showToast } = useToast();
   const nicknameRef = useRef<HTMLInputElement | null>(null);
-  const [nickname, setNickname] = useState('');
+  const [nickname, setNickname] = useState(profile.nickname);
+
+  useEffect(() => {
+    setNickname(profile.nickname);
+  }, [profile.nickname]);
+
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // 狼人杀专属：扩展角色池开关 + 节奏预设（开启的角色各入池 1 张）
-  const isWerewolf = game.id === 'werewolf';
-  const [roleGuard, setRoleGuard] = useState(false);
-  const [roleHunter, setRoleHunter] = useState(false);
-  const [roleIdiot, setRoleIdiot] = useState(false);
-  const [pace, setPace] = useState<'fast' | 'standard' | 'relaxed'>('standard');
-
-  const gameConfig = isWerewolf
-    ? { roles: { guard: roleGuard, hunter: roleHunter, idiot: roleIdiot }, pace }
-    : undefined;
+  // 开局配置统一由目录 setup 规格驱动（1-3：狼人杀扩展角色等选项收敛到共享面板，不再手写特判）
+  const [setupConfig, setSetupConfig] = useState<SetupConfig>(() => buildSetupConfig(game.setup));
+  const hasConfig = game.setup.options.length > 0 || game.setup.rulesets.length > 1;
 
   const connectionReady = state.connState !== 'connecting' && state.connState !== 'reconnecting';
   const canSubmit =
@@ -43,6 +46,7 @@ export function CreateRoomSheet({ game, onClose }: CreateRoomSheetProps) {
     if (!canSubmit) return;
 
     const normalizedNickname = nickname.trim();
+    saveUserNickname(normalizedNickname);
     setSubmitting(true);
     setError(null);
     try {
@@ -50,7 +54,7 @@ export function CreateRoomSheet({ game, onClose }: CreateRoomSheetProps) {
         nickname: normalizedNickname,
         gameId: game.id,
         ...(password.length > 0 ? { password } : {}),
-        ...(gameConfig !== undefined ? { gameConfig } : {}),
+        gameConfig: buildModuleConfig(game.setup, setupConfig),
       });
       const outcome = parseRoomAck(ack.payload);
       if (!outcome) {
@@ -74,23 +78,40 @@ export function CreateRoomSheet({ game, onClose }: CreateRoomSheetProps) {
       description={`本玩法适合 ${game.minPlayers}–${game.maxPlayers} 人体验，房间创建后直接分享 5 位房间码即可让好友加入！`}
       onClose={onClose}
       initialFocusRef={nicknameRef}
+      footer={
+        <button type="submit" form="create-room-form" className="room-sheet__submit" disabled={!canSubmit}>
+          {submitting ? '正在创建…' : '创建并进入房间'}
+          <span aria-hidden="true">→</span>
+        </button>
+      }
     >
-      <form className="room-sheet__form" onSubmit={handleSubmit}>
-        <label className="room-sheet__field" htmlFor="create-nickname">
-          <span>玩家昵称</span>
-          <input
-            ref={nicknameRef}
-            id="create-nickname"
-            value={nickname}
-            onChange={(event) => setNickname(event.target.value)}
-            placeholder="例如：大头爸爸"
-            maxLength={16}
-            autoComplete="nickname"
-            aria-invalid={Boolean(error)}
-            aria-describedby={error ? 'create-room-error' : undefined}
-            required
-          />
-        </label>
+      <form id="create-room-form" className="room-sheet__form" onSubmit={handleSubmit}>
+        <div className="room-sheet__profile-row">
+          <button
+            type="button"
+            className="room-sheet__avatar-btn"
+            onClick={openProfileModal}
+            title="点击更换头像"
+          >
+            <UserAvatar avatar={profile.avatar} nickname={nickname} size={48} />
+            <span className="room-sheet__avatar-badge">换头像</span>
+          </button>
+          <label className="room-sheet__field" htmlFor="create-nickname" style={{ flex: 1 }}>
+            <span>玩家昵称</span>
+            <input
+              ref={nicknameRef}
+              id="create-nickname"
+              value={nickname}
+              onChange={(event) => setNickname(event.target.value)}
+              placeholder="例如：大头爸爸"
+              maxLength={16}
+              autoComplete="nickname"
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? 'create-room-error' : undefined}
+              required
+            />
+          </label>
+        </div>
         <label className="room-sheet__field" htmlFor="create-password">
           <span>房间密码 <em>(可选)</em></span>
           <input
@@ -103,56 +124,13 @@ export function CreateRoomSheet({ game, onClose }: CreateRoomSheetProps) {
             autoComplete="new-password"
           />
         </label>
-        {!isWerewolf && (
-          <div className="room-sheet__overview" aria-label="玩法速览">
-            <p>{game.summary}</p>
-            <ul className="room-sheet__tags" aria-label="玩法标签">
-              {game.tags.map((tag) => <li key={tag}>{tag}</li>)}
-            </ul>
-            {game.botSupport === 'none' && (
-              <p className="room-sheet__note">本玩法暂不支持机器人，需要好友全部真人入座。</p>
-            )}
-          </div>
+        {hasConfig && (
+          <GameSetupPanel setup={game.setup} value={setupConfig} variant="compact" onChange={setSetupConfig} />
         )}
-        {isWerewolf && (
-          <fieldset className="room-sheet__field room-sheet__roles">
-            <legend>扩展角色池 <em>(开启则各入池 1 张)</em></legend>
-            <label className="room-sheet__check">
-              <input type="checkbox" checked={roleGuard} onChange={(e) => setRoleGuard(e.target.checked)} />
-              <span><b>守卫</b>守中狼刀可保平安夜；不能连续两夜守同一人</span>
-            </label>
-            <label className="room-sheet__check">
-              <input type="checkbox" checked={roleHunter} onChange={(e) => setRoleHunter(e.target.checked)} />
-              <span><b>猎人</b>出局可开枪带走一名玩家（被毒死除外）</span>
-            </label>
-            <label className="room-sheet__check">
-              <input type="checkbox" checked={roleIdiot} onChange={(e) => setRoleIdiot(e.target.checked)} />
-              <span><b>白痴</b>被放逐时翻牌免死，不再参与投票</span>
-            </label>
-          </fieldset>
-        )}
-        {isWerewolf && (
-          <fieldset className="room-sheet__field room-sheet__roles">
-            <legend>对局节奏</legend>
-            <label className="room-sheet__radio">
-              <input type="radio" name="ww-pace" checked={pace === 'fast'} onChange={() => setPace('fast')} />
-              <span>快速（发言/夜晚时间更短）</span>
-            </label>
-            <label className="room-sheet__radio">
-              <input type="radio" name="ww-pace" checked={pace === 'standard'} onChange={() => setPace('standard')} />
-              <span>标准（默认）</span>
-            </label>
-            <label className="room-sheet__radio">
-              <input type="radio" name="ww-pace" checked={pace === 'relaxed'} onChange={() => setPace('relaxed')} />
-              <span>休闲（发言/夜晚时间更长）</span>
-            </label>
-          </fieldset>
+        {game.botSupport === 'none' && (
+          <p className="room-sheet__note">本玩法暂不支持机器人，需要好友全部真人入座。</p>
         )}
         {error && <p id="create-room-error" className="room-sheet__error" role="alert">{error}</p>}
-        <button type="submit" className="room-sheet__submit" disabled={!canSubmit}>
-          {submitting ? '正在创建…' : '创建并进入房间'}
-          <span aria-hidden="true">→</span>
-        </button>
       </form>
     </SheetDialog>
   );

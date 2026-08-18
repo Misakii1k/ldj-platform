@@ -11,7 +11,21 @@ const exitReason = z.enum(['night_kill', 'poisoned', 'voted_out', 'hunter_shot',
 const seerResult = z.object({ night: z.number().int().nonnegative(), playerId: pid, team }).strict();
 
 const rolePool = z.object({ guard: z.boolean().default(false), hunter: z.boolean().default(false), idiot: z.boolean().default(false) }).strict();
-export const v2ConfigSchema = z.object({
+export const v2ConfigSchema = z.preprocess((raw: unknown) => {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return raw;
+  const obj = { ...(raw as Record<string, unknown>) };
+  if (('guard' in obj || 'hunter' in obj || 'idiot' in obj) && !('roles' in obj)) {
+    obj.roles = {
+      guard: Boolean(obj.guard),
+      hunter: Boolean(obj.hunter),
+      idiot: Boolean(obj.idiot),
+    };
+    delete obj.guard;
+    delete obj.hunter;
+    delete obj.idiot;
+  }
+  return obj;
+}, z.object({
   rulesetId: z.literal('werewolf_platform_open_kill_v1').default('werewolf_platform_open_kill_v1'),
   preset: z.enum(['classic', 'advanced']).default('classic'),
   pace: z.enum(['fast', 'standard', 'relaxed']).default('standard'),
@@ -19,7 +33,7 @@ export const v2ConfigSchema = z.object({
   winCondition: z.enum(['numbers', 'roles']).default('numbers'),
   wolfKillScope: z.literal('any').default('any'),
   roles: rolePool.default({ guard: false, hunter: false, idiot: false }),
-}).strict();
+}).strict());
 
 const night = z.object({
   wolfVotes: z.record(pid, pid),

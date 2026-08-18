@@ -196,6 +196,28 @@ test('werewolf witch self-save respects config', () => {
   assert.equal(denied.ok, false);
 });
 
+test('werewolf accepts flat role pool keys and merges with nested roles', () => {
+  // 目录 setup 扁平选项（1-3）：guard/hunter/idiot 直接入池
+  const flat = werewolfModule.parseConfig({
+    rulesetId: 'werewolf_legacy_platform_v2',
+    pace: 'standard',
+    guard: true,
+    hunter: true,
+    idiot: false,
+  });
+  assert.deepEqual(flat.roles, { guard: true, hunter: true, idiot: false });
+
+  // 旧嵌套 roles 兼容：嵌套为 true 优先合并，扁平为 true 亦入池
+  const merged = werewolfModule.parseConfig({
+    rulesetId: 'werewolf_legacy_platform_v2',
+    roles: { guard: true, hunter: false, idiot: true },
+    guard: false,
+    hunter: true,
+    idiot: true,
+  });
+  assert.deepEqual(merged.roles, { guard: true, hunter: true, idiot: true });
+});
+
 test('werewolf runoff tie goes to next night without elimination', () => {
   let state = resolvedDayAnnouncement();
   for (const id of aliveIds(state)) state = apply(state, actor(id), { type: 'confirm_announcement' });

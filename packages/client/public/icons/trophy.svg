@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="trophy">
+  <rect width="128" height="128" rx="28" fill="#f2c14e"/>
+  <path d="M42 34h44v24c0 14-10 24-22 24s-22-10-22-24V34z" fill="#211a12"/>
+  <path d="M42 42H30c0 10 6 16 12 16M86 42h12c0 10-6 16-12 16" fill="none" stroke="#211a12" stroke-width="6" stroke-linecap="round"/>
+  <rect x="58" y="82" width="12" height="12" fill="#211a12"/>
+  <rect x="44" y="94" width="40" height="10" rx="3" fill="#211a12"/>
+</svg>

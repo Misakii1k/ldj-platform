@@ -1,38 +1,103 @@
 /** durian_orchard_v1 客户端严格视角类型与解析器（与服务端视图形状一一对应）。 */
 
-export const DURIAN_FRUITS = ['amber_pear', 'cloud_berry', 'jade_melon', 'moon_plum', 'sun_fig'] as const;
+export const DURIAN_FRUITS = ['durian', 'strawberry', 'banana', 'grape', 'apple'] as const;
 export type DurianFruit = (typeof DURIAN_FRUITS)[number];
-export type DurianPhase = 'ordering' | 'buzzer' | 'game_over';
-export type DurianStaffEvent = 'double_check' | 'extra_basket' | 'mixed_crate';
 
-export interface DurianOrderOption {
+export const FRUIT_NAMES: Record<DurianFruit, string> = {
+  durian: '榴莲',
+  strawberry: '草莓',
+  banana: '香蕉',
+  grape: '葡萄',
+  apple: '苹果',
+};
+
+export const FRUIT_EMOJIS: Record<DurianFruit, string> = {
+  durian: '🍋',
+  strawberry: '🍓',
+  banana: '🍌',
+  grape: '🍇',
+  apple: '🍎',
+};
+
+export interface FruitHalf {
   fruit: DurianFruit;
-  quantity: 1 | 2;
+  quantity: 1 | 2 | 3;
 }
 
-export interface DurianOrderCard {
+export interface FruitCard {
   id: string;
-  options: readonly [DurianOrderOption, DurianOrderOption];
-  staffEvent: DurianStaffEvent;
+  kind: 'fruit';
+  left: FruitHalf;
+  right: FruitHalf;
 }
 
-export interface DurianDemandChange {
-  fruit: DurianFruit;
-  quantity: number;
+export type MonkeySpecial =
+  | 'flip'
+  | 'do_nothing'
+  | 'three_void'
+  | 'banana_void';
+
+export const MONKEY_SPECIAL_NAMES: Record<MonkeySpecial, string> = {
+  flip: '翻转卡牌',
+  do_nothing: '无事发生',
+  three_void: '3个水果无效',
+  banana_void: '所有香蕉无效',
+};
+
+export const MONKEY_SPECIAL_DESCS: Record<MonkeySpecial, string> = {
+  flip: '选择桌面上已放置的一张水果牌，将其 ✓ 和 ✗ 两半互换',
+  do_nothing: '无事发生，直接跳过本回合（下家仍可质疑）',
+  three_void: '桌面上所有标注为 3 个的水果格子全部失效',
+  banana_void: '桌面上所有 ✓ 侧的香蕉全部不计入总数',
+};
+
+export interface MonkeyCard {
+  id: string;
+  kind: 'monkey';
+  special: MonkeySpecial;
 }
 
-export interface DurianOrderRecord {
-  orderId: string;
+export type DurianCard = FruitCard | MonkeyCard;
+
+export interface TableFruitPlacement {
+  placementId: string;
+  card: FruitCard;
+  checkHalf: 'left' | 'right';
+  placedBy: string;
+}
+
+export interface TableMonkeyPlacement {
+  placementId: string;
+  card: MonkeyCard;
+  placedBy: string;
+  targetPlacementId?: string;
+}
+
+export type TablePlacement =
+  | { kind: 'fruit'; data: TableFruitPlacement }
+  | { kind: 'monkey'; data: TableMonkeyPlacement };
+
+export type DurianPhase =
+  | 'turn_action'
+  | 'choose_placement'
+  | 'choose_flip'
+  | 'challenge_result'
+  | 'game_over';
+
+export interface ChallengeDetails {
+  challengerId: string;
+  accusedId: string;
+  success: boolean;
+  loserId: string;
+  penaltyPoints: number;
+  tableTotals: Record<DurianFruit, number>;
+  stockTotals: Record<DurianFruit, number>;
+  oversoldFruits: DurianFruit[];
+}
+
+export interface VisibleForeheadCard {
   playerId: string;
-  optionIndex: 0 | 1;
-  staffEvent: DurianStaffEvent;
-  changes: DurianDemandChange[];
-}
-
-export interface DurianBell {
-  windowId: string;
-  status: 'open' | 'locked';
-  claimantId: string | null;
+  card: DurianCard;
 }
 
 export interface DurianPublicView {
@@ -41,179 +106,221 @@ export interface DurianPublicView {
   schemaVersion: 1;
   phase: DurianPhase;
   players: string[];
-  demand: Record<DurianFruit, number>;
-  currentOrder: DurianOrderCard | null;
-  history: DurianOrderRecord[];
+  round: number;
+  maxRounds: number;
+  mode: 'standard' | 'simulator';
+  deckCount: number;
+  tablePlacements: TablePlacement[];
   currentPlayerId: string | null;
-  bell: DurianBell | null;
-  angerLevel: number;
+  previousPlayerId: string | null;
+  lastChallenge: ChallengeDetails | null;
   penalties: Record<string, number>;
+  eliminatedPlayers: string[];
   winners: string[];
+  activeTableTotals: Record<DurianFruit, number>;
+  voidThreeActive: boolean;
+  voidBananaActive: boolean;
 }
 
 export interface DurianPlayerView extends DurianPublicView {
   me: {
     playerId: string;
-    ownInventoryHidden: true;
-    visibleInventory: { playerId: string; card: { id: string; fruit: DurianFruit } }[];
+    ownForeheadHidden: boolean;
+    drawnCard: DurianCard | null;
+    visibleForeheadCards: VisibleForeheadCard[];
   } | null;
 }
-
-const PUBLIC_KEYS = [
-  'gameId', 'rulesetId', 'schemaVersion', 'phase', 'players', 'demand', 'currentOrder',
-  'history', 'currentPlayerId', 'bell', 'angerLevel', 'penalties', 'winners',
-] as const;
-const ME_KEYS = ['playerId', 'ownInventoryHidden', 'visibleInventory'] as const;
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function hasExactKeys(record: Record<string, unknown>, allowed: readonly string[]): boolean {
-  const keys = Object.keys(record);
-  if (keys.length !== allowed.length) return false;
-  const allowedSet = new Set<string>(allowed);
-  return keys.every((key) => allowedSet.has(key));
-}
-
-function isPlayerId(value: unknown): value is string {
-  return typeof value === 'string' && value.length >= 1 && value.length <= 64;
-}
-
-function isFruit(value: unknown): value is DurianFruit {
-  return typeof value === 'string' && (DURIAN_FRUITS as readonly string[]).includes(value);
-}
-
-function isNonNegativeInteger(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0;
-}
-
-function parseFruitRecord(value: unknown): Record<DurianFruit, number> | null {
+function parseFruitHalf(value: unknown): FruitHalf | null {
   if (!isObject(value)) return null;
-  const result: Record<string, number> = {};
-  for (const key of Object.keys(value)) {
-    if (!isFruit(key) || !isNonNegativeInteger(value[key])) return null;
-    result[key] = value[key] as number;
-  }
-  for (const fruit of DURIAN_FRUITS) {
-    if (!(fruit in result)) result[fruit] = 0;
-  }
-  return result as Record<DurianFruit, number>;
+  const { fruit, quantity } = value;
+  if (typeof fruit !== 'string' || !(DURIAN_FRUITS as readonly string[]).includes(fruit)) return null;
+  if (quantity !== 1 && quantity !== 2 && quantity !== 3) return null;
+  return { fruit: fruit as DurianFruit, quantity };
 }
 
-function parseOrderOption(value: unknown): DurianOrderOption | null {
-  if (!isObject(value) || Object.keys(value).length !== 2) return null;
-  if (!isFruit(value.fruit)) return null;
-  if (value.quantity !== 1 && value.quantity !== 2) return null;
-  return { fruit: value.fruit, quantity: value.quantity as 1 | 2 };
-}
-
-function parseOrderCard(value: unknown): DurianOrderCard | null {
-  if (!isObject(value) || Object.keys(value).length !== 3) return null;
-  if (!isPlayerId(value.id)) return null;
-  if (!Array.isArray(value.options) || value.options.length !== 2) return null;
-  const options = value.options.map(parseOrderOption);
-  if (options.some((option) => option === null)) return null;
-  const staffEvent = value.staffEvent;
-  if (staffEvent !== 'double_check' && staffEvent !== 'extra_basket' && staffEvent !== 'mixed_crate') return null;
-  return { id: value.id, options: [options[0]!, options[1]!], staffEvent };
-}
-
-function parseOrderRecord(value: unknown): DurianOrderRecord | null {
-  if (!isObject(value) || Object.keys(value).length !== 5) return null;
-  if (!isPlayerId(value.orderId) || !isPlayerId(value.playerId)) return null;
-  if (value.optionIndex !== 0 && value.optionIndex !== 1) return null;
-  if (value.staffEvent !== 'double_check' && value.staffEvent !== 'extra_basket' && value.staffEvent !== 'mixed_crate') return null;
-  if (!Array.isArray(value.changes)) return null;
-  const changes: DurianDemandChange[] = [];
-  for (const change of value.changes) {
-    if (!isObject(change) || Object.keys(change).length !== 2 || !isFruit(change.fruit) || !isNonNegativeInteger(change.quantity)) return null;
-    changes.push({ fruit: change.fruit, quantity: change.quantity });
+function parseDurianCard(value: unknown): DurianCard | null {
+  if (!isObject(value)) return null;
+  const { id, kind } = value;
+  if (typeof id !== 'string') return null;
+  if (kind === 'fruit') {
+    const left = parseFruitHalf(value.left);
+    const right = parseFruitHalf(value.right);
+    if (!left || !right) return null;
+    return { id, kind: 'fruit', left, right };
   }
-  return { orderId: value.orderId, playerId: value.playerId, optionIndex: value.optionIndex, staffEvent: value.staffEvent, changes };
-}
-
-function parseBell(value: unknown): DurianBell | null {
-  if (value === null) return null;
-  if (!isObject(value) || Object.keys(value).length !== 3 || !isPlayerId(value.windowId)) return null;
-  if (value.status === 'open') {
-    return value.claimantId === null ? { windowId: value.windowId, status: 'open', claimantId: null } : null;
-  }
-  if (value.status === 'locked' && isPlayerId(value.claimantId)) {
-    return { windowId: value.windowId, status: 'locked', claimantId: value.claimantId };
+  if (kind === 'monkey') {
+    const special = value.special;
+    if (special !== 'flip' && special !== 'do_nothing' && special !== 'three_void' && special !== 'banana_void') {
+      return null;
+    }
+    return { id, kind: 'monkey', special };
   }
   return null;
 }
 
-function parseBase(view: Record<string, unknown>, withMe: boolean): DurianPublicView | null {
-  if (!hasExactKeys(view, withMe ? [...PUBLIC_KEYS, 'me'] : PUBLIC_KEYS)) return null;
-  if (view.gameId !== 'durian' || view.rulesetId !== 'durian_orchard_v1' || view.schemaVersion !== 1) return null;
-  if (view.phase !== 'ordering' && view.phase !== 'buzzer' && view.phase !== 'game_over') return null;
-  if (!Array.isArray(view.players) || !view.players.every(isPlayerId)) return null;
-  const demand = parseFruitRecord(view.demand);
-  const currentOrder = parseOrderCard(view.currentOrder);
-  const bell = parseBell(view.bell);
-  if (demand === null || currentOrder === null && view.currentOrder !== null || bell === null && view.bell !== null) return null;
-  if (!Array.isArray(view.history)) return null;
-  const history: DurianOrderRecord[] = [];
-  for (const item of view.history) {
-    const record = parseOrderRecord(item);
-    if (record === null) return null;
-    history.push(record);
+function parseTablePlacement(value: unknown): TablePlacement | null {
+  if (!isObject(value)) return null;
+  const { kind, data } = value;
+  if (!isObject(data)) return null;
+
+  if (kind === 'fruit') {
+    const card = parseDurianCard(data.card);
+    if (!card || card.kind !== 'fruit') return null;
+    if (typeof data.placementId !== 'string' || typeof data.placedBy !== 'string') return null;
+    if (data.checkHalf !== 'left' && data.checkHalf !== 'right') return null;
+    return {
+      kind: 'fruit',
+      data: {
+        placementId: data.placementId,
+        card,
+        checkHalf: data.checkHalf,
+        placedBy: data.placedBy,
+      },
+    };
   }
-  if (view.currentOrder !== null && currentOrder === null) return null;
-  if (view.bell !== null && bell === null) return null;
-  if (view.currentPlayerId !== null && !isPlayerId(view.currentPlayerId)) return null;
-  if (!isNonNegativeInteger(view.angerLevel) || (view.angerLevel as number) < 1 || (view.angerLevel as number) > 7) return null;
-  if (!isObject(view.penalties)) return null;
-  for (const key of Object.keys(view.penalties)) {
-    if (!isNonNegativeInteger(view.penalties[key])) return null;
+
+  if (kind === 'monkey') {
+    const card = parseDurianCard(data.card);
+    if (!card || card.kind !== 'monkey') return null;
+    if (typeof data.placementId !== 'string' || typeof data.placedBy !== 'string') return null;
+    return {
+      kind: 'monkey',
+      data: {
+        placementId: data.placementId,
+        card,
+        placedBy: data.placedBy,
+        targetPlacementId: typeof data.targetPlacementId === 'string' ? data.targetPlacementId : undefined,
+      },
+    };
   }
-  if (!Array.isArray(view.winners) || !view.winners.every(isPlayerId)) return null;
+
+  return null;
+}
+
+function parseChallengeDetails(value: unknown): ChallengeDetails | null {
+  if (!isObject(value)) return null;
+  const { challengerId, accusedId, success, loserId, penaltyPoints, tableTotals, stockTotals, oversoldFruits } = value;
+  if (typeof challengerId !== 'string' || typeof accusedId !== 'string' || typeof success !== 'boolean' || typeof loserId !== 'string') {
+    return null;
+  }
+  if (typeof penaltyPoints !== 'number') return null;
+  if (!isObject(tableTotals) || !isObject(stockTotals) || !Array.isArray(oversoldFruits)) return null;
+
+  return {
+    challengerId,
+    accusedId,
+    success,
+    loserId,
+    penaltyPoints,
+    tableTotals: tableTotals as Record<DurianFruit, number>,
+    stockTotals: stockTotals as Record<DurianFruit, number>,
+    oversoldFruits: oversoldFruits as DurianFruit[],
+  };
+}
+
+export function parseDurianPlayerView(input: unknown): DurianPlayerView | null {
+  if (!isObject(input)) return null;
+  if (input.gameId !== 'durian' || input.rulesetId !== 'durian_orchard_v1' || input.schemaVersion !== 1) return null;
+
+  const phase = input.phase;
+  if (phase !== 'turn_action' && phase !== 'choose_placement' && phase !== 'choose_flip' && phase !== 'challenge_result' && phase !== 'game_over') {
+    return null;
+  }
+
+  if (!Array.isArray(input.players)) return null;
+  const players = input.players.filter((p): p is string => typeof p === 'string');
+
+  if (typeof input.round !== 'number' || typeof input.maxRounds !== 'number' || typeof input.deckCount !== 'number') return null;
+  const mode = input.mode === 'simulator' ? 'simulator' : 'standard';
+
+  if (!Array.isArray(input.tablePlacements)) return null;
+  const tablePlacements: TablePlacement[] = [];
+  for (const item of input.tablePlacements) {
+    const parsed = parseTablePlacement(item);
+    if (!parsed) return null;
+    tablePlacements.push(parsed);
+  }
+
+  const currentPlayerId = typeof input.currentPlayerId === 'string' ? input.currentPlayerId : null;
+  const previousPlayerId = typeof input.previousPlayerId === 'string' ? input.previousPlayerId : null;
+  const lastChallenge = input.lastChallenge ? parseChallengeDetails(input.lastChallenge) : null;
+
+  if (!isObject(input.penalties)) return null;
+  const penalties = input.penalties as Record<string, number>;
+
+  const eliminatedPlayers = Array.isArray(input.eliminatedPlayers)
+    ? input.eliminatedPlayers.filter((p): p is string => typeof p === 'string')
+    : [];
+
+  const winners = Array.isArray(input.winners)
+    ? input.winners.filter((p): p is string => typeof p === 'string')
+    : [];
+
+  if (!isObject(input.activeTableTotals)) return null;
+  const activeTableTotals = input.activeTableTotals as Record<DurianFruit, number>;
+
+  const voidThreeActive = Boolean(input.voidThreeActive);
+  const voidBananaActive = Boolean(input.voidBananaActive);
+
+  let me: DurianPlayerView['me'] = null;
+  if (isObject(input.me)) {
+    const playerId = typeof input.me.playerId === 'string' ? input.me.playerId : '';
+    const drawnCard = input.me.drawnCard ? parseDurianCard(input.me.drawnCard) : null;
+
+    const visibleForeheadCards: VisibleForeheadCard[] = [];
+    if (Array.isArray(input.me.visibleForeheadCards)) {
+      for (const item of input.me.visibleForeheadCards) {
+        if (isObject(item) && typeof item.playerId === 'string') {
+          const card = parseDurianCard(item.card);
+          if (card) visibleForeheadCards.push({ playerId: item.playerId, card });
+        }
+      }
+    }
+
+    me = {
+      playerId,
+      ownForeheadHidden: true,
+      drawnCard,
+      visibleForeheadCards,
+    };
+  }
+
   return {
     gameId: 'durian',
     rulesetId: 'durian_orchard_v1',
     schemaVersion: 1,
-    phase: view.phase as DurianPhase,
-    players: [...view.players],
-    demand,
-    currentOrder,
-    history,
-    currentPlayerId: view.currentPlayerId as string | null,
-    bell,
-    angerLevel: view.angerLevel as number,
-    penalties: { ...view.penalties } as Record<string, number>,
-    winners: [...view.winners],
+    phase,
+    players,
+    round: input.round,
+    maxRounds: input.maxRounds,
+    mode,
+    deckCount: input.deckCount,
+    tablePlacements,
+    currentPlayerId,
+    previousPlayerId,
+    lastChallenge,
+    penalties,
+    eliminatedPlayers,
+    winners,
+    activeTableTotals,
+    voidThreeActive,
+    voidBananaActive,
+    me,
   };
 }
 
-function parseMe(value: unknown): DurianPlayerView['me'] {
-  if (value === null) return null;
-  if (!isObject(value) || !hasExactKeys(value, ME_KEYS) || !isPlayerId(value.playerId)) return null;
-  if (value.ownInventoryHidden !== true || !Array.isArray(value.visibleInventory)) return null;
-  const visibleInventory: NonNullable<DurianPlayerView['me']>['visibleInventory'] = [];
-  for (const item of value.visibleInventory) {
-    if (!isObject(item) || Object.keys(item).length !== 2 || !isPlayerId(item.playerId)) return null;
-    const card = item.card;
-    if (!isObject(card) || Object.keys(card).length !== 2 || !isPlayerId(card.id) || !isFruit(card.fruit)) return null;
-    visibleInventory.push({ playerId: item.playerId, card: { id: card.id, fruit: card.fruit } });
-  }
-  return { playerId: value.playerId, ownInventoryHidden: true, visibleInventory };
+export function parseDurianSpectatorView(input: unknown): DurianPublicView | null {
+  const playerView = parseDurianPlayerView(input);
+  if (!playerView) return null;
+  const { me, ...publicView } = playerView;
+  return publicView;
 }
 
-export function parseDurianView(
-  view: unknown,
-  role: 'player' | 'spectator',
-): DurianPlayerView | DurianPublicView | null {
-  if (!isObject(view)) return null;
-  if (role === 'spectator') {
-    if ('me' in view) return null;
-    return parseBase(view, false);
-  }
-  if (!('me' in view)) return null;
-  const base = parseBase(view, true);
-  if (base === null) return null;
-  const me = parseMe(view.me);
-  if (view.me !== null && me === null) return null;
-  return { ...base, me };
+export function parseDurianView(input: unknown, role: 'player' | 'spectator'): DurianPlayerView | DurianPublicView | null {
+  return role === 'player' ? parseDurianPlayerView(input) : parseDurianSpectatorView(input);
 }

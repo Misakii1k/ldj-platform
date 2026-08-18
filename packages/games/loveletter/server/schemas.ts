@@ -18,9 +18,11 @@ const deckSchema = z.array(cardSchema)
 
 const loveLetterConfigSchema = z.object({
   rulesetId: z.literal('loveletter_classic16_v1').optional(),
+  affectionTarget: z.number().int().min(1).max(10).optional(),
+  turnSeconds: z.number().int().min(1).max(600).optional(),
   deckOrder: deckSchema.optional(),
   futureDeckOrders: z.array(deckSchema).optional(),
-}).strict('配置 字段无效');
+}).passthrough();
 
 const loveLetterActionSchema = z.discriminatedUnion('type', [
   z.object({

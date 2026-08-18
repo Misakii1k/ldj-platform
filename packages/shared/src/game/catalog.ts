@@ -42,11 +42,12 @@ function defaultSetup(
   moduleConfig: Readonly<Record<string, string | number | boolean>> = {},
   extraRulesets: readonly GameRulesetSpec[] = [],
 ): GameSetupSpec {
+  const optionDefaults = Object.fromEntries(options.map((opt) => [opt.key, opt.defaultValue]));
   return {
     rulesets: [{ id: rulesetId, label }, ...extraRulesets],
     defaultRulesetId: rulesetId,
     options,
-    defaultConfig: { rulesetId, ...moduleConfig },
+    defaultConfig: { rulesetId, ...optionDefaults, ...moduleConfig },
   };
 }
 
@@ -61,14 +62,36 @@ export const GAME_CATALOG = [
     tags: ['推理', '轻松', '语言表达'],
     theme: 'berry',
     rulesets: [
-      { id: 'undercover_classic_v1', label: '平台经典兼容基线' },
-      { id: 'undercover_blank_v1', label: '白板变体' },
+      { id: 'undercover_classic_v1', label: '经典模式（每人都有词）' },
+      { id: 'undercover_blank_v1', label: '白板模式（白板玩家没有词）' },
     ],
-    setup: defaultSetup('undercover_classic_v1', '平台经典兼容基线', [
-      { key: 'speechSeconds', kind: 'integer', label: '发言时间（秒）', defaultValue: 60, min: 30, max: 90, step: 30 },
-      { key: 'voteSeconds', kind: 'integer', label: '投票时间（秒）', defaultValue: 45, min: 30, max: 60, step: 15 },
+    setup: defaultSetup('undercover_classic_v1', '经典模式（每人都有词）', [
+      {
+        key: 'speechSeconds',
+        kind: 'segmented',
+        label: '每人发言时长',
+        description: '默认 60 秒适合大多数局，直接开局不用调',
+        defaultValue: 60,
+        choices: [
+          { value: 30, label: '30 秒 · 快' },
+          { value: 60, label: '60 秒 · 适中' },
+          { value: 90, label: '90 秒 · 细聊' },
+        ],
+      },
+      {
+        key: 'voteSeconds',
+        kind: 'segmented',
+        label: '投票思考时长',
+        description: '默认 45 秒适合大多数局，直接开局不用调',
+        defaultValue: 45,
+        choices: [
+          { value: 30, label: '30 秒 · 快投' },
+          { value: 45, label: '45 秒 · 适中' },
+          { value: 60, label: '60 秒 · 细想' },
+        ],
+      },
     ], { speechSeconds: 60, voteSeconds: 45 }, [
-      { id: 'undercover_blank_v1', label: '白板变体' },
+      { id: 'undercover_blank_v1', label: '白板模式（白板玩家没有词）' },
     ]),
     botSupport: 'rule_and_llm',
     visualTheme: { accent: 'berry', surface: 'social' },
@@ -129,7 +152,10 @@ export const GAME_CATALOG = [
       { key: 'pace', kind: 'select', label: '对局节奏', defaultValue: 'standard', choices: [{ value: 'fast', label: '快速' }, { value: 'standard', label: '标准' }, { value: 'relaxed', label: '轻松' }] },
       { key: 'witchSelfSave', kind: 'select', label: '女巫自救', defaultValue: 'first_night', choices: [{ value: 'first_night', label: '仅首夜' }, { value: 'never', label: '禁止' }, { value: 'always', label: '允许' }] },
       { key: 'winCondition', kind: 'select', label: '胜负条件', defaultValue: 'numbers', choices: [{ value: 'numbers', label: '屠边人数' }, { value: 'roles', label: '屠神规则' }] },
-    ], { preset: 'classic', pace: 'standard', witchSelfSave: 'first_night', winCondition: 'numbers' }, [
+      { key: 'guard', kind: 'boolean', label: '守卫加入角色池', defaultValue: false },
+      { key: 'hunter', kind: 'boolean', label: '猎人加入角色池', defaultValue: false },
+      { key: 'idiot', kind: 'boolean', label: '白痴加入角色池', defaultValue: false },
+    ], { preset: 'classic', pace: 'standard', witchSelfSave: 'first_night', winCondition: 'numbers', guard: false, hunter: false, idiot: false }, [
       { id: 'werewolf_platform_open_kill_v1', label: '开放夜刀' },
     ]),
     botSupport: 'rule_and_llm',
@@ -141,15 +167,35 @@ export const GAME_CATALOG = [
     minPlayers: 2,
     maxPlayers: 7,
     availability: 'playable',
-    summary: '原创水果卡牌经营对局：按铃接单、管理库存与怒气，小心超卖赔穿！',
-    tags: ['卡牌', '经营', '原创'],
-    theme: 'ocean',
+    summary: '原版《Durian》机制：头顶暗牌（只看别人不看自己）、翻牌自选 ✓/✗ 生效、猴子功能牌与按铃质疑超卖。',
+    tags: ['推理', '心理', '聚会'],
+    theme: 'mint',
     rulesets: [
-      { id: 'durian_orchard_v1', label: '平台规则' },
+      { id: 'durian_orchard_v1', label: '原版规则基线' },
     ],
-    setup: defaultSetup('durian_orchard_v1', '平台规则'),
-    botSupport: 'none',
-    visualTheme: { accent: 'ocean', surface: 'board' },
+    setup: defaultSetup('durian_orchard_v1', '原版规则基线', [
+      {
+        key: 'mode',
+        kind: 'select',
+        label: '对局模式',
+        defaultValue: 'standard',
+        choices: [
+          { value: 'standard', label: '标准模式（系统判定）' },
+          { value: 'simulator', label: '模拟模式（含实体按铃）' },
+        ],
+      },
+      {
+        key: 'maxRounds',
+        kind: 'integer',
+        label: '轮数上限（轮）',
+        defaultValue: 7,
+        min: 1,
+        max: 14,
+        step: 1,
+      },
+    ]),
+    botSupport: 'rule',
+    visualTheme: { accent: 'mint', surface: 'board' },
   },
   {
     id: 'loveletter',
@@ -164,7 +210,7 @@ export const GAME_CATALOG = [
       { id: 'loveletter_classic16_v1', label: '平台规则' },
     ],
     setup: defaultSetup('loveletter_classic16_v1', '平台规则'),
-    botSupport: 'none',
+    botSupport: 'rule',
     visualTheme: { accent: 'sunset', surface: 'cards' },
   },
   {
@@ -194,14 +240,16 @@ export const GAME_CATALOG = [
     minPlayers: 5,
     maxPlayers: 9,
     availability: 'playable',
-    summary: '原版《以鹅传鹅》机制：头鹅读案、逐棒传递、从末位逐一指认、投票揪恶。线下桌游辅助工具。',
+    summary: '《以鹅传鹅》聚会推理机制：抢当头鹅、特征鹅卡选案、线下动作传递、末棒倒序指认、票选揪恶。线下桌游辅助工具。',
     tags: ['传递', '阵营', '聚会'],
     theme: 'sunset',
     rulesets: [
       { id: 'goose_relay_classic_v1', label: '原版规则基线' },
     ],
     setup: defaultSetup('goose_relay_classic_v1', '原版规则基线', [
-      { key: 'relaySeconds', kind: 'integer', label: '每节点传递时长（秒）', defaultValue: 30, min: 1, max: 600, step: 1 },
+      { key: 'claimHeadSeconds', kind: 'integer', label: '抢头鹅时限（秒）', defaultValue: 15, min: 1, max: 600, step: 1 },
+      { key: 'pickCardsSeconds', kind: 'integer', label: '头鹅选卡时限（秒）', defaultValue: 30, min: 1, max: 600, step: 1 },
+      { key: 'relaySeconds', kind: 'integer', label: '每节点表演时长（秒）', defaultValue: 30, min: 1, max: 600, step: 1 },
       { key: 'discussionSeconds', kind: 'integer', label: '讨论时长（秒，0=跳过）', defaultValue: 60, min: 0, max: 600, step: 1 },
       { key: 'accuseSeconds', kind: 'integer', label: '每人指认时长（秒）', defaultValue: 30, min: 1, max: 600, step: 1 },
       { key: 'voteSeconds', kind: 'integer', label: '投票时长（秒）', defaultValue: 30, min: 1, max: 600, step: 1 },

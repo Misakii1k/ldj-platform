@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useConnection } from './connection/useConnection.ts';
 import { ConnectionProvider } from './connection/ConnectionContext.tsx';
-import { ToastProvider } from './shared-ui/ToastContext.tsx';
+import { ToastProvider, useToast } from './shared-ui/ToastContext.tsx';
 import { BackgroundProvider } from './shared-ui/BackgroundContext.tsx';
 import { BackgroundManager } from './shared-ui/BackgroundManager.tsx';
 import { MotionProvider } from './motion/MotionContext.tsx';
@@ -10,9 +10,34 @@ import { RoomPage } from './room/RoomPage.tsx';
 import { GamePage } from './game/GamePage.tsx';
 import { TabletopStatusBanner } from './game/TabletopStatusBanner.tsx';
 
+import { useState, useRef } from 'react';
+import { GameStartTransition } from './shared-ui/GameStartTransition.tsx';
+import { webAudio } from './shared-ui/WebAudioManager.ts';
+
 function Router() {
-  const { state, me, reset, resync } = useConnection();
+  const { state, me, isViewingHome, setViewingHome, reset, resync, clearMe } = useConnection();
   const { connState, room, game, isRefreshing, isRecovering } = state;
+  const { showToast } = useToast();
+  const [inGameTransition, setInGameTransition] = useState(false);
+  const prevRoomStatusRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const prev = prevRoomStatusRef.current;
+    const current = room?.status ?? null;
+    prevRoomStatusRef.current = current;
+
+    if (prev && prev !== 'IN_GAME' && current === 'IN_GAME') {
+      webAudio.playDealCards();
+      setInGameTransition(true);
+    }
+  }, [room?.status]);
+
+  useEffect(() => {
+    if (state.closeReason?.code === 'room_closed') {
+      showToast('房主已解散房间');
+      reset();
+    }
+  }, [state.closeReason?.code, showToast, reset]);
 
   // 邀请深链消费完成：一旦建立身份（加入成功/恢复席位），把 /join/房间码 从地址栏清掉，
   // 避免刷新后再次弹出加入层。
@@ -26,6 +51,11 @@ function Router() {
   // 渲染视图并在顶部叠一条非模态状态横幅，而不是用全屏 loader 替换桌子。
   const hasContent = room !== null || game !== null;
   const showBanner = isRefreshing || isRecovering;
+
+  // 如果用户尚未进入房间，或者用户主动选择了暂离返回大厅/首页，展示主页（可自由挑选/创建新游戏，顶部显示返回原房间）
+  if (me === null || isViewingHome) {
+    return <GameHomePage />;
+  }
 
   if (connState === 'seat_expired') {
     return (
@@ -65,15 +95,13 @@ function Router() {
     );
   }
 
-  if (me === null) return <GameHomePage />;
-
   let view;
   if (room === null) {
     view = (
       <main className="app loading-screen">
         <h1>局域网桌游平台</h1>
         <p className="loading">正在恢复房间…</p>
-        <button type="button" className="text-btn" onClick={reset}>放弃恢复，返回首页</button>
+        <button type="button" className="text-btn" onClick={() => setViewingHome(true)}>暂离返回首页</button>
       </main>
     );
   } else if (room.status === 'CLOSED') {
@@ -83,7 +111,7 @@ function Router() {
         <button type="button" className="primary-btn" onClick={reset}>返回首页</button>
       </main>
     );
-  } else if (room.status === 'IN_GAME') {
+  } else if (room.status === 'IN_GAME' || (room.status === 'POST_GAME' && game !== null)) {
     view = game !== null ? <GamePage /> : (
       <main className="app loading-screen" aria-live="polite" aria-busy="true">
         <h1>对局已开始</h1>
@@ -95,29 +123,36 @@ function Router() {
     view = <RoomPage />;
   }
 
-  if (showBanner) {
-    return (
-      <>
-        <TabletopStatusBanner state={state} />
-        {view}
-      </>
-    );
-  }
-  return view;
+  return (
+    <>
+      <GameStartTransition active={inGameTransition} onComplete={() => setInGameTransition(false)} />
+      {showBanner && <TabletopStatusBanner state={state} />}
+      {view}
+    </>
+  );
 }
+
+import { UserProfileProvider } from './user/UserProfileContext.tsx';
+import { UserProfileModal } from './user/UserProfileModal.tsx';
+import { ErrorBoundary } from './shared-ui/ErrorBoundary.tsx';
 
 export function App() {
   return (
-    <ConnectionProvider>
-      <ToastProvider>
-        <MotionProvider>
-          <BackgroundProvider>
-            <BackgroundManager>
-              <Router />
-            </BackgroundManager>
-          </BackgroundProvider>
-        </MotionProvider>
-      </ToastProvider>
-    </ConnectionProvider>
+    <ErrorBoundary>
+      <UserProfileProvider>
+        <ConnectionProvider>
+          <ToastProvider>
+            <MotionProvider>
+              <BackgroundProvider>
+                <BackgroundManager>
+                  <Router />
+                  <UserProfileModal />
+                </BackgroundManager>
+              </BackgroundProvider>
+            </MotionProvider>
+          </ToastProvider>
+        </ConnectionProvider>
+      </UserProfileProvider>
+    </ErrorBoundary>
   );
 }

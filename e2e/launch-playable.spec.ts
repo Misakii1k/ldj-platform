@@ -6,7 +6,7 @@
  * 本 spec 全部走真实浏览器：首页 → 游戏卡「创建房间」→ 建房表单 → 服务端 create_room。
  *
  * 验证内容：
- * - undercover 完整局：首页建房 → 添加规则机器人 → 准备 → 开局 → 浏览器玩家全程参与
+ * - undercover 完整局：首页建房 → 添加机器人陪玩 → 准备 → 开局 → 浏览器玩家全程参与
  *   （看词确认 / 发言交棒 / 投票），3 个规则机器人驱动其余回合，直至真实服务端产出
  *   game_over（完整局 = 从开局到唯一正式结果）。
  * - werewolf / landlord 最小建房断言：首页可见、卡面「创建房间」可点、服务端 accept
@@ -113,13 +113,25 @@ function assertServerResultRow(roomCode: string): void {
   }
 }
 
+async function gotoHome(page: Page): Promise<void> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
+      return;
+    } catch (err) {
+      if (attempt === 2) throw err;
+      await page.waitForTimeout(400);
+    }
+  }
+}
+
 test.describe('D5 P2b 上架建房链路', () => {
   test('undercover 完整局：首页建房 → 机器人凑数 → 开局 → 真实服务端终局', async ({ browser }) => {
     test.setTimeout(480_000);
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto(BASE_URL);
+    await gotoHome(page);
 
     // 首页：undercover 可见且「创建房间」可用（availability=playable）
     const undercoverCard = homeCard(page, '谁是卧底');
@@ -132,10 +144,10 @@ test.describe('D5 P2b 上架建房链路', () => {
     await expect(roomPage).toHaveAttribute('data-game-id', 'undercover');
     const roomCode = (await page.locator('.room-code').textContent())?.trim() ?? '';
     expect(roomCode).toMatch(/^[A-Z0-9]{5}$/);
-    await expect(page.getByText('谁是卧底 · 房间大厅')).toBeVisible();
+    await expect(page.getByText('谁是卧底 · 房间大厅').first()).toBeVisible();
 
     // 添加 3 个规则机器人凑 4 人（机器人自动就绪）
-    const addBot = page.getByRole('button', { name: '添加规则机器人' });
+    const addBot = page.getByRole('button', { name: '添加机器人陪玩' });
     await expect(addBot).toBeEnabled();
     for (let expected = 2; expected <= 4; expected += 1) {
       await addBot.click();
@@ -163,7 +175,7 @@ test.describe('D5 P2b 上架建房链路', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto(BASE_URL);
+    await gotoHome(page);
 
     const werewolfCard = homeCard(page, '狼人杀');
     await expect(werewolfCard).toBeVisible({ timeout: 20_000 });
@@ -174,7 +186,7 @@ test.describe('D5 P2b 上架建房链路', () => {
     await expect(roomPage).toBeVisible({ timeout: 20_000 });
     await expect(roomPage).toHaveAttribute('data-game-id', 'werewolf');
     await expect(page.locator('.room-code')).toBeVisible();
-    await expect(page.getByText('狼人杀 · 房间大厅')).toBeVisible();
+    await expect(page.getByText('狼人杀 · 房间大厅').first()).toBeVisible();
 
     await context.close();
   });
@@ -184,7 +196,7 @@ test.describe('D5 P2b 上架建房链路', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto(BASE_URL);
+    await gotoHome(page);
 
     const landlordCard = homeCard(page, '斗地主');
     await expect(landlordCard).toBeVisible({ timeout: 20_000 });
@@ -195,12 +207,13 @@ test.describe('D5 P2b 上架建房链路', () => {
     await expect(roomPage).toBeVisible({ timeout: 20_000 });
     await expect(roomPage).toHaveAttribute('data-game-id', 'landlord');
     await expect(page.locator('.room-code')).toBeVisible();
-    await expect(page.getByText('斗地主 · 房间大厅')).toBeVisible();
+    await expect(page.getByText('斗地主 · 房间大厅').first()).toBeVisible();
 
-    const ruleset = page.getByRole('combobox', { name: '规则预设' });
-    await expect(ruleset).toHaveValue('landlord_platform_v1');
-    await expect(ruleset.locator('option')).toHaveCount(2);
-    await expect(ruleset.locator('option').nth(1)).toHaveText('Legacy 兼容基线');
+    // 玩法模式以点选芯片呈现（不再用下拉），默认档为第一个规则集
+    const ruleset = page.getByRole('radiogroup', { name: '玩法模式' });
+    await expect(ruleset.getByRole('radio')).toHaveCount(2);
+    await expect(ruleset.getByRole('radio').nth(0)).toBeChecked();
+    await expect(ruleset.getByRole('radio').nth(1)).toHaveText('Legacy 兼容基线');
     await context.close();
   });
 
@@ -208,7 +221,7 @@ test.describe('D5 P2b 上架建房链路', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto(BASE_URL);
+    await gotoHome(page);
 
     await expect(homeCard(page, 'UNO')).toHaveCount(0);
     // G2-B 上架后 playable 10 款（含奶酪大盗、以鹅传鹅、暗夜证词、铃铛对决、伪人测试）

@@ -16,7 +16,6 @@ export function BackgroundManager({ children }: BackgroundManagerProps) {
     <div className={`app-background-root bg-mode--${bgMode}`}>
       {bgMode === 'particles' && canvasQuality && <BackgroundCanvas quality={canvasQuality} />}
       {bgMode === 'video' && canvasQuality && <BackgroundVideo quality={canvasQuality} />}
-      <div className="atmosphere-overlay" aria-hidden="true" />
       {children}
     </div>
   );

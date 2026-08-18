@@ -3,10 +3,10 @@
  * 只消费严格解析后的囚徒之夜视角（night-testimony/types.ts）。
  * 定位：线下桌游辅助——App 负责身份/罪行私密分发、YES/NO 标记管理、问答轨迹公开、
  * 推理/投票计时、票出后狱警猜罪判定；问答与辩论在线下口头进行。
+ * 视觉：狱审档案——私密记号牌、问答回执、狱警猜罪矩阵。
  */
 import { useRef, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
-import { GameLeaveButton } from '../GameLeaveButton.tsx';
 import { nameFor, useGameAction } from '../useGameAction.ts';
 import { ActionDock } from '../tabletop/ActionDock.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
@@ -48,14 +48,14 @@ export function NightTestimonyGamePage({ view }: Props) {
   const [questionText, setQuestionText] = useState('');
   const [askTarget, setAskTarget] = useState<string | null>(null);
   const [voteTarget, setVoteTarget] = useState<string | null>(null);
+  const [hasVoted, setHasVoted] = useState(false);
   const [guessTarget, setGuessTarget] = useState<string | null>(null);
-  const [guessCrime, setGuessCrime] = useState<CrimeId | null>(null);
   const [guesses, setGuesses] = useState<Record<string, CrimeId>>({});
 
   const players = view.players.map((playerId) => {
     let status = '';
     if (view.phase === 'game_over') {
-      status = view.winners.includes(playerId) ? '获胜' : '失败';
+      status = (view.winners ?? []).includes(playerId) ? '获胜' : '失败';
     } else if (playerId === myId) {
       status = me?.isWarden ? '我是狱警' : `我是${me?.crime ? CRIME_LABELS[me.crime] : '囚犯'}`;
     }
@@ -70,14 +70,12 @@ export function NightTestimonyGamePage({ view }: Props) {
 
   if (view.phase === 'question' && myId) {
     if (me?.pendingQuestion) {
-      // 轮到我回答
       primary = { id: 'answer-yes', label: '回答 YES', disabled: (me.yesLeft ?? 0) <= 0, onAction: () => void act({ type: 'answer', playerId: myId, answer: 'yes' }) };
       secondary = [{ id: 'answer-no', label: '回答 NO', disabled: (me.noLeft ?? 0) <= 0, onAction: () => void act({ type: 'answer', playerId: myId, answer: 'no' }) }];
     } else {
-      // 我可以提问
       primary = {
         id: 'ask',
-        label: askTarget && questionText.trim() ? `提问 ${nameFor(members, askTarget)}` : '选择问题对象与内容',
+        label: askTarget && questionText.trim() ? `提问 ${nameFor(members, askTarget)}` : '在本页选择对象并输入问题',
         disabled: !(askTarget && questionText.trim()),
         onAction: () => {
           if (!askTarget || !questionText.trim()) return;
@@ -86,34 +84,26 @@ export function NightTestimonyGamePage({ view }: Props) {
           setQuestionText('');
         },
       };
-      secondary = view.players
-        .filter((id) => id !== myId)
-        .map((id) => ({
-          id: `ask-${id}`,
-          label: `${askTarget === id ? '✓ ' : ''}${nameFor(members, id)}`,
-          disabled: false,
-          onAction: () => setAskTarget(id),
-        }));
     }
   } else if (view.phase === 'vote' && myId) {
-    primary = voteTarget
-      ? { id: 'confirm-vote', label: `票选 ${nameFor(members, voteTarget)}`, disabled: false, onAction: () => { void act({ type: 'cast_vote', playerId: myId, targetPlayerId: voteTarget }); setVoteTarget(null); } }
-      : null;
-    secondary = view.players
-      .filter((id) => id !== myId)
-      .map((id) => ({
-        id: `vote-${id}`,
-        label: `${voteTarget === id ? '✓ ' : ''}${nameFor(members, id)}`,
-        disabled: false,
-        onAction: () => setVoteTarget(id),
-      }));
+    if (hasVoted) {
+      primary = {
+        id: 'has-voted',
+        label: voteTarget ? `已票选 ${nameFor(members, voteTarget)}` : '已投票，等待开票…',
+        disabled: true,
+        onAction: () => {},
+      };
+    } else {
+      primary = voteTarget
+        ? { id: 'confirm-vote', label: `票选 ${nameFor(members, voteTarget)}`, disabled: false, onAction: () => { void act({ type: 'cast_vote', playerId: myId, targetPlayerId: voteTarget }); setHasVoted(true); } }
+        : { id: 'wait', label: '在本页选择票选对象', disabled: true, onAction: () => {} };
+    }
   } else if (view.guessingInProgress && me?.isWarden && myId) {
-    // 狱警猜罪：为每名囚犯选罪行
     const inmates = view.players.filter((id) => id !== myId);
     const guessComplete = inmates.every((id) => guesses[id] !== undefined);
     primary = {
       id: 'submit-guesses',
-      label: guessComplete ? '提交猜罪' : '为每名囚犯选择一个罪行',
+      label: guessComplete ? '提交猜罪' : `为每名囚犯选择罪行（${Object.keys(guesses).length}/${inmates.length}）`,
       disabled: !guessComplete,
       onAction: () => {
         if (!guessComplete) return;
@@ -122,39 +112,23 @@ export function NightTestimonyGamePage({ view }: Props) {
         void act({ type: 'submit_guesses', playerId: myId, guesses: payload });
       },
     };
-    const target = guessTarget ?? inmates[0] ?? null;
-    secondary = (Object.keys(CRIME_LABELS) as CrimeId[]).map((crime) => ({
-      id: `guess-${crime}`,
-      label: `${target && guesses[target] === crime ? '✓ ' : ''}${CRIME_LABELS[crime]}`,
-      disabled: false,
-      onAction: () => {
-        if (target) {
-          setGuesses((prev) => ({ ...prev, [target]: crime }));
-          setGuessCrime(crime);
-        }
-      },
-    }));
-    // 切换被猜对象
-    const targetSwitchers = inmates.map((id) => ({
-      id: `guess-target-${id}`,
-      label: `${target === id ? '✓ ' : ''}${nameFor(members, id)}${guesses[id] ? `（${CRIME_LABELS[guesses[id]!]}）` : ''}`,
-      disabled: false,
-      onAction: () => setGuessTarget(id),
-    }));
-    secondary = [...targetSwitchers, ...secondary];
   }
-
-  void guessCrime;
 
   const waitingReason = view.phase === 'game_over'
     ? null
     : view.phase === 'question'
       ? me?.pendingQuestion
         ? `${nameFor(members, me.pendingQuestion.questionerId)} 在问你：${me.pendingQuestion.text}`
-        : '问答阶段——线下口头提问，输入问题并选择被问者'
+        : '问答阶段——线下口头提问，本页记录问题与对象'
       : view.phase === 'deduction'
         ? '推理阶段——线下辩论谁可能是狱警'
-        : '票选阶段——选出你怀疑的狱警';
+        : hasVoted
+          ? '你已完成投票，等待其他玩家完成投票…'
+          : '票选阶段——选出你怀疑的狱警';
+
+  const guessInmate = view.guessingInProgress && me?.isWarden
+    ? (guessTarget ?? view.players.find((id) => id !== myId && guesses[id] === undefined) ?? view.players.find((id) => id !== myId) ?? null)
+    : null;
 
   return (
     <TabletopShell
@@ -162,10 +136,19 @@ export function NightTestimonyGamePage({ view }: Props) {
       phase={phaseLabel(view.phase)}
       spectator={isSpectator}
       players={players}
+      theme="mystery"
+      rulesButton={(
+        <button ref={rulesRef} type="button" className="tabletop-rules-btn" onClick={() => setRulesOpen(true)}>
+          本局规则
+        </button>
+      )}
       actions={
-        primary || secondary.length > 0
-          ? <ActionDock primary={primary ?? { id: 'wait', label: '等待阶段推进', disabled: true, onAction: () => {} }} secondary={secondary} busy={busy} waitingReason={waitingReason ?? undefined} />
-          : <ActionDock primary={{ id: 'wait', label: '等待阶段推进', disabled: true, onAction: () => {} }} busy={busy} waitingReason={waitingReason ?? undefined} />
+        <ActionDock
+          primary={primary ?? { id: 'wait', label: '等待阶段推进', disabled: true, onAction: () => {} }}
+          secondary={secondary}
+          busy={busy}
+          waitingReason={waitingReason ?? undefined}
+        />
       }
       drawer={rulesOpen && (
         <GameDrawer kind="rules" title="本局规则" triggerRef={rulesRef} onClose={() => setRulesOpen(false)}>
@@ -175,96 +158,211 @@ export function NightTestimonyGamePage({ view }: Props) {
         </GameDrawer>
       )}
     >
-      <header className="durian-page__bar">
-        <GameLeaveButton />
-        <button ref={rulesRef} type="button" className="durian-page__rules" onClick={() => setRulesOpen(true)}>
-          本局规则
-        </button>
-      </header>
-
       {error && <p className="game-error" role="alert">{error}</p>}
 
-      {me && (
-        <section className="durian-private" aria-label="我的私密信息">
-          <span className="durian-board__label">我的私密信息（仅自己可见）</span>
-          <div className="durian-private__cards">
-            <span className="durian-private__card">{myIdentityLine}</span>
-            <span className="durian-private__card">YES <strong>{me.yesLeft}</strong> · NO <strong>{me.noLeft}</strong></span>
-          </div>
-        </section>
-      )}
+      {view.phase !== 'game_over' ? (
+        <div className="sg-stage">
+          {me && (
+            <section className="sg-panel testimony-private" aria-label="我的私密信息">
+              <div className="sg-panel__head">
+                <h3>我的私密信息（仅自己可见）</h3>
+                <span>记号余量</span>
+              </div>
+              <div className="sg-chip-row">
+                {myIdentityLine && <span className={`sg-chip ${me.isWarden ? 'sg-chip--m' : 'sg-chip--peek'}`}>{myIdentityLine}</span>}
+                <span className="sg-chip testimony-token testimony-token--yes">
+                  {Array.from({ length: 3 }, (_, i) => (
+                    <i key={i} className={i < (me.yesLeft ?? 0) ? 'is-left' : ''} aria-hidden="true">Y</i>
+                  ))}
+                </span>
+                <span className="sg-chip testimony-token testimony-token--no">
+                  {Array.from({ length: 1 }, (_, i) => (
+                    <i key={i} className={i < (me.noLeft ?? 0) ? 'is-left' : ''} aria-hidden="true">N</i>
+                  ))}
+                </span>
+              </div>
+            </section>
+          )}
 
-      {view.phase === 'question' && !me?.pendingQuestion && myId && (
-        <section className="goose-transmit" aria-label="提问">
-          <span className="durian-board__label">你的问题（线下口头问，这里记录）</span>
-          <input
-            className="goose-transmit__input"
-            value={questionText}
-            maxLength={200}
-            onChange={(e) => setQuestionText(e.target.value)}
-            placeholder="例如：你的罪行是纵火吗？"
-          />
-        </section>
-      )}
+          {view.phase === 'question' && !me?.pendingQuestion && myId && (
+            <section className="sg-panel" aria-label="提问">
+              <div className="sg-panel__head">
+                <h3>提出你的问题</h3>
+                <span>线下口头问 · 本页记录</span>
+              </div>
+              <div className="sg-chip-row">
+                {view.players.filter((id) => id !== myId).map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`sg-chip sg-chip--btn ${askTarget === id ? 'sg-chip--selected' : ''}`}
+                    onClick={() => setAskTarget(id)}
+                    aria-pressed={askTarget === id}
+                  >
+                    问 {nameFor(members, id)}
+                  </button>
+                ))}
+              </div>
+              <input
+                className="goose-transmit__input"
+                value={questionText}
+                maxLength={200}
+                onChange={(e) => setQuestionText(e.target.value)}
+                placeholder="例如：你的罪行是纵火吗？"
+                aria-label="问题内容"
+              />
+            </section>
+          )}
 
-      {view.phase === 'question' && me?.pendingQuestion && (
-        <section className="testimony-pending" aria-label="待回答的问题">
-          <p className="durian-board__label">{nameFor(members, me.pendingQuestion.questionerId)} 在问你</p>
-          <p className="testimony-pending__text">「{me.pendingQuestion.text}」</p>
-          <p className="testimony-pending__hint">囚犯按罪行如实回答；狱警可以撒谎。</p>
-        </section>
-      )}
+          {view.phase === 'question' && me?.pendingQuestion && (
+            <section className="testimony-pending" aria-label="待回答的问题">
+              <span className="testimony-pending__seal" aria-hidden="true">?</span>
+              <div>
+                <span className="testimony-pending__label">{nameFor(members, me.pendingQuestion.questionerId)} 在问你</span>
+                <strong className="testimony-pending__text">「{me.pendingQuestion.text}」</strong>
+                <span className="testimony-pending__hint">囚犯按罪行如实回答；狱警可以撒谎。</span>
+              </div>
+            </section>
+          )}
 
-      {/* 公开轨迹：谁问了谁，YES/NO 结果 */}
-      <section className="goose-chain" aria-label="问答轨迹">
-        <span className="durian-board__label">问答轨迹（公开）· {view.askedCount}/{view.questionLimit}</span>
-        <ol className="goose-chain__list">
-          {view.yesTrack.length === 0 && <li className="testimony-empty">尚无问答</li>}
-          {view.yesTrack.map((record, index) => (
-            <li key={index}>
-              <strong>{nameFor(members, record.questionerId)} → {nameFor(members, record.responderId)}</strong>
-              <span>{record.answer === 'yes' ? 'YES' : 'NO'} · {record.question}</span>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      {view.phase === 'deduction' && view.extraCrime && (
-        <section className="durian-order" aria-label="额外罪行卡">
-          <span className="durian-order__eyebrow">推理阶段</span>
-          <p>额外混入的罪行卡：<strong>{CRIME_LABELS[view.extraCrime]}</strong> ——线下辩论谁可能是狱警。</p>
-        </section>
-      )}
-
-      {view.guessingInProgress && me?.isWarden && (
-        <section className="durian-order" aria-label="狱警猜罪">
-          <span className="durian-order__eyebrow">狱警被票出了</span>
-          <p>你要猜出每名囚犯的罪行：先选囚犯，再选罪行。</p>
-        </section>
-      )}
-
-      {view.phase === 'game_over' && view.reveal && (() => {
-        const reveal = view.reveal;
-        return (
-          <section className="durian-over" aria-label="对局结果">
-            <h2>本局结束</h2>
-            <p>
-              {!reveal.wardenRevealed
-                ? `狱警逃过了票选！${view.winners.map((id) => nameFor(members, id)).join('、')} 获胜`
-                : reveal.crimesAllGuessed
-                  ? `狱警猜中了全部罪行，单独获胜！${nameFor(members, reveal.wardenId)}`
-                  : `狱警猜错了罪行，囚犯们获胜！${view.winners.map((id) => nameFor(members, id)).join('、')}`}
-            </p>
-            <ul className="cheese-reveal">
-              <li>狱警：{nameFor(members, reveal.wardenId)}</li>
-              <li>罪行：{view.players.map((id) => `${nameFor(members, id)}·${id === reveal.wardenId ? '—' : CRIME_LABELS[reveal.crimes[id] ?? 'arson']}`).join('、')}</li>
-              {reveal.wardenGuesses && (
-                <li>狱警猜罪：{view.players.filter((id) => id !== reveal.wardenId).map((id) => `${nameFor(members, id)}→${CRIME_LABELS[reveal.wardenGuesses![id] ?? 'arson']}`).join('、')}</li>
+          <section className="sg-panel" aria-label="问答轨迹">
+            <div className="sg-panel__head">
+              <h3>问答轨迹（公开）</h3>
+              <span>{view.askedCount}/{view.questionLimit} 问</span>
+            </div>
+            {(view.yesTrack ?? []).length === 0
+              ? <p className="sg-hint">尚无问答记录</p>
+              : (
+                <ol className="testimony-track">
+                  {(view.yesTrack ?? []).map((record, index) => (
+                    <li key={index}>
+                      <span className="testimony-track__idx">{index + 1}</span>
+                      <div className="testimony-track__body">
+                        <strong>{nameFor(members, record.questionerId)} → {nameFor(members, record.responderId)}</strong>
+                        <span>{record.question}</span>
+                      </div>
+                      <span className={`testimony-track__mark testimony-track__mark--${record.answer === 'yes' ? 'yes' : 'no'}`}>
+                        {record.answer === 'yes' ? 'YES' : 'NO'}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
               )}
-            </ul>
           </section>
-        );
-      })()}
+
+          {view.phase === 'deduction' && view.extraCrime && (
+            <section className="sg-panel" aria-label="额外罪行卡">
+              <div className="sg-panel__head">
+                <h3>额外混入的罪行卡</h3>
+                <span>推理阶段</span>
+              </div>
+              <div className="testimony-crime-row">
+                <span className="testimony-crime">{CRIME_LABELS[view.extraCrime]}</span>
+              </div>
+              <p className="sg-hint">线下辩论：谁最像伪装的狱警？</p>
+            </section>
+          )}
+
+          {view.guessingInProgress && me?.isWarden && guessInmate && (
+            <section className="sg-panel" aria-label="狱警猜罪">
+              <div className="sg-panel__head">
+                <h3>狱警猜罪 · 点选罪行</h3>
+                <span>先选囚犯，再点罪行</span>
+              </div>
+              <div className="sg-chip-row">
+                {view.players.filter((id) => id !== myId).map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`sg-chip sg-chip--btn ${guessInmate === id ? 'sg-chip--selected' : ''}`}
+                    onClick={() => setGuessTarget(id)}
+                    aria-pressed={guessInmate === id}
+                  >
+                    {nameFor(members, id)}{guesses[id] ? `（${CRIME_LABELS[guesses[id]!]}）` : ''}
+                  </button>
+                ))}
+              </div>
+              <div className="sg-chip-row testimony-crime-picks">
+                {(Object.keys(CRIME_LABELS) as CrimeId[]).map((crime) => (
+                  <button
+                    key={crime}
+                    type="button"
+                    className={`sg-chip sg-chip--btn ${guesses[guessInmate] === crime ? 'sg-chip--m' : ''}`}
+                    onClick={() => setGuesses((prev) => ({ ...prev, [guessInmate]: crime }))}
+                  >
+                    {CRIME_LABELS[crime]}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {view.phase === 'vote' && myId && (
+            <section className="sg-panel" aria-label="票选狱警">
+              <div className="sg-panel__head">
+                <h3>{hasVoted ? '✓ 你的投票已完成' : '票选你怀疑的狱警'}</h3>
+                <span>{hasVoted ? '已提交，等待开票' : '点选后在下方栏确认'}</span>
+              </div>
+              {hasVoted && (
+                <p className="sg-hint" style={{ color: 'var(--brand-accent, #10b981)', fontWeight: 800 }}>
+                  ✓ {voteTarget ? `你已票选 ${nameFor(members, voteTarget)}` : '已投票'}，正在等待其他玩家完成投票…
+                </p>
+              )}
+              <div className="sg-chip-row">
+                {view.players.filter((id) => id !== myId).map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    disabled={hasVoted}
+                    className={`sg-chip sg-chip--btn ${voteTarget === id ? 'sg-chip--selected' : ''}`}
+                    style={{ opacity: hasVoted && voteTarget !== id ? 0.45 : 1, cursor: hasVoted ? 'not-allowed' : 'pointer' }}
+                    onClick={() => !hasVoted && setVoteTarget(id)}
+                    aria-pressed={voteTarget === id}
+                  >
+                    {voteTarget === id ? '✓ ' : ''}{nameFor(members, id)}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      ) : (
+        view.reveal && (() => {
+          const reveal = view.reveal;
+          return (
+            <div className="sg-stage testimony-over">
+              <div className={`winner-hero ${reveal.wardenRevealed && reveal.crimesAllGuessed ? '' : 'winner-draw'}`}>
+                <span className="winner-rays" aria-hidden="true" />
+                <h2 className="winner-title">
+                  {!reveal.wardenRevealed
+                    ? '狱警逃过了票选！'
+                    : reveal.crimesAllGuessed
+                      ? '狱警猜中了全部罪行，单独获胜！'
+                      : '狱警猜错了罪行，囚犯们获胜！'}
+                </h2>
+                <p>
+                  {!reveal.wardenRevealed || !reveal.crimesAllGuessed
+                    ? `${(view.winners ?? []).map((id) => nameFor(members, id)).join('、')} 获胜`
+                    : nameFor(members, reveal.wardenId)}
+                </p>
+              </div>
+              <section className="sg-panel">
+                <div className="sg-panel__head">
+                  <h3>本局档案</h3>
+                  <span>全员罪行公开</span>
+                </div>
+                <ul className="sg-note-list">
+                  <li>狱警：{nameFor(members, reveal.wardenId)}</li>
+                  <li>罪行：{view.players.map((id) => `${nameFor(members, id)}·${id === reveal.wardenId ? '—' : CRIME_LABELS[reveal.crimes?.[id] ?? 'arson']}`).join('、')}</li>
+                  {reveal.wardenGuesses && (
+                    <li>狱警猜罪：{view.players.filter((id) => id !== reveal.wardenId).map((id) => `${nameFor(members, id)}→${CRIME_LABELS[reveal.wardenGuesses?.[id] ?? 'arson']}`).join('、')}</li>
+                  )}
+                </ul>
+              </section>
+            </div>
+          );
+        })()
+      )}
     </TabletopShell>
   );
 }

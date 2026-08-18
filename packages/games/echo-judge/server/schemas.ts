@@ -12,7 +12,7 @@ const echoJudgeConfigSchema = z
     judgmentSeconds: seconds.default(30),
     judgeWrongPenalty: z.number().int().min(-10).max(0).default(-1),
   })
-  .strict('配置 字段无效');
+  .passthrough();
 
 const echoJudgeActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('begin') }).strict('动作 字段无效'),

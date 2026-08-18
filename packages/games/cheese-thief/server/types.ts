@@ -208,6 +208,8 @@ export interface CheeseThiefPlayerView extends CheeseThiefPublicView {
     peekedHour: { target: string; hour: number } | null;
     /** 猫偷看到的玩家骰点（我是猫且已展示时） */
     catPeekedHour: { target: string; hour: number } | null;
+    /** 当前投票阶段是否已投过票 */
+    hasVoted: boolean;
   } | null;
 }
 

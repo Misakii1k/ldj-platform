@@ -1,11 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
 import { describeError } from '../shared-ui/errors.ts';
-
-function formatChatTime(at: number): string {
-  const date = new Date(at);
-  return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-}
+import { ChatMessageList } from '../shared-ui/ChatMessageList.tsx';
 
 export function GameChatDrawer() {
   const { state, me, send } = useConnection();
@@ -22,6 +18,9 @@ export function GameChatDrawer() {
     const entries = state.room?.members.map((member) => [member.playerId, member.nickname] as const) ?? [];
     return new Map(entries);
   }, [state.room]);
+
+  const isSimulator = (state.game?.view as { mode?: string } | undefined)?.mode === 'simulator';
+  if (isSimulator) return null;
 
   const unreadCount = open ? 0 : state.chat.filter((message) => message.cursor > lastSeenCursor).length;
   const synced = state.connState === 'synced';
@@ -83,7 +82,6 @@ export function GameChatDrawer() {
           <section className="game-chat-drawer" role="dialog" aria-modal="true" aria-labelledby="game-chat-title">
             <header className="game-chat-header">
               <div>
-                <span className="section-kicker">TABLE TALK</span>
                 <h2 id="game-chat-title">对局聊天</h2>
               </div>
               <button type="button" className="game-chat-close" onClick={() => setOpen(false)} aria-label="关闭对局聊天">×</button>
@@ -93,21 +91,9 @@ export function GameChatDrawer() {
             <div className="game-chat-messages" ref={listRef} aria-live="polite">
               {state.chat.length === 0 ? (
                 <div className="game-chat-empty"><span aria-hidden="true">···</span><strong>暂无消息记录</strong><p>发一条消息，与这一桌好友打个招呼吧。</p></div>
-              ) : state.chat.map((message) => {
-                const mine = message.fromPlayerId === me?.playerId;
-                if (message.kind === 'system') {
-                  return <div key={message.cursor} className="game-chat-system"><span>{message.text}</span></div>;
-                }
-                return (
-                  <article key={message.cursor} className={`game-chat-message ${mine ? 'mine' : ''}`}>
-                    <div className="game-chat-meta">
-                      <strong>{mine ? '我' : memberNames.get(message.fromPlayerId ?? '') ?? '玩家'}</strong>
-                      <time>{formatChatTime(message.at)}</time>
-                    </div>
-                    <p>{message.text}</p>
-                  </article>
-                );
-              })}
+              ) : (
+                <ChatMessageList messages={state.chat} myPlayerId={me?.playerId ?? null} memberNames={memberNames} />
+              )}
             </div>
 
             <form className="game-chat-compose" onSubmit={(event) => void handleSend(event)}>

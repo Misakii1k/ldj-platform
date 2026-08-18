@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="room_join">
+  <rect width="128" height="128" rx="28" fill="#287b66"/>
+  <path d="M42 34h30a12 12 0 0 1 12 12v36a12 12 0 0 1-12 12H42" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
+  <path d="M28 64h44M60 52l12 12-12 12" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

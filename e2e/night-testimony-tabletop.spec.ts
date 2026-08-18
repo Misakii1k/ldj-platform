@@ -107,7 +107,7 @@ test.describe('G2-B night-testimony 完整局', () => {
       });
 
       // 渲染断言：私密信息区可见
-      await expect(page.locator('.durian-private')).toBeVisible();
+      await expect(page.locator('.testimony-private')).toBeVisible();
 
       // Node 驱动其余 3 个座位
       const otherSeats = seeded.players.filter((p) => p.playerId !== browserPlayer.playerId);
@@ -123,6 +123,7 @@ test.describe('G2-B night-testimony 完整局', () => {
         // 浏览器驱动：回答/提问/投票，直到房间页
         const browserDeadline = Date.now() + 200_000;
         while (Date.now() < browserDeadline) {
+          if (await page.locator('.testimony-over').isVisible().catch(() => false)) break;
           if (await page.locator('.room-page').isVisible().catch(() => false)) break;
           const answerYes = page.getByRole('button', { name: '回答 YES' }).first();
           const answerNo = page.getByRole('button', { name: '回答 NO' }).first();
@@ -141,7 +142,7 @@ test.describe('G2-B night-testimony 完整局', () => {
               await targetBtn.click();
               await page.waitForTimeout(80);
             }
-            await askInput.fill('你的罪行？');
+            await askInput.fill('你的罪行？').catch(() => {});
             await askSubmit.click().catch(() => {});
           } else if (await voteBtn.isVisible().catch(() => false) && await voteBtn.isEnabled().catch(() => false)) {
             await voteBtn.click();

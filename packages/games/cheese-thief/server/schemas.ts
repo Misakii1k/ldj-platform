@@ -29,7 +29,7 @@ const cheeseThiefConfigSchema = z
       )
       .default({}),
   })
-  .strict('配置 字段无效');
+  .passthrough();
 
 const cheeseThiefActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('begin') }).strict('动作 字段无效'),

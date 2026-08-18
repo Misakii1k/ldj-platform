@@ -8,6 +8,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function accepts(option: GameSetupOption, value: unknown): value is string | number | boolean {
   if (option.kind === 'select') return typeof value === 'string' && option.choices.some((choice) => choice.value === value);
+  if (option.kind === 'segmented') return typeof value === 'number' && option.choices.some((choice) => choice.value === value);
   if (option.kind === 'boolean') return typeof value === 'boolean';
   return typeof value === 'number'
     && Number.isInteger(value)
@@ -17,7 +18,8 @@ function accepts(option: GameSetupOption, value: unknown): value is string | num
 }
 
 export function buildSetupConfig(setup: GameSetupSpec): SetupConfig {
-  return { ...setup.defaultConfig };
+  const optionDefaults = Object.fromEntries(setup.options.map((opt) => [opt.key, opt.defaultValue]));
+  return { rulesetId: setup.defaultRulesetId, ...optionDefaults, ...setup.defaultConfig };
 }
 
 export function applySetupValue(
@@ -40,12 +42,20 @@ export function applySetupValue(
 
 export function readRoomGameConfig(setup: GameSetupSpec, roomConfig: unknown): SetupConfig {
   let config = buildSetupConfig(setup);
-  if (!isRecord(roomConfig) || !isRecord(roomConfig.gameConfig)) return config;
-  for (const [key, value] of Object.entries(roomConfig.gameConfig)) {
-    try {
-      config = applySetupValue(setup, config, key, value);
-    } catch {
-      continue;
+  if (isRecord(roomConfig) && isRecord(roomConfig.gameConfig)) {
+    for (const [key, value] of Object.entries(roomConfig.gameConfig)) {
+      try {
+        config = applySetupValue(setup, config, key, value);
+      } catch {
+        continue;
+      }
+    }
+  }
+  // 兜底：确保所有配置项都有合法的默认值，防止由于未设或坏数据导致 NaN/undefined
+  for (const option of setup.options) {
+    const val = config[option.key];
+    if (val === undefined || (typeof val === 'number' && Number.isNaN(val))) {
+      config = { ...config, [option.key]: option.defaultValue };
     }
   }
   return config;

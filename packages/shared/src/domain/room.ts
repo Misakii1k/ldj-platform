@@ -35,6 +35,8 @@ export interface RoomMemberView {
   botKind: 'rule' | 'llm' | null;
   /** 是否已准备（LOBBY/POST_GAME 生效；对局中恒为 false） */
   ready: boolean;
+  /** 成员头像标识（如 preset:fox 或自定义 Base64 URL） */
+  avatar?: string;
 }
 
 /** 房间快照的公开视图（room_snapshot payload） */

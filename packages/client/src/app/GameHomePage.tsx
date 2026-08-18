@@ -10,12 +10,15 @@ import { useMotion } from '../motion/MotionContext.tsx';
 import { useHomeParallax } from '../motion/useHomeParallax.ts';
 import { CreateRoomSheet } from './CreateRoomSheet.tsx';
 import { GameCard } from './GameCard.tsx';
+import { HomeActiveRoomBanner } from './HomeActiveRoomBanner.tsx';
 import { HomePartyScene } from './HomePartyScene.tsx';
 import { JoinRoomSheet } from './JoinRoomSheet.tsx';
 import { PlayerCountFilter } from './PlayerCountFilter.tsx';
 import { SettingsSheet } from './SettingsSheet.tsx';
+import { UserProfileBadge } from '../user/UserProfileBadge.tsx';
+import { UserProfileModal } from '../user/UserProfileModal.tsx';
 
-type ActiveSheet = 'create' | 'join' | 'settings' | null;
+type ActiveSheet = 'create' | 'join' | 'settings' | 'profile' | null;
 
 export function GameHomePage() {
   const { state } = useConnection();
@@ -59,11 +62,12 @@ export function GameHomePage() {
       <HomePartyScene selectedCount={selectedCount} />
       <div className="game-home-page__content">
         <header className="home-header home-motion-layer" data-motion-step="0">
-          <div className="home-brand" aria-label="闹一桌">
-            <span className="home-brand__tile" aria-hidden="true">闹</span>
-            <span className="home-brand__name">闹一桌</span>
+          <div className="home-brand" aria-label="聚乐桌">
+            <span className="home-brand__tile" aria-hidden="true">聚</span>
+            <span className="home-brand__name">聚乐桌</span>
           </div>
           <div className="home-header__actions">
+            <UserProfileBadge onClick={() => setActiveSheet('profile')} />
             <span className="home-local-badge">局域网极速联机</span>
             <button
               type="button"
@@ -75,17 +79,10 @@ export function GameHomePage() {
               <Settings size={18} strokeWidth={2.4} aria-hidden="true" />
               <span>设置</span>
             </button>
-            <button
-              type="button"
-              className="home-header__button home-header__button--join"
-              onClick={() => setActiveSheet('join')}
-              title="加入现有对局"
-            >
-              <LogIn size={18} strokeWidth={2.4} aria-hidden="true" />
-              <span>加入对局</span>
-            </button>
           </div>
         </header>
+
+        <HomeActiveRoomBanner />
 
         <section className="home-hero home-motion-layer" data-motion-step="1" aria-labelledby="home-title">
           <p className="home-hero__eyebrow">扫码即玩 · 手机就是专属手牌</p>
@@ -109,7 +106,21 @@ export function GameHomePage() {
           <PlayerCountFilter selectedCount={selectedCount} onChange={setSelectedCount} />
         </div>
 
-        <section id="game-catalog" className="home-games home-motion-layer" data-motion-step="3" aria-labelledby="game-list-title">
+        <section className="home-join-callout home-motion-layer" data-motion-step="3" aria-label="已有房间码">
+          <div className="home-join-callout__icon" aria-hidden="true">
+            <LogIn size={23} strokeWidth={2.5} />
+          </div>
+          <div>
+            <h2>好友已经建好房间？</h2>
+            <p>输入 5 位房间码，一键切入战局。</p>
+          </div>
+          <button type="button" onClick={() => setActiveSheet('join')}>
+            加入此桌
+            <ArrowRight size={18} strokeWidth={2.5} aria-hidden="true" />
+          </button>
+        </section>
+
+        <section id="game-catalog" className="home-games home-motion-layer" data-motion-step="4" aria-labelledby="game-list-title">
           <div className="home-games__heading">
             <div>
               <p className="home-games__eyebrow">游戏目录</p>
@@ -127,20 +138,6 @@ export function GameHomePage() {
               <GameCard key={`${game.id}-${selectedCount ?? 'all'}`} game={game} onCreate={openCreateSheet} />
             ))}
           </div>
-        </section>
-
-        <section className="home-join-callout home-motion-layer" data-motion-step="4" aria-label="已有房间码">
-          <div className="home-join-callout__icon" aria-hidden="true">
-            <LogIn size={23} strokeWidth={2.5} />
-          </div>
-          <div>
-            <h2>好友已经建好房间？</h2>
-            <p>输入 5 位房间码，一键切入战局。</p>
-          </div>
-          <button type="button" onClick={() => setActiveSheet('join')}>
-            加入此桌
-            <ArrowRight size={18} strokeWidth={2.5} aria-hidden="true" />
-          </button>
         </section>
 
         <footer className="home-footer home-motion-layer" data-motion-step="5">
@@ -168,6 +165,7 @@ export function GameHomePage() {
         />
       )}
       {activeSheet === 'settings' && <SettingsSheet onClose={closeSheet} />}
+      {activeSheet === 'profile' && <UserProfileModal onClose={closeSheet} />}
     </main>
   );
 }

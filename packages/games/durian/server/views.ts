@@ -1,54 +1,97 @@
 import { z } from 'zod';
 import { DURIAN_FRUITS } from './types.ts';
+import { computeActiveTableTotals } from './rules.ts';
 import type {
-  BellWindow,
+  ChallengeDetails,
+  DurianCard,
   DurianPlayerView,
   DurianPublicView,
   DurianState,
-  OrderCard,
+  TablePlacement,
 } from './types.ts';
 
 const pid = z.string().min(1).max(64);
 const fruit = z.enum(DURIAN_FRUITS);
-const staffEvent = z.enum(['double_check', 'extra_basket', 'mixed_crate']);
+const monkeySpecial = z.enum(['flip', 'do_nothing', 'three_void', 'banana_void']);
 
-const inventoryCardSchema = z.object({ id: pid, fruit }).strict();
-const demandChangeSchema = z.object({ fruit, quantity: z.number().int().nonnegative() }).strict();
-const orderOptionSchema = z.object({ fruit, quantity: z.union([z.literal(1), z.literal(2)]) }).strict();
-const orderCardSchema = z.object({ id: pid, options: z.tuple([orderOptionSchema, orderOptionSchema]), staffEvent }).strict();
-const orderRecordSchema = z.object({
-  orderId: pid,
-  playerId: pid,
-  optionIndex: z.union([z.literal(0), z.literal(1)]),
-  staffEvent,
-  changes: z.array(demandChangeSchema),
+const fruitHalfSchema = z.object({
+  fruit,
+  quantity: z.union([z.literal(1), z.literal(2), z.literal(3)]),
 }).strict();
-const bellSchema = z.union([
-  z.object({ windowId: pid, status: z.literal('open'), claimantId: z.null() }).strict(),
-  z.object({ windowId: pid, status: z.literal('locked'), claimantId: pid }).strict(),
+
+const fruitCardSchema = z.object({
+  id: pid,
+  kind: z.literal('fruit'),
+  left: fruitHalfSchema,
+  right: fruitHalfSchema,
+}).strict();
+
+const monkeyCardSchema = z.object({
+  id: pid,
+  kind: z.literal('monkey'),
+  special: monkeySpecial,
+}).strict();
+
+const durianCardSchema = z.discriminatedUnion('kind', [fruitCardSchema, monkeyCardSchema]);
+
+const tableFruitPlacementSchema = z.object({
+  placementId: pid,
+  card: fruitCardSchema,
+  checkHalf: z.enum(['left', 'right']),
+  placedBy: pid,
+}).strict();
+
+const tableMonkeyPlacementSchema = z.object({
+  placementId: pid,
+  card: monkeyCardSchema,
+  placedBy: pid,
+  targetPlacementId: pid.optional(),
+}).strict();
+
+const tablePlacementSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('fruit'), data: tableFruitPlacementSchema }).strict(),
+  z.object({ kind: z.literal('monkey'), data: tableMonkeyPlacementSchema }).strict(),
 ]);
+
+const challengeDetailsSchema = z.object({
+  challengerId: pid,
+  accusedId: pid,
+  success: z.boolean(),
+  loserId: pid,
+  penaltyPoints: z.number().int().nonnegative(),
+  tableTotals: z.record(fruit, z.number().int().nonnegative()),
+  stockTotals: z.record(fruit, z.number().int().nonnegative()),
+  oversoldFruits: z.array(fruit),
+}).strict();
 
 const durianPublicViewSchema = z.object({
   gameId: z.literal('durian'),
   rulesetId: z.literal('durian_orchard_v1'),
   schemaVersion: z.literal(1),
-  phase: z.enum(['ordering', 'buzzer', 'game_over']),
+  phase: z.enum(['turn_action', 'choose_placement', 'choose_flip', 'challenge_result', 'game_over']),
   players: z.array(pid),
-  demand: z.record(fruit, z.number().int().nonnegative()),
-  currentOrder: orderCardSchema.nullable(),
-  history: z.array(orderRecordSchema),
+  round: z.number().int().positive(),
+  maxRounds: z.number().int().positive(),
+  mode: z.enum(['standard', 'simulator']),
+  deckCount: z.number().int().nonnegative(),
+  tablePlacements: z.array(tablePlacementSchema),
   currentPlayerId: pid.nullable(),
-  bell: bellSchema.nullable(),
-  angerLevel: z.number().int().min(1).max(7),
+  previousPlayerId: pid.nullable(),
+  lastChallenge: challengeDetailsSchema.nullable(),
   penalties: z.record(pid, z.number().int().nonnegative()),
+  eliminatedPlayers: z.array(pid),
   winners: z.array(pid),
+  activeTableTotals: z.record(fruit, z.number().int().nonnegative()),
+  voidThreeActive: z.boolean(),
+  voidBananaActive: z.boolean(),
 }).strict();
 
 const durianPlayerViewSchema = durianPublicViewSchema.extend({
   me: z.object({
     playerId: pid,
-    ownInventoryHidden: z.literal(true),
-    visibleInventory: z.array(z.object({ playerId: pid, card: inventoryCardSchema }).strict()),
+    ownForeheadHidden: z.boolean(),
+    drawnCard: durianCardSchema.nullable(),
+    visibleForeheadCards: z.array(z.object({ playerId: pid, card: durianCardSchema }).strict()),
   }).strict().nullable(),
 });
 
@@ -61,40 +104,65 @@ function parseOrThrow<T>(schema: z.ZodType<unknown>, input: unknown, label: stri
   return result.data as T;
 }
 
-function copyOrder(order: OrderCard | null): OrderCard | null {
-  return order ? structuredClone(order) : null;
-}
-
 function buildPublicView(state: DurianState): DurianPublicView {
+  const { totals: activeTableTotals, voidThreeActive, voidBananaActive } = computeActiveTableTotals(state.tablePlacements);
+
   return {
     gameId: 'durian',
     rulesetId: 'durian_orchard_v1',
     schemaVersion: 1,
     phase: state.phase,
     players: [...state.players],
-    demand: { ...state.demand },
-    currentOrder: copyOrder(state.currentOrder),
-    history: structuredClone(state.history),
+    round: state.round,
+    maxRounds: state.maxRounds,
+    mode: state.mode,
+    deckCount: state.deck.length,
+    tablePlacements: structuredClone(state.tablePlacements) as TablePlacement[],
     currentPlayerId: state.currentPlayerId,
-    bell: state.bell ? { ...state.bell } as BellWindow : null,
-    angerLevel: state.angerLevel,
+    previousPlayerId: state.previousPlayerId,
+    lastChallenge: state.lastChallenge ? structuredClone(state.lastChallenge) as ChallengeDetails : null,
     penalties: { ...state.penalties },
+    eliminatedPlayers: [...state.eliminatedPlayers],
     winners: [...state.winners],
+    activeTableTotals,
+    voidThreeActive,
+    voidBananaActive,
   };
 }
 
 export function buildDurianPlayerView(state: DurianState, playerId: string): DurianPlayerView {
+  const publicView = buildPublicView(state);
+  const isParticipant = state.players.includes(playerId);
+
+  if (!isParticipant) {
+    return {
+      ...publicView,
+      me: null,
+    };
+  }
+
+  // 印度扑克机制：标准线上模式下平时只能看到其他人的头顶牌，质疑结算时揭示自己暗牌；
+  // 纯模拟模式下设备作为实体手牌展示板（面向其他玩家立于面前），因此设备端需要渲染该玩家分配到的卡牌。
+  const isRevealed = (state.mode === 'standard' && (state.phase === 'challenge_result' || state.phase === 'game_over')) || state.mode === 'simulator';
+
+  const visibleForeheadCards = state.players
+    .filter((id) => (isRevealed || id !== playerId) && state.foreheadCards[id])
+    .map((id) => ({
+      playerId: id,
+      card: structuredClone(state.foreheadCards[id]!) as DurianCard,
+    }));
+
+  const isCurrent = state.currentPlayerId === playerId;
+  const drawnCard = isCurrent && state.drawnCard ? structuredClone(state.drawnCard) as DurianCard : null;
+
   return {
-    ...buildPublicView(state),
-    me: state.players.includes(playerId)
-      ? {
-          playerId,
-          ownInventoryHidden: true,
-          visibleInventory: state.players
-            .filter((id) => id !== playerId)
-            .map((id) => ({ playerId: id, card: { ...state.playerInventory[id]! } })),
-        }
-      : null,
+    ...publicView,
+    me: {
+      playerId,
+      ownForeheadHidden: !isRevealed,
+      drawnCard,
+      visibleForeheadCards,
+    },
   };
 }
 

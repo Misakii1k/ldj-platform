@@ -17,6 +17,7 @@ export const unoCardSchema = z.discriminatedUnion('kind', [
 ]);
 
 export const unoConfigSchema = z.object({
+  rulesetId: z.literal('uno_legacy_platform_v1').optional(),
   variant: z.literal('standard').default('standard'),
 }).strict();
 

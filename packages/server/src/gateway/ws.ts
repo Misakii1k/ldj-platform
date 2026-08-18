@@ -1,4 +1,4 @@
-﻿/**
+/**
  * WebSocket 接入（SPEC §9）：
  * Origin 校验 → welcome → 消息 envelope 校验 → 路由到命令执行链 → ack → 广播。
  * M2：join/resume/leave/room_command/chat_send/resync 全链路 + 会话接管 + 断线保留。
@@ -344,6 +344,7 @@ export class WsGateway {
       return;
     }
     if (this.#autoStartTimers.has(roomId)) return; // 已在倒计时
+    const delayMs = row.status === 'POST_GAME' ? 3_000 : AUTO_START_DELAY_MS;
     const timer = setTimeout(() => {
       this.#autoStartTimers.delete(roomId);
       void this.#deps.executor
@@ -364,7 +365,7 @@ export class WsGateway {
         .catch((err: Error) => {
           this.#deps.logger.error('auto_start_failed', { message: err.message });
         });
-    }, AUTO_START_DELAY_MS);
+    }, delayMs);
     this.#autoStartTimers.set(roomId, timer);
   }
 

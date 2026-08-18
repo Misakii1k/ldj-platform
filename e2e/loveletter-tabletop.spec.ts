@@ -46,7 +46,7 @@ async function driveHost(
 ): Promise<Record<string, unknown>> {
   let lastView: Record<string, unknown> = {};
   let actedSignature = '';
-  for (let step = 0; step < 800; step += 1) {
+  for (let step = 0; step < 2500; step += 1) {
     // 轮询最新权威状态（不按序消费旧帧），避免满负荷下读到过期回合造成竞态。
     const frame = host.client.latestGameState((v) => v.gameId === 'loveletter');
     if (frame) lastView = frame.payload.view as Record<string, unknown>;
@@ -60,7 +60,7 @@ async function driveHost(
     };
     if (view.phase === 'game_over') return lastView;
     if (view.phase !== 'playing' || view.currentPlayerId !== hostId || view.me === null) {
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       continue;
     }
     // 同一状态快照只行动一次（拒绝因旧帧重复出牌）。
@@ -70,7 +70,7 @@ async function driveHost(
       hand: (view.me.hand ?? []).map((card) => card.id).sort(),
     });
     if (signature === actedSignature) {
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       continue;
     }
     const hand = [...view.me.hand].sort((a, b) => ROLE_VALUE[a.role]! - ROLE_VALUE[b.role]!);

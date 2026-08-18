@@ -84,7 +84,7 @@ test('初始化接受 4 至 8 人并拒绝边界外、重复玩家及缺失两�
     { a: [1, 6], b: [2, 5], c: [3, 4], d: [1, 2] },
   );
   assert.equal(state4.phase, 'hour_choice');
-  assert.throws(() => createCheeseThiefState(['a', 'b', 'c', 'd'], {}, {}, null), /需要提供两骰候选/);
+  assert.throws(() => createCheeseThiefState(['a', 'b', 'c', 'd'], {}, {}, null), /醒来时刻无效/);
   assert.throws(() => makeState(['a', 'b', 'c']), /4 至 8/);
   assert.throws(() => makeState(['a', 'a', 'c', 'd', 'e']), /玩家列表无效/);
   assert.throws(

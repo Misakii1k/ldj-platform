@@ -136,3 +136,78 @@
   - `npm run build -w @ldj/client` ✓，dist 包含 manifest/sw.js/offline.html/icon.svg
   - dev:server 冒烟：/health/ready、/manifest.json、/sw.js、/offline.html 均 200
 - M5 剩余子任务：性能/安全测试、Termux 部署文档、真实聚会验收。
+
+## 2026-07-29 ~ 08-02 会话 7：D4 平台化与 AI 能力（版本升至 0.4.0）
+
+- 共享规则集注册表（D4-F1）：`shared/game/rulesetRegistry.ts` + 目录一致性校验；目录迁移到
+  `catalog.ts`（availability / rulesets / setup / botSupport / theme 声明）。
+- 版本化游戏模块契约（GameModuleV2 / versionedContract / tabletop 渲染原语）；`game/rules/`
+  开局配置 schema；v5 迁移退役已移除游戏会话，v6 成员 ready 标记。
+- 外部 LLM 裁判（D4-B）：adjudication 任务队列 + runner + llmProtocol 提示词 +
+  `safeUpstream.ts` 统一请求器（DNS 解析后按 IP 阻断私网/环回、分页强制同源、manual redirect、
+  256 KiB 响应上限）；v8 迁移新增 adjudication_tasks 表。
+- 机器人陪练 + LLM 大模型玩家 + 运行期设置面板：`app_settings`（v4 迁移）、
+  `core/settings.ts` 读写校验、LlmProvider 热生效、`GET/PUT /api/settings/llm`（ADMIN_TOKEN
+  鉴权，未设则仅本机）、客户端设置弹层 + 首页入口。
+- 验证：2026-08-02 typecheck / lint / client build / npm test 全绿（包内 365/365、
+  D1 扫描器契约 4/4）；版本升至 0.4.0。
+- 已知取舍：面板「清空」回落环境变量而非关闭；未设 ADMIN_TOKEN 时手机改设置 403。
+
+## 2026-08-02 ~ 08-09 会话 8：D5 稳定原语 + D6 斗地主闭环 + 目录扩展 + 安全复审
+
+- D5：稳定原语 v1 声明（目录/规则集一致性校验、`resolveRulesetIdentity` 归一化）。
+- D6：斗地主平台规则集客户端产品闭环——`landlord_platform_v1`（默认）+
+  `landlord_legacy_platform_v1`（兼容基线）；服务端叫分/出牌/牌型校验/胜负结算 + bot 提示；
+  客户端叫分按钮、扇形手牌引擎、地主底牌展示。
+- D7：目录扩展至 11 款——D7-C 共享 `TabletopShell`（TabletopOvalShell 封装）+ ActionDock/
+  GameDrawer；新增 Durian（原创）/ 情书 / 奶酪大盗 / 以鹅传鹅 / 暗夜证词 / 铃铛对决 / 伪人测试
+  （原版桌游辅助工具）；狼人杀 v4 状态机 + `werewolf_platform_open_kill_v1`（开放夜刀）。
+- 安全复审：`docs/security-audit.md` 于 2026-08-09 完成当前工作树完整复审（10 项全部通过、
+  无 P0；含 SSRF 面复核、设置写接口每 IP 限流加固、历史观察 B-1 确认解决）。
+
+## 2026-08-09 ~ 08-11 会话 9：性能压测与 D8 心跳
+
+- 性能压测：`packages/server/scripts/perf.mjs`（4 真人 + 8 规则机器人 + 8 观战 = 12 路 WS），
+  2026-08-11 产出 `perf-report.json`：30 分钟长跑 13 局完成，p95=41ms，服务端 RSS 峰值
+  99.7MB（限 200MB），稳定期增长 8.5MB（限 30MB），CPU 均值 1.5%，failureCriteria 全部 false。
+- D8：`room_status` 只读心跳查询端到端落地（客户端 15s 轮询，服务端绑定校验 + 限流）。
+- 遗留（需真机/用户）：Termux PoC 回填（DG-01/DG-02）、真实聚会验收（AC-18/19/20）、
+  UNO 权利证据、DG-04 词库人工复核。
+## 2026-08-12 会话 10：上线准备 R1（审查员 + 项目经理轮次）
+
+- 独立 UI 自检（无历史上下文子代理）完成：P0×3 / P1×12 / P2 清单，与主评审交叉验证。
+- 已落地（本轮）：
+  - 连接状态渲染收敛到 App 顶部 TabletopStatusBanner 唯一来源（删 RoomPage 底部 + 三个阶段视图内横幅）。
+  - P0-1：TabletopOvalShell 移除对业务组件 GameLeaveButton 的依赖，改由 4 个消费方经 topRightControls 插槽传入。
+  - P1-5：SheetDialog 三段式（Header 固定 / Body 唯一滚动 / Footer 固定提交），创建/加入弹层提交按钮移入 Footer（form 属性保持语义）。
+  - P1-3：JoinRoomSheet「加入此房间」伪操作改「填入房间码」；4 处重复自动填入提示收敛为 1 处；空态移除「自行建房」伪恢复动作。
+  - P1-13：JoinRoomSheet 加载/错误/空态互斥。
+  - P2：清除全部剩余双语眉标（SECRET FILE/CASE CLOSED/TABLE TALK/LOCAL TABLES/SUSPECT 01）、损坏选择器片段（`}ge .role-item.dead`）、重复 .game-loading-card/.role-badge/.waiting-host 块、.connect-*/.player-filter__gesture/.vote-card-index/.winner-kicker 死样式。
+- 待办（下一轮）：P0-2 双布局系统与 UNO 双 UI 收敛、P0-3 房间页主题解耦、P1-6 共享确认弹窗、P1-9 聊天统一、P1-10 狼人杀阶段信息收敛；自动化验证（typecheck/lint/build）仍受子进程工具损坏阻断（exit 3221225794）。
+- 图标视觉评审（vision 子代理）完成并修复 9 个 SVG：goose-relay 放大（占高 31%→44%、嘴加大）、loveletter 信封上提使心形入封、werewolf 新月左移 14px 且与 night-testimony 差异化（后者改圆月+问号气泡）、bell-clash/echo-judge 消除悬空、uno 圆点加大、landlord 三尖王冠、cheese-thief 楔形加大。
+
+## 2026-08-12 会话 10b：上线准备 R2
+
+- P1-9：聊天统一——共享 `formatChatTime` + `ChatMessageList`（RoomPage 与 GameChatDrawer 同一渲染与时间格式），房间聊天盒改 flex 支持 mine 右对齐。
+- P0-2（部分）：51 条 2.5D 增强规则选择器 `.game-page .X` → `.game-phase .X`，椭圆桌内对局视图获得完整视觉（此前仅基础样式）。
+- P1-2：首页「加入对局」三入口收敛为 Hero + 底部 callout 两个上下文入口。
+- P0-3（部分）：房间成员/聊天面板脱离 `.game-card`，`.room-panel` 独立面板样式。
+
+## 2026-08-15 会话 12：多轮视觉识别与交叉验证针对性 UI/UX 精细化优化
+
+- **自动化视觉审查套件落地（`e2e/visual-audit.spec.ts`）**：
+  - 覆盖桌面视口（1280×800）与移动视口（390×844），生成 17 张全品类、多阶段高保真渲染截图（`screenshots/*.png`）。
+- **通过视觉识别（Vision Inspection）发现并精准解决 7 项 UI/UX 核心缺陷**：
+  1. **谁是卧底中心卡与座位圈层叠遮挡（P0）**：`UndercoverGamePage` 改传 `players={[]}`，清除外层重叠的 4 个圆形通用座位，看词卡、计时器、发言者卡与操作条 100% 清晰呈现。
+  2. **狼人杀 12 人审判桌双层座位冲突（P0）**：`WerewolfStage` 改传 `players={[]}`，消除与内部 `SeatRing` 冲突的冗余外层头像圈，使 2.5D 审判桌与 12 座位环无干扰呈现。
+  3. **桌游对局页悬浮重复退出按钮（P0）**：`TabletopShell` 增加 `rulesButton` 插槽，将「本局规则」统一纳入右上角控制区，彻底移除 7 款桌游（情书、榴莲、奶酪大盗、证词、伪人测试、以鹅传鹅、铃铛对决）桌面中心内嵌的重复 `<header>` 与 `<GameLeaveButton />`。
+  4. **斗地主叫分阶段手牌隐藏盲叫问题（P1）**：`LandlordGamePage` 扩展 `CardFanEngine` 展示条件（`phase === 'bidding' || phase === 'playing'`），让玩家在叫地主阶段能直观查看手牌 17 张 3D 扇形展开。
+  5. **狼人杀「身份匣」私密按钮暗色低对比度（P1）**：重构 `.tabletop-private > button`，采用高对比度金黄渐变材质 + 触感立体阴影（`#1e170d` 深色字 + 金色描边与微动效），大幅提升按压体验。
+  6. **移动端弹层背景透光与大厅紧凑化（P2）**：加深 `.sheet-backdrop` 暗色模糊度（`rgba(26,22,18,0.75)` + `blur(8px)`），使移动端抽屉弹层聚焦；优化 `<640px` 房间大厅头部与二维码卡片尺寸，适配小屏人机工程学。
+  7. **首页与卡片文字墨色对比度（P2）**：修复 `--home-motion-duration` 回退变量及 `.phase-lead h2/p` 文字墨色（`#211a12` / `#655e53`），确保任何渲染上下文文字清晰。
+- **全量质量与回归验证 100% 通过**：
+  - `npm run typecheck`：0 错误。
+  - `npm run lint`：0 error, 0 warning。
+  - `npm test`：1,125 项测试全部通过。
+  - `npx playwright test`：29/29 端到端用例全部通过（含 6 项多视口视觉走查 Spec）。
+

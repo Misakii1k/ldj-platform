@@ -124,6 +124,8 @@ export interface ReducerResult {
 export interface ConnectionApi {
   state: ConnectionSnapshot;
   me: Me | null;
+  isViewingHome: boolean;
+  setViewingHome: (viewing: boolean) => void;
   send: (type: ClientMessageType, payload: unknown) => Promise<ServerEnvelope>;
   resync: () => void;
   setMe: (me: Me) => void;

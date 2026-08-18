@@ -3,7 +3,7 @@ import { DURIAN_MANIFEST } from '../shared/manifest.ts';
 import { parseDurianAction, parseDurianConfig } from './schemas.ts';
 import {
   assertDurianInvariants,
-  buildDurianOrderDeck,
+  buildDurianDeck,
   createDurianState,
   reduceDurianState,
 } from './rules.ts';
@@ -13,6 +13,7 @@ import {
   parseDurianPlayerView,
   parseDurianSpectatorView,
 } from './views.ts';
+import { pickDurianBotAction } from './bot.ts';
 import type {
   DurianAction,
   DurianConfig,
@@ -30,7 +31,9 @@ export const DURIAN_VERSIONED_IDENTITY = {
 } as const;
 
 function parseState(input: unknown): DurianState {
-  if (typeof input !== 'object' || input === null || Array.isArray(input)) throw new Error('Durian 状态必须是对象');
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) {
+    throw new Error('Durian 状态必须是对象');
+  }
   const state = structuredClone(input) as DurianState;
   assertDurianInvariants(state);
   return state;
@@ -67,8 +70,13 @@ export const durianModule: GameModuleV2<
   assertInvariants: assertDurianInvariants,
   snapshotMigrations: {},
   createInitialState(ctx: GameContext, players: string[], config: DurianConfig) {
-    const orderDeck = config.orderDeck ?? ctx.random.shuffle(buildDurianOrderDeck());
-    const state = createDurianState(players, { rulesetId: 'durian_orchard_v1', orderDeck });
+    const customDeck = config.customDeck ?? ctx.random.shuffle(buildDurianDeck());
+    const state = createDurianState(players, {
+      rulesetId: 'durian_orchard_v1',
+      mode: config.mode,
+      maxRounds: config.maxRounds,
+      customDeck,
+    });
     assertDurianInvariants(state);
     return state;
   },
@@ -91,4 +99,7 @@ export const durianModule: GameModuleV2<
   },
   getPlayerView: buildDurianPlayerView,
   getSpectatorView: buildDurianSpectatorView,
+  pickBotAction(input) {
+    return pickDurianBotAction(input);
+  },
 };

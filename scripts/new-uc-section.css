@@ -1,0 +1,243 @@
+
+/* ══════════════════════════════════════════════════════════════
+   谁是卧底 · 机密桌舞台（经典模式 + 白板模式共用）
+   奶油贴纸卡牌 + 茄紫机密桌面，全阶段亮度一致
+   ══════════════════════════════════════════════════════════════ */
+
+/* —— 舞台布局 —— */
+.uc-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 700px;
+  flex: 1;
+  min-height: 0;
+  margin-inline: auto;
+}
+.uc-stage__body { width: 100%; flex: 1; min-height: 0; }
+.game-phase { gap: 14px; padding-bottom: 6px; animation: phase-enter .42s cubic-bezier(.2,.8,.2,1) both; }
+
+/* —— 阶段进度条 —— */
+.game-phase-rail { display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; max-width: 560px; flex-shrink: 0; padding: 9px 12px 8px; border: 3px solid var(--game-line); border-radius: 14px; background: #fffdfa; box-shadow: 0 4px 0 var(--game-line); }
+.game-phase-step { position: relative; display: flex; gap: 6px; align-items: center; justify-content: center; color: #786e62; font-size: .78rem; font-weight: 800; }
+.game-phase-step:not(:last-child)::after { position: absolute; top: 50%; right: -7px; width: 14px; height: 3px; content: ''; background: #d8ccba; border-radius: 2px; transform: translateY(-50%); }
+.phase-step-dot { display: inline-grid; width: 24px; height: 24px; place-items: center; border: 2.5px solid var(--game-line); border-radius: 50%; background: #fff; color: var(--game-ink); font-size: .72rem; font-weight: 900; transition: transform .2s ease, box-shadow .2s ease; }
+.game-phase-step.active { color: var(--game-ink); font-weight: 900; }
+.game-phase-step.active .phase-step-dot { border-color: var(--game-line); background: var(--game-yellow); box-shadow: 0 3px 0 var(--game-line); transform: translateY(-2px); }
+.game-phase-step.done { color: var(--game-green); font-weight: 800; }
+.game-phase-step.done .phase-step-dot { border-color: var(--game-green); color: #fff; background: var(--game-green); box-shadow: 0 2px 0 var(--game-line); }
+
+/* —— 阶段导语卡 —— */
+.phase-lead { display: flex; gap: 14px; align-items: center; justify-content: space-between; width: 100%; flex-shrink: 0; padding: 14px 18px; border: 3px solid var(--game-line); border-radius: 18px; background: #fffdfa; box-shadow: 0 6px 0 var(--game-line); }
+.phase-lead-copy { min-width: 0; }
+.phase-eyebrow, .section-kicker { display: block; margin-bottom: 3px; color: #b3251b; font-size: .74rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.phase-lead h2 { margin: 0; color: var(--game-ink); font-size: clamp(1.24rem, 3.6vw, 1.62rem); font-weight: 900; line-height: 1.18; letter-spacing: -.02em; }
+.phase-lead p { margin: 4px 0 0; color: var(--game-muted); font-size: .82rem; font-weight: 650; }
+
+/* —— 倒计时贴纸 —— */
+.game-countdown { position: relative; display: grid; flex: 0 0 74px; width: 74px; height: 74px; place-content: center; text-align: center; border: 3px solid var(--game-line); border-radius: 50%; background: var(--game-yellow); box-shadow: 0 4px 0 var(--game-line); font-variant-numeric: tabular-nums; }
+.game-countdown::before { position: absolute; inset: 5px; content: ''; border: 2px dashed rgba(41,39,34,.32); border-radius: inherit; animation: timer-spin 14s linear infinite; }
+.game-countdown strong { z-index: 1; font-size: 1.42rem; line-height: 1; color: var(--game-ink); }
+.countdown-label,.countdown-unit { z-index: 1; color: #625b50; font-size: .56rem; font-weight: 800; }
+.game-countdown.urgent { color: #fff; background: var(--game-coral); animation: timer-urgent .9s ease-in-out infinite; }
+.game-countdown.urgent strong,.game-countdown.urgent .countdown-label,.game-countdown.urgent .countdown-unit { color: #fff; }
+.game-countdown.ended { color: var(--game-muted); background: #e8e0d4; }
+.game-countdown.ended::before { animation: none; border-color: transparent; }
+
+/* —— 等待卡 / 提示 —— */
+.game-waiting-card { display: grid; min-height: 190px; place-items: center; align-content: center; gap: 8px; padding: 24px; border: 3.5px solid var(--game-line); border-radius: 20px; text-align: center; background: #fffdfa; box-shadow: 0 6px 0 var(--game-line); }
+.game-waiting-card strong { font-size: 1.1rem; }
+.game-waiting-card p { margin: 0; color: var(--game-muted); font-size: .82rem; }
+.waiting-orbit { width: 46px; height: 46px; border: 3px dashed var(--game-green); border-radius: 50%; animation: timer-spin 6s linear infinite; }
+
+/* —— 机密词条卡（长按偷看） —— */
+.game-phase .word-reveal-box { position: relative; display: flex; width: 100%; min-height: clamp(220px, 32dvh, 320px); flex-direction: column; align-items: center; justify-content: center; gap: 14px; overflow: hidden; margin: 0; padding: 58px 22px 48px; border: 3.5px solid var(--game-line); border-radius: 22px; background: linear-gradient(156deg, #4b3494 0%, #2f2068 58%, #241550 100%); color: #fff; font: inherit; text-align: center; box-shadow: 0 8px 0 var(--game-line), 0 16px 30px rgba(10,5,26,.35); cursor: pointer; user-select: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: transform .18s cubic-bezier(.2,1.2,.4,1), box-shadow .18s ease; }
+.word-reveal-box::before { position: absolute; inset: 12px; content: ''; border: 2px dashed rgba(255,255,255,.42); border-radius: 16px; pointer-events: none; }
+.word-reveal-box::after { position: absolute; width: 210px; height: 210px; right: -105px; bottom: -105px; content: ''; border: 26px solid rgba(255,255,255,.06); border-radius: 50%; pointer-events: none; }
+.word-reveal-box:hover { transform: translateY(-4px); box-shadow: 0 12px 0 var(--game-line), 0 20px 34px rgba(8,4,22,.45); }
+.word-reveal-box:active { transform: translateY(2px); box-shadow: 0 3px 0 var(--game-line), 0 8px 20px rgba(8,4,22,.4); }
+.word-reveal-box.revealed { background: linear-gradient(155deg, #ffedb0 0%, #ffd972 100%); color: var(--game-ink); }
+.word-reveal-box.revealed::before { border-color: rgba(41,39,34,.34); }
+.word-reveal-box.revealed::after { border-color: rgba(41,39,34,.05); }
+.secret-card-stamp { position: absolute; top: 18px; right: 18px; z-index: 1; padding: 5px 9px; border: 2.5px solid currentColor; border-radius: 8px; font-size: .58rem; font-weight: 900; letter-spacing: .22em; transform: rotate(4deg); opacity: .9; }
+.secret-eye { position: relative; width: 54px; height: 32px; border: 3px solid currentColor; border-radius: 70% 20% 70% 20%; transform: rotate(45deg); opacity: .95; }
+.secret-eye::before { position: absolute; inset: 4px; content: ''; border: 3px solid currentColor; border-radius: 50%; background: var(--game-yellow); }
+.word-reveal-box.revealed .secret-eye { display: none; }
+.word-placeholder { position: relative; z-index: 1; font-size: .98rem; font-weight: 900; letter-spacing: .18em; opacity: .92; }
+.game-phase .my-word { position: relative; z-index: 1; font-size: clamp(2.1rem, 9vw, 3.2rem); font-weight: 900; letter-spacing: .05em; overflow-wrap: anywhere; animation: word-pop .28s cubic-bezier(.2,1.3,.4,1) both; }
+.secret-card-foot { position: absolute; bottom: 17px; font-size: .66rem; font-weight: 800; letter-spacing: .1em; opacity: .8; }
+
+/* —— 进度计量贴纸 —— */
+.uc-meter { display: flex; gap: 12px; align-items: center; width: 100%; flex-shrink: 0; padding: 10px 16px; border: 3px solid var(--game-line); border-radius: 14px; background: #fffdfa; box-shadow: 0 4px 0 var(--game-line); }
+.uc-meter__label { flex-shrink: 0; color: var(--game-muted); font-size: .78rem; font-weight: 800; white-space: nowrap; }
+.uc-meter__track { flex: 1; height: 14px; overflow: hidden; border: 2.5px solid var(--game-line); border-radius: 999px; background: #e8dfd2; }
+.uc-meter__track span { display: block; width: var(--uc-meter, 0%); height: 100%; background: var(--game-coral); transition: width .35s ease; }
+.uc-meter__count { flex-shrink: 0; font-size: .82rem; }
+
+/* —— 底部操作坞 —— */
+.game-action-dock { position: sticky; z-index: 5; bottom: max(var(--safe-bottom), 8px); display: flex; flex-direction: column; gap: 6px; width: 100%; flex-shrink: 0; padding: 12px; border: 3.5px solid var(--game-line); border-radius: 18px; background: rgba(255,253,247,.98); box-shadow: 0 8px 0 var(--game-line), 0 -12px 25px rgba(38,22,70,.5); backdrop-filter: blur(8px); margin-top: auto; }
+.game-action-dock > span { color: var(--game-muted); text-align: center; font-size: .7rem; font-weight: 700; }
+.game-primary-action { width: 100%; min-height: 52px; border: 3px solid var(--game-line); border-radius: 14px; color: #fff; background: var(--game-green); box-shadow: 0 5px 0 var(--game-line); font-weight: 900; font-size: 1.05rem; transition: transform .12s ease, box-shadow .12s ease, background .18s ease; cursor: pointer; }
+.game-primary-action:hover:not(:disabled) { border-color: var(--game-line); background: var(--game-green-dark); transform: translateY(-2px); box-shadow: 0 7px 0 var(--game-line); }
+.game-primary-action:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 1px 0 var(--game-line); }
+.game-primary-action:disabled { color: #8a8175; border-color: #887f73; background: #ded4c4; box-shadow: 0 2px 0 #887f73; cursor: not-allowed; }
+
+/* —— 发言人聚光卡 —— */
+.speaker-spotlight { position: relative; display: grid; grid-template-columns: 72px minmax(0,1fr) auto; gap: 14px; align-items: center; width: 100%; flex-shrink: 0; min-height: 112px; padding: 15px 16px; overflow: hidden; border: 3.5px solid var(--game-line); border-radius: 18px; background: var(--game-green); color: #fff; box-shadow: 0 6px 0 var(--game-line); }
+.speaker-spotlight::after { position: absolute; width: 150px; height: 150px; right: -70px; top: -75px; content: ''; border: 2px dashed rgba(255,255,255,.4); border-radius: 50%; }
+.speaker-spotlight.is-me { background: var(--game-coral); }
+.speaker-avatar { position: relative; width: 68px; height: 68px; border: 3px solid var(--game-line); border-radius: 50%; background: #f0e6d2; box-shadow: 0 3px 0 rgba(41,39,34,.55); }
+.speaker-avatar::before { position: absolute; top: 11px; left: 22px; width: 21px; height: 21px; content: ''; border: 3px solid var(--game-line); border-radius: 50%; background: #fff; }
+.speaker-avatar::after { position: absolute; bottom: 7px; left: 11px; width: 44px; height: 20px; content: ''; border: 3px solid var(--game-line); border-bottom: 0; border-radius: 22px 22px 0 0; background: #fff; }
+.speaker-avatar span { position: absolute; inset: 0; z-index: 1; }
+.speaker-avatar span::before,.speaker-avatar span::after { position: absolute; top: 25px; width: 4px; height: 4px; content: ''; border-radius: 50%; background: var(--game-line); }
+.speaker-avatar span::before { left: 28px; }
+.speaker-avatar span::after { left: 38px; }
+.speaker-spotlight-copy { display: flex; min-width: 0; flex-direction: column; gap: 1px; }
+.speaker-label { font-size: .66rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; opacity: .85; }
+.speaker-spotlight-copy .speaker-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1.5rem; font-weight: 900; line-height: 1.15; }
+.speaker-seat { font-size: .72rem; font-weight: 700; opacity: .85; }
+.speaker-signal { z-index: 1; display: flex; height: 34px; gap: 4px; align-items: center; }
+.speaker-signal i { width: 6px; height: 12px; border: 2px solid var(--game-line); border-radius: 3px; background: var(--game-yellow); animation: signal-wave 1.05s ease-in-out infinite alternate; }
+.speaker-signal i:nth-child(2) { animation-delay: .18s; }
+.speaker-signal i:nth-child(3) { animation-delay: .36s; }
+
+/* —— 发言顺序贴纸板 —— */
+.uc-order { width: 100%; flex-shrink: 0; padding: 13px 14px 13px; border: 3.5px solid var(--game-line); border-radius: 18px; background: #fffdfa; box-shadow: 0 6px 0 var(--game-line); }
+.uc-order__head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+.uc-order__head h3 { margin: 0; color: var(--game-ink); font-size: .99rem; font-weight: 900; }
+.uc-order__head span { color: var(--game-muted); font-size: .68rem; font-weight: 800; }
+.uc-order__track { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.uc-order__chip { display: flex; min-width: 0; gap: 8px; align-items: center; padding: 6px 9px; border: 2.5px solid var(--game-line); border-radius: 999px; color: var(--game-ink); background: #fffaf0; box-shadow: 0 3px 0 var(--game-line); font-size: .78rem; font-weight: 800; }
+.uc-order__idx { display: inline-grid; width: 22px; height: 22px; flex-shrink: 0; place-items: center; border: 2px solid var(--game-line); border-radius: 50%; background: #fff; font-size: .68rem; font-weight: 900; }
+.uc-order__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.uc-order__state { width: 9px; height: 9px; flex-shrink: 0; margin-left: auto; border-radius: 50%; background: #d8ccba; }
+.uc-order__chip.is-done { color: #5f7a52; background: #e9f2e2; box-shadow: 0 2px 0 var(--game-line); }
+.uc-order__chip.is-done .uc-order__idx { border-color: var(--game-green); color: #fff; background: var(--game-green); }
+.uc-order__chip.is-done .uc-order__state { background: var(--game-green); }
+.uc-order__chip.is-current { border-color: var(--game-line); color: #fff; background: var(--game-coral); animation: state-breathe 1.4s ease-in-out infinite; }
+.uc-order__chip.is-current .uc-order__idx { border-color: #fff; color: var(--game-ink); background: #fff; }
+.uc-order__chip.is-current .uc-order__state { background: #fff; box-shadow: 0 0 0 3px rgba(255,255,255,.35); }
+.uc-order__chip.is-dead { opacity: .5; }
+.uc-order__chip.is-me:not(.is-current) .uc-order__idx { border-color: var(--game-line); color: #fff; background: var(--game-purple); }
+
+/* —— 投票候选人卡 —— */
+.game-phase .vote-candidates { display: grid; grid-template-columns: repeat(auto-fill, minmax(146px, 1fr)); gap: 11px; width: 100%; }
+.game-phase .vote-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; min-height: 148px; padding: 14px 10px 12px; overflow: hidden; border: 3px solid var(--game-line); border-radius: 18px; color: var(--game-ink); background: #fffdfa; box-shadow: 0 5px 0 var(--game-line); cursor: pointer; animation: vote-card-in .38s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--stagger-index, 0) * 45ms); transition: transform .16s ease, box-shadow .16s ease, background .16s ease; }
+.vote-card:hover:not(:disabled) { border-color: var(--game-line); background: #fff3bf; transform: translateY(-3px); box-shadow: 0 8px 0 var(--game-line); }
+.vote-card:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--game-line); }
+.vote-card:disabled { cursor: not-allowed; }
+.vote-card.voted { border-color: #2b8a3e; background: #e9f7e6; box-shadow: 0 5px 0 #2b8a3e; }
+.vote-card.self { opacity: .55; background: #f1ebe0; }
+.vote-avatar { position: relative; width: 50px; height: 50px; border: 2.5px solid var(--game-line); border-radius: 50%; background: #e7ded2; }
+.vote-avatar i { position: absolute; inset: 0; }
+.vote-avatar i::before { position: absolute; top: 8px; left: 16px; width: 15px; height: 15px; content: ''; border: 2.5px solid var(--game-line); border-radius: 50%; background: #fff; }
+.vote-avatar i::after { position: absolute; bottom: 7px; left: 9px; width: 30px; height: 14px; content: ''; border: 2.5px solid var(--game-line); border-bottom: 0; border-radius: 15px 15px 0 0; background: #fff; }
+.vote-seat { color: var(--game-purple); font-size: .82rem; font-weight: 900; }
+.vote-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .92rem; font-weight: 900; }
+.vote-tag { margin-top: auto; padding: 4px 10px; border: 2px solid var(--game-line); border-radius: 999px; color: var(--game-muted); background: #efe7db; font-size: .68rem; font-weight: 900; }
+.vote-card:not(.self):not(.voted) .vote-tag { color: var(--game-ink); background: var(--game-yellow); }
+.vote-card.voted .vote-tag { border-color: #2b8a3e; color: #fff; background: #2b8a3e; }
+.vote-done-hint { display: flex; flex-direction: column; gap: 3px; align-items: center; padding: 12px; border: 3px dashed var(--game-line); border-radius: 16px; color: var(--game-ink); background: rgba(255,253,247,.94); text-align: center; }
+.vote-done-hint span { color: var(--game-muted); font-size: .76rem; font-weight: 700; }
+.spectator-hint { padding: 10px; border: 2.5px dashed var(--game-line); border-radius: 14px; color: var(--game-muted); background: rgba(255,253,247,.9); font-size: .78rem; font-weight: 700; text-align: center; }
+
+/* —— 进度计量（就绪/票数） —— */
+.uc-panel { display: flex; width: 100%; flex-shrink: 0; flex-direction: column; gap: 10px; padding: 14px 16px; border: 3.5px solid var(--game-line); border-radius: 18px; background: #fffdfa; box-shadow: 0 6px 0 var(--game-line); }
+.uc-panel__head { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; }
+.uc-panel__head h3 { margin: 0; color: var(--game-ink); font-size: .99rem; font-weight: 900; }
+.uc-panel__head span { color: var(--game-muted); font-size: .7rem; font-weight: 800; }
+
+/* —— 结果横幅 / 出局档案 / 公开票型 —— */
+.game-phase .result-banner { display: flex; gap: 14px; align-items: center; width: 100%; padding: 16px 18px; border: 3.5px solid var(--game-line); border-radius: 18px; color: var(--game-ink); background: var(--game-yellow); box-shadow: 0 6px 0 var(--game-line); text-align: left; }
+.result-seal { display: grid; width: 46px; height: 46px; flex-shrink: 0; place-items: center; border: 3px solid var(--game-line); border-radius: 50%; background: #fff; font-size: 1.35rem; font-weight: 900; box-shadow: 0 3px 0 rgba(41,39,34,.4); }
+.result-banner > div { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.result-banner strong { font-size: 1.16rem; font-weight: 900; }
+.result-banner div span { font-size: .78rem; font-weight: 700; opacity: .88; }
+.game-phase .result-banner.eliminated { color: #fff; background: var(--game-coral); }
+.game-phase .result-banner.tie, .game-phase .result-banner.runoff_tie { color: var(--game-ink); background: var(--game-yellow); }
+.game-phase .result-banner.no_votes { color: var(--game-ink); background: #e8e0d4; }
+.eliminated-info { display: grid; grid-template-columns: 48px minmax(0,1fr) auto; gap: 12px; align-items: center; width: 100%; padding: 13px 14px; border: 3px solid var(--game-line); border-radius: 16px; background: #fffdfa; box-shadow: 0 4px 0 var(--game-line); }
+.eliminated-avatar, .role-avatar { position: relative; width: 46px; height: 46px; border: 2.5px solid var(--game-line); border-radius: 50%; background: #e7ded2; }
+.eliminated-avatar::after, .role-avatar::after { position: absolute; top: 21px; left: 9px; width: 26px; height: 3px; content: ''; background: var(--game-line); transform: rotate(-35deg); }
+.eliminated-info > div { display: flex; min-width: 0; flex-direction: column; gap: 1px; }
+.eliminated-info > div span { color: var(--game-muted); font-size: .66rem; font-weight: 700; }
+.eliminated-info > div strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .95rem; font-weight: 900; }
+.game-phase .tally-list { display: flex; margin: 0; padding: 0; flex-direction: column; gap: 10px; list-style: none; }
+.game-phase .tally-item { display: grid; grid-template-columns: 76px minmax(45px,1fr) 46px; gap: 9px; align-items: center; padding: 2px 0; animation: tally-in .35s ease both; }
+.tally-player { display: flex; flex-direction: column; font-weight: 900; line-height: 1.2; }
+.tally-player small { color: var(--game-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .62rem; font-weight: 650; }
+.tally-bar { height: 13px; overflow: hidden; border: 2.5px solid var(--game-line); border-radius: 999px; background: #e8dfd2; }
+.tally-bar i { display: block; width: var(--fill-percent, 0%); height: 100%; background: var(--game-coral); animation: tally-grow .65s cubic-bezier(.2,.8,.2,1) both; transform-origin: left; }
+.game-phase .tally-count { text-align: right; font-size: .8rem; font-weight: 800; }
+
+/* —— 结算：胜方横幅 / 词条对 / 身份档案 —— */
+.winner-hero { position: relative; width: 100%; flex-shrink: 0; padding: 28px 20px 24px; overflow: hidden; border: 3.5px solid var(--game-line); border-radius: 22px; color: #fff; text-align: center; background: var(--game-green); box-shadow: 0 8px 0 var(--game-line); }
+.winner-undercover .winner-hero { background: var(--game-purple); }
+.winner-draw .winner-hero { color: var(--game-ink); background: var(--game-yellow); }
+.game-phase .winner-title { position: relative; z-index: 1; margin: 5px 0 3px; color: inherit; background: none; font-size: clamp(2rem, 9vw, 3.2rem); letter-spacing: -.03em; text-shadow: 0 4px 0 rgba(0,0,0,.25); }
+.winner-draw .winner-title { text-shadow: none; }
+.winner-hero p { position: relative; z-index: 1; margin: 0; font-size: .84rem; font-weight: 700; opacity: .92; }
+.winner-rays { position: absolute; top: 50%; left: 50%; width: 240px; height: 240px; border: 35px dotted rgba(255,255,255,.15); border-radius: 50%; transform: translate(-50%,-50%); animation: timer-spin 22s linear infinite; }
+.game-phase .word-pair { display: grid; width: 100%; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin: 0; }
+.game-phase .word-item { position: relative; min-height: 112px; padding: 18px 12px; overflow: hidden; border: 3px solid var(--game-line); border-radius: 16px; box-shadow: 0 5px 0 var(--game-line); }
+.game-phase .word-item.civilian { background: #d8eddf; }
+.game-phase .word-item.undercover { background: #e6d7ff; }
+.game-phase .word-label { display: block; color: var(--game-muted); font-size: .68rem; font-weight: 800; }
+.game-phase .word-text { display: block; overflow-wrap: anywhere; font-size: clamp(1.18rem, 5vw, 1.65rem); }
+.word-corner { position: absolute; right: 7px; bottom: 5px; color: rgba(41,39,34,.35); font-size: .48rem; font-weight: 900; letter-spacing: .08em; }
+.game-phase .roles-list { display: flex; margin: 0; padding: 0; flex-direction: column; gap: 8px; list-style: none; }
+.game-phase .role-item { display: grid; grid-template-columns: 40px 34px minmax(0,1fr) auto; gap: 8px; align-items: center; min-height: 56px; padding: 8px 10px; border: 3px solid var(--game-line); border-radius: 13px; background: #fffaf0; box-shadow: 0 3.5px 0 var(--game-line); animation: role-card-in .38s ease both; animation-delay: calc(var(--stagger-index, 0) * 40ms); }
+.game-phase .role-item.dead { opacity: .58; box-shadow: 0 2px 0 var(--game-line); }
+.game-phase .role-seat { min-width: 0; font-size: .8rem; font-weight: 800; }
+.game-phase .role-name { display: flex; min-width: 0; flex-direction: column; line-height: 1.2; }
+.role-name strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .82rem; }
+.role-name small { color: var(--game-muted); font-size: .6rem; }
+.game-phase .role-badge { padding: 3px 10px; border: 2px solid var(--game-line); border-radius: 999px; color: var(--game-ink); box-shadow: 0 2px 0 var(--game-line); font-size: .68rem; font-weight: 800; }
+.game-phase .role-badge.civilian { background: #bfe1ca; }
+.game-phase .role-badge.undercover { background: #d7bdfd; }
+.game-phase .waiting-host { display: grid; min-height: 48px; place-items: center; color: var(--game-muted); font-weight: 800; }
+
+.game-loading-card { margin: auto; padding: 20px; border: 3px solid var(--game-line); border-radius: 15px; background: var(--game-surface); box-shadow: 5px 5px 0 var(--game-line); font-weight: 800; }
+.game-phase .error-banner, .game-phase .status-banner { border: 2px solid var(--game-line); border-radius: 12px; box-shadow: 2px 2px 0 var(--game-line); flex-shrink: 0; }
+
+@keyframes game-card-in { from { opacity: 0; transform: translateY(-10px) rotate(-.5deg); } to { opacity: 1; transform: translateY(0) rotate(0); } }
+@keyframes phase-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes timer-spin { to { transform: rotate(360deg); } }
+@keyframes timer-urgent { 50% { transform: scale(1.035); box-shadow: 5px 5px 0 var(--game-line); } }
+@keyframes signal-wave { to { height: 8px; opacity: .55; } }
+@keyframes state-breathe { 50% { opacity: .65; } }
+@keyframes word-pop { from { opacity: 0; transform: scale(.75); } to { opacity: 1; transform: scale(1); } }
+@keyframes vote-card-in { from { opacity: 0; transform: translateY(10px) rotate(1deg); } to { opacity: 1; transform: translateY(0) rotate(0); } }
+@keyframes tally-in { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes tally-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes role-card-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 430px) {
+  .phase-lead { padding: 13px 12px; }
+  .phase-lead p { font-size: .76rem; }
+  .game-countdown { flex-basis: 66px; width: 66px; height: 66px; }
+  .game-countdown strong { font-size: 1.24rem; }
+  .game-phase-step { flex-direction: column; gap: 1px; font-size: .58rem; }
+  .game-phase-step:not(:last-child)::after { top: 12px; right: -9px; width: 18px; }
+  .speaker-spotlight { grid-template-columns: 58px minmax(0,1fr) auto; min-height: 100px; padding: 12px; }
+  .speaker-avatar { width: 54px; height: 54px; }
+  .speaker-avatar::before { top: 9px; left: 18px; width: 17px; height: 17px; }
+  .speaker-avatar::after { bottom: 6px; left: 9px; width: 34px; height: 16px; }
+  .speaker-avatar span::before { left: 22px; top: 20px; }
+  .speaker-avatar span::after { left: 30px; top: 20px; }
+  .game-phase .vote-candidates { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 9px; }
+  .game-phase .vote-card { min-height: 132px; padding: 12px 8px 10px; }
+  .uc-order__track { grid-template-columns: repeat(auto-fill, minmax(102px, 1fr)); }
+  .game-phase .word-pair { grid-template-columns: 1fr; }
+  .game-phase .tally-item { grid-template-columns: 66px minmax(40px,1fr) 42px; }
+}
+
+@media (max-width: 340px) {
+  .uc-order__track { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .game-phase .role-item { grid-template-columns: 36px 28px minmax(0,1fr); }
+  .game-phase .role-badge { grid-column: 3; justify-self: start; }
+}
+

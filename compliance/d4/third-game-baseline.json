@@ -51,9 +51,9 @@
     {
       "path": "packages/games/werewolf/server/module.ts",
       "role": "current_game_module",
-      "sha256": "ad15db058f175fe440ede8f409a29f537326656d9f7ce8c0222682785c824f21",
-      "lineCount": 1570,
-      "effectiveNonTestLineCount": 1233
+      "sha256": "40b304addb6338fcc40f523a9dcd43eec6b646df5037f97110902d8e042bfbe5",
+      "lineCount": 1571,
+      "effectiveNonTestLineCount": 1234
     },
     {
       "path": "packages/games/werewolf/server/bot.ts",
@@ -93,8 +93,8 @@
     {
       "path": "packages/games/werewolf/tests/module.test.ts",
       "role": "current_module_tests",
-      "sha256": "be3c04cf617122f0cd168a38e2effaf66b95c86c7d0290c54cba16778b9e3e69",
-      "lineCount": 296,
+      "sha256": "40b2f4a4b31e010f3102dd710595e3a3c591cec3403f37909e8dad550f1c105f",
+      "lineCount": 318,
       "effectiveNonTestLineCount": 0
     },
     {

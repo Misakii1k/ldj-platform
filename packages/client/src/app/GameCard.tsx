@@ -15,6 +15,11 @@ function gameMark(gameId: string): string {
     case 'werewolf': return '狼';
     case 'durian': return '榴';
     case 'loveletter': return '情';
+    case 'cheese-thief': return '奶';
+    case 'goose-relay': return '鹅';
+    case 'night-testimony': return '证';
+    case 'bell-clash': return '铃';
+    case 'echo-judge': return '伪';
     default: return '玩';
   }
 }

@@ -1,20 +1,26 @@
 /** goose_relay_classic_v1 客户端严格视角类型与解析器（与服务端视图形状一一对应）。 */
+import { CHARACTERS as SERVER_CHARACTERS } from '../../../../games/goose-relay/server/types.ts';
 
-export const CHARACTERS = ['grey_goose', 'white_goose', 'brown_goose', 'black_goose', 'duck_goose', 'swan_goose'] as const;
+export const CHARACTERS = SERVER_CHARACTERS;
 export type CharacterId = (typeof CHARACTERS)[number];
-export type GooseRelayPhase = 'case_view' | 'relay' | 'discussion' | 'accusation' | 'vote' | 'game_over';
+export type GooseRelayPhase =
+  | 'claim_head'
+  | 'pick_cards'
+  | 'relay'
+  | 'discussion'
+  | 'accusation'
+  | 'vote'
+  | 'game_over';
 export type GooseRole = 'head' | 'evil' | 'white';
 
 export interface CaseCard {
   murderer: CharacterId;
   victim: CharacterId;
-  tool: string;
-  scene: string;
 }
 
 export interface GooseRelayReveal {
   case: CaseCard;
-  transmissions: CaseCard[];
+  candidateCards: CharacterId[];
   evilGeese: string[];
   accusations: Array<{ playerId: string; guess: CaseCard; correct: boolean }>;
   voteCounts: Record<string, number>;
@@ -25,15 +31,16 @@ export interface GooseRelayReveal {
 export interface GooseRelayPublicView {
   gameId: 'goose-relay';
   rulesetId: 'goose_relay_classic_v1';
-  schemaVersion: 1;
+  schemaVersion: 2;
   phase: GooseRelayPhase;
   players: string[];
   lineOrder: string[];
+  headPlayerId: string | null;
+  candidateCards: CharacterId[];
   currentIndex: number;
   currentAccuserIndex: number;
   evilCount: number;
-  transmissions: CaseCard[] | null;
-  accusations: Array<{ playerId: string; correct: boolean }> | null;
+  accusations: Array<{ playerId: string; correct: boolean }>;
   caseMatched: boolean | null;
   votesCast: number;
   winners: string[];
@@ -49,9 +56,22 @@ export interface GooseRelayPlayerView extends GooseRelayPublicView {
 }
 
 const PUBLIC_KEYS = [
-  'gameId', 'rulesetId', 'schemaVersion', 'phase', 'players', 'lineOrder',
-  'currentIndex', 'currentAccuserIndex', 'evilCount', 'transmissions',
-  'accusations', 'caseMatched', 'votesCast', 'winners', 'reveal',
+  'gameId',
+  'rulesetId',
+  'schemaVersion',
+  'phase',
+  'players',
+  'lineOrder',
+  'headPlayerId',
+  'candidateCards',
+  'currentIndex',
+  'currentAccuserIndex',
+  'evilCount',
+  'accusations',
+  'caseMatched',
+  'votesCast',
+  'winners',
+  'reveal',
 ] as const;
 const ME_KEYS = ['playerId', 'role', 'observed'] as const;
 
@@ -86,32 +106,36 @@ function isCharacter(value: unknown): value is CharacterId {
   return typeof value === 'string' && (CHARACTERS as readonly string[]).includes(value);
 }
 
-function parseCaseCard(value: unknown): CaseCard | null {
-  if (!isObject(value) || Object.keys(value).length !== 4) return null;
-  if (!isCharacter(value.murderer) || !isCharacter(value.victim)) return null;
-  if (value.murderer === value.victim) return null;
-  if (typeof value.tool !== 'string' || value.tool.length < 1 || typeof value.scene !== 'string' || value.scene.length < 1) return null;
-  return { murderer: value.murderer, victim: value.victim, tool: value.tool, scene: value.scene };
+function isCandidateCards(value: unknown): value is CharacterId[] {
+  return Array.isArray(value) && value.every(isCharacter);
 }
 
-function parseCases(value: unknown): CaseCard[] | null {
-  if (!Array.isArray(value)) return null;
-  const cases: CaseCard[] = [];
-  for (const item of value) {
-    const card = parseCaseCard(item);
-    if (card === null) return null;
-    cases.push(card);
-  }
-  return cases;
+function parseCaseCard(value: unknown): CaseCard | null {
+  if (!isObject(value) || Object.keys(value).length !== 2) return null;
+  if (!isCharacter(value.murderer) || !isCharacter(value.victim)) return null;
+  if (value.murderer === value.victim) return null;
+  return { murderer: value.murderer, victim: value.victim };
 }
 
 function parseReveal(value: unknown): GooseRelayReveal | null {
   if (value === null) return null;
-  if (!isObject(value) || !hasExactKeys(value, ['case', 'transmissions', 'evilGeese', 'accusations', 'voteCounts', 'caseMatched', 'evilIdentified'])) return null;
+  if (
+    !isObject(value) ||
+    !hasExactKeys(value, [
+      'case',
+      'candidateCards',
+      'evilGeese',
+      'accusations',
+      'voteCounts',
+      'caseMatched',
+      'evilIdentified',
+    ])
+  ) {
+    return null;
+  }
   const base = parseCaseCard(value.case);
   if (base === null) return null;
-  const transmissions = parseCases(value.transmissions);
-  if (transmissions === null || !isPlayerIds(value.evilGeese)) return null;
+  if (!isCandidateCards(value.candidateCards) || !isPlayerIds(value.evilGeese)) return null;
   if (!isBool(value.caseMatched) || !isBool(value.evilIdentified)) return null;
   if (!Array.isArray(value.accusations)) return null;
   const accusations: GooseRelayReveal['accusations'] = [];
@@ -129,7 +153,7 @@ function parseReveal(value: unknown): GooseRelayReveal | null {
   }
   return {
     case: base,
-    transmissions,
+    candidateCards: [...value.candidateCards],
     evilGeese: [...value.evilGeese],
     accusations,
     voteCounts,
@@ -140,16 +164,42 @@ function parseReveal(value: unknown): GooseRelayReveal | null {
 
 function parseBase(view: Record<string, unknown>, withMe: boolean): GooseRelayPublicView | null {
   if (!hasExactKeys(view, withMe ? [...PUBLIC_KEYS, 'me'] : PUBLIC_KEYS)) return null;
-  if (view.gameId !== 'goose-relay' || view.rulesetId !== 'goose_relay_classic_v1' || view.schemaVersion !== 1) return null;
-  const phases: GooseRelayPhase[] = ['case_view', 'relay', 'discussion', 'accusation', 'vote', 'game_over'];
+  if (
+    view.gameId !== 'goose-relay' ||
+    view.rulesetId !== 'goose_relay_classic_v1' ||
+    view.schemaVersion !== 2
+  ) {
+    return null;
+  }
+  const phases: GooseRelayPhase[] = [
+    'claim_head',
+    'pick_cards',
+    'relay',
+    'discussion',
+    'accusation',
+    'vote',
+    'game_over',
+  ];
   if (typeof view.phase !== 'string' || !phases.includes(view.phase as GooseRelayPhase)) return null;
   if (!isPlayerIds(view.players) || !isPlayerIds(view.lineOrder)) return null;
-  if (!isNonNegativeInteger(view.currentIndex) || !isNonNegativeInteger(view.currentAccuserIndex) || !isNonNegativeInteger(view.evilCount)) return null;
-  if (view.transmissions !== null && parseCases(view.transmissions) === null) return null;
-  if (view.accusations !== null) {
-    if (!Array.isArray(view.accusations)) return null;
-    for (const item of view.accusations) {
-      if (!isObject(item) || !hasExactKeys(item, ['playerId', 'correct']) || !isPlayerId(item.playerId) || !isBool(item.correct)) return null;
+  if (view.headPlayerId !== null && !isPlayerId(view.headPlayerId)) return null;
+  if (!isCandidateCards(view.candidateCards)) return null;
+  if (
+    !isNonNegativeInteger(view.currentIndex) ||
+    !isNonNegativeInteger(view.currentAccuserIndex) ||
+    !isNonNegativeInteger(view.evilCount)
+  ) {
+    return null;
+  }
+  if (!Array.isArray(view.accusations)) return null;
+  for (const item of view.accusations) {
+    if (
+      !isObject(item) ||
+      !hasExactKeys(item, ['playerId', 'correct']) ||
+      !isPlayerId(item.playerId) ||
+      !isBool(item.correct)
+    ) {
+      return null;
     }
   }
   if (view.caseMatched !== null && !isBool(view.caseMatched)) return null;
@@ -159,21 +209,19 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): GooseRelayPu
   return {
     gameId: 'goose-relay',
     rulesetId: 'goose_relay_classic_v1',
-    schemaVersion: 1,
+    schemaVersion: 2,
     phase: view.phase as GooseRelayPhase,
     players: [...view.players],
     lineOrder: [...view.lineOrder],
+    headPlayerId: view.headPlayerId as string | null,
+    candidateCards: [...view.candidateCards],
     currentIndex: view.currentIndex as number,
     currentAccuserIndex: view.currentAccuserIndex as number,
     evilCount: view.evilCount as number,
-    transmissions: view.transmissions === null ? null : parseCases(view.transmissions),
-    accusations:
-      view.accusations === null
-        ? null
-        : (view.accusations as Array<Record<string, unknown>>).map((item) => ({
-            playerId: item.playerId as string,
-            correct: item.correct as boolean,
-          })),
+    accusations: (view.accusations as Array<Record<string, unknown>>).map((item) => ({
+      playerId: item.playerId as string,
+      correct: item.correct as boolean,
+    })),
     caseMatched: view.caseMatched as boolean | null,
     votesCast: view.votesCast as number,
     winners: [...view.winners],
@@ -185,7 +233,7 @@ function parseMe(value: unknown): GooseRelayPlayerView['me'] {
   if (value === null) return null;
   if (!isObject(value) || !hasExactKeys(value, ME_KEYS) || !isPlayerId(value.playerId)) return null;
   const roles: GooseRole[] = ['head', 'evil', 'white'];
-  if (typeof value.role !== 'string' || (value.role !== null && !roles.includes(value.role as GooseRole))) return null;
+  if (value.role !== null && (!roles.includes(value.role as GooseRole))) return null;
   const observed = parseCaseCard(value.observed);
   if (observed === null && value.observed !== null) return null;
   return {

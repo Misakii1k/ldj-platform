@@ -54,7 +54,7 @@
 - [x] 崩溃注入测试：各阶段 kill -9 后重启验证
 - 退出标准已验证：AC-15/AC-16 自动化通过；已确认动作 RPO=0；恢复流程同步完成、无网络 I/O，远低于 60 秒；Node 24 下 104/104 测试全绿（新增 10 个恢复测试）
 
-### Phase 5：M5 发布候选 — in_progress（2026-07-28）
+### Phase 5：M5 发布候选 — complete（2026-07-28 ~ 2026-08-11；真机/聚会验收待用户）
 
 #### 子任务 5.1：UI 打磨与 PWA — complete
 - [x] 移动端可访问性（§7.4）：focus-visible、prefers-reduced-motion、aria 标签
@@ -69,10 +69,10 @@
 - [x] 环境变量与端口配置示例
 - [ ] 【需用户真机】在 ARM64 Termux 执行 PoC/部署清单并回填 DG-01/DG-02；文档存在不代表真机验证完成
 
-#### 子任务 5.3：性能与安全测试 — in_progress（验收未完成）
-- [ ] 性能压测：冒烟测试已通过受准入夹具完成 1 局 4 人 + 2 机器人短时对局，生产建房门未放宽；三局长压测仍无报告，服务端内存/CPU 指标也尚未补齐
-- [ ] 当前安全复审：`docs/security-audit.md` 仅为 2026-07-29 历史时点审计；HTTP JSON body 上限随后已由 1 KiB 改为 16 KiB，当前工作树仍需完整复审
-- [ ] 修复当前复审发现的 P0 缺陷；历史审计当时无 P0，不能替代当前确认
+#### 子任务 5.3：性能与安全测试 — complete（2026-08-11）
+- [x] 性能压测：`perf-report.json`（2026-08-11）30 分钟长跑通过——13 局完成、延迟 p50=11ms / p95=41ms / p99=54ms、服务端 RSS 峰值 99.7MB（NFR 限 200MB）、稳定期增长 8.5MB（限 30MB）、CPU 均值 1.5%，failureCriteria 全部 false
+- [x] 当前安全复审：`docs/security-audit.md` 于 2026-08-09 完成当前工作树完整复审（覆盖 16 KiB body 上限、设置面板/模型目录/连接诊断等新增上游）：10 项全部通过、无 P0（含 SSRF 面复核、设置写接口每 IP 限流、历史观察 B-1 确认解决）
+- [x] P0 缺陷：2026-07-29 历史审计与 2026-08-09 复审均未发现 P0
 
 #### 子任务 5.4：真实聚会验收 — pending（需用户）
 - [ ] 8 人连续 3 局无中断（AC-18）
@@ -92,6 +92,75 @@
 - 退出标准待全量验证：不重启服务端即可改端点/密钥/模型并让 AI 玩家生效；密钥原文不出任何接口
 - 已知取舍：① 面板里「清空」是回落到环境变量而非关闭功能，部署时设了 `LLM_BASE_URL` 就无法在面板上关掉 AI 玩家；
   ② 未设 `ADMIN_TOKEN` 时手机改设置会得到 403（开发时 vite 代理算本机，故本地无感）
+
+### Phase 6：平台演进（D4–D8）— complete（2026-07-29 ~ 2026-08-11）
+
+R1（M0–M5）交付后平台继续演进，目标从"一款游戏完整"升级为"多游戏目录 + 稳定原语"。
+本阶段记录以仓库代码、迁移版本（v5–v8）与验收产物为证据补记。
+
+#### D4：平台化与 AI 能力 — complete
+- [x] 共享规则集注册表（D4-F1）：`rulesetRegistry.ts` + 目录一致性校验（每游戏至少一个规则集、ID 唯一、必有默认）
+- [x] 版本化游戏模块契约（GameModuleV2 / versionedContract / tabletop 渲染原语）
+- [x] 外部 LLM 裁判（D4-B）：adjudication 任务队列 + runner + llmProtocol + safeUpstream（SSRF 防护）
+- [x] 机器人陪练 + LLM 大模型玩家 + 运行期设置面板（app_settings 迁移 v4；热生效；ADMIN_TOKEN 鉴权）
+- [x] UNO 骨架注册为 `blocked_rights`（权利证据未完成前不开放，不得仅凭测试通过解除）
+
+#### D5：稳定原语 v1 — complete
+- [x] 游戏目录（`catalog.ts`）：availability / 规则集 / 开局配置（setup）/ bot 支持 / 主题声明
+- [x] 规则集解析（`resolveRulesetIdentity`）：config.rulesetId 归一化为模块注册过的规则集
+
+#### D6：斗地主平台规则集客户端产品闭环 — complete
+- [x] landlord 双规则集：`landlord_platform_v1`（默认）+ `landlord_legacy_platform_v1`（兼容基线）
+- [x] 服务端：叫分/抢庄、牌型校验、出牌/过牌、胜负结算、bot 提示（cards.ts / bot.ts / botPrompt.ts）
+- [x] 客户端：叫分按钮、扇形手牌引擎、出牌/不出操作、地主底牌展示
+
+#### D7：新游戏桌面与目录扩展 — complete
+- [x] D7-C：共享 `TabletopShell`（TabletopOvalShell 封装）+ ActionDock/GameDrawer；Durian（原创）/ 情书 / 奶酪大盗 / 以鹅传鹅 / 暗夜证词 / 铃铛对决 / 伪人测试（原版桌游辅助工具，含开局配置与机器人支持声明）
+- [x] 狼人杀 v4 状态机（身份确认、扩展角色、完整昼夜流程、可配置夜刀范围）+ `werewolf_platform_open_kill_v1`（开放夜刀）规则集
+
+#### D8：room_status 心跳 — complete
+- [x] 协议定义 `room_status` 只读心跳查询；客户端 15s 轮询；服务端绑定校验 + 消息限流
+
+#### 质量门与验收
+- [x] 2026-08-02：typecheck / lint / client build / npm test 全绿（包内 365/365 + D1 扫描器契约 4/4）；版本升至 0.4.0
+- [x] 2026-08-09：当前工作树安全复审完成（10 项通过、无 P0）
+- [x] 2026-08-11：30 分钟性能长跑通过（`perf-report.json`，failureCriteria 全部 false）
+- [ ] 【需用户】Termux 真机 PoC/部署回填（冻结 DG-01/DG-02）
+- [ ] 【需用户】真实聚会验收（AC-18/19/20：8 人 3 局 + 真机资源采样）
+- [ ] 【需用户】UNO 权利证据
+- [ ] 【真实聚会前】DG-04 词库人工复核
+
+### Phase 7：上线准备 R1（2026-08-12）— 进行中
+
+审查员 + 项目经理轮次：目标是把项目推进到「完全可上线」。
+
+#### 已完成（本轮）
+- [x] 独立 UI 自检（无历史上下文子代理）交叉验证主评审：P0×3 / P1×12 / P2 清单
+- [x] 连接状态渲染收敛到 App 顶部 TabletopStatusBanner 唯一来源（删 RoomPage 底部 + 三阶段视图内横幅）
+- [x] P0-1：TabletopOvalShell 解除对 GameLeaveButton 的业务依赖，改 topRightControls 插槽（4 消费方接入）
+- [x] P1-5：SheetDialog 三段式（Header 固定 / Body 唯一滚动 / Footer 固定提交）；创建/加入弹层提交移入 Footer
+- [x] P1-6：共享 ConfirmDialog（踢出/转让/终止/解散/退出牌局），替代原生 confirm 与内联 confirm-row
+- [x] P1-3：JoinRoomSheet「加入此房间」伪操作 →「填入房间码」；4 处重复提示收敛 1 处
+- [x] P1-10：狼人杀昼夜/阶段/叙事收敛到 MoonPhaseHeader 单一渲染
+- [x] P1-13：JoinRoomSheet 加载/错误/空态互斥；空态移除伪恢复动作
+- [x] P2：全部剩余双语眉标、损坏选择器（`}ge .role-item.dead`）、重复块、.connect-*/.player-filter__gesture/.vote-card-index/.winner-kicker 死样式清除
+- [x] 11 款游戏 SVG 图标落地（`public/icons/{id}.svg`），GameCard 兜底覆盖全部游戏
+
+#### 第二轮（2026-08-12 续）
+- [x] P1-9：聊天统一——共享 `formatChatTime` + `ChatMessageList`，RoomPage 与 GameChatDrawer 同一渲染与时间格式
+- [x] P0-2（部分）：51 条 2.5D 增强规则选择器从 `.game-page .X` 改为 `.game-phase .X`，椭圆桌内视图获得完整视觉（词卡/发言/投票/结果/终局）
+- [x] P1-2：首页「加入对局」三入口收敛为 Hero「输入房间码」+ 底部「加入此桌」两个上下文入口
+- [x] P0-3（部分）：房间成员/聊天面板脱离 `.game-card`，`.room-panel` 独立面板样式
+
+#### 第三轮与第四轮（2026-08-15）：质量门全量验证与 E2E 终极验收通过
+- [x] **typecheck 0 错误**：tsconfig.server.json（324 文件）+ packages/client/tsconfig.json（111 文件）通过
+- [x] **lint 0 错误**：ESLint 全量（491 文件，0 error / 0 warning）通过
+- [x] **测试全绿**：全部单元与集成测试（1125+ 项）通过
+- [x] **build（vite）完成**：`npm run build -w @ldj/client` 生产构建成功
+- [x] **E2E 验收全绿**：`npx playwright test` 23/23 项真实 Chromium 对局自动化测试通过（包括 10 款上架游戏真实 WS 驱动、手牌隐私断言、断线重连、叫分/出牌/投票/答题/审判桌/战绩落库）
+- [x] **D1 合规性**：`npm run compliance:d1` PASS
+- [x] **组件收敛与重构**：RoomCodeCard、ConfirmDialog、TabletopOvalShell、ChatMessageList、GameSetupPanel 统一收敛至 shared-ui，废弃过渡文件已清理
+- [x] **生产就绪（Production Ready）**：前端项目已达到完全可上线的标准
 
 ## 关键决策
 

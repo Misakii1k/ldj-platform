@@ -4,9 +4,9 @@ import { pickGooseRelayBotAction } from './bot.ts';
 import { parseGooseRelayAction, parseGooseRelayConfig } from './schemas.ts';
 import {
   assertGooseRelayInvariants,
-  buildRandomCase,
   createGooseRelayState,
   evilCountFor,
+  pickCandidateCards,
   reduceGooseRelayState,
 } from './rules.ts';
 import {
@@ -28,7 +28,7 @@ import type {
 export const GOOSE_RELAY_VERSIONED_IDENTITY = {
   engineContractVersion: 2 as const,
   rulesetId: 'goose_relay_classic_v1',
-  viewVersion: 1,
+  viewVersion: 2,
 } as const;
 
 function parseState(input: unknown): GooseRelayState {
@@ -75,23 +75,37 @@ export const gooseRelayModule: GameModuleV2<
   assertInvariants: assertGooseRelayInvariants,
   snapshotMigrations: {},
   createInitialState(ctx: GameContext, players: string[], config: GooseRelayConfig) {
-    const caseCard = buildRandomCase(ctx.random);
-    // 恶鹅从非头鹅中随机抽取（不重复）
-    const candidates = ctx.random.shuffle(players.slice(1));
-    const evilGeese = candidates.slice(0, evilCountFor(players.length));
-    const state = createGooseRelayState(players, config, caseCard, evilGeese);
+    const candidateCards = pickCandidateCards(ctx.random, 9);
+    // 随机指派 1 只恶鹅
+    const shuffled = ctx.random.shuffle(players);
+    const evilGeese = shuffled.slice(0, evilCountFor(players.length));
+    const state = createGooseRelayState(players, config, candidateCards, evilGeese);
     assertGooseRelayInvariants(state);
     return state;
   },
   reduce(_ctx: GameContext, state, actor, action) {
     // 平台计时器/开局以 system 投递；玩家动作必须与连接身份一致。
-    const isPlayerAction = action.type === 'transmit' || action.type === 'accuse' || action.type === 'cast_vote';
+    const isPlayerAction =
+      action.type === 'claim_head' ||
+      action.type === 'pick_cards' ||
+      action.type === 'relay_done' ||
+      action.type === 'end_discussion' ||
+      action.type === 'accuse' ||
+      action.type === 'cast_vote';
+
     if (isPlayerAction) {
-      if (actor.kind !== 'player') {
+      if (actor.kind !== 'player' && (action.type !== 'end_discussion' || actor.kind !== 'system')) {
         return { ok: false, code: 'ACTION_NOT_ALLOWED', message: '该动作只允许玩家发起' };
       }
-      if (!playerMatches(actor, action)) {
+      if (actor.kind === 'player' && 'playerId' in action && action.playerId && !playerMatches(actor, action)) {
         return { ok: false, code: 'ACTION_NOT_ALLOWED', message: '动作玩家与连接身份不一致' };
+      }
+      if (
+        action.type === 'end_discussion' &&
+        actor.kind === 'player' &&
+        (state.phase !== 'discussion' || actor.playerId !== state.headPlayerId)
+      ) {
+        return { ok: false, code: 'ACTION_NOT_ALLOWED', message: '只有头鹅可以在讨论阶段结束讨论' };
       }
     } else if (actor.kind !== 'system') {
       return { ok: false, code: 'ACTION_NOT_ALLOWED', message: '该动作只允许系统发起' };

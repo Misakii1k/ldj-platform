@@ -1,16 +1,19 @@
-import { TabletopOvalShell, type PlayerSeat } from '../../shared-ui/TabletopOvalShell.tsx';
+import { TabletopOvalShell, type PlayerSeat, type TabletopTheme } from '../../shared-ui/TabletopOvalShell.tsx';
+import { GameLeaveButton } from '../GameLeaveButton.tsx';
 import type { TabletopShellProps } from './types.ts';
 
-export function TabletopShell({ title, phase, spectator, players, actions, drawer, children }: TabletopShellProps) {
-  // 根据游戏标题判断主题风格
-  let theme: 'poker' | 'mystery' | 'party' | 'court' = 'party';
-  const t = title.toLowerCase();
-  if (t.includes('werewolf') || t.includes('狼人杀') || t.includes('night') || t.includes('证词') || t.includes('thief') || t.includes('小偷')) {
-    theme = 'mystery';
-  } else if (t.includes('judge') || t.includes('裁判') || t.includes('echo')) {
-    theme = 'court';
-  } else if (t.includes('loveletter') || t.includes('情书') || t.includes('landlord') || t.includes('uno')) {
-    theme = 'poker';
+export function TabletopShell({ title, phase, spectator, players, actions, drawer, rulesButton, theme, hideSeats, children }: TabletopShellProps) {
+  // 主题优先使用调用方显式指定；缺失时按游戏标题兜底（游戏专属 felt 主题由各游页面直接给出）
+  let resolvedTheme: TabletopTheme = theme ?? 'party';
+  if (theme === undefined) {
+    const t = title.toLowerCase();
+    if (t.includes('werewolf') || t.includes('狼人杀') || t.includes('night') || t.includes('证词') || t.includes('thief') || t.includes('小偷')) {
+      resolvedTheme = 'mystery';
+    } else if (t.includes('judge') || t.includes('裁判') || t.includes('echo')) {
+      resolvedTheme = 'court';
+    } else if (t.includes('loveletter') || t.includes('情书') || t.includes('landlord') || t.includes('uno')) {
+      resolvedTheme = 'poker';
+    }
   }
 
   const seats: PlayerSeat[] = players.map((p) => ({
@@ -25,18 +28,27 @@ export function TabletopShell({ title, phase, spectator, players, actions, drawe
     <TabletopOvalShell
       title={title}
       subtitle={`阶段：${phase}${spectator ? ' · (观战模式)' : ''}`}
-      theme={theme}
+      theme={resolvedTheme}
       players={seats}
+      hideSeats={hideSeats}
+      topRightControls={
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {rulesButton}
+          <GameLeaveButton />
+        </div>
+      }
       centerArena={
-        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: '100%', height: '100%', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', overflowY: 'auto' }}>
           {children}
         </div>
       }
       bottomBar={
-        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-          {actions}
-          {drawer}
-        </div>
+        actions || drawer ? (
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+            {actions}
+            {drawer}
+          </div>
+        ) : undefined
       }
     />
   );

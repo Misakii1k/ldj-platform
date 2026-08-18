@@ -38,10 +38,26 @@ export interface GameSetupBooleanOption {
   readonly defaultValue: boolean;
 }
 
+/** 数值型分段选项：用固定预设替代自由数字输入，避免用户过度调参。 */
+export interface GameSetupSegmentedChoice {
+  readonly value: number;
+  readonly label: string;
+}
+
+export interface GameSetupSegmentedOption {
+  readonly key: string;
+  readonly kind: 'segmented';
+  readonly label: string;
+  readonly description?: string;
+  readonly defaultValue: number;
+  readonly choices: readonly GameSetupSegmentedChoice[];
+}
+
 export type GameSetupOption =
   | GameSetupSelectOption
   | GameSetupIntegerOption
-  | GameSetupBooleanOption;
+  | GameSetupBooleanOption
+  | GameSetupSegmentedOption;
 
 export interface GameSetupDefinition {
   readonly rulesets: readonly GameRulesetSpec[];
@@ -65,6 +81,9 @@ function copyOption(option: GameSetupOption): GameSetupOption {
   if (option.kind === 'select') {
     return { ...option, choices: option.choices.map((choice) => ({ ...choice })) };
   }
+  if (option.kind === 'segmented') {
+    return { ...option, choices: option.choices.map((choice) => ({ ...choice })) };
+  }
   return { ...option };
 }
 
@@ -72,6 +91,17 @@ function validateOption(option: GameSetupOption): void {
   if (option.kind === 'select') {
     if (option.choices.length === 0) throw new Error(`配置项 ${option.key} 缺少选项`);
     assertUnique(option.choices.map((choice) => choice.value), `配置项 ${option.key} 的选项值重复`);
+    if (!option.choices.some((choice) => choice.value === option.defaultValue)) {
+      throw new Error(`配置项 ${option.key} 的默认选项不存在`);
+    }
+    return;
+  }
+  if (option.kind === 'segmented') {
+    if (option.choices.length === 0) throw new Error(`配置项 ${option.key} 缺少选项`);
+    assertUnique(option.choices.map((choice) => String(choice.value)), `配置项 ${option.key} 的选项值重复`);
+    if (!option.choices.every((choice) => Number.isInteger(choice.value))) {
+      throw new Error(`配置项 ${option.key} 的选项必须使用整数`);
+    }
     if (!option.choices.some((choice) => choice.value === option.defaultValue)) {
       throw new Error(`配置项 ${option.key} 的默认选项不存在`);
     }

@@ -59,6 +59,7 @@ function prepareRound(
   round: number,
   starterId: string,
   futureDeckOrders: LoveLetterCard[][],
+  customAffectionTarget?: number,
 ): LoveLetterState {
   validateDeck(deckOrder);
   const deck = deckOrder.map((card) => ({ ...card }));
@@ -80,7 +81,7 @@ function prepareRound(
     protectedPlayers: [],
     currentPlayerId: starterId,
     affection: { ...affection },
-    affectionTarget: affectionTarget(players.length),
+    affectionTarget: customAffectionTarget ?? affectionTarget(players.length),
     inspections: [],
     roundWinners: [],
     winners: [],
@@ -99,6 +100,7 @@ export function createLoveLetterState(players: readonly string[], configInput: u
     1,
     players[0]!,
     config.futureDeckOrders ?? [],
+    config.affectionTarget,
   );
   assertLoveLetterInvariants(state);
   return state;

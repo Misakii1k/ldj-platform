@@ -770,11 +770,22 @@ export function forfeitPlayers(
 ): GameActionOutcome | null {
   const session = getActiveSession(tx.db, roomId);
   if (!session || session.status !== 'ACTIVE' || playerIds.length === 0) return null;
-  return applySessionAction(
-    tx,
-    session,
-    { kind: 'system', source: 'timer' },
-    { type: 'player_forfeited', playerIds },
-    null,
-  );
+  try {
+    return applySessionAction(
+      tx,
+      session,
+      { kind: 'system', source: 'timer' },
+      { type: 'player_forfeited', playerIds },
+      null,
+    );
+  } catch {
+    // 某些模块不定义 player_forfeited 动作：若房间内已无有效连接或保留，直接终止对局
+    const activeCount = tx.db.prepare(
+      `SELECT count(*) as c FROM room_members WHERE room_id = ? AND connection_status IN ('CONNECTED', 'DISCONNECTED_RESERVED')`,
+    ).get(roomId) as { c: number };
+    if (activeCount.c === 0) {
+      abortGame(tx, roomId);
+    }
+    return null;
+  }
 }

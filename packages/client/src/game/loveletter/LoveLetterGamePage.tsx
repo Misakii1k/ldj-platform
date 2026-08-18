@@ -1,11 +1,11 @@
 /**
- * loveletter_classic16_v1 客户端主页面（D7-C，TabletopShell 消费方）。
+ * loveletter_classic16_v1 客户端主页面（TabletopShell 消费方）。
  * 只消费严格解析后的情书视角（loveletter/types.ts parseLoveLetterView）。
  * 手牌只属于本人：观战视角不含手牌，页面仅在 me 存在时渲染手牌区。
+ * 视觉：信笺宫廷主题——信封手牌、蜡封徽章、移除堆、好感红心进度。
  */
 import { useRef, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
-import { GameLeaveButton } from '../GameLeaveButton.tsx';
 import { nameFor, useGameAction } from '../useGameAction.ts';
 import { ActionDock } from '../tabletop/ActionDock.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
@@ -41,9 +41,8 @@ export function LoveLetterGamePage({ view }: Props) {
   const needsTarget = selectedCard !== null && NEEDS_TARGET.includes(selectedCard.role);
   const isGuard = selectedCard?.role === 'guard';
   const isPrince = selectedCard?.role === 'prince';
-  const protectedIds = new Set(view.protectedPlayers);
-  const eliminatedIds = new Set(view.eliminatedPlayers);
-  // 目标合法性：守卫/牧师/男爵/国王只能选其他存活且未被侍女庇护的玩家；王子可选自己或他人。
+  const protectedIds = new Set(view.protectedPlayers ?? []);
+  const eliminatedIds = new Set(view.eliminatedPlayers ?? []);
   const targetOptions = selectedCard === null
     ? []
     : isPrince
@@ -53,7 +52,6 @@ export function LoveLetterGamePage({ view }: Props) {
       : view.players
           .filter((player) => player.playerId !== myId && !eliminatedIds.has(player.playerId) && !protectedIds.has(player.playerId))
           .map((player) => player.playerId);
-  // 目标合法性：守卫/牧师/男爵/国王无合法目标时可无目标打出；王子可选自己。
   const needsTargetChoice = needsTarget && targetOptions.length > 0;
   const canPlay = myTurn && selectedCard !== null
     && (!needsTargetChoice || targetId !== null)
@@ -80,9 +78,9 @@ export function LoveLetterGamePage({ view }: Props) {
   const players = view.players.map((player) => ({
     id: player.playerId,
     name: nameFor(members, player.playerId),
-    status: `${player.handCount} 张${view.protectedPlayers.includes(player.playerId) ? ' · 侍女庇护' : ''}`,
+    status: `${player.handCount} 张${(view.protectedPlayers ?? []).includes(player.playerId) ? ' · 侍女庇护' : ''}`,
     active: player.playerId === view.currentPlayerId,
-    eliminated: view.eliminatedPlayers.includes(player.playerId),
+    eliminated: (view.eliminatedPlayers ?? []).includes(player.playerId),
   }));
 
   const canPlayDisabled = !canPlay;
@@ -93,6 +91,12 @@ export function LoveLetterGamePage({ view }: Props) {
       phase={view.phase === 'game_over' ? '对局结束' : `第 ${view.round} 轮`}
       spectator={isSpectator}
       players={players}
+      theme="letter"
+      rulesButton={(
+        <button ref={rulesRef} type="button" className="tabletop-rules-btn" onClick={() => setRulesOpen(true)}>
+          本局规则
+        </button>
+      )}
       actions={(
         <ActionDock
           primary={{ id: 'play', label: selectedCard ? `打出「${ROLE_LABELS[selectedCard.role]}」` : '打出所选牌', disabled: canPlayDisabled, onAction: () => void play() }}
@@ -109,71 +113,82 @@ export function LoveLetterGamePage({ view }: Props) {
         </GameDrawer>
       )}
     >
-      <header className="loveletter-page__bar">
-        <GameLeaveButton />
-        <button ref={rulesRef} type="button" className="loveletter-page__rules" onClick={() => setRulesOpen(true)}>
-          本局规则
-        </button>
-      </header>
-
       {error && <p className="game-error" role="alert">{error}</p>}
 
-      <section className="loveletter-afc" aria-label="好感进度">
-        <span className="loveletter-afc__label">好感目标 {view.affectionTarget}</span>
-        <div className="loveletter-afc__rows">
-          {view.players.map((player) => (
-            <div key={player.playerId} className={`loveletter-afc__row ${view.eliminatedPlayers.includes(player.playerId) ? 'is-out' : ''}`}>
-              <strong>{nameFor(members, player.playerId)}</strong>
-              <span>{view.affection[player.playerId] ?? 0} / {view.affectionTarget}</span>
+      {view.phase !== 'game_over' ? (
+        <div className="sg-stage">
+          <section className="sg-panel loveletter-afc" aria-label="好感进度">
+            <div className="sg-panel__head">
+              <h3>好感目标 · 先到 {view.affectionTarget} 红心者胜</h3>
+              <span>牌库剩余 {view.deckCount} 张</span>
             </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="loveletter-table" aria-label="桌面牌区">
-        <div className="loveletter-table__pile">
-          <span className="loveletter-table__label">牌库剩余</span>
-          <strong>{view.deckCount}</strong>
-        </div>
-        <div className="loveletter-table__pile">
-          <span className="loveletter-table__label">本轮移除</span>
-          <div className="loveletter-table__removed">
-            {view.removedCards.map((card) => (
-              <span key={card.id} className="loveletter-mini-card">{ROLE_LABELS[card.role]}</span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {me && (
-        <>
-          <section className="loveletter-hand" aria-label="我的手牌">
-            <span className="loveletter-hand__label">你的手牌{myTurn ? ' · 轮到你' : ''}</span>
-            <div className="loveletter-hand__cards">
-              {me.hand.map((card) => (
-                <button
-                  key={card.id}
-                  type="button"
-                  className={`loveletter-card loveletter-card--${card.role} ${selectedCardId === card.id ? 'is-selected' : ''}`}
-                  onClick={() => { setSelectedCardId(card.id); setTargetId(null); setGuessedRole(null); }}
-                  aria-pressed={selectedCardId === card.id}
-                >
-                  <span className="loveletter-card__value">{card.value}</span>
-                  <strong>{ROLE_LABELS[card.role]}</strong>
-                </button>
-              ))}
+            <div className="loveletter-afc__rows">
+              {view.players.map((player) => {
+                const points = (view.affection ?? {})[player.playerId] ?? 0;
+                return (
+                  <div key={player.playerId} className={`loveletter-afc__row ${(view.eliminatedPlayers ?? []).includes(player.playerId) ? 'is-out' : ''}`}>
+                    <strong>{nameFor(members, player.playerId)}</strong>
+                    <span className="loveletter-hearts" aria-label={`${points}/${view.affectionTarget} 红心`}>
+                      {Array.from({ length: view.affectionTarget }, (_, i) => (
+                        <i key={i} className={i < points ? 'is-lit' : ''} aria-hidden="true">♥</i>
+                      ))}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </section>
 
-          {selectedCard && needsTargetChoice && (
-            <section className="loveletter-target" aria-label="选择目标">
-              <span className="loveletter-hand__label">选择目标玩家{isPrince ? '（可选自己）' : ''}</span>
-              <div className="loveletter-target__options">
+          <section className="sg-panel loveletter-table" aria-label="本轮移除的牌">
+            <div className="sg-panel__head">
+              <h3>本轮移除</h3>
+              <span>{(view.removedCards ?? []).length} 张</span>
+            </div>
+            <div className="loveletter-removed">
+              {(view.removedCards ?? []).length > 0
+                ? (view.removedCards ?? []).map((card) => (
+                    <span key={card.id} className="loveletter-mini-card">{ROLE_LABELS[card.role]}</span>
+                  ))
+                : <span className="sg-hint">暂未被移除的牌</span>}
+            </div>
+          </section>
+
+          {me && (
+            <section className="sg-panel" aria-label="我的手牌">
+              <div className="sg-panel__head">
+                <h3>你的手牌{myTurn ? ' · 轮到你' : ''}</h3>
+                <span>{(me.hand ?? []).length} 张</span>
+              </div>
+              <div className="loveletter-hand__cards">
+                {(me.hand ?? []).map((card) => (
+                  <button
+                    key={card.id}
+                    type="button"
+                    className={`env-card loveletter-card loveletter-card--${card.role} ${selectedCardId === card.id ? 'is-selected' : ''}`}
+                    onClick={() => { setSelectedCardId(card.id); setTargetId(null); setGuessedRole(null); }}
+                    aria-pressed={selectedCardId === card.id}
+                  >
+                    <span className="env-card__seal" aria-hidden="true"><i /></span>
+                    <strong>{ROLE_LABELS[card.role]}</strong>
+                    <span className="env-card__value loveletter-card__value">{card.value}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {me && selectedCard && needsTargetChoice && (
+            <section className="sg-panel loveletter-target" aria-label="选择目标">
+              <div className="sg-panel__head">
+                <h3>选择目标玩家{isPrince ? '（可选自己）' : ''}</h3>
+                <span>守卫不能猜守卫</span>
+              </div>
+              <div className="sg-chip-row">
                 {targetOptions.map((playerId) => (
                   <button
                     key={playerId}
                     type="button"
-                    className={targetId === playerId ? 'is-selected' : ''}
+                    className={`sg-chip sg-chip--btn ${targetId === playerId ? 'sg-chip--selected' : ''}`}
                     onClick={() => setTargetId(playerId)}
                     aria-pressed={targetId === playerId}
                   >
@@ -184,15 +199,18 @@ export function LoveLetterGamePage({ view }: Props) {
             </section>
           )}
 
-          {selectedCard && isGuard && needsTargetChoice && (
-            <section className="loveletter-guess" aria-label="猜测身份">
-              <span className="loveletter-hand__label">猜测目标身份（守卫不能猜守卫）</span>
-              <div className="loveletter-target__options">
+          {me && selectedCard && isGuard && needsTargetChoice && (
+            <section className="sg-panel loveletter-guess" aria-label="猜测身份">
+              <div className="sg-panel__head">
+                <h3>猜测目标身份</h3>
+                <span>守卫规则</span>
+              </div>
+              <div className="sg-chip-row">
                 {LOVELETTER_ROLES.filter((role) => role !== 'guard').map((role) => (
                   <button
                     key={role}
                     type="button"
-                    className={guessedRole === role ? 'is-selected' : ''}
+                    className={`sg-chip sg-chip--btn ${guessedRole === role ? 'sg-chip--selected' : ''}`}
                     onClick={() => setGuessedRole(role)}
                     aria-pressed={guessedRole === role}
                   >
@@ -203,11 +221,14 @@ export function LoveLetterGamePage({ view }: Props) {
             </section>
           )}
 
-          {me.inspections.length > 0 && (
-            <section className="loveletter-inspect" aria-label="我的查验记录">
-              <span className="loveletter-hand__label">查验记录（仅你可见）</span>
-              <ul>
-                {me.inspections.map((inspection, index) => (
+          {me && (me.inspections ?? []).length > 0 && (
+            <section className="sg-panel loveletter-inspect" aria-label="我的查验记录">
+              <div className="sg-panel__head">
+                <h3>查验记录（仅你可见）</h3>
+                <span>{(me.inspections ?? []).length} 条</span>
+              </div>
+              <ul className="sg-note-list">
+                {(me.inspections ?? []).map((inspection, index) => (
                   <li key={index}>
                     第 {inspection.round} 轮 · {nameFor(members, inspection.targetPlayerId)} 是 {ROLE_LABELS[inspection.role]}
                   </li>
@@ -215,14 +236,15 @@ export function LoveLetterGamePage({ view }: Props) {
               </ul>
             </section>
           )}
-        </>
-      )}
-
-      {view.phase === 'game_over' && (
-        <section className="loveletter-over" aria-label="对局结果">
-          <h2>情书送达</h2>
-          <p>获胜：{view.winners.map((id) => nameFor(members, id)).join('、')}</p>
-        </section>
+        </div>
+      ) : (
+        <div className="sg-stage">
+          <div className="winner-hero loveletter-over">
+            <span className="winner-rays" aria-hidden="true" />
+            <h2 className="winner-title">情书送达</h2>
+            <p>获胜：{(view.winners ?? []).map((id) => nameFor(members, id)).join('、')}</p>
+          </div>
+        </div>
       )}
     </TabletopShell>
   );

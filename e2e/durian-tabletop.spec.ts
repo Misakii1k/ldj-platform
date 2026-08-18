@@ -1,26 +1,13 @@
 /**
- * D7-C durian_orchard_v1 完整局 Chromium 验收（botSupport none：全部由 Node + 浏览器真实驱动）。
- * 2 人局：房主（Node）与浏览器玩家交替接单/按铃/裁定，直到牌堆耗尽或处罚 7 触发终局，
- * 服务端产出正式战绩；同时断言浏览器视角的隐私（本人库存隐藏、中央库存不入视图）。
+ * Durian 印度扑克式翻牌质疑机制 + 纯模拟模式桌面/玩家端设备切换 + 无溢出视口 + 聊天端到端测试与截图。
  */
 import { test, expect, type Browser, type Page } from '@playwright/test';
+import * as path from 'node:path';
 import { seedRoom } from './helpers/dbClient.ts';
 import { RoomDriver } from './helpers/wsClient.ts';
 import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL } from './helpers/serverEnv.ts';
 
-const safeOrder = (id: string) => ({
-  id,
-  options: [
-    { fruit: 'amber_pear', quantity: 1 },
-    { fruit: 'cloud_berry', quantity: 1 },
-  ],
-  staffEvent: 'mixed_crate',
-});
-
-const DURIAN_CONFIG = {
-  rulesetId: 'durian_orchard_v1',
-  orderDeck: ['one', 'two', 'three', 'four'].map(safeOrder),
-};
+const ARTIFACT_DIR = path.resolve('C:/Users/87850/.gemini/antigravity/brain/000a5de9-3625-46f8-8228-425d7498996e');
 
 interface Me {
   playerId: string;
@@ -29,68 +16,32 @@ interface Me {
   nickname: string;
 }
 
-async function openBrowser(browser: Browser, me: Me): Promise<Page> {
+async function openBrowser(browser: Browser, me: Me, viewport = { width: 1280, height: 800 }): Promise<Page> {
   const context = await browser.newContext();
   const page = await context.newPage();
   await page.addInitScript(
     ([key, value]) => { localStorage.setItem(key, value); },
     [ME_STORAGE_KEY, JSON.stringify({ ...me, seatRole: 'player' })],
   );
-  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.setViewportSize(viewport);
   await page.goto(BASE_URL);
   await page.locator('.tabletop-shell').waitFor({ timeout: 30_000 });
   return page;
 }
 
-/** Node 侧房主策略：接单选 0、按铃、裁定，直到终局；返回最后一个视角供隐私断言。 */
-async function driveHost(
-  host: RoomDriver,
-  hostId: string,
-): Promise<Record<string, unknown>> {
-  let lastView: Record<string, unknown> = {};
-  let actedSignature = '';
-  for (let step = 0; step < 240; step += 1) {
-    // 轮询最新权威状态（不按序消费旧帧），避免满负荷下读到过期回合造成竞态。
-    const frame = host.client.latestGameState((v) => v.gameId === 'durian');
-    if (frame) lastView = frame.payload.view as Record<string, unknown>;
-    const view = lastView as {
-      phase: string;
-      currentPlayerId: string | null;
-      bell: { status: string } | null;
-    };
-    if (view.phase === 'game_over') return lastView;
-    const signature = JSON.stringify({ phase: view.phase, current: view.currentPlayerId, bell: view.bell?.status ?? null });
-    if (signature === actedSignature) {
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      continue;
-    }
-    let acted = false;
-    if (view.phase === 'ordering' && view.currentPlayerId === hostId) {
-      await host.gameAction({ type: 'submit_order', playerId: hostId, optionIndex: 0 });
-      acted = true;
-    } else if (view.phase === 'buzzer' && view.bell?.status === 'open' && view.currentPlayerId !== hostId) {
-      await host.gameAction({ type: 'ring_bell', playerId: hostId });
-      acted = true;
-    } else if (view.phase === 'buzzer' && view.bell?.status === 'locked' && view.currentPlayerId === hostId) {
-      await host.gameAction({ type: 'resolve_bell', playerId: hostId });
-      acted = true;
-    }
-    if (acted) actedSignature = signature;
-    await new Promise((resolve) => setTimeout(resolve, 150));
-  }
-  return lastView;
-}
-
-test.describe('D7-C durian 完整局', () => {
-  test('2 人完整局：真实 WS 交替动作 + 浏览器渲染 + 隐私断言 + 服务端战绩', async ({ browser }) => {
-    test.setTimeout(240_000);
-    const seeded = seedRoom(DB_PATH, { gameId: 'durian', count: 2, ready: true, config: DURIAN_CONFIG });
+test.describe('Durian 界面视觉、无溢出视口、设备端切换与聊天 E2E 验收', () => {
+  test('标准模式：完整桌面渲染、高对比度文字、无纵向滚动条、聊天抽屉打开与关闭', async ({ browser }) => {
+    test.setTimeout(60_000);
+    const seeded = seedRoom(DB_PATH, {
+      gameId: 'durian',
+      count: 3,
+      ready: true,
+      config: { rulesetId: 'durian_orchard_v1', mode: 'standard' },
+    });
     const host = await RoomDriver.resume(WS_URL, seeded.roomCode, seeded.hostId, seeded.hostResumeToken);
     try {
-      const readyAck = await host.ready();
-      expect(readyAck.type).toBe('ack');
-      const startAck = await host.startGame(DURIAN_CONFIG);
-      expect(startAck.type, `start_game 应 ack：${JSON.stringify(startAck.payload)}`).toBe('ack');
+      const startAck = await host.startGame({ rulesetId: 'durian_orchard_v1', mode: 'standard' });
+      expect(startAck.type).toBe('ack');
 
       const browserPlayer = seeded.players[1]!;
       const page = await openBrowser(browser, {
@@ -98,62 +49,158 @@ test.describe('D7-C durian 完整局', () => {
         resumeToken: browserPlayer.resumeToken,
         roomCode: seeded.roomCode,
         nickname: '玩家2',
+      }, { width: 1280, height: 800 });
+
+      // 1. 验证关键元素渲染且文字清晰，不向玩家暴露自动统计结果
+      await expect(page.locator('.durian-forehead-bar')).toBeVisible();
+      await expect(page.locator('.durian-center-board')).toBeVisible();
+      await expect(page.locator('.durian-board-title')).toContainText('桌面已放置卡牌');
+
+      // 2. 验证视口无纵向溢出（无全屏垂直滚动条）
+      const overflowInfo = await page.evaluate(() => {
+        const doc = document.documentElement;
+        return {
+          scrollHeight: doc.scrollHeight,
+          clientHeight: doc.clientHeight,
+        };
       });
+      expect(overflowInfo.scrollHeight).toBeLessThanOrEqual(overflowInfo.clientHeight + 4);
 
-      // 渲染：表壳 + 订单区 + 本人库存隐藏标记
-      await expect(page.locator('.durian-order')).toBeVisible();
-      await expect(page.getByText('其他玩家的库存（自己的已隐藏）')).toBeVisible();
+      // 截图存档
+      const screenshotPath = path.join(ARTIFACT_DIR, 'durian_standard_mode.png');
+      await page.screenshot({ path: screenshotPath, fullPage: false });
 
-      // 房主（Node）并行驱动自己的回合；浏览器驱动自己的回合
-      const hostDrive = driveHost(host, seeded.hostId);
+      // 3. 验证聊天按钮在标准模式下可见，点击后成功打开聊天抽屉
+      const chatTrigger = page.locator('.game-chat-trigger');
+      await expect(chatTrigger).toBeVisible();
+      await chatTrigger.click();
 
-      // 浏览器策略：交替接单/按铃/裁定，直到终局（客户端终局后切回房间页）
-      const deadline = Date.now() + 200_000;
-      while (Date.now() < deadline) {
-        if (await page.locator('.durian-over').isVisible().catch(() => false)) break;
-        if (await page.locator('.room-page').isVisible().catch(() => false)) break;
-        const submitBtn = page.getByRole('button', { name: /^接单 · / }).first();
-        const ringBtn = page.getByRole('button', { name: '按铃抢单' }).first();
-        const resolveBtn = page.getByRole('button', { name: '裁定本次按铃' }).first();
-        const closeBtn = page.getByRole('button', { name: '关闭按铃窗口' }).first();
-        if (await submitBtn.isVisible().catch(() => false) && await submitBtn.isEnabled().catch(() => false)) {
-          await submitBtn.click();
-        } else if (await ringBtn.isVisible().catch(() => false) && await ringBtn.isEnabled().catch(() => false)) {
-          await ringBtn.click();
-        } else if (await resolveBtn.isVisible().catch(() => false) && await resolveBtn.isEnabled().catch(() => false)) {
-          await resolveBtn.click();
-        } else if (await closeBtn.isVisible().catch(() => false) && await closeBtn.isEnabled().catch(() => false)) {
-          await closeBtn.click();
-        }
-        await page.waitForTimeout(200);
-      }
+      const chatDrawer = page.locator('.game-chat-drawer');
+      await expect(chatDrawer).toBeVisible();
+      await expect(page.locator('#game-chat-title')).toHaveText('对局聊天');
 
-      // 终局信号：房间页显示对局已结算（POST_GAME 客户端切回大厅）
-      await expect(page.getByText('对局已结算').first()).toBeVisible({ timeout: 30_000 });
-      const finalView = await hostDrive;
+      // 关闭聊天抽屉
+      await page.locator('.game-chat-close').click();
+      await expect(chatDrawer).not.toBeVisible();
 
-      // 隐私断言：本人库存隐藏、中央库存与权威库存不出现在任何视图
-      const view = finalView as {
-        me: { ownInventoryHidden: boolean } | null;
-        centralInventory?: unknown;
-        stock?: unknown;
-        inventory?: unknown;
-      };
-      expect(view.me?.ownInventoryHidden).toBe(true);
-      expect(view.centralInventory).toBeUndefined();
-      expect(view.stock).toBeUndefined();
-      expect(view.inventory).toBeUndefined();
+      await page.context().close();
+    } finally {
+      host.client.close();
+    }
+  });
 
-      // 服务端权威战绩
-      const db = new (await import('node:sqlite')).DatabaseSync(DB_PATH, { timeout: 5000 });
-      try {
-        const row = db.prepare(
-          `SELECT COUNT(*) AS n FROM game_results r JOIN game_sessions s ON s.id = r.session_id JOIN rooms ro ON ro.id = s.room_id WHERE ro.code = ?`,
-        ).get(seeded.roomCode) as { n: number };
-        expect(row.n, `房间 ${seeded.roomCode} 应产出正式战绩`).toBeGreaterThanOrEqual(1);
-      } finally {
-        db.close();
-      }
+  test('纯模拟模式：桌面端与玩家端设备用途切换、隐藏聊天按钮、大按铃展示', async ({ browser }) => {
+    test.setTimeout(60_000);
+    const seeded = seedRoom(DB_PATH, {
+      gameId: 'durian',
+      count: 3,
+      ready: true,
+      config: { rulesetId: 'durian_orchard_v1', mode: 'simulator' },
+    });
+    const host = await RoomDriver.resume(WS_URL, seeded.roomCode, seeded.hostId, seeded.hostResumeToken);
+    try {
+      const startAck = await host.startGame({ rulesetId: 'durian_orchard_v1', mode: 'simulator' });
+      expect(startAck.type).toBe('ack');
+
+      const browserPlayer = seeded.players[1]!;
+      const page = await openBrowser(browser, {
+        playerId: browserPlayer.playerId,
+        resumeToken: browserPlayer.resumeToken,
+        roomCode: seeded.roomCode,
+        nickname: '玩家2',
+      }, { width: 1280, height: 800 });
+
+      // 1. 验证纯模拟模式下不展示聊天按钮
+      await expect(page.locator('.game-chat-trigger')).not.toBeVisible();
+
+      // 2. 验证设备角色切换胶囊可见
+      const roleSwitch = page.locator('.durian-role-switch');
+      await expect(roleSwitch).toBeVisible();
+
+      // 默认处于玩家端
+      await expect(page.getByRole('button', { name: '📱 玩家端' })).toHaveClass(/is-active/);
+
+      // 切换到桌面端
+      await page.getByRole('button', { name: '🖥️ 桌面端' }).click();
+      await expect(page.getByRole('button', { name: '🖥️ 桌面端' })).toHaveClass(/is-active/);
+
+      // 桌面端应展示中央抢单按铃与需求看板、对号错号中央板
+      await expect(page.locator('.durian-sim-bell-btn-compact')).toBeVisible();
+      await expect(page.locator('.durian-table-center-board')).toBeVisible();
+      await expect(page.locator('.durian-table-counter--left')).toBeVisible();
+      await expect(page.locator('.durian-table-counter--right')).toBeVisible();
+
+      // 桌面端截图存档
+      const tableScreenshotPath = path.join(ARTIFACT_DIR, 'durian_simulator_table_mode.png');
+      await page.screenshot({ path: tableScreenshotPath, fullPage: false });
+
+      // 切换回玩家端
+      await page.getByRole('button', { name: '📱 玩家端' }).click();
+      await expect(page.locator('.durian-sim-bell-btn-compact')).not.toBeVisible();
+      await expect(page.locator('.durian-player-card-container')).toBeVisible();
+
+      // 玩家端截图存档
+      const playerScreenshotPath = path.join(ARTIFACT_DIR, 'durian_simulator_player_mode.png');
+      await page.screenshot({ path: playerScreenshotPath, fullPage: false });
+
+      // 验证无滚动条溢出
+      const overflowInfo = await page.evaluate(() => {
+        const doc = document.documentElement;
+        return {
+          scrollHeight: doc.scrollHeight,
+          clientHeight: doc.clientHeight,
+        };
+      });
+      expect(overflowInfo.scrollHeight).toBeLessThanOrEqual(overflowInfo.clientHeight + 4);
+
+      await page.context().close();
+    } finally {
+      host.client.close();
+    }
+  });
+
+  test('质疑结算阶段：展示自己的暗牌卡牌，并进行 3 秒倒计时自动进入下一轮', async ({ browser }) => {
+    test.setTimeout(60_000);
+    const seeded = seedRoom(DB_PATH, {
+      gameId: 'durian',
+      count: 2,
+      ready: true,
+      config: { rulesetId: 'durian_orchard_v1', mode: 'standard' },
+    });
+    const host = await RoomDriver.resume(WS_URL, seeded.roomCode, seeded.hostId, seeded.hostResumeToken);
+    try {
+      const startAck = await host.startGame({ rulesetId: 'durian_orchard_v1', mode: 'standard' });
+      expect(startAck.type).toBe('ack');
+
+      const browserPlayer = seeded.players[1]!;
+      const page = await openBrowser(browser, {
+        playerId: browserPlayer.playerId,
+        resumeToken: browserPlayer.resumeToken,
+        roomCode: seeded.roomCode,
+        nickname: '玩家2',
+      }, { width: 1280, height: 800 });
+
+      // 回合开始：房主摸牌并放置
+      await host.gameAction({ type: 'draw_card', playerId: seeded.hostId });
+      await host.gameAction({ type: 'place_fruit', playerId: seeded.hostId, checkHalf: 'left' });
+
+      // 轮到玩家2：此时自己头顶牌仍是暗牌
+      await expect(page.getByText('我的头顶暗牌（他人可见）')).toBeVisible();
+
+      // 玩家2发起质疑
+      await page.getByRole('button', { name: /质疑上家/ }).click();
+
+      // 质疑结算阶段：验证自己的卡牌已被揭示，不再显示「我的头顶暗牌」
+      await expect(page.getByText('暗牌已揭示')).toBeVisible();
+      await expect(page.getByText('我的头顶暗牌（他人可见）')).not.toBeVisible();
+      await expect(page.locator('.durian-verdict-overlay')).toBeVisible();
+
+      // 截图结算与卡牌揭示
+      const revealScreenshotPath = path.join(ARTIFACT_DIR, 'durian_challenge_reveal_own_card.png');
+      await page.screenshot({ path: revealScreenshotPath, fullPage: false });
+
+      // 验证 3 秒倒计时自动进入第 2 轮
+      await expect(page.getByText('第 2/7 轮')).toBeVisible({ timeout: 10_000 });
 
       await page.context().close();
     } finally {

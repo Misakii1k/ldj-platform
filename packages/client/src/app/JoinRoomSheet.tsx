@@ -4,6 +4,8 @@ import { describeError } from '../shared-ui/errors.ts';
 import { useToast } from '../shared-ui/ToastContext.tsx';
 import { SheetDialog } from './SheetDialog.tsx';
 import { makeMeFromRoomAck, parseRoomAck } from './roomAck.ts';
+import { useUserProfile } from '../user/UserProfileContext.tsx';
+import { UserAvatar } from '../user/UserAvatar.tsx';
 
 interface JoinRoomSheetProps {
   onClose: () => void;
@@ -77,10 +79,11 @@ function roomStatusLabel(status: LanRoom['status']): string {
 
 export function JoinRoomSheet({ onClose, initialRoomCode = '' }: JoinRoomSheetProps) {
   const { send, setMe, state } = useConnection();
+  const { profile, setNickname: saveUserNickname, openProfileModal } = useUserProfile();
   const { showToast } = useToast();
   const nicknameRef = useRef<HTMLInputElement | null>(null);
   const roomCodeRef = useRef<HTMLInputElement | null>(null);
-  const [nickname, setNickname] = useState('');
+  const [nickname, setNickname] = useState(profile.nickname);
   const [roomCode, setRoomCode] = useState(initialRoomCode);
   const [password, setPassword] = useState('');
   const [asSpectator, setAsSpectator] = useState(false);
@@ -135,6 +138,7 @@ export function JoinRoomSheet({ onClose, initialRoomCode = '' }: JoinRoomSheetPr
     if (!canSubmit) return;
 
     const normalizedNickname = nickname.trim();
+    saveUserNickname(normalizedNickname);
     setSubmitting(true);
     setError(null);
     try {
@@ -163,16 +167,21 @@ export function JoinRoomSheet({ onClose, initialRoomCode = '' }: JoinRoomSheetPr
   return (
     <SheetDialog
       title="加入局域网房间"
-      description="同一 Wi-Fi 下会自动发现可加入的房间；也可以手动输入 5 位房间码。"
+      description="选择同一局域网已发现的房间，或直接输入好友给你的 5 位房间码。"
       onClose={onClose}
-      initialFocusRef={nicknameRef}
+      initialFocusRef={roomCode ? nicknameRef : roomCodeRef}
+      footer={
+        <button type="submit" form="join-room-form" className="room-sheet__submit" disabled={!canSubmit}>
+          {submitting ? '正在加入…' : '确认加入房间'}
+          <span aria-hidden="true">→</span>
+        </button>
+      }
     >
-      <section className="lan-room-discovery" aria-labelledby="lan-room-discovery-title">
+      <section className="lan-room-discovery" aria-label="局域网房间发现">
         <div className="lan-room-discovery__header">
-          <div>
-            <p className="lan-room-discovery__eyebrow">LOCAL TABLES</p>
-            <h3 id="lan-room-discovery-title">发现同一 Wi-Fi 下的房间</h3>
-            <p>点击下方卡片，房间码将自动填入。</p>
+          <div className="lan-room-discovery__title">
+            <span className="lan-room-discovery__indicator" aria-hidden="true" />
+            <h3>同一局域网房间</h3>
           </div>
           <button
             type="button"
@@ -210,42 +219,55 @@ export function JoinRoomSheet({ onClose, initialRoomCode = '' }: JoinRoomSheetPr
                     onClick={() => selectRoom(room)}
                     aria-pressed={selected}
                   >
-                    {selected ? '已选择' : '加入此房间'}
+                    {selected ? '已选用' : '填入房间码'}
                   </button>
                 </article>
               );
             })}
           </div>
+        ) : roomsError ? (
+          <p className="lan-room-discovery__hint" role="status">{roomsError}</p>
         ) : (
-          <p className="lan-room-discovery__empty" role="status">暂未发现开启的局域网房间，你可以输入房间码加入或自行建房。</p>
+          <p className="lan-room-discovery__empty" role="status">暂未发现开启的局域网房间，可以输入房间码加入。</p>
         )}
-        {roomsError && <p className="lan-room-discovery__hint" role="status">{roomsError}</p>}
+        {roomsError && rooms.length > 0 && <p className="lan-room-discovery__hint" role="status">{roomsError}</p>}
       </section>
 
-      <form className="room-sheet__form" onSubmit={handleSubmit}>
-        <label className="room-sheet__field" htmlFor="join-nickname">
-          <span>玩家昵称</span>
-          <input
-            ref={nicknameRef}
-            id="join-nickname"
-            value={nickname}
-            onChange={(event) => setNickname(event.target.value)}
-            placeholder="例如：大头爸爸"
-            maxLength={16}
-            autoComplete="nickname"
-            aria-invalid={Boolean(error)}
-            aria-describedby={error ? 'join-room-error' : undefined}
-            required
-          />
-        </label>
+      <form id="join-room-form" className="room-sheet__form" onSubmit={handleSubmit}>
+        <div className="room-sheet__profile-row">
+          <button
+            type="button"
+            className="room-sheet__avatar-btn"
+            onClick={openProfileModal}
+            title="点击更换头像"
+          >
+            <UserAvatar avatar={profile.avatar} nickname={nickname} size={48} />
+            <span className="room-sheet__avatar-badge">换头像</span>
+          </button>
+          <label className="room-sheet__field" htmlFor="join-nickname" style={{ flex: 1 }}>
+            <span>玩家昵称</span>
+            <input
+              ref={nicknameRef}
+              id="join-nickname"
+              value={nickname}
+              onChange={(event) => setNickname(event.target.value)}
+              placeholder="例如：大头爸爸"
+              maxLength={16}
+              autoComplete="nickname"
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? 'join-room-error' : undefined}
+              required
+            />
+          </label>
+        </div>
         <label className="room-sheet__field" htmlFor="join-room-code">
-          <span>房间码 <em>(可点上方快速填入)</em></span>
+          <span>房间码</span>
           <input
             ref={roomCodeRef}
             id="join-room-code"
             value={roomCode}
             onChange={(event) => setRoomCode(event.target.value.toUpperCase())}
-            placeholder="选择上方房间，或手动输入 AB2CD"
+            placeholder="输入 5 位房间码"
             maxLength={5}
             autoComplete="off"
             inputMode="text"
@@ -278,10 +300,6 @@ export function JoinRoomSheet({ onClose, initialRoomCode = '' }: JoinRoomSheetPr
           </span>
         </label>
         {error && <p id="join-room-error" className="room-sheet__error" role="alert">{error}</p>}
-        <button type="submit" className="room-sheet__submit" disabled={!canSubmit}>
-          {submitting ? '正在加入…' : '加入房间'}
-          <span aria-hidden="true">→</span>
-        </button>
       </form>
     </SheetDialog>
   );

@@ -1,0 +1,903 @@
+/** 80 张桌面鸭子卡片高清图库与中文名称映射表 */
+import type { CharacterId } from './types.ts';
+
+export interface GooseCardMeta {
+  id: string;
+  key: CharacterId;
+  name: string;
+  theme: string;
+  image: string;
+}
+
+export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
+  "detective": {
+    "id": "goose_001",
+    "key": "detective",
+    "name": "侦探鸭",
+    "theme": "professions",
+    "sheetIndex": 1,
+    "gridIndex": 1,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_001_detective.png"
+  },
+  "astronaut": {
+    "id": "goose_002",
+    "key": "astronaut",
+    "name": "宇航员鸭",
+    "theme": "professions",
+    "sheetIndex": 1,
+    "gridIndex": 2,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_002_astronaut.png"
+  },
+  "pirate": {
+    "id": "goose_003",
+    "key": "pirate",
+    "name": "海盗鸭",
+    "theme": "professions",
+    "sheetIndex": 1,
+    "gridIndex": 3,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_003_pirate.png"
+  },
+  "chef": {
+    "id": "goose_004",
+    "key": "chef",
+    "name": "厨师鸭",
+    "theme": "professions",
+    "sheetIndex": 1,
+    "gridIndex": 4,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_004_chef.png"
+  },
+  "doctor": {
+    "id": "goose_005",
+    "key": "doctor",
+    "name": "医生鸭",
+    "theme": "professions",
+    "sheetIndex": 1,
+    "gridIndex": 5,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_005_doctor.png"
+  },
+  "firefighter": {
+    "id": "goose_006",
+    "key": "firefighter",
+    "name": "消防员鸭",
+    "theme": "professions",
+    "sheetIndex": 1,
+    "gridIndex": 6,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_006_firefighter.png"
+  },
+  "miner": {
+    "id": "goose_007",
+    "key": "miner",
+    "name": "矿工鸭",
+    "theme": "professions",
+    "sheetIndex": 1,
+    "gridIndex": 7,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_007_miner.png"
+  },
+  "wizard": {
+    "id": "goose_008",
+    "key": "wizard",
+    "name": "魔法师鸭",
+    "theme": "professions",
+    "sheetIndex": 1,
+    "gridIndex": 8,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_008_wizard.png"
+  },
+  "samurai": {
+    "id": "goose_009",
+    "key": "samurai",
+    "name": "武士鸭",
+    "theme": "professions",
+    "sheetIndex": 1,
+    "gridIndex": 9,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_009_samurai.png"
+  },
+  "king": {
+    "id": "goose_010",
+    "key": "king",
+    "name": "国王鸭",
+    "theme": "professions",
+    "sheetIndex": 1,
+    "gridIndex": 10,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_010_king.png"
+  },
+  "diver": {
+    "id": "goose_011",
+    "key": "diver",
+    "name": "潜水员鸭",
+    "theme": "professions",
+    "sheetIndex": 1,
+    "gridIndex": 11,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_011_diver.png"
+  },
+  "painter": {
+    "id": "goose_012",
+    "key": "painter",
+    "name": "画家鸭",
+    "theme": "professions",
+    "sheetIndex": 1,
+    "gridIndex": 12,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_012_painter.png"
+  },
+  "rockstar": {
+    "id": "goose_013",
+    "key": "rockstar",
+    "name": "摇滚鸭",
+    "theme": "professions",
+    "sheetIndex": 1,
+    "gridIndex": 13,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_013_rockstar.png"
+  },
+  "ninja": {
+    "id": "goose_014",
+    "key": "ninja",
+    "name": "忍者鸭",
+    "theme": "professions",
+    "sheetIndex": 1,
+    "gridIndex": 14,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_014_ninja.png"
+  },
+  "racer": {
+    "id": "goose_015",
+    "key": "racer",
+    "name": "赛车手鸭",
+    "theme": "professions",
+    "sheetIndex": 1,
+    "gridIndex": 15,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_015_racer.png"
+  },
+  "ballerina": {
+    "id": "goose_016",
+    "key": "ballerina",
+    "name": "芭蕾舞鸭",
+    "theme": "professions",
+    "sheetIndex": 1,
+    "gridIndex": 16,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_016_ballerina.png"
+  },
+  "fried_chicken": {
+    "id": "goose_017",
+    "key": "fried_chicken",
+    "name": "炸鸡腿鸭",
+    "theme": "food_objects",
+    "sheetIndex": 2,
+    "gridIndex": 1,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_017_fried_chicken.png"
+  },
+  "fried_egg": {
+    "id": "goose_018",
+    "key": "fried_egg",
+    "name": "荷包蛋鸭",
+    "theme": "food_objects",
+    "sheetIndex": 2,
+    "gridIndex": 2,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_018_fried_egg.png"
+  },
+  "boba_tea": {
+    "id": "goose_019",
+    "key": "boba_tea",
+    "name": "珍珠奶茶鸭",
+    "theme": "food_objects",
+    "sheetIndex": 2,
+    "gridIndex": 3,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_019_boba_tea.png"
+  },
+  "burger": {
+    "id": "goose_020",
+    "key": "burger",
+    "name": "汉堡鸭",
+    "theme": "food_objects",
+    "sheetIndex": 2,
+    "gridIndex": 4,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_020_burger.png"
+  },
+  "cactus": {
+    "id": "goose_021",
+    "key": "cactus",
+    "name": "仙人掌鸭",
+    "theme": "food_objects",
+    "sheetIndex": 2,
+    "gridIndex": 5,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_021_cactus.png"
+  },
+  "ice_cream": {
+    "id": "goose_022",
+    "key": "ice_cream",
+    "name": "冰淇淋鸭",
+    "theme": "food_objects",
+    "sheetIndex": 2,
+    "gridIndex": 6,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_022_ice_cream.png"
+  },
+  "toast": {
+    "id": "goose_023",
+    "key": "toast",
+    "name": "烤吐司鸭",
+    "theme": "food_objects",
+    "sheetIndex": 2,
+    "gridIndex": 7,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_023_toast.png"
+  },
+  "puddle": {
+    "id": "goose_024",
+    "key": "puddle",
+    "name": "融化水洼鸭",
+    "theme": "food_objects",
+    "sheetIndex": 2,
+    "gridIndex": 8,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_024_puddle.png"
+  },
+  "watermelon": {
+    "id": "goose_025",
+    "key": "watermelon",
+    "name": "西瓜鸭",
+    "theme": "food_objects",
+    "sheetIndex": 2,
+    "gridIndex": 9,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_025_watermelon.png"
+  },
+  "popcorn": {
+    "id": "goose_026",
+    "key": "popcorn",
+    "name": "爆米花鸭",
+    "theme": "food_objects",
+    "sheetIndex": 2,
+    "gridIndex": 10,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_026_popcorn.png"
+  },
+  "sushi": {
+    "id": "goose_027",
+    "key": "sushi",
+    "name": "寿司鸭",
+    "theme": "food_objects",
+    "sheetIndex": 2,
+    "gridIndex": 11,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_027_sushi.png"
+  },
+  "balloon": {
+    "id": "goose_028",
+    "key": "balloon",
+    "name": "气球鸭",
+    "theme": "food_objects",
+    "sheetIndex": 2,
+    "gridIndex": 12,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_028_balloon.png"
+  },
+  "chili": {
+    "id": "goose_029",
+    "key": "chili",
+    "name": "辣椒鸭",
+    "theme": "food_objects",
+    "sheetIndex": 2,
+    "gridIndex": 13,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_029_chili.png"
+  },
+  "coffee": {
+    "id": "goose_030",
+    "key": "coffee",
+    "name": "咖啡杯鸭",
+    "theme": "food_objects",
+    "sheetIndex": 2,
+    "gridIndex": 14,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_030_coffee.png"
+  },
+  "durian": {
+    "id": "goose_031",
+    "key": "durian",
+    "name": "榴莲鸭",
+    "theme": "food_objects",
+    "sheetIndex": 2,
+    "gridIndex": 15,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_031_durian.png"
+  },
+  "potted_plant": {
+    "id": "goose_032",
+    "key": "potted_plant",
+    "name": "盆栽小树鸭",
+    "theme": "food_objects",
+    "sheetIndex": 2,
+    "gridIndex": 16,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_032_potted_plant.png"
+  },
+  "cthulhu": {
+    "id": "goose_033",
+    "key": "cthulhu",
+    "name": "克苏鲁触手鸭",
+    "theme": "heroes_fantasy",
+    "sheetIndex": 3,
+    "gridIndex": 1,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_033_cthulhu.png"
+  },
+  "bodybuilder": {
+    "id": "goose_034",
+    "key": "bodybuilder",
+    "name": "健美肌肉鸭",
+    "theme": "heroes_fantasy",
+    "sheetIndex": 3,
+    "gridIndex": 2,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_034_bodybuilder.png"
+  },
+  "magic_student": {
+    "id": "goose_035",
+    "key": "magic_student",
+    "name": "魔法学徒鸭",
+    "theme": "heroes_fantasy",
+    "sheetIndex": 3,
+    "gridIndex": 3,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_035_magic_student.png"
+  },
+  "batman": {
+    "id": "goose_036",
+    "key": "batman",
+    "name": "蝙蝠侠暗夜鸭",
+    "theme": "heroes_fantasy",
+    "sheetIndex": 3,
+    "gridIndex": 4,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_036_batman.png"
+  },
+  "sailor_moon": {
+    "id": "goose_037",
+    "key": "sailor_moon",
+    "name": "水手月亮鸭",
+    "theme": "heroes_fantasy",
+    "sheetIndex": 3,
+    "gridIndex": 5,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_037_sailor_moon.png"
+  },
+  "wukong": {
+    "id": "goose_038",
+    "key": "wukong",
+    "name": "齐天大圣鸭",
+    "theme": "heroes_fantasy",
+    "sheetIndex": 3,
+    "gridIndex": 6,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_038_wukong.png"
+  },
+  "mummy": {
+    "id": "goose_039",
+    "key": "mummy",
+    "name": "木乃伊鸭",
+    "theme": "heroes_fantasy",
+    "sheetIndex": 3,
+    "gridIndex": 7,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_039_mummy.png"
+  },
+  "dracula": {
+    "id": "goose_040",
+    "key": "dracula",
+    "name": "吸血鬼伯爵鸭",
+    "theme": "heroes_fantasy",
+    "sheetIndex": 3,
+    "gridIndex": 8,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_040_dracula.png"
+  },
+  "angel": {
+    "id": "goose_041",
+    "key": "angel",
+    "name": "天使光环鸭",
+    "theme": "heroes_fantasy",
+    "sheetIndex": 3,
+    "gridIndex": 9,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_041_angel.png"
+  },
+  "devil": {
+    "id": "goose_042",
+    "key": "devil",
+    "name": "小恶魔鸭",
+    "theme": "heroes_fantasy",
+    "sheetIndex": 3,
+    "gridIndex": 10,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_042_devil.png"
+  },
+  "cyborg": {
+    "id": "goose_043",
+    "key": "cyborg",
+    "name": "赛博机械鸭",
+    "theme": "heroes_fantasy",
+    "sheetIndex": 3,
+    "gridIndex": 11,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_043_cyborg.png"
+  },
+  "zombie": {
+    "id": "goose_044",
+    "key": "zombie",
+    "name": "末日丧尸鸭",
+    "theme": "heroes_fantasy",
+    "sheetIndex": 3,
+    "gridIndex": 12,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_044_zombie.png"
+  },
+  "mermaid": {
+    "id": "goose_045",
+    "key": "mermaid",
+    "name": "美人鱼海妖鸭",
+    "theme": "heroes_fantasy",
+    "sheetIndex": 3,
+    "gridIndex": 13,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_045_mermaid.png"
+  },
+  "spartan": {
+    "id": "goose_046",
+    "key": "spartan",
+    "name": "斯巴达勇士鸭",
+    "theme": "heroes_fantasy",
+    "sheetIndex": 3,
+    "gridIndex": 14,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_046_spartan.png"
+  },
+  "god_of_wealth": {
+    "id": "goose_047",
+    "key": "god_of_wealth",
+    "name": "财神金宝鸭",
+    "theme": "heroes_fantasy",
+    "sheetIndex": 3,
+    "gridIndex": 15,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_047_god_of_wealth.png"
+  },
+  "ghost": {
+    "id": "goose_048",
+    "key": "ghost",
+    "name": "床单幽灵鸭",
+    "theme": "heroes_fantasy",
+    "sheetIndex": 3,
+    "gridIndex": 16,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_048_ghost.png"
+  },
+  "boxer": {
+    "id": "goose_049",
+    "key": "boxer",
+    "name": "拳击手鸭",
+    "theme": "sports_lifestyle",
+    "sheetIndex": 4,
+    "gridIndex": 1,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_049_boxer.png"
+  },
+  "weightlifter": {
+    "id": "goose_050",
+    "key": "weightlifter",
+    "name": "举重达人鸭",
+    "theme": "sports_lifestyle",
+    "sheetIndex": 4,
+    "gridIndex": 2,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_050_weightlifter.png"
+  },
+  "skater": {
+    "id": "goose_051",
+    "key": "skater",
+    "name": "滑板少年鸭",
+    "theme": "sports_lifestyle",
+    "sheetIndex": 4,
+    "gridIndex": 3,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_051_skater.png"
+  },
+  "fisherman": {
+    "id": "goose_052",
+    "key": "fisherman",
+    "name": "钓鱼老翁鸭",
+    "theme": "sports_lifestyle",
+    "sheetIndex": 4,
+    "gridIndex": 4,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_052_fisherman.png"
+  },
+  "onsen": {
+    "id": "goose_053",
+    "key": "onsen",
+    "name": "温泉泡汤鸭",
+    "theme": "sports_lifestyle",
+    "sheetIndex": 4,
+    "gridIndex": 5,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_053_onsen.png"
+  },
+  "skier": {
+    "id": "goose_054",
+    "key": "skier",
+    "name": "滑雪高手鸭",
+    "theme": "sports_lifestyle",
+    "sheetIndex": 4,
+    "gridIndex": 6,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_054_skier.png"
+  },
+  "yoga": {
+    "id": "goose_055",
+    "key": "yoga",
+    "name": "瑜伽冥想鸭",
+    "theme": "sports_lifestyle",
+    "sheetIndex": 4,
+    "gridIndex": 7,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_055_yoga.png"
+  },
+  "spy": {
+    "id": "goose_056",
+    "key": "spy",
+    "name": "特工间谍鸭",
+    "theme": "sports_lifestyle",
+    "sheetIndex": 4,
+    "gridIndex": 8,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_056_spy.png"
+  },
+  "tennis": {
+    "id": "goose_057",
+    "key": "tennis",
+    "name": "网球健将鸭",
+    "theme": "sports_lifestyle",
+    "sheetIndex": 4,
+    "gridIndex": 9,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_057_tennis.png"
+  },
+  "birthday": {
+    "id": "goose_058",
+    "key": "birthday",
+    "name": "派对寿星鸭",
+    "theme": "sports_lifestyle",
+    "sheetIndex": 4,
+    "gridIndex": 10,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_058_birthday.png"
+  },
+  "pajama": {
+    "id": "goose_059",
+    "key": "pajama",
+    "name": "睡衣宅男鸭",
+    "theme": "sports_lifestyle",
+    "sheetIndex": 4,
+    "gridIndex": 11,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_059_pajama.png"
+  },
+  "hiker": {
+    "id": "goose_060",
+    "key": "hiker",
+    "name": "登山驴友鸭",
+    "theme": "sports_lifestyle",
+    "sheetIndex": 4,
+    "gridIndex": 12,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_060_hiker.png"
+  },
+  "soccer": {
+    "id": "goose_061",
+    "key": "soccer",
+    "name": "足球前锋鸭",
+    "theme": "sports_lifestyle",
+    "sheetIndex": 4,
+    "gridIndex": 13,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_061_soccer.png"
+  },
+  "cyclist": {
+    "id": "goose_062",
+    "key": "cyclist",
+    "name": "骑行骑士鸭",
+    "theme": "sports_lifestyle",
+    "sheetIndex": 4,
+    "gridIndex": 14,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_062_cyclist.png"
+  },
+  "graffiti": {
+    "id": "goose_063",
+    "key": "graffiti",
+    "name": "街头涂鸦鸭",
+    "theme": "sports_lifestyle",
+    "sheetIndex": 4,
+    "gridIndex": 15,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_063_graffiti.png"
+  },
+  "gardener": {
+    "id": "goose_064",
+    "key": "gardener",
+    "name": "园丁小匠鸭",
+    "theme": "sports_lifestyle",
+    "sheetIndex": 4,
+    "gridIndex": 16,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_064_gardener.png"
+  },
+  "blue_hood": {
+    "id": "goose_065",
+    "key": "blue_hood",
+    "name": "小蓝斗篷鸭",
+    "theme": "wacky_fashion",
+    "sheetIndex": 5,
+    "gridIndex": 1,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_065_blue_hood.png"
+  },
+  "floral_coat": {
+    "id": "goose_066",
+    "key": "floral_coat",
+    "name": "东北大花袄鸭",
+    "theme": "wacky_fashion",
+    "sheetIndex": 5,
+    "gridIndex": 2,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_066_floral_coat.png"
+  },
+  "rapper": {
+    "id": "goose_067",
+    "key": "rapper",
+    "name": "金链说唱鸭",
+    "theme": "wacky_fashion",
+    "sheetIndex": 5,
+    "gridIndex": 3,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_067_rapper.png"
+  },
+  "box_head": {
+    "id": "goose_068",
+    "key": "box_head",
+    "name": "纸箱头套鸭",
+    "theme": "wacky_fashion",
+    "sheetIndex": 5,
+    "gridIndex": 4,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_068_box_head.png"
+  },
+  "dinosaur": {
+    "id": "goose_069",
+    "key": "dinosaur",
+    "name": "恐龙睡衣鸭",
+    "theme": "wacky_fashion",
+    "sheetIndex": 5,
+    "gridIndex": 5,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_069_dinosaur.png"
+  },
+  "noble_lady": {
+    "id": "goose_070",
+    "key": "noble_lady",
+    "name": "羽毛贵妇鸭",
+    "theme": "wacky_fashion",
+    "sheetIndex": 5,
+    "gridIndex": 6,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_070_noble_lady.png"
+  },
+  "bag_head": {
+    "id": "goose_071",
+    "key": "bag_head",
+    "name": "纸袋潜行鸭",
+    "theme": "wacky_fashion",
+    "sheetIndex": 5,
+    "gridIndex": 7,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_071_bag_head.png"
+  },
+  "monocle": {
+    "id": "goose_072",
+    "key": "monocle",
+    "name": "单片眼镜鸭",
+    "theme": "wacky_fashion",
+    "sheetIndex": 5,
+    "gridIndex": 8,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_072_monocle.png"
+  },
+  "sumo": {
+    "id": "goose_073",
+    "key": "sumo",
+    "name": "相扑胖子鸭",
+    "theme": "wacky_fashion",
+    "sheetIndex": 5,
+    "gridIndex": 9,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_073_sumo.png"
+  },
+  "raincoat": {
+    "id": "goose_074",
+    "key": "raincoat",
+    "name": "黄雨衣鸭",
+    "theme": "wacky_fashion",
+    "sheetIndex": 5,
+    "gridIndex": 10,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_074_raincoat.png"
+  },
+  "white_beard": {
+    "id": "goose_075",
+    "key": "white_beard",
+    "name": "圣诞大胡子鸭",
+    "theme": "wacky_fashion",
+    "sheetIndex": 5,
+    "gridIndex": 11,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_075_white_beard.png"
+  },
+  "mao_suit": {
+    "id": "goose_076",
+    "key": "mao_suit",
+    "name": "老干部保温杯鸭",
+    "theme": "wacky_fashion",
+    "sheetIndex": 5,
+    "gridIndex": 12,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_076_mao_suit.png"
+  },
+  "maid": {
+    "id": "goose_077",
+    "key": "maid",
+    "name": "女仆咖啡鸭",
+    "theme": "wacky_fashion",
+    "sheetIndex": 5,
+    "gridIndex": 13,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_077_maid.png"
+  },
+  "viking": {
+    "id": "goose_078",
+    "key": "viking",
+    "name": "维京狂战鸭",
+    "theme": "wacky_fashion",
+    "sheetIndex": 5,
+    "gridIndex": 14,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_078_viking.png"
+  },
+  "bee": {
+    "id": "goose_079",
+    "key": "bee",
+    "name": "小蜜蜂鸭",
+    "theme": "wacky_fashion",
+    "sheetIndex": 5,
+    "gridIndex": 15,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_079_bee.png"
+  },
+  "gamer_headset": {
+    "id": "goose_080",
+    "key": "gamer_headset",
+    "name": "猫耳电竞鸭",
+    "theme": "wacky_fashion",
+    "sheetIndex": 5,
+    "gridIndex": 16,
+    "width": 320,
+    "height": 440,
+    "image": "/goose-cards/goose_080_gamer_headset.png"
+  }
+} as Record<CharacterId, GooseCardMeta>;
+
+export function getGooseCard(key: CharacterId): GooseCardMeta {
+  return GOOSE_CARD_MAP[key] ?? {
+    id: key,
+    key,
+    name: key,
+    theme: 'unknown',
+    image: '/goose-cards/goose_001_detective.png',
+  };
+}
