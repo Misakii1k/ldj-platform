@@ -308,37 +308,39 @@ export function RoomPage() {
     <main className="room-page game-home-page" data-game-id={roomGame.id}>
       <div className="game-home-page__content room-layout">
         <header className="home-header room-header">
-          <div className="home-brand">
+          <div className="home-brand room-header__brand">
             <img
               src={`/icons/${roomGame.id}.png`}
               alt=""
-              style={{ width: '32px', height: '32px', objectFit: 'contain', borderRadius: '6px' }}
+              style={{ width: '28px', height: '28px', objectFit: 'contain', borderRadius: '6px' }}
               onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
             />
-            <span>{roomGame.displayName} · 房间大厅</span>
+            <span className="room-header__title">{roomGame.displayName}</span>
+            <span className="room-status-badge">
+              <span className="room-status-badge__dot" />
+              {statusText(room.status)}
+            </span>
+          </div>
+          <div className="home-header__actions room-header__actions">
             {isHost && room.status !== 'IN_GAME' && (
               <button
                 type="button"
-                className="room-switch-game-btn"
+                className="room-action-btn room-action-btn--switch"
                 onClick={() => setShowGameSwitcher(true)}
                 title="更换房间游玩的游戏"
               >
                 切换游戏
               </button>
             )}
-          </div>
-          <div className="home-header__actions">
-            <UserProfileBadge />
-            <span className="home-local-badge">局域网极速联机</span>
             <button
               type="button"
-              className="room-switch-game-btn"
+              className="room-action-btn room-action-btn--leave"
               onClick={() => setViewingHome(true)}
               title="暂离返回主页，可在主页随时返回或自由体验其他游戏"
             >
               暂离大厅
             </button>
-            <span className="room-status">{statusText(room.status)}</span>
+            <UserProfileBadge />
           </div>
         </header>
 

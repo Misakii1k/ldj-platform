@@ -37,9 +37,10 @@ const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 function readStoredPreference(): MotionPreference {
   try {
-    return parseMotionPreference(localStorage.getItem(STORAGE_KEY));
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? parseMotionPreference(saved) : 'full';
   } catch {
-    return 'auto';
+    return 'full';
   }
 }
 
@@ -87,7 +88,7 @@ export function MotionProvider({ children }: { children: ReactNode }) {
   }, [preference]);
 
   useEffect(() => {
-    if (preference !== 'auto' || resolution.level === 'minimal' || resolution.level === 'off') return;
+    if (resolution.level === 'minimal' || resolution.level === 'off') return;
     if (sampledPreferenceRef.current === preference || document.hidden) return;
 
     let delayId = 0;
