@@ -155,7 +155,7 @@ export function CheeseThiefGamePage({ view }: Props) {
 
   return (
     <TabletopShell
-      title="奶酪大盗：月夜鼠影"
+      title="奶酪大盗"
       phase={phaseLabel(view.phase)}
       spectator={isSpectator}
       players={players}

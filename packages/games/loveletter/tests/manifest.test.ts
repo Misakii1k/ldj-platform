@@ -5,7 +5,7 @@ import { loveLetterModule, LOVELETTER_VERSIONED_IDENTITY } from '../server/index
 
 test('情书 manifest shape 与模块身份一致', () => {
   assert.equal(LOVELETTER_MANIFEST.id, 'loveletter');
-  assert.equal(LOVELETTER_MANIFEST.displayName, '情书：密函心意');
+  assert.equal(LOVELETTER_MANIFEST.displayName, '情书');
   assert.equal(LOVELETTER_MANIFEST.minPlayers, 2);
   assert.equal(LOVELETTER_MANIFEST.maxPlayers, 4);
   assert.equal(LOVELETTER_MANIFEST.stateSchemaVersion, 1);

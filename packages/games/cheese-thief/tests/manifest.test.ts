@@ -5,7 +5,7 @@ import { cheeseThiefModule, CHEESE_THIEF_VERSIONED_IDENTITY } from '../server/in
 
 test('奶酪大盗 manifest shape 与模块身份一致', () => {
   assert.equal(CHEESE_THIEF_MANIFEST.id, 'cheese-thief');
-  assert.equal(CHEESE_THIEF_MANIFEST.displayName, '奶酪大盗：月夜鼠影');
+  assert.equal(CHEESE_THIEF_MANIFEST.displayName, '奶酪大盗');
   assert.equal(CHEESE_THIEF_MANIFEST.minPlayers, 4);
   assert.equal(CHEESE_THIEF_MANIFEST.maxPlayers, 8);
   assert.equal(CHEESE_THIEF_MANIFEST.stateSchemaVersion, 1);

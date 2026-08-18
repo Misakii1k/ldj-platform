@@ -2,8 +2,8 @@ import type { GameManifest } from '@ldj/shared';
 
 export const GOOSE_RELAY_MANIFEST = {
   id: 'goose-relay',
-  displayName: '以鹅传鹅：鹅鹅密令',
-  version: '0.3.0',
+  displayName: '以鹅传鹅',
+  version: '0.1.0',
   minPlayers: 5,
   maxPlayers: 9,
   stateSchemaVersion: 2,

@@ -163,11 +163,11 @@ export const GAME_CATALOG = [
   },
   {
     id: 'durian',
-    displayName: 'Durian：榴莲店长',
+    displayName: 'During',
     minPlayers: 2,
     maxPlayers: 7,
     availability: 'playable',
-    summary: '原版《Durian》机制：头顶暗牌（只看别人不看自己）、翻牌自选 ✓/✗ 生效、猴子功能牌与按铃质疑超卖。',
+    summary: '原版《During》机制：头顶暗牌（只看别人不看自己）、翻牌自选 ✓/✗ 生效、猴子功能牌与按铃质疑超卖。',
     tags: ['推理', '心理', '聚会'],
     theme: 'mint',
     rulesets: [
@@ -199,11 +199,11 @@ export const GAME_CATALOG = [
   },
   {
     id: 'loveletter',
-    displayName: '情书：密函心意',
+    displayName: '情书',
     minPlayers: 2,
     maxPlayers: 4,
     availability: 'playable',
-    summary: '经典 16 张密函手牌：揣测心意、淘汰对手，把情书送到公主手中。',
+    summary: '经典 16 张手牌：揣测心意、淘汰对手，把情书送到公主手中。',
     tags: ['卡牌', '推理', '经典'],
     theme: 'sunset',
     rulesets: [
@@ -215,11 +215,11 @@ export const GAME_CATALOG = [
   },
   {
     id: 'cheese-thief',
-    displayName: '奶酪大盗：月夜鼠影',
+    displayName: '奶酪大盗',
     minPlayers: 4,
     maxPlayers: 8,
     availability: 'playable',
-    summary: '原版《Cheese Thief》机制：掷骰定醒来时刻、独醒偷奶酪、共犯与平票同出局。线下桌游辅助工具。',
+    summary: '原版《奶酪大盗》机制：掷骰定醒来时刻、独醒偷奶酪、共犯与平票同出局。线下桌游辅助工具。',
     tags: ['推理', '阵营', '聚会'],
     theme: 'mint',
     rulesets: [
@@ -236,7 +236,7 @@ export const GAME_CATALOG = [
   },
   {
     id: 'goose-relay',
-    displayName: '以鹅传鹅：鹅鹅密令',
+    displayName: '以鹅传鹅',
     minPlayers: 5,
     maxPlayers: 9,
     availability: 'playable',
@@ -259,7 +259,7 @@ export const GAME_CATALOG = [
   },
   {
     id: 'night-testimony',
-    displayName: '暗夜证词',
+    displayName: '囚徒之夜',
     minPlayers: 3,
     maxPlayers: 6,
     availability: 'playable',
@@ -280,11 +280,11 @@ export const GAME_CATALOG = [
   },
   {
     id: 'bell-clash',
-    displayName: '铃铛对决',
+    displayName: 'Ding',
     minPlayers: 2,
     maxPlayers: 7,
     availability: 'playable',
-    summary: '原版《Ding! 眼急脑快》机制：UNO 式出牌 + 行动短语卡 + 按铃抢回合，先打完手牌者胜。线下桌游辅助工具。',
+    summary: '原版《Ding》机制：UNO 式出牌 + 行动短语卡 + 按铃抢回合，先打完手牌者胜。线下桌游辅助工具。',
     tags: ['反应', '卡牌', '聚会'],
     theme: 'berry',
     rulesets: [

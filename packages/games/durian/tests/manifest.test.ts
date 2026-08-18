@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import { DURIAN_MANIFEST } from '../shared/manifest.ts';
 import { durianModule, DURIAN_VERSIONED_IDENTITY } from '../server/index.ts';
 
-test('Durian manifest shape 与模块身份一致', () => {
+test('durian manifest shape 与模块身份一致', () => {
   assert.equal(DURIAN_MANIFEST.id, 'durian');
-  assert.equal(DURIAN_MANIFEST.displayName, 'Durian：榴莲店长');
-  assert.equal(DURIAN_MANIFEST.minPlayers, 2);
+  assert.equal(DURIAN_MANIFEST.displayName, 'During');
+  assert.equal(DURIAN_MANIFEST.version, '0.1.0');
   assert.equal(DURIAN_MANIFEST.maxPlayers, 7);
   assert.equal(DURIAN_MANIFEST.stateSchemaVersion, 1);
   assert.deepEqual(DURIAN_MANIFEST.rulesets, ['durian_orchard_v1']);

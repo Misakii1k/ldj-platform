@@ -372,7 +372,7 @@ export function GooseRelayGamePage({ view }: Props) {
 
   return (
     <TabletopShell
-      title="以鹅传鹅：鹅鹅密令"
+      title="以鹅传鹅"
       phase={phaseLabel(view.phase)}
       spectator={isSpectator}
       players={players}

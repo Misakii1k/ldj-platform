@@ -311,7 +311,7 @@ export function DurianGamePage({ view }: Props) {
 
   return (
     <TabletopShell
-      title="榴莲店长 Durian"
+      title="During"
       phase={`第 ${view.round}/${view.maxRounds} 轮 · ${phaseLabel(view.phase)}${
         isSimulator ? (deviceRole === 'table' ? ' · 🖥️ 桌面中央端' : ' · 📱 玩家手牌端') : ''
       }`}

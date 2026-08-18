@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { BELL_CLASH_MANIFEST } from '../shared/manifest.ts';
 import { bellClashModule, BELL_CLASH_VERSIONED_IDENTITY } from '../server/index.ts';
 
-test('铃铛对决 manifest shape 与模块身份一致', () => {
+test('Ding manifest shape 与模块身份一致', () => {
   assert.equal(BELL_CLASH_MANIFEST.id, 'bell-clash');
-  assert.equal(BELL_CLASH_MANIFEST.displayName, '铃铛对决');
+  assert.equal(BELL_CLASH_MANIFEST.displayName, 'Ding');
   assert.equal(BELL_CLASH_MANIFEST.minPlayers, 2);
   assert.equal(BELL_CLASH_MANIFEST.maxPlayers, 7);
   assert.equal(BELL_CLASH_MANIFEST.stateSchemaVersion, 1);

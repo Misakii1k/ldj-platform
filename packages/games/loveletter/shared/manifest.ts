@@ -2,7 +2,7 @@ import type { GameManifest } from '@ldj/shared';
 
 export const LOVELETTER_MANIFEST = {
   id: 'loveletter',
-  displayName: '情书：密函心意',
+  displayName: '情书',
   version: '0.1.0',
   minPlayers: 2,
   maxPlayers: 4,

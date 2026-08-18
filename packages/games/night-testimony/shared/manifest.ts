@@ -2,7 +2,7 @@ import type { GameManifest } from '@ldj/shared';
 
 export const NIGHT_TESTIMONY_MANIFEST = {
   id: 'night-testimony',
-  displayName: '暗夜证词',
+  displayName: '囚徒之夜',
   version: '0.1.0',
   minPlayers: 3,
   maxPlayers: 6,

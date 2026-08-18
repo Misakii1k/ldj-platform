@@ -267,7 +267,7 @@ export function GamePage() {
     case 'durian': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameErrorCard title="多利安数据格式异常" />;
+        content = <GameErrorCard title="During 数据格式异常" />;
         break;
       }
       content = <DurianGamePage view={parsed.view as import('./durian/types.ts').DurianPlayerView} />;
@@ -276,7 +276,7 @@ export function GamePage() {
     case 'loveletter': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameErrorCard title="情书对局数据格式异常" />;
+        content = <GameErrorCard title="情书数据格式异常" />;
         break;
       }
       content = <LoveLetterGamePage view={parsed.view as import('./loveletter/types.ts').LoveLetterPlayerView} />;
@@ -285,7 +285,7 @@ export function GamePage() {
     case 'cheese-thief': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameErrorCard title="芝士怪盗数据格式异常" />;
+        content = <GameErrorCard title="奶酪大盗数据格式异常" />;
         break;
       }
       content = <CheeseThiefGamePage view={parsed.view as import('./cheese-thief/types.ts').CheeseThiefPlayerView} />;
@@ -294,7 +294,7 @@ export function GamePage() {
     case 'goose-relay': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameErrorCard title="天鹅接力数据格式异常" />;
+        content = <GameErrorCard title="以鹅传鹅数据格式异常" />;
         break;
       }
       content = <GooseRelayGamePage view={parsed.view as import('./goose-relay/types.ts').GooseRelayPlayerView} />;
@@ -303,7 +303,7 @@ export function GamePage() {
     case 'night-testimony': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameErrorCard title="午夜证词数据格式异常" />;
+        content = <GameErrorCard title="囚徒之夜数据格式异常" />;
         break;
       }
       content = <NightTestimonyGamePage view={parsed.view as import('./night-testimony/types.ts').NightTestimonyPlayerView} />;
@@ -312,7 +312,7 @@ export function GamePage() {
     case 'bell-clash': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameErrorCard title="德国心脏病数据格式异常" />;
+        content = <GameErrorCard title="Ding 数据格式异常" />;
         break;
       }
       content = <BellClashGamePage view={parsed.view as import('./bell-clash/types.ts').BellClashPlayerView} />;

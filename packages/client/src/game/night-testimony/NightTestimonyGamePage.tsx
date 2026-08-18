@@ -132,7 +132,7 @@ export function NightTestimonyGamePage({ view }: Props) {
 
   return (
     <TabletopShell
-      title="暗夜证词"
+      title="囚徒之夜"
       phase={phaseLabel(view.phase)}
       spectator={isSpectator}
       players={players}

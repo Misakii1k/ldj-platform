@@ -5,7 +5,7 @@ import { gooseRelayModule, GOOSE_RELAY_VERSIONED_IDENTITY } from '../server/inde
 
 test('以鹅传鹅 manifest shape 与模块身份一致', () => {
   assert.equal(GOOSE_RELAY_MANIFEST.id, 'goose-relay');
-  assert.equal(GOOSE_RELAY_MANIFEST.displayName, '以鹅传鹅：鹅鹅密令');
+  assert.equal(GOOSE_RELAY_MANIFEST.displayName, '以鹅传鹅');
   assert.equal(GOOSE_RELAY_MANIFEST.minPlayers, 5);
   assert.equal(GOOSE_RELAY_MANIFEST.maxPlayers, 9);
   assert.equal(GOOSE_RELAY_MANIFEST.stateSchemaVersion, 2);

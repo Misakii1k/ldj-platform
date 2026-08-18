@@ -87,7 +87,7 @@ export function LoveLetterGamePage({ view }: Props) {
 
   return (
     <TabletopShell
-      title="情书：密函心意"
+      title="情书"
       phase={view.phase === 'game_over' ? '对局结束' : `第 ${view.round} 轮`}
       spectator={isSpectator}
       players={players}
