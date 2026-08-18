@@ -59,7 +59,6 @@ export function GameHomePage() {
 
   return (
     <main ref={pageRef} className="game-home-page" data-player-count={selectedCount ?? 'all'} data-motion-level={level}>
-      <HomePartyScene selectedCount={selectedCount} />
       <div className="game-home-page__content">
         <header className="home-header home-motion-layer" data-motion-step="0">
           <div className="home-brand" aria-label="聚乐桌">
@@ -85,21 +84,24 @@ export function GameHomePage() {
         <HomeActiveRoomBanner />
 
         <section className="home-hero home-motion-layer" data-motion-step="1" aria-labelledby="home-title">
-          <p className="home-hero__eyebrow">扫码即玩 · 手机就是专属手牌</p>
-          <h1 id="home-title">好友到齐，<span>即刻开局。</span></h1>
-          <p className="home-hero__description">
-            无需下载与繁琐注册。连上同一个局域网，与身边的朋友面对面开局畅玩！
-          </p>
-          <div className="home-hero__actions">
-            <a className="home-hero__primary" href="#game-catalog">
-              <Gamepad2 size={19} strokeWidth={2.5} aria-hidden="true" />
-              挑选游戏
-            </a>
-            <button type="button" onClick={() => setActiveSheet('join')}>
-              <LogIn size={18} strokeWidth={2.5} aria-hidden="true" />
-              输入房间码
-            </button>
+          <div className="home-hero__copy">
+            <p className="home-hero__eyebrow">扫码即玩 · 手机就是专属手牌</p>
+            <h1 id="home-title">好友到齐，<span>即刻开局。</span></h1>
+            <p className="home-hero__description">
+              无需下载与繁琐注册。连上同一个局域网，与身边的朋友面对面开局畅玩！
+            </p>
+            <div className="home-hero__actions">
+              <a className="home-hero__primary" href="#game-catalog">
+                <Gamepad2 size={19} strokeWidth={2.5} aria-hidden="true" />
+                挑选游戏
+              </a>
+              <button type="button" onClick={() => setActiveSheet('join')}>
+                <LogIn size={18} strokeWidth={2.5} aria-hidden="true" />
+                输入房间码
+              </button>
+            </div>
           </div>
+          <HomePartyScene selectedCount={selectedCount} />
         </section>
 
         <div className="home-motion-layer" data-motion-step="2">

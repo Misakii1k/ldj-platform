@@ -489,13 +489,13 @@ p { margin: 0.5rem 0; }
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 14px 8px 12px;
-  border-radius: 14px;
-  font-size: 0.88rem;
+  padding: 8px 14px 8px 16px;
+  border-radius: 999px;
+  font-size: 0.9rem;
   font-weight: 900;
   line-height: 1.35;
   border: 2.5px solid var(--game-line, #221e1a);
-  box-shadow: 0 4px 0 var(--game-line, #221e1a), 0 8px 20px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 0 var(--game-line, #221e1a), 0 8px 20px rgba(0, 0, 0, 0.25);
   animation: toast-spring-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -537,19 +537,19 @@ p { margin: 0.5rem 0; }
 .toast-close {
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 7px;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
   background: #ffffff;
-  border: 1.5px solid var(--game-line, #221e1a);
-  box-shadow: 1px 1.5px 0 var(--game-line, #221e1a);
+  border: 2px solid var(--game-line, #221e1a);
+  box-shadow: 0 2px 0 var(--game-line, #221e1a);
   color: var(--game-line, #221e1a);
   font-size: 1.1rem;
   font-weight: 900;
   line-height: 1;
   cursor: pointer;
   padding: 0;
-  margin-left: 2px;
+  margin-left: 4px;
   flex-shrink: 0;
   transition: transform 0.12s ease, background 0.12s ease, color 0.12s ease;
 }
@@ -753,9 +753,19 @@ p { margin: 0.5rem 0; }
 }
 
 .home-hero {
-  max-width: 650px;
-  min-height: clamp(380px, 38vw, 520px);
-  padding: clamp(66px, 10vw, 126px) 3px clamp(34px, 6vw, 64px);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 100%;
+  min-height: clamp(360px, 36vw, 480px);
+  padding: clamp(36px, 5vw, 64px) 3px clamp(24px, 4vw, 48px);
+}
+
+.home-hero__copy {
+  max-width: 560px;
+  position: relative;
+  z-index: 2;
 }
 
 .home-hero__eyebrow,
@@ -1778,7 +1788,7 @@ p { margin: 0.5rem 0; }
   }
 
   .home-hero {
-    padding-top: 128px;
+    padding-top: 48px;
   }
 
   .game-grid {
@@ -2075,39 +2085,56 @@ p { margin: 0.5rem 0; }
 
 .home-party-scene {
   position: absolute;
-  z-index: 0;
-  top: clamp(80px, 10vw, 150px);
-  right: clamp(-100px, -2vw, -10px);
-  width: clamp(460px, 48vw, 680px);
-  height: clamp(380px, 40vw, 540px);
+  z-index: 1;
+  top: 50%;
+  right: -10px;
+  transform: translateY(-50%) translateZ(0);
+  width: clamp(380px, 42vw, 560px);
+  height: clamp(320px, 36vw, 460px);
   isolation: isolate;
   pointer-events: none;
   opacity: 0.96;
-  transform: translateZ(0);
   transition: opacity 520ms ease, filter 520ms ease;
+}
+
+@media (max-width: 960px) {
+  .home-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    min-height: auto;
+    padding-top: 24px;
+  }
+
+  .home-party-scene {
+    position: relative;
+    top: auto;
+    right: auto;
+    transform: none;
+    width: min(100%, 480px);
+    height: clamp(280px, 50vw, 380px);
+    margin: 16px auto 0;
+  }
 }
 
 /* 横屏与矮屏适配：防止下方内容卡片遮挡围桌人物与桌底 */
 @media (orientation: landscape) and (max-height: 820px) {
   .home-hero {
-    min-height: clamp(340px, 68vh, 480px);
-    padding-top: clamp(30px, 6vh, 60px);
-    padding-bottom: clamp(16px, 3vh, 32px);
+    min-height: clamp(320px, 60vh, 440px);
+    padding-top: clamp(20px, 4vh, 44px);
+    padding-bottom: clamp(14px, 2.5vh, 28px);
   }
 
   .home-party-scene {
-    top: clamp(40px, 6vh, 76px);
-    right: clamp(-20px, 1vw, 24px);
-    width: clamp(360px, 44vw, 520px);
-    height: clamp(280px, 64vh, 440px);
+    width: clamp(340px, 40vw, 480px);
+    height: clamp(260px, 56vh, 400px);
   }
 }
 
 @media (orientation: landscape) and (max-height: 560px) {
   .home-hero {
-    min-height: clamp(250px, 78vh, 340px);
-    padding-top: 14px;
-    padding-bottom: 14px;
+    min-height: clamp(230px, 70vh, 320px);
+    padding-top: 12px;
+    padding-bottom: 12px;
   }
 
   .home-hero h1 {
@@ -2122,10 +2149,8 @@ p { margin: 0.5rem 0; }
   }
 
   .home-party-scene {
-    top: 30px;
-    right: 0;
-    width: clamp(280px, 40vw, 380px);
-    height: clamp(210px, 74vh, 290px);
+    width: clamp(260px, 36vw, 360px);
+    height: clamp(200px, 68vh, 280px);
     opacity: 0.95;
   }
 }
@@ -8944,7 +8969,7 @@ p { margin: 0.5rem 0; }
 }
 
 .home-hero {
-  padding: 74px 3px 38px;
+  padding: 44px 3px 32px;
 }
 
 .home-hero h1 {
