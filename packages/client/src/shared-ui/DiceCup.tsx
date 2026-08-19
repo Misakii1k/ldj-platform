@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { webAudio } from './WebAudioManager.ts';
+import { ThreeDiceCupCanvas } from './ThreeDiceCupCanvas.tsx';
 
 export type DiceCupTheme = 'wood' | 'felt' | 'metal';
 
@@ -95,7 +96,6 @@ export function DiceCup({
   className = '',
 }: DiceCupProps) {
   const [isLifted, setIsLifted] = useState(false);
-  const [isLockedOpen, setIsLockedOpen] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
 
   // 归一化点数数组
@@ -104,9 +104,8 @@ export function DiceCup({
   // 环境级安全防窥：切换后台或失焦时自动扣盖
   useEffect(() => {
     const hide = () => {
-      if (isLifted || isLockedOpen) {
+      if (isLifted) {
         setIsLifted(false);
-        setIsLockedOpen(false);
         onInspectCommit?.();
       }
     };
@@ -120,12 +119,12 @@ export function DiceCup({
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('blur', hide);
     };
-  }, [isLifted, isLockedOpen, onInspectCommit]);
+  }, [isLifted, onInspectCommit]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!canInteract) return;
-      if (isLockedOpen) return; // 已锁定时点击交给 click
+      e.preventDefault();
       setIsLifted(true);
       webAudio.playDiceReveal();
       try {
@@ -133,46 +132,28 @@ export function DiceCup({
           navigator.vibrate(10);
         }
       } catch {
-        // Ignore vibration error
+        // Ignore vibration error on unsupported platforms
       }
     },
-    [canInteract, isLockedOpen]
+    [canInteract]
   );
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent) => {
-      if (isLockedOpen) return;
       if (!isLifted) return;
+      e.preventDefault();
       setIsLifted(false);
       onInspectCommit?.();
     },
-    [isLifted, isLockedOpen, onInspectCommit]
+    [isLifted, onInspectCommit]
   );
 
   const handlePointerCancel = useCallback(() => {
-    if (isLockedOpen) return;
     if (isLifted) {
       setIsLifted(false);
       onInspectCommit?.();
     }
-  }, [isLifted, isLockedOpen, onInspectCommit]);
-
-  const toggleLockOpen = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (!canInteract) return;
-      setIsLockedOpen((prev) => {
-        const next = !prev;
-        if (next) {
-          webAudio.playDiceReveal();
-        } else {
-          onInspectCommit?.();
-        }
-        return next;
-      });
-    },
-    [canInteract, onInspectCommit]
-  );
+  }, [isLifted, onInspectCommit]);
 
   const handleShakeClick = useCallback(
     (e: React.MouseEvent) => {
@@ -185,7 +166,7 @@ export function DiceCup({
           navigator.vibrate([15, 30, 20]);
         }
       } catch {
-        // Ignore vibration error
+        // Ignore vibration error on unsupported platforms
       }
       setTimeout(() => {
         setIsShaking(false);
@@ -195,56 +176,8 @@ export function DiceCup({
     [allowShake, canInteract, isShaking, onShakeCommit]
   );
 
-  const currentlyOpen = isLifted || isLockedOpen;
-
-  // 渲染单个骰子的点数（国标中式红 1、红 4 点）
-  const renderDiceDots = (value: number) => {
-    const dots: Array<{ x: number; y: number; isRed?: boolean }> = [];
-    if (value === 1) {
-      dots.push({ x: 50, y: 50, isRed: true });
-    } else if (value === 2) {
-      dots.push({ x: 30, y: 30 }, { x: 70, y: 70 });
-    } else if (value === 3) {
-      dots.push({ x: 30, y: 30 }, { x: 50, y: 50 }, { x: 70, y: 70 });
-    } else if (value === 4) {
-      dots.push(
-        { x: 30, y: 30, isRed: true },
-        { x: 70, y: 30, isRed: true },
-        { x: 30, y: 70, isRed: true },
-        { x: 70, y: 70, isRed: true }
-      );
-    } else if (value === 5) {
-      dots.push(
-        { x: 30, y: 30 },
-        { x: 70, y: 30 },
-        { x: 50, y: 50, isRed: true },
-        { x: 30, y: 70 },
-        { x: 70, y: 70 }
-      );
-    } else if (value === 6) {
-      dots.push(
-        { x: 30, y: 25 },
-        { x: 30, y: 50 },
-        { x: 30, y: 75 },
-        { x: 70, y: 25 },
-        { x: 70, y: 50 },
-        { x: 70, y: 75 }
-      );
-    }
-
-    return dots.map((dot, index) => (
-      <span
-        key={index}
-        className={`shared-die-dot ${dot.isRed ? 'shared-die-dot--red' : ''}`}
-        style={{ left: `${dot.x}%`, top: `${dot.y}%` }}
-      />
-    ));
-  };
-
   const isCompact = variant === 'compact';
-  const hasValidDice =
-    normalizedValues.length > 0 &&
-    normalizedValues.every((v) => typeof v === 'number' && v >= 1 && v <= 6);
+  const hasValidDice = normalizedValues.length > 0;
 
   return (
     <div
@@ -266,51 +199,13 @@ export function DiceCup({
       }
     >
       <div className={`shared-dice-cup-scene ${isShaking ? 'is-shaking' : ''}`}>
-        {/* 底部绒布/木质托盘底座 */}
-        <div className="shared-cup-base">
-          <div className="shared-cup-mat">
-            {hasValidDice ? (
-              <div
-                className={`shared-dice-cluster count-${Math.min(normalizedValues.length, 6)} ${
-                  isLifted ? 'is-visible' : ''
-                }`}
-              >
-                {normalizedValues.map((val, idx) => (
-                  <div key={idx} className="shared-die-3d">
-                    <div className="shared-die-face">{renderDiceDots(val)}</div>
-                  </div>
-                ))}
-                {normalizedValues.length === 1 && (
-                  <div className="shared-die-number-badge">{normalizedValues[0]} 点</div>
-                )}
-              </div>
-            ) : (
-              <div className="shared-die-unknown">
-                <span>?</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 3D 骰盅罩体与长按掀起动效 */}
-        <div className={`shared-cup-dome ${isLifted ? 'is-lifted' : ''}`}>
-          <div className="shared-cup-dome__top">
-            <span className="shared-cup-dome__knob" />
-          </div>
-          <div className="shared-cup-dome__body">
-            <span className="shared-cup-dome__icon" aria-hidden="true">
-              🎲
-            </span>
-            <span className="shared-cup-dome__label">
-              {peekTargetName
-                ? `查验 ${peekTargetName}`
-                : isMe
-                  ? '我的骰盅'
-                  : playerName || '骰盅'}
-            </span>
-          </div>
-          <div className="shared-cup-dome__rim" />
-        </div>
+        <ThreeDiceCupCanvas
+          diceValues={hasValidDice ? normalizedValues : [4]}
+          isLifted={isLifted}
+          isShaking={isShaking}
+          theme={theme}
+          variant={variant}
+        />
       </div>
 
       {/* 底部提示与辅助操作 */}
@@ -321,9 +216,16 @@ export function DiceCup({
         <div className="shared-cup-hint">
           {canInteract ? (
             isLifted ? (
-              <span className="hint-lifted">👀 松开手指自动扣盖防窥</span>
+              <span className="hint-lifted">
+                👀 松开手指自动扣盖防窥{' '}
+                {normalizedValues.length === 1
+                  ? `（${normalizedValues[0]} 点）`
+                  : normalizedValues.length > 1
+                    ? `（共 ${normalizedValues.reduce((a, b) => a + b, 0)} 点）`
+                    : ''}
+              </span>
             ) : (
-              <span className="hint-press">👆 按住掀开骰盅查看</span>
+              <span className="hint-press">👆 按住掀开 3D 骰盅查看</span>
             )
           ) : (
             <span className="hint-disabled">{hint || '骰盅已扣紧'}</span>

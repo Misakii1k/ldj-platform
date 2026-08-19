@@ -10,6 +10,7 @@ import { GameDrawer } from '../tabletop/GameDrawer.tsx';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
 import { CheeseDiceCup3D } from './CheeseDiceCup3D.tsx';
 import { CheeseTabletopArena } from './CheeseTabletopArena.tsx';
+import { IdentityFlipCard } from '../../shared-ui/IdentityFlipCard.tsx';
 import { useCheeseTTS } from './useCheeseTTS.ts';
 import type { CheeseThiefPlayerView, RoleCard } from './types.ts';
 
@@ -274,18 +275,23 @@ export function CheeseThiefGamePage({ view }: Props) {
                   />
                 </div>
 
-                {/* 身份大胶囊 */}
-                <div className={`cheese-secret-role ${me.isThief ? 'role--thief' : me.isAccomplice ? 'role--accomplice' : 'role--sleeper'}`}>
-                  <span className="secret-role-icon">{me.isThief ? '🐭🧀' : me.isAccomplice ? '🤝🐭' : '😴🐭'}</span>
-                  <div className="secret-role-text">
-                    <span className="secret-role-label">本局身份</span>
-                    <strong>{me.isThief ? '贪吃鼠（怪盗）' : me.isAccomplice ? '共犯老鼠' : '贪睡鼠（村民）'}</strong>
-                  </div>
-                  {me.roleCard !== 'none' && (
-                    <div className="secret-role-subtag">
-                      🃏 身份卡：{ROLE_LABELS[me.roleCard]}
-                    </div>
-                  )}
+                {/* 3D 秘密身份卡牌 */}
+                <div className="cheese-identity-card-container" style={{ width: '100%', maxWidth: '280px', marginTop: '12px' }}>
+                  <IdentityFlipCard
+                    theme="classic"
+                    variant="compact"
+                    roleName={me.isThief ? '贪吃鼠（怪盗）' : me.isAccomplice ? '共犯老鼠' : '贪睡鼠（村民）'}
+                    roleSubtitle={me.roleCard !== 'none' ? `身份卡：${ROLE_LABELS[me.roleCard]}` : me.isThief ? '夜间偷吃奶酪' : '找出偷吃大盗'}
+                    roleCamp={me.isThief || me.isAccomplice ? 'evil' : 'good'}
+                    secretHints={[
+                      me.isThief
+                        ? '你在自己的时刻醒来并偷吃奶酪，天亮后隐藏身份！'
+                        : me.isAccomplice
+                          ? '你被怪盗选为共犯，协助怪盗掩盖偷吃痕迹！'
+                          : '你在自己的时刻醒来观察周围动静，天亮后找出怪盗！',
+                    ]}
+                    canInteract={true}
+                  />
                 </div>
               </div>
 

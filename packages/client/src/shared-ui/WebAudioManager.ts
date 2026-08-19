@@ -272,6 +272,35 @@ class WebAudioEngine {
     }
   }
 
+  /** 骰子单次碰撞声（3D 物理引擎节流触发；intensity 0~1 随撞击速度） */
+  public playDiceKnock(intensity = 1) {
+    try {
+      if (this.muted) return;
+      const ctx = this.getContext();
+      if (!ctx) return;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'triangle';
+      const freq = 190 + Math.random() * 90;
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.55, ctx.currentTime + 0.05);
+
+      const vol = Math.max(0.03, Math.min(0.28, this.volume * 0.22 * Math.max(0.4, intensity)));
+      gain.gain.setValueAtTime(vol, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.008, ctx.currentTime + 0.05);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.06);
+    } catch {
+      // Audio playback blocked or not supported
+    }
+  }
+
   /** 揭开骰盅/落台清脆声 */
   public playDiceReveal() {
     try {

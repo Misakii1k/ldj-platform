@@ -16007,6 +16007,176 @@ html[data-motion-level="off"] *::after {
   transform: translateY(-56px) rotateX(-22deg) scale(1.06);
 }
 
+.identity-flip-container {
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  --glare-x: 50%;
+  --glare-y: 50%;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  perspective: 1100px;
+}
+
+.identity-flip-container--compact {
+  max-width: 240px;
+}
+
+.identity-flip-card {
+  position: relative;
+  width: 100%;
+  border-radius: 20px;
+  outline: none;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transition: transform 0.15s ease-out;
+}
+
+.identity-card-inner {
+  position: relative;
+  width: 100%;
+  min-height: 250px;
+  border-radius: 20px;
+  transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.36s ease;
+}
+
+.identity-flip-container--compact .identity-card-inner {
+  min-height: 180px;
+  border-radius: 16px;
+}
+
+.identity-flip-card.is-revealed .identity-card-inner {
+  transform: rotateY(180deg) scale(1.02);
+}
+
+.identity-card-back,
+.identity-card-front {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.identity-card-holo-foil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle 220px at var(--glare-x, 50%) var(--glare-y, 50%),
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(251, 191, 36, 0.22) 30%,
+    rgba(244, 63, 94, 0.18) 55%,
+    rgba(56, 189, 248, 0.18) 80%,
+    transparent 100%
+  );
+  mix-blend-mode: overlay;
+  opacity: 0.85;
+  z-index: 5;
+  transition: opacity 0.2s ease;
+}
+
+.identity-flip-container--compact .identity-card-back,
+.identity-flip-container--compact .identity-card-front {
+  border-radius: 16px;
+}
+
+/* ════════ 1. 卡牌背面 (遮蔽态) ════════ */
+.identity-card-back {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  z-index: 2;
+  transform: rotateY(0deg);
+}
+
+.identity-card-back__border {
+  position: relative;
+  margin: 10px;
+  flex: 1;
+  border: 1.5px dashed rgba(255, 255, 255, 0.25);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 80%);
+}
+
+.identity-card-back__seal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.identity-card-back__emblem {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.04) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.3), 0 6px 16px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.identity-card-back__emblem::after {
+  content: '🔒';
+  font-size: 1.5rem;
+}
+
+.identity-card-back__badge {
+  font-size: 0.96rem;
+  letter-spacing: 2px;
+  color: #f1f5f9;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8), 0 0 12px rgba(255, 255, 255, 0.2);
+}
+
+.identity-card-back__action-tip {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tip-press {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #38bdf8;
+  font-weight: 700;
+  animation: pulseTip 2s infinite ease-in-out;
+}
+
+@keyframes pulseTip {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+/* ════════ 2. 卡牌正面 (揭示态) ════════ */
+.identity-card-front {
+  background: linear-gradient(145deg, #1e2433 0%, #111622 100%);
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  transform: rotateY(180deg);
+  padding: 16px;
+  justify-content: space-between;
+}
+
 .cheese-cup-dome__top {
   width: 22px;
   height: 14px;
@@ -16845,22 +17015,12 @@ html[data-motion-level="off"] *::after {
   position: relative;
   width: 140px;
   height: 140px;
-  perspective: 700px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.15s ease;
 }
 
-.shared-dice-cup-scene.is-shaking {
-  animation: cupShake 0.45s infinite ease-in-out;
-}
-
-@keyframes cupShake {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  25% { transform: translateY(-8px) rotate(-6deg); }
-  75% { transform: translateY(-4px) rotate(6deg); }
-}
+/* is-shaking 类保留为 JS 钩子；摇晃动效由 Three.js 引擎内部的物理模拟渲染 */
 
 .shared-dice-cup-wrapper--compact .shared-dice-cup-scene {
   width: 96px;
@@ -17049,12 +17209,12 @@ html[data-motion-level="off"] *::after {
 
 /* 长按掀开状态 */
 .shared-cup-dome.is-lifted {
-  transform: translateY(-84px) rotateX(-24deg) scale(1.06);
-  box-shadow: 0 34px 40px rgba(0, 0, 0, 0.35), inset 0 4px 8px rgba(255, 255, 255, 0.3);
+  transform: translateY(-68px) rotateX(-20deg) scale(1.04);
+  box-shadow: 0 28px 36px rgba(0, 0, 0, 0.4), inset 0 4px 8px rgba(255, 255, 255, 0.3);
 }
 
 .shared-dice-cup-wrapper--compact .shared-cup-dome.is-lifted {
-  transform: translateY(-56px) rotateX(-22deg) scale(1.06);
+  transform: translateY(-46px) rotateX(-18deg) scale(1.04);
 }
 
 .shared-cup-dome__top {
