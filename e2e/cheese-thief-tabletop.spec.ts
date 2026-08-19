@@ -96,7 +96,7 @@ test.describe('G2-B cheese-thief 完整局', () => {
       });
 
       // 渲染断言：私密信息区可见（本局规则/身份区）
-      await expect(page.locator('.cheese-private')).toBeVisible();
+      await expect(page.locator('.cheese-secret-card')).toBeVisible();
 
       // Node 驱动除浏览器外的其余 4 个座位（房主 + 座位 2/3/4）
       const otherSeats = seeded.players.filter((p) => p.playerId !== browserPlayer.playerId);

@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
 import { PlayingCard, CardBack } from './PlayingCard.tsx';
 import { nameFor, useGameAction, type MemberLike } from './useGameAction.ts';
-import { UNO_COLORS, UNO_COLOR_NAMES, cardLabel, colorLabel, type UnoCard } from './uno/types.ts';
+import { UNO_COLORS, cardLabel, colorLabel, type UnoCard } from './uno/types.ts';
 import { TabletopOvalShell, type PlayerSeat } from '../shared-ui/TabletopOvalShell.tsx';
 import { CardFanEngine, type CardItem } from '../shared-ui/CardFanEngine.tsx';
 import { GameLeaveButton } from './GameLeaveButton.tsx';

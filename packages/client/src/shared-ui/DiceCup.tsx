@@ -84,7 +84,6 @@ export function reduceDiceCupState(
 export function DiceCup({
   diceValues = null,
   playerName,
-  isMe = false,
   canInteract = true,
   hint,
   peekTargetName,

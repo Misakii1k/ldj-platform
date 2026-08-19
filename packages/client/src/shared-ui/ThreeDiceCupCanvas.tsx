@@ -379,7 +379,7 @@ export function ThreeDiceCupCanvas({
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelCap));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
     container.appendChild(renderer.domElement);
@@ -398,7 +398,6 @@ export function ThreeDiceCupCanvas({
     mainLight.shadow.camera.near = 2;
     mainLight.shadow.camera.far = 20;
     mainLight.shadow.bias = -0.0008;
-    mainLight.shadow.radius = 4;
     scene.add(mainLight);
 
     const fillLight = new THREE.DirectionalLight(0x93c5fd, 0.8);
@@ -575,7 +574,7 @@ export function ThreeDiceCupCanvas({
       new THREE.MeshStandardMaterial({
         color: 0xffffff,
         map: themed.cupMap,
-        roughnessMap: themed.roughnessMap ?? undefined,
+        ...(themed.roughnessMap ? { roughnessMap: themed.roughnessMap } : {}),
         metalness: theme === 'metal' ? 0.7 : 0.12,
         roughness: theme === 'metal' ? 0.34 : theme === 'felt' ? 0.8 : 0.5,
         side: THREE.DoubleSide,
@@ -640,7 +639,7 @@ export function ThreeDiceCupCanvas({
     cupGroup.add(bottomRingMesh);
 
     // 8. 动画与物理循环（按需渲染）
-    const clock = new THREE.Clock();
+    let lastTime = performance.now();
     let rafId = 0;
     let running = false;
     let idleFrames = 0;
@@ -814,7 +813,9 @@ export function ThreeDiceCupCanvas({
 
     const tick = () => {
       rafId = requestAnimationFrame(tick);
-      const dt = Math.min(clock.getDelta(), 0.033);
+      const now = performance.now();
+      const dt = Math.min((now - lastTime) / 1000, 0.033);
+      lastTime = now;
       update(dt);
       renderer.render(scene, camera);
       if (!isAnimating()) {
@@ -838,7 +839,7 @@ export function ThreeDiceCupCanvas({
       idleFrames = 0;
       if (running) return;
       running = true;
-      clock.getDelta(); // 丢弃挂起期间累积的时间
+      lastTime = performance.now(); // 丢弃挂起期间累积的时间
       rafId = requestAnimationFrame(tick);
     };
 
