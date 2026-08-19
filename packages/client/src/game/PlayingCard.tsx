@@ -3,12 +3,20 @@
  *
  * 结合 AI 生成与精准切图的高清美术资源：
  * - 大王 / 小王：宫廷小丑与国王吉祥物立绘
- * - J / Q / K：12 张专属黑桃/红桃/梅花/方块贵族与骑士立绘 + 金箔画框
+ * - J / Q / K：12 张专属黑桃/红桃/方块/梅花贵族与骑士立绘 + 金箔画框
  * - 黑桃 A：大师级金叶藤蔓花体黑桃勋章
  * - 红桃/梅花/方块 A 及数字牌：宝石级精致花色徽章
  * - 牌背：复古几何金星与纸牌图腾徽章
  * - 经典纸牌角标与 2.5D 象牙白温润卡面
  */
+
+import React, { useId } from 'react';
+
+/** useId 含浏览器安全字符集之外的字位，过滤为纯字母数字下划线，保证 SVG url(#...) 引用可靠 */
+function useSvgId(): string {
+  const raw = useId();
+  return raw.replace(/[^a-zA-Z0-9_-]/g, '');
+}
 
 const CARD_ART_MAP: Record<string, string> = {
   // Jokers
@@ -38,17 +46,6 @@ const SUIT_ART_MAP: Record<string, string> = {
   hearts: '/assets/cards/suit_hearts.png',
   clubs: '/assets/cards/suit_clubs.png',
   diamonds: '/assets/cards/suit_diamonds.png',
-};
-
-const SUIT_PATHS: Record<string, string> = {
-  spades:
-    'M50 5 C50 5 5 40 5 60 C5 80 25 90 50 75 C75 90 95 80 95 60 C95 40 50 5 50 5Z M42 75 L50 95 L58 75Z',
-  hearts:
-    'M50 90 C50 90 5 55 5 35 C5 15 25 5 50 30 C75 5 95 15 95 35 C95 55 50 90 50 90Z',
-  diamonds:
-    'M50 5 L90 50 L50 95 L10 50Z',
-  clubs:
-    'M50 15 C35 15 20 25 20 40 C20 55 35 60 45 55 C35 70 25 75 25 75 L50 95 L75 75 C75 75 65 70 55 55 C65 60 80 55 80 40 C80 25 65 15 50 15Z',
 };
 
 interface PipPos { x: number; y: number; flip?: boolean }
@@ -202,18 +199,19 @@ function FaceCardCenter({ rank, suit, color }: { rank: string; suit: string; col
 }
 
 /** 大小王 (Joker) */
-function JokerCenter({ big }: { big: boolean }) {
+function JokerCenter({ big, uid }: { big: boolean; uid: string }) {
   const artImg = big ? CARD_ART_MAP.BJ : CARD_ART_MAP.SJ;
   const color = big ? '#d92727' : '#1e293b';
+  const glowId = `joker-glow-${uid}-${big ? 'b' : 's'}`;
 
   return (
     <g>
       {/* 渐变底光 */}
-      <radialGradient id={`joker-glow-${big ? 'b' : 's'}`} cx="50%" cy="50%" r="50%">
+      <radialGradient id={glowId} cx="50%" cy="50%" r="50%">
         <stop offset="0%" stopColor={big ? 'rgba(255,215,0,0.4)' : 'rgba(147,197,253,0.35)'} />
         <stop offset="100%" stopColor="rgba(255,255,255,0)" />
       </radialGradient>
-      <circle cx="125" cy="180" r="90" fill={`url(#joker-glow-${big ? 'b' : 's'})`} />
+      <circle cx="125" cy="180" r="90" fill={`url(#${glowId})`} />
 
       {/* 装饰边框 */}
       <rect x="42" y="55" width="166" height="250" rx="16" ry="16"
@@ -244,6 +242,10 @@ interface PlayingCardProps {
 
 /** 渲染一张完整的 SVG 扑克牌。viewBox 250×360，实际大小由 CSS 控制。 */
 export function PlayingCard({ rank, suit, className }: PlayingCardProps) {
+  const uid = useSvgId();
+  const surfaceGradId = `card-surface-grad-${uid}`;
+  const bevelGradId = `card-bevel-grad-${uid}`;
+  const dropShadowId = `card-drop-shadow-${uid}`;
   const isJoker = rank === 'SJ' || rank === 'BJ';
   const color = isJoker
     ? (rank === 'BJ' ? '#d92727' : '#1e293b')
@@ -262,26 +264,26 @@ export function PlayingCard({ rank, suit, className }: PlayingCardProps) {
       aria-label={isJoker ? (rank === 'BJ' ? '大王' : '小王') : `${suit === 'hearts' ? '♥' : suit === 'diamonds' ? '♦' : suit === 'spades' ? '♠' : '♣'}${rank}`}
     >
       <defs>
-        <linearGradient id="card-surface-grad" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={surfaceGradId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#ffffff" />
           <stop offset="45%" stopColor="#fffdfa" />
           <stop offset="100%" stopColor="#f7f2e7" />
         </linearGradient>
-        <linearGradient id="card-bevel-grad" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={bevelGradId} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="rgba(255,255,255,0.95)" />
           <stop offset="100%" stopColor="rgba(41,39,34,0.2)" />
         </linearGradient>
-        <filter id="card-drop-shadow" x="-5%" y="-5%" width="110%" height="110%">
+        <filter id={dropShadowId} x="-5%" y="-5%" width="110%" height="110%">
           <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.12" />
         </filter>
       </defs>
 
       {/* 2.5D 实体卡面底层与边框 */}
       <rect x="2" y="2" width="246" height="356" rx="16" ry="16"
-        fill="url(#card-surface-grad)" stroke="#2b2722" strokeWidth="2.5" filter="url(#card-drop-shadow)" />
+        fill={`url(#${surfaceGradId})`} stroke="#2b2722" strokeWidth="2.5" filter={`url(#${dropShadowId})`} />
       {/* 2.5D 高光内框 */}
       <rect x="6" y="6" width="238" height="348" rx="12" ry="12"
-        fill="none" stroke="url(#card-bevel-grad)" strokeWidth="1.6" />
+        fill="none" stroke={`url(#${bevelGradId})`} strokeWidth="1.6" />
 
       {/* 角标 */}
       <Corner rank={rank} suit={suit} color={color} />
@@ -289,7 +291,7 @@ export function PlayingCard({ rank, suit, className }: PlayingCardProps) {
 
       {/* ── 中央主图 ── */}
       {/* 大小王 */}
-      {isJoker && <JokerCenter big={rank === 'BJ'} />}
+      {isJoker && <JokerCenter big={rank === 'BJ'} uid={uid} />}
 
       {/* J / Q / K 贵族人物立绘 */}
       {isFace && suit && <FaceCardCenter rank={rank} suit={suit} color={color} />}
@@ -345,6 +347,8 @@ export function PlayingCard({ rank, suit, className }: PlayingCardProps) {
 
 /** 渲染一张牌背面。采用生成的复古图腾金徽章。 */
 export function CardBack({ className }: { className?: string }) {
+  const uid = useSvgId();
+  const clipId = `card-back-clip-${uid}`;
   return (
     <svg
       className={`playing-card playing-card--back ${className ?? ''}`}
@@ -354,7 +358,7 @@ export function CardBack({ className }: { className?: string }) {
       aria-label="未公开的牌"
     >
       <defs>
-        <clipPath id="card-back-clip">
+        <clipPath id={clipId}>
           <rect x="2" y="2" width="246" height="356" rx="16" ry="16" />
         </clipPath>
       </defs>
@@ -364,7 +368,7 @@ export function CardBack({ className }: { className?: string }) {
         fill="#1e293b" stroke="#2b2722" strokeWidth="2.5" />
 
       {/* 牌背插画图案 */}
-      <g clipPath="url(#card-back-clip)">
+      <g clipPath={`url(#${clipId})`}>
         <image
           href="/assets/cards/card_back.png"
           x="0" y="0"

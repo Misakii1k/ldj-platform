@@ -13675,6 +13675,26 @@ html[data-motion-level="off"] *::after {
   box-shadow: 0 0 20px #f59e0b, 0 12px 28px rgba(245, 158, 11, 0.6) !important;
 }
 
+/* 触摸按下反馈（移动端无 hover） */
+.card-fan-item:not(:disabled):active {
+  filter: brightness(1.08);
+}
+
+/* 出牌飞出：上浮放大渐隐离场（配合 JS 180ms 后的业务回调） */
+.card-fan-item--playing {
+  pointer-events: none;
+  animation: cardFanPlay 0.18s ease-in forwards;
+}
+
+@keyframes cardFanPlay {
+  0% { opacity: 1; }
+  100% {
+    opacity: 0;
+    translate: 0 -36px;
+    scale: 1.18;
+  }
+}
+
 .card-fan-badge {
   position: absolute;
   top: 4px;
@@ -17026,230 +17046,6 @@ html[data-motion-level="off"] *::after {
   width: 96px;
   height: 96px;
   perspective: 500px;
-}
-
-/* 绒布底座 */
-.shared-cup-base {
-  position: absolute;
-  bottom: 10px;
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #2d5a3f 0%, #173824 100%);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.15);
-  border: 3px solid #8b5a2b;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.theme-felt .shared-cup-base {
-  background: radial-gradient(circle, #831843 0%, #500724 100%);
-  border-color: #9d174d;
-}
-
-.theme-metal .shared-cup-base {
-  background: radial-gradient(circle, #334155 0%, #0f172a 100%);
-  border-color: #64748b;
-}
-
-.shared-dice-cup-wrapper--compact .shared-cup-base {
-  width: 82px;
-  height: 82px;
-  bottom: 6px;
-  border-width: 2px;
-}
-
-.shared-cup-mat {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* 多骰子阵列排列 */
-.shared-dice-cluster {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  max-width: 90px;
-}
-
-.shared-dice-cup-wrapper--compact .shared-dice-cluster {
-  max-width: 64px;
-  gap: 4px;
-}
-
-.shared-die-3d {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.shared-die-face {
-  position: relative;
-  width: 48px;
-  height: 48px;
-  background: #ffffff;
-  border-radius: 10px;
-  border: 2px solid #e2e8f0;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.35), inset 0 2px 4px rgba(255, 255, 255, 0.9);
-}
-
-.shared-dice-cluster.count-2 .shared-die-face,
-.shared-dice-cluster.count-3 .shared-die-face,
-.shared-dice-cluster.count-4 .shared-die-face,
-.shared-dice-cluster.count-5 .shared-die-face,
-.shared-dice-cluster.count-6 .shared-die-face {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-}
-
-.shared-dice-cup-wrapper--compact .shared-die-face {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-}
-
-.shared-dice-cup-wrapper--compact .shared-dice-cluster.count-2 .shared-die-face,
-.shared-dice-cup-wrapper--compact .shared-dice-cluster.count-3 .shared-die-face,
-.shared-dice-cup-wrapper--compact .shared-dice-cluster.count-4 .shared-die-face {
-  width: 26px;
-  height: 26px;
-  border-radius: 5px;
-}
-
-.shared-die-dot {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #1e293b;
-  transform: translate(-50%, -50%);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
-}
-
-.shared-die-dot--red {
-  background: #ef4444;
-  box-shadow: 0 0 6px rgba(239, 68, 68, 0.5), inset 0 1px 2px rgba(0, 0, 0, 0.4);
-}
-
-.shared-dice-cluster.count-2 .shared-die-dot,
-.shared-dice-cluster.count-3 .shared-die-dot,
-.shared-dice-cluster.count-4 .shared-die-dot,
-.shared-dice-cluster.count-5 .shared-die-dot,
-.shared-dice-cluster.count-6 .shared-die-dot {
-  width: 6px;
-  height: 6px;
-}
-
-.shared-dice-cup-wrapper--compact .shared-die-dot {
-  width: 7px;
-  height: 7px;
-}
-
-.shared-die-number-badge {
-  font-size: 0.76rem;
-  font-weight: 900;
-  color: #fef08a;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
-  white-space: nowrap;
-  margin-top: 2px;
-}
-
-.shared-die-unknown {
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 1.8rem;
-  font-weight: 900;
-}
-
-/* 3D 骰盅罩体 */
-.shared-cup-dome {
-  position: absolute;
-  bottom: 12px;
-  width: 108px;
-  height: 112px;
-  background: linear-gradient(135deg, #a05a2c 0%, #683416 60%, #4a220b 100%);
-  border-radius: 48% 48% 16px 16px / 52% 52% 12px 12px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), inset 0 4px 6px rgba(255, 255, 255, 0.25), inset 0 -4px 8px rgba(0, 0, 0, 0.4);
-  border: 3px solid #3e1b09;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 4px 4px;
-  transform-origin: bottom center;
-  transition: transform 0.24s cubic-bezier(0.18, 0.89, 0.32, 1.28), box-shadow 0.24s ease;
-  z-index: 10;
-}
-
-.theme-felt .shared-cup-dome {
-  background: linear-gradient(135deg, #9d174d 0%, #700c36 60%, #4a0422 100%);
-  border-color: #500724;
-}
-
-.theme-metal .shared-cup-dome {
-  background: linear-gradient(135deg, #475569 0%, #1e293b 60%, #0f172a 100%);
-  border-color: #334155;
-}
-
-.shared-dice-cup-wrapper--compact .shared-cup-dome {
-  width: 74px;
-  height: 78px;
-  bottom: 8px;
-  border-width: 2px;
-}
-
-/* 长按掀开状态 */
-.shared-cup-dome.is-lifted {
-  transform: translateY(-68px) rotateX(-20deg) scale(1.04);
-  box-shadow: 0 28px 36px rgba(0, 0, 0, 0.4), inset 0 4px 8px rgba(255, 255, 255, 0.3);
-}
-
-.shared-dice-cup-wrapper--compact .shared-cup-dome.is-lifted {
-  transform: translateY(-46px) rotateX(-18deg) scale(1.04);
-}
-
-.shared-cup-dome__top {
-  width: 22px;
-  height: 14px;
-  border-radius: 50%;
-  background: #f59e0b;
-  border: 2px solid #78350f;
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5);
-}
-
-.shared-cup-dome__body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.shared-cup-dome__icon {
-  font-size: 1.4rem;
-}
-
-.shared-cup-dome__label {
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: #fef3c7;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-  white-space: nowrap;
-}
-
-.shared-cup-dome__rim {
-  width: 90%;
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.15);
 }
 
 /* 底部信息 */

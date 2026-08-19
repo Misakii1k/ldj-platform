@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { webAudio } from './WebAudioManager.ts';
 import { GameIcon } from './GameIcon.tsx';
 
@@ -34,6 +34,37 @@ interface FanMetrics {
 }
 
 const FALLBACK_METRICS: FanMetrics = { width: 76, height: 112, lift: 24, slope: 0.8, maxAngleCap: 40 };
+
+/** 出牌飞出动画时长（CSS transition 与延迟回调共用） */
+const PLAY_ANIM_MS = 180;
+
+export interface FanLayout {
+  stepAngle: number;
+  startAngle: number;
+  stepX: number;
+  startX: number;
+}
+
+/**
+ * 扇形手牌几何纯函数：角度展开（受上限约束）与横向叠牌间距。
+ * 单张牌不偏转；相邻角度步进上限 6°，横向步进兼顾牌宽与总宽约束。
+ */
+export function computeFanLayout(
+  total: number,
+  cardWidth: number,
+  maxFanAngle: number,
+  angleCap: number
+): FanLayout {
+  if (total <= 1) {
+    return { stepAngle: 0, startAngle: 0, stepX: 0, startX: 0 };
+  }
+  const effMaxAngle = Math.min(maxFanAngle, angleCap);
+  const stepAngle = Math.min(effMaxAngle / (total - 1), 6);
+  const startAngle = -((total - 1) * stepAngle) / 2;
+  const stepX = Math.min(cardWidth * 0.48, Math.max(20, 580 / total));
+  const startX = -((total - 1) * stepX) / 2;
+  return { stepAngle, startAngle, stepX, startX };
+}
 
 /**
  * 扇形手牌几何令牌驱动（styles.css `.card-fan-container` 定义 --fan-*，多尺寸适配层按断点覆盖）。
@@ -89,9 +120,20 @@ export function CardFanEngine({
   const metrics = useFanMetrics(containerRef);
   const effCardWidth = cardWidth ?? metrics.width;
   const effCardHeight = cardHeight ?? metrics.height;
-  const effMaxFanAngle = Math.min(maxFanAngle, metrics.maxAngleCap);
   const [internalSelected, setInternalSelected] = useState<string[]>([]);
   const activeSelected = onSelectCards ? selectedCardIds : internalSelected;
+
+  // 邻卡联动：hover/focus 某张牌时，邻近牌按距离轻微抬升
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+
+  // 出牌飞出动画：目标牌渐隐离场后再提交业务回调
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const playTimerRef = useRef<number | null>(null);
+  useEffect(() => {
+    return () => {
+      if (playTimerRef.current !== null) window.clearTimeout(playTimerRef.current);
+    };
+  }, []);
 
   const handleCardClick = (card: CardItem) => {
     if (disabled || card.disabled) return;
@@ -116,21 +158,29 @@ export function CardFanEngine({
   };
 
   const handlePlaySelected = () => {
-    if (disabled || activeSelected.length === 0) return;
+    if (disabled || activeSelected.length === 0 || playingId !== null) return;
     const targetCard = cards.find((c) => activeSelected.includes(c.id));
     if (targetCard && onPlayCard) {
       webAudio.playCardPlay();
-      onPlayCard(targetCard);
-      if (!onSelectCards) setInternalSelected([]);
+      // 先播放 180ms 飞出动画，再提交业务（期间禁用出牌按钮防双击）
+      setPlayingId(targetCard.id);
+      playTimerRef.current = window.setTimeout(() => {
+        playTimerRef.current = null;
+        setPlayingId(null);
+        onPlayCard(targetCard);
+        if (!onSelectCards) setInternalSelected([]);
+      }, PLAY_ANIM_MS + 10);
     }
   };
 
   // 弧度与横向展开计算
   const total = cards.length;
-  const stepAngle = total > 1 ? Math.min(effMaxFanAngle / (total - 1), 6) : 0;
-  const startAngle = total > 1 ? -((total - 1) * stepAngle) / 2 : 0;
-  const stepX = total > 1 ? Math.min(effCardWidth * 0.48, Math.max(20, 580 / total)) : 0;
-  const startX = total > 1 ? -((total - 1) * stepX) / 2 : 0;
+  const { stepAngle, startAngle, stepX, startX } = computeFanLayout(
+    total,
+    effCardWidth,
+    maxFanAngle,
+    metrics.maxAngleCap
+  );
 
   return (
     <div className="card-fan-container" ref={containerRef}>
@@ -141,7 +191,7 @@ export function CardFanEngine({
             type="button"
             className="card-fan-play-btn"
             onClick={handlePlaySelected}
-            disabled={disabled}
+            disabled={disabled || playingId !== null}
           >
             <GameIcon name="rocket" size={16} style={{ marginRight: '6px' }} />
             {playButtonText} ({activeSelected.length}张)
@@ -153,25 +203,44 @@ export function CardFanEngine({
       <div className="card-fan-deck" style={{ height: effCardHeight + 28 }}>
         {cards.map((card, idx) => {
           const isSelected = activeSelected.includes(card.id);
+          const isPlaying = playingId === card.id;
           const angle = startAngle + idx * stepAngle;
           const translateX = startX + idx * stepX;
-          const translateY = isSelected ? -metrics.lift : Math.abs(angle) * metrics.slope;
-          const transform = `translateX(${translateX}px) rotate(${angle}deg) translateY(${translateY}px)`;
+
+          // 邻卡联动抬升：距 hover 牌 1 格抬 8px、2 格抬 4px（选中态优先，不叠加）
+          let neighborLift = 0;
+          if (hoverIdx !== null && !isSelected && !isPlaying) {
+            const dist = Math.abs(idx - hoverIdx);
+            if (dist === 1) neighborLift = 8;
+            else if (dist === 2) neighborLift = 4;
+          }
+
+          const translateY = isSelected
+            ? -metrics.lift
+            : Math.abs(angle) * metrics.slope - neighborLift;
+          const scale = isSelected ? 1.06 : 1;
+          const transform = `translateX(${translateX}px) rotate(${angle}deg) translateY(${translateY}px) scale(${scale})`;
 
           return (
             <button
               key={card.id}
               type="button"
               className={`card-fan-item ${isSelected ? 'card-fan-item--selected' : ''} ${
+                isPlaying ? 'card-fan-item--playing' : ''
+              } ${
                 card.disabled || disabled ? 'card-fan-item--disabled' : ''
               } ${card.colorTheme ? `card-fan-item--${card.colorTheme}` : ''}`}
               style={{
                 transform,
-                zIndex: isSelected ? 100 + idx : idx,
+                zIndex: isSelected || isPlaying ? 100 + idx : idx,
                 width: effCardWidth,
                 height: effCardHeight,
               }}
               onClick={() => handleCardClick(card)}
+              onMouseEnter={() => setHoverIdx(idx)}
+              onMouseLeave={() => setHoverIdx((cur) => (cur === idx ? null : cur))}
+              onFocus={() => setHoverIdx(idx)}
+              onBlur={() => setHoverIdx((cur) => (cur === idx ? null : cur))}
               disabled={card.disabled || disabled}
             >
               {card.badge && <span className="card-fan-badge">{card.badge}</span>}
