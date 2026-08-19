@@ -284,18 +284,19 @@ function createThemedTextures(theme: ThreeDiceCupTheme, size: number): ThemedTex
 function layoutPositionsFor(count: number): Array<readonly [number, number]> {
   switch (count) {
     case 1: return [[0, 0]];
-    case 2: return [[-0.45, 0], [0.45, 0]];
-    case 3: return [[0, -0.45], [-0.5, 0.4], [0.5, 0.4]];
-    case 4: return [[-0.45, -0.45], [0.45, -0.45], [-0.45, 0.45], [0.45, 0.45]];
-    case 5: return [[-0.5, -0.5], [0.5, -0.5], [0, 0], [-0.5, 0.5], [0.5, 0.5]];
-    default: return [[-0.5, -0.6], [0.5, -0.6], [-0.5, 0], [0.5, 0], [-0.5, 0.6], [0.5, 0.6]];
+    case 2: return [[-0.5, 0], [0.5, 0]];
+    case 3: return [[0, -0.5], [-0.55, 0.45], [0.55, 0.45]];
+    case 4: return [[-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]];
+    case 5: return [[-0.55, -0.55], [0.55, -0.55], [0, 0], [-0.55, 0.55], [0.55, 0.55]];
+    default: return [[-0.55, -0.62], [0.55, -0.62], [-0.55, 0], [0.55, 0], [-0.55, 0.62], [0.55, 0.62]];
   }
 }
 
 function dieSizeFor(count: number): number {
-  if (count === 1) return 0.76;
-  if (count <= 3) return 0.58;
-  return 0.46;
+  if (count === 1) return 1.12;
+  if (count <= 3) return 0.78;
+  if (count <= 5) return 0.64;
+  return 0.56;
 }
 
 /* ══════════════════════ 主组件 ══════════════════════ */
@@ -316,8 +317,13 @@ interface DieState {
   };
 }
 
-const CUP_LIFT_Y = 1.9;
-const CUP_LIFT_TILT = -0.35;
+// 掀盖 = 升起并挪向右后方（真实玩家的"掀开挪到一边"），完全让出骰子顶面视线：
+// 杯口半径 1.7 远大于骰子，若仅垂直上浮，任何相机视角下杯口下沿都会遮挡骰面后侧。
+const CUP_LIFT_Y = 1.4;
+const CUP_LIFT_X = 1.2;
+const CUP_LIFT_Z = -1.5;
+const CUP_LIFT_TILT = -0.12;
+const CUP_LIFT_LEAN = 0.25;
 const GRAVITY = 26;
 const SETTLE_DURATION = 0.5;
 const KNOCK_MIN_INTERVAL_MS = 60;
@@ -347,9 +353,9 @@ export function ThreeDiceCupCanvas({
     if (!container) return;
 
     const isCompact = variant === 'compact';
-    const width = isCompact ? 140 : 200;
-    const height = isCompact ? 150 : 210;
-    const texSize = isCompact ? 128 : 256;
+    const width = isCompact ? 140 : 240;
+    const height = isCompact ? 150 : 250;
+    const texSize = isCompact ? 256 : 512;
     const shadowSize = isCompact ? 1024 : 2048;
     const pixelCap = isCompact ? 1.5 : 2;
 
@@ -366,10 +372,10 @@ export function ThreeDiceCupCanvas({
       return res;
     };
 
-    // 1. Scene & Camera
+    // 1. Scene & Camera（略拉近：骰子为主体，占满画面）
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
-    camera.position.set(0, 4.8, 6.8);
+    camera.position.set(0, 4.5, 6.3);
     camera.lookAt(0, 0.4, 0);
 
     // 2. WebGL Renderer
@@ -471,9 +477,13 @@ export function ThreeDiceCupCanvas({
     baseGroup.add(rimMesh);
 
     // 6. Dice（单位立方体 + scale，支持数量动态增减）
-    const faceTextures = [1, 2, 3, 4, 5, 6].map((num) =>
-      track(createDiceFaceTexture(num, texSize))
-    );
+    // 各向异性过滤：斜视角下骰面贴图保持锐利（清晰度关键）
+    const maxAnisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    const faceTextures = [1, 2, 3, 4, 5, 6].map((num) => {
+      const tex = track(createDiceFaceTexture(num, texSize));
+      tex.anisotropy = maxAnisotropy;
+      return tex;
+    });
     const diceMaterials = [
       faceTextures[0], faceTextures[5], faceTextures[1],
       faceTextures[4], faceTextures[2], faceTextures[3],
@@ -644,11 +654,21 @@ export function ThreeDiceCupCanvas({
     let running = false;
     let idleFrames = 0;
 
-    // 杯体弹簧状态（欠阻尼 → 轻微过冲回弹）
+    // 杯体弹簧状态（欠阻尼 → 轻微过冲回弹）：位置 XYZ + 转角 XZ 全弹簧驱动
+    let cupX = 0;
+    let cupVelX = 0;
     let cupY = 0;
     let cupVelY = 0;
+    let cupZ = 0;
+    let cupVelZ = 0;
     let cupRotX = 0;
     let cupRotVelX = 0;
+    let cupRotZ = 0;
+    let cupRotVelZ = 0;
+    // 摇晃抖动偏移（叠加在弹簧姿态之上）
+    let wobX = 0;
+    let wobZ = 0;
+    let wobRotZ = 0;
     let shakeT = 0;
 
     const spring = (
@@ -669,14 +689,18 @@ export function ThreeDiceCupCanvas({
         syncDice(st.diceValues, false);
       }
 
-      // 杯体升降弹簧
-      const targetY = st.isLifted ? CUP_LIFT_Y : 0;
+      // 杯体弹簧：掀盖 → 升起并挪向右后方；扣盖 → 回正
+      const lifted = st.isLifted;
+      const targetY = lifted ? CUP_LIFT_Y : 0;
+      const targetX = lifted ? CUP_LIFT_X : 0;
+      const targetZ = lifted ? CUP_LIFT_Z : 0;
+      const targetRotX = lifted ? CUP_LIFT_TILT : 0;
+      const targetRotZ = lifted ? CUP_LIFT_LEAN : 0;
       [cupY, cupVelY] = spring(cupY, cupVelY, targetY, dt, 90, 11);
-      cupGroup.position.y = cupY;
-
-      const targetRotX = st.isLifted ? CUP_LIFT_TILT : 0;
+      [cupX, cupVelX] = spring(cupX, cupVelX, targetX, dt, 70, 10);
+      [cupZ, cupVelZ] = spring(cupZ, cupVelZ, targetZ, dt, 70, 10);
       [cupRotX, cupRotVelX] = spring(cupRotX, cupRotVelX, targetRotX, dt, 70, 10);
-      cupGroup.rotation.x = cupRotX;
+      [cupRotZ, cupRotVelZ] = spring(cupRotZ, cupRotVelZ, targetRotZ, dt, 60, 9);
 
       if (st.isShaking) {
         // 摇晃：手腕复合摇动轨迹 + 惯性带动骰子
@@ -685,9 +709,9 @@ export function ThreeDiceCupCanvas({
         const ax = -0.25 * amp * 2.2 * 2.2 * Math.sin(shakeT * 2.2);
         const az = -0.22 * amp * 2.8 * 2.8 * Math.cos(shakeT * 2.8);
 
-        cupGroup.position.x = Math.sin(shakeT * 2.2) * 0.25 * amp;
-        cupGroup.position.z = Math.cos(shakeT * 2.8) * 0.22 * amp;
-        cupGroup.rotation.z = Math.sin(shakeT * 3.1) * 0.18 * amp;
+        wobX = Math.sin(shakeT * 2.2) * 0.25 * amp;
+        wobZ = Math.cos(shakeT * 2.8) * 0.22 * amp;
+        wobRotZ = Math.sin(shakeT * 3.1) * 0.18 * amp;
 
         const half = dieSize / 2;
         const maxR = Math.max(0.1, 1.15 - half * 0.9);
@@ -749,11 +773,11 @@ export function ThreeDiceCupCanvas({
         }
         shakeT = 0;
 
-        // 杯体回正
-        const lerp = Math.min(1, dt * 8);
-        cupGroup.position.x += (0 - cupGroup.position.x) * lerp;
-        cupGroup.position.z += (0 - cupGroup.position.z) * lerp;
-        cupGroup.rotation.z += (0 - cupGroup.rotation.z) * lerp;
+        // 摇晃抖动衰减回零
+        const decay = Math.min(1, dt * 8);
+        wobX += (0 - wobX) * decay;
+        wobZ += (0 - wobZ) * decay;
+        wobRotZ += (0 - wobRotZ) * decay;
 
         for (const d of dice) {
           if (d.settle) {
@@ -785,6 +809,11 @@ export function ThreeDiceCupCanvas({
           d.mesh.position.z += (d.targetZ - d.mesh.position.z) * lerpXz;
         }
       }
+
+      // 应用杯体组合姿态：弹簧（掀盖/扣盖）+ 抖动（摇骰）
+      cupGroup.position.set(cupX + wobX, cupY, cupZ + wobZ);
+      cupGroup.rotation.set(cupRotX, 0, cupRotZ + wobRotZ);
+
       wasShaking = st.isShaking;
     };
 
@@ -792,15 +821,18 @@ export function ThreeDiceCupCanvas({
     const isAnimating = (): boolean => {
       const st = stateRef.current;
       if (st.isShaking) return true;
-      const targetY = st.isLifted ? CUP_LIFT_Y : 0;
+      const lifted = st.isLifted;
+      const targetY = lifted ? CUP_LIFT_Y : 0;
       if (Math.abs(cupY - targetY) > 1e-3 || Math.abs(cupVelY) > 2e-2) return true;
-      const targetRotX = st.isLifted ? CUP_LIFT_TILT : 0;
+      const targetX = lifted ? CUP_LIFT_X : 0;
+      if (Math.abs(cupX - targetX) > 1e-3 || Math.abs(cupVelX) > 2e-2) return true;
+      const targetZ = lifted ? CUP_LIFT_Z : 0;
+      if (Math.abs(cupZ - targetZ) > 1e-3 || Math.abs(cupVelZ) > 2e-2) return true;
+      const targetRotX = lifted ? CUP_LIFT_TILT : 0;
       if (Math.abs(cupRotX - targetRotX) > 1e-3 || Math.abs(cupRotVelX) > 2e-2) return true;
-      if (
-        Math.abs(cupGroup.position.x) > 1e-3 ||
-        Math.abs(cupGroup.position.z) > 1e-3 ||
-        Math.abs(cupGroup.rotation.z) > 1e-3
-      ) return true;
+      const targetRotZ = lifted ? CUP_LIFT_LEAN : 0;
+      if (Math.abs(cupRotZ - targetRotZ) > 1e-3 || Math.abs(cupRotVelZ) > 2e-2) return true;
+      if (Math.abs(wobX) > 1e-3 || Math.abs(wobZ) > 1e-3 || Math.abs(wobRotZ) > 1e-3) return true;
       for (const d of dice) {
         if (d.settle) return true;
         if (d.angVel.lengthSq() > 1e-4) return true;
