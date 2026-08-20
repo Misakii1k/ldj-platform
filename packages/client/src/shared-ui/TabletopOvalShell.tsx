@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type ReactNode } from 'react';
+import React, { useEffect, useRef, useState, type ReactNode } from 'react';
 import { webAudio } from './WebAudioManager.ts';
 import { GameIcon } from './GameIcon.tsx';
 import { UserAvatar } from '../user/UserAvatar.tsx';
@@ -105,6 +105,52 @@ export function TabletopOvalShell({
   }
 
   const dense = players.length >= 7;
+  const seatsBarRef = useRef<HTMLDivElement>(null);
+
+  // 查找当前行动/发言玩家，作为焦点玩家
+  const activeFocusPlayer = orderedPlayers.find((p) => p.isCurrentTurn) ?? orderedPlayers.find((p) => p.isSpeaking);
+  const activeFocusPlayerId = activeFocusPlayer?.id;
+
+  // 轮到谁时自动平滑滑动到该玩家席位
+  useEffect(() => {
+    if (!activeFocusPlayerId || !seatsBarRef.current) return;
+    const container = seatsBarRef.current;
+    const targetEl = container.querySelector<HTMLElement>(`[data-player-id="${CSS.escape(activeFocusPlayerId)}"]`);
+    if (!targetEl) return;
+
+    const targetOffsetLeft = targetEl.offsetLeft;
+    const targetWidth = targetEl.offsetWidth;
+    const containerWidth = container.clientWidth;
+    const scrollTarget = targetOffsetLeft - (containerWidth - targetWidth) / 2;
+
+    const prefersReduced = motionLevel === 'off' || motionLevel === 'minimal';
+    container.scrollTo({
+      left: Math.max(0, scrollTarget),
+      behavior: prefersReduced ? 'auto' : 'smooth',
+    });
+  }, [activeFocusPlayerId, motionLevel]);
+
+  // 桌面端鼠标滚轮横向滚动支持
+  useEffect(() => {
+    const container = seatsBarRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && container.scrollWidth > container.clientWidth) {
+        const atLeft = container.scrollLeft <= 0 && e.deltaY < 0;
+        const atRight = container.scrollLeft + container.clientWidth >= container.scrollWidth - 1 && e.deltaY > 0;
+        if (!atLeft && !atRight) {
+          e.preventDefault();
+          container.scrollLeft += e.deltaY;
+        }
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
 
   const renderSeatChip = (player: (typeof orderedPlayers)[number]) => {
     const isMe = player.id === currentUserId;
@@ -114,6 +160,7 @@ export function TabletopOvalShell({
     return (
       <div
         key={player.id}
+        data-player-id={player.id}
         className={`tabletop-seat tabletop-seat--chip ${player.isCurrentTurn ? 'tabletop-seat--active-turn' : ''} ${
           player.isSpeaking ? 'tabletop-seat--speaking' : ''
         } ${player.isEliminated ? 'tabletop-seat--eliminated' : ''} ${
@@ -150,15 +197,23 @@ export function TabletopOvalShell({
   };
 
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>(() => {
-    const saved = localStorage.getItem('ldj_tabletop_orientation');
-    if (saved === 'portrait' || saved === 'landscape') return saved;
+    try {
+      const saved = localStorage.getItem('ldj_tabletop_orientation');
+      if (saved === 'portrait' || saved === 'landscape') return saved;
+    } catch {
+      // 存储被禁用（隐私模式等）时安全回退竖屏
+    }
     return 'portrait';
   });
 
   const toggleOrientation = () => {
     setOrientation((prev) => {
       const next = prev === 'portrait' ? 'landscape' : 'portrait';
-      localStorage.setItem('ldj_tabletop_orientation', next);
+      try {
+        localStorage.setItem('ldj_tabletop_orientation', next);
+      } catch {
+        // ignore
+      }
       return next;
     });
   };
@@ -182,7 +237,7 @@ export function TabletopOvalShell({
 
         {/* 玩家列表席位条（直接嵌入顶栏中心，当显式 hideSeats 时消除） */}
         {!hideSeats && orderedPlayers.length > 0 && (
-          <div className="tabletop-seats-bar" aria-label="玩家席位">
+          <div className="tabletop-seats-bar" ref={seatsBarRef} aria-label="玩家席位">
             {orderedPlayers.map((player) => renderSeatChip(player))}
           </div>
         )}

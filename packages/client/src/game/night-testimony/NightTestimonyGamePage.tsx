@@ -58,7 +58,8 @@ export function NightTestimonyGamePage({ view }: Props) {
     if (view.phase === 'game_over') {
       status = (view.winners ?? []).includes(playerId) ? '获胜' : '失败';
     } else if (playerId === myId) {
-      status = me?.isWarden ? '我是狱警' : `我是${me?.crime ? CRIME_LABELS[me.crime] : '囚犯'}`;
+      // 私密身份只在私密卡片中查看，顶栏公开席位绝不泄露罪行
+      status = '我';
     }
     return { id: playerId, name: nameFor(members, playerId), status, active: false };
   });
@@ -162,121 +163,128 @@ export function NightTestimonyGamePage({ view }: Props) {
       {error && <p className="game-error" role="alert" aria-live="assertive" aria-atomic="true">{error}</p>}
 
       {view.phase !== 'game_over' ? (
-        <div className="sg-stage">
-          {me && (
-            <section className="sg-panel testimony-private" aria-label="我的私密身份">
-              <div className="sg-panel__head">
-                <h3>我的私密档案（按住翻开 · 防窥）</h3>
-                <span>记号余量</span>
-              </div>
-              <IdentityFlipCard
-                theme="prison"
-                variant="compact"
-                roleName={me.isWarden ? '狱警' : me.crime ? CRIME_LABELS[me.crime] : '囚犯'}
-                roleSubtitle={me.isWarden ? '卧底潜伏 · 可撒谎' : '嫌疑囚犯 · 须如实应答'}
-                roleCamp={me.isWarden ? 'evil' : 'good'}
-                secretHints={
-                  me.isWarden
-                    ? ['【绝密】你是潜伏在囚犯中的狱警！回答问题时可以撒谎误导他人，避免被票出。']
-                    : ['你是囚犯！面对其他人的提问必须根据你的真实罪行如实回答 YES/NO。']
-                }
-              >
-                <div className="sg-chip-row" style={{ marginTop: '8px', justifyContent: 'center' }}>
-                  <span className="sg-chip testimony-token testimony-token--yes">
-                    YES 记号余量：
-                    {Array.from({ length: 3 }, (_, i) => (
-                      <i key={i} className={i < (me.yesLeft ?? 0) ? 'is-left' : ''} aria-hidden="true">Y</i>
-                    ))}
-                  </span>
-                  <span className="sg-chip testimony-token testimony-token--no">
-                    NO 记号余量：
-                    {Array.from({ length: 1 }, (_, i) => (
-                      <i key={i} className={i < (me.noLeft ?? 0) ? 'is-left' : ''} aria-hidden="true">N</i>
-                    ))}
-                  </span>
-                </div>
-              </IdentityFlipCard>
-            </section>
-          )}
-
-          {view.phase === 'question' && !me?.pendingQuestion && myId && (
-            <section className="sg-panel" aria-label="提问">
-              <div className="sg-panel__head">
-                <h3>提出你的问题</h3>
-                <span>线下口头问 · 本页记录</span>
-              </div>
-              <div className="sg-chip-row">
-                {view.players.filter((id) => id !== myId).map((id) => (
-                  <button
-                    key={id}
-                    type="button"
-                    className={`sg-chip sg-chip--btn ${askTarget === id ? 'sg-chip--selected' : ''}`}
-                    onClick={() => setAskTarget(id)}
-                    aria-pressed={askTarget === id}
+        <div className="sg-stage testimony-stage">
+          {/* 左右双列单屏：左私密档案 + 记号余量，右提问/回答/问答轨迹 */}
+          <div className="testimony-dual-col">
+            <div className="testimony-col">
+              {me && (
+                <section className="sg-panel testimony-private" aria-label="我的私密身份">
+                  <div className="sg-panel__head">
+                    <h3>我的私密档案（按住翻开 · 防窥）</h3>
+                    <span>记号余量</span>
+                  </div>
+                  <IdentityFlipCard
+                    theme="prison"
+                    variant="compact"
+                    roleName={me.isWarden ? '狱警' : me.crime ? CRIME_LABELS[me.crime] : '囚犯'}
+                    roleSubtitle={me.isWarden ? '卧底潜伏 · 可撒谎' : '嫌疑囚犯 · 须如实应答'}
+                    roleCamp={me.isWarden ? 'evil' : 'good'}
+                    secretHints={
+                      me.isWarden
+                        ? ['【绝密】你是潜伏在囚犯中的狱警！回答问题时可以撒谎误导他人，避免被票出。']
+                        : ['你是囚犯！面对其他人的提问必须根据你的真实罪行如实回答 YES/NO。']
+                    }
                   >
-                    问 {nameFor(members, id)}
-                  </button>
-                ))}
-              </div>
-              <input
-                className="goose-transmit__input"
-                value={questionText}
-                maxLength={200}
-                onChange={(e) => setQuestionText(e.target.value)}
-                placeholder="例如：你的罪行是纵火吗？"
-                aria-label="问题内容"
-              />
-            </section>
-          )}
-
-          {view.phase === 'question' && me?.pendingQuestion && (
-            <section className="testimony-pending" aria-label="待回答的问题">
-              <span className="testimony-pending__seal" aria-hidden="true">?</span>
-              <div>
-                <span className="testimony-pending__label">{nameFor(members, me.pendingQuestion.questionerId)} 在问你</span>
-                <strong className="testimony-pending__text">「{me.pendingQuestion.text}」</strong>
-                <span className="testimony-pending__hint">囚犯按罪行如实回答；狱警可以撒谎。</span>
-              </div>
-            </section>
-          )}
-
-          <section className="sg-panel" aria-label="问答轨迹">
-            <div className="sg-panel__head">
-              <h3>问答轨迹（公开）</h3>
-              <span>{view.askedCount}/{view.questionLimit} 问</span>
-            </div>
-            {(view.yesTrack ?? []).length === 0
-              ? <p className="sg-hint">尚无问答记录</p>
-              : (
-                <ol className="testimony-track">
-                  {(view.yesTrack ?? []).map((record, index) => (
-                    <li key={index}>
-                      <span className="testimony-track__idx">{index + 1}</span>
-                      <div className="testimony-track__body">
-                        <strong>{nameFor(members, record.questionerId)} → {nameFor(members, record.responderId)}</strong>
-                        <span>{record.question}</span>
-                      </div>
-                      <span className={`testimony-track__mark testimony-track__mark--${record.answer === 'yes' ? 'yes' : 'no'}`}>
-                        {record.answer === 'yes' ? 'YES' : 'NO'}
+                    <div className="sg-chip-row" style={{ marginTop: '8px', justifyContent: 'center' }}>
+                      <span className="sg-chip testimony-token testimony-token--yes">
+                        YES 记号余量：
+                        {Array.from({ length: 3 }, (_, i) => (
+                          <i key={i} className={i < (me.yesLeft ?? 0) ? 'is-left' : ''} aria-hidden="true">Y</i>
+                        ))}
                       </span>
-                    </li>
-                  ))}
-                </ol>
+                      <span className="sg-chip testimony-token testimony-token--no">
+                        NO 记号余量：
+                        {Array.from({ length: 1 }, (_, i) => (
+                          <i key={i} className={i < (me.noLeft ?? 0) ? 'is-left' : ''} aria-hidden="true">N</i>
+                        ))}
+                      </span>
+                    </div>
+                  </IdentityFlipCard>
+                </section>
               )}
-          </section>
 
-          {view.phase === 'deduction' && view.extraCrime && (
-            <section className="sg-panel" aria-label="额外罪行卡">
-              <div className="sg-panel__head">
-                <h3>额外混入的罪行卡</h3>
-                <span>推理阶段</span>
-              </div>
-              <div className="testimony-crime-row">
-                <span className="testimony-crime">{CRIME_LABELS[view.extraCrime]}</span>
-              </div>
-              <p className="sg-hint">线下辩论：谁最像伪装的狱警？</p>
-            </section>
-          )}
+              {view.phase === 'deduction' && view.extraCrime && (
+                <section className="sg-panel" aria-label="额外罪行卡">
+                  <div className="sg-panel__head">
+                    <h3>额外混入的罪行卡</h3>
+                    <span>推理阶段</span>
+                  </div>
+                  <div className="testimony-crime-row">
+                    <span className="testimony-crime">{CRIME_LABELS[view.extraCrime]}</span>
+                  </div>
+                  <p className="sg-hint">线下辩论：谁最像伪装的狱警？</p>
+                </section>
+              )}
+            </div>
+
+            <div className="testimony-col">
+              {view.phase === 'question' && !me?.pendingQuestion && myId && (
+                <section className="sg-panel" aria-label="提问">
+                  <div className="sg-panel__head">
+                    <h3>提出你的问题</h3>
+                    <span>线下口头问 · 本页记录</span>
+                  </div>
+                  <div className="sg-chip-row">
+                    {view.players.filter((id) => id !== myId).map((id) => (
+                      <button
+                        key={id}
+                        type="button"
+                        className={`sg-chip sg-chip--btn ${askTarget === id ? 'sg-chip--selected' : ''}`}
+                        onClick={() => setAskTarget(id)}
+                        aria-pressed={askTarget === id}
+                      >
+                        问 {nameFor(members, id)}
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    className="goose-transmit__input"
+                    value={questionText}
+                    maxLength={200}
+                    onChange={(e) => setQuestionText(e.target.value)}
+                    placeholder="例如：你的罪行是纵火吗？"
+                    aria-label="问题内容"
+                  />
+                </section>
+              )}
+
+              {view.phase === 'question' && me?.pendingQuestion && (
+                <section className="testimony-pending" aria-label="待回答的问题">
+                  <span className="testimony-pending__seal" aria-hidden="true">?</span>
+                  <div>
+                    <span className="testimony-pending__label">{nameFor(members, me.pendingQuestion.questionerId)} 在问你</span>
+                    <strong className="testimony-pending__text">「{me.pendingQuestion.text}」</strong>
+                    <span className="testimony-pending__hint">囚犯按罪行如实回答；狱警可以撒谎。</span>
+                  </div>
+                </section>
+              )}
+
+              <section className="sg-panel" aria-label="问答轨迹">
+                <div className="sg-panel__head">
+                  <h3>问答轨迹（公开）</h3>
+                  <span>{view.askedCount}/{view.questionLimit} 问</span>
+                </div>
+                {(view.yesTrack ?? []).length === 0
+                  ? <p className="sg-hint">尚无问答记录</p>
+                  : (
+                    <ol className="testimony-track">
+                      {(view.yesTrack ?? []).map((record, index) => (
+                        <li key={index}>
+                          <span className="testimony-track__idx">{index + 1}</span>
+                          <div className="testimony-track__body">
+                            <strong>{nameFor(members, record.questionerId)} → {nameFor(members, record.responderId)}</strong>
+                            <span>{record.question}</span>
+                          </div>
+                          <span className={`testimony-track__mark testimony-track__mark--${record.answer === 'yes' ? 'yes' : 'no'}`}>
+                            {record.answer === 'yes' ? 'YES' : 'NO'}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+              </section>
+            </div>
+          </div>
 
           {view.guessingInProgress && me?.isWarden && guessInmate && (
             <section className="sg-panel" aria-label="狱警猜罪">

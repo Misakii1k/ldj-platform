@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- 三个新游戏的服务端视图结构不同，此组件按 moduleId 消费运行时视图。 */
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
 import { PlayingCard, CardBack } from './PlayingCard.tsx';
 import { nameFor, useGameAction, type MemberLike } from './useGameAction.ts';
@@ -467,6 +467,80 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
     );
   };
 
+  // 手牌拖拽区间多选：按住起牌横向划过，途经区间内的牌全部选中；原地松开等同点击切换单牌
+  const dragRef = useRef<{ index: number; startX: number; moved: boolean; initialSelected: string[]; toggleMode: 'select' | 'deselect' } | null>(null);
+  const lastDragRangeRef = useRef<string>('');
+
+  const selectRange = (from: number, to: number) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const lo = Math.min(from, to);
+    const hi = Math.max(from, to);
+    const rangeIds = sortedHand.slice(lo, hi + 1).map((card: AnyView) => card.id);
+    const key = `${lo}:${hi}`;
+    if (key !== lastDragRangeRef.current) {
+      lastDragRangeRef.current = key;
+      webAudio.playCardFlip();
+    }
+    
+    let newSelected = [...drag.initialSelected];
+    if (drag.toggleMode === 'select') {
+      rangeIds.forEach(id => {
+        if (!newSelected.includes(id)) newSelected.push(id);
+      });
+    } else {
+      newSelected = newSelected.filter(id => !rangeIds.includes(id));
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleHandPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (busy || view.phase !== 'playing') return;
+    const el = (e.target as HTMLElement).closest<HTMLElement>('.landlord-hand-card');
+    if (!el) return;
+    const index = Number(el.dataset.index);
+    if (Number.isNaN(index)) return;
+    
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const cardId = sortedHand[index].id;
+    const isSelected = selectedIds.includes(cardId);
+    
+    dragRef.current = { 
+      index, 
+      startX: e.clientX, 
+      moved: false, 
+      initialSelected: [...selectedIds],
+      toggleMode: isSelected ? 'deselect' : 'select'
+    };
+    lastDragRangeRef.current = '';
+  };
+
+  const handleHandPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('.landlord-hand-card');
+    if (!el) return;
+    const index = Number(el.dataset.index);
+    if (Number.isNaN(index)) return;
+    if (Math.abs(e.clientX - drag.startX) > 6) drag.moved = true;
+    if (drag.moved) selectRange(drag.index, index);
+  };
+
+  const handleHandPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+    if (!drag) return;
+    if (!drag.moved) {
+      const card = sortedHand[drag.index];
+      if (card) handleCardToggle((card as AnyView).id);
+    }
+  };
+
   const handlePlaySelected = () => {
     if (busy || selectedIds.length === 0) return;
     webAudio.playCardPlay();
@@ -692,22 +766,31 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
         </div>
       </div>
 
-      {/* 手牌横向展开牌架 */}
+      {/* 手牌横向展开牌架（支持点击切换 / 按住横向拖动区间多选） */}
       {me && (
         <div className="landlord-hand-container card-fan-container">
-          <div className="landlord-hand-rack" role="region" aria-label="我的手牌">
+          <div
+            className="landlord-hand-rack"
+            role="region"
+            aria-label="我的手牌"
+            style={{ touchAction: 'pan-y' }}
+            onPointerDown={handleHandPointerDown}
+            onPointerMove={handleHandPointerMove}
+            onPointerUp={handleHandPointerUp}
+            onPointerCancel={handleHandPointerUp}
+          >
             {sortedHand.map((card: AnyView, idx: number) => {
               const isSelected = selectedIds.includes(card.id);
               return (
                 <button
                   key={card.id}
                   type="button"
+                  data-index={idx}
                   className={`landlord-hand-card card-fan-item ${isSelected ? 'is-selected' : ''}`}
                   style={{
                     zIndex: isSelected ? 100 + idx : idx + 1,
                   }}
-                  onClick={() => handleCardToggle(card.id)}
-                  disabled={busy || !myTurn || view.phase !== 'playing'}
+                  aria-disabled={busy || view.phase !== 'playing'}
                   aria-pressed={isSelected}
                   title={`${card.rank} ${card.suit ?? ''}`}
                 >

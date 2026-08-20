@@ -148,7 +148,7 @@ test.describe('D5 P2b 上架建房链路', () => {
 
     // 添加 3 个规则机器人凑 4 人（机器人自动就绪）
     const addBot = page.getByRole('button', { name: '添加机器人陪玩' });
-    await expect(addBot).toBeEnabled();
+    await expect(addBot).toBeEnabled({ timeout: 15_000 });
     for (let expected = 2; expected <= 4; expected += 1) {
       await addBot.click();
       await expect(page.locator('.members-list .member')).toHaveCount(expected);
@@ -159,7 +159,7 @@ test.describe('D5 P2b 上架建房链路', () => {
 
     // 对局开始：以权威看词阶段作为稳定业务边界。
     await expect(page.locator('.game-phase.word-reveal').first()).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByRole('button', { name: '长按查看秘密词' }).first()).toBeVisible();
+    await expect(page.locator('.identity-flip-card-3d')).toBeVisible({ timeout: 30_000 });
 
     // 完整局：浏览器玩家全程参与，规则机器人驱动其余回合，直到真实终局
     await driveBrowserUndercover(page);

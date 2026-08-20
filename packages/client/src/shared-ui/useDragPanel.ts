@@ -49,15 +49,16 @@ export function useDragPanel(options: DragPanelOptions = {}): DragHandle {
   );
 
   const handlePointerUp = useCallback(
-    (event: PointerEvent) => {
+    (_event: PointerEvent) => {
       if (pointerIdRef.current === null) return;
       pointerIdRef.current = null;
       elementRef.current = null;
       setDragging(false);
       // 吸附到最近档位
       setOffsetY((current) => {
-        if (snapPoints.length <= 1) return clamp(snapPoints[0] ?? 0);
-        let best = snapPoints[0];
+        if (snapPoints.length === 0) return clamp(0);
+        if (snapPoints.length === 1) return clamp(snapPoints[0] ?? 0);
+        let best = snapPoints[0] ?? 0;
         let bestDist = Math.abs(current - best);
         for (const point of snapPoints.slice(1)) {
           const dist = Math.abs(current - point);

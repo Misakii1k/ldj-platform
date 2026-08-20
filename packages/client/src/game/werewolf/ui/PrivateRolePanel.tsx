@@ -8,7 +8,7 @@ interface PrivateRolePanelProps {
 }
 
 export function PrivateRolePanel({ self, synced: _synced }: PrivateRolePanelProps) {
-  const [revealed, setRevealed] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
 
   if (self === null) {
     return (
@@ -22,20 +22,19 @@ export function PrivateRolePanel({ self, synced: _synced }: PrivateRolePanelProp
   const isWolf = self.role === 'wolf';
 
   return (
-    <aside className={`werewolf-compact-role ${revealed ? 'is-revealed' : ''}`} aria-label="私密身份">
-      <div className="werewolf-compact-role__main" onClick={() => setRevealed(!revealed)}>
+    <aside className={`werewolf-compact-role is-revealed`} aria-label="身份牌">
+      <div className="werewolf-compact-role__main" onClick={() => setShowDetail(!showDetail)}>
         <div className="werewolf-compact-role__thumb-box">
           <img
             src={self.artworkUrl}
             alt={self.roleLabel}
-            className={`werewolf-compact-role__thumb ${revealed ? 'is-clear' : 'is-blurred'}`}
+            className="werewolf-compact-role__thumb is-clear"
           />
-          {!revealed && <span className="werewolf-compact-role__lock">🔒</span>}
         </div>
 
         <div className="werewolf-compact-role__info">
           <div className="werewolf-compact-role__label-row">
-            <span className="werewolf-compact-role__label">我的身份</span>
+            <span className="werewolf-compact-role__label">身份牌</span>
             <span className={`werewolf-compact-role__status-pill ${self.alive ? 'is-alive' : 'is-out'}`}>
               {self.alive ? '存活' : '已出局'}
             </span>
@@ -43,7 +42,7 @@ export function PrivateRolePanel({ self, synced: _synced }: PrivateRolePanelProp
 
           <div className="werewolf-compact-role__name-row">
             <strong className="werewolf-compact-role__name">
-              {revealed ? self.roleLabel : '•••• (点击查看)'}
+              {self.roleLabel}
             </strong>
           </div>
         </div>
@@ -51,17 +50,17 @@ export function PrivateRolePanel({ self, synced: _synced }: PrivateRolePanelProp
         <button
           type="button"
           className="werewolf-compact-role__toggle-btn"
-          title={revealed ? '隐藏身份' : '查看私密身份'}
+          title={showDetail ? '收起卡牌' : '查看身份卡牌'}
           onClick={(e) => {
             e.stopPropagation();
-            setRevealed(!revealed);
+            setShowDetail(!showDetail);
           }}
         >
-          {revealed ? '隐藏' : '查看'}
+          {showDetail ? '收起' : '详情'}
         </button>
       </div>
 
-      {revealed && (
+      {showDetail && (
         <div className="werewolf-compact-role__popover" role="dialog" aria-label="身份详情">
           <IdentityFlipCard
             theme="gothic"

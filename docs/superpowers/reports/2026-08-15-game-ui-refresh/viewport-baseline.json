@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-19T11:51:58.835Z",
+  "generatedAt": "2026-08-20T09:00:24.705Z",
   "strictTouch": false,
   "games": [
     {
@@ -592,7 +592,10 @@
             "button.tabletop-rules-btn \"本局规则\" 75x34",
             "button.game-leave__button \"返回大厅 / 退出\" 124x34",
             "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34"
+            "button.tabletop-sound-btn \"音效开\" 44x34",
+            "button.sg-chip.sg-chip--btn \"问 房主\" 70x30",
+            "button.sg-chip.sg-chip--btn \"问 玩家3\" 78x30",
+            "button.sg-chip.sg-chip--btn \"问 玩家4\" 78x30"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"在本页选择对象并输入问题\" 250x44 首屏可见"
@@ -610,7 +613,10 @@
             "button.tabletop-rules-btn \"本局规则\" 75x34",
             "button.game-leave__button \"返回大厅 / 退出\" 124x34",
             "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34"
+            "button.tabletop-sound-btn \"音效开\" 44x34",
+            "button.sg-chip.sg-chip--btn \"问 房主\" 70x30",
+            "button.sg-chip.sg-chip--btn \"问 玩家3\" 78x30",
+            "button.sg-chip.sg-chip--btn \"问 玩家4\" 78x30"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"在本页选择对象并输入问题\" 320x44 首屏可见"
@@ -629,6 +635,9 @@
             "button.game-leave__button \"返回大厅 / 退出\" 141x34",
             "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
             "button.tabletop-sound-btn \"音效开\" 44x34",
+            "button.sg-chip.sg-chip--btn \"问 房主\" 70x30",
+            "button.sg-chip.sg-chip--btn \"问 玩家3\" 78x30",
+            "button.sg-chip.sg-chip--btn \"问 玩家4\" 78x30",
             "button.tabletop-action.tabletop-action--primary \"在本页选择对象并输入问题\" 542x41"
           ],
           "primaryActions": [
@@ -647,7 +656,10 @@
             "button.tabletop-rules-btn \"本局规则\" 75x34",
             "button.game-leave__button \"返回大厅 / 退出\" 141x34",
             "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 84x34",
-            "button.tabletop-sound-btn \"音效开\" 84x34"
+            "button.tabletop-sound-btn \"音效开\" 84x34",
+            "button.sg-chip.sg-chip--btn \"问 房主\" 70x30",
+            "button.sg-chip.sg-chip--btn \"问 玩家3\" 78x30",
+            "button.sg-chip.sg-chip--btn \"问 玩家4\" 78x30"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"在本页选择对象并输入问题\" 530x44 首屏可见"
@@ -665,7 +677,10 @@
             "button.tabletop-rules-btn \"本局规则\" 75x34",
             "button.game-leave__button \"返回大厅 / 退出\" 141x34",
             "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 84x34",
-            "button.tabletop-sound-btn \"音效开\" 84x34"
+            "button.tabletop-sound-btn \"音效开\" 84x34",
+            "button.sg-chip.sg-chip--btn \"问 房主\" 70x30",
+            "button.sg-chip.sg-chip--btn \"问 玩家3\" 78x30",
+            "button.sg-chip.sg-chip--btn \"问 玩家4\" 78x30"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"在本页选择对象并输入问题\" 530x44 首屏可见"

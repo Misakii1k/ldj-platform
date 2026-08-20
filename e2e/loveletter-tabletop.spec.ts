@@ -130,7 +130,7 @@ test.describe('D7-C loveletter 完整局', () => {
         nickname: '玩家2',
       });
 
-      await expect(page.locator('.loveletter-afc')).toBeVisible();
+      await expect(page.locator('.loveletter-immersive-board, .loveletter-afc')).toBeVisible();
 
       // 房主（Node）并行驱动自己的回合；浏览器驱动自己的回合
       const hostDrive = driveHost(host, seeded.hostId);
@@ -166,22 +166,18 @@ test.describe('D7-C loveletter 完整局', () => {
         for (let attempt = 0; attempt < order.length && !played; attempt += 1) {
           const idx = order[attempt]!;
           await handCards.nth(idx).click({ timeout: 1000 }).catch(() => {});
-          // 轮询等待目标区出现（点牌后 React 渲染；固定 120ms 单次检测在慢机/牌序差异下会漏，
-          // 导致漏选目标 → 打出按钮保持禁用 → 死循环）。
-          const targetSection = page.locator('.loveletter-target');
-          await targetSection.waitFor({ state: 'visible', timeout: 2000 }).catch(() => {});
-          const targetBtn = targetSection.getByRole('button').first();
-          if (await targetSection.isVisible().catch(() => false) && await targetBtn.count().catch(() => 0) > 0) {
-            await targetBtn.click({ timeout: 1000 }).catch(() => {});
+          const opponent = page.locator('.ll-opponent.is-targetable, .ll-target-self-btn, .loveletter-target button').first();
+          if (await opponent.count().catch(() => 0) > 0) {
+            await opponent.click({ timeout: 1000 }).catch(() => {});
           }
           // 守卫需猜身份：优先猜「公主」（守卫不能猜守卫）
-          const guessSection = page.locator('.loveletter-guess');
-          if (await guessSection.isVisible().catch(() => false)) {
-            const princess = guessSection.getByRole('button', { name: '公主' });
+          const rolePicker = page.locator('.ll-role-picker, .loveletter-guess');
+          if (await rolePicker.isVisible().catch(() => false)) {
+            const princess = rolePicker.getByRole('button', { name: '公主' });
             if (await princess.count().catch(() => 0) > 0) {
               await princess.click({ timeout: 1000 }).catch(() => {});
             } else {
-              await guessSection.getByRole('button').first().click({ timeout: 1000 }).catch(() => {});
+              await rolePicker.getByRole('button').first().click({ timeout: 1000 }).catch(() => {});
             }
           }
           const playBtn = page.getByRole('button', { name: /打出「/ });

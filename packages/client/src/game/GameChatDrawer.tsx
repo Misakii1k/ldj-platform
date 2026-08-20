@@ -10,7 +10,8 @@ export function GameChatDrawer() {
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const initialCursor = state.chat.at(-1)?.cursor ?? 0;
+  const lastChat = state.chat[state.chat.length - 1];
+  const initialCursor = lastChat?.cursor ?? 0;
   const [lastSeenCursor, setLastSeenCursor] = useState(initialCursor);
   const [maxUp, setMaxUp] = useState(0);
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -37,14 +38,13 @@ export function GameChatDrawer() {
   }, [state.room]);
 
   const isSimulator = (state.game?.view as { mode?: string } | undefined)?.mode === 'simulator';
-  if (isSimulator) return null;
 
   const unreadCount = open ? 0 : state.chat.filter((message) => message.cursor > lastSeenCursor).length;
   const synced = state.connState === 'synced';
 
   useEffect(() => {
     if (!open) return;
-    const latestCursor = state.chat.at(-1)?.cursor ?? lastSeenCursor;
+    const latestCursor = state.chat[state.chat.length - 1]?.cursor ?? lastSeenCursor;
     setLastSeenCursor(latestCursor);
     const frame = requestAnimationFrame(() => {
       const list = listRef.current;
@@ -61,6 +61,74 @@ export function GameChatDrawer() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [open]);
+
+  // 聊天按钮拖拽位置支持与持久化
+  const [btnPos, setBtnPos] = useState<{ x: number; y: number } | null>(() => {
+    try {
+      const saved = localStorage.getItem('ldj_chat_btn_pos');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+          return parsed;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  });
+
+  const btnDragRef = useRef<{
+    startX: number;
+    startY: number;
+    initLeft: number;
+    initTop: number;
+    hasDragged: boolean;
+  } | null>(null);
+
+  const handleBtnPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const btn = e.currentTarget;
+    const rect = btn.getBoundingClientRect();
+    btnDragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initLeft: rect.left,
+      initTop: rect.top,
+      hasDragged: false,
+    };
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      if (!btnDragRef.current) return;
+      const dx = moveEvent.clientX - btnDragRef.current.startX;
+      const dy = moveEvent.clientY - btnDragRef.current.startY;
+      if (Math.hypot(dx, dy) > 4) {
+        btnDragRef.current.hasDragged = true;
+      }
+      if (btnDragRef.current.hasDragged) {
+        const nextX = Math.max(8, Math.min(window.innerWidth - rect.width - 8, btnDragRef.current.initLeft + dx));
+        const nextY = Math.max(8, Math.min(window.innerHeight - rect.height - 8, btnDragRef.current.initTop + dy));
+        setBtnPos({ x: nextX, y: nextY });
+      }
+    };
+
+    const handlePointerUp = () => {
+      if (btnDragRef.current?.hasDragged && btnPos) {
+        try {
+          localStorage.setItem('ldj_chat_btn_pos', JSON.stringify(btnPos));
+        } catch {
+          // ignore
+        }
+      }
+      btnDragRef.current = null;
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+      document.removeEventListener('pointercancel', handlePointerUp);
+    };
+
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
+    document.addEventListener('pointercancel', handlePointerUp);
+  };
 
   async function handleSend(event: FormEvent) {
     event.preventDefault();
@@ -80,12 +148,19 @@ export function GameChatDrawer() {
     }
   }
 
+  // 模拟模式不渲染聊天；此判断置于全部 hooks 之后，遵守 Rules of Hooks
+  if (isSimulator) return null;
+
   return (
     <>
       <button
         type="button"
         className={`game-chat-trigger ${open ? 'is-open' : ''}`}
-        onClick={() => setOpen(true)}
+        onPointerDown={handleBtnPointerDown}
+        onClick={() => {
+          if (!btnDragRef.current?.hasDragged) setOpen(true);
+        }}
+        style={btnPos ? { left: `${btnPos.x}px`, top: `${btnPos.y}px`, right: 'auto', bottom: 'auto', transform: 'none', touchAction: 'none' } : { touchAction: 'none' }}
         aria-label={unreadCount > 0 ? `打开对局聊天，${unreadCount} 条未读消息` : '打开对局聊天'}
         aria-expanded={open}
       >

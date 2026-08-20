@@ -8,6 +8,7 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/dist/**',
       'poc/**',
+      'scratch/**',
       'eslint.config.js',
       'packages/client/vite.config.ts',
     ],

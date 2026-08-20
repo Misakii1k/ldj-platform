@@ -8,6 +8,7 @@ import { applyRoomCommand } from '../../server/src/core/commands/roomCommand.ts'
 import { RoomCommandExecutor } from '../../server/src/core/executor.ts';
 import { seedRoom } from '../../server/tests/helpers/seedRoom.ts';
 import { parseGameView } from '../../client/src/game/viewRegistry.ts';
+import { parseGameStatePayload } from '../../client/src/game/types.ts';
 import { buildModuleConfig, buildSetupConfig } from '../../client/src/shared-ui/setupState.ts';
 
 const playableGames = GAME_CATALOG.filter((g) => g.availability === 'playable');
@@ -51,7 +52,10 @@ for (const game of playableGames) {
         const payload = buildGameStatePayload(db, roomId, pid);
         assert.ok(payload, `[${game.id}:${ruleset.id}] buildGameStatePayload returned null for player ${pid}`);
 
-        const parsed = parseGameView(payload as any);
+        const envelope = parseGameStatePayload(payload);
+        assert.ok(envelope, `[${game.id}:${ruleset.id}] parseGameStatePayload returned null for player ${pid}`);
+
+        const parsed = parseGameView(envelope);
         if (!parsed.ok) {
           console.error(`FAIL: [${game.id}:${ruleset.id}] parseGameView failed for player ${pid}! Payload:`, JSON.stringify(payload));
         }
@@ -64,7 +68,9 @@ for (const game of playableGames) {
       // Verify spectator view parses
       const spectatorPayload = buildGameStatePayload(db, roomId, null);
       assert.ok(spectatorPayload, `[${game.id}:${ruleset.id}] buildGameStatePayload returned null for spectator`);
-      const parsedSpectator = parseGameView(spectatorPayload as any);
+      const specEnvelope = parseGameStatePayload(spectatorPayload);
+      assert.ok(specEnvelope, `[${game.id}:${ruleset.id}] parseGameStatePayload returned null for spectator`);
+      const parsedSpectator = parseGameView(specEnvelope);
       if (!parsedSpectator.ok) {
         console.error(`FAIL: [${game.id}:${ruleset.id}] parseGameView failed for spectator! Payload:`, JSON.stringify(spectatorPayload));
       }

@@ -6,7 +6,7 @@
 import { test, expect, type Browser as _Browser } from '@playwright/test';
 import { seedRoom } from './helpers/dbClient.ts';
 import { RoomDriver } from './helpers/wsClient.ts';
-import { BASE_URL, DB_PATH, WS_URL } from './helpers/serverEnv.ts';
+import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL } from './helpers/serverEnv.ts';
 
 const BELL_CONFIG = { rulesetId: 'bell_clash_v1', handSize: 3, turnSeconds: 1, bellSeconds: 1 };
 
@@ -80,12 +80,22 @@ test.describe('G2-B bell-clash 完整局', () => {
           db.close();
         }
 
-        // 独立观战浏览器确认渲染与手牌隐私
+        // 独立观战浏览器确认渲染与手牌隐私（注入完整会话恢复，经房间码进入对局）
         const context = await browser.newContext();
         const page = await context.newPage();
+        await page.addInitScript(
+          ([key, value]) => { localStorage.setItem(key, value); },
+          [ME_STORAGE_KEY, JSON.stringify({
+            playerId: seeded.players[0]!.playerId,
+            resumeToken: seeded.players[0]!.resumeToken,
+            roomCode: seeded.roomCode,
+            nickname: '玩家1',
+            seatRole: 'player',
+          })],
+        );
         await page.setViewportSize({ width: 390, height: 844 });
-        await page.goto(`${BASE_URL}/?room=${seeded.roomCode}`);
-        await page.waitForTimeout(2500);
+        await page.goto(BASE_URL);
+        await page.locator('.tabletop-shell').waitFor({ timeout: 30_000 });
         const bodyText = await page.evaluate(() => document.body.innerText).catch(() => '');
         const rendered = bodyText.includes('本局结束') || bodyText.includes('对局已结算') || bodyText.includes('铃铛对决');
         expect(rendered, `浏览器应渲染游戏/终局页，实际 body 前 200 字：${bodyText.slice(0, 200)}`).toBe(true);

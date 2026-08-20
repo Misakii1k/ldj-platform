@@ -160,7 +160,7 @@ function UndercoverGamePage({ game }: { game: ActiveGame }) {
   const members = state.room?.members ?? [];
   const seats = view.players.map((player) => ({
     id: player.playerId,
-    name: nameFor(members, player.playerId) || `玩家 ${player.seat}`,
+    name: nameFor(members, player.playerId) || `玩家 ${player.seat + 1}`,
     isCurrentTurn: player.playerId === view.currentSpeakerId,
     isSpeaking: view.phase === 'speaking' && player.playerId === view.currentSpeakerId,
     isEliminated: !player.alive,
@@ -235,7 +235,7 @@ export function GamePage() {
     case 'landlord': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        if (isRecord(game.view) && (game.view as any).phase) {
+        if (isRecord(game.view) && typeof game.view.phase === 'string') {
           content = <LandlordGamePage view={game.view as Record<string, unknown>} />;
         } else {
           content = <GameErrorCard title="斗地主数据格式异常" />;

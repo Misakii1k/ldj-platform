@@ -10,6 +10,8 @@ import { BASE_URL, DB_PATH, WS_URL } from './helpers/serverEnv.ts';
 
 const RELAY_CONFIG = {
   rulesetId: 'goose_relay_classic_v1',
+  claimHeadSeconds: 1,
+  pickCardsSeconds: 1,
   relaySeconds: 1,
   discussionSeconds: 0,
   accuseSeconds: 1,
@@ -26,12 +28,26 @@ async function driveSeat(driver: RoomDriver, playerId: string, playerIndex: numb
       phase: string;
       currentIndex: number;
       currentAccuserIndex: number;
+      headPlayerId: string | null;
+      candidateCards: string[];
       me: { playerId: string; observed: { murderer: string; victim: string } | null } | null;
       lineOrder: string[];
     };
     if (view.phase === 'game_over') return lastView;
     try {
-      if (view.phase === 'relay' && view.currentIndex === playerIndex) {
+      if (view.phase === 'claim_head') {
+        if (playerIndex === 0) {
+          await driver.gameAction({ type: 'claim_head', playerId, claim: true });
+        }
+      } else if (view.phase === 'pick_cards' && view.headPlayerId === playerId) {
+        const candidateCards = view.candidateCards ?? ['white_goose', 'black_goose'];
+        await driver.gameAction({
+          type: 'pick_cards',
+          playerId,
+          murderer: candidateCards[0] ?? 'white_goose',
+          victim: candidateCards[1] ?? 'black_goose',
+        });
+      } else if (view.phase === 'relay' && view.currentIndex === playerIndex) {
         const observed = view.me?.observed;
         await driver.gameAction({
           type: 'transmit',

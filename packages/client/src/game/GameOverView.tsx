@@ -101,9 +101,9 @@ export function GameOverView({ view }: Props) {
                       size={36}
                       className="role-avatar"
                     />
-                    <span className="role-seat">#{player.seat}</span>
+                    <span className="role-seat">#{player.seat + 1}</span>
                     <span className="role-name">
-                      <strong>{isMe ? '我' : nameFor(members, player.playerId) || `玩家 ${player.seat}`}</strong>
+                      <strong>{isMe ? '我' : nameFor(members, player.playerId) || `玩家 ${player.seat + 1}`}</strong>
                       <small>{!player.alive ? '本局已淘汰' : '存活至结算'}</small>
                     </span>
                     <span className={`role-badge ${role ?? ''}`}>{role ? roleLabel(role) : '未知'}</span>

@@ -91,10 +91,10 @@ export function computeIsRevealed(state: IdentityCardState, isSpectator: boolean
 
 const DEFAULT_THEME_BADGES: Record<IdentityCardTheme, string> = {
   confidential: '机密档案 · 阅后即焚',
-  gothic: '暗夜降临 · 封印血契',
-  cyber: 'ECHO 终端 · 测谎协议',
-  prison: '囚徒案卷 · 密存口供',
-  classic: '命运之牌 · 密函亲启',
+  gothic: '狼人杀 · 身份契约',
+  cyber: '伪人测试 · 审判档案',
+  prison: '暗夜证词 · 秘密档案',
+  classic: '私密身份 · 密函亲启',
 };
 
 export function IdentityFlipCard({

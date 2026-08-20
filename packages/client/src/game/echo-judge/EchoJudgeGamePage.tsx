@@ -127,112 +127,119 @@ export function EchoJudgeGamePage({ view }: Props) {
       {error && <p className="game-error" role="alert" aria-live="assertive" aria-atomic="true">{error}</p>}
 
       {view.phase !== 'game_over' ? (
-        <div className="sg-stage">
-          {me && (
-            <section className="sg-panel" aria-label="我的私密身份">
-              <div className="sg-panel__head">
-                <h3>我的私密身份（按住翻开 · 防窥）</h3>
-                <span>测谎协议</span>
-              </div>
-              <IdentityFlipCard
-                theme="cyber"
-                variant="compact"
-                roleName={me.isJudge ? '判官' : me.role === 'impostor' ? '伪人（Echo）' : '人类'}
-                roleSubtitle={me.isJudge ? '审判者阵营' : me.role === 'impostor' ? '异常伪人阵营' : '正常人类阵营'}
-                roleCamp={me.isJudge ? 'special' : me.role === 'impostor' ? 'echo' : 'human'}
-                secretWord={me.role === 'impostor' && me.triggerWord ? me.triggerWord : undefined}
-                secretHints={
-                  me.isJudge
-                    ? ['向全员出题并聆听回答，指认出将触发词藏进话里的伪人。']
-                    : me.role === 'impostor'
-                      ? ['【绝密】你必须在回答中自然藏入秘密触发词，切勿被判官察觉！']
-                      : ['如实或策略性回答判官题目；人类可以故意撒谎误导判官保护同伴。']
-                }
-              />
-            </section>
-          )}
-
-          {view.question && (
-            <section className="sg-panel" aria-label="当前题目">
-              <div className="sg-panel__head">
-                <h3>第 {view.round} 轮题目</h3>
-                <span>判官 {nameFor(members, view.judgeId)}</span>
-              </div>
-              <p className="echo-question">「{view.question}」</p>
-              <div className="uc-meter" role="status">
-                <span className="uc-meter__label">已回答 {view.answeredCount} / {answerTotal} 人</span>
-                <div className="uc-meter__track" style={{ '--uc-meter': `${answerPercent}%` } as never}>
-                  <span />
-                </div>
-              </div>
-            </section>
-          )}
-
-          {view.phase === 'judge_setup' && me?.isJudge && (
-            <section className="sg-panel" aria-label="判官出题">
-              <div className="sg-panel__head">
-                <h3>出题</h3>
-                <span>线下口头念出 · 本页记录</span>
-              </div>
-              <input
-                className="goose-transmit__input"
-                value={question}
-                maxLength={200}
-                onChange={(e) => setQuestion(e.target.value)}
-                placeholder="例如：你最喜欢哪个季节？"
-                aria-label="题目内容"
-              />
-            </section>
-          )}
-
-          {view.phase === 'answering' && me?.myTurn && (
-            <section className="sg-panel" aria-label="我的回答">
-              <div className="sg-panel__head">
-                <h3>轮到你回答</h3>
-                <span>{me.role === 'impostor' ? '伪人须把触发词藏进话里' : '人类可说谎'}</span>
-              </div>
-              <input
-                className="goose-transmit__input"
-                value={answer}
-                maxLength={200}
-                onChange={(e) => setAnswer(e.target.value)}
-                placeholder="输入你的回答……"
-                aria-label="回答内容"
-              />
-            </section>
-          )}
-
-          {view.phase === 'judgment' && me?.isJudge && (
-            <section className="sg-panel" aria-label="指认伪人">
-              <div className="sg-panel__head">
-                <h3>谁把触发词藏进了回答？</h3>
-                <span>点选后在下方栏指认</span>
-              </div>
-              <div className="sg-chip-row">
-                {view.players.filter((id) => id !== myId).map((id) => (
-                  <button
-                    key={id}
-                    type="button"
-                    className={`sg-chip sg-chip--btn ${accuseTarget === id ? 'sg-chip--selected' : ''}`}
-                    onClick={() => setAccuseTarget(id)}
-                    aria-pressed={accuseTarget === id}
-                  >
-                    {nameFor(members, id)}
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {view.caughtImpostor !== null && (
-            <div className={`result-banner ${view.caughtImpostor ? 'eliminated' : 'tie'}`}>
-              <span className="result-seal" aria-hidden="true">{view.caughtImpostor ? '✓' : '×'}</span>
-              <div>
-                <strong>{view.caughtImpostor ? '上一轮：判官抓对了伪人！' : '上一轮：判官未抓中'}</strong>
-                <span>{view.caughtImpostor ? '伪人 −1 分，判官 +1 分' : '伪人隐藏成功 +2 分'}</span>
-              </div>
+        <div className="sg-stage echo-judge-stage">
+          {/* 左右双列单屏：左私密身份，右出题/回答/指认 */}
+          <div className="echo-judge-dual-col">
+            <div className="echo-judge-col">
+              {me && (
+                <section className="sg-panel" aria-label="我的私密身份">
+                  <div className="sg-panel__head">
+                    <h3>我的私密身份（按住翻开 · 防窥）</h3>
+                    <span>测谎协议</span>
+                  </div>
+                  <IdentityFlipCard
+                    theme="cyber"
+                    variant="compact"
+                    roleName={me.isJudge ? '判官' : me.role === 'impostor' ? '伪人（Echo）' : '人类'}
+                    roleSubtitle={me.isJudge ? '审判者阵营' : me.role === 'impostor' ? '异常伪人阵营' : '正常人类阵营'}
+                    roleCamp={me.isJudge ? 'special' : me.role === 'impostor' ? 'echo' : 'human'}
+                    secretWord={me.role === 'impostor' && me.triggerWord ? me.triggerWord : undefined}
+                    secretHints={
+                      me.isJudge
+                        ? ['向全员出题并聆听回答，指认出将触发词藏进话里的伪人。']
+                        : me.role === 'impostor'
+                          ? ['【绝密】你必须在回答中自然藏入秘密触发词，切勿被判官察觉！']
+                          : ['如实或策略性回答判官题目；人类可以故意撒谎误导判官保护同伴。']
+                    }
+                  />
+                </section>
+              )}
             </div>
-          )}
+
+            <div className="echo-judge-col">
+              {view.question && (
+                <section className="sg-panel" aria-label="当前题目">
+                  <div className="sg-panel__head">
+                    <h3>第 {view.round} 轮题目</h3>
+                    <span>判官 {nameFor(members, view.judgeId)}</span>
+                  </div>
+                  <p className="echo-question">「{view.question}」</p>
+                  <div className="uc-meter" role="status">
+                    <span className="uc-meter__label">已回答 {view.answeredCount} / {answerTotal} 人</span>
+                    <div className="uc-meter__track" style={{ '--uc-meter': `${answerPercent}%` } as never}>
+                      <span />
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {view.phase === 'judge_setup' && me?.isJudge && (
+                <section className="sg-panel" aria-label="判官出题">
+                  <div className="sg-panel__head">
+                    <h3>出题</h3>
+                    <span>线下口头念出 · 本页记录</span>
+                  </div>
+                  <input
+                    className="goose-transmit__input"
+                    value={question}
+                    maxLength={200}
+                    onChange={(e) => setQuestion(e.target.value)}
+                    placeholder="例如：你最喜欢哪个季节？"
+                    aria-label="题目内容"
+                  />
+                </section>
+              )}
+
+              {view.phase === 'answering' && me?.myTurn && (
+                <section className="sg-panel" aria-label="我的回答">
+                  <div className="sg-panel__head">
+                    <h3>轮到你回答</h3>
+                    <span>{me.role === 'impostor' ? '伪人须把触发词藏进话里' : '人类可说谎'}</span>
+                  </div>
+                  <input
+                    className="goose-transmit__input"
+                    value={answer}
+                    maxLength={200}
+                    onChange={(e) => setAnswer(e.target.value)}
+                    placeholder="输入你的回答……"
+                    aria-label="回答内容"
+                  />
+                </section>
+              )}
+
+              {view.phase === 'judgment' && me?.isJudge && (
+                <section className="sg-panel" aria-label="指认伪人">
+                  <div className="sg-panel__head">
+                    <h3>谁把触发词藏进了回答？</h3>
+                    <span>点选后在下方栏指认</span>
+                  </div>
+                  <div className="sg-chip-row">
+                    {view.players.filter((id) => id !== myId).map((id) => (
+                      <button
+                        key={id}
+                        type="button"
+                        className={`sg-chip sg-chip--btn ${accuseTarget === id ? 'sg-chip--selected' : ''}`}
+                        onClick={() => setAccuseTarget(id)}
+                        aria-pressed={accuseTarget === id}
+                      >
+                        {nameFor(members, id)}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {view.caughtImpostor !== null && (
+                <div className={`result-banner ${view.caughtImpostor ? 'eliminated' : 'tie'}`}>
+                  <span className="result-seal" aria-hidden="true">{view.caughtImpostor ? '✓' : '×'}</span>
+                  <div>
+                    <strong>{view.caughtImpostor ? '上一轮：判官抓对了伪人！' : '上一轮：判官未抓中'}</strong>
+                    <span>{view.caughtImpostor ? '伪人 −1 分，判官 +1 分' : '伪人隐藏成功 +2 分'}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       ) : (
         view.reveal && (

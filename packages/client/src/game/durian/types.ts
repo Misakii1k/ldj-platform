@@ -317,7 +317,7 @@ export function parseDurianPlayerView(input: unknown): DurianPlayerView | null {
 export function parseDurianSpectatorView(input: unknown): DurianPublicView | null {
   const playerView = parseDurianPlayerView(input);
   if (!playerView) return null;
-  const { me, ...publicView } = playerView;
+  const { me: _me, ...publicView } = playerView;
   return publicView;
 }
 

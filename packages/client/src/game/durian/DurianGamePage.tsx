@@ -15,6 +15,64 @@ import {
   type DurianPlayerView,
 } from './types.ts';
 
+function playTurnCue() {
+  try {
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (AudioCtx) {
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(987.77, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1318.51, ctx.currentTime + 0.06);
+      gain.gain.setValueAtTime(0.28, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.4);
+    }
+  } catch {
+    // ignore
+  }
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    try {
+      navigator.vibrate([40, 30, 40]);
+    } catch {
+      // ignore
+    }
+  }
+}
+
+function playInvalidCue() {
+  try {
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (AudioCtx) {
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(180, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.18);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+    }
+  } catch {
+    // ignore
+  }
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    try {
+      navigator.vibrate([80, 50, 120]);
+    } catch {
+      // ignore
+    }
+  }
+}
+
 function phaseLabel(phase: DurianPlayerView['phase']): string {
   switch (phase) {
     case 'turn_action': return '回合行动';
@@ -82,18 +140,49 @@ export function DurianGamePage({ view }: Props) {
   const [rulesOpen, setRulesOpen] = useState(false);
 
   const [deviceRole, setDeviceRole] = useState<DeviceRole>(() => {
-    const saved = localStorage.getItem('ldj_durian_device_role');
-    return saved === 'table' || saved === 'player' ? saved : 'player';
+    try {
+      const saved = localStorage.getItem('ldj_durian_device_role');
+      if (saved === 'table' || saved === 'player') return saved;
+    } catch {
+      // 存储被禁用时安全回退玩家端
+    }
+    return 'player';
   });
 
   const selectDeviceRole = (role: DeviceRole) => {
     setDeviceRole(role);
-    localStorage.setItem('ldj_durian_device_role', role);
+    try {
+      localStorage.setItem('ldj_durian_device_role', role);
+    } catch {
+      // ignore
+    }
   };
 
   const isMyTurn = view.currentPlayerId === myId;
   const currentActorName = nameFor(members, view.currentPlayerId);
   const prevActorName = nameFor(members, view.previousPlayerId);
+
+  const isSimulator = view.mode === 'simulator';
+  const isSimulatorTable = isSimulator && deviceRole === 'table';
+  const isSimulatorPlayer = isSimulator && deviceRole === 'player';
+
+  // 轮到玩家行动时触发清脆“叮”提示音和轻微触感震动
+  const prevTurnRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (isMyTurn && !prevTurnRef.current) {
+      playTurnCue();
+    }
+    prevTurnRef.current = isMyTurn;
+  }, [isMyTurn]);
+
+  // 模拟器玩家端操作非法时，用低频提示音 + 震动反馈（桌面端不弹错误提示）
+  const prevErrorRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (error && error !== prevErrorRef.current && isSimulatorPlayer) {
+      playInvalidCue();
+    }
+    prevErrorRef.current = error;
+  }, [error, isSimulatorPlayer]);
 
   const isRevealed = view.mode === 'standard' && (view.phase === 'challenge_result' || view.phase === 'game_over');
 
@@ -116,30 +205,30 @@ export function DurianGamePage({ view }: Props) {
     setCountdown(5);
     const totalAnimDurationMs = Math.max(1800, 1200 + activeShowdownFruits.length * 150);
 
+    let intervalId: ReturnType<typeof setInterval> | null = null;
     const delayTimer = setTimeout(() => {
       setAnimPlaying(false);
       setCountdown(5);
 
-      const interval = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            if (myId && !isSpectator) {
-              void act({ type: 'next_round', playerId: myId });
-            }
-            return 0;
-          }
-          return prev - 1;
-        });
+      intervalId = setInterval(() => {
+        // 副作用（act）移到 updater 外，避免 StrictMode 双调用重复提交
+        setCountdown((prev) => (prev <= 1 ? 0 : prev - 1));
       }, 1000);
-
-      return () => clearInterval(interval);
     }, totalAnimDurationMs);
 
     return () => {
       clearTimeout(delayTimer);
+      if (intervalId) clearInterval(intervalId);
     };
   }, [view.phase, view.round, view.mode, myId, isSpectator, activeShowdownFruits.length]);
+
+  // 结算倒计时归零后自动进入下一轮（独立于 updater，杜绝重复提交）
+  useEffect(() => {
+    if (view.phase !== 'challenge_result' || view.mode !== 'standard' || countdown > 0) return;
+    if (myId && !isSpectator) {
+      void act({ type: 'next_round', playerId: myId });
+    }
+  }, [countdown, view.phase, view.mode, myId, isSpectator, act]);
 
   const waitingReason = view.phase === 'game_over'
     ? null
@@ -302,15 +391,11 @@ export function DurianGamePage({ view }: Props) {
     </div>
   );
 
-  const isSimulator = view.mode === 'simulator';
-  const isSimulatorTable = isSimulator && deviceRole === 'table';
-  const isSimulatorPlayer = isSimulator && deviceRole === 'player';
-
   const myForeheadEntry = me?.visibleForeheadCards?.find((e) => e.playerId === myId);
 
   return (
     <TabletopShell
-      title="During"
+      title="榴莲店长"
       phase={`第 ${view.round}/${view.maxRounds} 轮 · ${phaseLabel(view.phase)}${
         isSimulator ? (deviceRole === 'table' ? ' · 🖥️ 桌面中央端' : ' · 📱 玩家手牌端') : ''
       }`}
@@ -347,7 +432,7 @@ export function DurianGamePage({ view }: Props) {
         </GameDrawer>
       )}
     >
-      {error && <p className="game-error" role="alert" aria-live="assertive" aria-atomic="true">{error}</p>}
+      {error && !isSimulatorTable && <p className="game-error" role="alert" aria-live="assertive" aria-atomic="true">{error}</p>}
 
       <div className={`durian-stage ${isSimulatorTable ? 'durian-stage--simulator-table' : ''} ${isSimulatorPlayer ? 'durian-stage--simulator-player' : ''}`}>
         
@@ -465,31 +550,37 @@ export function DurianGamePage({ view }: Props) {
                 <div className="durian-sim-deck-dock">
                   {view.phase === 'choose_placement' && isMyTurn && me?.drawnCard && me.drawnCard.kind === 'fruit' ? (
                     <div className="durian-sim-choice-popup">
-                      <div className="durian-sim-choice-title">🎴 请选择哪半边放在 ✅ 对号生效侧：</div>
-                      <div className="durian-sim-choice-btns">
-                        <button
-                          type="button"
-                          className="durian-sim-choice-opt"
-                          onClick={() => void act({ type: 'place_fruit', playerId: myId!, checkHalf: 'left' })}
-                        >
-                          <FruitIcon fruit={me.drawnCard.left.fruit} size={28} />
-                          <span>左边：{FRUIT_NAMES[me.drawnCard.left.fruit]}</span>
-                        </button>
-                        <button
-                          type="button"
-                          className="durian-sim-choice-opt"
-                          onClick={() => void act({ type: 'place_fruit', playerId: myId!, checkHalf: 'right' })}
-                        >
-                          <FruitIcon fruit={me.drawnCard.right.fruit} size={28} />
-                          <span>右边：{FRUIT_NAMES[me.drawnCard.right.fruit]}</span>
-                        </button>
+                      <div className="durian-sim-choice-title">🎴 请点击卡牌上要生效的那半边：</div>
+                      <div className="durian-sim-card-flip">
+                        <div className="durian-card durian-card--large">
+                          <button
+                            type="button"
+                            className={`durian-card-half durian-card-half--btn durian-card-half--${me.drawnCard.left.fruit}`}
+                            aria-label={`生效左半边 ${FRUIT_NAMES[me.drawnCard.left.fruit]} ×${me.drawnCard.left.quantity}`}
+                            onClick={() => void act({ type: 'place_fruit', playerId: myId!, checkHalf: 'left' })}
+                          >
+                            <FruitGroup fruit={me.drawnCard.left.fruit} quantity={me.drawnCard.left.quantity} size={44} stacked={false} />
+                            <span className="durian-card-half__name">{FRUIT_NAMES[me.drawnCard.left.fruit]}</span>
+                            <span className="durian-card-half__badge">×{me.drawnCard.left.quantity}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            className={`durian-card-half durian-card-half--btn durian-card-half--${me.drawnCard.right.fruit}`}
+                            aria-label={`生效右半边 ${FRUIT_NAMES[me.drawnCard.right.fruit]} ×${me.drawnCard.right.quantity}`}
+                            onClick={() => void act({ type: 'place_fruit', playerId: myId!, checkHalf: 'right' })}
+                          >
+                            <FruitGroup fruit={me.drawnCard.right.fruit} quantity={me.drawnCard.right.quantity} size={44} stacked={false} />
+                            <span className="durian-card-half__name">{FRUIT_NAMES[me.drawnCard.right.fruit]}</span>
+                            <span className="durian-card-half__badge">×{me.drawnCard.right.quantity}</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ) : (
                     <button
                       type="button"
                       className="durian-sim-draw-btn"
-                      disabled={view.deckCount === 0 || (view.phase !== 'turn_action' && view.phase !== 'choose_placement')}
                       onClick={() => {
                         if (myId) void act({ type: 'draw_card', playerId: myId });
                       }}
@@ -563,6 +654,26 @@ export function DurianGamePage({ view }: Props) {
           </div>
         ) : (
           <>
+            {/* 本局行动顺序条（首轮开局清晰展示，当前玩家高亮） */}
+            {view.players.length > 1 && (
+              <section className="durian-order-strip" aria-label="本局行动顺序">
+                <span className="durian-order-strip__label">🔄 出牌顺序</span>
+                <div className="durian-order-strip__chips">
+                  {view.players.map((playerId, index) => {
+                    const isCurrent = playerId === view.currentPlayerId;
+                    const isEliminated = (view.eliminatedPlayers ?? []).includes(playerId);
+                    return (
+                      <span key={playerId} className={`durian-order-chip ${isCurrent ? 'is-current' : ''} ${isEliminated ? 'is-out' : ''}`}>
+                        <b>{index + 1}</b>
+                        <span>{playerId === myId ? '我' : nameFor(members, playerId)}</span>
+                        {isCurrent && <em>行动中</em>}
+                      </span>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
             <section className="durian-forehead-bar" aria-label="玩家头顶手牌">
               {view.players.map((playerId) => {
                 const isMe = playerId === myId;

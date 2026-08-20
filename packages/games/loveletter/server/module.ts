@@ -21,6 +21,7 @@ import type {
   LoveLetterPlayerView,
   LoveLetterPublicView,
   LoveLetterResult,
+  LoveLetterRole,
   LoveLetterState,
 } from './types.ts';
 
@@ -121,7 +122,7 @@ export const loveLetterModule: GameModuleV2<
       .map((p) => p.playerId)
       .filter((id) => id !== playerId && !view.eliminatedPlayers.includes(id) && !view.protectedPlayers.includes(id));
     let targetPlayerId: string | undefined;
-    let guessedRole: any;
+    let guessedRole: LoveLetterRole | undefined;
     if (['guard', 'priest', 'baron', 'king'].includes(card.role)) {
       if (otherPlayerIds.length > 0) {
         targetPlayerId = otherPlayerIds[random.nextInt(0, otherPlayerIds.length)];
@@ -130,8 +131,8 @@ export const loveLetterModule: GameModuleV2<
       targetPlayerId = otherPlayerIds.length > 0 ? otherPlayerIds[0] : playerId;
     }
     if (card.role === 'guard' && targetPlayerId) {
-      const candidateRoles = ['priest', 'baron', 'handmaid', 'prince', 'king', 'countess', 'princess'];
-      guessedRole = candidateRoles[random.nextInt(0, candidateRoles.length)] as any;
+      const candidateRoles: LoveLetterRole[] = ['priest', 'baron', 'handmaid', 'prince', 'king', 'countess', 'princess'];
+      guessedRole = candidateRoles[random.nextInt(0, candidateRoles.length)];
     }
     return {
       type: 'play_card',

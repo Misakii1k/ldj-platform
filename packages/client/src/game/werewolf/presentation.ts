@@ -187,7 +187,7 @@ function roleHintOf(view: WerewolfView, members: readonly MemberLike[]): string 
     return `${mates ? `同伴：${mates}` : '同伴：无'} · ${scope}`;
   }
   if (me.role === 'seer') {
-    const last = me.seerResults.at(-1);
+    const last = me.seerResults[me.seerResults.length - 1];
     return last ? `最近查验：${nameFor(members, last.playerId)} 是 ${teamLabel(last.team)}` : '尚未查验过任何人';
   }
   if (me.role === 'witch') {

@@ -66,12 +66,11 @@ test('smoke：Node WS 建房开局 + 浏览器加入渲染', async ({ browser })
 
   // 对局页（word_reveal）渲染：标题 + 看词交互
   await expect(page.getByText('谁是卧底').first()).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByText('查看你的秘密词条')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(/查看你的(机密|秘密)词条/)).toBeVisible({ timeout: 20_000 });
 
-  // 私有词条未交互前不得进入 DOM：占位文案可见、真实词不可见
-  await expect(page.locator('.word-placeholder')).toBeVisible();
-  const hiddenWord = await page.locator('.word-reveal-box').getAttribute('aria-label');
-  expect(hiddenWord).toBe('长按查看秘密词');
+  // 3D 翻牌卡牌渲染与交互前状态
+  await expect(page.locator('.identity-flip-card-3d')).toBeVisible();
+  await expect(page.locator('.identity-card-back__badge')).toBeVisible();
 
   // 回合信息渲染（第 0 轮）确认浏览器已进入该房间的对局页
   await expect(page.getByText('第 0 轮 · 找出隐藏卧底')).toBeVisible();

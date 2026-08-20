@@ -8,7 +8,7 @@ export const BLANK_STATE_SCHEMA_VERSION = 1;
 
 const playerIdSchema = z.string().min(1).max(64);
 
-import type { BlankAction, BlankConfig, BlankEvent, BlankPlayerView, BlankResult, BlankSpectatorView, BlankState } from './types.ts';
+import type { BlankConfig } from './types.ts';
 
 export const blankConfigSchema: z.ZodType<BlankConfig, z.ZodTypeDef, unknown> = z
   .object({

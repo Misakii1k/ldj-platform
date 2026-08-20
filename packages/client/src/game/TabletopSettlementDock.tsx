@@ -190,6 +190,18 @@ export function TabletopSettlementDock() {
             </button>
           )}
 
+          {isHost && (
+            <button
+              type="button"
+              className="settlement-btn settlement-btn--secondary"
+              onClick={handleReturnToLobby}
+              disabled={busy}
+              title="房主将所有成员带回房间大厅（可切换游戏或调整配置）"
+            >
+              <span>返回大厅</span>
+            </button>
+          )}
+
           <button
             type="button"
             className="settlement-btn settlement-btn--secondary"

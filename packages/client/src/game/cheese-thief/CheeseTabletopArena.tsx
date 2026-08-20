@@ -18,15 +18,13 @@ interface CheeseTabletopArenaProps {
 
 export function CheeseTabletopArena({
   view,
-  myId,
+  myId: _myId,
   members,
   onStealCheese,
   ttsEnabled = true,
   onToggleTts,
 }: CheeseTabletopArenaProps) {
   const [stealTapped, setStealTapped] = useState(false);
-  const me = 'me' in view ? view.me : null;
-  const isThief = me?.isThief ?? false;
   const isNight = view.phase === 'night';
   const isDawn = view.phase === 'dawn';
   const isVote = view.phase === 'vote';
@@ -34,12 +32,6 @@ export function CheeseTabletopArena({
 
   const memberNames = new Map(members.map((m) => [m.playerId, m.nickname]));
   const nameFor = (id: string | null | undefined) => (id ? memberNames.get(id) || id : '未知');
-
-  const handleStealClick = () => {
-    if (stealTapped) return;
-    setStealTapped(true);
-    onStealCheese?.();
-  };
 
   const isCheeseStolen = view.reveal ? Boolean(view.reveal.thiefId) : (isDawn || isVote || isGameOver);
 
@@ -131,38 +123,7 @@ export function CheeseTabletopArena({
         </div>
       </div>
 
-      {/* 玩家环桌座次雷达 */}
-      <div className="cheese-players-ring">
-        {view.players.map((playerId) => {
-          const isMe = playerId === myId;
-          const wakeHour = view.reveal?.wakeHours?.[playerId];
-          const isWinner = (view.winners ?? []).includes(playerId);
-          const isThiefPlayer = view.reveal?.thiefId === playerId;
-          const isAccomplicePlayer = (view.reveal?.accomplices ?? []).includes(playerId);
-
-          return (
-            <div
-              key={playerId}
-              className={`cheese-player-pod ${isMe ? 'is-me' : ''} ${isWinner ? 'is-winner' : ''}`}
-            >
-              <div className="cheese-pod-avatar">
-                <span className="cheese-pod-avatar__emoji">
-                  {isThiefPlayer ? '🐭' : isAccomplicePlayer ? '🦊' : '🐹'}
-                </span>
-              </div>
-              <div className="cheese-pod-name">
-                {nameFor(playerId)} {isMe ? '（我）' : ''}
-              </div>
-              {isGameOver && wakeHour && (
-                <div className="cheese-pod-dice-badge">
-                  🎲 {wakeHour} 点
-                  {isThiefPlayer ? ' · 大盗' : isAccomplicePlayer ? ' · 共犯' : ' · 贪睡鼠'}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {/* 玩家环桌座次雷达（顶栏已有完整席位条，此处删除避免重复堆叠） */}
 
       {/* 终局真相大揭秘 */}
       {isGameOver && view.reveal && (

@@ -16,7 +16,7 @@ import {
 import { GameSetupPanel } from '../shared-ui/GameSetupPanel.tsx';
 import { ConfirmDialog } from '../shared-ui/ConfirmDialog.tsx';
 import { ChatMessageList } from '../shared-ui/ChatMessageList.tsx';
-import { GameIcon } from '../shared-ui/GameIcon.tsx';
+import { GameIcon, type GameIconName } from '../shared-ui/GameIcon.tsx';
 import { RoomCodeCard } from './RoomCodeCard.tsx';
 import { buildModuleConfig, readRoomGameConfig, type SetupConfig } from '../shared-ui/setupState.ts';
 import { UserProfileBadge } from '../user/UserProfileBadge.tsx';
@@ -386,7 +386,7 @@ export function RoomPage() {
                 const isMe = m.playerId === myPlayerId;
                 return (
                   <li key={m.playerId} className={'member ' + badge.cls}>
-                    <span className="member-seat">{m.seatRole === 'player' ? '#' + (m.seat ?? '?') : '观'}</span>
+                    <span className="member-seat">{m.seatRole === 'player' ? '#' + (m.seat !== undefined && m.seat !== null ? m.seat + 1 : '?') : '观'}</span>
                     <UserAvatar avatar={isMe ? profile.avatar : 'preset:fox'} nickname={m.nickname} size={32} style={{ marginRight: '6px' }} />
                     <span className="member-name">
                       {m.nickname}
@@ -507,7 +507,7 @@ export function RoomPage() {
                     disabled={isCurrent}
                   >
                     <div className="game-switcher-card__icon-box">
-                      <GameIcon name={g.id as any} size={28} />
+                      <GameIcon name={g.id as GameIconName} size={28} />
                     </div>
                     <div className="game-switcher-card__info">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

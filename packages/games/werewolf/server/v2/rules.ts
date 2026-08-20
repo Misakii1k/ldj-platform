@@ -9,8 +9,8 @@ const PLAYER_ACTIONS = new Set<V2Action['type']>(['confirm_role', 'night_kill', 
 const SPECIAL_ROLES: readonly V2Role[] = ['seer', 'witch', 'guard', 'hunter', 'idiot'];
 const PACE_MS: Record<V2ConfigPace, Record<V2TimedPhase, number>> = {
   fast: { role_reveal: 15_000, night: 30_000, hunter_shot: 15_000, day_announcement: 10_000, discussion: 30_000, voting: 20_000, runoff_voting: 20_000, vote_result: 4_000, last_words: 20_000 },
-  standard: { role_reveal: 30_000, night: 60_000, hunter_shot: 30_000, day_announcement: 20_000, discussion: 60_000, voting: 45_000, runoff_voting: 45_000, vote_result: 5_000, last_words: 30_000 },
-  relaxed: { role_reveal: 45_000, night: 90_000, hunter_shot: 45_000, day_announcement: 30_000, discussion: 90_000, voting: 60_000, runoff_voting: 60_000, vote_result: 7_000, last_words: 45_000 },
+  standard: { role_reveal: 30_000, night: 60_000, hunter_shot: 30_000, day_announcement: 10_000, discussion: 60_000, voting: 45_000, runoff_voting: 45_000, vote_result: 5_000, last_words: 30_000 },
+  relaxed: { role_reveal: 45_000, night: 90_000, hunter_shot: 45_000, day_announcement: 10_000, discussion: 90_000, voting: 60_000, runoff_voting: 60_000, vote_result: 7_000, last_words: 45_000 },
 };
 
 const deny = (message: string): V2ReduceResult => ({ ok: false, code: 'ACTION_NOT_ALLOWED', message });

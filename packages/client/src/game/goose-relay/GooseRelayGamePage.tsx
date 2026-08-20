@@ -619,37 +619,60 @@ export function GooseRelayGamePage({ view }: Props) {
           </section>
         )}
 
-        {/* 投票区：vote 阶段 */}
+        {/* 投票区：vote 阶段（与指认记录左右双列并排，单屏无需滑动） */}
         {view.phase === 'vote' && (
-          <section className="sg-panel goose-vote-panel" aria-label="揪恶投票区">
-            <div className="sg-panel__head">
-              <h3>🗳️ 揪恶投票</h3>
-              <span>已投 {view.votesCast} / {view.players.length} 人</span>
-            </div>
-            <p className="goose-vote-instruction">
-              谁是故意传递错误动作的恶鹅？请点击头像选择你要投票的目标（不能投自己）：
-            </p>
-            <div className="goose-vote-targets-grid">
-              {view.players
-                .filter((pid) => pid !== myId)
-                .map((pid) => {
-                  const isSelected = voteTarget === pid;
-                  return (
-                    <button
-                      key={pid}
-                      type="button"
-                      disabled={hasVoted}
-                      className={`goose-vote-target-btn ${isSelected ? 'is-selected' : ''}`}
-                      onClick={() => setVoteTarget(pid)}
+          <div className="goose-dual-col">
+            {(view.accusations ?? []).length > 0 && (
+              <section className="sg-panel goose-accusations-history" aria-label="指认记录">
+                <div className="sg-panel__head">
+                  <h3>🔍 案情指认记录</h3>
+                  <span>{view.caseMatched ? '🎉 已有人指对！' : '倒序指认推进中'}</span>
+                </div>
+                <ul className="goose-history-list">
+                  {(view.accusations ?? []).map((item, idx) => (
+                    <li
+                      key={idx}
+                      className={`goose-history-item ${item.correct ? 'is-correct' : 'is-wrong'}`}
                     >
-                      <span className="goose-vote-target-avatar">🦆</span>
-                      <strong className="goose-vote-target-name">{nameFor(members, pid)}</strong>
-                      {isSelected && <span className="goose-vote-check">✓ 选定</span>}
-                    </button>
-                  );
-                })}
-            </div>
-          </section>
+                      <span className="goose-history-name">{nameFor(members, item.playerId)}</span>
+                      <span className="goose-history-result">
+                        {item.correct ? '✅ 还原真相（指对）' : '❌ 指认错误'}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+            <section className="sg-panel goose-vote-panel" aria-label="揪恶投票区">
+              <div className="sg-panel__head">
+                <h3>🗳️ 揪恶投票</h3>
+                <span>已投 {view.votesCast} / {view.players.length} 人</span>
+              </div>
+              <p className="goose-vote-instruction">
+                谁是故意传递错误动作的恶鹅？请点击头像选择你要投票的目标（不能投自己）：
+              </p>
+              <div className="goose-vote-targets-grid">
+                {view.players
+                  .filter((pid) => pid !== myId)
+                  .map((pid) => {
+                    const isSelected = voteTarget === pid;
+                    return (
+                      <button
+                        key={pid}
+                        type="button"
+                        disabled={hasVoted}
+                        className={`goose-vote-target-btn ${isSelected ? 'is-selected' : ''}`}
+                        onClick={() => setVoteTarget(pid)}
+                      >
+                        <span className="goose-vote-target-avatar">🦆</span>
+                        <strong className="goose-vote-target-name">{nameFor(members, pid)}</strong>
+                        {isSelected && <span className="goose-vote-check">✓ 选定</span>}
+                      </button>
+                    );
+                  })}
+              </div>
+            </section>
+          </div>
         )}
 
         {/* 终局揭晓面板（game_over） */}

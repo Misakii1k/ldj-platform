@@ -99,7 +99,7 @@ export function BellClashGamePage({ view }: Props) {
 
   return (
     <TabletopShell
-      title="Ding"
+      title="铃铛对决"
       phase={phaseLabel(view.phase)}
       gameId="bell-clash"
       phaseKey={`${view.phase}:${view.currentPlayerId}:${view.bellOpen ? `bell:${view.bellClaimantId ?? 'open'}` : 'turn'}:${view.phase === 'game_over' ? view.winners.join(',') || 'no-winner' : 'active'}`}
@@ -127,53 +127,58 @@ export function BellClashGamePage({ view }: Props) {
       {error && <p className="game-error" role="alert" aria-live="assertive" aria-atomic="true">{error}</p>}
 
       {view.phase !== 'game_over' ? (
-        <div className="sg-stage">
-          <section className="sg-panel" aria-label="弃牌堆顶">
-            <div className="sg-panel__head">
-              <h3>弃牌堆顶</h3>
-              <span>抽牌堆剩 {view.drawCount} 张</span>
-            </div>
-            <div className="bell-board">
-              <div className={`bell-card bell-card--top bell-card--c-${view.discardTop?.color ?? 'empty'}`}>
-                <strong>{view.discardTop ? topLabel : '开局'}</strong>
-                <span>{view.discardTop ? (view.discardTop.kind === 'number' ? '数字牌' : '行动短语卡') : '等待首张'}</span>
-              </div>
-            </div>
-          </section>
-
-          {view.bellOpen && (
-            <section className="bell-window" aria-label="按铃窗口">
-              <span className="bell-window__icon" aria-hidden="true">🔔</span>
-              <div className="bell-window__copy">
-                <strong>按铃窗口开启</strong>
-                <span>「{topLabel}」——若有人说了/做了牌上内容，拍铃抢回合（须持有同色短语卡）。</span>
-              </div>
-            </section>
-          )}
-
-          {me && (
-            <section className="sg-panel" aria-label="我的手牌">
+        <div className="sg-stage bell-stage">
+          {/* 左右双列单屏：左弃牌堆顶 + 右按铃窗口 / 手牌 */}
+          <div className="bell-dual-col">
+            <section className="sg-panel" aria-label="弃牌堆顶">
               <div className="sg-panel__head">
-                <h3>我的手牌（仅自己可见）</h3>
-                <span>{(me.hand ?? []).length} 张</span>
+                <h3>弃牌堆顶</h3>
+                <span>抽牌堆剩 {view.drawCount} 张</span>
               </div>
-              <div className="bell-hand">
-                {(me.hand ?? []).map((card, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    className={`bell-card bell-card--hand bell-card--c-${card.color} ${selectedIndex === index ? 'is-selected' : ''}`}
-                    onClick={() => setSelectedIndex(selectedIndex === index ? null : index)}
-                    aria-pressed={selectedIndex === index}
-                  >
-                    <strong>{card.kind === 'number' ? card.number : card.phrase}</strong>
-                    <span>{COLOR_LABELS[card.color]}{card.kind === 'number' ? '' : ' · 短语'}</span>
-                  </button>
-                ))}
+              <div className="bell-board">
+                <div className={`bell-card bell-card--top bell-card--c-${view.discardTop?.color ?? 'empty'}`}>
+                  <strong>{view.discardTop ? topLabel : '开局'}</strong>
+                  <span>{view.discardTop ? (view.discardTop.kind === 'number' ? '数字牌' : '行动短语卡') : '等待首张'}</span>
+                </div>
               </div>
-              {isMyTurn && <p className="sg-hint">轮到你：点一张同色或同数字的牌打出，或摸一张。</p>}
             </section>
-          )}
+
+            <section className="bell-right-col">
+              {view.bellOpen && (
+                <section className="bell-window" aria-label="按铃窗口">
+                  <span className="bell-window__icon" aria-hidden="true">🔔</span>
+                  <div className="bell-window__copy">
+                    <strong>按铃窗口开启</strong>
+                    <span>「{topLabel}」——若有人说了/做了牌上内容，拍铃抢回合（须持有同色短语卡）。</span>
+                  </div>
+                </section>
+              )}
+
+              {me && (
+                <section className="sg-panel" aria-label="我的手牌">
+                  <div className="sg-panel__head">
+                    <h3>我的手牌（仅自己可见）</h3>
+                    <span>{(me.hand ?? []).length} 张</span>
+                  </div>
+                  <div className="bell-hand">
+                    {(me.hand ?? []).map((card, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        className={`bell-card bell-card--hand bell-card--c-${card.color} ${selectedIndex === index ? 'is-selected' : ''}`}
+                        onClick={() => setSelectedIndex(selectedIndex === index ? null : index)}
+                        aria-pressed={selectedIndex === index}
+                      >
+                        <strong>{card.kind === 'number' ? card.number : card.phrase}</strong>
+                        <span>{COLOR_LABELS[card.color]}{card.kind === 'number' ? '' : ' · 短语'}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {isMyTurn && <p className="sg-hint">轮到你：点一张同色或同数字的牌打出，或摸一张。</p>}
+                </section>
+              )}
+            </section>
+          </div>
         </div>
       ) : (
         <div className="sg-stage">

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GAME_CATALOG } from '../src/game/catalog.ts';
 import { buildGameStatePayload } from '../../server/src/core/game/views.ts';
-import { openDb, closeDb } from '../../server/src/persistence/db.ts';
+import { openDb, closeDb, type Db } from '../../server/src/persistence/db.ts';
 import { migrate } from '../../server/src/persistence/migrator.ts';
 import { applyRoomCommand } from '../../server/src/core/commands/roomCommand.ts';
 import { RoomCommandExecutor } from '../../server/src/core/executor.ts';
@@ -17,7 +17,7 @@ import { consumeDueTimer } from '../../server/src/core/game/timerRunner.ts';
 
 const silentLogger = createLogger('error', {}, () => {});
 
-function validateAllViews(db: any, roomId: string, label: string) {
+function validateAllViews(db: Db, roomId: string, label: string) {
   const members = db.prepare('SELECT player_id FROM room_members WHERE room_id = ?').all(roomId) as { player_id: string }[];
   for (const { player_id: pid } of members) {
     const rawPayload = buildGameStatePayload(db, roomId, pid);

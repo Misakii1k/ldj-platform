@@ -85,12 +85,12 @@ export function VotingView({ view }: Props) {
                 >
                   <UserAvatar
                     avatar={members.find((m) => m.playerId === candidateId)?.avatar ?? (isSelf ? profile.avatar : 'preset:fox')}
-                    nickname={isSelf ? '我' : nameFor(members, candidateId) || `玩家 ${player.seat}`}
+                    nickname={isSelf ? '我' : nameFor(members, candidateId) || `玩家 ${player.seat + 1}`}
                     size={46}
                     className="vote-avatar-box"
                   />
-                  <span className="vote-seat">#{player.seat}</span>
-                  <span className="vote-name">{isSelf ? '我' : nameFor(members, candidateId) || `玩家 ${player.seat}`}</span>
+                  <span className="vote-seat">#{player.seat + 1}</span>
+                  <span className="vote-name">{isSelf ? '我' : nameFor(members, candidateId) || `玩家 ${player.seat + 1}`}</span>
                   <span className={`vote-tag ${isMyVote ? 'voted-tag' : ''}`}>
                     {isMyVote ? '已投此人' : isSelf ? '不能投自己' : '点击投票'}
                   </span>

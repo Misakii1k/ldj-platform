@@ -81,7 +81,7 @@ export function BlankStageArena({ view }: Props) {
     ? null
     : (currentSpeaker.playerId === me?.playerId
         ? '你'
-        : nameFor(members, currentSpeaker.playerId) || `${currentSpeaker.seat} 号玩家`);
+        : nameFor(members, currentSpeaker.playerId) || `${currentSpeaker.seat + 1} 号玩家`);
   const liveStatus = error
     ? `操作失败：${error}`
     : busy
@@ -94,7 +94,7 @@ export function BlankStageArena({ view }: Props) {
     const member = members.find((m) => m.playerId === player.playerId);
     return {
       id: player.playerId,
-      name: nameFor(members, player.playerId) || `玩家 ${player.seat}`,
+      name: nameFor(members, player.playerId) || `玩家 ${player.seat + 1}`,
       avatar: member?.avatar ?? (player.playerId === me?.playerId ? profile.avatar : 'preset:fox'),
       isCurrentTurn: player.playerId === view.currentSpeakerId,
       isSpeaking: view.phase === 'speaking' && player.playerId === view.currentSpeakerId,
@@ -336,14 +336,14 @@ function BlankSpeechPanel({ view, act, busy }: { view: BlankPlayerView; act: Act
               <div className="speaker-spotlight-top">
                 <UserAvatar
                   avatar={members.find((m) => m.playerId === speakerInfo.playerId)?.avatar ?? (isMyTurn ? profile.avatar : 'preset:fox')}
-                  nickname={isMyTurn ? '我' : nameFor(members, speakerInfo.playerId) || `玩家 ${speakerInfo.seat}`}
+                  nickname={isMyTurn ? '我' : nameFor(members, speakerInfo.playerId) || `玩家 ${speakerInfo.seat + 1}`}
                   size={58}
                   className="speaker-avatar-box"
                 />
                 <div className="speaker-spotlight-copy">
                   <span className="speaker-label">{isMyTurn ? '🎯 轮到你了' : '🎙️ 正在发言'}</span>
-                  <strong className="speaker-name">{isMyTurn ? '我' : nameFor(members, speakerInfo.playerId) || `玩家 ${speakerInfo.seat}`}</strong>
-                  <span className="speaker-seat">#{speakerInfo.seat} 号座位</span>
+                  <strong className="speaker-name">{isMyTurn ? '我' : nameFor(members, speakerInfo.playerId) || `玩家 ${speakerInfo.seat + 1}`}</strong>
+                  <span className="speaker-seat">#{speakerInfo.seat + 1} 号座位</span>
                 </div>
                 <div className="speaker-signal" aria-hidden="true"><i /><i /><i /></div>
               </div>
@@ -376,7 +376,7 @@ function BlankSpeechPanel({ view, act, busy }: { view: BlankPlayerView; act: Act
                 const isDone = currentIndex >= 0 && index < currentIndex;
                 const isMe = pid === me?.playerId;
                 const playerAvatar = members.find((m) => m.playerId === pid)?.avatar ?? (isMe ? profile.avatar : 'preset:fox');
-                const playerName = isMe ? '我' : nameFor(members, pid) || `玩家 ${player.seat}`;
+                const playerName = isMe ? '我' : nameFor(members, pid) || `玩家 ${player.seat + 1}`;
 
                 return (
                   <li
@@ -401,7 +401,7 @@ function BlankSpeechPanel({ view, act, busy }: { view: BlankPlayerView; act: Act
                     <div className="uc-order-card__meta">
                       <div className="uc-order-card__name-row">
                         <strong className="uc-order-card__name">{playerName}</strong>
-                        <span className="uc-order-card__seat">#{player.seat}号位</span>
+                        <span className="uc-order-card__seat">#{player.seat + 1}号位</span>
                       </div>
                       <span className="uc-order-card__status-text">
                         {!player.alive
@@ -537,12 +537,12 @@ function BlankVotePanel({ view, act, busy }: { view: BlankPlayerView; act: Act; 
                 >
                   <UserAvatar
                     avatar={members.find((m) => m.playerId === candidateId)?.avatar ?? (isSelf ? profile.avatar : 'preset:fox')}
-                    nickname={isSelf ? '我' : nameFor(members, candidateId) || `玩家 ${player.seat}`}
+                    nickname={isSelf ? '我' : nameFor(members, candidateId) || `玩家 ${player.seat + 1}`}
                     size={46}
                     className="vote-avatar-box"
                   />
-                  <span className="vote-seat">#{player.seat}</span>
-                  <span className="vote-name">{isSelf ? '我' : nameFor(members, candidateId) || `玩家 ${player.seat}`}</span>
+                  <span className="vote-seat">#{player.seat + 1}</span>
+                  <span className="vote-name">{isSelf ? '我' : nameFor(members, candidateId) || `玩家 ${player.seat + 1}`}</span>
                   <span className={`vote-tag ${isMyVote ? 'voted-tag' : ''}`}>
                     {isMyVote ? '已投此人' : isSelf ? '不能投自己' : '点击投票'}
                   </span>
@@ -604,7 +604,7 @@ function BlankResultPanel({ view }: { view: BlankPlayerView }) {
         <span className="result-seal" aria-hidden="true">{summary.outcome === 'eliminated' ? '!' : '='}</span>
         <div>
           <strong>{blankOutcomeText(summary)}</strong>
-          <span>{eliminatedPlayer ? `${nameFor(members, eliminatedPlayer.playerId) || `#${eliminatedPlayer.seat}`} 离场` : '准备进入下一阶段'}</span>
+          <span>{eliminatedPlayer ? `${nameFor(members, eliminatedPlayer.playerId) || `#${eliminatedPlayer.seat + 1}`} 离场` : '准备进入下一阶段'}</span>
         </div>
       </div>
 
@@ -612,13 +612,13 @@ function BlankResultPanel({ view }: { view: BlankPlayerView }) {
         <div className="eliminated-info">
           <UserAvatar
             avatar={members.find((m) => m.playerId === eliminatedPlayer.playerId)?.avatar ?? 'preset:fox'}
-            nickname={nameFor(members, eliminatedPlayer.playerId) || `#${eliminatedPlayer.seat} 号玩家`}
+            nickname={nameFor(members, eliminatedPlayer.playerId) || `#${eliminatedPlayer.seat + 1} 号玩家`}
             size={44}
             className="eliminated-avatar-box"
           />
           <div>
             <span>身份揭晓</span>
-            <strong>{nameFor(members, eliminatedPlayer.playerId) || `#${eliminatedPlayer.seat} 号玩家`}</strong>
+            <strong>{nameFor(members, eliminatedPlayer.playerId) || `#${eliminatedPlayer.seat + 1} 号玩家`}</strong>
           </div>
           <span className={`role-badge ${summary.eliminatedRole ?? ''}`}>{blankRoleLabel(summary.eliminatedRole)}</span>
         </div>
@@ -635,7 +635,7 @@ function BlankResultPanel({ view }: { view: BlankPlayerView }) {
               const player = playerMap.get(playerId);
               return (
                 <li key={playerId} className="tally-item" style={{ '--stagger-index': index } as CSSProperties}>
-                  <span className="tally-player">#{player?.seat ?? '?'}<small>{nameFor(members, playerId)}</small></span>
+                  <span className="tally-player">#{player !== undefined ? player.seat + 1 : '?'}<small>{nameFor(members, playerId)}</small></span>
                   <span className="tally-bar"><i style={{ '--fill-percent': `${count / maxVotes * 100}%` } as CSSProperties} /></span>
                   <strong className="tally-count">{count} 票</strong>
                 </li>
@@ -788,9 +788,9 @@ function BlankOverPanel({ view }: { view: BlankPlayerView }) {
                       size={36}
                       className="role-avatar"
                     />
-                    <span className="role-seat">#{player.seat}</span>
+                    <span className="role-seat">#{player.seat + 1}</span>
                     <span className="role-name">
-                      <strong>{isMe ? '我' : nameFor(members, player.playerId) || `玩家 ${player.seat}`}</strong>
+                      <strong>{isMe ? '我' : nameFor(members, player.playerId) || `玩家 ${player.seat + 1}`}</strong>
                       <small>{!player.alive ? '本局已淘汰' : '存活至结算'}</small>
                     </span>
                     <span className={`role-badge ${role === 'blank' ? 'blank' : role === 'civilian' ? 'civilian' : ''}`}>{blankRoleLabel(role ?? null)}</span>

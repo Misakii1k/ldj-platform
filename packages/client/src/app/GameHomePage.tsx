@@ -17,6 +17,9 @@ import { PlayerCountFilter } from './PlayerCountFilter.tsx';
 import { SettingsSheet } from './SettingsSheet.tsx';
 import { UserProfileBadge } from '../user/UserProfileBadge.tsx';
 import { UserProfileModal } from '../user/UserProfileModal.tsx';
+import { BlurText } from '../shared-ui/motion/BlurText.tsx';
+import { FadeContent } from '../shared-ui/motion/FadeContent.tsx';
+import { ShinyText } from '../shared-ui/motion/ShinyText.tsx';
 
 type ActiveSheet = 'create' | 'join' | 'settings' | 'profile' | null;
 
@@ -67,7 +70,7 @@ export function GameHomePage() {
           </div>
           <div className="home-header__actions">
             <UserProfileBadge onClick={() => setActiveSheet('profile')} />
-            <span className="home-local-badge">局域网极速联机</span>
+            <ShinyText text="局域网极速联机" className="home-local-badge" speed={3} />
             <button
               type="button"
               className="home-header__button"
@@ -86,10 +89,17 @@ export function GameHomePage() {
         <section className="home-hero home-motion-layer" data-motion-step="1" aria-labelledby="home-title">
           <div className="home-hero__copy">
             <p className="home-hero__eyebrow">扫码即玩 · 手机就是专属手牌</p>
-            <h1 id="home-title">好友到齐，<span>即刻开局。</span></h1>
-            <p className="home-hero__description">
-              无需下载与繁琐注册。连上同一个局域网，与身边的朋友面对面开局畅玩！
-            </p>
+            <h1 id="home-title">
+              <BlurText text="好友到齐，" animateBy="words" direction="bottom" delay={100} className="inline-block" />
+              <span>
+                <BlurText text="即刻开局。" animateBy="words" direction="bottom" delay={300} className="inline-block" />
+              </span>
+            </h1>
+            <FadeContent blur delay={600} duration={800}>
+              <p className="home-hero__description">
+                无需下载与繁琐注册。连上同一个局域网，与身边的朋友面对面开局畅玩！
+              </p>
+            </FadeContent>
             <div className="home-hero__actions">
               <a className="home-hero__primary" href="#game-catalog">
                 <Gamepad2 size={19} strokeWidth={2.5} aria-hidden="true" />

@@ -306,7 +306,7 @@ export function CheeseThiefGamePage({ view }: Props) {
               </div>
 
               <div className="cheese-secret-card__body">
-                {/* 3D 拟真骰盅与骰子 */}
+                {/* 3D 拟真骰盅与骰子（左列） */}
                 <div className="cheese-dice-cup-container">
                   <CheeseDiceCup3D
                     diceValue={me.wakeHour}
@@ -317,8 +317,8 @@ export function CheeseThiefGamePage({ view }: Props) {
                   />
                 </div>
 
-                {/* 3D 秘密身份卡牌 */}
-                <div className="cheese-identity-card-container" style={{ width: '100%', maxWidth: '280px', marginTop: '12px' }}>
+                {/* 3D 秘密身份卡牌（右列） */}
+                <div className="cheese-identity-card-container">
                   <IdentityFlipCard
                     theme="classic"
                     variant="compact"

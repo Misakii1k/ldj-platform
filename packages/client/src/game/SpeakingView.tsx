@@ -52,14 +52,14 @@ export function SpeakingView({ view }: Props) {
               <div className="speaker-spotlight-top">
                 <UserAvatar
                   avatar={members.find((m) => m.playerId === currentSpeakerInfo.playerId)?.avatar ?? (isMyTurn ? profile.avatar : 'preset:fox')}
-                  nickname={isMyTurn ? '我' : nameFor(members, currentSpeakerInfo.playerId) || `玩家 ${currentSpeakerInfo.seat}`}
+                  nickname={isMyTurn ? '我' : nameFor(members, currentSpeakerInfo.playerId) || `玩家 ${currentSpeakerInfo.seat + 1}`}
                   size={58}
                   className="speaker-avatar-box"
                 />
                 <div className="speaker-spotlight-copy">
                   <span className="speaker-label">{isMyTurn ? '🎯 轮到你了' : '🎙️ 正在发言'}</span>
-                  <strong className="speaker-name">{isMyTurn ? '我' : nameFor(members, currentSpeakerInfo.playerId) || `玩家 ${currentSpeakerInfo.seat}`}</strong>
-                  <span className="speaker-seat">#{currentSpeakerInfo.seat} 号座位</span>
+                  <strong className="speaker-name">{isMyTurn ? '我' : nameFor(members, currentSpeakerInfo.playerId) || `玩家 ${currentSpeakerInfo.seat + 1}`}</strong>
+                  <span className="speaker-seat">#{currentSpeakerInfo.seat + 1} 号座位</span>
                 </div>
                 <div className="speaker-signal" aria-hidden="true"><i /><i /><i /></div>
               </div>
@@ -105,7 +105,7 @@ export function SpeakingView({ view }: Props) {
                 const isDone = currentIndex >= 0 && idx < currentIndex;
                 const isMe = pid === myId;
                 const playerAvatar = members.find((m) => m.playerId === pid)?.avatar ?? (isMe ? profile.avatar : 'preset:fox');
-                const playerName = isMe ? '我' : nameFor(members, pid) || `玩家 ${player.seat}`;
+                const playerName = isMe ? '我' : nameFor(members, pid) || `玩家 ${player.seat + 1}`;
 
                 return (
                   <li
@@ -130,7 +130,7 @@ export function SpeakingView({ view }: Props) {
                     <div className="uc-order-card__meta">
                       <div className="uc-order-card__name-row">
                         <strong className="uc-order-card__name">{playerName}</strong>
-                        <span className="uc-order-card__seat">#{player.seat}号位</span>
+                        <span className="uc-order-card__seat">#{player.seat + 1}号位</span>
                       </div>
                       <span className="uc-order-card__status-text">
                         {!player.alive

@@ -210,17 +210,6 @@ async function renderAllOilCards() {
         const targetPath = path.join(outDir, filename);
         const previewPath = path.join(previewDir, filename);
 
-        // 1. Extract the raw card cell
-        const cellBuffer = await sharp(sheet.path)
-          .extract({
-            left: Math.max(0, Math.min(W - width, left)),
-            top: Math.max(0, Math.min(H - height, top)),
-            width: width,
-            height: height
-          })
-          .png()
-          .toBuffer();
-
         // 2. Generate pristine unified card frame
         const frameSvg = buildCardTemplateSvg(cardW, cardH, 18);
         const baseCard = await sharp(frameSvg).png().toBuffer();

@@ -57,7 +57,7 @@ export function VoteResultView({ view }: Props) {
         <span className="result-seal" aria-hidden="true">{summary.outcome === 'eliminated' ? '!' : '='}</span>
         <div>
           <strong>{outcomeText(summary)}</strong>
-          <span>{eliminatedPlayer ? `${nameFor(members, eliminatedPlayer.playerId) || `#${eliminatedPlayer.seat}`} 离场` : '准备进入下一阶段'}</span>
+          <span>{eliminatedPlayer ? `${nameFor(members, eliminatedPlayer.playerId) || `#${eliminatedPlayer.seat + 1}`} 离场` : '准备进入下一阶段'}</span>
         </div>
       </div>
 
@@ -65,13 +65,13 @@ export function VoteResultView({ view }: Props) {
         <div className="eliminated-info">
           <UserAvatar
             avatar={members.find((m) => m.playerId === eliminatedPlayer.playerId)?.avatar ?? 'preset:fox'}
-            nickname={nameFor(members, eliminatedPlayer.playerId) || `#${eliminatedPlayer.seat} 号玩家`}
+            nickname={nameFor(members, eliminatedPlayer.playerId) || `#${eliminatedPlayer.seat + 1} 号玩家`}
             size={44}
             className="eliminated-avatar-box"
           />
           <div>
             <span>身份揭晓</span>
-            <strong>{nameFor(members, eliminatedPlayer.playerId) || `#${eliminatedPlayer.seat} 号玩家`}</strong>
+            <strong>{nameFor(members, eliminatedPlayer.playerId) || `#${eliminatedPlayer.seat + 1} 号玩家`}</strong>
           </div>
           <span className={`role-badge ${summary.eliminatedRole ?? ''}`}>{summary.eliminatedRole === 'undercover' ? '卧底' : '平民'}</span>
         </div>
@@ -88,7 +88,7 @@ export function VoteResultView({ view }: Props) {
               const player = playerMap.get(playerId);
               return (
                 <li key={playerId} className="tally-item" style={{ '--stagger-index': index } as CSSProperties}>
-                  <span className="tally-player">#{player?.seat ?? '?'}<small>{nameFor(members, playerId)}</small></span>
+                  <span className="tally-player">#{player !== undefined ? player.seat + 1 : '?'}<small>{nameFor(members, playerId)}</small></span>
                   <span className="tally-bar"><i style={{ '--fill-percent': `${count / maxVotes * 100}%` } as CSSProperties} /></span>
                   <strong className="tally-count">{count} 票</strong>
                 </li>

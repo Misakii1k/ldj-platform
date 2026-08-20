@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useConnection } from './connection/useConnection.ts';
 import { ConnectionProvider } from './connection/ConnectionContext.tsx';
 import { ToastProvider, useToast } from './shared-ui/ToastContext.tsx';
@@ -9,13 +9,14 @@ import { GameHomePage } from './app/GameHomePage.tsx';
 import { RoomPage } from './room/RoomPage.tsx';
 import { GamePage } from './game/GamePage.tsx';
 import { TabletopStatusBanner } from './game/TabletopStatusBanner.tsx';
-
-import { useState, useRef } from 'react';
 import { GameStartTransition } from './shared-ui/GameStartTransition.tsx';
 import { webAudio } from './shared-ui/WebAudioManager.ts';
+import { UserProfileProvider } from './user/UserProfileContext.tsx';
+import { UserProfileModal } from './user/UserProfileModal.tsx';
+import { ErrorBoundary } from './shared-ui/ErrorBoundary.tsx';
 
 function Router() {
-  const { state, me, isViewingHome, setViewingHome, reset, resync, clearMe } = useConnection();
+  const { state, me, isViewingHome, setViewingHome, reset, resync } = useConnection();
   const { connState, room, game, isRefreshing, isRecovering } = state;
   const { showToast } = useToast();
   const [inGameTransition, setInGameTransition] = useState(false);
@@ -131,10 +132,6 @@ function Router() {
     </>
   );
 }
-
-import { UserProfileProvider } from './user/UserProfileContext.tsx';
-import { UserProfileModal } from './user/UserProfileModal.tsx';
-import { ErrorBoundary } from './shared-ui/ErrorBoundary.tsx';
 
 export function App() {
   return (
