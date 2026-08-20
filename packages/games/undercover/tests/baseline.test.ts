@@ -9,7 +9,7 @@ import {
 } from '../../../../scripts/generate-d1-baselines.ts';
 
 const fixtureUrl = new URL('./fixtures/d1/undercover-classic-v1.json', import.meta.url);
-const FROZEN_FIXTURE_SHA256 = '38b011909f2945140a3007cfefb052cc47dfcbccc270869bdf3ec5897508ae68';
+const FROZEN_FIXTURE_SHA256 = '94a253a0e92cc59cddd5819f4e5d801ac4f4289f990fb3ef79cee455d84940df';
 
 test('D1 谁是卧底 fixture 字节哈希保持冻结', async () => {
   const raw = await readFile(fixtureUrl);

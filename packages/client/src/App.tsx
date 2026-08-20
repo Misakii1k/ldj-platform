@@ -14,6 +14,7 @@ import { webAudio } from './shared-ui/WebAudioManager.ts';
 import { UserProfileProvider } from './user/UserProfileContext.tsx';
 import { UserProfileModal } from './user/UserProfileModal.tsx';
 import { ErrorBoundary } from './shared-ui/ErrorBoundary.tsx';
+import { LandscapePrompt } from './shared-ui/LandscapePrompt.tsx';
 
 function Router() {
   const { state, me, isViewingHome, setViewingHome, reset, resync } = useConnection();
@@ -133,6 +134,11 @@ function Router() {
   );
 }
 
+import { UserProfileProvider } from './user/UserProfileContext.tsx';
+import { UserProfileModal } from './user/UserProfileModal.tsx';
+import { ErrorBoundary } from './shared-ui/ErrorBoundary.tsx';
+import { LandscapePrompt } from './shared-ui/LandscapePrompt.tsx';
+
 export function App() {
   return (
     <ErrorBoundary>
@@ -142,6 +148,7 @@ export function App() {
             <MotionProvider>
               <BackgroundProvider>
                 <BackgroundManager>
+                  <LandscapePrompt />
                   <Router />
                   <UserProfileModal />
                 </BackgroundManager>
@@ -153,3 +160,4 @@ export function App() {
     </ErrorBoundary>
   );
 }
+

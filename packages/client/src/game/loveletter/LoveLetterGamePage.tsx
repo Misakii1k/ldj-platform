@@ -169,7 +169,8 @@ export function LoveLetterGamePage({ view }: Props) {
                             className={`ll-role-btn ${guessedRole === role ? 'is-active' : ''}`}
                             onClick={() => setGuessedRole(role)}
                           >
-                            {ROLE_LABELS[role]}
+                            <img src={`/assets/loveletter/${role}.jpg`} alt="" className="ll-role-thumb" />
+                            <span>{ROLE_LABELS[role]}</span>
                           </button>
                         ))}
                       </div>
@@ -193,8 +194,8 @@ export function LoveLetterGamePage({ view }: Props) {
                 <div className="ll-removed-cards">
                   {(view.removedCards ?? []).map((card) => (
                     <div key={card.id} className="ll-mini-card">
-                      <span className="ll-mini-seal"><i /></span>
-                      {ROLE_LABELS[card.role]}
+                      <img src={`/assets/loveletter/${card.role}.jpg`} alt="" className="ll-mini-thumb" />
+                      <span>{ROLE_LABELS[card.role]}</span>
                     </div>
                   ))}
                 </div>
@@ -213,12 +214,18 @@ export function LoveLetterGamePage({ view }: Props) {
                     onClick={() => { setSelectedCardId(card.id); setTargetId(null); setGuessedRole(null); }}
                     aria-pressed={selectedCardId === card.id}
                   >
-                    <span className="env-card__seal" aria-hidden="true"><i /></span>
-                    <strong>{ROLE_LABELS[card.role]}</strong>
-                    <span className="env-card__value loveletter-card__value">{card.value}</span>
+                    <div className="loveletter-card__art">
+                      <img src={`/assets/loveletter/${card.role}.jpg`} alt={ROLE_LABELS[card.role]} className="loveletter-card__img" />
+                    </div>
+                    <div className="loveletter-card__info">
+                      <span className="env-card__seal" aria-hidden="true"><i /></span>
+                      <strong>{ROLE_LABELS[card.role]}</strong>
+                      <span className="env-card__value loveletter-card__value">{card.value}</span>
+                    </div>
                   </button>
                 ))}
               </div>
+
 
               {isPrince && needsTargetChoice && targetOptions.includes(myId!) && (
                 <button

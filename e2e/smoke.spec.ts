@@ -69,7 +69,7 @@ test('smoke：Node WS 建房开局 + 浏览器加入渲染', async ({ browser })
   await expect(page.getByText(/查看你的(机密|秘密)词条/)).toBeVisible({ timeout: 20_000 });
 
   // 3D 翻牌卡牌渲染与交互前状态
-  await expect(page.locator('.identity-flip-card-3d')).toBeVisible();
+  await expect(page.locator('.identity-flip-card')).toBeVisible();
   await expect(page.locator('.identity-card-back__badge')).toBeVisible();
 
   // 回合信息渲染（第 0 轮）确认浏览器已进入该房间的对局页

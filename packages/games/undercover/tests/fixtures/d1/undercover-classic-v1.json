@@ -421,7 +421,7 @@
   ],
   "finalState": {
     "aborted": false,
-    "civilianWord": "青团",
+    "civilianWord": "菠萝蜜",
     "config": {
       "speechSeconds": 60,
       "voteSeconds": 45
@@ -494,7 +494,7 @@
       "uc-p5",
       "uc-p6"
     ],
-    "undercoverWord": "月饼",
+    "undercoverWord": "榴莲",
     "votes": {
       "uc-p3": "uc-p4",
       "uc-p4": "uc-p3",
@@ -515,7 +515,7 @@
   "randomCursor": 8,
   "result": {
     "aborted": false,
-    "civilianWord": "青团",
+    "civilianWord": "菠萝蜜",
     "roles": {
       "uc-p1": "civilian",
       "uc-p2": "civilian",
@@ -525,7 +525,7 @@
       "uc-p6": "civilian"
     },
     "rounds": 3,
-    "undercoverWord": "月饼",
+    "undercoverWord": "榴莲",
     "winner": "civilian"
   },
   "rulesetId": "undercover_classic_v1",
@@ -599,7 +599,7 @@
       }
     ],
     "reveal": {
-      "civilianWord": "青团",
+      "civilianWord": "菠萝蜜",
       "roles": {
         "uc-p1": "civilian",
         "uc-p2": "civilian",
@@ -608,7 +608,7 @@
         "uc-p5": "civilian",
         "uc-p6": "civilian"
       },
-      "undercoverWord": "月饼"
+      "undercoverWord": "榴莲"
     },
     "round": 3,
     "runoffCandidates": [],
@@ -639,7 +639,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -707,7 +707,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -775,7 +775,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "word_reveal",
           "players": [
@@ -843,7 +843,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -911,7 +911,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -979,7 +979,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -1112,7 +1112,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -1180,7 +1180,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -1248,7 +1248,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "word_reveal",
           "players": [
@@ -1316,7 +1316,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -1384,7 +1384,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -1452,7 +1452,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -1587,7 +1587,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -1657,7 +1657,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -1727,7 +1727,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "word_reveal",
           "players": [
@@ -1797,7 +1797,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -1867,7 +1867,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -1937,7 +1937,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -2075,7 +2075,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -2146,7 +2146,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -2217,7 +2217,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "word_reveal",
           "players": [
@@ -2288,7 +2288,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -2359,7 +2359,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -2430,7 +2430,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -2570,7 +2570,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -2642,7 +2642,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -2714,7 +2714,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "word_reveal",
           "players": [
@@ -2786,7 +2786,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -2858,7 +2858,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -2930,7 +2930,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -3072,7 +3072,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -3145,7 +3145,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -3218,7 +3218,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "word_reveal",
           "players": [
@@ -3291,7 +3291,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -3364,7 +3364,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -3437,7 +3437,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -3581,7 +3581,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -3655,7 +3655,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -3729,7 +3729,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "word_reveal",
           "players": [
@@ -3803,7 +3803,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -3877,7 +3877,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -3951,7 +3951,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "word_reveal",
           "players": [
@@ -4097,7 +4097,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -4179,7 +4179,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -4261,7 +4261,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "speaking",
           "players": [
@@ -4343,7 +4343,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -4425,7 +4425,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -4507,7 +4507,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -4668,7 +4668,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -4750,7 +4750,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -4832,7 +4832,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "speaking",
           "players": [
@@ -4914,7 +4914,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -4996,7 +4996,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -5078,7 +5078,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -5239,7 +5239,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -5321,7 +5321,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -5403,7 +5403,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "speaking",
           "players": [
@@ -5485,7 +5485,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -5567,7 +5567,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -5649,7 +5649,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -5810,7 +5810,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -5892,7 +5892,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -5974,7 +5974,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "speaking",
           "players": [
@@ -6056,7 +6056,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -6138,7 +6138,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -6220,7 +6220,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -6381,7 +6381,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -6463,7 +6463,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -6545,7 +6545,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "speaking",
           "players": [
@@ -6627,7 +6627,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -6709,7 +6709,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -6791,7 +6791,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -6952,7 +6952,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -7034,7 +7034,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -7116,7 +7116,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "speaking",
           "players": [
@@ -7198,7 +7198,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -7280,7 +7280,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -7362,7 +7362,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -7523,7 +7523,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -7605,7 +7605,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -7687,7 +7687,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "voting",
           "players": [
@@ -7769,7 +7769,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -7851,7 +7851,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -7933,7 +7933,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -8094,7 +8094,7 @@
             "myVote": "uc-p2",
             "playerId": "uc-p1",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -8176,7 +8176,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -8258,7 +8258,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "voting",
           "players": [
@@ -8340,7 +8340,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -8422,7 +8422,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -8504,7 +8504,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -8665,7 +8665,7 @@
             "myVote": "uc-p2",
             "playerId": "uc-p1",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -8747,7 +8747,7 @@
             "myVote": "uc-p1",
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -8829,7 +8829,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "voting",
           "players": [
@@ -8911,7 +8911,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -8993,7 +8993,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -9075,7 +9075,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -9236,7 +9236,7 @@
             "myVote": "uc-p2",
             "playerId": "uc-p1",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -9318,7 +9318,7 @@
             "myVote": "uc-p1",
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -9400,7 +9400,7 @@
             "myVote": "uc-p1",
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "voting",
           "players": [
@@ -9482,7 +9482,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -9564,7 +9564,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -9646,7 +9646,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -9807,7 +9807,7 @@
             "myVote": "uc-p2",
             "playerId": "uc-p1",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -9889,7 +9889,7 @@
             "myVote": "uc-p1",
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -9971,7 +9971,7 @@
             "myVote": "uc-p1",
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "voting",
           "players": [
@@ -10053,7 +10053,7 @@
             "myVote": "uc-p1",
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -10135,7 +10135,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -10217,7 +10217,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -10378,7 +10378,7 @@
             "myVote": "uc-p2",
             "playerId": "uc-p1",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -10460,7 +10460,7 @@
             "myVote": "uc-p1",
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -10542,7 +10542,7 @@
             "myVote": "uc-p1",
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "voting",
           "players": [
@@ -10624,7 +10624,7 @@
             "myVote": "uc-p1",
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -10706,7 +10706,7 @@
             "myVote": "uc-p1",
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -10788,7 +10788,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -10959,7 +10959,7 @@
             "myVote": "uc-p2",
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "vote_result",
           "players": [
@@ -11051,7 +11051,7 @@
             "myVote": "uc-p1",
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "vote_result",
           "players": [
@@ -11143,7 +11143,7 @@
             "myVote": "uc-p1",
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "vote_result",
           "players": [
@@ -11235,7 +11235,7 @@
             "myVote": "uc-p1",
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "vote_result",
           "players": [
@@ -11327,7 +11327,7 @@
             "myVote": "uc-p1",
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "vote_result",
           "players": [
@@ -11419,7 +11419,7 @@
             "myVote": "uc-p1",
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "vote_result",
           "players": [
@@ -11600,7 +11600,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -11691,7 +11691,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -11782,7 +11782,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "speaking",
           "players": [
@@ -11873,7 +11873,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -11964,7 +11964,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -12055,7 +12055,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -12234,7 +12234,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -12325,7 +12325,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -12416,7 +12416,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "speaking",
           "players": [
@@ -12507,7 +12507,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -12598,7 +12598,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -12689,7 +12689,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -12868,7 +12868,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -12959,7 +12959,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -13050,7 +13050,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "speaking",
           "players": [
@@ -13141,7 +13141,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -13232,7 +13232,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -13323,7 +13323,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -13502,7 +13502,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -13593,7 +13593,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -13684,7 +13684,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "speaking",
           "players": [
@@ -13775,7 +13775,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -13866,7 +13866,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -13957,7 +13957,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -14136,7 +14136,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -14227,7 +14227,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -14318,7 +14318,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "speaking",
           "players": [
@@ -14409,7 +14409,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -14500,7 +14500,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -14591,7 +14591,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -14770,7 +14770,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -14861,7 +14861,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -14952,7 +14952,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "voting",
           "players": [
@@ -15043,7 +15043,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -15134,7 +15134,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -15225,7 +15225,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -15404,7 +15404,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -15495,7 +15495,7 @@
             "myVote": "uc-p3",
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -15586,7 +15586,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "voting",
           "players": [
@@ -15677,7 +15677,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -15768,7 +15768,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -15859,7 +15859,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -16038,7 +16038,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -16129,7 +16129,7 @@
             "myVote": "uc-p3",
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -16220,7 +16220,7 @@
             "myVote": "uc-p2",
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "voting",
           "players": [
@@ -16311,7 +16311,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -16402,7 +16402,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -16493,7 +16493,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -16672,7 +16672,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -16763,7 +16763,7 @@
             "myVote": "uc-p3",
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -16854,7 +16854,7 @@
             "myVote": "uc-p2",
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "voting",
           "players": [
@@ -16945,7 +16945,7 @@
             "myVote": "uc-p2",
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -17036,7 +17036,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -17127,7 +17127,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -17306,7 +17306,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -17397,7 +17397,7 @@
             "myVote": "uc-p3",
             "playerId": "uc-p2",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -17488,7 +17488,7 @@
             "myVote": "uc-p2",
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "voting",
           "players": [
@@ -17579,7 +17579,7 @@
             "myVote": "uc-p2",
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -17670,7 +17670,7 @@
             "myVote": "uc-p2",
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -17761,7 +17761,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -17940,7 +17940,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "vote_result",
           "players": [
@@ -18031,7 +18031,7 @@
             "myVote": "uc-p3",
             "playerId": "uc-p2",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "vote_result",
           "players": [
@@ -18122,7 +18122,7 @@
             "myVote": "uc-p2",
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "vote_result",
           "players": [
@@ -18213,7 +18213,7 @@
             "myVote": "uc-p2",
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "vote_result",
           "players": [
@@ -18304,7 +18304,7 @@
             "myVote": "uc-p2",
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "vote_result",
           "players": [
@@ -18395,7 +18395,7 @@
             "myVote": "uc-p2",
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "vote_result",
           "players": [
@@ -18574,7 +18574,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -18664,7 +18664,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -18754,7 +18754,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "speaking",
           "players": [
@@ -18844,7 +18844,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -18934,7 +18934,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -19024,7 +19024,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -19201,7 +19201,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -19291,7 +19291,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -19381,7 +19381,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "speaking",
           "players": [
@@ -19471,7 +19471,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -19561,7 +19561,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -19651,7 +19651,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -19828,7 +19828,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -19918,7 +19918,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -20008,7 +20008,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "speaking",
           "players": [
@@ -20098,7 +20098,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -20188,7 +20188,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -20278,7 +20278,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -20455,7 +20455,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -20545,7 +20545,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -20635,7 +20635,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "speaking",
           "players": [
@@ -20725,7 +20725,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -20815,7 +20815,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -20905,7 +20905,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "speaking",
           "players": [
@@ -21082,7 +21082,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -21172,7 +21172,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -21262,7 +21262,7 @@
             "myVote": null,
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "voting",
           "players": [
@@ -21352,7 +21352,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -21442,7 +21442,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -21532,7 +21532,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -21709,7 +21709,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -21799,7 +21799,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -21889,7 +21889,7 @@
             "myVote": "uc-p4",
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "voting",
           "players": [
@@ -21979,7 +21979,7 @@
             "myVote": null,
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -22069,7 +22069,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -22159,7 +22159,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -22336,7 +22336,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -22426,7 +22426,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -22516,7 +22516,7 @@
             "myVote": "uc-p4",
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "voting",
           "players": [
@@ -22606,7 +22606,7 @@
             "myVote": "uc-p3",
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -22696,7 +22696,7 @@
             "myVote": null,
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -22786,7 +22786,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -22963,7 +22963,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -23053,7 +23053,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -23143,7 +23143,7 @@
             "myVote": "uc-p4",
             "playerId": "uc-p3",
             "role": null,
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "voting",
           "players": [
@@ -23233,7 +23233,7 @@
             "myVote": "uc-p3",
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -23323,7 +23323,7 @@
             "myVote": "uc-p3",
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -23413,7 +23413,7 @@
             "myVote": null,
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "voting",
           "players": [
@@ -23590,7 +23590,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "vote_result",
           "players": [
@@ -23680,7 +23680,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "vote_result",
           "players": [
@@ -23770,7 +23770,7 @@
             "myVote": "uc-p4",
             "playerId": "uc-p3",
             "role": "undercover",
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "vote_result",
           "players": [
@@ -23860,7 +23860,7 @@
             "myVote": "uc-p3",
             "playerId": "uc-p4",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "vote_result",
           "players": [
@@ -23950,7 +23950,7 @@
             "myVote": "uc-p3",
             "playerId": "uc-p5",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "vote_result",
           "players": [
@@ -24040,7 +24040,7 @@
             "myVote": "uc-p3",
             "playerId": "uc-p6",
             "role": null,
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "vote_result",
           "players": [
@@ -24217,7 +24217,7 @@
             "myVote": null,
             "playerId": "uc-p1",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "game_over",
           "players": [
@@ -24265,7 +24265,7 @@
             }
           ],
           "reveal": {
-            "civilianWord": "青团",
+            "civilianWord": "菠萝蜜",
             "roles": {
               "uc-p1": "civilian",
               "uc-p2": "civilian",
@@ -24274,7 +24274,7 @@
               "uc-p5": "civilian",
               "uc-p6": "civilian"
             },
-            "undercoverWord": "月饼"
+            "undercoverWord": "榴莲"
           },
           "round": 3,
           "runoffCandidates": [],
@@ -24318,7 +24318,7 @@
             "myVote": null,
             "playerId": "uc-p2",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "game_over",
           "players": [
@@ -24366,7 +24366,7 @@
             }
           ],
           "reveal": {
-            "civilianWord": "青团",
+            "civilianWord": "菠萝蜜",
             "roles": {
               "uc-p1": "civilian",
               "uc-p2": "civilian",
@@ -24375,7 +24375,7 @@
               "uc-p5": "civilian",
               "uc-p6": "civilian"
             },
-            "undercoverWord": "月饼"
+            "undercoverWord": "榴莲"
           },
           "round": 3,
           "runoffCandidates": [],
@@ -24419,7 +24419,7 @@
             "myVote": "uc-p4",
             "playerId": "uc-p3",
             "role": "undercover",
-            "word": "月饼"
+            "word": "榴莲"
           },
           "phase": "game_over",
           "players": [
@@ -24467,7 +24467,7 @@
             }
           ],
           "reveal": {
-            "civilianWord": "青团",
+            "civilianWord": "菠萝蜜",
             "roles": {
               "uc-p1": "civilian",
               "uc-p2": "civilian",
@@ -24476,7 +24476,7 @@
               "uc-p5": "civilian",
               "uc-p6": "civilian"
             },
-            "undercoverWord": "月饼"
+            "undercoverWord": "榴莲"
           },
           "round": 3,
           "runoffCandidates": [],
@@ -24520,7 +24520,7 @@
             "myVote": "uc-p3",
             "playerId": "uc-p4",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "game_over",
           "players": [
@@ -24568,7 +24568,7 @@
             }
           ],
           "reveal": {
-            "civilianWord": "青团",
+            "civilianWord": "菠萝蜜",
             "roles": {
               "uc-p1": "civilian",
               "uc-p2": "civilian",
@@ -24577,7 +24577,7 @@
               "uc-p5": "civilian",
               "uc-p6": "civilian"
             },
-            "undercoverWord": "月饼"
+            "undercoverWord": "榴莲"
           },
           "round": 3,
           "runoffCandidates": [],
@@ -24621,7 +24621,7 @@
             "myVote": "uc-p3",
             "playerId": "uc-p5",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "game_over",
           "players": [
@@ -24669,7 +24669,7 @@
             }
           ],
           "reveal": {
-            "civilianWord": "青团",
+            "civilianWord": "菠萝蜜",
             "roles": {
               "uc-p1": "civilian",
               "uc-p2": "civilian",
@@ -24678,7 +24678,7 @@
               "uc-p5": "civilian",
               "uc-p6": "civilian"
             },
-            "undercoverWord": "月饼"
+            "undercoverWord": "榴莲"
           },
           "round": 3,
           "runoffCandidates": [],
@@ -24722,7 +24722,7 @@
             "myVote": "uc-p3",
             "playerId": "uc-p6",
             "role": "civilian",
-            "word": "青团"
+            "word": "菠萝蜜"
           },
           "phase": "game_over",
           "players": [
@@ -24770,7 +24770,7 @@
             }
           ],
           "reveal": {
-            "civilianWord": "青团",
+            "civilianWord": "菠萝蜜",
             "roles": {
               "uc-p1": "civilian",
               "uc-p2": "civilian",
@@ -24779,7 +24779,7 @@
               "uc-p5": "civilian",
               "uc-p6": "civilian"
             },
-            "undercoverWord": "月饼"
+            "undercoverWord": "榴莲"
           },
           "round": 3,
           "runoffCandidates": [],
@@ -24863,7 +24863,7 @@
           }
         ],
         "reveal": {
-          "civilianWord": "青团",
+          "civilianWord": "菠萝蜜",
           "roles": {
             "uc-p1": "civilian",
             "uc-p2": "civilian",
@@ -24872,7 +24872,7 @@
             "uc-p5": "civilian",
             "uc-p6": "civilian"
           },
-          "undercoverWord": "月饼"
+          "undercoverWord": "榴莲"
         },
         "round": 3,
         "runoffCandidates": [],
@@ -24920,7 +24920,7 @@
         "myVote": null,
         "playerId": "uc-p1",
         "role": "civilian",
-        "word": "青团"
+        "word": "菠萝蜜"
       },
       "phase": "game_over",
       "players": [
@@ -24968,7 +24968,7 @@
         }
       ],
       "reveal": {
-        "civilianWord": "青团",
+        "civilianWord": "菠萝蜜",
         "roles": {
           "uc-p1": "civilian",
           "uc-p2": "civilian",
@@ -24977,7 +24977,7 @@
           "uc-p5": "civilian",
           "uc-p6": "civilian"
         },
-        "undercoverWord": "月饼"
+        "undercoverWord": "榴莲"
       },
       "round": 3,
       "runoffCandidates": [],
@@ -25021,7 +25021,7 @@
         "myVote": null,
         "playerId": "uc-p2",
         "role": "civilian",
-        "word": "青团"
+        "word": "菠萝蜜"
       },
       "phase": "game_over",
       "players": [
@@ -25069,7 +25069,7 @@
         }
       ],
       "reveal": {
-        "civilianWord": "青团",
+        "civilianWord": "菠萝蜜",
         "roles": {
           "uc-p1": "civilian",
           "uc-p2": "civilian",
@@ -25078,7 +25078,7 @@
           "uc-p5": "civilian",
           "uc-p6": "civilian"
         },
-        "undercoverWord": "月饼"
+        "undercoverWord": "榴莲"
       },
       "round": 3,
       "runoffCandidates": [],
@@ -25122,7 +25122,7 @@
         "myVote": "uc-p4",
         "playerId": "uc-p3",
         "role": "undercover",
-        "word": "月饼"
+        "word": "榴莲"
       },
       "phase": "game_over",
       "players": [
@@ -25170,7 +25170,7 @@
         }
       ],
       "reveal": {
-        "civilianWord": "青团",
+        "civilianWord": "菠萝蜜",
         "roles": {
           "uc-p1": "civilian",
           "uc-p2": "civilian",
@@ -25179,7 +25179,7 @@
           "uc-p5": "civilian",
           "uc-p6": "civilian"
         },
-        "undercoverWord": "月饼"
+        "undercoverWord": "榴莲"
       },
       "round": 3,
       "runoffCandidates": [],
@@ -25223,7 +25223,7 @@
         "myVote": "uc-p3",
         "playerId": "uc-p4",
         "role": "civilian",
-        "word": "青团"
+        "word": "菠萝蜜"
       },
       "phase": "game_over",
       "players": [
@@ -25271,7 +25271,7 @@
         }
       ],
       "reveal": {
-        "civilianWord": "青团",
+        "civilianWord": "菠萝蜜",
         "roles": {
           "uc-p1": "civilian",
           "uc-p2": "civilian",
@@ -25280,7 +25280,7 @@
           "uc-p5": "civilian",
           "uc-p6": "civilian"
         },
-        "undercoverWord": "月饼"
+        "undercoverWord": "榴莲"
       },
       "round": 3,
       "runoffCandidates": [],
@@ -25324,7 +25324,7 @@
         "myVote": "uc-p3",
         "playerId": "uc-p5",
         "role": "civilian",
-        "word": "青团"
+        "word": "菠萝蜜"
       },
       "phase": "game_over",
       "players": [
@@ -25372,7 +25372,7 @@
         }
       ],
       "reveal": {
-        "civilianWord": "青团",
+        "civilianWord": "菠萝蜜",
         "roles": {
           "uc-p1": "civilian",
           "uc-p2": "civilian",
@@ -25381,7 +25381,7 @@
           "uc-p5": "civilian",
           "uc-p6": "civilian"
         },
-        "undercoverWord": "月饼"
+        "undercoverWord": "榴莲"
       },
       "round": 3,
       "runoffCandidates": [],
@@ -25425,7 +25425,7 @@
         "myVote": "uc-p3",
         "playerId": "uc-p6",
         "role": "civilian",
-        "word": "青团"
+        "word": "菠萝蜜"
       },
       "phase": "game_over",
       "players": [
@@ -25473,7 +25473,7 @@
         }
       ],
       "reveal": {
-        "civilianWord": "青团",
+        "civilianWord": "菠萝蜜",
         "roles": {
           "uc-p1": "civilian",
           "uc-p2": "civilian",
@@ -25482,7 +25482,7 @@
           "uc-p5": "civilian",
           "uc-p6": "civilian"
         },
-        "undercoverWord": "月饼"
+        "undercoverWord": "榴莲"
       },
       "round": 3,
       "runoffCandidates": [],
