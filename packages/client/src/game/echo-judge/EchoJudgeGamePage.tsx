@@ -98,6 +98,8 @@ export function EchoJudgeGamePage({ view }: Props) {
     <TabletopShell
       title="伪人测试"
       phase={phaseLabel(view.phase)}
+      gameId="echo-judge"
+      phaseKey={`${view.phase}:${view.round}:${view.judgeId}:${view.phase === 'answering' ? view.answeredCount : view.phase === 'judgment' ? view.caughtImpostor ?? 'pending' : view.phase === 'game_over' ? view.winners.join(',') || 'no-winner' : 'active'}`}
       spectator={isSpectator}
       players={players}
       theme="court"
@@ -122,7 +124,7 @@ export function EchoJudgeGamePage({ view }: Props) {
         </GameDrawer>
       )}
     >
-      {error && <p className="game-error" role="alert">{error}</p>}
+      {error && <p className="game-error" role="alert" aria-live="assertive" aria-atomic="true">{error}</p>}
 
       {view.phase !== 'game_over' ? (
         <div className="sg-stage">

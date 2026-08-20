@@ -1,14 +1,16 @@
 import React from 'react';
+import { GameActionFeedback } from '../../../shared-ui/GameMotion.tsx';
 import type { WerewolfActionGroup } from '../presentation.ts';
 
 interface WerewolfActionPanelProps {
   readonly groups: readonly WerewolfActionGroup[];
   readonly waitingHint: string | null;
   readonly busy: boolean;
+  readonly phaseKey: string;
   readonly onAct: (payload: unknown) => void;
 }
 
-export function WerewolfActionPanel({ groups, waitingHint, busy, onAct }: WerewolfActionPanelProps) {
+export function WerewolfActionPanel({ groups, waitingHint, busy, phaseKey, onAct }: WerewolfActionPanelProps) {
   if (groups.length === 0) {
     if (!waitingHint) return null;
     return (
@@ -21,7 +23,26 @@ export function WerewolfActionPanel({ groups, waitingHint, busy, onAct }: Werewo
 
   return (
     <section className="werewolf-actions" aria-label="可执行操作" aria-busy={busy} data-busy={busy || undefined}>
-      {busy && <div className="werewolf-actions__busy" role="status">正在同步决策…</div>}
+      <GameActionFeedback
+        active={busy}
+        feedbackKey={`${phaseKey}:busy`}
+        className="focused-game-feedback"
+        variant="info"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {busy ? '正在同步决策，请勿重复操作…' : null}
+      </GameActionFeedback>
+      <GameActionFeedback
+        active={!busy && groups.length > 0}
+        feedbackKey={`${phaseKey}:${groups.map((group) => group.id).join(',')}`}
+        className="focused-game-feedback"
+        variant="warning"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {!busy && groups.length > 0 ? '轮到你行动，请完成本阶段选择。' : null}
+      </GameActionFeedback>
       {groups.map((group) => (
         <div key={group.id} className="werewolf-actions__group">
           <div className="werewolf-actions__header-line">

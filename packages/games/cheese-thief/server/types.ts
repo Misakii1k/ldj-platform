@@ -46,6 +46,8 @@ export interface CheeseThiefConfig {
   voteSeconds?: number;
   /** 4 人局两骰自选窗口（秒），默认 30 */
   hourChoiceSeconds?: number;
+  /** 大盗选择共犯时长（秒），默认 15 */
+  accompliceSelectSeconds?: number;
   /** 是否启用可选身份卡（猫/狗/白老鼠），默认 false */
   roleCards?: boolean;
   /** 共犯配置覆盖（按人数），默认见 DEFAULT_ACCOMPLICE_RULES */
@@ -57,6 +59,7 @@ export interface ResolvedCheeseThiefConfig {
   rulesetId?: 'cheese_thief_classic_v1';
   mode: 'standard' | 'simulator';
   nightHourSeconds: number;
+  accompliceSelectSeconds: number;
   discussionSeconds: number;
   voteSeconds: number;
   hourChoiceSeconds: number;

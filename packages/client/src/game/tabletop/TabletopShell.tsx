@@ -2,7 +2,7 @@ import { TabletopOvalShell, type PlayerSeat, type TabletopTheme } from '../../sh
 import { GameLeaveButton } from '../GameLeaveButton.tsx';
 import type { TabletopShellProps } from './types.ts';
 
-export function TabletopShell({ title, phase, spectator, players, actions, drawer, rulesButton, theme, hideSeats, children }: TabletopShellProps) {
+export function TabletopShell({ title, phase, phaseKey, gameId, spectator, players, actions, drawer, rulesButton, theme, hideSeats, children }: TabletopShellProps) {
   // 主题优先使用调用方显式指定；缺失时按游戏标题兜底（游戏专属 felt 主题由各游页面直接给出）
   let resolvedTheme: TabletopTheme = theme ?? 'party';
   if (theme === undefined) {
@@ -28,9 +28,11 @@ export function TabletopShell({ title, phase, spectator, players, actions, drawe
     <TabletopOvalShell
       title={title}
       subtitle={`阶段：${phase}${spectator ? ' · (观战模式)' : ''}`}
+      gameId={gameId}
       theme={resolvedTheme}
       players={seats}
       hideSeats={hideSeats}
+      phaseKey={phaseKey ?? phase}
       topRightControls={
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {rulesButton}
@@ -44,9 +46,9 @@ export function TabletopShell({ title, phase, spectator, players, actions, drawe
       }
       bottomBar={
         actions || drawer ? (
-          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-            {actions}
-            {drawer}
+          <div className="tabletop-action-stack">
+            {actions && <div className="tabletop-action-stack__actions">{actions}</div>}
+            {drawer && <div className="tabletop-action-stack__drawer">{drawer}</div>}
           </div>
         ) : undefined
       }

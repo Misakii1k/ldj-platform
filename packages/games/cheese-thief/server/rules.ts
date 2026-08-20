@@ -256,7 +256,7 @@ function endNight(
       effects.push({
         type: 'schedule_timer',
         timerId: 'accomplice-select',
-        deadlineAt: ctx.now + state.config.nightHourSeconds * 1000,
+        deadlineAt: ctx.now + state.config.accompliceSelectSeconds * 1000,
         action: { type: 'auto_select_accomplice' },
       });
       return;

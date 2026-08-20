@@ -1,3 +1,4 @@
+import { GameCountdownPulse } from '../../../shared-ui/GameMotion.tsx';
 import { useCountdown } from '../../../shared-ui/useCountdown.ts';
 import type { WerewolfMood } from '../presentation.ts';
 
@@ -44,10 +45,17 @@ export function MoonPhaseHeader({
         {seconds === null ? (
           <span className="moon-header__timer moon-header__timer--idle">无限时</span>
         ) : (
-          <span className={`moon-header__timer ${seconds <= 5 ? 'is-urgent' : ''}`} role="timer" aria-live="off">
-            <strong>{seconds}</strong>
-            <small>秒</small>
-          </span>
+          <GameCountdownPulse
+            secondsLeft={seconds}
+            urgentAt={5}
+            className="focused-game-countdown"
+            aria-live="off"
+          >
+            <span className={`moon-header__timer ${seconds <= 5 ? 'is-urgent' : ''}`} role="timer">
+              <strong>{seconds}</strong>
+              <small>秒</small>
+            </span>
+          </GameCountdownPulse>
         )}
       </div>
     </header>

@@ -160,6 +160,22 @@ export function IdentityFlipCard({
     };
   }, []);
 
+  const [tilt, setTilt] = useState<{ x: number; y: number; glareX: number; glareY: number } | null>(null);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!canInteract || isSpectator) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const rotateX = ((y - centerY) / centerY) * -12;
+    const rotateY = ((x - centerX) / centerX) * 12;
+    const glareX = (x / rect.width) * 100;
+    const glareY = (y / rect.height) * 100;
+    setTilt({ x: rotateX, y: rotateY, glareX, glareY });
+  }, [canInteract, isSpectator]);
+
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (!canInteract || isSpectator) return;
     // 忽略小锁按钮本身的 pointer 事件穿透
@@ -177,6 +193,7 @@ export function IdentityFlipCard({
   }, [isPressing]);
 
   const handlePointerCancel = useCallback(() => {
+    setTilt(null);
     if (isPressing) {
       setIsPressing(false);
     }
@@ -206,12 +223,19 @@ export function IdentityFlipCard({
       className={`identity-flip-container theme-${theme} camp-${roleCamp} ${
         isCompact ? 'identity-flip-container--compact' : ''
       } ${className}`}
+      style={{
+        '--tilt-x': `${tilt ? tilt.x.toFixed(1) : 0}deg`,
+        '--tilt-y': `${tilt ? tilt.y.toFixed(1) : 0}deg`,
+        '--glare-x': `${tilt ? tilt.glareX.toFixed(1) : 50}%`,
+        '--glare-y': `${tilt ? tilt.glareY.toFixed(1) : 50}%`,
+      } as React.CSSProperties}
     >
       {/* 3D 翻牌主舞台 */}
       <div
         className={`identity-flip-card ${isRevealed ? 'is-revealed' : ''} ${
           isLockedOpen ? 'is-locked' : ''
         }`}
+        onPointerMove={handlePointerMove}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerCancel}
@@ -224,6 +248,7 @@ export function IdentityFlipCard({
           {/* ════════ 卡牌背面（遮蔽态 · 拟真封印） ════════ */}
           <div className="identity-card-back">
             <div className="identity-card-back__texture" />
+            <div className="identity-card-holo-foil" />
             <div className="identity-card-back__border">
               <div className="identity-card-back__seal">
                 <span className="identity-card-back__emblem" aria-hidden="true" />
@@ -247,6 +272,7 @@ export function IdentityFlipCard({
           {/* ════════ 卡牌正面（揭示态 · 3D 核心身份） ════════ */}
           <div className="identity-card-front">
             <div className="identity-card-front__aura" />
+            <div className="identity-card-holo-foil" />
             
             {/* 右上角常驻锁止按钮 */}
             {canInteract && !isSpectator && (

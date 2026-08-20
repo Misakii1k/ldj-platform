@@ -1,0 +1,178 @@
+.game-motion-root {
+  --game-motion-fast-duration: 160ms;
+  --game-motion-standard-duration: 320ms;
+  --game-motion-phase-duration: 420ms;
+  --game-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  isolation: isolate;
+}
+
+.game-motion-root[data-motion-level='reduced'],
+.game-motion-layer[data-motion-level='reduced'],
+.game-motion-phase-transition[data-motion-level='reduced'],
+.game-motion-action-feedback[data-motion-level='reduced'],
+.game-motion-countdown-pulse[data-motion-level='reduced'] {
+  --game-motion-fast-duration: 120ms;
+  --game-motion-standard-duration: 220ms;
+  --game-motion-phase-duration: 280ms;
+}
+
+.game-motion-root[data-motion-level='minimal'],
+.game-motion-layer[data-motion-level='minimal'],
+.game-motion-phase-transition[data-motion-level='minimal'],
+.game-motion-action-feedback[data-motion-level='minimal'],
+.game-motion-countdown-pulse[data-motion-level='minimal'] {
+  --game-motion-fast-duration: 1ms;
+  --game-motion-standard-duration: 1ms;
+  --game-motion-phase-duration: 1ms;
+}
+
+.game-motion-root[data-motion-level='off'],
+.game-motion-layer[data-motion-level='off'],
+.game-motion-phase-transition[data-motion-level='off'],
+.game-motion-action-feedback[data-motion-level='off'],
+.game-motion-countdown-pulse[data-motion-level='off'] {
+  --game-motion-fast-duration: 0ms;
+  --game-motion-standard-duration: 0ms;
+  --game-motion-phase-duration: 0ms;
+}
+
+.game-motion-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.game-motion-layer.is-interactive {
+  pointer-events: auto;
+}
+
+.game-motion-phase-transition {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.game-motion-phase-transition.is-active {
+  animation: game-motion-phase-enter var(--game-motion-phase-duration) var(--game-motion-ease);
+  will-change: opacity, transform;
+}
+
+.game-motion-action-feedback {
+  --game-motion-feedback-color: #7dd3fc;
+  border-radius: 0.75rem;
+  transition:
+    opacity var(--game-motion-fast-duration) var(--game-motion-ease),
+    transform var(--game-motion-fast-duration) var(--game-motion-ease),
+    box-shadow var(--game-motion-fast-duration) var(--game-motion-ease);
+  opacity: 0;
+  transform: translate3d(0, 4px, 0) scale(0.98);
+  will-change: opacity, transform;
+}
+
+.game-motion-action-feedback[data-feedback-variant='success'] {
+  --game-motion-feedback-color: #86efac;
+}
+
+.game-motion-action-feedback[data-feedback-variant='error'] {
+  --game-motion-feedback-color: #fca5a5;
+}
+
+.game-motion-action-feedback[data-feedback-variant='warning'] {
+  --game-motion-feedback-color: #fde68a;
+}
+
+.game-motion-action-feedback.is-active {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.game-motion-action-feedback.is-pulsing {
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--game-motion-feedback-color) 42%, transparent);
+  animation: game-motion-action-pulse var(--game-motion-standard-duration) var(--game-motion-ease);
+}
+
+.game-motion-countdown-pulse {
+  --game-motion-countdown-progress: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  border-radius: 999px;
+  transition:
+    color var(--game-motion-fast-duration) var(--game-motion-ease),
+    background-color var(--game-motion-fast-duration) var(--game-motion-ease),
+    transform var(--game-motion-fast-duration) var(--game-motion-ease);
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.game-motion-countdown-pulse.is-pulsing {
+  animation: game-motion-countdown-pulse var(--game-motion-fast-duration) var(--game-motion-ease);
+}
+
+.game-motion-countdown-pulse[data-countdown-state='urgent'] {
+  color: #fecaca;
+  background-color: color-mix(in srgb, #ef4444 18%, transparent);
+}
+
+.game-motion-countdown-pulse[data-countdown-state='expired'] {
+  color: #cbd5e1;
+  background-color: color-mix(in srgb, #64748b 18%, transparent);
+}
+
+@keyframes game-motion-action-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--game-motion-feedback-color) 48%, transparent);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0.75rem transparent;
+  }
+}
+
+@keyframes game-motion-phase-enter {
+  0% {
+    opacity: 0.82;
+    transform: translate3d(0, 6px, 0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes game-motion-countdown-pulse {
+  0% {
+    transform: translateZ(0) scale(0.94);
+  }
+
+  65% {
+    transform: translateZ(0) scale(1.06);
+  }
+
+  100% {
+    transform: translateZ(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-motion-root,
+  .game-motion-layer,
+  .game-motion-phase-transition,
+  .game-motion-action-feedback,
+  .game-motion-countdown-pulse {
+    --game-motion-fast-duration: 1ms;
+    --game-motion-standard-duration: 1ms;
+    --game-motion-phase-duration: 1ms;
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+
+  .game-motion-action-feedback.is-pulsing,
+  .game-motion-countdown-pulse.is-pulsing {
+    animation: none !important;
+  }
+}

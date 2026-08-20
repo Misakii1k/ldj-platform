@@ -7,6 +7,7 @@ import { useGameAction } from '../useGameAction.ts';
 import { buildWerewolfPresentation } from './presentation.ts';
 import { parseWerewolfView } from './types.ts';
 import { WerewolfStage } from './ui/WerewolfStage.tsx';
+import '../focused-game-motion.css';
 
 export function WerewolfGamePage({ view: rawView }: { view: unknown }) {
   const view = parseWerewolfView(rawView);
@@ -18,7 +19,9 @@ export function WerewolfGamePage({ view: rawView }: { view: unknown }) {
       <main className="werewolf-stage werewolf-stage--error">
         <section className="werewolf-stage__fallback">
           <h1>狼人杀</h1>
-          <p className="game-error" role="alert">狼人杀视图同步失败，请尝试刷新或重新进入房间。</p>
+          <p className="game-error" role="alert" aria-live="assertive" aria-atomic="true">
+            狼人杀视图同步失败，请尝试刷新或重新进入房间。
+          </p>
         </section>
       </main>
     );

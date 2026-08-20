@@ -13,7 +13,6 @@ import {
   MONKEY_SPECIAL_NAMES,
   type DurianCard,
   type DurianPlayerView,
-  type FruitCard,
 } from './types.ts';
 
 function phaseLabel(phase: DurianPlayerView['phase']): string {
@@ -254,7 +253,7 @@ export function DurianGamePage({ view }: Props) {
             checkHalf !== undefined ? (isLeftChecked ? 'durian-card-half--checked' : 'durian-card-half--crossed') : ''
           }`}
         >
-          <FruitGroup fruit={leftHalf.fruit} quantity={leftHalf.quantity} size={size} stacked={true} />
+          <FruitGroup fruit={leftHalf.fruit} quantity={leftHalf.quantity} size={size} stacked={false} />
           <span className="durian-card-half__name">{FRUIT_NAMES[leftHalf.fruit]}</span>
           {showBadge && <span className="durian-card-half__badge">×{leftHalf.quantity}</span>}
         </div>
@@ -264,7 +263,7 @@ export function DurianGamePage({ view }: Props) {
             checkHalf !== undefined ? (isRightChecked ? 'durian-card-half--checked' : 'durian-card-half--crossed') : ''
           }`}
         >
-          <FruitGroup fruit={rightHalf.fruit} quantity={rightHalf.quantity} size={size} stacked={true} />
+          <FruitGroup fruit={rightHalf.fruit} quantity={rightHalf.quantity} size={size} stacked={false} />
           <span className="durian-card-half__name">{FRUIT_NAMES[rightHalf.fruit]}</span>
           {showBadge && <span className="durian-card-half__badge">×{rightHalf.quantity}</span>}
         </div>
@@ -315,6 +314,8 @@ export function DurianGamePage({ view }: Props) {
       phase={`第 ${view.round}/${view.maxRounds} 轮 · ${phaseLabel(view.phase)}${
         isSimulator ? (deviceRole === 'table' ? ' · 🖥️ 桌面中央端' : ' · 📱 玩家手牌端') : ''
       }`}
+      gameId="durian"
+      phaseKey={`${view.phase}:${view.round}:${view.currentPlayerId ?? view.previousPlayerId ?? 'idle'}:${view.lastChallenge ? `${view.lastChallenge.challengerId}:${view.lastChallenge.loserId}` : view.phase === 'game_over' ? view.winners.join(',') || 'no-winner' : 'active'}`}
       spectator={isSpectator}
       players={players}
       theme="orchard"
@@ -346,7 +347,7 @@ export function DurianGamePage({ view }: Props) {
         </GameDrawer>
       )}
     >
-      {error && <p className="game-error" role="alert">{error}</p>}
+      {error && <p className="game-error" role="alert" aria-live="assertive" aria-atomic="true">{error}</p>}
 
       <div className={`durian-stage ${isSimulatorTable ? 'durian-stage--simulator-table' : ''} ${isSimulatorPlayer ? 'durian-stage--simulator-player' : ''}`}>
         

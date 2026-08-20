@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- 三个新游戏的服务端视图结构不同，此组件按 moduleId 消费运行时视图。 */
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
 import { PlayingCard, CardBack } from './PlayingCard.tsx';
 import { nameFor, useGameAction, type MemberLike } from './useGameAction.ts';
@@ -12,6 +12,7 @@ import { webAudio } from '../shared-ui/WebAudioManager.ts';
 import { useCountdown } from '../shared-ui/useCountdown.ts';
 import { UserAvatar } from '../user/UserAvatar.tsx';
 import { useUserProfile } from '../user/UserProfileContext.tsx';
+import { GameActionFeedback, GameCountdownPulse } from '../shared-ui/GameMotion.tsx';
 
 type AnyView = Record<string, any>;
 
@@ -173,6 +174,7 @@ export function UnoGamePage({ view }: { view: AnyView }) {
     <TabletopOvalShell
       title="UNO"
       subtitle={unoSubtitle(view, members)}
+      gameId="uno"
       theme="poker"
       players={playerSeats}
       currentUserId={me?.playerId}
@@ -180,6 +182,8 @@ export function UnoGamePage({ view }: { view: AnyView }) {
       centerArena={centerArena}
       bottomBar={bottomBar}
       phaseBannerText={myTurn ? '轮到你的回合' : undefined}
+      phaseBannerSubtext={busy ? '正在提交操作…' : undefined}
+      phaseKey={`${view.phase}:${view.currentPlayerId ?? view.winnerId ?? 'idle'}`}
     />
   );
 }
@@ -422,6 +426,10 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
   const countdown = useCountdown(view.deadlineAt);
   const remainSeconds = countdown.secondsLeft !== null ? Math.max(0, countdown.secondsLeft) : 15;
 
+  useEffect(() => {
+    if (view.phase !== 'playing' || !myTurn) setSelectedIds([]);
+  }, [myTurn, view.phase]);
+
   // 整理手牌：按大王>小王>2>A>K>Q>J>10>9>8>7>6>5>4>3 降序排列
   const sortedHand = useMemo(() => {
     if (!me?.hand) return [];
@@ -452,7 +460,7 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
   }, [view.players, me?.playerId]);
 
   const handleCardToggle = (cardId: string) => {
-    if (busy || view.phase !== 'playing') return;
+    if (busy || view.phase !== 'playing' || !myTurn) return;
     webAudio.playCardFlip();
     setSelectedIds((prev) =>
       prev.includes(cardId) ? prev.filter((id) => id !== cardId) : [...prev, cardId]
@@ -533,7 +541,17 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
               自由出牌轮次
             </div>
           )}
-          {error && <div className="game-error landlord-arena-error">{error}</div>}
+{error && (
+            <GameActionFeedback
+              active
+              feedbackKey={error}
+              variant="error"
+              className="game-error landlord-arena-error"
+              role="alert"
+            >
+              {error}
+            </GameActionFeedback>
+          )}
         </div>
 
         {/* 右家区域（下家）：左侧出牌 + 右侧头像 */}
@@ -618,7 +636,8 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
             ) : (
               <div className="landlord-wait-tag">
                 <GameIcon name="hourglass" size={13} style={{ marginRight: '4px' }} />
-                等待 {nameFor(members, view.currentBidderId)} 叫分 ({remainSeconds}s)
+                等待 {nameFor(members, view.currentBidderId)} 叫分
+                <GameCountdownPulse secondsLeft={remainSeconds} urgentAt={5} className="landlord-inline-countdown" />
               </div>
             )
           )}
@@ -652,13 +671,14 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
                   onClick={handlePlaySelected}
                 >
                   <GameIcon name="rocket" size={15} style={{ marginRight: '4px' }} />
-                  出牌 {selectedIds.length > 0 ? `(${selectedIds.length}张)` : ''}
+                  {busy ? '提交中…' : '出牌'} {selectedIds.length > 0 ? `(${selectedIds.length}张)` : ''}
                 </button>
               </div>
             ) : (
               <div className="landlord-wait-tag">
                 <GameIcon name="hourglass" size={13} style={{ marginRight: '4px' }} />
-                等待 {nameFor(members, view.currentPlayerId)} 出牌 ({remainSeconds}s)
+                等待 {nameFor(members, view.currentPlayerId)} 出牌
+                <GameCountdownPulse secondsLeft={remainSeconds} urgentAt={5} className="landlord-inline-countdown" />
               </div>
             )
           )}
@@ -687,6 +707,8 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
                     zIndex: isSelected ? 100 + idx : idx + 1,
                   }}
                   onClick={() => handleCardToggle(card.id)}
+                  disabled={busy || !myTurn || view.phase !== 'playing'}
+                  aria-pressed={isSelected}
                   title={`${card.rank} ${card.suit ?? ''}`}
                 >
                   <PlayingCard rank={card.rank} suit={card.suit} />
@@ -713,12 +735,16 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
     <TabletopOvalShell
       title="斗地主"
       subtitle={landlordSubtitle(view, members)}
+      gameId="landlord"
       theme="poker"
       players={seats}
       currentUserId={me?.playerId}
       topRightControls={<GameLeaveButton />}
       centerArena={centerArena}
       bottomBar={bottomBar}
+      phaseKey={`${view.phase}:${view.currentBidderId ?? view.currentPlayerId ?? view.winnerTeam ?? 'idle'}`}
+      phaseBannerText={myBid || myTurn ? '轮到你行动' : undefined}
+      phaseBannerSubtext={busy ? '正在提交操作…' : undefined}
     />
   );
 }

@@ -92,8 +92,8 @@ const PIP_LAYOUTS: Record<number, PipPos[]> = {
 };
 
 function rankText(rank: string): string {
-  if (rank === 'SJ') return '小';
-  if (rank === 'BJ') return '大';
+  if (rank === 'SJ') return 'JOKER';
+  if (rank === 'BJ') return 'JOKER';
   return rank;
 }
 
@@ -116,29 +116,47 @@ function Corner({ rank, suit, color, flip }: {
   const suitImg = suit ? SUIT_ART_MAP[suit] : null;
   const suitChar = suit === 'hearts' ? '♥' : suit === 'diamonds' ? '♦' : suit === 'spades' ? '♠' : suit === 'clubs' ? '♣' : '★';
   const isTen = rank === '10';
-  const isJokerText = text === '大' || text === '小';
+  const isJokerText = text === 'JOKER';
 
-  // 极具辨识度的大号字号与位置
-  const fontSize = isTen ? '44' : isJokerText ? '48' : '52';
+  // 极具辨识度的大号字号与位置；JOKER 五字母用小字避免溢出角标区
+  const fontSize = isTen ? '44' : isJokerText ? '17' : '52';
 
   return (
     <g transform={flip ? 'translate(250,360) rotate(180)' : 'translate(0,0)'}>
       {/* 角标大号清晰数字（大而不粗，清秀易认） */}
-      <text
-        x={isTen ? '28' : '26'}
-        y="38"
-        fill={color}
-        fontSize={fontSize}
-        fontWeight="600"
-        fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-        textAnchor="middle"
-        dominantBaseline="central"
-        letterSpacing={isTen ? '-2' : '0'}
-      >
-        {text}
-      </text>
+      {isJokerText ? (
+        <text
+          x="26"
+          fill={color}
+          fontSize="22"
+          fontWeight="800"
+          fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+          textAnchor="middle"
+          dominantBaseline="central"
+        >
+          <tspan x="26" dy="20">J</tspan>
+          <tspan x="26" dy="22">O</tspan>
+          <tspan x="26" dy="22">K</tspan>
+          <tspan x="26" dy="22">E</tspan>
+          <tspan x="26" dy="22">R</tspan>
+        </text>
+      ) : (
+        <text
+          x={isTen ? '28' : '26'}
+          y="38"
+          fill={color}
+          fontSize={fontSize}
+          fontWeight="600"
+          fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+          textAnchor="middle"
+          dominantBaseline="central"
+          letterSpacing={isTen ? '-2' : '0'}
+        >
+          {text}
+        </text>
+      )}
 
-      {/* 角标花色大号宝石图标 */}
+      {/* 角标花色大号宝石图标（JOKER 纵向排列已占满，不再显示 ★） */}
       {suitImg ? (
         <image
           href={suitImg}
@@ -146,7 +164,7 @@ function Corner({ rank, suit, color, flip }: {
           width="36" height="36"
           preserveAspectRatio="xMidYMid meet"
         />
-      ) : (
+      ) : isJokerText ? null : (
         <text
           x="26" y="80"
           fill={color}
@@ -227,7 +245,7 @@ function JokerCenter({ big, uid }: { big: boolean; uid: string }) {
         />
       ) : (
         <text x="125" y="180" fill={color} fontSize="44" fontWeight="900" textAnchor="middle">
-          {big ? '大王' : '小王'}
+          JOKER
         </text>
       )}
     </g>

@@ -133,6 +133,8 @@ export function NightTestimonyGamePage({ view }: Props) {
     <TabletopShell
       title="囚徒之夜"
       phase={phaseLabel(view.phase)}
+      gameId="night-testimony"
+      phaseKey={`${view.phase}:${me?.pendingQuestion?.questionerId ?? view.accusedId ?? (view.guessingInProgress ? view.reveal?.wardenId ?? 'warden' : 'table')}:${view.askedCount}:${view.phase === 'game_over' ? view.winners.join(',') || 'no-winner' : view.hasPendingQuestion ? 'question-pending' : view.guessingInProgress ? 'guessing' : 'active'}`}
       spectator={isSpectator}
       players={players}
       theme="mystery"
@@ -157,7 +159,7 @@ export function NightTestimonyGamePage({ view }: Props) {
         </GameDrawer>
       )}
     >
-      {error && <p className="game-error" role="alert">{error}</p>}
+      {error && <p className="game-error" role="alert" aria-live="assertive" aria-atomic="true">{error}</p>}
 
       {view.phase !== 'game_over' ? (
         <div className="sg-stage">

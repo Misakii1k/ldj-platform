@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
 import { describeError } from '../shared-ui/errors.ts';
 import { ChatMessageList } from '../shared-ui/ChatMessageList.tsx';
+import { useDragPanel } from '../shared-ui/useDragPanel.ts';
 
 export function GameChatDrawer() {
   const { state, me, send } = useConnection();
@@ -11,8 +12,24 @@ export function GameChatDrawer() {
   const [error, setError] = useState<string | null>(null);
   const initialCursor = state.chat.at(-1)?.cursor ?? 0;
   const [lastSeenCursor, setLastSeenCursor] = useState(initialCursor);
+  const [maxUp, setMaxUp] = useState(0);
   const listRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const { onPointerDown, offsetY, dragging, reset } = useDragPanel({
+    maxUp,
+    // 档位：0 = 完全展开（底部弹出态），-maxUp/2 = 半折叠上拉
+    snapPoints: [0, -Math.round(maxUp / 2)],
+  });
+
+  // 打开时根据视口高度计算可上拖的最大距离，并重置拖拽偏移
+  useEffect(() => {
+    if (!open) return;
+    const vh = window.innerHeight;
+    // 面板默认占视口底部约 78dvh，最多可上拉到顶部留 12dvh
+    setMaxUp(Math.max(0, Math.round(vh * 0.66)));
+    reset();
+  }, [open, reset]);
 
   const memberNames = useMemo(() => {
     const entries = state.room?.members.map((member) => [member.playerId, member.nickname] as const) ?? [];
@@ -79,8 +96,14 @@ export function GameChatDrawer() {
 
       {open && (
         <div className="game-chat-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}>
-          <section className="game-chat-drawer" role="dialog" aria-modal="true" aria-labelledby="game-chat-title">
-            <header className="game-chat-header">
+          <section
+            className={`game-chat-drawer ${dragging ? 'is-dragging' : ''}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="game-chat-title"
+            style={{ transform: `translateY(${offsetY}px)` }}
+          >
+            <header className="game-chat-header game-chat-header--draggable" onPointerDown={onPointerDown}>
               <div>
                 <h2 id="game-chat-title">对局聊天</h2>
               </div>

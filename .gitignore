@@ -38,8 +38,13 @@ research/quarantined/**/*.zip
 # Playwright 运行时产物（临时数据库与报告，不入库）
 e2e/.tmp-data/
 e2e/.tmp-data-dbg/
+e2e/.demo-data/
+e2e/.smoke-data/
 test-results/
 playwright-report/
+
+# 本地草稿与临时脚本（不入库）
+scratch/
 
 # Mimosa 安全扫描内部状态（工具运行产物，不入库）
 .mimosa/

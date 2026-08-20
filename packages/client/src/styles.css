@@ -1,4 +1,4 @@
-/* 全局样式（Task 5）：移动优先、320px 可用、44×44 触摸目标、安全区适配。 */
+/* 全局样式（Task 5）：移动优先�?20px 可用�?4×44 触摸目标、安全区适配�?*/
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -23,7 +23,7 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --touch-size: 44px;
   /* 对局纸牌派对调色板：唯一权威来源。对局内浮层（如聊天入口）挂在各游戏页根节点之外，
-     令牌必须在全局作用域可用，否则浮层会退化成无边框无底色的裸控件。 */
+     令牌必须在全局作用域可用，否则浮层会退化成无边框无底色的裸控件�?*/
   --game-paper: #fff4df;
   --game-surface: #fffdf7;
   --game-ink: #292722;
@@ -73,8 +73,8 @@ body::-webkit-scrollbar,
   background: #fff5e6;
 }
 
-/* ════════ 全局桌面与移动端无缝美学滚动条规范 ════════ */
-/* 1. 游戏舞台外层容器彻底消除非必要滚动条与任何横向溢出 */
+/* ════════ 全局桌面与移动端无缝美学滚动条规�?════════ */
+/* 1. 游戏舞台外层容器彻底消除非必要滚动条与任何横向溢�?*/
 .game-page,
 .tabletop-shell,
 .tabletop-oval-shell,
@@ -103,7 +103,7 @@ body::-webkit-scrollbar,
   height: 0;
 }
 
-/* 2. 内部局部可滚动控件专属桌游美学设计（Custom Aesthetic Scrollbar Design Tokens） */
+/* 2. 内部局部可滚动控件专属桌游美学设计（Custom Aesthetic Scrollbar Design Tokens�?*/
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(217, 119, 6, 0.35) transparent;
@@ -223,7 +223,7 @@ h2 { font-size: 1.25rem; margin: 0 0 0.75rem; }
 h3 { font-size: 1.1rem; margin: 0.5rem 0; }
 p { margin: 0.5rem 0; }
 
-/* —— 通用布局 —— */
+/* —�?通用布局 —�?*/
 
 .app, .connect-page, .room-page, .game-page {
   max-width: 480px;
@@ -251,7 +251,7 @@ p { margin: 0.5rem 0; }
   font-size: 0.875rem;
 }
 
-/* —— 按钮 —— */
+/* —�?按钮 —�?*/
 
 .primary-btn {
   background: var(--color-primary);
@@ -305,7 +305,7 @@ p { margin: 0.5rem 0; }
   font-size: 1.05rem;
 }
 
-/* —— 旧连接页样式已随 ConnectPage 移除（2026-08 椭圆桌重构）；.field* 保留待确认 —— */
+/* —�?旧连接页样式已随 ConnectPage 移除�?026-08 椭圆桌重构）�?field* 保留待确�?—�?*/
 
 .field {
   display: flex;
@@ -331,7 +331,7 @@ p { margin: 0.5rem 0; }
   height: 20px;
 }
 
-/* —— 错误与状态横幅 —— */
+/* —�?错误与状态横�?—�?*/
 
 .error-banner {
   font-size: 0.875rem;
@@ -341,7 +341,7 @@ p { margin: 0.5rem 0; }
   font-size: 0.875rem;
 }
 
-/* —— 房间页 —— */
+/* —�?房间�?—�?*/
 
 .room-header {
   justify-content: space-between;
@@ -373,7 +373,7 @@ p { margin: 0.5rem 0; }
   background: #f3f4f6;
 }
 
-/* —— 聊天 —— */
+/* —�?聊天 —�?*/
 
 .chat-box {
   overflow-y: auto;
@@ -397,9 +397,9 @@ p { margin: 0.5rem 0; }
   white-space: nowrap;
 }
 
-/* —— 操作栏 —— */
+/* —�?操作�?—�?*/
 
-/* —— 游戏页 —— */
+/* —�?游戏�?—�?*/
 
 .game-header {
   display: flex;
@@ -438,7 +438,7 @@ p { margin: 0.5rem 0; }
   font-size: 0.875rem;
 }
 
-/* —— 倒计时（颜色 + 数字双信号，§7.4） —— */
+/* —�?倒计时（颜色 + 数字双信号，§7.4�?—�?*/
 
 .countdown {
   text-align: center;
@@ -467,7 +467,7 @@ p { margin: 0.5rem 0; }
   50% { opacity: 0.6; }
 }
 
-/* —— Toast 通知（全平台统一高质感悬浮气泡） —— */
+/* —�?Toast 通知（全平台统一高质感悬浮气泡） —�?*/
 
 .toast-container {
   position: fixed;
@@ -575,7 +575,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-/* —— 响应式 —— */
+/* —�?响应�?—�?*/
 
 @media (min-width: 480px) {
   .app, .connect-page, .room-page, .game-page {
@@ -590,7 +590,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-/* —— 游戏首页：纸牌桌游风格 —— */
+/* —�?游戏首页：纸牌桌游风�?—�?*/
 
 .game-home-page {
   --home-paper: #fff5e6;
@@ -1332,7 +1332,7 @@ p { margin: 0.5rem 0; }
   text-align: center;
 }
 
-/* —— 首页创建 / 加入房间抽屉 —— */
+/* —�?首页创建 / 加入房间抽屉 —�?*/
 
 .sheet-backdrop {
   position: fixed;
@@ -1557,7 +1557,7 @@ p { margin: 0.5rem 0; }
   font-weight: 800;
 }
 
-/* 建房抽屉「玩法速览」：为无额外配置的游戏填补表单空荡区，并给出识别信息。 */
+/* 建房抽屉「玩法速览」：为无额外配置的游戏填补表单空荡区，并给出识别信息�?*/
 .room-sheet__overview {
   display: grid;
   gap: 8px;
@@ -1601,7 +1601,7 @@ p { margin: 0.5rem 0; }
   font-weight: 700;
 }
 
-/* 建房表单：狼人杀扩展角色池 / 节奏选择 */
+/* 建房表单：狼人杀扩展角色�?/ 节奏选择 */
 .room-sheet__roles {
   display: grid;
   gap: 8px;
@@ -1795,7 +1795,7 @@ p { margin: 0.5rem 0; }
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  /* 目录数量不足一整轮时收拢轨道，避免筛选后留下无意义空列。 */
+  /* 目录数量不足一整轮时收拢轨道，避免筛选后留下无意义空列�?*/
   .game-grid[data-game-count="1"] {
     grid-template-columns: minmax(0, 760px);
     justify-content: center;
@@ -1860,7 +1860,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-/* —— 人数滑块与动态围桌场景 —— */
+/* —�?人数滑块与动态围桌场�?—�?*/
 
 .game-home-page__content {
   position: relative;
@@ -2210,7 +2210,7 @@ p { margin: 0.5rem 0; }
   animation: scene-glow-breathe 7s ease-in-out infinite;
 }
 
-/* 核心实木桌景大画幅 */
+/* 核心实木桌景大画�?*/
 .home-party-scene__table-wrap {
   position: absolute;
   top: 50%;
@@ -2260,7 +2260,7 @@ p { margin: 0.5rem 0; }
   pointer-events: none;
 }
 
-/* 绿植盆栽（移入背景 z-index: 1） */
+/* 绿植盆栽（移入背�?z-index: 1�?*/
 .home-party-scene__plant-wrap {
   position: absolute;
   bottom: 1%;
@@ -2329,7 +2329,7 @@ p { margin: 0.5rem 0; }
   user-select: none;
 }
 
-/* 趣味悬浮微表情气泡 */
+/* 趣味悬浮微表情气�?*/
 .home-party-scene__bubble {
   position: absolute;
   top: -18px;
@@ -2372,7 +2372,7 @@ p { margin: 0.5rem 0; }
   100% { transform: rotate(-2deg); }
 }
 
-/* 派对吊旗（移入背景 z-index: 1，并置于人物头顶上方，绝不遮脸） */
+/* 派对吊旗（移入背�?z-index: 1，并置于人物头顶上方，绝不遮脸） */
 .home-party-scene__garland {
   position: absolute;
   z-index: 1;
@@ -2600,7 +2600,7 @@ p { margin: 0.5rem 0; }
     transform-origin: top right;
   }
 }
-/* —— 谁是卧底房间：与首页统一的纸张卡牌布局 —— */
+/* —�?谁是卧底房间：与首页统一的纸张卡牌布局 —�?*/
 .room-page {
   --room-paper: #fff5e6;
   --room-ink: #312d28;
@@ -2631,8 +2631,7 @@ p { margin: 0.5rem 0; }
   font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 }
 
-/* 边角装饰方块：仅在留白足够（≥1600px，见下方同名断点）时出现，
-   否则近乎满幅的布局会把它们裁成碎边，看着像渲染缺陷而不是点缀。 */
+/* 边角装饰方块：仅在留白足够（�?600px，见下方同名断点）时出现�?   否则近乎满幅的布局会把它们裁成碎边，看着像渲染缺陷而不是点缀�?*/
 .room-page::before,
 .room-page::after {
   display: none;
@@ -2645,7 +2644,7 @@ p { margin: 0.5rem 0; }
   pointer-events: none;
 }
 
-/* 旋转会让方块的外接盒每侧多出约 20px，内缩量必须大于这个溢出，否则仍会被视口裁边。 */
+/* 旋转会让方块的外接盒每侧多出�?20px，内缩量必须大于这个溢出，否则仍会被视口裁边�?*/
 .room-page::before {
   top: clamp(190px, 24vw, 350px);
   right: clamp(30px, 2.4vw, 46px);
@@ -2806,8 +2805,8 @@ p { margin: 0.5rem 0; }
   text-align: center;
 }
 
-/* 未就绪引导已收敛为操作台常驻原因行（2-5），旧横幅与 wavy 标记样式随之一并移除 */
-/* 全员就绪 → 自动开局倒计时横幅 */
+/* 未就绪引导已收敛为操作台常驻原因行（2-5），旧横幅与 wavy 标记样式随之一并移�?*/
+/* 全员就绪 �?自动开局倒计时横�?*/
 .auto-start-banner {
   display: flex;
   align-items: center;
@@ -2992,7 +2991,7 @@ p { margin: 0.5rem 0; }
   font-weight: 700;
 }
 
-/* 机器人/AI 标记：跟在昵称后面的小胶囊，与 member-status 视觉上区分开 */
+/* 机器�?AI 标记：跟在昵称后面的小胶囊，�?member-status 视觉上区分开 */
 .bot-tag {
   margin-left: 6px;
   padding: 1px 6px;
@@ -3076,7 +3075,7 @@ p { margin: 0.5rem 0; }
   scrollbar-color: var(--room-coral) transparent;
 }
 
-/* P1-9：房间聊天改用共享消息列表（flex 排列以支持 mine 右对齐） */
+/* P1-9：房间聊天改用共享消息列表（flex 排列以支�?mine 右对齐） */
 .room-chat-box {
   display: flex;
   flex-direction: column;
@@ -3312,7 +3311,7 @@ p { margin: 0.5rem 0; }
     width: 100%;
   }
 }
-/* —— 局域网房间发现列表 —— */
+/* —�?局域网房间发现列表 —�?*/
 .lan-room-discovery {
   display: grid;
   gap: 12px;
@@ -3496,7 +3495,7 @@ p { margin: 0.5rem 0; }
   white-space: nowrap;
 }
 
-/* —— 局域网桌游 2.5D 视效设计系统 (Tabletop 2.5D Tactile Studio) —— */
+/* —�?局域网桌游 2.5D 视效设计系统 (Tabletop 2.5D Tactile Studio) —�?*/
 .game-page {
   position: relative;
   isolation: isolate;
@@ -3515,11 +3514,9 @@ p { margin: 0.5rem 0; }
 }
 
 /* ══════════════════════════════════════════════════════════════
-   谁是卧底 · 机密桌舞台（经典模式 + 白板模式共用）
-   奶油贴纸卡牌 + 茄紫机密桌面，全阶段亮度一致
-   ══════════════════════════════════════════════════════════════ */
+   谁是卧底 · 机密桌舞台（经典模式 + 白板模式共用�?   奶油贴纸卡牌 + 茄紫机密桌面，全阶段亮度一�?   ══════════════════════════════════════════════════════════════ */
 
-/* —— 舞台布局 —— */
+/* —�?舞台布局 —�?*/
 .uc-stage {
   display: flex;
   flex-direction: column;
@@ -3558,7 +3555,7 @@ p { margin: 0.5rem 0; }
   min-height: 0;
 }
 
-/* —— 左右双列响应式主栅格 —— */
+/* —�?左右双列响应式主栅格 —�?*/
 .game-phase-main-grid {
   display: flex;
   flex-direction: column;
@@ -3643,7 +3640,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-/* —— 阶段进度条 —— */
+/* —�?阶段进度�?—�?*/
 .game-phase-rail { display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; max-width: 560px; flex-shrink: 0; padding: 6px 12px; border: 3px solid var(--game-line); border-radius: 14px; background: #fffdfa; box-shadow: 0 4px 0 var(--game-line); }
 .game-phase-step { position: relative; display: flex; gap: 6px; align-items: center; justify-content: center; color: #786e62; font-size: .78rem; font-weight: 800; }
 .game-phase-step:not(:last-child)::after { position: absolute; top: 50%; right: -7px; width: 14px; height: 3px; content: ''; background: #d8ccba; border-radius: 2px; transform: translateY(-50%); }
@@ -3653,14 +3650,14 @@ p { margin: 0.5rem 0; }
 .game-phase-step.done { color: var(--game-green); font-weight: 800; }
 .game-phase-step.done .phase-step-dot { border-color: var(--game-green); color: #fff; background: var(--game-green); box-shadow: 0 2px 0 var(--game-line); }
 
-/* —— 阶段导语卡 —— */
+/* —�?阶段导语�?—�?*/
 .phase-lead { display: flex; gap: 14px; align-items: center; justify-content: space-between; width: 100%; flex-shrink: 0; padding: 12px 18px; border: 3px solid var(--game-line); border-radius: 18px; background: #fffdfa; box-shadow: 0 6px 0 var(--game-line); }
 .phase-lead-copy { min-width: 0; }
 .phase-eyebrow, .section-kicker { display: block; margin-bottom: 3px; color: #b3251b; font-size: .74rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
 .phase-lead h2 { margin: 0; color: var(--game-ink); font-size: clamp(1.24rem, 3.6vw, 1.62rem); font-weight: 900; line-height: 1.18; letter-spacing: -.02em; }
 .phase-lead p { margin: 4px 0 0; color: var(--game-muted); font-size: .82rem; font-weight: 650; }
 
-/* —— 倒计时贴纸 —— */
+/* —�?倒计时贴�?—�?*/
 .game-countdown { position: relative; display: grid; flex: 0 0 74px; width: 74px; height: 74px; place-content: center; text-align: center; border: 3px solid var(--game-line); border-radius: 50%; background: var(--game-yellow); box-shadow: 0 4px 0 var(--game-line); font-variant-numeric: tabular-nums; }
 .game-countdown::before { position: absolute; inset: 5px; content: ''; border: 2px dashed rgba(41,39,34,.32); border-radius: inherit; animation: timer-spin 14s linear infinite; }
 .game-countdown strong { z-index: 1; font-size: 1.42rem; line-height: 1; color: var(--game-ink); }
@@ -3670,13 +3667,13 @@ p { margin: 0.5rem 0; }
 .game-countdown.ended { color: var(--game-muted); background: #e8e0d4; }
 .game-countdown.ended::before { animation: none; border-color: transparent; }
 
-/* —— 等待卡 / 提示 —— */
+/* —�?等待�?/ 提示 —�?*/
 .game-waiting-card { display: grid; min-height: 190px; place-items: center; align-content: center; gap: 8px; padding: 24px; border: 3.5px solid var(--game-line); border-radius: 20px; text-align: center; background: #fffdfa; box-shadow: 0 6px 0 var(--game-line); }
 .game-waiting-card strong { font-size: 1.1rem; }
 .game-waiting-card p { margin: 0; color: var(--game-muted); font-size: .82rem; }
 .waiting-orbit { width: 46px; height: 46px; border: 3px dashed var(--game-green); border-radius: 50%; animation: timer-spin 6s linear infinite; }
 
-/* —— 机密词条卡（长按偷看） —— */
+/* —�?机密词条卡（长按偷看�?—�?*/
 .game-phase .word-reveal-box { position: relative; display: flex; width: 100%; min-height: clamp(160px, 21dvh, 235px); flex: 1 1 auto; flex-direction: column; align-items: center; justify-content: center; gap: 10px; overflow: hidden; margin: 0; padding: 44px 22px 38px; border: 3.5px solid var(--game-line); border-radius: 22px; background: linear-gradient(156deg, #4b3494 0%, #2f2068 58%, #241550 100%); color: #fff; font: inherit; text-align: center; box-shadow: 0 8px 0 var(--game-line), 0 16px 30px rgba(10,5,26,.35); cursor: pointer; user-select: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: transform .18s cubic-bezier(.2,1.2,.4,1), box-shadow .18s ease; }
 .word-reveal-box::before { position: absolute; inset: 12px; content: ''; border: 2px dashed rgba(255,255,255,.42); border-radius: 16px; pointer-events: none; }
 .word-reveal-box:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 12px 0 var(--game-line), 0 22px 40px rgba(10,5,26,.42); }
@@ -3687,7 +3684,7 @@ p { margin: 0.5rem 0; }
 .my-word { font-size: clamp(2rem, 6vw, 2.8rem); font-weight: 900; letter-spacing: .06em; color: #ffd43b; text-shadow: 0 3px 0 rgba(0,0,0,.35); }
 .secret-card-foot { position: absolute; bottom: 10px; color: rgba(255,255,255,.6); font-size: .72rem; font-weight: 700; }
 
-/* —— 底部操作坞与统一风格主操作按钮 —— */
+/* —�?底部操作坞与统一风格主操作按�?—�?*/
 .game-action-dock {
   position: sticky;
   z-index: 20;
@@ -3750,7 +3747,7 @@ p { margin: 0.5rem 0; }
   cursor: not-allowed;
 }
 
-/* —— 发言聚焦区（左栏高亮聚光灯） —— */
+/* —�?发言聚焦区（左栏高亮聚光灯） —�?*/
 .speaker-spotlight {
   display: flex;
   flex-direction: column;
@@ -3835,7 +3832,7 @@ p { margin: 0.5rem 0; }
   color: #c92a2a;
 }
 
-/* —— 发言顺序轨道（右栏完整卡片流） —— */
+/* —�?发言顺序轨道（右栏完整卡片流�?—�?*/
 .uc-order {
   display: flex;
   flex-direction: column;
@@ -4006,7 +4003,7 @@ p { margin: 0.5rem 0; }
   border-color: var(--game-purple);
 }
 
-/* —— 投票候选人卡（充满活力与头像） —— */
+/* —�?投票候选人卡（充满活力与头像） —�?*/
 .game-phase .vote-candidates { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; width: 100%; max-width: 680px; margin-inline: auto; }
 .game-phase .vote-card { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 6px; min-height: 156px; padding: 14px 10px 10px; overflow: hidden; border: 3px solid var(--game-line); border-radius: 20px; color: var(--game-ink); background: #fffdfa; box-shadow: 0 5px 0 var(--game-line); cursor: pointer; animation: vote-card-in .38s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--stagger-index, 0) * 45ms); transition: transform .16s ease, box-shadow .16s ease, background .16s ease; }
 .vote-card:hover:not(:disabled) { border-color: var(--game-line); background: #fff3bf; transform: translateY(-3px); box-shadow: 0 8px 0 var(--game-line); }
@@ -4024,10 +4021,10 @@ p { margin: 0.5rem 0; }
 .vote-done-hint span { color: var(--game-muted); font-size: .76rem; font-weight: 700; }
 .spectator-hint { padding: 10px; border: 2.5px dashed var(--game-line); border-radius: 14px; color: var(--game-muted); background: rgba(255,253,247,.9); font-size: .78rem; font-weight: 700; text-align: center; }
 
-/* —— 进度计量（就绪/票数） —— */
+/* —�?进度计量（就�?票数�?—�?*/
 .uc-panel { display: flex; width: 100%; flex-shrink: 0; flex-direction: column; gap: 10px; padding: 14px 16px; border: 3.5px solid var(--game-line); border-radius: 18px; background: #fffdfa; box-shadow: 0 6px 0 var(--game-line); }
 
-/* —— 榴莲店长 Durian（印度扑克式翻牌质疑机制） —— */
+/* —�?榴莲店长 Durian（印度扑克式翻牌质疑机制�?—�?*/
 .durian-top-controls {
   display: flex;
   align-items: center;
@@ -4071,7 +4068,7 @@ p { margin: 0.5rem 0; }
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* 统一顶栏所有按钮规格：严格与退出牌局（game-leave__button）控件设计完全一致 */
+/* 统一顶栏所有按钮规格：严格与退出牌局（game-leave__button）控件设计完全一�?*/
 .tabletop-sound-btn,
 .tabletop-rules-btn,
 .tabletop-orient-btn,
@@ -4161,7 +4158,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-/* 矢量水果与水果堆叠组件 */
+/* 矢量水果与水果堆叠组�?*/
 .fruit-svg {
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.12));
   transition: transform 0.15s ease;
@@ -4179,7 +4176,7 @@ p { margin: 0.5rem 0; }
 }
 
 /* ========================================================= */
-/* A. 桌面中央端（3 栏式双向对称看板 + 中央对折对号错号长方体卡牌板） */
+/* A. 桌面中央端（3 栏式双向对称看板 + 中央对折对号错号长方体卡牌板�?*/
 /* ========================================================= */
 .durian-tabletop-arena {
   display: grid;
@@ -4315,7 +4312,7 @@ p { margin: 0.5rem 0; }
   height: 100%;
 }
 
-/* 卡牌瀑布流堆叠区（正向清晰排列、无遮挡） */
+/* 卡牌瀑布流堆叠区（正向清晰排列、无遮挡�?*/
 .durian-board-stack-scroll {
   flex: 1;
   min-height: 0;
@@ -4385,7 +4382,7 @@ p { margin: 0.5rem 0; }
   box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.4);
 }
 
-/* 底部左右操作区 */
+/* 底部左右操作�?*/
 .durian-table-bottom-bar {
   display: flex;
   justify-content: space-between;
@@ -4498,7 +4495,7 @@ p { margin: 0.5rem 0; }
 }
 
 /* ========================================================= */
-/* B. 玩家手牌端（大屏横置卡牌面向全桌展示，无乘号） */
+/* B. 玩家手牌端（大屏横置卡牌面向全桌展示，无乘号�?*/
 /* ========================================================= */
 .durian-player-arena {
   flex: 1;
@@ -4641,7 +4638,7 @@ p { margin: 0.5rem 0; }
   border: 1.5px solid #f87171;
 }
 
-/* 水果卡牌（横置 3:1 双半区卡牌） */
+/* 水果卡牌（横�?3:1 双半区卡牌） */
 .durian-card {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -4750,7 +4747,7 @@ p { margin: 0.5rem 0; }
 }
 
 .durian-card-half--checked::after {
-  content: '✓';
+  content: "✓";
   position: absolute;
   top: 1px;
   right: 3px;
@@ -4765,7 +4762,7 @@ p { margin: 0.5rem 0; }
 }
 
 .durian-card-half--crossed::after {
-  content: '✗';
+  content: "×";
   position: absolute;
   top: 1px;
   right: 3px;
@@ -4774,7 +4771,7 @@ p { margin: 0.5rem 0; }
   color: #b91c1c;
 }
 
-/* 布局主容器 */
+/* 布局主容�?*/
 .durian-main-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -4785,7 +4782,7 @@ p { margin: 0.5rem 0; }
   overflow: hidden;
 }
 
-/* 桌面清单与汇总看板 */
+/* 桌面清单与汇总看�?*/
 .durian-board {
   display: flex;
   flex-direction: column;
@@ -4860,7 +4857,7 @@ p { margin: 0.5rem 0; }
   border: 1.5px solid #fb923c;
 }
 
-/* 中央桌面已放置卡牌看板 */
+/* 中央桌面已放置卡牌看�?*/
 .durian-center-board {
   display: flex;
   flex-direction: column;
@@ -4914,7 +4911,7 @@ p { margin: 0.5rem 0; }
   font-weight: 900;
 }
 
-/* 桌面已放置卡牌轨迹 */
+/* 桌面已放置卡牌轨�?*/
 .durian-placements-wrap {
   display: flex;
   flex-direction: column;
@@ -5041,7 +5038,7 @@ p { margin: 0.5rem 0; }
 }
 
 /* 质疑结算看板 */
-/* 精简紧凑卡牌条（第 5 张出牌起使用，带 ×几 标识，省空间防溢出） */
+/* 精简紧凑卡牌条（�?5 张出牌起使用，带 ×�?标识，省空间防溢出） */
 .durian-card-compact {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -5254,7 +5251,7 @@ p { margin: 0.5rem 0; }
 .durian-reveal-hero--success { background: #dcfce7; color: #166534; border: 2px solid #86efac; }
 .durian-reveal-hero--failed { background: #fee2e2; color: #991b1b; border: 2px solid #fca5a5; }
 
-/* 质疑结果专属提示横幅（带弹跳进场动效） */
+/* 质疑结果专属提示横幅（带弹跳进场动效�?*/
 .durian-verdict-banner {
   display: flex;
   align-items: center;
@@ -5341,7 +5338,7 @@ p { margin: 0.5rem 0; }
   box-shadow: 0 5px 0 var(--game-line, #2d261e);
 }
 
-/* 严重超卖卡片高亮与震动 */
+/* 严重超卖卡片高亮与震�?*/
 .durian-showdown-card.is-oversold {
   border-color: #ef4444;
   background: linear-gradient(180deg, #fff5f5 0%, #ffe4e6 100%);
@@ -5376,7 +5373,7 @@ p { margin: 0.5rem 0; }
   color: #0f172a;
 }
 
-/* PK 区域：桌面需求 VS 头顶库存 */
+/* PK 区域：桌面需�?VS 头顶库存 */
 .durian-showdown-card__pk {
   display: flex;
   align-items: center;
@@ -5438,7 +5435,7 @@ p { margin: 0.5rem 0; }
   animation: num-land-pop .25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-/* 判定印章（带盖章弹跳动画） */
+/* 判定印章（带盖章弹跳动画�?*/
 .durian-showdown-stamp {
   display: flex;
   align-items: center;
@@ -5466,7 +5463,7 @@ p { margin: 0.5rem 0; }
   box-shadow: 0 2px 0 #15803d;
 }
 
-/* 终局结算背景：从左上往右下飘落游移的水果动效 */
+/* 终局结算背景：从左上往右下飘落游移的水果动�?*/
 .durian-floating-fruits {
   position: absolute;
   inset: 0;
@@ -5496,7 +5493,7 @@ p { margin: 0.5rem 0; }
 .durian-floating-item.f11 { top: -15%; left: 15%;  font-size: 1.6rem; animation-duration: 8.2s; animation-delay: 3s; }
 .durian-floating-item.f12 { top: 5%;   left: 75%;  font-size: 1.9rem; animation-duration: 7.8s; animation-delay: 1.5s; }
 
-/* 关键帧动画定义 */
+/* 关键帧动画定�?*/
 @keyframes showdown-card-in {
   0% {
     opacity: 0;
@@ -5646,7 +5643,7 @@ p { margin: 0.5rem 0; }
 
 
 
-/* —— 暗夜证词（狱审档案） —— */
+/* —�?暗夜证词（狱审档案） —�?*/
 .testimony-token { gap: 4px; letter-spacing: .04em; }
 .testimony-token i { display: inline-grid; width: 20px; height: 20px; place-items: center; border: 2px solid var(--game-line); border-radius: 50%; color: #b7ad9d; background: #efe8db; font-size: .58rem; font-style: normal; font-weight: 900; }
 .testimony-token--yes i.is-left { color: #fff; background: var(--game-green); }
@@ -5669,7 +5666,7 @@ p { margin: 0.5rem 0; }
 .testimony-crime { padding: 12px 26px; border: 3px solid var(--game-line); border-radius: 12px; color: var(--game-ink); background: var(--game-yellow); box-shadow: 0 5px 0 var(--game-line); font-size: 1.06rem; font-weight: 900; transform: none; }
 .testimony-crime-picks { margin-top: 4px; }
 
-/* —— 奶酪大盗（月夜） —— */
+/* —�?奶酪大盗（月夜） —�?*/
 .cheese-hour__dice { display: flex; gap: 14px; justify-content: center; }
 .cheese-die { display: grid; width: 64px; height: 64px; place-items: center; border: 3.5px solid var(--game-line); border-radius: 14px; color: var(--game-ink); background: #fff; box-shadow: 0 6px 0 var(--game-line); font-size: 1.7rem; font-weight: 900; }
 .cheese-die::after { content: ''; }
@@ -5685,16 +5682,16 @@ p { margin: 0.5rem 0; }
 .cheese-hours__dot.is-done { border-color: rgba(255, 235, 170, .9); color: #1d2440; background: #ffe9a3; }
 .cheese-hours__dot.is-current { border-color: #fff; color: #fff; background: var(--game-coral); box-shadow: 0 0 0 4px rgba(239, 81, 61, .35); animation: state-breathe 1.4s ease-in-out infinite; }
 
-/* —— 伪人测试（判庭） —— */
+/* —�?伪人测试（判庭） —�?*/
 .echo-question { margin: 0; padding: 14px 16px; border: 2.5px dashed var(--game-line); border-radius: 14px; color: var(--game-ink); background: #fffaf0; font-size: 1.06rem; font-weight: 900; line-height: 1.4; }
 
-/* —— 斗地主中心舞台（贴纸级底牌与牌型面板） —— */
+/* —�?斗地主中心舞台（贴纸级底牌与牌型面板�?—�?*/
 .bottom-cards { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 0 auto 14px; text-align: center; }
 .bottom-cards__label { color: rgba(232, 245, 233, .85); font-size: .8rem; font-weight: 700; }
 .bottom-cards__row { display: flex; justify-content: center; gap: 8px; margin-top: 6px; }
 .current-combo-box { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 24px; border: 1.5px solid rgba(255, 209, 102, .4); border-radius: 16px; background: rgba(6, 28, 20, .55); backdrop-filter: blur(8px); box-shadow: 0 10px 26px rgba(0, 0, 0, .28); }
 
-/* —— 铃铛对决（金铃竞技） —— */
+/* —�?铃铛对决（金铃竞技�?—�?*/
 .bell-board { display: flex; justify-content: center; }
 .bell-card { display: flex; flex-direction: column; align-items: center; gap: 3px; border: 3px solid var(--game-line); border-radius: 14px; color: var(--game-ink); background: #fffdf5; box-shadow: 0 4px 0 var(--game-line); font-weight: 800; }
 .bell-card strong { font-size: 1.05rem; font-weight: 900; }
@@ -5716,7 +5713,7 @@ p { margin: 0.5rem 0; }
 .bell-card--hand:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--game-line); }
 .bell-card--hand.is-selected { border-color: var(--game-purple); box-shadow: 0 6px 0 var(--game-purple); transform: translateY(-4px) rotate(-1.5deg); }
 
-/* —— 大厅全员就绪自动开局：固定浮条（替代易被忽略的页面底部横幅） —— */
+/* —�?大厅全员就绪自动开局：固定浮条（替代易被忽略的页面底部横幅） —�?*/
 .autostart-banner { position: fixed; left: 50%; bottom: calc(var(--safe-bottom) + 22px); z-index: 60; display: inline-flex; gap: 10px; align-items: center; padding: 12px 22px; border: 3px solid var(--home-ink, #29241f); border-radius: 999px; color: #fff; background: var(--home-green, #0c715d); box-shadow: 0 6px 0 var(--home-ink, #29241f), 0 18px 40px rgba(0, 0, 0, .3); font-weight: 900; transform: translateX(-50%); animation: autostart-pop .28s cubic-bezier(.2, .8, .2, 1) both; }
 .autostart-banner__dot { width: 12px; height: 12px; border: 2.5px solid currentColor; border-radius: 50%; background: var(--game-yellow, #f7c84b); animation: state-breathe 1.2s ease-in-out infinite; }
 @keyframes autostart-pop { from { opacity: 0; transform: translateX(-50%) translateY(14px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
@@ -5791,7 +5788,7 @@ p { margin: 0.5rem 0; }
   animation: gst-stripe-enter 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* 红绿蓝黄四色宽条，直接铺满全屏作为背景，带有醒目的黑色粗描边与立体投影 */
+/* 红绿蓝黄四色宽条，直接铺满全屏作为背景，带有醒目的黑色粗描边与立体投�?*/
 .gst-stripe.s1 { animation-delay: 0.02s; background: #ef4d39; } /* 红色 */
 .gst-stripe.s2 { animation-delay: 0.05s; background: #16a34a; } /* 绿色 */
 .gst-stripe.s3 { animation-delay: 0.08s; background: #2563eb; } /* 蓝色 */
@@ -5876,7 +5873,7 @@ p { margin: 0.5rem 0; }
   letter-spacing: 0.05em;
 }
 
-/* —— 情书（信笺宫廷主题） —— */
+/* —�?情书（信笺宫廷主题） —�?*/
 .loveletter-afc__rows { display: flex; flex-direction: column; gap: 8px; }
 .loveletter-afc__row { display: flex; gap: 8px; align-items: center; justify-content: space-between; min-height: 34px; padding: 5px 10px; border: 2.5px solid var(--game-line); border-radius: 12px; background: #fffaf0; font-weight: 800; }
 .loveletter-afc__row.is-out { opacity: .5; }
@@ -5901,7 +5898,7 @@ p { margin: 0.5rem 0; }
 .sg-chip--selected { color: #fff; background: var(--game-coral); }
 .sg-note-list { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0 0 0 18px; color: var(--game-ink); font-size: .82rem; font-weight: 700; }
 
-/* —— 以鹅传鹅（草场/落日主题） —— */
+/* —�?以鹅传鹅（草�?落日主题�?—�?*/
 .goose-role-tag { display: inline-flex; gap: 8px; align-items: center; padding: 6px 14px; border: 3px solid var(--game-line); border-radius: 999px; color: var(--game-ink); background: #e6f0c2; box-shadow: 0 4px 0 var(--game-line); font-size: .8rem; font-weight: 900; }
 .goose-role-tag__dot { width: 10px; height: 10px; border: 2px solid var(--game-line); border-radius: 50%; background: var(--game-green); }
 .goose-role-tag--head { color: var(--game-ink); background: #fce790; }
@@ -5931,7 +5928,7 @@ p { margin: 0.5rem 0; }
 .goose-track__chip.is-me:not(.is-current) .goose-track__idx { border-color: var(--game-line); color: #fff; background: var(--game-purple); }
 .goose-track__name { overflow: hidden; max-width: 120px; text-overflow: ellipsis; white-space: nowrap; }
 
-/* 主舞台卡牌快捷入口横幅（空间紧凑，点击展开遮罩选卡） */
+/* 主舞台卡牌快捷入口横幅（空间紧凑，点击展开遮罩选卡�?*/
 .goose-card-dock-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: #fffdf7; border: 2.5px solid var(--game-line); border-radius: 14px; box-shadow: 0 4px 0 var(--game-line); }
 .goose-card-dock-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .goose-card-dock-title { display: flex; align-items: center; gap: 6px; font-size: .88rem; font-weight: 900; color: var(--game-ink); }
@@ -5944,7 +5941,7 @@ p { margin: 0.5rem 0; }
 .goose-card-dock-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 0 var(--game-line); background: #fff; }
 .goose-card-dock-btn.is-highlight { background: var(--game-coral); color: #fff; border-color: #b71c1c; box-shadow: 0 3px 0 #7f1d1d; animation: state-breathe 1.5s ease-in-out infinite; }
 
-/* 全屏卡牌遮罩层（Modal Mask Overlay） —— 宽屏大视野无滚动设计 */
+/* 全屏卡牌遮罩层（Modal Mask Overlay�?—�?宽屏大视野无滚动设计 */
 .goose-card-modal-backdrop { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: clamp(6px, 1.5vw, 16px); background: rgba(14, 22, 18, 0.88); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); animation: modal-backdrop-in 0.2s ease-out; box-sizing: border-box; }
 .goose-card-modal-dialog { position: relative; display: flex; flex-direction: column; width: min(96vw, 1020px); height: auto; max-height: min(95vh, 95dvh); background: #fffdf5; border: 3.5px solid var(--game-line); border-radius: 22px; box-shadow: 0 20px 60px rgba(0,0,0,.7), 0 8px 0 var(--game-line); overflow: hidden; box-sizing: border-box; }
 .goose-card-modal-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 18px 8px; border-bottom: 2.5px solid var(--game-line); background: #fef7e6; flex-shrink: 0; }
@@ -5953,14 +5950,14 @@ p { margin: 0.5rem 0; }
 .goose-card-modal-close { display: grid; place-items: center; width: 32px; height: 32px; min-width: 32px; min-height: 32px; padding: 0; border: 2px solid var(--game-line); border-radius: 50%; background: #fff; color: var(--game-ink); cursor: pointer; box-shadow: 0 2px 0 var(--game-line); transition: transform .12s ease, background-color .12s ease; flex-shrink: 0; }
 .goose-card-modal-close:hover { transform: scale(1.08); background: #ffebee; }
 
-/* 遮罩选定状态槽位 */
+/* 遮罩选定状态槽�?*/
 .goose-modal-selection-bar { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 12px; background: #fff3db; border-bottom: 2px dashed #d5c3aa; flex-shrink: 0; flex-wrap: wrap; }
 .goose-select-slot { display: flex; align-items: center; gap: 4px; padding: 3px 10px; border: 2px solid var(--game-line); border-radius: 999px; background: #fff; font-size: .78rem; font-weight: 800; }
 .goose-select-slot.is-picked { background: #f0fdf4; border-color: #22c55e; }
 .slot-label { opacity: .85; }
 .slot-divider { font-size: .85rem; font-weight: 900; color: var(--game-line); }
 
-/* 全局置顶错误/警告提示横幅（Toast Alert Banner） */
+/* 全局置顶错误/警告提示横幅（Toast Alert Banner�?*/
 .game-error, .tabletop-error {
   position: fixed !important;
   top: 14px !important;
@@ -5998,7 +5995,7 @@ p { margin: 0.5rem 0; }
   box-sizing: border-box;
 }
 
-/* 遮罩九宫格 9 张卡牌 —— 宽屏自适应两行排布（5+4），竖屏三行（3x3），彻底杜绝滚动与截断 */
+/* 遮罩九宫�?9 张卡�?—�?宽屏自适应两行排布�?+4），竖屏三行�?x3），彻底杜绝滚动与截�?*/
 .goose-modal-cards-grid {
   display: flex;
   flex-wrap: wrap;
@@ -6072,7 +6069,7 @@ p { margin: 0.5rem 0; }
 .goose-history-item.is-correct { background: #edf7ed; border-color: #4caf50; color: #2e7d32; }
 .goose-history-item.is-wrong { background: #fff5f5; border-color: #ef5350; color: #c62828; }
 
-/* 投票区 */
+/* 投票�?*/
 .goose-vote-instruction { font-size: .84rem; font-weight: 700; color: var(--game-muted); margin: 0 0 10px; }
 .goose-vote-targets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
 .goose-vote-target-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 8px; border: 3px solid var(--game-line); border-radius: 16px; background: #fffdf7; box-shadow: 0 4px 0 var(--game-line); cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; font: inherit; }
@@ -6082,7 +6079,7 @@ p { margin: 0.5rem 0; }
 .goose-vote-target-name { font-size: .9rem; font-weight: 900; color: var(--game-ink); }
 .goose-vote-check { font-size: .72rem; font-weight: 900; color: var(--game-coral); background: #ffe3e1; padding: 2px 8px; border-radius: 999px; }
 
-/* 终局大揭秘 */
+/* 终局大揭�?*/
 .goose-game-over-banner { margin-bottom: 16px; }
 .goose-result-card { padding: 16px; border: 3.5px solid var(--game-line); border-radius: 18px; text-align: center; }
 .goose-result-card--white { background: #e8f5e9; border-color: #43a047; box-shadow: 0 6px 0 #2e7d32; color: #1b5e20; }
@@ -6113,7 +6110,7 @@ p { margin: 0.5rem 0; }
 .uc-panel__head h3 { margin: 0; color: var(--game-ink); font-size: .99rem; font-weight: 900; }
 .uc-panel__head span { color: var(--game-muted); font-size: .7rem; font-weight: 800; }
 
-/* —— 白板专属：终局倒计时 / 空白档案卡 / 猜词输入条 / 等待裁判 —— */
+/* —�?白板专属：终局倒计�?/ 空白档案�?/ 猜词输入�?/ 等待裁判 —�?*/
 .blank-final-guess__timer { margin: 0; font-size: 1.05rem; font-weight: 900; color: #b3251b; }
 .blank-final-guess__hint { color: var(--game-muted); font-size: .7rem; font-weight: 700; }
 .word-reveal-box--blank { background: linear-gradient(155deg, #fffdf7 0%, #f1e8d2 100%); color: var(--game-ink); }
@@ -6133,7 +6130,7 @@ p { margin: 0.5rem 0; }
 @keyframes blank-pulse { 50% { opacity: .3; } }
 .game-phase .role-badge.blank { background: #f2c2ba; }
 
-/* —— 结果横幅 / 出局档案 / 公开票型 —— */
+/* —�?结果横幅 / 出局档案 / 公开票型 —�?*/
 .game-phase .result-banner { display: flex; gap: 14px; align-items: center; width: 100%; padding: 16px 18px; border: 3.5px solid var(--game-line); border-radius: 18px; color: var(--game-ink); background: var(--game-yellow); box-shadow: 0 6px 0 var(--game-line); text-align: left; box-sizing: border-box; }
 .result-seal { display: grid; width: 46px; height: 46px; flex-shrink: 0; place-items: center; border: 3px solid var(--game-line, #221e1a); border-radius: 50%; background: #ffffff; color: var(--game-line, #221e1a) !important; font-size: 1.35rem; font-weight: 900; box-shadow: 0 3px 0 rgba(41,39,34,.4); line-height: 1; }
 .result-banner > div { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
@@ -6155,7 +6152,7 @@ p { margin: 0.5rem 0; }
 .tally-bar i { display: block; width: var(--fill-percent, 0%); height: 100%; background: var(--game-coral); animation: tally-grow .65s cubic-bezier(.2,.8,.2,1) both; transform-origin: left; }
 .game-phase .tally-count { text-align: right; font-size: .8rem; font-weight: 800; }
 
-/* —— 结算：胜方横幅 / 词条对 / 身份档案 —— */
+/* —�?结算：胜方横�?/ 词条�?/ 身份档案 —�?*/
 .game-phase.game-over {
   display: flex;
   flex-direction: column;
@@ -6218,7 +6215,7 @@ p { margin: 0.5rem 0; }
   animation: timer-spin 22s linear infinite;
 }
 
-/* —— 词条揭晓卡（高对比度，黑墨粗字） —— */
+/* —�?词条揭晓卡（高对比度，黑墨粗字） —�?*/
 .game-phase .word-pair {
   display: grid;
   width: 100%;
@@ -6289,7 +6286,7 @@ p { margin: 0.5rem 0; }
   letter-spacing: 0.08em;
 }
 
-/* —— 结算身份档案卡 —— */
+/* —�?结算身份档案�?—�?*/
 .game-phase .roles-list {
   display: flex;
   margin: 0;
@@ -6379,7 +6376,7 @@ p { margin: 0.5rem 0; }
   font-weight: 800;
 }
 
-/* —— 结算界面专用栅格与紧凑响应式排布 —— */
+/* —�?结算界面专用栅格与紧凑响应式排布 —�?*/
 .game-phase.game-over {
   width: 100%;
   max-width: 1080px;
@@ -6499,7 +6496,7 @@ p { margin: 0.5rem 0; }
   .game-phase .role-badge { grid-column: 3; justify-self: start; }
 }
 
-/* —— 对局内文字聊天 —— */
+/* —�?对局内文字聊�?—�?*/
 .game-chat-trigger {
   position: fixed;
   z-index: 9999;
@@ -6529,8 +6526,14 @@ p { margin: 0.5rem 0; }
 .chat-unread-badge { position: absolute; top: -8px; right: -5px; display: grid; min-width: 24px; height: 24px; padding: 0 5px; place-items: center; border: 2px solid var(--game-line); border-radius: 999px; color: var(--game-ink); background: var(--game-yellow); font-size: .62rem; }
 
 .game-chat-layer { position: fixed; z-index: 10000; inset: 0; display: flex; justify-content: center; align-items: flex-end; padding: 18px 14px max(14px,var(--safe-bottom)); background: rgba(35,31,27,.42); backdrop-filter: blur(3px); animation: chat-layer-in .18s ease both; pointer-events: auto; }
-.game-chat-drawer { display: grid; grid-template-rows: auto auto minmax(120px,1fr) auto auto; width: min(100%, 560px); max-height: min(78dvh, 660px); overflow: hidden; border: 3px solid var(--game-line); border-radius: 20px; background: var(--game-surface); box-shadow: 8px 8px 0 var(--game-line); animation: chat-drawer-in .3s cubic-bezier(.2,.8,.2,1) both; }
+.game-chat-drawer { display: grid; grid-template-rows: auto auto minmax(120px,1fr) auto auto; width: min(100%, 560px); max-height: min(78dvh, 660px); overflow: hidden; border: 3px solid var(--game-line); border-radius: 20px; background: var(--game-surface); box-shadow: 8px 8px 0 var(--game-line); animation: chat-drawer-in .3s cubic-bezier(.2,.8,.2,1) both; transition: transform .25s ease; will-change: transform; }
+/* 拖拽中：禁用入场动画与过渡，跟手移动 */
+.game-chat-drawer.is-dragging { animation: none; transition: none; }
 .game-chat-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 15px 11px; border-bottom: 2px solid var(--game-line); background: #fff7e9; }
+/* 可拖动手柄：grab 光标 + 禁止触摸滚动干扰 */
+.game-chat-header--draggable { cursor: grab; touch-action: none; user-select: none; }
+.game-chat-header--draggable:active { cursor: grabbing; }
+.game-chat-header--draggable h2 { cursor: inherit; }
 .game-chat-header h2 { margin: 0; font-size: 1.24rem; }.game-chat-header .section-kicker { margin: 0; }
 .game-chat-close { width: 42px; height: 42px; min-width: 42px; min-height: 42px; padding: 0; border: 2px solid var(--game-line); border-radius: 50%; color: var(--game-ink); background: var(--game-yellow); box-shadow: 2px 2px 0 var(--game-line); font-size: 1.45rem; line-height: 1; }
 .game-chat-notice { padding: 8px 13px; border-bottom: 2px dashed #cbbfac; color: #675f55; background: #fff0bd; font-size: .68rem; font-weight: 700; text-align: center; }
@@ -6560,7 +6563,7 @@ p { margin: 0.5rem 0; }
   .game-chat-messages { min-height: 210px; }
 }
 
-/* —— 房间页响应式修正：单一居中容器，避免小屏内容落入旧双列网格 —— */
+/* —�?房间页响应式修正：单一居中容器，避免小屏内容落入旧双列网格 —�?*/
 .room-page.game-home-page {
   display: block;
   width: 100%;
@@ -6608,7 +6611,7 @@ p { margin: 0.5rem 0; }
   max-width: none;
 }
 
-/* 本局规则面板：在房间页内改用房间纸牌配色，避免牌桌深绿主题混入 */
+/* 本局规则面板：在房间页内改用房间纸牌配色，避免牌桌深绿主题混�?*/
 .room-layout .tabletop-setup {
   --tabletop-ink: var(--room-ink);
   --tabletop-accent: var(--room-coral);
@@ -6643,7 +6646,7 @@ p { margin: 0.5rem 0; }
   padding: 4px 2px;
 }
 
-/* Hero：标题面板 */
+/* Hero：标题面�?*/
 .room-hero__panel {
   display: flex;
   min-height: 150px;
@@ -6684,7 +6687,7 @@ p { margin: 0.5rem 0; }
   font-weight: 700;
 }
 
-/* Hero：房间码分享卡片（1-2 独立组件 RoomCodeCard，不复用目录卡片） */
+/* Hero：房间码分享卡片�?-2 独立组件 RoomCodeCard，不复用目录卡片�?*/
 .room-code-card {
   display: flex;
   min-height: 190px;
@@ -6832,7 +6835,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-/* 面板通用（成员 / 聊天）——独立面板样式，不再复用目录卡片 .game-card（P0-3 解耦） */
+/* 面板通用（成�?/ 聊天）——独立面板样式，不再复用目录卡片 .game-card（P0-3 解耦） */
 .room-panel {
   min-height: 0;
   padding: clamp(16px, 3vw, 24px);
@@ -6882,7 +6885,7 @@ p { margin: 0.5rem 0; }
   background: rgba(255, 253, 248, .72);
 }
 
-/* 操作按钮与状态徽标同排，避免"我"这一行比邻居高一截 */
+/* 操作按钮与状态徽标同排，避免"�?这一行比邻居高一�?*/
 .room-content-grid .member-actions {
   margin-left: 4px;
   flex: 0 0 auto;
@@ -6913,7 +6916,7 @@ p { margin: 0.5rem 0; }
   white-space: nowrap;
 }
 
-/* 房主操作台 */
+/* 房主操作�?*/
 .room-console {
   grid-template-columns: 1fr;
   margin-top: 0;
@@ -6946,7 +6949,7 @@ p { margin: 0.5rem 0; }
   gap: 10px;
 }
 
-/* 2-5：次级操作（机器人增删/返回大厅）——区别于主导「开始游戏」的高强调 */
+/* 2-5：次级操作（机器人增�?返回大厅）——区别于主导「开始游戏」的高强�?*/
 .room-console__secondary {
   min-height: 42px;
   padding: 7px 13px;
@@ -6975,7 +6978,7 @@ p { margin: 0.5rem 0; }
   cursor: not-allowed;
 }
 
-/* 2-5：开始游戏禁用原因常驻行（手机可见，替代仅 title 提示） */
+/* 2-5：开始游戏禁用原因常驻行（手机可见，替代�?title 提示�?*/
 .room-console__reason {
   margin: 0;
   color: var(--home-muted);
@@ -7001,7 +7004,7 @@ p { margin: 0.5rem 0; }
     padding-left: clamp(42px, 4vw, 76px);
   }
 
-  /* 此宽度下 1440px 容器两侧留出真实空白，装饰方块才不会被裁成碎边。 */
+  /* 此宽度下 1440px 容器两侧留出真实空白，装饰方块才不会被裁成碎边�?*/
   .room-page::before,
   .room-page::after {
     display: block;
@@ -7147,7 +7150,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-/* —— 谁是卧底游戏页宽屏布局：全屏纸张背景 + 独立内容 Shell —— */
+/* —�?谁是卧底游戏页宽屏布局：全屏纸张背�?+ 独立内容 Shell —�?*/
 .game-page {
   width: 100%;
   max-width: none;
@@ -7536,7 +7539,7 @@ p { margin: 0.5rem 0; }
 .landlord-bid-actions {
   min-height: 52px;
 }
-/* 当前牌型的牌面一行摆开，牌多时换行而不是溢出 */
+/* 当前牌型的牌面一行摆开，牌多时换行而不是溢�?*/
 .current-combo-row {
   display: flex;
   flex-wrap: wrap;
@@ -7544,7 +7547,7 @@ p { margin: 0.5rem 0; }
   gap: 4px;
   margin: 10px 0 6px;
 }
-/* 选色弹层：写出颜色名，不让红/绿只靠色相区分 */
+/* 选色弹层：写出颜色名，不让红/绿只靠色相区�?*/
 .color-picker button {
   font-size: 19px;
   font-weight: 900;
@@ -8013,7 +8016,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-/* —— 列表入场交错延迟：由 TSX 注入 --stagger-index，避免内联 animationDelay —— */
+/* —�?列表入场交错延迟：由 TSX 注入 --stagger-index，避免内�?animationDelay —�?*/
 .game-page .vote-card,
 .game-page .tally-item,
 .game-page .role-item {
@@ -8318,18 +8321,18 @@ p { margin: 0.5rem 0; }
 }
 
 /* ══════════════════════════════════════════════════════════
-   PlayingCard SVG — 通用样式
+   PlayingCard SVG �?通用样式
    ══════════════════════════════════════════════════════════ */
 
 .playing-card {
   display: block;
   width: 100%;
   height: 100%;
-  pointer-events: none;       /* 点击由外层 button 处理 */
+  pointer-events: none;       /* 点击由外�?button 处理 */
   filter: drop-shadow(0 1px 2px rgba(0,0,0,.08));
 }
 
-/* 静态卡牌面（底牌 / 当前出牌行）—— 替代原来的 <b> 元素 */
+/* 静态卡牌面（底�?/ 当前出牌行）—�?替代原来�?<b> 元素 */
 .card-face-static {
   display: inline-block;
   width: 52px;
@@ -8339,17 +8342,17 @@ p { margin: 0.5rem 0; }
   filter: drop-shadow(2px 3px 4px rgba(0,0,0,.18));
 }
 
-/* 底牌行间距 */
+/* 底牌行间�?*/
 .bottom-card-row .card-face-static {
   margin: 0 2px;
 }
 
-/* 当前出牌行间距 */
+/* 当前出牌行间�?*/
 .current-combo-row .card-face-static {
   margin: 2px;
 }
 
-/* 手牌区 SVG 卡牌按钮 */
+/* 手牌�?SVG 卡牌按钮 */
 .new-game-page--landlord .landlord-hand button.landlord-hand__card {
   padding: 0;
   overflow: hidden;
@@ -8369,7 +8372,7 @@ p { margin: 0.5rem 0; }
     drop-shadow(0 1px 2px rgba(0,0,0,.12));
 }
 
-/* 手牌选中态：SVG 卡牌的金色高光 */
+/* 手牌选中态：SVG 卡牌的金色高�?*/
 .new-game-page--landlord .landlord-hand button.landlord-hand__card.selected .playing-card {
   filter:
     drop-shadow(0 0 0 rgba(251,191,36,1))
@@ -8401,7 +8404,7 @@ p { margin: 0.5rem 0; }
   display: none;
 }
 
-/* 平板/桌面的大卡 */
+/* 平板/桌面的大�?*/
 @media (min-width: 641px) {
   .card-face-static {
     width: 62px;
@@ -8417,7 +8420,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-/* 超大屏 */
+/* 超大�?*/
 @media (min-width: 1025px) {
   .card-face-static {
     width: 70px;
@@ -8425,7 +8428,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-/* —— 设置中心 & AI 引擎样式 —— */
+/* —�?设置中心 & AI 引擎样式 —�?*/
 .room-sheet:has(.settings-layout) {
   width: min(960px, calc(100vw - 40px));
   max-height: min(90dvh, 820px);
@@ -8962,7 +8965,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-/* —— 首页体验打磨：收紧首屏、筛选器与游戏卡片 —— */
+/* —�?首页体验打磨：收紧首屏、筛选器与游戏卡�?—�?*/
 
 .game-home-page .sr-only {
   position: absolute;
@@ -9507,7 +9510,7 @@ p { margin: 0.5rem 0; }
   opacity: 0.85;
 }
 
-/* 视频/极光动态烟雾背景 */
+/* 视频/极光动态烟雾背�?*/
 .bg-video-wrapper {
   position: fixed;
   inset: 0;
@@ -9540,14 +9543,14 @@ html[data-bg-mode="minimal"] .home-party-scene {
   display: none !important;
 }
 
-/* 非 party 模式下淡化手绘插画 */
+/* �?party 模式下淡化手绘插�?*/
 html:not([data-bg-mode="party"]) .home-party-scene {
   opacity: 0.15;
   filter: blur(10px);
   transition: opacity 0.5s ease, filter 0.5s ease;
 }
 
-/* 玻璃拟态提升 (Glassmorphism & Card Glows) */
+/* 玻璃拟态提�?(Glassmorphism & Card Glows) */
 .room-sheet__content,
 .game-card,
 .playing-card,
@@ -10188,7 +10191,7 @@ html[data-motion-level="off"] *::after {
 .tabletop-setup input[type="checkbox"] { width: 44px; accent-color: var(--tabletop-accent); }
 .tabletop-setup small { color: #617069; font-weight: 500; }
 
-/* 点选芯片：玩法模式与数值预设（与谁是卧底保持完全一致的实体桌游芯片风格） */
+/* 点选芯片：玩法模式与数值预设（与谁是卧底保持完全一致的实体桌游芯片风格�?*/
 .tabletop-setup__field {
   display: grid;
   gap: 8px;
@@ -10271,7 +10274,7 @@ html[data-motion-level="off"] *::after {
   margin-top: -2px;
 }
 
-/* 步进器风格（数值选项） */
+/* 步进器风格（数值选项�?*/
 .setup-stepper {
   display: inline-flex;
   align-items: center;
@@ -10358,7 +10361,7 @@ html[data-motion-level="off"] *::after {
   .tabletop-shell { padding-bottom: calc(var(--safe-bottom) + 8px); }
   .tabletop-player-strip { margin-block: 8px; }
   .tabletop-surface { min-height: 42dvh; }
-  /* 矮横屏：底栏与扇形手牌紧凑化，保证主导动作与牌面留在首屏内 */
+  /* 矮横屏：底栏与扇形手牌紧凑化，保证主导动作与牌面留在首屏�?*/
   .tabletop-bottom-bar { padding: 4px 8px; }
   .card-fan-container { --fan-card-w: 44px; --fan-card-h: 64px; --fan-lift: 12px; --fan-max-angle-cap: 30; }
   .card-fan-action-bar { top: -38px; }
@@ -10374,7 +10377,7 @@ html[data-motion-level="off"] *::after {
   .tabletop-drawer { width: min(440px, 92vw); height: 100dvh; max-height: none; border-radius: 24px 0 0 24px; }
 }
 
-/* Werewolf · 暗夜与白昼审判庭。所有规则状态来自服务端视角，此处负责全沉浸式环境与动态主题渲染。 */
+/* Werewolf · 暗夜与白昼审判庭。所有规则状态来自服务端视角，此处负责全沉浸式环境与动态主题渲染�?*/
 .werewolf-arena {
   position: absolute;
   inset: 0;
@@ -10398,8 +10401,7 @@ html[data-motion-level="off"] *::after {
 }
 
 /* ==========================================================================
-   Wolfcha 沉浸式电影级暗夜/白昼眨眼转场（Eye-Blink Cinematic Transition）
-   ========================================================================== */
+   Wolfcha 沉浸式电影级暗夜/白昼眨眼转场（Eye-Blink Cinematic Transition�?   ========================================================================== */
 .wc-eye-blink {
   position: fixed;
   inset: 0;
@@ -10465,7 +10467,7 @@ html[data-motion-level="off"] *::after {
   100% { opacity: 0; transform: translate(-50%, -50%) scale(1.35); }
 }
 
-/* 动态环境粒子与 Wolfcha 迷雾层 */
+/* 动态环境粒子与 Wolfcha 迷雾�?*/
 .werewolf-ambient-fx {
   position: absolute;
   inset: 0;
@@ -10541,7 +10543,7 @@ html[data-motion-level="off"] *::after {
   100% { opacity: 1; transform: scaleY(1.05); }
 }
 
-/* 角色与阶段大画幅/智能卡片（WerewolfRoleSpotlight） */
+/* 角色与阶段大画幅/智能卡片（WerewolfRoleSpotlight�?*/
 .werewolf-spotlight {
   position: relative;
   z-index: 6;
@@ -10698,7 +10700,7 @@ html[data-motion-level="off"] *::after {
   color: #4b3d2b;
 }
 
-/* 角色战术信息板（Wolf, Seer, Witch, etc.） */
+/* 角色战术信息板（Wolf, Seer, Witch, etc.�?*/
 .werewolf-role-intel {
   display: flex;
   flex-direction: column;
@@ -10963,6 +10965,15 @@ html[data-motion-level="off"] *::after {
   50% { transform: scale(1.06); }
 }
 
+/* 白昼主题：timer 背景加深、文字提亮，保证亮背景下数字醒目 */
+.tabletop-theme-tribunal-day .moon-header__timer {
+  background: rgba(20, 16, 14, 0.72);
+  border-color: rgba(179, 126, 27, 0.5);
+  color: #d4a017;
+}
+.tabletop-theme-tribunal-day .moon-header__timer strong { color: #e8b020; }
+.tabletop-theme-tribunal-day .moon-header__timer small { color: rgba(212, 160, 23, 0.85); }
+
 /* 审判桌环与席位卡 */
 .seat-ring {
   position: absolute;
@@ -11024,6 +11035,11 @@ html[data-motion-level="off"] *::after {
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   overflow: visible;
   box-sizing: border-box;
+}
+
+.seat-ring.is-dense .seat-chip {
+  width: 88px;
+  padding-inline: 6px;
 }
 
 .tabletop-theme-tribunal-day .seat-chip {
@@ -11149,7 +11165,7 @@ html[data-motion-level="off"] *::after {
   animation: wc-speaking-breathe 2.4s ease-in-out infinite;
 }
 
-/* Wolfcha 声波光晕纹涟漪扩散 (Acoustic Ripple Wave) */
+/* Wolfcha 声波光晕纹涟漪扩�?(Acoustic Ripple Wave) */
 .seat-chip.is-speaking::before {
   content: '';
   position: absolute;
@@ -11175,9 +11191,9 @@ html[data-motion-level="off"] *::after {
   filter: grayscale(0.8);
 }
 
-/* Wolfcha 火漆印章出局章 (Embossed Wax Seal Elimination Stamp) */
+/* Wolfcha 火漆印章出局�?(Embossed Wax Seal Elimination Stamp) */
 .seat-chip.is-out::after {
-  content: "✕ 出局";
+  content: "�?出局";
   position: absolute;
   top: 3px;
   right: 4px;
@@ -11194,7 +11210,7 @@ html[data-motion-level="off"] *::after {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 
-/* 极致紧凑底栏控制坞（Werewolf Bottom Dock） */
+/* 极致紧凑底栏控制坞（Werewolf Bottom Dock�?*/
 .werewolf-bottom-dock {
   display: flex;
   align-items: center;
@@ -11219,7 +11235,7 @@ html[data-motion-level="off"] *::after {
   gap: 8px;
 }
 
-/* 紧凑身份匣徽章（PrivateRolePanel） */
+/* 紧凑身份匣徽章（PrivateRolePanel�?*/
 .werewolf-compact-role {
   position: relative;
   border-radius: 8px;
@@ -11400,7 +11416,7 @@ html[data-motion-level="off"] *::after {
   color: #3b2d1d;
 }
 
-/* 操作面板（WerewolfActionPanel） */
+/* 操作面板（WerewolfActionPanel�?*/
 .werewolf-actions {
   display: flex;
   align-items: center;
@@ -11528,7 +11544,7 @@ html[data-motion-level="off"] *::after {
   cursor: not-allowed;
 }
 
-/* 投票与结算记录 */
+/* 投票与结算记�?*/
 .vote-ledger,
 .werewolf-reveal {
   border: 1px solid rgba(197, 160, 89, 0.24);
@@ -11572,7 +11588,7 @@ html[data-motion-level="off"] *::after {
 .werewolf-desktop-seat-ring { display: block; }
 .werewolf-wing { display: none; }
 
-/* 移动端/竖屏（左右分列席位翼，中轴紧凑舞台，文字完整不遮挡） */
+/* 移动�?竖屏（左右分列席位翼，中轴紧凑舞台，文字完整不遮挡） */
 @media (max-width: 760px) {
   .werewolf-stage { padding-inline: 4px; }
   .werewolf-arena {
@@ -11618,7 +11634,7 @@ html[data-motion-level="off"] *::after {
     margin: 0 auto !important;
   }
 
-  /* 紧凑中央发言/计时器卡片 */
+  /* 紧凑中央发言/计时器卡�?*/
   .moon-header {
     width: 100% !important;
     max-width: 100% !important;
@@ -11857,7 +11873,7 @@ html[data-motion-level="off"] *::after {
   .werewolf-actions__options { grid-template-columns: 1fr; }
 }
 
-/* —— uno_platform_house_v1 主舞台（D4-U-UI） —— */
+/* —�?uno_platform_house_v1 主舞台（D4-U-UI�?—�?*/
 .uno-house-stage {
   display: grid;
   gap: 18px;
@@ -12058,12 +12074,11 @@ html[data-motion-level="off"] *::after {
 }
 
 /* ══════════════════════════════════════════════════════════
-   全游戏前端 UI 重构设计系统（SHARED-UI RENEWAL）
-   ========================================== */
+   全游戏前�?UI 重构设计系统（SHARED-UI RENEWAL�?   ========================================== */
 
 /* 1. 沉浸式桌游外壳与 4 大主题包 */
 .tabletop-shell {
-  /* 多尺寸适配层唯一令牌源（断点覆盖见文末 SHARED-UI RENEWAL · 多尺寸适配层） */
+  /* 多尺寸适配层唯一令牌源（断点覆盖见文�?SHARED-UI RENEWAL · 多尺寸适配层） */
   --tabletop-avatar: 56px;
   --tabletop-felt-radius: 240px;
   --tabletop-center-pad: 40px;
@@ -12150,8 +12165,7 @@ html[data-motion-level="off"] *::after {
   color: #e0f2fe;
 }
 
-/* tribunal 主题：暗夜审判庭（狼人杀专用主题变体；视觉对齐 wolfcha-web 的暗夜羊皮纸判庭）。
-   --wc-* 令牌在此一处定义，壳主题与狼人杀无壳兜底页（.werewolf-stage）共用。 */
+/* tribunal 主题：暗夜审判庭（狼人杀专用主题变体；视觉对�?wolfcha-web 的暗夜羊皮纸判庭）�?   --wc-* 令牌在此一处定义，壳主题与狼人杀无壳兜底页（.werewolf-stage）共用�?*/
 .tabletop-theme-tribunal,
 .tabletop-theme-tribunal-night,
 .werewolf-stage {
@@ -12174,7 +12188,7 @@ html[data-motion-level="off"] *::after {
   transition: background 0.8s ease, color 0.8s ease;
 }
 
-/* 白昼主题（Bright Warm Daylight Theme） */
+/* 白昼主题（Bright Warm Daylight Theme�?*/
 .tabletop-theme-tribunal-day {
   --wc-blood: #a32222;
   --wc-blood-light: #d43b3b;
@@ -12195,7 +12209,7 @@ html[data-motion-level="off"] *::after {
   transition: background 0.8s ease, color 0.8s ease;
 }
 
-/* 拂晓黎明主题（Sunrise Dawn Theme） */
+/* 拂晓黎明主题（Sunrise Dawn Theme�?*/
 .tabletop-theme-tribunal-dawn {
   --wc-blood: #a32222;
   --wc-blood-light: #d43b3b;
@@ -12216,7 +12230,7 @@ html[data-motion-level="off"] *::after {
   transition: background 0.8s ease, color 0.8s ease;
 }
 
-/* 羊皮纸噪点 */
+/* 羊皮纸噪�?*/
 .tabletop-theme-tribunal::before,
 .tabletop-theme-tribunal-night::before,
 .tabletop-theme-tribunal-dawn::before {
@@ -12239,7 +12253,7 @@ html[data-motion-level="off"] *::after {
   background-size: 200px 200px;
 }
 
-/* 四角判厅角纹：血色折角 + 金铆钉 */
+/* 四角判厅角纹：血色折�?+ 金铆�?*/
 .tabletop-theme-tribunal::after,
 .tabletop-theme-tribunal-night::after,
 .tabletop-theme-tribunal-dawn::after,
@@ -12291,7 +12305,7 @@ html[data-motion-level="off"] *::after {
     2px 56px;
 }
 
-/* 顶栏：白昼与黑夜差异化 */
+/* 顶栏：白昼与黑夜差异�?*/
 .tabletop-theme-tribunal .tabletop-header,
 .tabletop-theme-tribunal-night .tabletop-header,
 .tabletop-theme-tribunal-dawn .tabletop-header {
@@ -12385,7 +12399,7 @@ html[data-motion-level="off"] *::after {
 }
 
 
-/* 顶栏（完全移除遮罩背景，零遮挡，席位横向嵌入，彻底释放顶部与内容空间） */
+/* 顶栏：轻微半透明深色底 + 模糊，让文字在游戏背景上清晰可读 */
 .tabletop-header {
   display: flex;
   flex-wrap: wrap;
@@ -12394,11 +12408,11 @@ html[data-motion-level="off"] *::after {
   gap: 8px;
   padding: 6px 18px 2px;
   min-height: 36px;
-  background: transparent !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  border-bottom: none !important;
-  box-shadow: none !important;
+  background: rgba(20, 16, 14, 0.42);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: none;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
   z-index: 500;
   width: 100%;
 }
@@ -12490,7 +12504,7 @@ html[data-motion-level="off"] *::after {
   transform: scale(1.03);
 }
 
-/* 沉浸式游戏舞台全景区域（高度与宽度全面展开） */
+/* 沉浸式游戏舞台全景区域（高度与宽度全面展开�?*/
 .tabletop-arena-container {
   flex: 1;
   min-height: 0;
@@ -12515,7 +12529,7 @@ html[data-motion-level="off"] *::after {
   justify-content: flex-start;
 }
 
-/* 玩家席位条（透明悬浮，零遮罩） */
+/* 玩家席位条（透明悬浮，零遮罩�?*/
 .tabletop-seats-bar {
   display: flex;
   flex: 1 1 auto;
@@ -12680,7 +12694,7 @@ html[data-motion-level="off"] *::after {
   color: #06d6a0;
 }
 
-/* ════════════════ 游戏专属主题背景（全景无拘束） ════════════════ */
+/* ════════════════ 游戏专属主题背景（全景无拘束�?════════════════ */
 .tabletop-theme-orchard {
   background: radial-gradient(circle at center, #1b3821 0%, #0a170d 100%);
   color: #e6f4e0;
@@ -12706,7 +12720,7 @@ html[data-motion-level="off"] *::after {
   color: #fff0f5;
 }
 
-/* 阶段通知条 */
+/* 阶段通知�?*/
 .tabletop-phase-banner {
   position: absolute;
   top: clamp(8px, 2vw, 18px);
@@ -12720,13 +12734,7 @@ html[data-motion-level="off"] *::after {
   padding: 6px 24px;
   text-align: center;
   z-index: 300;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  animation: bannerPulse 2s infinite ease-in-out;
-}
-
-@keyframes bannerPulse {
-  0%, 100% { box-shadow: 0 0 10px rgba(255, 209, 102, 0.3); }
-  50% { box-shadow: 0 0 24px rgba(255, 209, 102, 0.7); }
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 14px rgba(255, 209, 102, 0.4);
 }
 
 .tabletop-phase-banner__title {
@@ -12740,7 +12748,7 @@ html[data-motion-level="off"] *::after {
   opacity: 0.85;
 }
 
-/* 舞台中心竞技/内容区域（全宽全高自由布局） */
+/* 舞台中心竞技/内容区域（全宽全高自由布局�?*/
 .tabletop-center-content {
   position: relative;
   z-index: 50;
@@ -12756,7 +12764,7 @@ html[data-motion-level="off"] *::after {
   overflow-y: auto;
 }
 
-/* ════════════════ 斗地主现代全景竞技台（标准三人对决布局） ════════════════ */
+/* ════════════════ 斗地主现代全景竞技台（标准三人对决布局�?════════════════ */
 .landlord-battlefield {
   display: flex;
   flex-direction: column;
@@ -12831,7 +12839,7 @@ html[data-motion-level="off"] *::after {
   font-size: 0.95rem;
 }
 
-/* ════════════════ 斗地主全新明朗全景对决竞技场 ════════════════ */
+/* ════════════════ 斗地主全新明朗全景对决竞技�?════════════════ */
 .landlord-battlefield {
   display: flex;
   flex-direction: column;
@@ -12844,7 +12852,7 @@ html[data-motion-level="off"] *::after {
   gap: 8px;
 }
 
-/* 顶部：底牌与倍率（上移并紧凑） */
+/* 顶部：底牌与倍率（上移并紧凑�?*/
 .landlord-top-bar {
   display: flex;
   align-items: center;
@@ -12983,7 +12991,7 @@ html[data-motion-level="off"] *::after {
   animation: pulse 1.5s infinite;
 }
 
-/* 中间战场：3 栏安全栅格布局（左玩家对决区 + 中心提示区 + 右玩家对决区） */
+/* 中间战场�? 栏安全栅格布局（左玩家对决�?+ 中心提示�?+ 右玩家对决区�?*/
 .landlord-mid-arena {
   display: grid;
   grid-template-columns: minmax(120px, 1fr) auto minmax(120px, 1fr);
@@ -12998,7 +13006,7 @@ html[data-motion-level="off"] *::after {
   box-sizing: border-box;
 }
 
-/* 左右站位群组（头像 + 紧贴该玩家的出牌展示区） */
+/* 左右站位群组（头�?+ 紧贴该玩家的出牌展示区） */
 .landlord-station-group {
   display: flex;
   flex-direction: row;
@@ -13191,7 +13199,7 @@ html[data-motion-level="off"] *::after {
   color: #4b5563;
 }
 
-/* 中心开阔地带 */
+/* 中心开阔地�?*/
 .landlord-center-nexus {
   display: flex;
   flex-direction: column;
@@ -13229,7 +13237,7 @@ html[data-motion-level="off"] *::after {
   height: 78px;
 }
 
-/* 玩家仪表盘与操作区 */
+/* 玩家仪表盘与操作�?*/
 .landlord-player-dashboard {
   display: flex;
   flex-direction: column;
@@ -13398,6 +13406,10 @@ html[data-motion-level="off"] *::after {
   transform-origin: bottom center;
   transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.15s ease;
   user-select: none;
+  /* 覆盖 .card-fan-item 的 position:absolute，斗地主手牌靠负 margin 相对流展开 */
+}
+.landlord-hand-card.card-fan-item {
+  position: relative;
   flex-shrink: 0;
 }
 
@@ -13596,8 +13608,7 @@ html[data-motion-level="off"] *::after {
 }
 
 /* 2. CSS 3D 卡牌扇形引擎
-   几何令牌唯一来源：--fan-card-w/--fan-card-h/--fan-lift/--fan-slope/--fan-max-angle-cap，
-   CardFanEngine 运行时经 getComputedStyle 读取；多尺寸适配层按断点覆盖。 */
+   几何令牌唯一来源�?-fan-card-w/--fan-card-h/--fan-lift/--fan-slope/--fan-max-angle-cap�?   CardFanEngine 运行时经 getComputedStyle 读取；多尺寸适配层按断点覆盖�?*/
 .card-fan-container {
   --fan-card-w: 76px;
   --fan-card-h: 112px;
@@ -13608,7 +13619,7 @@ html[data-motion-level="off"] *::after {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  max-width: 680px;
+  max-width: 1080px;
   position: relative;
 }
 
@@ -13675,12 +13686,12 @@ html[data-motion-level="off"] *::after {
   box-shadow: 0 0 20px #f59e0b, 0 12px 28px rgba(245, 158, 11, 0.6) !important;
 }
 
-/* 触摸按下反馈（移动端无 hover） */
+/* 触摸按下反馈（移动端�?hover�?*/
 .card-fan-item:not(:disabled):active {
   filter: brightness(1.08);
 }
 
-/* 出牌飞出：上浮放大渐隐离场（配合 JS 180ms 后的业务回调） */
+/* 出牌飞出：上浮放大渐隐离场（配合 JS 180ms 后的业务回调�?*/
 .card-fan-item--playing {
   pointer-events: none;
   animation: cardFanPlay 0.18s ease-in forwards;
@@ -13718,19 +13729,19 @@ html[data-motion-level="off"] *::after {
   margin-top: 4px;
 }
 
-/* 卡牌主题分类色 */
+/* 卡牌主题分类�?*/
 .card-fan-item--red { background: linear-gradient(145deg, #fee2e2 0%, #fca5a5 100%); border-color: #ef4444; color: #991b1b; }
 .card-fan-item--blue { background: linear-gradient(145deg, #dbeafe 0%, #93c5fd 100%); border-color: #3b82f6; color: #1e3a8a; }
 .card-fan-item--green { background: linear-gradient(145deg, #dcfce7 0%, #86efac 100%); border-color: #22c55e; color: #14532d; }
 .card-fan-item--yellow { background: linear-gradient(145deg, #fef9c3 0%, #fde047 100%); border-color: #eab308; color: #713f12; }
 .card-fan-item--wild { background: linear-gradient(145deg, #f3e8ff 0%, #c084fc 100%); border-color: #a855f7; color: #581c87; }
-/* 共享确认弹窗（P1-6） */
+/* 共享确认弹窗（P1-6�?*/
 .confirm-backdrop {
   align-items: center;
   padding: 20px 16px;
 }
 
-/* 确认弹窗与遮罩（全局 Portal 挂载，100% 视口无缝居中，严格遵循项目主题） */
+/* 确认弹窗与遮罩（全局 Portal 挂载�?00% 视口无缝居中，严格遵循项目主题） */
 .confirm-dialog-backdrop {
   position: fixed;
   inset: 0;
@@ -13842,10 +13853,9 @@ html[data-motion-level="off"] *::after {
 }
 
 /* ==========================================
-   SHARED-UI RENEWAL · 多尺寸适配层
-   ========================================== */
+   SHARED-UI RENEWAL · 多尺寸适配�?   ========================================== */
 
-/* —— ≤480px：手机紧凑竖屏 —— */
+/* —�?�?80px：手机紧凑竖�?—�?*/
 @media (max-width: 480px) {
   .tabletop-shell {
     --tabletop-avatar: 42px;
@@ -13881,7 +13891,46 @@ html[data-motion-level="off"] *::after {
   .tabletop-shell--dense .tabletop-turn-halo { inset: -4px; }
 }
 
-/* —— 481–767px：大屏手机 / 小平板（竖屏） —— */
+/* 人多时席位 chip 紧凑化（≥7 人触发 dense） */
+.tabletop-shell--dense .tabletop-seat {
+  padding: 2px 7px 2px 3px;
+  gap: 4px;
+}
+.tabletop-shell--dense .tabletop-seat .tabletop-avatar-box {
+  width: 22px;
+  height: 22px;
+}
+.tabletop-shell--dense .tabletop-seat .tabletop-avatar-img {
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  min-height: 22px !important;
+}
+.tabletop-shell--dense .tabletop-seat-name {
+  max-width: 64px;
+  font-size: 0.68rem;
+}
+.tabletop-shell--dense .tabletop-custom-badge {
+  font-size: 0.6rem;
+  padding: 1px 5px;
+}
+.tabletop-shell--dense .tabletop-seat-info {
+  gap: 4px;
+}
+
+/* 横屏宽幅：席位条改为水平滚动，chip 不换行不缩，超出滑动查看 */
+.tabletop-shell--landscape .tabletop-seats-bar {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  justify-content: flex-start;
+}
+.tabletop-shell--landscape .tabletop-seats-bar::-webkit-scrollbar {
+  display: none;
+}
+
+/* —�?481�?67px：大屏手�?/ 小平板（竖屏�?—�?*/
 @media (min-width: 481px) and (max-width: 767px) {
   .tabletop-shell {
     --tabletop-avatar: 52px;
@@ -13894,7 +13943,7 @@ html[data-motion-level="off"] *::after {
   .tabletop-arena-container { padding: 8px; }
 }
 
-/* 横竖屏手动切换模式覆写 */
+/* 横竖屏手动切换模式覆�?*/
 .tabletop-shell--landscape .tabletop-arena-container {
   max-width: 1280px;
 }
@@ -13909,7 +13958,7 @@ html[data-motion-level="off"] *::after {
   gap: 6px !important;
 }
 
-/* —— 768–1023px：平板 —— */
+/* —�?768�?023px：平�?—�?*/
 @media (min-width: 768px) and (max-width: 1023px) {
   .tabletop-shell {
     --tabletop-avatar: 64px;
@@ -13920,7 +13969,7 @@ html[data-motion-level="off"] *::after {
   .tabletop-arena-container { padding: 18px; }
 }
 
-/* —— ≥1024px：桌面 —— */
+/* —�?�?024px：桌�?—�?*/
 @media (min-width: 1024px) {
   .tabletop-shell {
     max-width: none;
@@ -13935,10 +13984,10 @@ html[data-motion-level="off"] *::after {
   .tabletop-arena-container { padding: 22px; }
   .tabletop-seat-name { max-width: 104px; font-size: 0.82rem; }
   .tabletop-bottom-bar { padding: 14px 24px; }
-  .tabletop-bottom-bar > * { width: 100%; max-width: 720px; }
+  .tabletop-bottom-bar > * { width: 100%; max-width: 1080px; }
 }
 
-/* —— ≥1600px：大屏 —— */
+/* —�?�?600px：大�?—�?*/
 @media (min-width: 1600px) {
   .tabletop-shell {
     --tabletop-avatar: 80px;
@@ -13948,7 +13997,7 @@ html[data-motion-level="off"] *::after {
   .tabletop-oval-felt { max-width: min(92%, 1240px); max-height: min(84%, 840px); }
 }
 
-/* —— 横屏手机（高度受限） —— */
+/* —�?横屏手机（高度受限） —�?*/
 @media (orientation: landscape) and (max-height: 520px) {
   .tabletop-shell {
     --tabletop-avatar: 44px;
@@ -13968,7 +14017,7 @@ html[data-motion-level="off"] *::after {
   .tabletop-bottom-bar { padding: 8px 10px; }
 }
 
-/* ════════════════ 账号与头像系统样式 ════════════════ */
+/* ════════════════ 账号与头像系统样�?════════════════ */
 .user-profile-badge {
   display: inline-flex;
   align-items: center;
@@ -14290,7 +14339,7 @@ html[data-motion-level="off"] *::after {
   justify-content: center;
 }
 
-/* 图片裁切器面板 */
+/* 图片裁切器面�?*/
 .profile-crop-panel {
   display: flex;
   flex-direction: column;
@@ -15147,7 +15196,7 @@ html[data-motion-level="off"] *::after {
 }
 
 /* ========================================================= */
-/* 狼人杀终局大画幅身份复盘 (Werewolf Grand Center Reveal)     */
+/* 狼人杀终局大画幅身份复�?(Werewolf Grand Center Reveal)     */
 /* ========================================================= */
 .werewolf-reveal-overlay {
   position: fixed;
@@ -15460,7 +15509,7 @@ html[data-motion-level="off"] *::after {
 }
 
 /* ========================================================= */
-/* 奶酪大盗私密身份与掷骰卡片 (Cheese Secret Card)            */
+/* 奶酪大盗私密身份与掷骰卡�?(Cheese Secret Card)            */
 /* ========================================================= */
 .cheese-secret-card {
   width: 100%;
@@ -15645,8 +15694,7 @@ html[data-motion-level="off"] *::after {
 }
 
 /* ==========================================================================
-   主页顶部进行中房间提醒横幅（Home Active Room Banner）
-   ========================================================================== */
+   主页顶部进行中房间提醒横幅（Home Active Room Banner�?   ========================================================================== */
 .home-active-room-banner {
   display: flex;
   justify-content: space-between;
@@ -15885,18 +15933,16 @@ html[data-motion-level="off"] *::after {
 
 .cheese-dice-cup-scene {
   position: relative;
-  width: 140px;
-  height: 140px;
-  perspective: 700px;
+  width: 240px;
+  height: 250px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .cheese-dice-cup-wrapper--compact .cheese-dice-cup-scene {
-  width: 96px;
-  height: 96px;
-  perspective: 500px;
+  width: 140px;
+  height: 150px;
 }
 
 /* 绒布底座 */
@@ -16017,7 +16063,7 @@ html[data-motion-level="off"] *::after {
   border-width: 2px;
 }
 
-/* 长按掀开状态 */
+/* 长按掀开状�?*/
 .cheese-cup-dome.is-lifted {
   transform: translateY(-84px) rotateX(-24deg) scale(1.06);
   box-shadow: 0 34px 40px rgba(0, 0, 0, 0.35), inset 0 4px 8px rgba(255, 255, 255, 0.3);
@@ -16111,7 +16157,7 @@ html[data-motion-level="off"] *::after {
   border-radius: 16px;
 }
 
-/* ════════ 1. 卡牌背面 (遮蔽态) ════════ */
+/* ════════ 1. 卡牌背面 (遮蔽�? ════════ */
 .identity-card-back {
   background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
   border: 2px solid rgba(255, 255, 255, 0.16);
@@ -16188,7 +16234,7 @@ html[data-motion-level="off"] *::after {
   50% { opacity: 1; transform: scale(1.04); }
 }
 
-/* ════════ 2. 卡牌正面 (揭示态) ════════ */
+/* ════════ 2. 卡牌正面 (揭示�? ════════ */
 .identity-card-front {
   background: linear-gradient(145deg, #1e2433 0%, #111622 100%);
   border: 2px solid rgba(255, 255, 255, 0.22);
@@ -16281,7 +16327,7 @@ html[data-motion-level="off"] *::after {
   background: rgba(56, 189, 248, 0.1);
 }
 
-/* ════════ 桌面中央端 (CheeseTabletopArena) ════════ */
+/* ════════ 桌面中央�?(CheeseTabletopArena) ════════ */
 .cheese-tabletop-arena {
   display: flex;
   flex-direction: column;
@@ -16292,7 +16338,7 @@ html[data-motion-level="off"] *::after {
   padding: 8px 4px;
 }
 
-/* 顶部夜间时刻轴 */
+/* 顶部夜间时刻�?*/
 .cheese-arena-header {
   display: flex;
   align-items: center;
@@ -16561,7 +16607,7 @@ html[data-motion-level="off"] *::after {
   border-radius: 6px;
 }
 
-/* 终局大屏结算卡 */
+/* 终局大屏结算�?*/
 .cheese-table-settlement-card {
   background: rgba(15, 23, 42, 0.85);
   border: 2.5px solid #f59e0b;
@@ -16616,9 +16662,9 @@ html[data-motion-level="off"] *::after {
   line-height: 1.6;
 }
 
-/* ═════════════════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════════════�?*/
 /* ════════ 通用秘密身份翻牌引擎 (IdentityFlipCard 3D Engine) ════════ */
-/* ═════════════════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════════════�?*/
 
 .identity-flip-container {
   display: flex;
@@ -16687,7 +16733,7 @@ html[data-motion-level="off"] *::after {
   border-radius: 16px;
 }
 
-/* ════════ 1. 卡牌背面 (遮蔽态) ════════ */
+/* ════════ 1. 卡牌背面 (遮蔽�? ════════ */
 .identity-card-back {
   background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
   border: 2px solid rgba(255, 255, 255, 0.12);
@@ -16764,7 +16810,7 @@ html[data-motion-level="off"] *::after {
   50% { opacity: 1; transform: scale(1.04); }
 }
 
-/* ════════ 2. 卡牌正面 (揭示态) ════════ */
+/* ════════ 2. 卡牌正面 (揭示�? ════════ */
 .identity-card-front {
   background: linear-gradient(145deg, #1e2433 0%, #111622 100%);
   border: 2px solid rgba(255, 255, 255, 0.18);
@@ -17014,9 +17060,9 @@ html[data-motion-level="off"] *::after {
   cursor: not-allowed;
 }
 
-/* ═════════════════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════════════�?*/
 /* ════════ 通用 3D 骰盅组件 (Shared DiceCup 3D Engine) ══════════════ */
-/* ═════════════════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════════════�?*/
 
 .shared-dice-cup-wrapper {
   position: relative;
@@ -17033,19 +17079,18 @@ html[data-motion-level="off"] *::after {
 
 .shared-dice-cup-scene {
   position: relative;
-  width: 140px;
-  height: 140px;
+  width: 240px;
+  height: 250px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* is-shaking 类保留为 JS 钩子；摇晃动效由 Three.js 引擎内部的物理模拟渲染 */
+/* is-shaking 类保留为 JS 钩子；摇晃动效由 Three.js 引擎内部的物理模拟渲�?*/
 
 .shared-dice-cup-wrapper--compact .shared-dice-cup-scene {
-  width: 96px;
-  height: 96px;
-  perspective: 500px;
+  width: 140px;
+  height: 150px;
 }
 
 /* 底部信息 */
@@ -17291,4 +17336,312 @@ html[data-motion-level="off"] *::after {
   padding: 10px 24px;
   border-radius: 999px;
   font-weight: 900;
+}
+
+
+/* ����ר���ֻ泡������ӳ�� */
+/* ========================================== */
+
+
+/* ����ר���ֻ泡������ӳ�� (FIXED) */
+/* ========================================== */
+
+/* ȡ�������Ĭ�ϵĴ�ɫ/���䱳����ʹ�ײ�ɼ� */
+.tabletop-shell[data-game-id] {
+  background: transparent !important;
+}
+
+/* ʹ�� ::before αԪ����Ϊȫ�������㣬���� 1120px max-width ��������ȷ������������������� */
+.tabletop-shell[data-game-id]::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-color: #FFF7EF;
+}
+
+/* Ĭ�ϣ�����/�ƶ������ȣ������� portrait �汾��9:16 ��ͼ */
+.tabletop-shell[data-game-id="undercover"]::before { background-image: url("/assets/backgrounds/bg_undercover_portrait.jpg"); }
+.tabletop-shell[data-game-id="uno"]::before { background-image: url("/assets/backgrounds/bg_uno_portrait.jpg"); }
+.tabletop-shell[data-game-id="landlord"]::before { background-image: url("/assets/backgrounds/bg_landlord_portrait.jpg"); }
+.tabletop-shell[data-game-id="loveletter"]::before { background-image: url("/assets/backgrounds/bg_loveletter_portrait.jpg"); }
+.tabletop-shell[data-game-id="cheese-thief"]::before { background-image: url("/assets/backgrounds/bg_cheese_thief_portrait.jpg"); }
+.tabletop-shell[data-game-id="durian"]::before { background-image: url("/assets/backgrounds/bg_durian_portrait.jpg"); }
+.tabletop-shell[data-game-id="goose-relay"]::before { background-image: url("/assets/backgrounds/bg_goose_relay_portrait.jpg"); }
+.tabletop-shell[data-game-id="night-testimony"]::before { background-image: url("/assets/backgrounds/bg_night_testimony_portrait.jpg"); }
+.tabletop-shell[data-game-id="bell-clash"]::before { background-image: url("/assets/backgrounds/bg_bell_clash_portrait.jpg"); }
+.tabletop-shell[data-game-id="echo-judge"]::before { background-image: url("/assets/backgrounds/bg_echo_judge_portrait.jpg"); }
+
+/* 狼人杀：无背景图，按昼夜主题用 CSS 多层渐变合成氛围背景（覆盖 #FFF7EF 兜底色） */
+/* 默认/夜晚/黎明：深紫黑夜空 + 顶部月光散射 */
+.tabletop-shell[data-game-id="werewolf"]::before,
+.tabletop-shell.tabletop-theme-tribunal-night[data-game-id="werewolf"]::before,
+.tabletop-shell.tabletop-theme-tribunal-dawn[data-game-id="werewolf"]::before {
+  background-color: #0a0810;
+  background-image:
+    radial-gradient(900px 600px at 72% 12%, rgba(197, 160, 89, 0.16), transparent 60%),
+    radial-gradient(700px 520px at 20% 78%, rgba(138, 28, 28, 0.22), transparent 58%),
+    radial-gradient(1400px 900px at 50% 50%, rgba(24, 19, 29, 0.5), transparent 70%),
+    linear-gradient(176deg, #1a1320 0%, #120e18 44%, #07050b 100%);
+  background-repeat: no-repeat;
+}
+/* 黎明过渡：带暖紫红 */
+.tabletop-shell.tabletop-theme-tribunal-dawn[data-game-id="werewolf"]::before {
+  background-image:
+    radial-gradient(800px 480px at 50% 6%, rgba(245, 140, 60, 0.22), transparent 58%),
+    radial-gradient(640px 520px at 22% 80%, rgba(110, 30, 60, 0.28), transparent 56%),
+    radial-gradient(1200px 800px at 80% 90%, rgba(40, 24, 38, 0.45), transparent 66%),
+    linear-gradient(174deg, #2a1826 0%, #1c1018 48%, #0c0710 100%);
+}
+/* 白昼：暖光羊皮纸氛围（覆盖暗色） */
+.tabletop-shell.tabletop-theme-tribunal-day[data-game-id="werewolf"]::before {
+  background-color: #f4ead4;
+  background-image:
+    radial-gradient(1000px 620px at 50% 0%, rgba(255, 238, 194, 0.9), transparent 66%),
+    radial-gradient(1200px 760px at 82% 92%, rgba(245, 218, 170, 0.55), transparent 60%),
+    radial-gradient(900px 600px at 12% 88%, rgba(220, 190, 140, 0.3), transparent 62%),
+    linear-gradient(176deg, #faf5e6 0%, #f4e8cb 46%, #ebd6b0 100%);
+  background-repeat: no-repeat;
+}
+
+/* 横屏：各游戏使用 landscape 版本 16:9 图；狼人杀保持 CSS 渐变（按主题） */
+@media (min-width: 900px) and (orientation: landscape) {
+  .tabletop-shell[data-game-id="undercover"]::before, .tabletop-shell--landscape[data-game-id="undercover"]::before { background-image: url("/assets/backgrounds/bg_undercover_landscape.jpg"); }
+  .tabletop-shell[data-game-id="uno"]::before, .tabletop-shell--landscape[data-game-id="uno"]::before { background-image: url("/assets/backgrounds/bg_uno_landscape.jpg"); }
+  .tabletop-shell[data-game-id="landlord"]::before, .tabletop-shell--landscape[data-game-id="landlord"]::before { background-image: url("/assets/backgrounds/bg_landlord_landscape.jpg"); }
+  .tabletop-shell[data-game-id="loveletter"]::before, .tabletop-shell--landscape[data-game-id="loveletter"]::before { background-image: url("/assets/backgrounds/bg_loveletter_landscape.jpg"); }
+  .tabletop-shell[data-game-id="cheese-thief"]::before, .tabletop-shell--landscape[data-game-id="cheese-thief"]::before { background-image: url("/assets/backgrounds/bg_cheese_thief_landscape.jpg"); }
+  .tabletop-shell[data-game-id="durian"]::before, .tabletop-shell--landscape[data-game-id="durian"]::before { background-image: url("/assets/backgrounds/bg_durian_landscape.jpg"); }
+  .tabletop-shell[data-game-id="goose-relay"]::before, .tabletop-shell--landscape[data-game-id="goose-relay"]::before { background-image: url("/assets/backgrounds/bg_goose_relay_landscape.jpg"); }
+  .tabletop-shell[data-game-id="night-testimony"]::before, .tabletop-shell--landscape[data-game-id="night-testimony"]::before { background-image: url("/assets/backgrounds/bg_night_testimony_landscape.jpg"); }
+  .tabletop-shell[data-game-id="bell-clash"]::before, .tabletop-shell--landscape[data-game-id="bell-clash"]::before { background-image: url("/assets/backgrounds/bg_bell_clash_landscape.jpg"); }
+  .tabletop-shell[data-game-id="echo-judge"]::before, .tabletop-shell--landscape[data-game-id="echo-judge"]::before { background-image: url("/assets/backgrounds/bg_echo_judge_landscape.jpg"); }
+}
+
+
+
+
+/* Game motion system integration — 2026-08-19 */
+.tabletop-shell.game-motion-root {
+  --game-motion-fast-duration: 140ms;
+  --game-motion-standard-duration: 260ms;
+  --game-motion-phase-duration: 420ms;
+  isolation: isolate;
+}
+
+.tabletop-header,
+.tabletop-arena-container,
+.tabletop-bottom-bar {
+  position: relative;
+  z-index: 2;
+}
+
+.tabletop-header {
+  flex: 0 0 auto;
+}
+
+.tabletop-arena-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+
+.tabletop-center-content.game-motion-phase-transition {
+  display: flex;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.tabletop-bottom-bar {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 100%;
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+}
+
+.tabletop-action-stack,
+.tabletop-action-stack__actions,
+.tabletop-action-stack__drawer {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.tabletop-action-stack {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tabletop-shell button,
+.tabletop-shell [role='button'] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--game-motion-fast-duration, 140ms) cubic-bezier(.2,.8,.2,1),
+    box-shadow var(--game-motion-fast-duration, 140ms) cubic-bezier(.2,.8,.2,1),
+    opacity var(--game-motion-fast-duration, 140ms) ease,
+    filter var(--game-motion-fast-duration, 140ms) ease;
+}
+
+.tabletop-shell button:not(:disabled):active,
+.tabletop-shell [role='button']:not([aria-disabled='true']):active {
+  transform: translate3d(0, 2px, 0) scale(.985);
+}
+
+.tabletop-shell button:disabled,
+.tabletop-shell [aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: .55;
+  filter: saturate(.65);
+}
+
+.tabletop-seat {
+  transition:
+    transform var(--game-motion-standard-duration, 260ms) cubic-bezier(.2,.8,.2,1),
+    opacity var(--game-motion-standard-duration, 260ms) ease,
+    border-color var(--game-motion-fast-duration, 140ms) ease,
+    box-shadow var(--game-motion-standard-duration, 260ms) ease;
+}
+
+.tabletop-seat--active-turn {
+  will-change: transform;
+}
+
+.tabletop-phase-banner.game-motion-phase-transition {
+  transform-origin: 50% 0;
+}
+
+html[data-motion-level='reduced'] .tabletop-shell.game-motion-root {
+  --game-motion-fast-duration: 100ms;
+  --game-motion-standard-duration: 160ms;
+  --game-motion-phase-duration: 220ms;
+}
+
+html[data-motion-level='minimal'] .tabletop-shell.game-motion-root {
+  --game-motion-fast-duration: 80ms;
+  --game-motion-standard-duration: 100ms;
+  --game-motion-phase-duration: 120ms;
+}
+
+html[data-motion-level='minimal'] .tabletop-turn-halo,
+html[data-motion-level='minimal'] .tabletop-speech-wave,
+html[data-motion-level='minimal'] .seat-chip.is-speaking::before,
+html[data-motion-level='off'] .tabletop-turn-halo,
+html[data-motion-level='off'] .tabletop-speech-wave,
+html[data-motion-level='off'] .seat-chip.is-speaking::before {
+  animation: none !important;
+}
+
+html[data-motion-level='off'] .tabletop-shell *,
+html[data-motion-level='off'] .tabletop-shell *::before,
+html[data-motion-level='off'] .tabletop-shell *::after {
+  scroll-behavior: auto !important;
+  transition-duration: 0ms !important;
+}
+
+@media (max-width: 720px) {
+  .tabletop-shell.game-motion-root {
+    --tabletop-center-pad: 10px;
+  }
+
+  .tabletop-header {
+    gap: 6px;
+    padding-inline: max(8px, env(safe-area-inset-left, 0px)) max(8px, env(safe-area-inset-right, 0px));
+  }
+
+  .tabletop-header__actions {
+    gap: 5px;
+  }
+
+  .tabletop-arena-container {
+    padding-inline: max(6px, env(safe-area-inset-left, 0px)) max(6px, env(safe-area-inset-right, 0px));
+  }
+
+  .tabletop-bottom-bar {
+    padding-inline: max(8px, env(safe-area-inset-left, 0px)) max(8px, env(safe-area-inset-right, 0px));
+  }
+
+  .tabletop-action-stack__actions > * {
+    max-width: 100%;
+  }
+
+  .tabletop-shell .card-fan,
+  .tabletop-shell .landlord-hand,
+  .tabletop-shell .uno-hand {
+    max-width: 100%;
+    overscroll-behavior-x: contain;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .tabletop-header {
+    min-height: 48px;
+  }
+
+  .tabletop-bottom-bar {
+    padding-top: 4px;
+    padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .tabletop-action-stack {
+    gap: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabletop-shell button,
+  .tabletop-shell [role='button'],
+  .tabletop-seat {
+    transition-duration: 1ms !important;
+  }
+}
+
+
+/* Game session overlay coordination */
+.game-session-root {
+  display: contents;
+}
+
+.game-session-root:has(.tabletop-bottom-bar) .game-chat-trigger {
+  bottom: calc(var(--safe-bottom) + 92px);
+}
+
+.landlord-hand-container {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.landlord-hand-rack {
+  max-width: none;
+}
+
+.landlord-hand-card:disabled {
+  cursor: default;
+}
+
+.landlord-inline-countdown {
+  min-width: 30px;
+  min-height: 30px;
+  margin-left: 4px;
+  font-size: .76rem;
+  font-weight: 900;
+}
+
+@media (max-width: 720px) {
+  .game-session-root:has(.tabletop-bottom-bar) .game-chat-trigger {
+    right: 8px;
+    bottom: calc(var(--safe-bottom) + 78px);
+    min-width: 64px;
+  }
+
+  .landlord-hand-container {
+    padding-inline: 0;
+  }
 }

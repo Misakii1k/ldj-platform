@@ -374,6 +374,8 @@ export function GooseRelayGamePage({ view }: Props) {
     <TabletopShell
       title="以鹅传鹅"
       phase={phaseLabel(view.phase)}
+      gameId="goose-relay"
+      phaseKey={`${view.phase}:${view.phase === 'relay' ? view.lineOrder[view.currentIndex] ?? 'relay-idle' : view.phase === 'accusation' ? view.lineOrder[view.currentAccuserIndex] ?? 'accuse-idle' : view.headPlayerId ?? 'idle'}:${view.currentIndex}:${view.currentAccuserIndex}:${view.phase === 'game_over' ? view.winners.join(',') || 'no-winner' : view.caseMatched ?? 'pending'}`}
       spectator={isSpectator}
       players={players}
       theme="meadow"
@@ -437,7 +439,7 @@ export function GooseRelayGamePage({ view }: Props) {
       }
     >
       {error && (
-        <p className="game-error" role="alert">
+        <p className="game-error" role="alert" aria-live="assertive" aria-atomic="true">
           {error}
         </p>
       )}

@@ -89,6 +89,8 @@ export function LoveLetterGamePage({ view }: Props) {
     <TabletopShell
       title="情书"
       phase={view.phase === 'game_over' ? '对局结束' : `第 ${view.round} 轮`}
+      gameId="loveletter"
+      phaseKey={`${view.phase}:${view.round}:${view.currentPlayerId ?? 'idle'}:${view.phase === 'game_over' ? view.winners.join(',') || 'no-winner' : view.roundWinners.join(',') || 'active'}`}
       spectator={isSpectator}
       players={players}
       theme="letter"
@@ -113,7 +115,7 @@ export function LoveLetterGamePage({ view }: Props) {
         </GameDrawer>
       )}
     >
-      {error && <p className="game-error" role="alert">{error}</p>}
+      {error && <p className="game-error" role="alert" aria-live="assertive" aria-atomic="true">{error}</p>}
 
       {view.phase !== 'game_over' ? (
         <div className="sg-stage">

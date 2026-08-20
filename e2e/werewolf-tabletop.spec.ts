@@ -157,11 +157,14 @@ test.describe('D5 P1a 狼人杀 12 人审判桌（v2 引擎）', () => {
       // 1) 他人身份绝不进入 DOM：无任何已揭示身份标签（任何阶段、任何淘汰前）
       await expect(page.locator('.seat-chip__role')).toHaveCount(0);
       // 2) 本人身份默认隐藏（PrivatePanel 需显式按下查看）：身份卡初始不可见
-      await expect(page.locator('.private-role-panel__card')).toHaveCount(0);
-      await expect(page.getByRole('button', { name: '按下查看本人私密信息' })).toBeVisible();
+      await expect(page.locator('.werewolf-compact-role__popover')).toHaveCount(0);
+      const privateRoleToggle = page.locator('.werewolf-compact-role__toggle-btn');
+      await expect(privateRoleToggle).toBeVisible();
       // 3) 按下查看后，身份匣只显示本人身份（7 种之一）
-      await page.getByRole('button', { name: '按下查看本人私密信息' }).click();
-      const myRole = (await page.locator('.private-role-panel__card strong').textContent())?.trim() ?? '';
+      await privateRoleToggle.click();
+      const myRole = (
+        await page.locator('.werewolf-compact-role__popover .identity-card-front__role-name').textContent()
+      )?.trim() ?? '';
       expect((ROLE_NAMES as readonly string[]).includes(myRole), `身份应属于合法集合，收到：${myRole}`).toBe(true);
       // 4) 席位卡绝不携带任何身份文本（身份只可能出现在身份匣）
       const seatTexts = await page.locator('.seat-chip').allInnerTexts();

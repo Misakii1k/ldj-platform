@@ -4,6 +4,7 @@
  */
 import { useState, type CSSProperties } from 'react';
 import { useConnection } from '../../../connection/useConnection.ts';
+import { GameActionFeedback, GameCountdownPulse } from '../../../shared-ui/GameMotion.tsx';
 import { useCountdown } from '../../../shared-ui/useCountdown.ts';
 import { GameLeaveButton } from '../../GameLeaveButton.tsx';
 import { nameFor, useGameAction } from '../../useGameAction.ts';
@@ -11,7 +12,9 @@ import { GameCountdown, GamePhaseRail, PhaseLead } from '../../GameChrome.tsx';
 import { TabletopOvalShell } from '../../../shared-ui/TabletopOvalShell.tsx';
 import { UserAvatar } from '../../../user/UserAvatar.tsx';
 import { useUserProfile } from '../../../user/UserProfileContext.tsx';
+import { buildBlankPhaseKey } from '../motion.ts';
 import type { BlankPlayerView, BlankRole, BlankVoteSummary } from '../types.ts';
+import '../../focused-game-motion.css';
 
 interface Props {
   view: BlankPlayerView;
@@ -39,12 +42,53 @@ function blankOutcomeText(summary: BlankVoteSummary): string {
   }
 }
 
+function blankPhaseLabel(phase: BlankPlayerView['phase']): string {
+  switch (phase) {
+    case 'word_reveal': return '查看词条';
+    case 'speaking': return '描述发言';
+    case 'voting': return '投票指认';
+    case 'runoff_voting': return '加赛投票';
+    case 'vote_result': return '结果揭晓';
+    case 'final_guess': return '最终猜词';
+    case 'game_over': return '对局结算';
+  }
+}
+
+function FocusedCountdown({ seconds, label }: { seconds: number; label?: string }) {
+  return (
+    <GameCountdownPulse
+      secondsLeft={seconds}
+      urgentAt={5}
+      className="focused-game-countdown"
+      aria-live="off"
+    >
+      <GameCountdown seconds={seconds} label={label} />
+    </GameCountdownPulse>
+  );
+}
+
 export function BlankStageArena({ view }: Props) {
   const { profile } = useUserProfile();
   const { state } = useConnection();
   const members = state.room?.members ?? [];
   const { act, busy, error } = useGameAction();
   const me = view.me;
+  const phaseKey = buildBlankPhaseKey(view);
+  const currentSpeaker = view.currentSpeakerId === null
+    ? null
+    : view.players.find((player) => player.playerId === view.currentSpeakerId) ?? null;
+  const currentSpeakerName = currentSpeaker === null
+    ? null
+    : (currentSpeaker.playerId === me?.playerId
+        ? '你'
+        : nameFor(members, currentSpeaker.playerId) || `${currentSpeaker.seat} 号玩家`);
+  const liveStatus = error
+    ? `操作失败：${error}`
+    : busy
+      ? `${blankPhaseLabel(view.phase)}，正在提交操作。`
+      : view.phase === 'speaking' && currentSpeakerName !== null
+        ? `${blankPhaseLabel(view.phase)}，当前由${currentSpeakerName}发言。`
+        : `${blankPhaseLabel(view.phase)}，第 ${view.round} 轮。`;
 
   const seats = view.players.map((player) => {
     const member = members.find((m) => m.playerId === player.playerId);
@@ -88,15 +132,47 @@ export function BlankStageArena({ view }: Props) {
     <TabletopOvalShell
       title="谁是卧底 · 白板"
       subtitle={`第 ${view.round} 轮 · 白板之局`}
+      gameId="undercover"
       theme="mystery"
       stageFit="arena"
       players={seats}
       currentUserId={me === null ? undefined : me.playerId}
       topRightControls={<GameLeaveButton />}
+      phaseKey={phaseKey}
       centerArena={
-        <div className="uc-stage" data-uc-phase={view.phase}>
+        <div
+          className="uc-stage focused-game-stage"
+          data-uc-phase={view.phase}
+          data-current-actor={view.currentSpeakerId ?? undefined}
+          aria-busy={busy}
+        >
+          <p className="focused-game-sr-live" role="status" aria-live="polite" aria-atomic="true">
+            {liveStatus}
+          </p>
           {view.phase !== 'game_over' && <GamePhaseRail phase={railOf(view.phase)} />}
-          {error && <div className="error-banner" role="alert" style={{ width: '100%' }}>{error}</div>}
+          <GameActionFeedback
+            active={busy}
+            feedbackKey={`${phaseKey}:busy`}
+            variant="info"
+            className="focused-game-feedback"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {busy ? '正在同步操作，请勿重复点击…' : null}
+          </GameActionFeedback>
+          {error && (
+            <GameActionFeedback
+              active
+              feedbackKey={`${phaseKey}:${error}`}
+              variant="error"
+              className="error-banner focused-game-feedback focused-game-feedback--error"
+              role="alert"
+              aria-live="assertive"
+              aria-atomic="true"
+            >
+              {error}
+            </GameActionFeedback>
+          )}
           {body}
         </div>
       }
@@ -132,10 +208,10 @@ function BlankPeekCard({ view, act, busy }: { view: BlankPlayerView; act: Act; b
               : me?.isBlank
                 ? '本局你没有词条。靠拢大家的描述，把自己藏进人群。'
                 : '长按词卡悄悄查看，松手立即遮挡，别让旁人看到。'}
-            aside={<GameCountdown seconds={countdown.secondsLeft} />}
+            aside={<FocusedCountdown seconds={countdown.secondsLeft} />}
           />
 
-          <div className="uc-meter" role="status">
+          <div className="uc-meter" role="status" aria-live="polite" aria-atomic="true">
             <span className="uc-meter__label">已就绪</span>
             <div className="uc-meter__track" style={{ '--uc-meter': `${total > 0 ? (confirmedCount / total) * 100 : 0}%` } as CSSProperties}>
               <span />
@@ -183,7 +259,7 @@ function BlankPeekCard({ view, act, busy }: { view: BlankPlayerView; act: Act; b
 
       {me !== null && (
         <div className="game-action-dock">
-          <button type="button" className="game-primary-action" disabled={busy || confirmed} onClick={() => void act({ type: 'confirm_word' })}>
+          <button type="button" className="game-primary-action" aria-busy={busy} disabled={busy || confirmed} onClick={() => void act({ type: 'confirm_word' })}>
             {confirmed ? '已确认，等待全员就绪' : busy ? '提交中…' : '我已记下，确认就绪'}
           </button>
           <span>{confirmed ? '全员就绪后自动进入描述发言' : '确认前可以随时长按查阅'}</span>
@@ -252,11 +328,11 @@ function BlankSpeechPanel({ view, act, busy }: { view: BlankPlayerView; act: Act
             eyebrow={`第 ${view.round} 轮 · 描述发言`}
             title={isMyTurn ? '轮到你发言了' : '倾听同桌玩家的描述'}
             description={isMyTurn ? '用一句话描述，说清又不露底。' : '留意描述与语气，找出对不上号的破绽。'}
-            aside={<GameCountdown seconds={countdown.secondsLeft} />}
+            aside={<FocusedCountdown seconds={countdown.secondsLeft} />}
           />
 
           {speakerInfo !== undefined && (
-            <div className={`speaker-spotlight ${isMyTurn ? 'is-me' : ''}`} aria-live="polite">
+            <div className={`speaker-spotlight focused-current-actor ${isMyTurn ? 'is-me' : ''}`} aria-live="polite" aria-atomic="true">
               <div className="speaker-spotlight-top">
                 <UserAvatar
                   avatar={members.find((m) => m.playerId === speakerInfo.playerId)?.avatar ?? (isMyTurn ? profile.avatar : 'preset:fox')}
@@ -416,10 +492,10 @@ function BlankVotePanel({ view, act, busy }: { view: BlankPlayerView; act: Act; 
             eyebrow={`第 ${view.round} 轮 · ${isRunoff ? '加赛指认' : '投票指认'}`}
             title={hasVoted ? '选票已锁定' : '指认你心中的白板'}
             description={hasVoted ? '票数在全员投完后统一公开。' : '综合发言表现，把票投给你最怀疑的人。'}
-            aside={<GameCountdown seconds={countdown.secondsLeft} />}
+            aside={<FocusedCountdown seconds={countdown.secondsLeft} />}
           />
 
-          <div className="uc-meter" role="status">
+          <div className="uc-meter" role="status" aria-live="polite" aria-atomic="true">
             <span className="uc-meter__label">已投 {view.votesSubmitted} / {view.votesExpected} 票</span>
             <div className="uc-meter__track" style={{ '--uc-meter': `${votePercent}%` } as CSSProperties}>
               <span />
@@ -427,10 +503,17 @@ function BlankVotePanel({ view, act, busy }: { view: BlankPlayerView; act: Act; 
           </div>
 
           {hasVoted && (
-            <div className="vote-done-hint" role="status">
+            <GameActionFeedback
+              active
+              feedbackKey={`vote:${view.round}:${myVote ?? 'abstain'}`}
+              variant="success"
+              className="vote-done-hint"
+              aria-live="polite"
+              aria-atomic="true"
+            >
               <strong>选票已锁定</strong>
               <span>等待其他玩家完成投票…</span>
-            </div>
+            </GameActionFeedback>
           )}
           {me !== null && !me.alive && <div className="spectator-hint">你已出局，本回合观战等待结果</div>}
         </div>
@@ -514,7 +597,7 @@ function BlankResultPanel({ view }: { view: BlankPlayerView }) {
         eyebrow={`第 ${summary.round} 轮 · 结果揭晓`}
         title="本轮投票统计"
         description={summary.kind === 'runoff' ? '这是加赛对决的公开票型。' : '选票已按公开规则完成统计。'}
-        aside={<GameCountdown seconds={countdown.secondsLeft} label="即将推进" />}
+        aside={<FocusedCountdown seconds={countdown.secondsLeft} label="即将推进" />}
       />
 
       <div className={`result-banner ${summary.outcome}`}>
@@ -586,7 +669,7 @@ function BlankFinalPanel({ view, act, busy }: { view: BlankPlayerView; act: Act;
         eyebrow="背水一战 · 最终猜词"
         title={me?.canSubmitFinalGuess ? '最后一搏，猜对即胜' : '等待白板最终猜词'}
         description={me?.canSubmitFinalGuess ? '30 秒内猜中平民词，白板方直接锁定胜局。' : '白板正在做最后判断，猜词提交后等待裁判揭晓。'}
-        aside={<GameCountdown seconds={countdown.secondsLeft} />}
+        aside={<FocusedCountdown seconds={countdown.secondsLeft} />}
       />
 
       {me?.canSubmitFinalGuess ? (
@@ -603,14 +686,14 @@ function BlankFinalPanel({ view, act, busy }: { view: BlankPlayerView; act: Act;
             onSubmit={() => void submitFinal()}
           />
           <div className="game-action-dock">
-            <button type="button" className="game-primary-action uc-guess__skip" disabled={busy} onClick={() => void act({ type: 'skip_final_guess' })}>
+            <button type="button" className="game-primary-action uc-guess__skip" aria-busy={busy} disabled={busy} onClick={() => void act({ type: 'skip_final_guess' })}>
               跳过，接受出局
             </button>
             <span>跳过视为放弃猜词机会</span>
           </div>
         </div>
       ) : pending ? (
-        <div className="blank-waiting-adjudication" role="status">
+        <div className="blank-waiting-adjudication" role="status" aria-live="polite" aria-atomic="true">
           <span className="blank-waiting-adjudication__pulse" aria-hidden="true" />
           <strong>等待裁判判定</strong>
           <span>最终猜词已提交，裁判结果回来后自动结算本局。</span>
@@ -723,5 +806,3 @@ function BlankOverPanel({ view }: { view: BlankPlayerView }) {
     </section>
   );
 }
-
-

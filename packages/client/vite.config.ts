@@ -11,6 +11,18 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     copyPublicDir: true,
+    chunkSizeWarningLimit: 550,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('/three/')) return 'vendor-three';
+          if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/scheduler/')) return 'vendor-react';
+          if (id.includes('/lucide-react/')) return 'vendor-icons';
+          return undefined;
+        },
+      },
+    },
   },
   server: {
     proxy: {

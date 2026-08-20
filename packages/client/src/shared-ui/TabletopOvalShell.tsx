@@ -4,6 +4,8 @@ import { GameIcon } from './GameIcon.tsx';
 import { UserAvatar } from '../user/UserAvatar.tsx';
 import { useUserProfile } from '../user/UserProfileContext.tsx';
 import { useConnection } from '../connection/useConnection.ts';
+import { useMotion } from '../motion/MotionContext.tsx';
+import { GameMotionRoot, GamePhaseTransition } from './GameMotion.tsx';
 
 export interface PlayerSeat {
   id: string;
@@ -43,6 +45,7 @@ export type TabletopTheme =
 export interface TabletopOvalShellProps {
   title: string;
   subtitle?: string;
+  gameId?: string;
   theme?: TabletopTheme;
   players: PlayerSeat[];
   currentUserId?: string;
@@ -58,11 +61,13 @@ export interface TabletopOvalShellProps {
    * - 'arena'：舞台占满椭圆纵向空间、两侧让开座位（卡片为主要交互的阶段面板，如谁是卧底）。
    */
   stageFit?: 'safe' | 'arena';
+  phaseKey?: string;
 }
 
 export function TabletopOvalShell({
   title,
   subtitle,
+  gameId,
   theme = 'poker',
   players,
   currentUserId,
@@ -73,10 +78,13 @@ export function TabletopOvalShell({
   phaseBannerSubtext,
   hideSeats = false,
   stageFit = 'safe',
+  phaseKey,
 }: TabletopOvalShellProps) {
   const { profile } = useUserProfile();
   const { state } = useConnection();
   const [muted, setMuted] = useState(webAudio.isMuted());
+  const { level: motionLevel } = useMotion();
+  const landscapeShort = useLandscapeShort();
   const members = state.room?.members ?? [];
 
   const toggleSound = () => {
@@ -96,7 +104,7 @@ export function TabletopOvalShell({
     ];
   }
 
-  const dense = players.length >= 8;
+  const dense = players.length >= 7;
 
   const renderSeatChip = (player: (typeof orderedPlayers)[number]) => {
     const isMe = player.id === currentUserId;
@@ -156,7 +164,12 @@ export function TabletopOvalShell({
   };
 
   return (
-    <div className={`tabletop-shell tabletop-theme-${theme} tabletop-shell--${orientation} ${dense ? 'tabletop-shell--dense' : ''}`}>
+    <GameMotionRoot
+      level={motionLevel}
+      className={`tabletop-shell tabletop-theme-${theme} tabletop-shell--${orientation} ${dense ? 'tabletop-shell--dense' : ''} ${landscapeShort ? 'tabletop-shell--landscape-short' : ''} tabletop-stage-fit-${stageFit}`}
+      data-game-id={gameId}
+      data-phase-key={phaseKey}
+    >
       {/* 顶栏控制（超紧凑空间） */}
       <header className="tabletop-header">
         <div className="tabletop-header__info">
@@ -207,18 +220,24 @@ export function TabletopOvalShell({
       <main className="tabletop-arena-container">
         {/* 阶段通知条 */}
         {(phaseBannerText || phaseBannerSubtext) && (
-          <div className="tabletop-phase-banner">
+          <GamePhaseTransition
+            phaseKey={phaseKey ?? phaseBannerText ?? phaseBannerSubtext ?? 'phase'}
+            className="tabletop-phase-banner"
+            aria-live="polite"
+          >
             {phaseBannerText && <div className="tabletop-phase-banner__title">{phaseBannerText}</div>}
             {phaseBannerSubtext && <div className="tabletop-phase-banner__sub">{phaseBannerSubtext}</div>}
-          </div>
+          </GamePhaseTransition>
         )}
 
         {/* 舞台中心竞技/内容区域 */}
-        <div className="tabletop-center-content">{centerArena}</div>
+        <div className="tabletop-center-content" data-phase-key={phaseKey ?? 'stage'}>
+          {centerArena}
+        </div>
       </main>
 
       {/* 底部玩家专属控制/手牌面板 */}
       {bottomBar && <footer className="tabletop-bottom-bar">{bottomBar}</footer>}
-    </div>
+    </GameMotionRoot>
   );
 }

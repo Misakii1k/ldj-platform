@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { useMotion } from '../motion/MotionContext.tsx';
+import type { MotionLevel } from '../motion/motionPolicy.ts';
 import { webAudio } from './WebAudioManager.ts';
 
 export type ThreeDiceCupTheme = 'wood' | 'felt' | 'metal';
@@ -17,6 +19,69 @@ export interface ThreeDiceCupCanvasProps {
   variant?: 'large' | 'compact';
   /** 容器类名 */
   className?: string;
+}
+
+export interface DiceCupMotionProfile {
+  motionScale: number;
+  settleDuration: number;
+  pixelRatioCap: number;
+  shadowMapSize: number;
+  shadowsEnabled: boolean;
+  knockAudioEnabled: boolean;
+}
+
+export function resolveDiceCupMotionProfile(
+  level: MotionLevel,
+  variant: 'large' | 'compact',
+): DiceCupMotionProfile {
+  const compact = variant === 'compact';
+  switch (level) {
+    case 'off':
+      return {
+        motionScale: 0,
+        settleDuration: 0.08,
+        pixelRatioCap: 1,
+        shadowMapSize: compact ? 256 : 512,
+        shadowsEnabled: false,
+        knockAudioEnabled: false,
+      };
+    case 'minimal':
+      return {
+        motionScale: 0.25,
+        settleDuration: SETTLE_DURATION * 0.45,
+        pixelRatioCap: 1,
+        shadowMapSize: compact ? 256 : 512,
+        shadowsEnabled: false,
+        knockAudioEnabled: false,
+      };
+    case 'reduced':
+      return {
+        motionScale: 0.55,
+        settleDuration: SETTLE_DURATION * 0.7,
+        pixelRatioCap: compact ? 1.25 : 1.5,
+        shadowMapSize: compact ? 512 : 1024,
+        shadowsEnabled: true,
+        knockAudioEnabled: true,
+      };
+    case 'full':
+    default:
+      return {
+        motionScale: 1,
+        settleDuration: SETTLE_DURATION,
+        pixelRatioCap: compact ? 1.5 : 2,
+        shadowMapSize: compact ? 1024 : 2048,
+        shadowsEnabled: true,
+        knockAudioEnabled: true,
+      };
+  }
+}
+
+export function shouldRunDiceCupFrame(
+  pageVisible: boolean,
+  elementVisible: boolean,
+  animationActive: boolean,
+): boolean {
+  return pageVisible && elementVisible && animationActive;
 }
 
 /* ══════════════════════ 朝向数学（纯函数，可单测） ══════════════════════ */
@@ -337,16 +402,18 @@ export function ThreeDiceCupCanvas({
   className = '',
 }: ThreeDiceCupCanvasProps) {
   const mountRef = useRef<HTMLDivElement | null>(null);
+  const { level: motionLevel } = useMotion();
+  const diceValuesKey = diceValues.join(',');
 
   // 动态状态经 ref 传入渲染帧，避免场景重建
-  const stateRef = useRef({ isLifted, isShaking, theme, diceValues, variant });
-  stateRef.current = { isLifted, isShaking, theme, diceValues, variant };
+  const stateRef = useRef({ isLifted, isShaking, theme, diceValues, variant, motionLevel });
+  stateRef.current = { isLifted, isShaking, theme, diceValues, variant, motionLevel };
 
-  // 唤醒按需渲染循环（组件每次渲染后调用）
+  // 仅在交互状态变化时唤醒按需渲染循环
   const wakeRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     wakeRef.current?.();
-  });
+  }, [diceValuesKey, isLifted, isShaking, motionLevel]);
 
   useEffect(() => {
     const container = mountRef.current;
@@ -356,14 +423,15 @@ export function ThreeDiceCupCanvas({
     const width = isCompact ? 140 : 240;
     const height = isCompact ? 150 : 250;
     const texSize = isCompact ? 256 : 512;
-    const shadowSize = isCompact ? 1024 : 2048;
-    const pixelCap = isCompact ? 1.5 : 2;
-
-    const reducedMotion =
-      typeof matchMedia !== 'undefined' &&
-      matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const motionScale = reducedMotion ? 0.4 : 1;
-    const settleDuration = reducedMotion ? SETTLE_DURATION * 0.6 : SETTLE_DURATION;
+    const motionProfile = resolveDiceCupMotionProfile(motionLevel, variant);
+    const {
+      motionScale,
+      settleDuration,
+      pixelRatioCap,
+      shadowMapSize,
+      shadowsEnabled,
+      knockAudioEnabled,
+    } = motionProfile;
 
     // ── 资源统一登记释放 ──
     const disposables: Array<{ dispose(): void }> = [];
@@ -372,19 +440,23 @@ export function ThreeDiceCupCanvas({
       return res;
     };
 
-    // 1. Scene & Camera（略拉近：骰子为主体，占满画面）
+    // 1. Scene & Camera（留出充裕的安全边距，确保底座与掀开时不裁切）
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
-    camera.position.set(0, 4.5, 6.3);
-    camera.lookAt(0, 0.4, 0);
+    const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+    camera.position.set(0, 5.2, 8.2);
+    camera.lookAt(0, 0.6, 0);
 
     // 2. WebGL Renderer
     const renderer = track(
-      new THREE.WebGLRenderer({ antialias: true, alpha: true })
+      new THREE.WebGLRenderer({
+        antialias: motionLevel === 'full' || motionLevel === 'reduced',
+        alpha: true,
+        powerPreference: 'high-performance',
+      })
     );
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelCap));
-    renderer.shadowMap.enabled = true;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelRatioCap));
+    renderer.shadowMap.enabled = shadowsEnabled;
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
@@ -395,8 +467,8 @@ export function ThreeDiceCupCanvas({
 
     const mainLight = new THREE.DirectionalLight(0xfff5e6, 2.2);
     mainLight.position.set(4, 9, 5);
-    mainLight.castShadow = true;
-    mainLight.shadow.mapSize.set(shadowSize, shadowSize);
+    mainLight.castShadow = shadowsEnabled;
+    mainLight.shadow.mapSize.set(shadowMapSize, shadowMapSize);
     mainLight.shadow.camera.left = -4;
     mainLight.shadow.camera.right = 4;
     mainLight.shadow.camera.top = 4;
@@ -511,6 +583,7 @@ export function ThreeDiceCupCanvas({
     let lastKnockAt = 0;
 
     const playKnock = (intensity: number) => {
+      if (!knockAudioEnabled) return;
       const now = performance.now();
       if (now - lastKnockAt < KNOCK_MIN_INTERVAL_MS) return;
       lastKnockAt = now;
@@ -652,7 +725,9 @@ export function ThreeDiceCupCanvas({
     let lastTime = performance.now();
     let rafId = 0;
     let running = false;
-    let idleFrames = 0;
+    let pageVisible = document.visibilityState !== 'hidden';
+    let elementVisible = typeof IntersectionObserver === 'undefined';
+    let visibilityObserver: IntersectionObserver | null = null;
 
     // 杯体弹簧状态（欠阻尼 → 轻微过冲回弹）：位置 XYZ + 转角 XZ 全弹簧驱动
     let cupX = 0;
@@ -686,7 +761,7 @@ export function ThreeDiceCupCanvas({
       const key = st.diceValues.join(',');
       if (key !== lastValuesKey) {
         lastValuesKey = key;
-        syncDice(st.diceValues, false);
+        syncDice(st.diceValues, st.motionLevel === 'off');
       }
 
       // 杯体弹簧：掀盖 → 升起并挪向右后方；扣盖 → 回正
@@ -696,13 +771,30 @@ export function ThreeDiceCupCanvas({
       const targetZ = lifted ? CUP_LIFT_Z : 0;
       const targetRotX = lifted ? CUP_LIFT_TILT : 0;
       const targetRotZ = lifted ? CUP_LIFT_LEAN : 0;
-      [cupY, cupVelY] = spring(cupY, cupVelY, targetY, dt, 90, 11);
-      [cupX, cupVelX] = spring(cupX, cupVelX, targetX, dt, 70, 10);
-      [cupZ, cupVelZ] = spring(cupZ, cupVelZ, targetZ, dt, 70, 10);
-      [cupRotX, cupRotVelX] = spring(cupRotX, cupRotVelX, targetRotX, dt, 70, 10);
-      [cupRotZ, cupRotVelZ] = spring(cupRotZ, cupRotVelZ, targetRotZ, dt, 60, 9);
+      if (st.motionLevel === 'off') {
+        cupX = targetX;
+        cupY = targetY;
+        cupZ = targetZ;
+        cupRotX = targetRotX;
+        cupRotZ = targetRotZ;
+        cupVelX = 0;
+        cupVelY = 0;
+        cupVelZ = 0;
+        cupRotVelX = 0;
+        cupRotVelZ = 0;
+        wobX = 0;
+        wobZ = 0;
+        wobRotZ = 0;
+      } else {
+        [cupY, cupVelY] = spring(cupY, cupVelY, targetY, dt, 90, 11);
+        [cupX, cupVelX] = spring(cupX, cupVelX, targetX, dt, 70, 10);
+        [cupZ, cupVelZ] = spring(cupZ, cupVelZ, targetZ, dt, 70, 10);
+        [cupRotX, cupRotVelX] = spring(cupRotX, cupRotVelX, targetRotX, dt, 70, 10);
+        [cupRotZ, cupRotVelZ] = spring(cupRotZ, cupRotVelZ, targetRotZ, dt, 60, 9);
+      }
 
-      if (st.isShaking) {
+      const shakingActive = st.isShaking && st.motionLevel !== 'off';
+      if (shakingActive) {
         // 摇晃：手腕复合摇动轨迹 + 惯性带动骰子
         shakeT += dt;
         const amp = motionScale;
@@ -814,13 +906,13 @@ export function ThreeDiceCupCanvas({
       cupGroup.position.set(cupX + wobX, cupY, cupZ + wobZ);
       cupGroup.rotation.set(cupRotX, 0, cupRotZ + wobRotZ);
 
-      wasShaking = st.isShaking;
+      wasShaking = shakingActive;
     };
 
     /** 是否仍有活跃动画（用于按需渲染挂起判定） */
     const isAnimating = (): boolean => {
       const st = stateRef.current;
-      if (st.isShaking) return true;
+      if (st.isShaking && st.motionLevel !== 'off') return true;
       const lifted = st.isLifted;
       const targetY = lifted ? CUP_LIFT_Y : 0;
       if (Math.abs(cupY - targetY) > 1e-3 || Math.abs(cupVelY) > 2e-2) return true;
@@ -844,32 +936,34 @@ export function ThreeDiceCupCanvas({
     };
 
     const tick = () => {
-      rafId = requestAnimationFrame(tick);
+      if (!pageVisible || !elementVisible) {
+        rafId = 0;
+        running = false;
+        return;
+      }
       const now = performance.now();
       const dt = Math.min((now - lastTime) / 1000, 0.033);
       lastTime = now;
       update(dt);
       renderer.render(scene, camera);
-      if (!isAnimating()) {
-        if (++idleFrames >= 5) {
-          cancelAnimationFrame(rafId);
-          running = false;
-        }
-      } else {
-        idleFrames = 0;
+      if (shouldRunDiceCupFrame(pageVisible, elementVisible, isAnimating())) {
+        rafId = requestAnimationFrame(tick);
+        return;
       }
+      rafId = 0;
+      running = false;
     };
 
     const stopLoop = () => {
-      if (running) {
+      if (rafId !== 0) {
         cancelAnimationFrame(rafId);
-        running = false;
+        rafId = 0;
       }
+      running = false;
     };
 
     const wake = () => {
-      idleFrames = 0;
-      if (running) return;
+      if (running || !pageVisible || !elementVisible) return;
       running = true;
       lastTime = performance.now(); // 丢弃挂起期间累积的时间
       rafId = requestAnimationFrame(tick);
@@ -888,13 +982,23 @@ export function ThreeDiceCupCanvas({
 
     // 页面隐藏时挂起渲染（DiceCup 层的防窥扣盖与此互补）
     const onVisibility = () => {
-      if (document.visibilityState === 'hidden') {
+      pageVisible = document.visibilityState !== 'hidden';
+      if (!pageVisible) {
         stopLoop();
       } else {
         wake();
       }
     };
     document.addEventListener('visibilitychange', onVisibility);
+
+    if (typeof IntersectionObserver !== 'undefined') {
+      visibilityObserver = new IntersectionObserver(([entry]) => {
+        elementVisible = entry?.isIntersecting === true && entry.intersectionRatio > 0;
+        if (elementVisible) wake();
+        else stopLoop();
+      }, { threshold: 0.01 });
+      visibilityObserver.observe(container);
+    }
 
     wakeRef.current = wake;
     wake();
@@ -903,6 +1007,7 @@ export function ThreeDiceCupCanvas({
     return () => {
       wakeRef.current = null;
       stopLoop();
+      visibilityObserver?.disconnect();
       document.removeEventListener('visibilitychange', onVisibility);
       renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
       renderer.domElement.removeEventListener('webglcontextrestored', onContextRestored);
@@ -912,12 +1017,15 @@ export function ThreeDiceCupCanvas({
         container.removeChild(renderer.domElement);
       }
     };
-  }, [theme, variant]);
+  }, [motionLevel, theme, variant]);
 
   return (
     <div
       ref={mountRef}
       className={`three-dice-cup-canvas-wrapper ${className}`}
+      data-motion-level={motionLevel}
+      data-render-policy="on-demand"
+      aria-hidden="true"
       style={{
         display: 'flex',
         alignItems: 'center',

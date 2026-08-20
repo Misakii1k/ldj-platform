@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { WerewolfSelfModel } from '../presentation.ts';
+import { IdentityFlipCard } from '../../../shared-ui/IdentityFlipCard.tsx';
 
 interface PrivateRolePanelProps {
   readonly self: WerewolfSelfModel | null;
@@ -17,6 +18,8 @@ export function PrivateRolePanel({ self, synced: _synced }: PrivateRolePanelProp
       </aside>
     );
   }
+
+  const isWolf = self.role === 'wolf';
 
   return (
     <aside className={`werewolf-compact-role ${revealed ? 'is-revealed' : ''}`} aria-label="私密身份">
@@ -60,14 +63,16 @@ export function PrivateRolePanel({ self, synced: _synced }: PrivateRolePanelProp
 
       {revealed && (
         <div className="werewolf-compact-role__popover" role="dialog" aria-label="身份详情">
-          <div className="werewolf-compact-role__popover-header">
-            <img src={self.artworkUrl} alt={self.roleLabel} className="werewolf-compact-role__popover-art" />
-            <div>
-              <h3>{self.roleLabel}</h3>
-              <span className="werewolf-compact-role__popover-tag">{self.alive ? '存活中' : '已出局 (保留观战)'}</span>
-            </div>
-          </div>
-          <p className="werewolf-compact-role__popover-hint">{self.roleHint}</p>
+          <IdentityFlipCard
+            theme="gothic"
+            variant="compact"
+            roleName={self.roleLabel}
+            roleSubtitle={isWolf ? '狼人阵营' : '好人阵营'}
+            roleCamp={isWolf ? 'evil' : 'good'}
+            artworkUrl={self.artworkUrl}
+            secretHints={[self.roleHint]}
+            canInteract={true}
+          />
         </div>
       )}
     </aside>

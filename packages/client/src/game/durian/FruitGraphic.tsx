@@ -328,7 +328,7 @@ export function FruitGroup({ fruit, quantity, size = 64, stacked = true }: Fruit
     return (
       <div
         className={`fruit-group fruit-group--2 ${stacked ? 'is-stacked' : 'is-side-by-side'}`}
-        style={{ width: size * 1.3, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}
+        style={{ width: stacked ? size * 1.3 : size * 1.7, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}
       >
         <div className="fruit-item item-1" style={{ position: 'relative', zIndex: 1, transform: stacked ? 'rotate(-4deg)' : 'none' }}>
           <FruitIcon fruit={fruit} size={itemSize} />
@@ -354,7 +354,7 @@ export function FruitGroup({ fruit, quantity, size = 64, stacked = true }: Fruit
   return (
     <div
       className={`fruit-group fruit-group--3 ${stacked ? 'is-stacked' : 'is-row'}`}
-      style={{ width: size * 1.5, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}
+      style={{ width: stacked ? size * 1.5 : size * 2.1, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}
     >
       <div className="fruit-item item-1" style={{ position: 'relative', zIndex: 1, transform: stacked ? 'rotate(-6deg)' : 'none' }}>
         <FruitIcon fruit={fruit} size={itemSize} />

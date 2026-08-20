@@ -18,6 +18,7 @@ const cheeseThiefConfigSchema = z
     rulesetId: z.literal('cheese_thief_classic_v1').optional(),
     mode: z.enum(['standard', 'simulator']).default('standard'),
     nightHourSeconds: seconds.default(20),
+    accompliceSelectSeconds: seconds.default(15),
     discussionSeconds: seconds.default(120),
     voteSeconds: seconds.default(30),
     hourChoiceSeconds: seconds.default(30),
@@ -82,6 +83,7 @@ export function parseCheeseThiefConfig(input: unknown): ResolvedCheeseThiefConfi
     rulesetId?: 'cheese_thief_classic_v1';
     mode: 'standard' | 'simulator';
     nightHourSeconds: number;
+    accompliceSelectSeconds: number;
     discussionSeconds: number;
     voteSeconds: number;
     hourChoiceSeconds: number;
@@ -98,6 +100,7 @@ export function parseCheeseThiefConfig(input: unknown): ResolvedCheeseThiefConfi
     rulesetId: parsed.rulesetId ?? 'cheese_thief_classic_v1',
     mode: parsed.mode ?? 'standard',
     nightHourSeconds: parsed.nightHourSeconds,
+    accompliceSelectSeconds: parsed.accompliceSelectSeconds,
     discussionSeconds: parsed.discussionSeconds,
     voteSeconds: parsed.voteSeconds,
     hourChoiceSeconds: parsed.hourChoiceSeconds,

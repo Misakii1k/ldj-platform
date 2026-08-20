@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { GameActionFeedback } from '../../../shared-ui/GameMotion.tsx';
 import { TabletopOvalShell, type TabletopTheme } from '../../../shared-ui/TabletopOvalShell.tsx';
 import { GameLeaveButton } from '../../GameLeaveButton.tsx';
+import { buildWerewolfPhaseKey } from '../motion.ts';
 import type { WerewolfPresentationModel } from '../presentation.ts';
 import { EyeBlinkTransition } from './EyeBlinkTransition.tsx';
 import { GameOverReveal } from './GameOverReveal.tsx';
@@ -20,6 +22,25 @@ interface WerewolfStageProps {
 }
 
 export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfStageProps) {
+  const [mobileLayout, setMobileLayout] = useState(false);
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 899px), (orientation: landscape) and (max-height: 520px)');
+    const update = () => setMobileLayout(mediaQuery.matches);
+    update();
+    mediaQuery.addEventListener('change', update);
+    return () => mediaQuery.removeEventListener('change', update);
+  }, []);
+  const phaseKey = buildWerewolfPhaseKey(model);
+  const speakingSeat = model.seats.find((seat) => seat.isSpeaking);
+  const liveStatus = error
+    ? `操作失败：${error}`
+    : busy
+      ? `${model.phaseLabel}，正在提交操作。`
+      : speakingSeat
+        ? `${model.phaseLabel}，当前由 ${speakingSeat.name} 发言。`
+        : model.actionGroups.length > 0
+          ? `${model.phaseLabel}，轮到你行动。`
+          : `${model.phaseLabel}。${model.waitingHint ?? model.narrative}`;
   // 根据昼夜/阶段动态切换舞台主题与背景
   let dynamicTheme: TabletopTheme = 'tribunal';
   if (model.mood === 'day') {
@@ -39,7 +60,14 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
   const rightSeats = model.seats.filter((_, i) => i % 2 === 1);
 
   const centerArena = (
-    <div className={`werewolf-arena werewolf-arena--${model.mood}`}>
+    <div
+      className={`werewolf-arena werewolf-arena--${model.mood}`}
+      aria-busy={busy}
+      data-current-actor={speakingSeat?.playerId}
+    >
+      <p className="focused-game-sr-live" role="status" aria-live="polite" aria-atomic="true">
+        {liveStatus}
+      </p>
       {/* 眨眼昼夜交替转场特效 (Eye-Blink Cinematic Transition) */}
       <EyeBlinkTransition mood={model.mood} />
 
@@ -51,15 +79,17 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
         {isDawn && <div className="werewolf-dawn-glow" />}
       </div>
 
-      {/* 桌面宽屏模式：马蹄形全景环绕席位 */}
-      <SeatRing seats={model.seats} mood={model.mood} className="werewolf-desktop-seat-ring" />
+      {!mobileLayout && (
+        <SeatRing seats={model.seats} mood={model.mood} className="werewolf-desktop-seat-ring" />
+      )}
 
-      {/* 移动端竖屏模式：左侧席位列 */}
-      <ol className="werewolf-wing werewolf-wing--left" aria-label="左侧席位">
-        {leftSeats.map((seat) => (
-          <SeatChip key={seat.playerId} seat={seat} />
-        ))}
-      </ol>
+      {mobileLayout && (
+        <ol className="werewolf-wing werewolf-wing--left" aria-label="左侧席位">
+          {leftSeats.map((seat) => (
+            <SeatChip key={seat.playerId} seat={seat} />
+          ))}
+        </ol>
+      )}
 
       {/* 中央发言/天象舞台（桌面居中，移动端在左右翼之间） */}
       <div className="werewolf-arena__center-stack">
@@ -80,18 +110,31 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
         )}
       </div>
 
-      {/* 移动端竖屏模式：右侧席位列 */}
-      <ol className="werewolf-wing werewolf-wing--right" aria-label="右侧席位">
-        {rightSeats.map((seat) => (
-          <SeatChip key={seat.playerId} seat={seat} />
-        ))}
-      </ol>
+      {mobileLayout && (
+        <ol className="werewolf-wing werewolf-wing--right" aria-label="右侧席位">
+          {rightSeats.map((seat) => (
+            <SeatChip key={seat.playerId} seat={seat} />
+          ))}
+        </ol>
+      )}
 
       <p className="werewolf-arena__caption" aria-hidden="true">
         {isNight ? '☾ 暗夜审判桌' : '☼ 白昼公投厅'} · {model.seats.length} 人局
       </p>
 
-      {error && <p className="game-error werewolf-stage__error" role="alert">{error}</p>}
+      {error && (
+        <GameActionFeedback
+          active
+          feedbackKey={`${phaseKey}:${error}`}
+          variant="error"
+          className="game-error werewolf-stage__error focused-game-feedback focused-game-feedback--error"
+          role="alert"
+          aria-live="assertive"
+          aria-atomic="true"
+        >
+          {error}
+        </GameActionFeedback>
+      )}
     </div>
   );
 
@@ -106,6 +149,7 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
           groups={model.actionGroups}
           waitingHint={model.waitingHint}
           busy={busy}
+          phaseKey={phaseKey}
           onAct={onAct}
         />
         <VoteLedger progress={model.voteProgress} ledger={model.voteLedger} />
@@ -116,10 +160,12 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
   return (
     <TabletopOvalShell
       title="狼人杀"
+      gameId="werewolf"
       theme={dynamicTheme}
       players={[]}
       currentUserId={model.self?.playerId}
       topRightControls={<GameLeaveButton />}
+      phaseKey={phaseKey}
       centerArena={centerArena}
       bottomBar={bottomBar}
     />

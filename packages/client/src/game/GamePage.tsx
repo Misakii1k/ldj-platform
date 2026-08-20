@@ -194,10 +194,13 @@ function UndercoverGamePage({ game }: { game: ActiveGame }) {
     <TabletopOvalShell
       title="谁是卧底"
       subtitle={`第 ${view.round} 轮 · 找出隐藏卧底`}
+      gameId="undercover"
       theme="mystery"
       stageFit="arena"
       players={seats}
       currentUserId={view.me?.playerId}
+      phaseKey={`${view.phase}:${view.round}:${view.currentSpeakerId ?? 'idle'}`}
+      phaseBannerText={view.phase === 'speaking' && view.currentSpeakerId === view.me?.playerId ? '轮到你发言' : undefined}
       topRightControls={<GameLeaveButton />}
       centerArena={
         <div className="uc-stage" data-uc-phase={view.phase}>
@@ -332,11 +335,11 @@ export function GamePage() {
   }
   return (
     <Suspense fallback={<GameLoadingCard>正在布置游戏桌…</GameLoadingCard>}>
-      <>
+      <div className="game-session-root">
         {content}
         <TabletopSettlementDock />
         <GameChatDrawer />
-      </>
+      </div>
     </Suspense>
   );
 }

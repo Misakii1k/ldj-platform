@@ -101,6 +101,8 @@ export function BellClashGamePage({ view }: Props) {
     <TabletopShell
       title="Ding"
       phase={phaseLabel(view.phase)}
+      gameId="bell-clash"
+      phaseKey={`${view.phase}:${view.currentPlayerId}:${view.bellOpen ? `bell:${view.bellClaimantId ?? 'open'}` : 'turn'}:${view.phase === 'game_over' ? view.winners.join(',') || 'no-winner' : 'active'}`}
       spectator={isSpectator}
       players={players}
       theme="arena"
@@ -122,7 +124,7 @@ export function BellClashGamePage({ view }: Props) {
         </GameDrawer>
       )}
     >
-      {error && <p className="game-error" role="alert">{error}</p>}
+      {error && <p className="game-error" role="alert" aria-live="assertive" aria-atomic="true">{error}</p>}
 
       {view.phase !== 'game_over' ? (
         <div className="sg-stage">

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { UndercoverPlayerView } from './types.ts';
+import { GameCountdownPulse } from '../shared-ui/GameMotion.tsx';
 
 const PHASES = [
   { key: 'word', label: '查词', short: '1' },
@@ -61,7 +62,9 @@ export function GameCountdown({ seconds, label = '剩余时间' }: { seconds: nu
   return (
     <div className={`game-countdown ${urgent ? 'urgent' : ''} ${ended ? 'ended' : ''}`} role="timer" aria-live="off">
       <span className="countdown-label">{ended ? '阶段切换' : label}</span>
-      <strong>{ended ? '…' : seconds}</strong>
+      <GameCountdownPulse secondsLeft={seconds} urgentAt={5} active={!ended}>
+        <strong>{ended ? '—' : seconds}</strong>
+      </GameCountdownPulse>
       <span className="countdown-unit">{ended ? '请稍候' : '秒'}</span>
     </div>
   );

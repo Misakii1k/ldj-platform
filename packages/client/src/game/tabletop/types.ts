@@ -19,6 +19,7 @@ export interface TabletopAction {
 export interface TabletopShellProps {
   readonly title: string;
   readonly phase: string;
+  readonly gameId?: string;
   readonly spectator?: boolean;
   /** 游戏专属 felt 主题（未指定时按标题兜底：悬疑夜晚→mystery、法庭→court、扑克→poker、其它→party） */
   readonly theme?: TabletopTheme;
@@ -27,6 +28,7 @@ export interface TabletopShellProps {
   readonly drawer?: ReactNode;
   readonly rulesButton?: ReactNode;
   readonly hideSeats?: boolean;
+  readonly phaseKey?: string;
   readonly children: ReactNode;
 }
 

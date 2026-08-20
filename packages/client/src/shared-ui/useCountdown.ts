@@ -25,8 +25,35 @@ export function useCountdown(deadlineAt: number | null, serverNow?: number): Cou
 
   useEffect(() => {
     if (deadlineAt === null) return;
-    const id = setInterval(() => setTick((t) => t + 1), 500);
-    return () => clearInterval(id);
+
+    let timeoutId = 0;
+    let cancelled = false;
+
+    const schedule = () => {
+      window.clearTimeout(timeoutId);
+      if (cancelled || document.hidden) return;
+      setTick((current) => current + 1);
+      const remaining = Math.max(0, deadlineAt - Date.now());
+      const delay = Math.min(1000, Math.max(120, remaining % 1000 || 1000));
+      timeoutId = window.setTimeout(schedule, delay);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        window.clearTimeout(timeoutId);
+        return;
+      }
+      schedule();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    schedule();
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [deadlineAt]);
 
   // 时钟偏移：服务端时间 - 本地时间（>0 表示本地慢）

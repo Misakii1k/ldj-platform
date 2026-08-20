@@ -161,12 +161,25 @@ export function CheeseThiefGamePage({ view }: Props) {
             : '轮到你的时刻推进中'
         : '夜间进行中——闭眼装睡，轮到你的时刻才睁眼'
       : view.phase === 'accomplice_select'
-        ? '大盗正在秘密挑选共犯…'
+        ? '大盗正在秘密挑选共犯（限时 15 秒）…'
         : view.phase === 'dawn'
           ? '天亮讨论中——线下自由发言，讨论结束自动进入投票'
           : me?.hasVoted
             ? '你已完成投票，等待其他玩家完成投票…'
             : '请选择你怀疑的大盗，或在下方操作栏弃票';
+
+  const presentationState = error
+    ? 'error'
+    : busy
+      ? 'busy'
+      : view.phase === 'game_over'
+        ? 'result'
+        : primary && !primary.disabled
+          ? 'action'
+          : 'waiting';
+  const phaseAnnouncement = view.phase === 'night'
+    ? `${phaseLabel(view.phase)}，当前 ${Math.max(1, view.currentHour)} 点`
+    : phaseLabel(view.phase);
 
   const headerControls = (
     <div className="cheese-top-controls">
@@ -175,6 +188,7 @@ export function CheeseThiefGamePage({ view }: Props) {
           type="button"
           className={`cheese-role-pill ${deviceRole === 'player' ? 'is-active' : ''}`}
           onClick={() => selectDeviceRole('player')}
+          aria-pressed={deviceRole === 'player'}
           title="作为玩家个人手牌设备使用（持在手中）"
         >
           <span className="cheese-btn-icon">📱</span>
@@ -184,6 +198,7 @@ export function CheeseThiefGamePage({ view }: Props) {
           type="button"
           className={`cheese-role-pill ${deviceRole === 'table' ? 'is-active' : ''}`}
           onClick={() => selectDeviceRole('table')}
+          aria-pressed={deviceRole === 'table'}
           title="作为桌面中央公共案发大屏使用（平放于桌面正中）"
         >
           <span className="cheese-btn-icon">🖥️</span>
@@ -194,6 +209,8 @@ export function CheeseThiefGamePage({ view }: Props) {
         type="button"
         className={`cheese-tts-icon-btn ${ttsEnabled ? 'is-active' : ''}`}
         onClick={toggleTts}
+        aria-pressed={ttsEnabled}
+        aria-label={ttsEnabled ? '关闭语音法官主持' : '开启语音法官主持'}
         title={ttsEnabled ? '点击关闭语音法官主持' : '点击开启语音法官主持'}
       >
         <span>{ttsEnabled ? '🔊 语音' : '🔇 静音'}</span>
@@ -211,6 +228,7 @@ export function CheeseThiefGamePage({ view }: Props) {
       phase={`${phaseLabel(view.phase)}${
         deviceRole === 'table' ? ' · 🖥️ 桌面中央端' : ' · 📱 玩家手牌端'
       }`}
+      gameId="cheese-thief"
       spectator={isSpectator}
       players={players}
       theme="night"
@@ -236,7 +254,26 @@ export function CheeseThiefGamePage({ view }: Props) {
         </GameDrawer>
       )}
     >
-      {error && <p className="game-error" role="alert">{error}</p>}
+      <p
+        className={`cheese-phase-feedback cheese-phase-feedback--${presentationState}`}
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        style={{
+          position: 'absolute',
+          width: '1px',
+          height: '1px',
+          padding: 0,
+          margin: '-1px',
+          overflow: 'hidden',
+          clip: 'rect(0, 0, 0, 0)',
+          whiteSpace: 'nowrap',
+          border: 0,
+        }}
+      >
+        {phaseAnnouncement}{waitingReason ? `。${waitingReason}` : ''}
+      </p>
+      {error && <p className="game-error cheese-feedback cheese-feedback--error" role="alert">{error}</p>}
 
       {/* 🖥️ 桌面端呈现 */}
       {isSimulatorTable ? (
@@ -252,7 +289,12 @@ export function CheeseThiefGamePage({ view }: Props) {
         />
       ) : (
         /* 📱 玩家端呈现 */
-        <div className="sg-stage cheese-player-stage">
+        <div
+          className={`sg-stage cheese-player-stage cheese-phase--${view.phase} is-${presentationState}`}
+          data-cheese-phase={view.phase}
+          data-cheese-state={presentationState}
+          aria-busy={busy}
+        >
           {me && (
             <section className="cheese-secret-card" aria-label="我的私密身份与3D骰盅">
               <div className="cheese-secret-card__header">
