@@ -1,19 +1,21 @@
 /**
  * APP 身份门控页（仅原生 APP 显示）：
- * 选择本机身份（玩家/桌面），并连接到主机后进入应用。
+ * 选择本机身份（玩家/桌面/主机）后进入应用。
+ * 玩家/桌面需再连接主机；主机模式直接进入主机控制台。
  */
 import { useState } from 'react';
-import { Smartphone, Monitor } from 'lucide-react';
+import { Smartphone, Monitor, Server } from 'lucide-react';
 import { useAppMode } from './AppModeContext.tsx';
 import { ConnectionSettings } from './ConnectionSettings.tsx';
-import type { AppMode } from './appMode.ts';
 
-const IDENTITY_CARDS: Array<{
-  mode: Exclude<AppMode, 'host'>;
+interface IdentityCardSpec {
+  mode: 'player' | 'table' | 'host';
   icon: typeof Smartphone;
   title: string;
   description: string;
-}> = [
+}
+
+const IDENTITY_CARDS: IdentityCardSpec[] = [
   {
     mode: 'player',
     icon: Smartphone,
@@ -26,11 +28,25 @@ const IDENTITY_CARDS: Array<{
     title: '桌面模式',
     description: '平放桌中，作公共大屏展示',
   },
+  {
+    mode: 'host',
+    icon: Server,
+    title: '主机模式',
+    description: '本机当服务器，大家连你',
+  },
 ];
 
 export function AppModeGate() {
   const { confirmMode } = useAppMode();
-  const [selected, setSelected] = useState<Exclude<AppMode, 'host'> | null>(null);
+  const [selected, setSelected] = useState<'player' | 'table' | null>(null);
+
+  function pickCard(mode: IdentityCardSpec['mode']) {
+    if (mode === 'host') {
+      confirmMode('host');
+      return;
+    }
+    setSelected(mode);
+  }
 
   return (
     <main className="app-mode-gate">
@@ -41,15 +57,15 @@ export function AppModeGate() {
           <p className="app-mode-gate__subtitle">选择这台设备的身份</p>
         </header>
 
-        <div className="app-mode-gate__cards" role="radiogroup" aria-label="设备身份">
+        <div className="app-mode-gate__cards app-mode-gate__cards--three" role="radiogroup" aria-label="设备身份">
           {IDENTITY_CARDS.map(({ mode, icon: Icon, title, description }) => (
             <button
               key={mode}
               type="button"
               role="radio"
-              aria-checked={selected === mode}
+              aria-checked={mode === 'host' || selected === mode}
               className={`app-mode-card ${selected === mode ? 'is-selected' : ''}`}
-              onClick={() => setSelected(mode)}
+              onClick={() => pickCard(mode)}
             >
               <Icon size={30} strokeWidth={1.8} aria-hidden="true" className="app-mode-card__icon" />
               <span className="app-mode-card__title">{title}</span>

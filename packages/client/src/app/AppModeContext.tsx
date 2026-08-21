@@ -2,13 +2,15 @@
  * APP 身份模式上下文：
  * 原生 APP 首启（或主动切换）时门控选择身份；浏览器环境永不门控。
  * 门控期间不渲染应用内容，确认身份后才进入正常连接流程。
+ * 主机模式在未切入本机服务器前渲染 HostConsole（一键开房控制台）。
  */
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { AppMode } from './appMode.ts';
 import { getSavedAppMode, saveAppMode } from './appMode.ts';
-import { getManualServerBase } from '../connection/serverAddress.ts';
+import { getManualServerBase, getRuntimeServerBase, setRuntimeServerBase, subscribeServerBaseChange } from '../connection/serverAddress.ts';
 import { isNativeApp } from './nativePlatform.ts';
 import { AppModeGate } from './AppModeGate.tsx';
+import { HostConsole } from './HostConsole.tsx';
 
 interface AppModeApi {
   /** 是否显示身份门控 */
@@ -37,6 +39,12 @@ function resolveInitialMode(): { gating: boolean; mode: AppMode | null } {
 export function AppModeProvider({ children }: { children: ReactNode }) {
   const [initial] = useState(resolveInitialMode);
   const [activeMode, setActiveMode] = useState<AppMode | null>(initial.mode);
+  // 运行时覆盖是否已指向本机服务器（主机模式「进入大厅」后为 true）
+  const [runtimeActive, setRuntimeActive] = useState(() => getRuntimeServerBase() !== null);
+
+  useEffect(() => subscribeServerBaseChange(() => {
+    setRuntimeActive(getRuntimeServerBase() !== null);
+  }), []);
 
   const confirmMode = useCallback((mode: AppMode) => {
     saveAppMode(mode);
@@ -44,6 +52,8 @@ export function AppModeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const backToModeSelection = useCallback(() => {
+    // 清除运行时覆盖：切回门控后不应再隐式连本机服务器
+    setRuntimeServerBase(null);
     setActiveMode(null);
   }, []);
 
@@ -54,9 +64,16 @@ export function AppModeProvider({ children }: { children: ReactNode }) {
     backToModeSelection,
   }), [activeMode, confirmMode, backToModeSelection]);
 
+  let content: ReactNode = children;
+  if (api.gating) {
+    content = <AppModeGate />;
+  } else if (isNativeApp() && activeMode === 'host' && !runtimeActive) {
+    content = <HostConsole />;
+  }
+
   return (
     <AppModeContext.Provider value={api}>
-      {api.gating ? <AppModeGate /> : children}
+      {content}
     </AppModeContext.Provider>
   );
 }
