@@ -20070,3 +20070,217 @@ html[data-motion-level="minimal"] .durian-sim-card-flip {
     font-size: 0.8rem;
   }
 }
+
+/* ———— APP 身份门控（仅原生 APP） ———— */
+
+.app-mode-gate {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px calc(24px + var(--safe-bottom));
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #eef2ff 0%, transparent 60%),
+    var(--color-bg);
+}
+
+.app-mode-gate__content {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.app-mode-gate__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.app-mode-gate__tile {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.app-mode-gate__title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.app-mode-gate__subtitle {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.app-mode-gate__cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.app-mode-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 12px 16px;
+  border: 2px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.app-mode-card:hover {
+  border-color: var(--color-primary);
+}
+
+.app-mode-card:active {
+  transform: scale(0.98);
+}
+
+.app-mode-card.is-selected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.app-mode-card__icon {
+  color: var(--color-primary);
+}
+
+.app-mode-card__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.app-mode-card__desc {
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.app-mode-gate__connect {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+
+.app-mode-gate__hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+/* ———— 连接主机设置 ———— */
+
+.connection-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.connection-settings__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.connection-settings__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.connection-settings__input {
+  width: 100%;
+  min-height: var(--touch-size);
+  padding: 8px 12px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.connection-settings__input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.connection-settings__error {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-danger);
+}
+
+.connection-settings__submit {
+  width: 100%;
+}
+
+.connection-settings__recent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.connection-settings__recent-title {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.connection-settings__recent-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.connection-chip {
+  padding: 6px 12px;
+  min-height: 32px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.connection-chip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.connection-chip.is-active {
+  border-color: var(--color-primary);
+  background: #eef2ff;
+  color: var(--color-primary);
+  font-weight: 700;
+}

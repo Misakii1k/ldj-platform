@@ -10,37 +10,12 @@
  * 3. 同源默认（浏览器行为与历史版本完全一致）。
  */
 
-const MANUAL_SERVER_BASE_KEY = 'ldj_server_base';
+import { safeGetItem, safeRemoveItem, safeSetItem } from '../lib/safeStorage.ts';
 
-/** localStorage 不可用（Node 测试环境 / 异常 WebView）时的内存兜底 */
-const memoryStore = new Map<string, string>();
+const MANUAL_SERVER_BASE_KEY = 'ldj_server_base';
 
 let runtimeOverride: string | null = null;
 const listeners = new Set<() => void>();
-
-function safeGetItem(key: string): string | null {
-  try {
-    const stored = globalThis.localStorage?.getItem(key);
-    if (stored !== null && stored !== undefined) return stored;
-  } catch {
-    // localStorage 不可用时走内存兜底
-  }
-  return memoryStore.get(key) ?? null;
-}
-
-function safeSetItem(key: string, value: string | null): void {
-  memoryStore.set(key, value ?? '');
-  if (value === null) memoryStore.delete(key);
-  try {
-    if (value === null) {
-      globalThis.localStorage?.removeItem(key);
-    } else {
-      globalThis.localStorage?.setItem(key, value);
-    }
-  } catch {
-    // 忽略持久化失败
-  }
-}
 
 /**
  * 归一化用户输入的主机地址：
@@ -76,7 +51,7 @@ export function getManualServerBase(): string | null {
 /** 保存/清除手动配置；非法输入返回 false 且不改动现有配置 */
 export function setManualServerBase(input: string | null): boolean {
   if (input === null) {
-    safeSetItem(MANUAL_SERVER_BASE_KEY, null);
+    safeRemoveItem(MANUAL_SERVER_BASE_KEY);
     notifyListeners();
     return true;
   }

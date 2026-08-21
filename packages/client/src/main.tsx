@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App.tsx';
+import { isNativeApp } from './app/nativePlatform.ts';
 import './styles.css';
 import './shared-ui/GameMotion.css';
 
@@ -10,8 +11,9 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
-// 注册 PWA Service Worker；失败不影响应用运行
-if ('serviceWorker' in navigator) {
+// 注册 PWA Service Worker；失败不影响应用运行。
+// 原生 APP 内跳过：WebView 资源随 APK 打包，SW 缓存会掩盖版本更新。
+if (!isNativeApp() && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js')

@@ -14,13 +14,21 @@ import { webAudio } from './shared-ui/WebAudioManager.ts';
 import { UserProfileProvider } from './user/UserProfileContext.tsx';
 import { UserProfileModal } from './user/UserProfileModal.tsx';
 import { ErrorBoundary } from './shared-ui/ErrorBoundary.tsx';
+import { AppModeProvider, useAppMode } from './app/AppModeContext.tsx';
+import { isNativeApp } from './app/nativePlatform.ts';
 
 function Router() {
   const { state, me, isViewingHome, setViewingHome, reset, resync } = useConnection();
+  const { backToModeSelection } = useAppMode();
   const { connState, room, game, isRefreshing, isRecovering } = state;
   const { showToast } = useToast();
   const [inGameTransition, setInGameTransition] = useState(false);
   const prevRoomStatusRef = useRef<string | null>(null);
+
+  // 原生 APP：连接类停留页提供身份/服务器切换逃生口
+  const identitySwitchButton = isNativeApp() ? (
+    <button type="button" className="text-btn" onClick={backToModeSelection}>切换身份或主机</button>
+  ) : null;
 
   useEffect(() => {
     const prev = prevRoomStatusRef.current;
@@ -73,6 +81,7 @@ function Router() {
       <main className="app loading-screen" aria-live="polite" aria-busy="true">
         <h1>局域网桌游平台</h1>
         <p className="loading">正在连接服务器…</p>
+        {identitySwitchButton}
       </main>
     );
   }
@@ -83,6 +92,7 @@ function Router() {
         <h1>局域网桌游平台</h1>
         <p className="loading">连接断开，正在重连…</p>
         {me && <p className="loading-hint">将自动恢复你的席位</p>}
+        {identitySwitchButton}
       </main>
     );
   }
@@ -136,20 +146,22 @@ function Router() {
 export function App() {
   return (
     <ErrorBoundary>
-      <UserProfileProvider>
-        <ConnectionProvider>
-          <ToastProvider>
-            <MotionProvider>
-              <BackgroundProvider>
-                <BackgroundManager>
-                  <Router />
-                  <UserProfileModal />
-                </BackgroundManager>
-              </BackgroundProvider>
-            </MotionProvider>
-          </ToastProvider>
-        </ConnectionProvider>
-      </UserProfileProvider>
+      <AppModeProvider>
+        <UserProfileProvider>
+          <ConnectionProvider>
+            <ToastProvider>
+              <MotionProvider>
+                <BackgroundProvider>
+                  <BackgroundManager>
+                    <Router />
+                    <UserProfileModal />
+                  </BackgroundManager>
+                </BackgroundProvider>
+              </MotionProvider>
+            </ToastProvider>
+          </ConnectionProvider>
+        </UserProfileProvider>
+      </AppModeProvider>
     </ErrorBoundary>
   );
 }

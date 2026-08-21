@@ -2,19 +2,24 @@ import { useRef, useState } from 'react';
 import { SheetDialog } from './SheetDialog.tsx';
 import { AiEngineSettings } from './ai-settings/AiEngineSettings.tsx';
 import { TtsSettings } from './tts-settings/TtsSettings.tsx';
+import { ConnectionSettings } from './ConnectionSettings.tsx';
+import { isNativeApp } from './nativePlatform.ts';
 
 interface SettingsSheetProps {
   onClose: () => void;
 }
 
+type SettingsTab = 'ai' | 'tts' | 'connection';
+
 export function SettingsSheet({ onClose }: SettingsSheetProps) {
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
-  const [activeTab, setActiveTab] = useState<'ai' | 'tts'>('ai');
+  const native = isNativeApp();
+  const [activeTab, setActiveTab] = useState<SettingsTab>('ai');
 
   return (
     <SheetDialog
       title="平台设置"
-      description="管理 AI 陪练引擎与 TTS 智能法官语音配置。"
+      description={native ? '管理连接、AI 陪练引擎与 TTS 智能法官语音配置。' : '管理 AI 陪练引擎与 TTS 智能法官语音配置。'}
       onClose={onClose}
       initialFocusRef={closeButtonRef}
     >
@@ -40,10 +45,25 @@ export function SettingsSheet({ onClose }: SettingsSheetProps) {
           <span className="tab-icon">🎙️</span>
           <span>语音法官 TTS</span>
         </button>
+
+        {native && (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'connection'}
+            className={`settings-nav-tab ${activeTab === 'connection' ? 'is-active' : ''}`}
+            onClick={() => setActiveTab('connection')}
+          >
+            <span className="tab-icon">📡</span>
+            <span>连接主机</span>
+          </button>
+        )}
       </div>
 
       <div className="settings-panel-content">
-        {activeTab === 'ai' ? <AiEngineSettings /> : <TtsSettings />}
+        {activeTab === 'ai' && <AiEngineSettings />}
+        {activeTab === 'tts' && <TtsSettings />}
+        {activeTab === 'connection' && native && <ConnectionSettings submitLabel="切换到该主机" />}
       </div>
     </SheetDialog>
   );

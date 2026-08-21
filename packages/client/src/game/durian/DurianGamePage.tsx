@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
+import { resolveInitialDeviceRole } from '../../app/appMode.ts';
 import { nameFor, useGameAction } from '../useGameAction.ts';
 import { ActionDock } from '../tabletop/ActionDock.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
@@ -139,15 +140,9 @@ export function DurianGamePage({ view }: Props) {
   const rulesRef = useRef<HTMLButtonElement | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
 
-  const [deviceRole, setDeviceRole] = useState<DeviceRole>(() => {
-    try {
-      const saved = localStorage.getItem('ldj_durian_device_role');
-      if (saved === 'table' || saved === 'player') return saved;
-    } catch {
-      // 存储被禁用时安全回退玩家端
-    }
-    return 'player';
-  });
+  const [deviceRole, setDeviceRole] = useState<DeviceRole>(
+    () => resolveInitialDeviceRole('ldj_durian_device_role'),
+  );
 
   const selectDeviceRole = (role: DeviceRole) => {
     setDeviceRole(role);

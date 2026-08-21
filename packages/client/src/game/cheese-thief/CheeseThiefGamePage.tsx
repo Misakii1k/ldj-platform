@@ -4,6 +4,7 @@
  */
 import { useRef, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
+import { resolveInitialDeviceRole } from '../../app/appMode.ts';
 import { nameFor, useGameAction } from '../useGameAction.ts';
 import { ActionDock } from '../tabletop/ActionDock.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
@@ -52,14 +53,9 @@ export function CheeseThiefGamePage({ view }: Props) {
 
   // 模拟模式设备角色：'table' 桌面中央大屏，'player' 玩家手牌端
   const isSimulator = view.mode === 'simulator';
-  const [deviceRole, setDeviceRole] = useState<'player' | 'table'>(() => {
-    try {
-      const saved = localStorage.getItem('ldj_cheese_device_role');
-      return saved === 'table' ? 'table' : 'player';
-    } catch {
-      return 'player';
-    }
-  });
+  const [deviceRole, setDeviceRole] = useState<'player' | 'table'>(
+    () => resolveInitialDeviceRole('ldj_cheese_device_role'),
+  );
 
   const selectDeviceRole = (role: 'player' | 'table') => {
     setDeviceRole(role);
