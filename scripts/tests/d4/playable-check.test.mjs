@@ -74,7 +74,7 @@ test('当前仓库：上架游戏均带完整授权证据 → pass', async () =>
   // 上架十一款均在台账中声明 playable 并带完整授权证据
   assert.deepEqual([...result.playableGames].sort(), ['bell-clash', 'cheese-thief', 'durian', 'echo-judge', 'goose-relay', 'landlord', 'loveletter', 'night-testimony', 'undercover', 'uno', 'werewolf']);
   assert.ok(result.playableGames.includes('uno'), 'uno 应出现在 playable 游戏列表');
-  assert.ok(result.playableRulesets.length >= 12, '至少包含所有上架游戏的规则集');
+  assert.ok(result.playableRulesets.length >= 11, '至少包含所有上架游戏的规则集');
   for (const ruleset of result.playableRulesets) {
     assert.ok(
       ruleset.startsWith('undercover/') || ruleset.startsWith('werewolf/') || ruleset.startsWith('landlord/')

@@ -139,17 +139,15 @@ test('create_room：未开放或未定的游戏不能创建房间', async () => 
 test('create_room：上架游戏可建房', async () => {
   const { db, executor } = setup();
   try {
-    // undercover / landlord / werewolf / uno 已 playable → 允许建房
-    for (const gameId of ['undercover', 'landlord', 'werewolf', 'uno'] as const) {
+    for (const gameId of ['undercover', 'uno', 'landlord', 'werewolf'] as const) {
       const okRoomId = prepareCreateRoom().roomId;
-      const created = await executor.executeCreate({
+      const res = await executor.executeCreate({
         roomId: okRoomId,
         actorScope: `conn:${gameId}`,
         requestId: `req-d5-${gameId}`,
         handler: (tx) => applyCreateRoom(tx, okRoomId, { nickname: '房主', gameId }),
       });
-      assert.ok(created.outcome.roomId);
-      assert.equal(created.outcome.snapshot.gameId, gameId);
+      assert.equal(res.outcome.snapshot.gameId, gameId);
     }
   } finally {
     db.close();

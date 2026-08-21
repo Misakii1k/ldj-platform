@@ -1,0 +1,47 @@
+﻿
+/* 桌游专属手绘场景背景映射 (FIXED) */
+/* ========================================== */
+
+/* 取消主题包默认的纯色/渐变背景，使底层可见 */
+.tabletop-shell[data-game-id] {
+  background: transparent !important;
+}
+
+/* 使用 ::before 伪元素作为全屏背景层，脱离 1120px max-width 的束缚，确保铺满整个浏览器窗口 */
+.tabletop-shell[data-game-id]::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-color: #FFF7EF;
+}
+
+/* 默认（竖屏/移动端优先）：加载 portrait 版本，9:16 构图 */
+.tabletop-shell[data-game-id="undercover"]::before { background-image: url("/assets/backgrounds/bg_undercover_portrait.jpg"); }
+.tabletop-shell[data-game-id="uno"]::before { background-image: url("/assets/backgrounds/bg_uno_portrait.jpg"); }
+.tabletop-shell[data-game-id="landlord"]::before { background-image: url("/assets/backgrounds/bg_landlord_portrait.jpg"); }
+.tabletop-shell[data-game-id="loveletter"]::before { background-image: url("/assets/backgrounds/bg_loveletter_portrait.jpg"); }
+.tabletop-shell[data-game-id="cheese-thief"]::before { background-image: url("/assets/backgrounds/bg_cheese_thief_portrait.jpg"); }
+.tabletop-shell[data-game-id="durian"]::before { background-image: url("/assets/backgrounds/bg_durian_portrait.jpg"); }
+.tabletop-shell[data-game-id="goose-relay"]::before { background-image: url("/assets/backgrounds/bg_goose_relay_portrait.jpg"); }
+.tabletop-shell[data-game-id="night-testimony"]::before { background-image: url("/assets/backgrounds/bg_night_testimony_portrait.jpg"); }
+.tabletop-shell[data-game-id="bell-clash"]::before { background-image: url("/assets/backgrounds/bg_bell_clash_portrait.jpg"); }
+.tabletop-shell[data-game-id="echo-judge"]::before { background-image: url("/assets/backgrounds/bg_echo_judge_portrait.jpg"); }
+
+/* 横屏状态下，加载 landscape 版本，16:9 构图 */
+@media (min-width: 900px) and (orientation: landscape) {
+  .tabletop-shell[data-game-id="undercover"]::before, .tabletop-shell--landscape[data-game-id="undercover"]::before { background-image: url("/assets/backgrounds/bg_undercover_landscape.jpg"); }
+  .tabletop-shell[data-game-id="uno"]::before, .tabletop-shell--landscape[data-game-id="uno"]::before { background-image: url("/assets/backgrounds/bg_uno_landscape.jpg"); }
+  .tabletop-shell[data-game-id="landlord"]::before, .tabletop-shell--landscape[data-game-id="landlord"]::before { background-image: url("/assets/backgrounds/bg_landlord_landscape.jpg"); }
+  .tabletop-shell[data-game-id="loveletter"]::before, .tabletop-shell--landscape[data-game-id="loveletter"]::before { background-image: url("/assets/backgrounds/bg_loveletter_landscape.jpg"); }
+  .tabletop-shell[data-game-id="cheese-thief"]::before, .tabletop-shell--landscape[data-game-id="cheese-thief"]::before { background-image: url("/assets/backgrounds/bg_cheese_thief_landscape.jpg"); }
+  .tabletop-shell[data-game-id="durian"]::before, .tabletop-shell--landscape[data-game-id="durian"]::before { background-image: url("/assets/backgrounds/bg_durian_landscape.jpg"); }
+  .tabletop-shell[data-game-id="goose-relay"]::before, .tabletop-shell--landscape[data-game-id="goose-relay"]::before { background-image: url("/assets/backgrounds/bg_goose_relay_landscape.jpg"); }
+  .tabletop-shell[data-game-id="night-testimony"]::before, .tabletop-shell--landscape[data-game-id="night-testimony"]::before { background-image: url("/assets/backgrounds/bg_night_testimony_landscape.jpg"); }
+  .tabletop-shell[data-game-id="bell-clash"]::before, .tabletop-shell--landscape[data-game-id="bell-clash"]::before { background-image: url("/assets/backgrounds/bg_bell_clash_landscape.jpg"); }
+  .tabletop-shell[data-game-id="echo-judge"]::before, .tabletop-shell--landscape[data-game-id="echo-judge"]::before { background-image: url("/assets/backgrounds/bg_echo_judge_landscape.jpg"); }
+}
+

@@ -397,7 +397,6 @@ test('注册表：上架游戏可建房（playable + 模块存在）', async () 
     assert.ok(getGameModule(game.id), `${game.id} 应注册模块以支持建房`);
     assert.equal(getPlayableGameCatalogEntry(game.id)?.id, game.id);
   }
-  assert.equal(getPlayableGameCatalogEntry('uno')?.id, 'uno');
 });
 
 test('forfeitPlayers：echo-judge 对局中退出能被模块处理（不抛 Invalid discriminator）', async () => {

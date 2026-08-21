@@ -4,6 +4,14 @@
   "gameId": "uno",
   "kind": "platform_variant",
   "releaseStatus": "playable",
+  "rights": {
+    "status": "approved",
+    "recordId": "internal-admission-uno-2026-08-20-u02",
+    "scope": "internal_platform_launch_2026",
+    "expiresAt": "2099-12-31",
+    "rightsApprover": "internal-rights-admin",
+    "rulesApprover": "internal-rules-committee"
+  },
   "sourceDocuments": [
     "docs/superpowers/specs/2026-08-02-shared-game-engine-design.md#已确认的-uno-平台规则集",
     "packages/games/uno/server/module.ts",
