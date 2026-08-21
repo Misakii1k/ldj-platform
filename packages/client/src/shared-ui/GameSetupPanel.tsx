@@ -1,4 +1,7 @@
-import type { GameSetupSpec } from '@ldj/shared';
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
+import type { GameRulesetSpec, GameSetupSpec } from '@ldj/shared';
+import { Info, X } from 'lucide-react';
 import { applySetupValue, type SetupConfig } from './setupState.ts';
 
 interface GameSetupPanelProps {
@@ -17,6 +20,7 @@ interface GameSetupPanelProps {
 export function GameSetupPanel({ setup, value, disabled = false, variant = 'default', onChange }: GameSetupPanelProps) {
   const update = (key: string, next: unknown) => onChange(applySetupValue(setup, value, key, next));
   const compact = variant === 'compact';
+  const [activeRulesetModal, setActiveRulesetModal] = useState<GameRulesetSpec | null>(null);
 
   return (
     <section className={`tabletop-setup ${compact ? 'tabletop-setup--compact' : ''}`} aria-labelledby="tabletop-setup-title">
@@ -28,22 +32,104 @@ export function GameSetupPanel({ setup, value, disabled = false, variant = 'defa
           <div className="setup-chips" role="radiogroup" aria-labelledby="tabletop-setup-ruleset-label">
             {setup.rulesets.map((ruleset) => {
               const isSelected = value.rulesetId === ruleset.id;
+              const hasDetails = Boolean(ruleset.description || (ruleset.details && ruleset.details.length > 0));
+
               return (
-                <button
-                  key={ruleset.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={isSelected}
-                  className={`setup-chip ${isSelected ? 'is-selected' : ''}`}
-                  disabled={disabled}
-                  onClick={() => update('rulesetId', ruleset.id)}
-                >
-                  {ruleset.label}
-                </button>
+                <div key={ruleset.id} className="setup-chip-group">
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={isSelected}
+                    className={`setup-chip ${isSelected ? 'is-selected' : ''}`}
+                    disabled={disabled}
+                    onClick={() => update('rulesetId', ruleset.id)}
+                  >
+                    <span>{ruleset.label}</span>
+                  </button>
+                  {hasDetails && (
+                    <button
+                      type="button"
+                      className="setup-chip-info-btn"
+                      title={`查看「${ruleset.label}」规则要点`}
+                      aria-label={`查看「${ruleset.label}」规则要点`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveRulesetModal(ruleset);
+                      }}
+                    >
+                      <Info size={13} strokeWidth={2.4} />
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>
         </div>
+      )}
+
+      {/* 规则详情弹窗 */}
+      {activeRulesetModal && typeof document !== 'undefined' && createPortal(
+        <div
+          className="rules-detail-backdrop"
+          role="presentation"
+          onClick={() => setActiveRulesetModal(null)}
+        >
+          <div
+            className="rules-detail-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rules-detail-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="rules-detail-modal__header">
+              <div className="rules-detail-modal__title-row">
+                <span className="rules-detail-modal__tag">规则要点</span>
+                <h3 id="rules-detail-title">{activeRulesetModal.label}</h3>
+              </div>
+              <button
+                type="button"
+                className="rules-detail-modal__close"
+                onClick={() => setActiveRulesetModal(null)}
+                aria-label="关闭"
+              >
+                <X size={18} strokeWidth={2.4} />
+              </button>
+            </div>
+
+            <div className="rules-detail-modal__body">
+              {activeRulesetModal.description && (
+                <p className="rules-detail-modal__summary">{activeRulesetModal.description}</p>
+              )}
+
+              {activeRulesetModal.details && activeRulesetModal.details.length > 0 && (
+                <div className="rules-detail-modal__points">
+                  <h4>💡 核心要点</h4>
+                  <ul>
+                    {activeRulesetModal.details.map((point, idx) => (
+                      <li key={idx}>{point}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            <div className="rules-detail-modal__footer">
+              <button
+                type="button"
+                className="rules-detail-modal__ok-btn"
+                onClick={() => {
+                  if (value.rulesetId !== activeRulesetModal.id) {
+                    update('rulesetId', activeRulesetModal.id);
+                  }
+                  setActiveRulesetModal(null);
+                }}
+              >
+                {value.rulesetId === activeRulesetModal.id ? '我知道了' : '选用此规则'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
       )}
 
       {setup.options.map((option) => {

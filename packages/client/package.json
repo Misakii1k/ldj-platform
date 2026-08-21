@@ -10,10 +10,12 @@
   },
   "dependencies": {
     "@ldj/shared": "*",
+    "@types/howler": "^2.2.13",
     "@types/three": "^0.185.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^13.1.0",
+    "howler": "^2.2.4",
     "lucide-react": "^1.27.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.1.0",
@@ -22,6 +24,9 @@
     "three": "^0.185.1"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^4.7.0",

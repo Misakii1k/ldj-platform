@@ -206,6 +206,28 @@ export function TabletopOvalShell({
     return 'portrait';
   });
 
+  const [viewMode, setViewMode] = useState<'player' | 'table'>(() => {
+    try {
+      const saved = localStorage.getItem('ldj_tabletop_view_mode');
+      if (saved === 'player' || saved === 'table') return saved;
+    } catch {
+      // ignore
+    }
+    return 'player';
+  });
+
+  const toggleViewMode = () => {
+    setViewMode((prev) => {
+      const next = prev === 'player' ? 'table' : 'player';
+      try {
+        localStorage.setItem('ldj_tabletop_view_mode', next);
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
   const toggleOrientation = () => {
     setOrientation((prev) => {
       const next = prev === 'portrait' ? 'landscape' : 'portrait';
@@ -221,9 +243,10 @@ export function TabletopOvalShell({
   return (
     <GameMotionRoot
       level={motionLevel}
-      className={`tabletop-shell tabletop-theme-${theme} tabletop-shell--${orientation} ${dense ? 'tabletop-shell--dense' : ''} ${landscapeShort ? 'tabletop-shell--landscape-short' : ''} tabletop-stage-fit-${stageFit}`}
+      className={`tabletop-shell tabletop-theme-${theme} tabletop-shell--${orientation} tabletop-shell--${viewMode}-mode ${dense ? 'tabletop-shell--dense' : ''} ${landscapeShort ? 'tabletop-shell--landscape-short' : ''} tabletop-stage-fit-${stageFit}`}
       data-game-id={gameId}
       data-phase-key={phaseKey}
+      data-view-mode={viewMode}
     >
       {/* 顶栏控制（超紧凑空间） */}
       <header className="tabletop-header">
@@ -244,6 +267,18 @@ export function TabletopOvalShell({
 
         <div className="tabletop-header__actions">
           {topRightControls}
+          <button
+            type="button"
+            className="tabletop-sound-btn tabletop-viewmode-btn"
+            onClick={toggleViewMode}
+            title={viewMode === 'table' ? '当前：桌面大屏端（点击切回个人手牌）' : '当前：个人手牌端（点击切为桌面大屏）'}
+            aria-label={viewMode === 'table' ? '切换为个人手牌模式' : '切换为公共桌面大屏模式'}
+          >
+            <span className="tabletop-sound-btn__icon" aria-hidden="true">
+              {viewMode === 'table' ? '📱' : '🖥️'}
+            </span>
+            <span className="tabletop-sound-btn__label">{viewMode === 'table' ? '切手牌' : '切大屏'}</span>
+          </button>
           <button
             type="button"
             className="tabletop-sound-btn tabletop-orient-btn"

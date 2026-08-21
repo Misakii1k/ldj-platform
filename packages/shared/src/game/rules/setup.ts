@@ -2,6 +2,7 @@ export interface GameRulesetSpec {
   readonly id: string;
   readonly label: string;
   readonly description?: string;
+  readonly details?: readonly string[];
 }
 
 export interface GameSetupChoice {

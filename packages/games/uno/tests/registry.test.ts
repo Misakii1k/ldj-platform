@@ -39,13 +39,12 @@ test('uno_platform_house_v1 注册：shared/manifest.ts 声明 house 规则集�
   assert.ok(rulesets!.includes('uno_platform_house_v1'), 'manifest 应注册 uno_platform_house_v1');
 });
 
-test('uno_platform_house_v1 注册：catalog.ts uno 规则集含 house 项且默认仍是 legacy 基线', () => {
+test('uno_platform_house_v1 注册：catalog.ts uno 规则集含 house 项且默认切到平台房规', () => {
   const unoEntry = GAME_CATALOG.find((game) => game.id === 'uno');
   assert.ok(unoEntry, '目录应包含 uno');
   const rulesetIds = unoEntry!.rulesets.map((r) => r.id);
   assert.ok(rulesetIds.includes('uno_platform_house_v1'), 'uno rulesets 应含 house 项');
-  // legacy 基线必须保留为默认，不被 house 替换（UNO-HOUSE-GOV-002 并行注册）。
-  assert.equal(unoEntry!.setup.defaultRulesetId, 'uno_legacy_platform_v1');
+  assert.equal(unoEntry!.setup.defaultRulesetId, 'uno_platform_house_v1');
   assert.equal(unoEntry!.availability, 'playable');
 });
 

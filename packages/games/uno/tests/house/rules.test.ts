@@ -465,3 +465,62 @@ test('DECK-003：动态扩牌保证任意摸牌完成（连续大额罚牌）', 
   // 直接验证 deck 不变量：不变量断言已在每次 accepted 后由 module 执行。
   assertUnoHouseInvariants(state);
 });
+
+test('UNO-DIFF-002/DRAW：摸牌后无可出牌自动跳下家，有可出牌保留当前回合', () => {
+  const top: UnoHouseCard = { id: 'top-red-5', kind: 'number', color: 'red', value: 5 };
+  // p1 只有蓝牌，顶牌红 5
+  const p1Hand: UnoHouseCard[] = [
+    { id: 'p1-blue-1', kind: 'number', color: 'blue', value: 1 },
+  ];
+  const p2Hand: UnoHouseCard[] = [
+    { id: 'p2-green-2', kind: 'number', color: 'green', value: 2 },
+  ];
+  let state = scenarioState(['p1', 'p2'], { p1: p1Hand, p2: p2Hand }, top, 'red', 'p1');
+  // 构造牌堆顶为一张蓝 9（摸到依然不可出，切片替换第一张保持 108 张）
+  const unplayableCard: UnoHouseCard = { id: 'deck-blue-9', kind: 'number', color: 'blue', value: 9 };
+  state = {
+    ...state,
+    round: {
+      ...state.round,
+      deck: [unplayableCard, ...state.round.deck.slice(1)],
+    },
+  };
+  assertUnoHouseInvariants(state);
+
+  // p1 摸牌 -> 摸后无可出 -> 自动跳到 p2
+  const r1 = unoHouseModule.reduce(makeCtx(), state, { kind: 'player', playerId: 'p1' }, { type: 'draw_card' } as never);
+  assert.ok(r1.ok);
+  assert.equal(r1.nextState.round.currentPlayerId, 'p2', '摸牌后无可出牌应自动推进到下家 p2');
+  assert.equal(r1.nextState.round.hasDrawnThisTurn, false, '下家初始 hasDrawnThisTurn 应为 false');
+  assert.equal(r1.nextState.round.hands['p1']!.length, 2, 'p1 手牌应增加 1 张');
+  assertUnoHouseInvariants(r1.nextState);
+
+  // 测试有可出牌分支：牌堆顶为一张红 9（摸到可出）
+  let statePlayable = scenarioState(['p1', 'p2'], { p1: p1Hand, p2: p2Hand }, top, 'red', 'p1');
+  const playableCard: UnoHouseCard = { id: 'deck-red-9', kind: 'number', color: 'red', value: 9 };
+  statePlayable = {
+    ...statePlayable,
+    round: {
+      ...statePlayable.round,
+      deck: [playableCard, ...statePlayable.round.deck.slice(1)],
+    },
+  };
+  assertUnoHouseInvariants(statePlayable);
+
+  // p1 摸牌 -> 摸到可出牌 -> 回合保留给 p1，hasDrawnThisTurn 为 true
+  const r2 = unoHouseModule.reduce(makeCtx(), statePlayable, { kind: 'player', playerId: 'p1' }, { type: 'draw_card' } as never);
+  assert.ok(r2.ok);
+  assert.equal(r2.nextState.round.currentPlayerId, 'p1', '摸牌后有可出牌应保留当前玩家回合');
+  assert.equal(r2.nextState.round.hasDrawnThisTurn, true, '当前玩家 hasDrawnThisTurn 应为 true');
+  const p1View = unoHouseModule.getPlayerView(r2.nextState, 'p1') as { me: { capabilities: string[]; playableCardIds: string[] } };
+  assert.ok(p1View.me.capabilities.includes('canPassAfterDraw'), '应具备 canPassAfterDraw 能力');
+  assert.ok(!p1View.me.capabilities.includes('canDraw'), '本回合不能再次摸牌');
+  assert.ok(p1View.me.playableCardIds.includes('deck-red-9'), '摸到的红 9 应该在 playableCardIds 中');
+  assertUnoHouseInvariants(r2.nextState);
+
+  // p1 选择手动过牌
+  const r3 = unoHouseModule.reduce(makeCtx(), r2.nextState, { kind: 'player', playerId: 'p1' }, { type: 'pass_after_draw' } as never);
+  assert.ok(r3.ok);
+  assert.equal(r3.nextState.round.currentPlayerId, 'p2', '手动过牌后推进至下家 p2');
+  assertUnoHouseInvariants(r3.nextState);
+});

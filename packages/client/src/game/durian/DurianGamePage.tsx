@@ -417,7 +417,7 @@ export function DurianGamePage({ view }: Props) {
       }
       drawer={rulesOpen && (
         <GameDrawer kind="rules" title="本局规则" triggerRef={rulesRef} onClose={() => setRulesOpen(false)}>
-          <h4>🎮 印度扑克式翻牌质疑机制</h4>
+          <h4>🎮 翻牌与暗牌质疑规则</h4>
           <p>1. <strong>头顶暗牌</strong>：开局每人抽一张牌顶在头上，自己看不到，其他所有人都看得到。</p>
           <p>2. <strong>翻牌与生效</strong>：轮到自己时摸一张牌，选择将左侧还是右侧放在 ✓ 计入桌面总数（另一侧 ✗ 作废）。</p>
           <p>3. <strong>质疑判定</strong>：如果认为桌面上某种水果的累计数量已经超过了所有人头顶牌中该水果的总和，即可按铃质疑上家。</p>

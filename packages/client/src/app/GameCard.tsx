@@ -32,9 +32,9 @@ function playerRange(game: GameCatalogEntry): string {
 
 function availabilityLabel(game: GameCatalogEntry): string {
   if (game.availability === 'playable') return '可以开局';
-  if (game.availability === 'blocked_rights') return '权利审核中';
-  if (game.availability === 'internal_prototype') return '内部原型';
-  return '即将推出';
+  if (game.availability === 'blocked_rights') return '暂未开放';
+  if (game.availability === 'internal_prototype') return '体验版';
+  return '敬请期待';
 }
 
 export function GameCard({ game, onCreate }: GameCardProps) {

@@ -1,0 +1,12 @@
+{
+  "appId": "com.tabletop.ldj",
+  "appName": "聚乐桌",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}

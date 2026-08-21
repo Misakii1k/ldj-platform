@@ -25,7 +25,10 @@
     "dev:server": "node packages/server/src/index.ts",
     "perf:load": "node packages/server/scripts/perf.mjs",
     "build": "npm run build -w @ldj/client",
-    "start:prod": "node packages/server/src/index.ts"
+    "start:prod": "node packages/server/src/index.ts",
+    "host": "node scripts/start-host-gui.mjs",
+    "build:apk": "npm run build && npm run sync:apk && cd packages/client/android && .\\gradlew.bat assembleDebug",
+    "sync:apk": "npx cap copy android -w @ldj/client"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",

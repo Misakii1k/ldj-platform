@@ -36,7 +36,7 @@
       "classification": "CHANGE_RULESET",
       "baselineRulesetId": "uno-legacy-platform-v1-d1",
       "baselineBehavior": "After drawing, only the drawn-state flow is represented and the legacy bot may play a legal card or pass.",
-      "targetBehavior": "After drawing, the player may choose any legal card already in hand or the newly drawn card.",
+      "targetBehavior": "After drawing, if there are no playable cards, turn automatically advances to the next player; if playable cards exist, the player retains the turn to choose any legal card in hand or pass.",
       "relatedClauseIds": ["UNO-HOUSE-BASE-001"]
     },
     {

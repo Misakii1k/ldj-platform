@@ -368,7 +368,7 @@ export function UnoHouseStage({ view }: Props) {
     </div>
   );
 
-  const title = view.mode === 'team' ? 'UNO 组队房规' : 'UNO 平台房规';
+  const title = view.mode === 'team' ? 'UNO 组队房规' : 'UNO 房规模式';
   const subtitle = `第 ${view.round} / ${view.roundLimit} 局 · ${view.mode === 'team' ? '组队赛' : '个人赛'} · ${phaseLabel(phase)}`;
 
   return (

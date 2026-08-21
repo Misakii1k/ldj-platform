@@ -63,6 +63,7 @@ export interface HttpDeps {
   adminToken?: string | null;
   allowedOrigins?: string[];
   allowPrivateLlmUpstream?: boolean;
+  getNetworkStatus?: () => unknown;
 }
 
 /** 请求体上限：设置对象很小，1 KiB 足够，超了直接拒绝而不是攒内存 */
@@ -264,6 +265,28 @@ export function createHttpServer(deps: HttpDeps): http.Server {
       const ready = deps.isReady();
       res.writeHead(ready ? 200 : 503, { 'content-type': 'application/json' });
       res.end(JSON.stringify({ status: ready ? 'ok' : 'not_ready' }));
+      return;
+    }
+
+    if (url === '/api/network/ping') {
+      res.writeHead(200, {
+        'content-type': 'application/json',
+        'access-control-allow-origin': '*',
+        'cache-control': 'no-store',
+      });
+      res.end(JSON.stringify({ status: 'ok', timestamp: Date.now() }));
+      return;
+    }
+
+    if (url === '/api/network/status') {
+      const getStatus = deps.getNetworkStatus;
+      const data = getStatus ? getStatus() : { status: 'ok' };
+      res.writeHead(200, {
+        'content-type': 'application/json',
+        'access-control-allow-origin': '*',
+        'cache-control': 'no-store',
+      });
+      res.end(JSON.stringify(data));
       return;
     }
 

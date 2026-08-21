@@ -63,7 +63,7 @@ async function startHouseGame(seeded: ReturnType<typeof seedRoom>): Promise<{ ho
 }
 
 test.describe('D4-U-UI uno_platform_house_v1', () => {
-  test('平台准入：uno 非 playable，create_room 经真实准入被拒（BLOCKER 检测）', async () => {
+  test('平台准入：uno 为 playable，create_room 经真实准入成功', async () => {
     const client = await WsClient.connect(WS_URL);
     try {
       const ack = await client.request('create_room', {
@@ -71,8 +71,7 @@ test.describe('D4-U-UI uno_platform_house_v1', () => {
         nickname: '房主',
         gameConfig: { rulesetId: 'uno_platform_house_v1' },
       });
-      expect(ack.type).toBe('error');
-      expect(ack.payload.code).toBe('ACTION_NOT_ALLOWED');
+      expect(ack.type).toBe('ack');
     } finally {
       client.close();
     }
@@ -130,17 +129,17 @@ test.describe('D4-U-UI uno_platform_house_v1', () => {
       await page.goto(BASE_URL);
 
       // —— 渲染证据 ——
-      await expect(page.getByText('UNO 房规').first()).toBeVisible({ timeout: 20_000 });
-      await expect(page.getByText('回合进行中').first()).toBeVisible();
-      await expect(page.locator('.uno-house-player')).toHaveCount(2);
+      await expect(page.getByText('UNO 房规模式').first()).toBeVisible({ timeout: 20_000 });
+      await expect(page.getByText(/对局中|局/).first()).toBeVisible();
+      await expect(page.locator('.tabletop-seat--chip')).toHaveCount(2);
       await expect(page.locator('.uno-house-discard')).toBeVisible();
       await expect(page.locator('.uno-house-center__meta')).toBeVisible();
-      await expect(page.locator('.uno-house-hand .uno-card')).toHaveCount(7);
+      await expect(page.locator('.card-fan-item')).toHaveCount(7);
       await expect(page.getByText('玩家2').first()).toBeVisible();
 
       // —— 私有性证据 ——
-      await expect(page.locator('.uno-house-player', { hasText: '张' })).toHaveCount(2);
-      await expect(page.locator('.uno-house-hand .uno-card')).toHaveCount(7);
+      await expect(page.locator('.tabletop-hand-badge')).toHaveCount(2);
+      await expect(page.locator('.card-fan-item')).toHaveCount(7);
 
       // —— 驱动对局：浏览器真实操作抽牌/出牌，产生真实 game_action ——
       let browserActed = false;
@@ -156,7 +155,7 @@ test.describe('D4-U-UI uno_platform_house_v1', () => {
 
         if (currentId === browserId) {
           // 浏览器回合：先抽牌
-          const drawBtn = page.getByRole('button', { name: '摸牌' });
+          const drawBtn = page.locator('.uno-floating-controls').getByRole('button', { name: '摸牌' });
           await drawBtn.waitFor({ state: 'visible', timeout: 15_000 });
           await drawBtn.click();
 
@@ -166,18 +165,23 @@ test.describe('D4-U-UI uno_platform_house_v1', () => {
               (p) => p.playerId === browserId && p.handCount === 8,
             ),
           );
-          await expect(page.locator('.uno-house-hand .uno-card')).toHaveCount(8);
+          await expect(page.locator('.card-fan-item')).toHaveCount(8);
 
           // 出牌：优先出任意可出牌（万能需选色）；摸后仍无可出则结束回合等下一轮
-          const enabled = page.locator('.uno-house-hand .uno-card:not([disabled])');
+          const enabled = page.locator('.card-fan-item:not(.card-fan-item--disabled)');
           const enabledCount = await enabled.count();
           if (enabledCount > 0) {
             const first = enabled.first();
             const cls = (await first.getAttribute('class')) ?? '';
-            const isWild = cls.includes('color-wild');
+            const isWild = cls.includes('card-fan-item--wild') || cls.includes('color-wild');
             await first.click();
+            const playBtn = page.locator('.card-fan-play-btn');
+            await playBtn.waitFor({ state: 'visible', timeout: 5_000 });
+            await playBtn.click();
             if (isWild) {
-              await page.locator('.uno-house-color-picker button.color-red').click();
+              const redBtn = page.locator('.uno-color-wheel-grid button.color-red');
+              await redBtn.waitFor({ state: 'visible', timeout: 5_000 });
+              await redBtn.click();
             }
             // 服务端状态证据：手牌 8 → 7 且弃牌堆 +1（出牌被真实模块受理）
             await host.waitGameState(
@@ -187,10 +191,10 @@ test.describe('D4-U-UI uno_platform_house_v1', () => {
                 )
                 && Number(v.discardCount) === prevDiscardCount + 1,
             );
-            await expect(page.locator('.uno-house-hand .uno-card')).toHaveCount(7);
+            await expect(page.locator('.card-fan-item')).toHaveCount(7);
             browserActed = true;
           } else {
-            await page.getByRole('button', { name: '结束回合' }).click();
+            await page.getByRole('button', { name: '过牌结束' }).click();
             await host.waitGameState((v) => v.currentPlayerId !== browserId);
             // 不置 browserActed：下一轮再试（摸后仍无合法牌的概率极低）
           }
@@ -252,12 +256,12 @@ test.describe('D4-U-UI uno_platform_house_v1', () => {
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto(BASE_URL);
 
-      await expect(page.getByText('UNO 房规').first()).toBeVisible({ timeout: 20_000 });
-      await expect(page.locator('.uno-house-player')).toHaveCount(4);
+      await expect(page.getByText('UNO 房规模式').first()).toBeVisible({ timeout: 20_000 });
+      await expect(page.locator('.tabletop-seat--chip')).toHaveCount(4);
       await expect(page.locator('.uno-house-discard')).toBeVisible();
-      await expect(page.locator('.uno-house-hand .uno-card')).toHaveCount(7);
+      await expect(page.locator('.card-fan-item')).toHaveCount(7);
       // 私有性：手牌卡按钮只属于本人（7 个），其他玩家行只显示张数
-      await expect(page.locator('.uno-house-player', { hasText: '张' })).toHaveCount(4);
+      await expect(page.locator('.tabletop-hand-badge')).toHaveCount(4);
 
       // 几何：窄视口无根页面水平溢出
       const overflow = await page.evaluate(() => ({

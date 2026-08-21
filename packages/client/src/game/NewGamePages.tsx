@@ -39,8 +39,45 @@ export function UnoGamePage({ view }: { view: AnyView }) {
   const currentColor = view.currentColor ?? top?.color ?? null;
   const directionLabel = view.direction === -1 ? '逆时针' : '顺时针';
   const mustDraw = view.pendingDraw > 0;
+  const playableCardIds: string[] = me?.playableCardIds ?? [];
+  const hasDrawnThisTurn = Boolean(me?.hasDrawnThisTurn);
+
+  const mySeat = (view.players || []).find((p: AnyView) => p.playerId === me?.playerId);
+  const unoCalled = Boolean(mySeat?.unoCalled);
+  const canCallUno = Boolean(me) && me.hand?.length === 1 && !unoCalled;
+
+  // 摸牌后无可出牌自动过牌（800ms 延迟让摸牌动画可见，useRef+busy 防重）
+  const autoPassTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoPassedRef = useRef(false);
+
+  useEffect(() => {
+    if (myTurn && hasDrawnThisTurn && playableCardIds.length === 0 && !busy && !autoPassedRef.current) {
+      autoPassTimerRef.current = setTimeout(() => {
+        autoPassedRef.current = true;
+        void act({ type: 'pass_after_draw' });
+      }, 800);
+      return () => {
+        if (autoPassTimerRef.current) {
+          clearTimeout(autoPassTimerRef.current);
+          autoPassTimerRef.current = null;
+        }
+      };
+    }
+    if (!myTurn || !hasDrawnThisTurn) {
+      autoPassedRef.current = false;
+      if (autoPassTimerRef.current) {
+        clearTimeout(autoPassTimerRef.current);
+        autoPassTimerRef.current = null;
+      }
+    }
+  }, [myTurn, hasDrawnThisTurn, playableCardIds.length, busy, act]);
 
   function play(card: AnyView) {
+    if (card.kind === 'skip') webAudio.playUnoSkip();
+    else if (card.kind === 'reverse') webAudio.playUnoReverse();
+    else if (card.kind === 'draw2' || card.kind === 'wild4') webAudio.playUnoDrawPenalty();
+    else webAudio.playCardPlay();
+
     if (card.kind === 'wild' || card.kind === 'wild4') setWildCardId(card.id);
     else void act({ type: 'play_card', cardId: card.id });
   }
@@ -55,14 +92,19 @@ export function UnoGamePage({ view }: { view: AnyView }) {
   }));
 
   // 映射 CSS 3D 扇形手牌
-  const fanCards: CardItem[] = (me?.hand || []).map((card: AnyView) => ({
-    id: card.id,
-    label: cardFaceLabel(card),
-    sublabel: colorLabel(card.color),
-    colorTheme: card.color ?? 'wild',
-    imageUrl: getUnoCardAssetPath(card as unknown as UnoCard),
-    raw: card,
-  }));
+  const fanCards: CardItem[] = (me?.hand || []).map((card: AnyView) => {
+    const isPlayable = myTurn && playableCardIds.includes(card.id);
+    return {
+      id: card.id,
+      label: cardFaceLabel(card),
+      sublabel: colorLabel(card.color),
+      colorTheme: card.color ?? 'wild',
+      imageUrl: getUnoCardAssetPath(card as unknown as UnoCard),
+      disabled: !isPlayable,
+      badge: isPlayable ? '可出' : undefined,
+      raw: card,
+    };
+  });
 
   const centerArena = (
     <div className="uno-arena-arena" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
@@ -165,6 +207,52 @@ export function UnoGamePage({ view }: { view: AnyView }) {
         </div>
       )}
 
+      {(canCallUno || myTurn) && (
+        <div className="uno-floating-controls">
+          {canCallUno && (
+            <button
+              type="button"
+              className="uno-floating-btn btn-danger"
+              disabled={busy}
+              onClick={() => {
+                webAudio.playUnoShout();
+                void act({ type: 'call_uno' });
+              }}
+            >
+              <GameIcon name="uno_alert" size={16} />
+              喊 UNO!
+            </button>
+          )}
+
+          {myTurn && !hasDrawnThisTurn && (
+            <button
+              type="button"
+              className="uno-floating-btn btn-primary"
+              disabled={busy}
+              onClick={() => {
+                webAudio.playDealCards();
+                void act({ type: 'draw_card' });
+              }}
+            >
+              <GameIcon name="cards_deck" size={16} />
+              摸一张牌
+            </button>
+          )}
+
+          {myTurn && hasDrawnThisTurn && (
+            <button
+              type="button"
+              className="uno-floating-btn btn-outline"
+              disabled={busy}
+              onClick={() => void act({ type: 'pass_after_draw' })}
+            >
+              <GameIcon name="door_exit" size={16} />
+              过牌结束
+            </button>
+          )}
+        </div>
+      )}
+
       {me && (
         <CardFanEngine
           cards={fanCards}
@@ -174,21 +262,6 @@ export function UnoGamePage({ view }: { view: AnyView }) {
           }}
           playButtonText="打出"
         />
-      )}
-
-      {myTurn && (
-        <button
-          type="button"
-          className="uno-floating-btn btn-primary"
-          disabled={busy}
-          onClick={() => {
-            webAudio.playDealCards();
-            void act({ type: 'draw_card' });
-          }}
-        >
-          <GameIcon name="cards_deck" size={16} />
-          摸一张牌
-        </button>
       )}
     </div>
   );

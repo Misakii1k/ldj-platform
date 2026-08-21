@@ -880,8 +880,15 @@ export function reduceUnoHouse(
       if (nextWithFlag.round.unoRaceWindow) {
         nextWithFlag.round = { ...nextWithFlag.round, unoRaceWindow: null, windowDeadlineAt: null };
       }
-      // 摸牌后保留当前玩家回合（摸后可出牌），重新起 15s 回合计时器。
-      const nextState = startTurn(ctx, nextWithFlag, playerId, effects);
+      // 摸牌后若无可出牌 -> 自动推进到下家；有牌可出时保留当前玩家回合（摸后可出牌），重新起 15s 回合计时器。
+      const canPlayAfterDraw = legalPlayableIds(nextWithFlag, playerId).length > 0;
+      let nextState: UnoHouseState;
+      if (canPlayAfterDraw) {
+        const started = startTurn(ctx, nextWithFlag, playerId, effects);
+        nextState = { ...started, round: { ...started.round, hasDrawnThisTurn: true } };
+      } else {
+        nextState = startTurn(ctx, nextWithFlag, nextPlayer(nextWithFlag, playerId), effects);
+      }
       return {
         ok: true,
         nextState,

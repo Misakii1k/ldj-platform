@@ -69,7 +69,7 @@ test('GAME_CATALOG：D1 规则集 ID 与目录状态已冻结', () => {
     GAME_CATALOG.map((game) => ({ id: game.id, availability: game.availability, rulesetId: game.setup.defaultRulesetId })),
     [
       { id: 'undercover', availability: 'playable', rulesetId: 'undercover_classic_v1' },
-      { id: 'uno', availability: 'playable', rulesetId: 'uno_legacy_platform_v1' },
+      { id: 'uno', availability: 'playable', rulesetId: 'uno_platform_house_v1' },
       { id: 'landlord', availability: 'playable', rulesetId: 'landlord_platform_v1' },
       { id: 'werewolf', availability: 'playable', rulesetId: 'werewolf_legacy_platform_v2' },
       { id: 'durian', availability: 'playable', rulesetId: 'durian_orchard_v1' },

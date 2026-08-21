@@ -16,6 +16,7 @@ import { LlmProvider } from './core/game/llmProvider.ts';
 import { resolveLlmConfig, getLlmSettingsView, updateLlmSettings } from './core/settings.ts';
 import { createHttpServer } from './gateway/http.ts';
 import { WsGateway } from './gateway/ws.ts';
+import { buildEntryUrls } from './boot/lan.ts';
 import type { Logger } from './boot/logger.ts';
 import type { ServerConfig } from './config.ts';
 import { isLlmEnabled } from './core/game/llmClient.ts';
@@ -153,6 +154,9 @@ export function createApp(
     logger.info('llm_enabled', { model: llm.config().model });
   }
 
+  let wsRef: WsGateway | null = null;
+  let serverRef: http.Server | null = null;
+
   const server = createHttpServer({
     isReady: () => ready,
     listOpenRooms: () => listOpenRoomSummaries(db),
@@ -178,7 +182,18 @@ export function createApp(
     adminToken: config.adminToken,
     allowedOrigins: config.allowedOrigins,
     allowPrivateLlmUpstream: config.allowPrivateLlmUpstream,
+    getNetworkStatus: () => {
+      const addr = serverRef ? serverRef.address() : null;
+      const port = addr && typeof addr === 'object' ? addr.port : config.port;
+      const urls = buildEntryUrls(port, config.publicBaseUrl);
+      const onlineClientCount = wsRef ? wsRef.clientCount() : 0;
+      return {
+        ...urls,
+        onlineClientCount,
+      };
+    },
   });
+  serverRef = server;
   // ws 与 timerRunner 互相引用：ts 变更后 ws 通知 runner 对表，runner 到期后经 ws 广播
   // （闭包延迟求值：onTimersChanged 仅在对局事件后触发，彼时 timerRunner 已初始化）
   const ws = new WsGateway({
@@ -201,6 +216,7 @@ export function createApp(
       ? { joinLimitMax: config.joinLimitMax }
       : {}),
   });
+  wsRef = ws;
   const timerRunner = new TimerRunner(db, executor, (roomId, outcome) => {
     try {
       ws.applyGameOutcome(roomId, outcome);

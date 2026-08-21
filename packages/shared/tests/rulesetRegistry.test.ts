@@ -94,7 +94,7 @@ test('buildRulesetRegistry：输入数组的后续修改不影响注册表', () 
 test('buildCatalogRulesetRegistry：校验 GAME_CATALOG 规则集非空且每游戏唯一', () => {
   const registry = buildCatalogRulesetRegistry();
   assert.ok(registry.entries.length >= 4, '目录应包含四款游戏的规则集条目');
-  assert.equal(registry.defaultRulesetId('uno'), 'uno_legacy_platform_v1');
+  assert.equal(registry.defaultRulesetId('uno'), 'uno_platform_house_v1');
   assert.equal(registry.defaultRulesetId('werewolf'), 'werewolf_legacy_platform_v2');
   assert.deepEqual(
     listRulesetIdsForGame(registry, 'werewolf'),

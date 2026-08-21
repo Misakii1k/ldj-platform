@@ -241,6 +241,11 @@ export class WsGateway {
     });
   }
 
+  /** 获取当前活跃客户端连接数 */
+  public clientCount(): number {
+    return this.#wss.clients.size;
+  }
+
   /** 断线处理（FR-REC-004、FR-HOST-005） */
   async #onClose(socket: WebSocket, state: ConnectionState, log: Logger): Promise<void> {
     log.info('ws_closed');
