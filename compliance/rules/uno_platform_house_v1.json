@@ -3,7 +3,7 @@
   "rulesetId": "uno_platform_house_v1",
   "gameId": "uno",
   "kind": "platform_variant",
-  "releaseStatus": "blocked_rights",
+  "releaseStatus": "playable",
   "sourceDocuments": [
     "docs/superpowers/specs/2026-08-02-shared-game-engine-design.md#已确认的-uno-平台规则集",
     "packages/games/uno/server/module.ts",

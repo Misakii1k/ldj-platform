@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
 import { PlayingCard, CardBack } from './PlayingCard.tsx';
 import { nameFor, useGameAction, type MemberLike } from './useGameAction.ts';
-import { UNO_COLORS, cardLabel, colorLabel, type UnoCard } from './uno/types.ts';
+import { UNO_COLORS, cardLabel, colorLabel, getUnoCardAssetPath, type UnoCard } from './uno/types.ts';
 import { TabletopOvalShell, type PlayerSeat } from '../shared-ui/TabletopOvalShell.tsx';
 import { CardFanEngine, type CardItem } from '../shared-ui/CardFanEngine.tsx';
 import { GameLeaveButton } from './GameLeaveButton.tsx';
@@ -60,6 +60,7 @@ export function UnoGamePage({ view }: { view: AnyView }) {
     label: cardFaceLabel(card),
     sublabel: colorLabel(card.color),
     colorTheme: card.color ?? 'wild',
+    imageUrl: getUnoCardAssetPath(card as unknown as UnoCard),
     raw: card,
   }));
 
@@ -75,44 +76,45 @@ export function UnoGamePage({ view }: { view: AnyView }) {
           }}
           disabled={!myTurn || busy}
           style={{
-            width: '80px',
-            height: '118px',
-            background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-            border: '2px solid #64748b',
-            borderRadius: '12px',
-            color: '#fff',
-            fontWeight: 800,
+            width: '84px',
+            height: '124px',
+            background: 'transparent',
+            border: 'none',
+            padding: 0,
             cursor: myTurn ? 'pointer' : 'default',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+            boxShadow: '0 8px 20px rgba(0,0,0,0.45)',
+            borderRadius: '12px',
+            overflow: 'hidden',
           }}
         >
-          {mustDraw ? `摸 ${view.pendingDraw} 张` : '摸牌'}
+          <img src="/assets/uno/back.png" alt="摸牌" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </button>
 
         {/* 弃牌堆顶牌 */}
         <div
           className={`uno-discard-card uno-card--${currentColor ?? 'wild'}`}
           style={{
-            width: '80px',
-            height: '118px',
+            width: '84px',
+            height: '124px',
             borderRadius: '12px',
-            border: '2px solid #ffffff',
+            overflow: 'hidden',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+            background: 'transparent',
+            border: 'none',
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            fontWeight: 900,
-            fontSize: '1.2rem',
-            boxShadow: '0 6px 18px rgba(0,0,0,0.4)',
-            background: currentColor ? `var(--uno-${currentColor}, #333)` : '#333',
-            color: '#fff',
           }}
         >
-          <span>{top ? cardFaceLabel(top) : '空'}</span>
-          {currentColor && <span style={{ fontSize: '0.7rem', opacity: 0.85 }}>{colorLabel(currentColor)}</span>}
+          {top ? (
+            <img
+              src={getUnoCardAssetPath(top as unknown as UnoCard)}
+              alt={cardFaceLabel(top)}
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            />
+          ) : (
+            <span style={{ color: '#fff', fontWeight: 900 }}>空</span>
+          )}
         </div>
       </div>
 
@@ -126,23 +128,40 @@ export function UnoGamePage({ view }: { view: AnyView }) {
   );
 
   const bottomBar = (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', width: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', width: '100%' }}>
       {wildCardId && (
-        <div className="uno-color-picker" style={{ display: 'flex', gap: '8px', zIndex: 20 }}>
-          {UNO_COLORS.map((c) => (
+        <div className="uno-color-wheel-backdrop" role="dialog" aria-modal="true" aria-label="万能牌选色">
+          <div className="uno-color-wheel-dialog">
+            <h3>
+              <GameIcon name="uno_wild" size={24} />
+              请选择声明颜色
+            </h3>
+            <div className="uno-color-wheel-grid">
+              {UNO_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  className={`uno-color-wheel-btn color-${c}`}
+                  disabled={busy}
+                  onClick={() => {
+                    webAudio.playCardPlay();
+                    void act({ type: 'play_card', cardId: wildCardId, declaredColor: c });
+                    setWildCardId(null);
+                  }}
+                >
+                  <span style={{ fontSize: '1.4rem' }}>●</span>
+                  {colorLabel(c)}
+                </button>
+              ))}
+            </div>
             <button
-              key={c}
               type="button"
-              className={`uno-color-btn uno-color-btn--${c}`}
-              style={{ padding: '8px 16px', borderRadius: '16px', fontWeight: 800 }}
-              onClick={() => {
-                void act({ type: 'play_card', cardId: wildCardId, chosenColor: c });
-                setWildCardId(null);
-              }}
+              className="uno-color-wheel-cancel"
+              onClick={() => setWildCardId(null)}
             >
-              {colorLabel(c)}
+              取消
             </button>
-          ))}
+          </div>
         </div>
       )}
 
@@ -160,10 +179,14 @@ export function UnoGamePage({ view }: { view: AnyView }) {
       {myTurn && (
         <button
           type="button"
+          className="uno-floating-btn btn-primary"
           disabled={busy}
-          style={{ padding: '8px 24px', borderRadius: '20px', fontWeight: 800 }}
-          onClick={() => void act({ type: 'draw_card' })}
+          onClick={() => {
+            webAudio.playDealCards();
+            void act({ type: 'draw_card' });
+          }}
         >
+          <GameIcon name="cards_deck" size={16} />
           摸一张牌
         </button>
       )}
@@ -175,7 +198,7 @@ export function UnoGamePage({ view }: { view: AnyView }) {
       title="UNO"
       subtitle={unoSubtitle(view, members)}
       gameId="uno"
-      theme="poker"
+      theme="sunset"
       players={playerSeats}
       currentUserId={me?.playerId}
       topRightControls={<GameLeaveButton />}

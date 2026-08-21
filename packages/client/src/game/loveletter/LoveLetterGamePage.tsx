@@ -4,12 +4,13 @@
  * 手牌只属于本人：观战视角不含手牌，页面仅在 me 存在时渲染手牌区。
  * 视觉：信笺宫廷主题——信封手牌、蜡封徽章、移除堆、好感红心进度。
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
 import { nameFor, useGameAction } from '../useGameAction.ts';
 import { ActionDock } from '../tabletop/ActionDock.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
+import { webAudio } from '../../shared-ui/WebAudioManager.ts';
 import { LOVELETTER_ROLES, type LoveLetterPlayerView, type LoveLetterRole } from './types.ts';
 
 const ROLE_LABELS: Record<LoveLetterRole, string> = {
@@ -18,6 +19,25 @@ const ROLE_LABELS: Record<LoveLetterRole, string> = {
 };
 
 const NEEDS_TARGET: readonly LoveLetterRole[] = ['guard', 'priest', 'baron', 'prince', 'king'];
+
+/** 战报条目：一次出牌 / 淘汰 / 庇护 / 查验的可读描述 */
+interface LLFeedItem {
+  id: number;
+  text: string;
+  kind: 'play' | 'out' | 'protect' | 'peek';
+}
+
+/** 轮次结算摘要：谁赢、怎么赢、赢后好感进度 */
+interface LLRoundSummary {
+  round: number;
+  winnerIds: string[];
+  reason: 'last-standing' | 'deck-empty';
+  affection: Record<string, number>;
+  affectionTarget: number;
+}
+
+const FEED_TTL_MS = 6000;
+const ROUND_BANNER_TTL_MS = 4200;
 
 interface Props {
   view: LoveLetterPlayerView;
@@ -36,6 +56,115 @@ export function LoveLetterGamePage({ view }: Props) {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [targetId, setTargetId] = useState<string | null>(null);
   const [guessedRole, setGuessedRole] = useState<LoveLetterRole | null>(null);
+  const [feed, setFeed] = useState<LLFeedItem[]>([]);
+  const [roundBanner, setRoundBanner] = useState<LLRoundSummary | null>(null);
+  const [finalSummary, setFinalSummary] = useState<LLRoundSummary | null>(null);
+  const prevViewRef = useRef<LoveLetterPlayerView | null>(null);
+  const feedIdRef = useRef(0);
+  const timersRef = useRef<number[]>([]);
+
+  useEffect(() => () => {
+    for (const timer of timersRef.current) window.clearTimeout(timer);
+    timersRef.current = [];
+  }, []);
+
+  // —— 视图差分战报：把每一步操作与本轮胜负翻译成玩家能看懂的反馈。
+  // 服务端每次动作都会推全量视角，相邻两帧之间的差异即"刚发生了什么"。
+  useEffect(() => {
+    const prev = prevViewRef.current;
+    prevViewRef.current = view;
+    if (!prev || prev.phase !== 'playing') return;
+
+    const nameOf = (id: string) => (id === myId ? '你' : nameFor(members, id));
+
+    // 回合边界：轮次号前进或进入终局。此时弃牌堆/淘汰表已重置，
+    // 唯一可靠的结算信号是好感增加值——加了的 就是本轮胜者。
+    if (view.round !== prev.round || view.phase === 'game_over') {
+      const winnerIds = view.players
+        .filter((p) => (view.affection[p.playerId] ?? 0) > (prev.affection[p.playerId] ?? 0))
+        .map((p) => p.playerId);
+      if (winnerIds.length === 0) return;
+      // 结算前只剩 2 名存活且牌库不止 1 张：一次出牌最多淘汰 1 人，
+      // 这种局面收轮必然是"对手出局、最后存活"；否则是牌库耗尽比点数。
+      const prevAlive = prev.players.filter((p) => !prev.eliminatedPlayers.includes(p.playerId)).length;
+      const summary: LLRoundSummary = {
+        round: prev.round,
+        winnerIds,
+        reason: prevAlive === 2 && prev.deckCount > 1 ? 'last-standing' : 'deck-empty',
+        affection: { ...view.affection },
+        affectionTarget: view.affectionTarget,
+      };
+      if (view.phase === 'game_over') {
+        setFinalSummary(summary);
+      } else {
+        setRoundBanner(summary);
+        const timer = window.setTimeout(() => setRoundBanner(null), ROUND_BANNER_TTL_MS);
+        timersRef.current.push(timer);
+      }
+      if (myId !== null) {
+        if (winnerIds.includes(myId)) webAudio.playVictory();
+        else webAudio.playBuzzer();
+      }
+      return;
+    }
+
+    const additions: { text: string; kind: LLFeedItem['kind'] }[] = [];
+
+    // 出牌者 = 上一帧的当前玩家；其弃牌堆新增的第一张就是刚打出的牌
+    const actorId = prev.currentPlayerId;
+    if (actorId !== null) {
+      const beforePile = prev.players.find((p) => p.playerId === actorId)?.discarded.length ?? 0;
+      const afterPile = view.players.find((p) => p.playerId === actorId)?.discarded ?? [];
+      if (afterPile.length > beforePile) {
+        additions.push({ text: `${nameOf(actorId)} 打出「${ROLE_LABELS[afterPile[beforePile]!.role]}」`, kind: 'play' });
+      }
+    }
+
+    // 非出牌者弃牌堆增长且未出局 → 王子弃牌效果（出局者的弃牌增长是淘汰清手，跳过）
+    for (const player of view.players) {
+      if (player.playerId === actorId) continue;
+      const before = prev.players.find((p) => p.playerId === player.playerId)?.discarded.length ?? 0;
+      const newlyOut = view.eliminatedPlayers.includes(player.playerId)
+        && !prev.eliminatedPlayers.includes(player.playerId);
+      if (!newlyOut && player.discarded.length > before) {
+        additions.push({ text: `${nameOf(player.playerId)} 被迫弃掉手牌`, kind: 'play' });
+      }
+    }
+
+    for (const id of view.eliminatedPlayers) {
+      if (!prev.eliminatedPlayers.includes(id)) additions.push({ text: `${nameOf(id)} 出局`, kind: 'out' });
+    }
+    for (const id of view.protectedPlayers) {
+      if (!prev.protectedPlayers.includes(id)) additions.push({ text: `${nameOf(id)} 获得侍女庇护`, kind: 'protect' });
+    }
+    if (me) {
+      const beforePeeks = prev.me?.inspections.length ?? 0;
+      const peeks = me.inspections ?? [];
+      if (peeks.length > beforePeeks) {
+        const last = peeks[peeks.length - 1]!;
+        additions.push({
+          text: `你查验了 ${nameFor(members, last.targetPlayerId)}：是「${ROLE_LABELS[last.role]}」`,
+          kind: 'peek',
+        });
+      }
+    }
+
+    if (additions.length > 0) {
+      setFeed((current) => {
+        const next = [...current];
+        for (const addition of additions) {
+          const id = ++feedIdRef.current;
+          next.push({ id, ...addition });
+          const timer = window.setTimeout(() => {
+            setFeed((items) => items.filter((item) => item.id !== id));
+          }, FEED_TTL_MS);
+          timersRef.current.push(timer);
+        }
+        return next.slice(-4);
+      });
+      if (additions.some((addition) => addition.kind === 'play')) webAudio.playCardPlay();
+    }
+  }, [view]);
 
   const myTurn = view.phase === 'playing' && view.currentPlayerId === myId;
   const selectedCard = me?.hand.find((card) => card.id === selectedCardId) ?? null;
@@ -186,7 +315,6 @@ export function LoveLetterGamePage({ view }: Props) {
               <div className="ll-deck-stack" aria-label={`牌库剩余 ${view.deckCount} 张`}>
                 <div className="ll-card-back shadow" />
                 <div className="ll-card-back top" />
-                <span className="ll-deck-count">{view.deckCount}</span>
               </div>
             </div>
             {(view.removedCards ?? []).length > 0 && (
@@ -214,13 +342,13 @@ export function LoveLetterGamePage({ view }: Props) {
                     onClick={() => { setSelectedCardId(card.id); setTargetId(null); setGuessedRole(null); }}
                     aria-pressed={selectedCardId === card.id}
                   >
+                    <span className="loveletter-card__corner-value" aria-label={`点数 ${card.value}`}>{card.value}</span>
                     <div className="loveletter-card__art">
                       <img src={`/assets/loveletter/${card.role}.jpg`} alt={ROLE_LABELS[card.role]} className="loveletter-card__img" />
                     </div>
                     <div className="loveletter-card__info">
                       <span className="env-card__seal" aria-hidden="true"><i /></span>
                       <strong>{ROLE_LABELS[card.role]}</strong>
-                      <span className="env-card__value loveletter-card__value">{card.value}</span>
                     </div>
                   </button>
                 ))}
@@ -264,6 +392,49 @@ export function LoveLetterGamePage({ view }: Props) {
               )}
             </div>
           )}
+
+          {/* 牌库剩余张数：置于棋盘右上角暗区 */}
+          <div
+            className={`ll-deck-corner ${view.deckCount <= 3 ? 'is-low' : ''}`}
+            aria-label={`牌库剩余 ${view.deckCount} 张`}
+          >
+            <span className="ll-deck-corner__num" key={view.deckCount}>{view.deckCount}</span>
+            <span className="ll-deck-corner__label">牌库</span>
+          </div>
+
+          {/* 本步操作战报 */}
+          {feed.length > 0 && (
+            <div className="ll-feed" aria-live="polite">
+              {feed.map((item) => (
+                <div key={item.id} className={`ll-feed__item ll-feed__item--${item.kind}`}>{item.text}</div>
+              ))}
+            </div>
+          )}
+
+          {/* 轮次结算横幅：谁赢、怎么赢、好感进度 */}
+          {roundBanner && (
+            <div
+              className={`ll-round-banner ${myId && roundBanner.winnerIds.includes(myId) ? 'is-me-win' : myId ? 'is-me-lose' : ''}`}
+              aria-live="assertive"
+            >
+              <div className="ll-round-banner__card">
+                <span className="ll-round-banner__round">第 {roundBanner.round} 轮结束</span>
+                <span className="ll-round-banner__title">
+                  {myId && roundBanner.winnerIds.includes(myId)
+                    ? '你赢下本轮！'
+                    : `${roundBanner.winnerIds.map((id) => nameFor(members, id)).join('、')} 获胜`}
+                </span>
+                <span className="ll-round-banner__reason">
+                  {roundBanner.reason === 'last-standing' ? '对手出局 · 最后存活' : '牌库耗尽 · 手牌点数最高'} · 好感 +1
+                </span>
+                <span className="ll-round-banner__progress">
+                  {roundBanner.winnerIds
+                    .map((id) => `${nameFor(members, id)} ${roundBanner.affection[id] ?? 0}/${roundBanner.affectionTarget}`)
+                    .join(' · ')}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="sg-stage">
@@ -271,6 +442,13 @@ export function LoveLetterGamePage({ view }: Props) {
             <span className="winner-rays" aria-hidden="true" />
             <h2 className="winner-title">情书送达</h2>
             <p>获胜：{(view.winners ?? []).map((id) => nameFor(members, id)).join('、')}</p>
+            {finalSummary && (
+              <p className="ll-over-note">
+                最终轮：{finalSummary.winnerIds.map((id) => nameFor(members, id)).join('、')}
+                {finalSummary.reason === 'last-standing' ? ' 最后存活' : ' 手牌点数最高'}
+                {' · '}好感 {finalSummary.affection[finalSummary.winnerIds[0]!] ?? 0}/{finalSummary.affectionTarget}
+              </p>
+            )}
           </div>
         </div>
       )}

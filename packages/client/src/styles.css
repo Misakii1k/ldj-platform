@@ -12377,6 +12377,125 @@ html[data-motion-level="off"] *::after {
   gap: 10px;
 }
 
+.uno-deck-pile-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(20px, 4vw, 48px);
+  margin: 12px 0 8px;
+}
+
+.uno-house-draw-pile {
+  position: relative;
+  width: clamp(76px, 12vw, 98px);
+  aspect-ratio: 2 / 3;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 12px;
+  /* 真实 3D 多层实体纸牌叠放厚度立体效果 */
+  box-shadow:
+    0 1px 0 #ffffff,
+    0 2px 0 #18181b,
+    0 3px 0 #ffffff,
+    0 4px 0 #18181b,
+    0 5px 0 #ffffff,
+    0 6px 0 #18181b,
+    0 16px 32px rgba(0, 0, 0, 0.45);
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease;
+  touch-action: manipulation;
+}
+
+.uno-house-draw-pile.is-my-turn-playable {
+  animation: unoDrawPilePulse 2s ease-in-out infinite;
+}
+
+@keyframes unoDrawPilePulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px rgba(249, 115, 22, 0.35));
+  }
+  50% {
+    filter: drop-shadow(0 0 18px rgba(249, 115, 22, 0.85));
+    transform: translateY(-4px) scale(1.03);
+  }
+}
+
+.uno-house-draw-pile:not(:disabled):hover {
+  transform: translateY(-8px) scale(1.05);
+  box-shadow:
+    0 1px 0 #ffffff,
+    0 2px 0 #18181b,
+    0 3px 0 #ffffff,
+    0 4px 0 #18181b,
+    0 5px 0 #ffffff,
+    0 6px 0 #18181b,
+    0 22px 42px rgba(0, 0, 0, 0.6);
+}
+
+.uno-house-draw-pile:disabled {
+  cursor: not-allowed;
+  opacity: 0.88;
+}
+
+.uno-house-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+.uno-house-pile-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffffff;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+}
+
+.uno-house-discard {
+  position: relative;
+  width: clamp(76px, 12vw, 98px);
+  aspect-ratio: 2 / 3;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.uno-house-discard-color-badge {
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(18, 24, 27, 0.92);
+  color: #ffd93d;
+  font-size: 0.72rem;
+  font-weight: 800;
+  border: 1.5px solid rgba(255,255,255,0.3);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  white-space: nowrap;
+}
+
 .uno-house-hand .uno-card {
   display: grid;
   place-items: center;
@@ -12389,8 +12508,430 @@ html[data-motion-level="off"] *::after {
   color: #1f2937;
 }
 
-.uno-house-hand .uno-card strong { font-size: clamp(1rem, 3vw, 1.4rem); }
-.uno-house-hand .uno-card small { font-size: .62rem; }
+.uno-house-hand .uno-card.uno-card--illustrated {
+  width: clamp(72px, 11vw, 98px);
+  aspect-ratio: 2 / 3;
+  height: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, filter 0.2s ease;
+  overflow: visible;
+  position: relative;
+}
+
+.uno-house-hand .uno-card.uno-card--illustrated:not(:disabled):hover {
+  transform: translateY(-12px) scale(1.08);
+  box-shadow: 0 16px 32px rgba(0,0,0,0.6), 0 0 16px rgba(255,217,61,0.5);
+  z-index: 10;
+}
+
+.uno-house-hand .uno-card.uno-card--illustrated:disabled {
+  opacity: 0.55;
+  filter: grayscale(0.4) brightness(0.8);
+  cursor: not-allowed;
+}
+
+.uno-card__asset-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+/* 扇形手牌引擎中的图片卡 */
+.card-fan-item.card-fan-item--has-image {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.4) !important;
+  border-radius: 12px !important;
+}
+.card-fan-item.card-fan-item--has-image .card-fan-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  border-radius: 12px;
+  pointer-events: none;
+}
+.card-fan-item.card-fan-item--has-image.card-fan-item--selected {
+  box-shadow: 0 14px 28px rgba(0,0,0,0.6), 0 0 16px rgba(255,217,61,0.6) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   UNO 沉浸式牌桌与动效系统 (UNO HOUSE IMMERSIVE UI)
+   ================================══════════════════════════ */
+
+/* UNO 日落暖橙主题桌面 */
+.tabletop-theme-sunset {
+  background: radial-gradient(1200px 750px at 50% 30%, #fff7ed 0%, #ffedd5 40%, #fed7aa 80%, #fdba74 100%);
+  color: #431407;
+}
+
+.tabletop-theme-sunset .tabletop-header {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(14px);
+  border-bottom: 1.5px solid rgba(234, 88, 12, 0.18);
+  box-shadow: 0 4px 16px rgba(194, 65, 12, 0.08);
+}
+
+.tabletop-theme-sunset .tabletop-header__kicker {
+  color: #ea580c !important;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+
+.tabletop-theme-sunset .tabletop-header__title {
+  color: #7c2d12 !important;
+  font-weight: 900;
+}
+
+.tabletop-theme-sunset .tabletop-header__sub {
+  color: #9a3412 !important;
+  font-weight: 600;
+}
+
+.tabletop-theme-sunset .tabletop-sound-btn,
+.tabletop-theme-sunset .tabletop-rules-btn,
+.tabletop-theme-sunset .game-leave__button {
+  background: #ffffff;
+  border: 1.5px solid rgba(234, 88, 12, 0.22);
+  color: #7c2d12;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.08);
+}
+
+.tabletop-theme-sunset .tabletop-sound-btn:hover,
+.tabletop-theme-sunset .tabletop-rules-btn:hover,
+.tabletop-theme-sunset .game-leave__button:hover {
+  background: #fff7ed;
+  border-color: #f97316;
+}
+
+/* UNO 中心舞台布局 */
+.uno-tabletop-arena {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* 顺时针 / 逆时针流光旋转方向环 */
+.uno-direction-compass {
+  position: absolute;
+  width: clamp(220px, 34vw, 320px);
+  height: clamp(220px, 34vw, 320px);
+  border-radius: 50%;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.85;
+}
+
+.uno-direction-compass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px dashed rgba(234, 88, 12, 0.35);
+  box-shadow: 0 0 24px rgba(249, 115, 22, 0.18), inset 0 0 24px rgba(249, 115, 22, 0.12);
+}
+
+.uno-direction-compass.is-cw::before {
+  animation: unoSpinCW 16s linear infinite;
+}
+
+.uno-direction-compass.is-ccw::before {
+  animation: unoSpinCCW 16s linear infinite;
+}
+
+@keyframes unoSpinCW {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes unoSpinCCW {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+/* 牌堆与弃牌堆光圈 */
+.uno-discard-halo {
+  position: absolute;
+  inset: -12px;
+  border-radius: 20px;
+  pointer-events: none;
+  transition: all 0.35s ease;
+  z-index: 0;
+}
+
+.uno-discard-halo--red {
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.45) 0%, transparent 75%);
+  box-shadow: 0 0 28px rgba(239, 68, 68, 0.5);
+}
+
+.uno-discard-halo--yellow {
+  background: radial-gradient(circle, rgba(234, 179, 8, 0.45) 0%, transparent 75%);
+  box-shadow: 0 0 28px rgba(234, 179, 8, 0.5);
+}
+
+.uno-discard-halo--green {
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.45) 0%, transparent 75%);
+  box-shadow: 0 0 28px rgba(34, 197, 94, 0.5);
+}
+
+.uno-discard-halo--blue {
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.45) 0%, transparent 75%);
+  box-shadow: 0 0 28px rgba(59, 130, 246, 0.5);
+}
+
+/* 四色大轮盘质感选色器 */
+.uno-color-wheel-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: unoFadeIn 0.2s ease-out;
+}
+
+.uno-color-wheel-dialog {
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 28px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  max-width: 340px;
+  width: 90%;
+  animation: unoPopIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.uno-color-wheel-dialog h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.uno-color-wheel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+}
+
+.uno-color-wheel-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px 12px;
+  border-radius: 18px;
+  border: none;
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 1.05rem;
+  cursor: pointer;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.15), inset 0 2px 4px rgba(255,255,255,0.4);
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease;
+}
+
+.uno-color-wheel-btn:hover {
+  transform: translateY(-4px) scale(1.04);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.25), inset 0 2px 4px rgba(255,255,255,0.5);
+}
+
+.uno-color-wheel-btn.color-red {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+.uno-color-wheel-btn.color-yellow {
+  background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+  color: #78350f;
+}
+.uno-color-wheel-btn.color-green {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+}
+.uno-color-wheel-btn.color-blue {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.uno-color-wheel-cancel {
+  padding: 8px 24px;
+  border-radius: 999px;
+  border: 1.5px solid #e5e7eb;
+  background: #f9fafb;
+  color: #6b7280;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.uno-color-wheel-cancel:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+/* UNO 喊牌金色暴击全屏印章动效 */
+.uno-shout-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  animation: unoFadeOut 1.8s ease-in forwards;
+}
+
+.uno-shout-stamp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 48px;
+  border-radius: 36px;
+  background: radial-gradient(ellipse at center, #fef08a 0%, #f59e0b 60%, #b45309 100%);
+  border: 8px solid #ffffff;
+  box-shadow: 0 20px 80px rgba(245, 158, 11, 0.8), 0 0 0 8px #f59e0b;
+  animation: unoStampBurst 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  transform-origin: center center;
+}
+
+.uno-shout-stamp__title {
+  font-family: 'Impact', 'Arial Black', sans-serif;
+  font-size: clamp(3rem, 10vw, 5.5rem);
+  font-style: italic;
+  font-weight: 900;
+  color: #dc2626;
+  text-shadow: 0 4px 0 #ffffff, 0 8px 16px rgba(0,0,0,0.4);
+  line-height: 1;
+  margin: 0;
+  letter-spacing: 0.05em;
+}
+
+.uno-shout-stamp__sub {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #78350f;
+  margin-top: 6px;
+  letter-spacing: 0.08em;
+}
+
+@keyframes unoStampBurst {
+  0% {
+    opacity: 0;
+    transform: scale(2.6) rotate(-15deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.95) rotate(4deg);
+  }
+  80% {
+    transform: scale(1.05) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes unoFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes unoFadeOut {
+  0% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes unoPopIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* 底部操作浮条与罚牌条 */
+.uno-floating-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  border-radius: 999px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.12);
+  border: 1px solid rgba(234, 88, 12, 0.2);
+  margin-bottom: 6px;
+}
+
+.uno-floating-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.uno-floating-btn.btn-primary {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.35);
+}
+
+.uno-floating-btn.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.5);
+}
+
+.uno-floating-btn.btn-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.35);
+}
+
+.uno-floating-btn.btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.5);
+}
+
+.uno-floating-btn.btn-outline {
+  background: #ffffff;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.uno-floating-btn.btn-outline:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
 
 .uno-house-actions {
   display: flex;
@@ -14506,11 +15047,11 @@ html[data-motion-level="off"] *::after {
     --tabletop-felt-radius: 240px;
     --tabletop-center-pad: 44px;
   }
-  .tabletop-header { padding: 14px 28px; }
-  .tabletop-header__title { font-size: 1.4rem; }
-  .tabletop-arena-container { padding: 22px; }
+  .tabletop-header { padding: 10px 24px; }
+  .tabletop-header__title { font-size: 1.35rem; }
+  .tabletop-arena-container { padding: 10px 16px; }
   .tabletop-seat-name { max-width: 104px; font-size: 0.82rem; }
-  .tabletop-bottom-bar { padding: 14px 24px; }
+  .tabletop-bottom-bar { padding: 8px 20px; }
   .tabletop-bottom-bar > * { width: 100%; max-width: 1080px; }
 }
 
@@ -18258,15 +18799,17 @@ html[data-motion-level="minimal"] .durian-sim-card-flip {
   flex-direction: column;
   justify-content: space-between;
   width: 100%;
-  flex: 1;
-  min-height: 0;
+  max-width: min(100%, 1240px);
+  margin: 0 auto;
+  flex: 1 1 auto;
+  min-height: clamp(480px, 64vh, 760px);
   height: 100%;
   background: radial-gradient(circle at center, rgba(61, 27, 42, 0.4) 0%, rgba(22, 8, 16, 0.8) 100%),
               url('/assets/backgrounds/bg_loveletter_portrait.jpg') center/cover;
   border-radius: 20px;
   box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
   overflow: hidden;
-  padding: 12px 16px;
+  padding: 16px 22px 10px;
   box-sizing: border-box;
 }
 
@@ -18291,7 +18834,11 @@ html[data-motion-level="minimal"] .durian-sim-card-flip {
   display: flex;
   justify-content: space-around;
   align-items: flex-start;
-  gap: 16px;
+  gap: clamp(12px, 2.5vw, 32px);
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+  padding-top: 4px;
   flex-shrink: 0;
 }
 .ll-opponent {
@@ -18417,20 +18964,21 @@ html[data-motion-level="minimal"] .durian-sim-card-flip {
 
 /* 中央区域 */
 .loveletter-center-area {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 20px;
+  gap: 10px;
 }
 .ll-deck-zone {
   position: relative;
 }
 .ll-deck-stack {
   position: relative;
-  width: 60px;
-  height: 90px;
+  width: 56px;
+  height: 84px;
 }
 .ll-deck-stack .ll-card-back {
   width: 100%;
@@ -18445,22 +18993,153 @@ html[data-motion-level="minimal"] .durian-sim-card-flip {
 .ll-deck-stack .ll-card-back.top {
   position: absolute;
 }
-.ll-deck-count {
+/* 牌库剩余张数：棋盘右上角暗区徽章 */
+.ll-deck-corner {
   position: absolute;
-  bottom: -25px;
+  top: 14px;
+  right: 18px;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #f7e1b5;
+  pointer-events: none;
+}
+.ll-deck-corner__num {
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+  animation: ll-deck-pop 0.35s ease-out;
+}
+.ll-deck-corner__label {
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  opacity: 0.75;
+  margin-top: 2px;
+}
+.ll-deck-corner.is-low .ll-deck-corner__num {
+  color: #fa5252;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes ll-deck-pop {
+  from { transform: scale(1.5); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* 本步操作战报：底部居中悬浮条 */
+.ll-feed {
+  position: absolute;
+  bottom: 108px;
   left: 50%;
   transform: translateX(-50%);
+  z-index: 16;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  max-width: 86%;
+  pointer-events: none;
+}
+.ll-feed__item {
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: rgba(20, 8, 14, 0.88);
+  border: 1px solid rgba(207, 163, 88, 0.55);
   color: #f7e1b5;
-  font-weight: bold;
-  background: rgba(0,0,0,0.6);
-  padding: 2px 8px;
-  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 700;
   white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+  animation: ll-feed-in 0.3s ease-out;
+}
+.ll-feed__item--out {
+  border-color: rgba(250, 82, 82, 0.8);
+  color: #ffb3b3;
+}
+.ll-feed__item--protect {
+  border-color: rgba(116, 192, 252, 0.8);
+  color: #cde5ff;
+}
+.ll-feed__item--peek {
+  border-color: rgba(191, 144, 255, 0.8);
+  color: #e6d6ff;
+}
+@keyframes ll-feed-in {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* 轮次结算横幅：谁赢、怎么赢、好感进度 */
+.ll-round-banner {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 3, 7, 0.62);
+  animation: ll-banner-in 0.3s ease-out;
+}
+.ll-round-banner__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: #fdf5e6;
+  border: 3px solid #cfa358;
+  border-radius: 14px;
+  padding: 22px 34px;
+  box-shadow: 0 14px 40px rgba(0,0,0,0.85);
+  max-width: 86%;
+  text-align: center;
+}
+.ll-round-banner__round {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #8b5a2b;
+}
+.ll-round-banner__title {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #5c3a21;
+}
+.ll-round-banner__reason {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #7a4a2b;
+}
+.ll-round-banner__progress {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #a87e43;
+  border-top: 1px dashed #cfa358;
+  padding-top: 8px;
+}
+.ll-round-banner.is-me-win .ll-round-banner__title { color: #c0392b; }
+.ll-round-banner.is-me-win .ll-round-banner__card {
+  border-color: #fa5252;
+  box-shadow: 0 0 34px rgba(250, 82, 82, 0.55), 0 14px 40px rgba(0,0,0,0.85);
+}
+.ll-round-banner.is-me-lose .ll-round-banner__title { color: #4a4a4a; }
+@keyframes ll-banner-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 终局页最终轮备注 */
+.ll-over-note {
+  font-size: 0.9rem;
+  color: #f7e1b5;
+  opacity: 0.85;
+  margin: 4px 0 0;
 }
 
 .ll-removed-zone {
   background: rgba(0,0,0,0.3);
-  padding: 12px;
+  padding: 10px;
   border-radius: 12px;
   border: 1px solid rgba(207, 163, 88, 0.3);
 }
@@ -18496,13 +19175,15 @@ html[data-motion-level="minimal"] .durian-sim-card-flip {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  padding-bottom: 20px;
+  gap: 8px;
+  padding-bottom: 4px;
+  flex-shrink: 0;
 }
 .loveletter-my-hand {
   display: flex;
   justify-content: center;
-  gap: 20px;
+  gap: clamp(12px, 2.5vw, 24px);
+  align-items: flex-end;
 }
 .ll-target-self-btn {
   background: #2b1d1a;
@@ -18584,49 +19265,77 @@ html[data-motion-level="minimal"] .durian-sim-card-flip {
 
 
 /* ==========================================================================
-   强制横屏提示层 (Landscape Prompt)
+   移动端竖屏（Portrait / max-width: 600px）情书流式适配
    ========================================================================== */
-.landscape-prompt {
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-  background: rgba(17, 24, 39, 0.95);
-  backdrop-filter: blur(10px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: #fff;
-  text-align: center;
-  padding: 32px;
-}
-.landscape-prompt__content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  max-width: 320px;
-}
-.landscape-prompt__icon {
-  animation: rotatePhone 2s ease-in-out infinite;
-  transform-origin: center;
-  color: var(--color-primary);
-}
-@keyframes rotatePhone {
-  0% { transform: rotate(0deg); }
-  30% { transform: rotate(-90deg); }
-  70% { transform: rotate(-90deg); }
-  100% { transform: rotate(0deg); }
-}
-.landscape-prompt h2 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 800;
-}
-.landscape-prompt p {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.95rem;
-  line-height: 1.5;
+@media (max-width: 600px) {
+  .loveletter-immersive-board {
+    padding: 8px 10px 4px;
+    border-radius: 14px;
+    gap: 4px;
+  }
+  .loveletter-opponents {
+    gap: 6px;
+    width: 100%;
+    justify-content: space-around;
+  }
+  .ll-opponent {
+    gap: 3px;
+    min-width: 0;
+  }
+  .ll-opponent-avatar {
+    padding: 4px 6px;
+    border-radius: 8px;
+  }
+  .ll-opponent-name {
+    font-size: 0.74rem;
+    max-width: 76px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ll-token-heart {
+    width: 9px;
+    height: 9px;
+  }
+  .ll-card-back {
+    width: 26px;
+    height: 38px;
+    margin-left: -10px;
+    border-radius: 3px;
+  }
+  .ll-role-picker {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(290px, 92vw);
+    box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.65), 0 12px 30px rgba(0, 0, 0, 0.85);
+    z-index: 100;
+  }
+  .ll-deck-corner {
+    top: 8px;
+    right: 10px;
+  }
+  .ll-deck-corner__num {
+    font-size: 1.5rem;
+  }
+  .loveletter-my-hand {
+    gap: 12px;
+  }
+  .env-card.loveletter-card {
+    width: clamp(94px, 38vw, 130px);
+    height: clamp(130px, 22vh, 175px);
+    padding: 4px 4px 6px;
+  }
+  .ll-history-notebook {
+    bottom: 8px;
+    right: 8px;
+  }
+  .ll-history-toggle {
+    width: 42px;
+    height: 42px;
+    font-size: 0.68rem;
+  }
 }
 
 
@@ -18670,10 +19379,25 @@ html[data-motion-level="minimal"] .durian-sim-card-flip {
     width: 36px;
     height: 52px;
   }
-  .ll-deck-count {
-    bottom: -16px;
-    font-size: 0.7rem;
-    padding: 1px 5px;
+  .ll-deck-corner {
+    top: 8px;
+    right: 10px;
+  }
+  .ll-deck-corner__num {
+    font-size: 1.4rem;
+  }
+  .ll-feed {
+    bottom: 96px;
+  }
+  .ll-feed__item {
+    font-size: 0.78rem;
+    padding: 4px 10px;
+  }
+  .ll-round-banner__card {
+    padding: 14px 18px;
+  }
+  .ll-round-banner__title {
+    font-size: 1.2rem;
   }
   .loveletter-my-area {
     gap: 4px;
@@ -18718,13 +19442,15 @@ html[data-motion-level="minimal"] .durian-sim-card-flip {
    情书卡牌生图与华丽立绘卡面样式
    ========================================================================== */
 .env-card.loveletter-card {
-  width: 140px;
-  min-height: 190px;
-  padding: 6px 6px 10px;
+  width: clamp(100px, 13.5vw, 142px);
+  height: clamp(140px, 25vh, 195px);
+  min-height: 0;
+  padding: 5px 5px 6px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 4px;
   background: linear-gradient(160deg, #fffdf8 0%, #f6ecd5 100%);
   border: 3px solid #b88645;
   border-radius: 10px;
@@ -18735,19 +19461,21 @@ html[data-motion-level="minimal"] .durian-sim-card-flip {
 }
 
 .env-card.loveletter-card:hover {
-  transform: translateY(-8px) scale(1.03);
+  transform: translateY(-6px) scale(1.03);
   box-shadow: 0 14px 24px rgba(0, 0, 0, 0.6), 0 6px 0 #7a4f21;
 }
 
 .env-card.loveletter-card.is-selected {
-  transform: translateY(-12px) scale(1.06);
+  transform: translateY(-10px) scale(1.05);
   border-color: #ffd700;
   box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 6px 0 #b88645;
 }
 
 .loveletter-card__art {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
   width: 100%;
-  aspect-ratio: 3/4;
   overflow: hidden;
   border-radius: 6px;
   border: 1.5px solid #cfa358;
@@ -18762,38 +19490,53 @@ html[data-motion-level="minimal"] .durian-sim-card-flip {
   display: block;
 }
 
-.loveletter-card__info {
+/* 卡牌右上角黑色区域的点数数字 */
+.env-card.loveletter-card .loveletter-card__corner-value {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 4px;
-  gap: 4px;
+  justify-content: center;
+  color: #ffdf70;
+  font-size: 1.15rem;
+  font-weight: 900;
+  font-family: 'Cinzel', 'Noto Serif SC', serif, Georgia;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+  pointer-events: none;
+  z-index: 10;
+  line-height: 1;
+}
+
+.loveletter-card__info {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 4px 1px;
+  gap: 6px;
 }
 
 .loveletter-card__info strong {
   color: #3e2825;
-  font-size: 0.95rem;
+  font-size: clamp(0.85rem, 1.1vw, 1rem);
   font-weight: 900;
-  flex: 1;
-  text-align: left;
+  text-align: center;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
 }
 
 .loveletter-card__info .env-card__seal {
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
 }
 
 .loveletter-card__info .env-card__seal i {
-  width: 9px;
-  height: 9px;
-}
-
-.loveletter-card__info .env-card__value {
-  width: 28px;
-  height: 28px;
-  font-size: 1.1rem;
-  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
 }
 
 /* 缩略图样式（角色选择轮盘与移出区） */

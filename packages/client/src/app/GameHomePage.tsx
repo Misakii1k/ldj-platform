@@ -19,7 +19,6 @@ import { UserProfileBadge } from '../user/UserProfileBadge.tsx';
 import { UserProfileModal } from '../user/UserProfileModal.tsx';
 import { BlurText } from '../shared-ui/motion/BlurText.tsx';
 import { FadeContent } from '../shared-ui/motion/FadeContent.tsx';
-import { ShinyText } from '../shared-ui/motion/ShinyText.tsx';
 
 type ActiveSheet = 'create' | 'join' | 'settings' | 'profile' | null;
 
@@ -70,7 +69,7 @@ export function GameHomePage() {
           </div>
           <div className="home-header__actions">
             <UserProfileBadge onClick={() => setActiveSheet('profile')} />
-            <ShinyText text="局域网极速联机" className="home-local-badge" speed={3} />
+            <div className="home-local-badge">局域网极速联机</div>
             <button
               type="button"
               className="home-header__button"

@@ -19,6 +19,8 @@ export const unoCardSchema = z.discriminatedUnion('kind', [
 export const unoConfigSchema = z.object({
   rulesetId: z.literal('uno_legacy_platform_v1').optional(),
   variant: z.literal('standard').default('standard'),
+  mode: z.enum(['individual', 'team']).optional(),
+  roundCount: z.union([z.literal(1), z.literal(3), z.literal(5), z.literal(7)]).optional(),
 }).strict();
 
 export const unoActionSchema: z.ZodType<UnoAction> = z.discriminatedUnion('type', [

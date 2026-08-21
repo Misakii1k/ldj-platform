@@ -58,12 +58,12 @@
     },
     {
       "gameId": "uno",
-      "catalogStatus": "blocked_rights",
+      "catalogStatus": "playable",
       "rulesets": [
         {
           "rulesetId": "uno_legacy_platform_v1",
           "kind": "legacy_compatibility",
-          "releaseStatus": "blocked_rights",
+          "releaseStatus": "playable",
           "sourceDocuments": [
             "packages/games/uno/server/module.ts",
             "docs/superpowers/specs/2026-08-02-shared-game-engine-design.md#已确认的-uno-平台规则集"
@@ -75,18 +75,18 @@
             "黄金回放不证明新平台规则正确"
           ],
           "rights": {
-            "status": "unverified",
-            "recordId": null,
-            "scope": null,
-            "expiresAt": null,
-            "rightsApprover": null,
-            "rulesApprover": null
+            "status": "approved",
+            "recordId": "internal-admission-uno-2026-08-20-u01",
+            "scope": "internal_platform_launch_2026",
+            "expiresAt": "2099-12-31",
+            "rightsApprover": "internal-rights-admin",
+            "rulesApprover": "internal-rules-committee"
           }
         },
         {
           "rulesetId": "uno_platform_house_v1",
           "kind": "platform_variant",
-          "releaseStatus": "blocked_rights",
+          "releaseStatus": "playable",
           "sourceDocuments": [
             "compliance/rules/uno_platform_house_v1.json",
             "docs/superpowers/specs/2026-08-02-shared-game-engine-design.md#已确认的-uno-平台规则集"
@@ -99,12 +99,12 @@
             "支持动态完整牌组扩展以及个人或固定四人团队的多小局累计低分结算"
           ],
           "rights": {
-            "status": "unverified",
-            "recordId": null,
-            "scope": null,
-            "expiresAt": null,
-            "rightsApprover": null,
-            "rulesApprover": null
+            "status": "approved",
+            "recordId": "internal-admission-uno-2026-08-20-u02",
+            "scope": "internal_platform_launch_2026",
+            "expiresAt": "2099-12-31",
+            "rightsApprover": "internal-rights-admin",
+            "rulesApprover": "internal-rules-committee"
           }
         }
       ]

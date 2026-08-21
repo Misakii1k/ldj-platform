@@ -16,7 +16,14 @@ export type GameIconName =
   | 'werewolf'
   | 'undercover'
   | 'robot'
-  | 'star';
+  | 'star'
+  | 'uno_wild'
+  | 'uno_skip'
+  | 'uno_reverse'
+  | 'uno_draw2'
+  | 'uno_draw4'
+  | 'uno_alert'
+  | 'uno_challenge';
 
 const ICON_SRC_MAP: Record<GameIconName, string> = {
   crown: '/assets/icons/crown.png',
@@ -35,6 +42,13 @@ const ICON_SRC_MAP: Record<GameIconName, string> = {
   undercover: '/assets/icons/undercover.png',
   robot: '/assets/icons/robot.png',
   star: '/assets/icons/star.png',
+  uno_wild: '/assets/icons/uno_wild.png',
+  uno_skip: '/assets/icons/uno_skip.png',
+  uno_reverse: '/assets/icons/uno_reverse.png',
+  uno_draw2: '/assets/icons/uno_draw2.png',
+  uno_draw4: '/assets/icons/uno_draw4.png',
+  uno_alert: '/assets/icons/uno_alert.png',
+  uno_challenge: '/assets/icons/uno_challenge.png',
 };
 
 export interface GameIconProps extends React.ImgHTMLAttributes<HTMLImageElement> {

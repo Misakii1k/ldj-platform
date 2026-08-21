@@ -46,7 +46,7 @@ test('uno_platform_house_v1 注册：catalog.ts uno 规则集含 house 项且默
   assert.ok(rulesetIds.includes('uno_platform_house_v1'), 'uno rulesets 应含 house 项');
   // legacy 基线必须保留为默认，不被 house 替换（UNO-HOUSE-GOV-002 并行注册）。
   assert.equal(unoEntry!.setup.defaultRulesetId, 'uno_legacy_platform_v1');
-  assert.equal(unoEntry!.availability, 'blocked_rights');
+  assert.equal(unoEntry!.availability, 'playable');
 });
 
 test('uno_platform_house_v1 注册：服务端注册表可解析 (uno, uno_platform_house_v1)', () => {

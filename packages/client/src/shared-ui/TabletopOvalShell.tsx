@@ -39,7 +39,7 @@ function useLandscapeShort(): boolean {
 /** felt 主题：poker（牌桌绿）、mystery（机密茄紫）、party（星空紫）、court（判庭蓝黑）、tribunal（暗夜羊皮纸）、orchard（果园夜）、meadow（磡草晴）、letter（信笺宫廷）、night（虫月夜）、arena（金铃竞技） */
 export type TabletopTheme =
   | 'mystery' | 'poker' | 'party' | 'court' | 'tribunal'
-  | 'orchard' | 'meadow' | 'letter' | 'night' | 'arena'
+  | 'orchard' | 'meadow' | 'letter' | 'night' | 'arena' | 'sunset'
   | 'tribunal-day' | 'tribunal-night' | 'tribunal-dawn';
 
 export interface TabletopOvalShellProps {

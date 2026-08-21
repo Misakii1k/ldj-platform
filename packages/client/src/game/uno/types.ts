@@ -31,6 +31,30 @@ export function colorLabel(color: UnoColor | string | null | undefined): string 
   return color ? (UNO_COLOR_NAMES[color as UnoColor] ?? color) : '任意色';
 }
 
+/** 获取 UNO 卡牌对应的静态高清立绘资源路径 */
+export function getUnoCardAssetPath(card: UnoCard | null | undefined): string {
+  if (!card) return '/assets/uno/back.png';
+  if (card.kind === 'number') {
+    return `/assets/uno/${card.color}_${card.value}.png`;
+  }
+  if (card.kind === 'skip') {
+    return `/assets/uno/${card.color}_skip.png`;
+  }
+  if (card.kind === 'reverse') {
+    return `/assets/uno/${card.color}_reverse.png`;
+  }
+  if (card.kind === 'draw2') {
+    return `/assets/uno/${card.color}_draw2.png`;
+  }
+  if (card.kind === 'wild4') {
+    return '/assets/uno/wild4.png';
+  }
+  if (card.kind === 'wild') {
+    return '/assets/uno/wild.png';
+  }
+  return '/assets/uno/back.png';
+}
+
 export type UnoCard =
   | { id: string; kind: 'number'; color: UnoColor; value: number }
   | { id: string; kind: 'skip' | 'reverse' | 'draw2'; color: UnoColor }

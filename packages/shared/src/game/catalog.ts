@@ -101,7 +101,7 @@ export const GAME_CATALOG = [
     displayName: 'UNO',
     minPlayers: 2,
     maxPlayers: 6,
-    availability: 'blocked_rights',
+    availability: 'playable',
     summary: '颜色、数字与功能卡牌的激情碰撞！最后一张牌时刻别忘了高喊 UNO！',
     tags: ['卡牌', '轻松', '快节奏'],
     theme: 'sunset',
@@ -109,12 +109,34 @@ export const GAME_CATALOG = [
       { id: 'uno_legacy_platform_v1', label: 'Legacy 兼容基线' },
       { id: 'uno_platform_house_v1', label: '平台房规' },
     ],
-    setup: defaultSetup('uno_legacy_platform_v1', 'Legacy 兼容基线', [], { variant: 'standard' }, [
+    setup: defaultSetup('uno_legacy_platform_v1', 'Legacy 兼容基线', [
+      {
+        key: 'mode',
+        kind: 'select',
+        label: '对局模式',
+        defaultValue: 'individual',
+        choices: [
+          { value: 'individual', label: '个人赛' },
+          { value: 'team', label: '组队赛（4人）' },
+        ],
+      },
+      {
+        key: 'roundCount',
+        kind: 'segmented',
+        label: '总局数',
+        defaultValue: 3,
+        choices: [
+          { value: 1, label: '1 局' },
+          { value: 3, label: '3 局' },
+          { value: 5, label: '5 局' },
+          { value: 7, label: '7 局' },
+        ],
+      },
+    ], { mode: 'individual', roundCount: 3, variant: 'standard' }, [
       { id: 'uno_platform_house_v1', label: '平台房规' },
     ]),
     botSupport: 'rule_and_llm',
     visualTheme: { accent: 'sunset', surface: 'cards' },
-    comingSoonMessage: '权利证据未完成，暂不开放',
   },
   {
     id: 'landlord',

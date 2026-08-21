@@ -386,19 +386,18 @@ test('注册表：默认游戏可查、manifest 一致', () => {
   assert.ok(module.manifest.minPlayers >= 2);
 });
 
-test('注册表：上架游戏可建房（playable + 模块存在），uno 权利阻断不可建房', async () => {
+test('注册表：上架游戏可建房（playable + 模块存在）', async () => {
   const { listGameManifests } = await import('../src/core/game/registry.ts');
   const manifests = listGameManifests();
   assert.deepEqual(manifests.map((manifest) => manifest.id), ['undercover', 'uno', 'landlord', 'werewolf', 'durian', 'loveletter', 'cheese-thief', 'goose-relay', 'night-testimony', 'bell-clash', 'echo-judge']);
   const playable = GAME_CATALOG.filter((game) => String(game.availability) === 'playable');
-  assert.deepEqual(playable.map((game) => game.id).sort(), ['bell-clash', 'cheese-thief', 'durian', 'echo-judge', 'goose-relay', 'landlord', 'loveletter', 'night-testimony', 'undercover', 'werewolf']);
+  assert.deepEqual(playable.map((game) => game.id).sort(), ['bell-clash', 'cheese-thief', 'durian', 'echo-judge', 'goose-relay', 'landlord', 'loveletter', 'night-testimony', 'undercover', 'uno', 'werewolf']);
   // 每款 playable 游戏都必须同时存在注册模块（create_room 准入依赖两者同时满足）
   for (const game of playable) {
     assert.ok(getGameModule(game.id), `${game.id} 应注册模块以支持建房`);
     assert.equal(getPlayableGameCatalogEntry(game.id)?.id, game.id);
   }
-  // uno 权利阻断：目录不可建房，模块仅供历史恢复
-  assert.equal(getPlayableGameCatalogEntry('uno'), undefined);
+  assert.equal(getPlayableGameCatalogEntry('uno')?.id, 'uno');
 });
 
 test('forfeitPlayers：echo-judge 对局中退出能被模块处理（不抛 Invalid discriminator）', async () => {

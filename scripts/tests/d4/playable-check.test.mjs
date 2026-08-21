@@ -71,17 +71,17 @@ async function fixtureLedger({ catalogStatus, releaseStatus, rights }) {
 test('当前仓库：上架游戏均带完整授权证据 → pass', async () => {
   const result = await runPlayableCheck(ROOT);
   assert.equal(result.pass, true, `仓库 playable 检查应通过：${result.errors.join('；')}`);
-  // 上架十款必须在台账中声明 playable；uno 保持 blocked_rights 不出现在 playable 列表
-  assert.deepEqual([...result.playableGames].sort(), ['bell-clash', 'cheese-thief', 'durian', 'echo-judge', 'goose-relay', 'landlord', 'loveletter', 'night-testimony', 'undercover', 'werewolf']);
-  assert.ok(!result.playableGames.includes('uno'), 'uno 不得出现在 playable 游戏列表');
-  assert.ok(result.playableRulesets.length >= 11, '至少 classic/blank + legacy/open_kill + landlord legacy + durian/loveletter + cheese-thief/goose-relay + night-testimony + bell-clash/echo-judge 规则集');
+  // 上架十一款均在台账中声明 playable 并带完整授权证据
+  assert.deepEqual([...result.playableGames].sort(), ['bell-clash', 'cheese-thief', 'durian', 'echo-judge', 'goose-relay', 'landlord', 'loveletter', 'night-testimony', 'undercover', 'uno', 'werewolf']);
+  assert.ok(result.playableGames.includes('uno'), 'uno 应出现在 playable 游戏列表');
+  assert.ok(result.playableRulesets.length >= 12, '至少包含所有上架游戏的规则集');
   for (const ruleset of result.playableRulesets) {
     assert.ok(
       ruleset.startsWith('undercover/') || ruleset.startsWith('werewolf/') || ruleset.startsWith('landlord/')
       || ruleset.startsWith('durian/') || ruleset.startsWith('loveletter/')
       || ruleset.startsWith('cheese-thief/') || ruleset.startsWith('goose-relay/')
       || ruleset.startsWith('night-testimony/') || ruleset.startsWith('bell-clash/')
-      || ruleset.startsWith('echo-judge/'),
+      || ruleset.startsWith('echo-judge/') || ruleset.startsWith('uno/'),
     );
   }
   assert.ok(!cliMessage(result).includes('无 playable'));

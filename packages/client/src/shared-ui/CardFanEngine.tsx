@@ -9,6 +9,7 @@ export interface CardItem {
   colorTheme?: string;
   disabled?: boolean;
   badge?: string;
+  imageUrl?: string;
   raw?: unknown;
 }
 
@@ -229,7 +230,7 @@ export function CardFanEngine({
                 isPlaying ? 'card-fan-item--playing' : ''
               } ${
                 card.disabled || disabled ? 'card-fan-item--disabled' : ''
-              } ${card.colorTheme ? `card-fan-item--${card.colorTheme}` : ''}`}
+              } ${card.colorTheme ? `card-fan-item--${card.colorTheme}` : ''} ${card.imageUrl ? 'card-fan-item--has-image' : ''}`}
               style={{
                 transform,
                 zIndex: isSelected || isPlaying ? 100 + idx : idx,
@@ -243,9 +244,15 @@ export function CardFanEngine({
               onBlur={() => setHoverIdx((cur) => (cur === idx ? null : cur))}
               disabled={card.disabled || disabled}
             >
-              {card.badge && <span className="card-fan-badge">{card.badge}</span>}
-              <div className="card-fan-label">{card.label}</div>
-              {card.sublabel && <div className="card-fan-sublabel">{card.sublabel}</div>}
+              {card.imageUrl ? (
+                <img src={card.imageUrl} alt={typeof card.label === 'string' ? card.label : ''} className="card-fan-image" />
+              ) : (
+                <>
+                  {card.badge && <span className="card-fan-badge">{card.badge}</span>}
+                  <div className="card-fan-label">{card.label}</div>
+                  {card.sublabel && <div className="card-fan-sublabel">{card.sublabel}</div>}
+                </>
+              )}
             </button>
           );
         })}

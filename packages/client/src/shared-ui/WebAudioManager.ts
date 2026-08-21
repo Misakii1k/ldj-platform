@@ -327,6 +327,119 @@ class WebAudioEngine {
       // Audio playback blocked or not supported
     }
   }
+
+  /** UNO 喊牌震撼号角与金光爆裂 */
+  public playUnoShout() {
+    try {
+      if (this.muted) return;
+      const ctx = this.getContext();
+      if (!ctx) return;
+
+      const notes = [587.33, 880, 1174.66]; // D5, A5, D6
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.06);
+
+        gain.gain.setValueAtTime(0, ctx.currentTime + idx * 0.06);
+        gain.gain.linearRampToValueAtTime(this.volume * 0.5, ctx.currentTime + idx * 0.06 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.06 + 0.35);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(ctx.currentTime + idx * 0.06);
+        osc.stop(ctx.currentTime + idx * 0.06 + 0.35);
+      });
+    } catch {
+      // Audio playback blocked or not supported
+    }
+  }
+
+  /** UNO 转向呼啸旋转音 */
+  public playUnoReverse() {
+    try {
+      if (this.muted) return;
+      const ctx = this.getContext();
+      if (!ctx) return;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(300, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(900, ctx.currentTime + 0.1);
+      osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.2);
+
+      gain.gain.setValueAtTime(this.volume * 0.4, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.2);
+    } catch {
+      // Audio playback blocked or not supported
+    }
+  }
+
+  /** UNO 禁令沉重顿挫音 */
+  public playUnoSkip() {
+    try {
+      if (this.muted) return;
+      const ctx = this.getContext();
+      if (!ctx) return;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(220, ctx.currentTime);
+      osc.frequency.setValueAtTime(110, ctx.currentTime + 0.08);
+
+      gain.gain.setValueAtTime(this.volume * 0.35, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.18);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.18);
+    } catch {
+      // Audio playback blocked or not supported
+    }
+  }
+
+  /** UNO 罚牌加倍警报 */
+  public playUnoDrawPenalty() {
+    try {
+      if (this.muted) return;
+      const ctx = this.getContext();
+      if (!ctx) return;
+
+      for (let i = 0; i < 3; i++) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(400 + i * 200, ctx.currentTime + i * 0.07);
+
+        gain.gain.setValueAtTime(this.volume * 0.4, ctx.currentTime + i * 0.07);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.07 + 0.06);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(ctx.currentTime + i * 0.07);
+        osc.stop(ctx.currentTime + i * 0.07 + 0.06);
+      }
+    } catch {
+      // Audio playback blocked or not supported
+    }
+  }
 }
 
 export const webAudio = new WebAudioEngine();
