@@ -54,3 +54,6 @@ d7-shots/
 
 # Android APK 构建产物（根目录成品拷贝，不入库）
 /*.apk
+
+# APP 内嵌服务器载荷与抓取缓存（构建产物，由 scripts/fetch-node-runtime.mjs 再生）
+/build/

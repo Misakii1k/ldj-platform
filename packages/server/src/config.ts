@@ -29,6 +29,8 @@ export interface ServerConfig {
   host: string;
   port: number;
   dbPath: string;
+  /** 数据目录（SQLite、启动信息 boot.json 等）；APP 内嵌运行时由原生层注入 */
+  dataDir: string;
   /** 显式覆盖二维码地址（FR-BOOT-002） */
   publicBaseUrl: string | null;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
@@ -94,6 +96,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     host: env.HOST ?? '0.0.0.0',
     port,
     dbPath: env.DB_PATH ?? resolve(dataDir, 'platform.db'),
+    dataDir,
     publicBaseUrl: env.PUBLIC_BASE_URL ?? null,
     logLevel: logLevel as ServerConfig['logLevel'],
     // 默认放行 Capacitor WebView 源（APP 跨源连接）；ALLOWED_ORIGINS 可追加

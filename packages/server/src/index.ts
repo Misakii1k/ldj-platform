@@ -2,7 +2,7 @@
  * 启动入口（FR-BOOT-001/002/004）。
  * 前台运行；SIGINT/SIGTERM 优雅停止；启动失败以非零退出码结束。
  */
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import qrcode from 'qrcode-terminal';
@@ -12,8 +12,39 @@ import { startPerfStats } from './boot/perfStats.ts';
 import { buildEntryUrls } from './boot/lan.ts';
 import { createApp, SERVER_VERSION } from './app.ts';
 
-const here = dirname(fileURLToPath(import.meta.url));
-const clientDist = resolve(here, '../../client/dist');
+// APP 内嵌运行时由原生层注入 CLIENT_DIST_DIR；常规部署相对仓库解析。
+// 打包为 CJS 后 import.meta.url 不可用，故仅在未注入时尝试相对解析。
+const clientDist = process.env.CLIENT_DIST_DIR !== undefined
+  ? resolve(process.env.CLIENT_DIST_DIR)
+  : resolveClientDistFromModule();
+
+function resolveClientDistFromModule(): string {
+  try {
+    const here = dirname(fileURLToPath(import.meta.url));
+    return resolve(here, '../../client/dist');
+  } catch {
+    return resolve('client/dist');
+  }
+}
+
+/** 把实际监听端口与入口地址写给宿主（APP 原生层轮询读取；端口冲突自动换端口后以此为准） */
+function writeBootInfo(dataDir: string, port: number, urls: ReturnType<typeof buildEntryUrls>, logger: ReturnType<typeof createLogger>): void {
+  try {
+    mkdirSync(dataDir, { recursive: true });
+    writeFileSync(resolve(dataDir, 'boot.json'), JSON.stringify({
+      pid: process.pid,
+      version: SERVER_VERSION,
+      startedAt: new Date().toISOString(),
+      port,
+      local: urls.local,
+      lan: urls.lan,
+      qrTarget: urls.qrTarget,
+      primaryType: urls.primaryType,
+    }, null, 2));
+  } catch (err) {
+    logger.warn('boot_info_write_failed', { message: (err as Error).message });
+  }
+}
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -26,6 +57,7 @@ async function main(): Promise<void> {
   await app.listen();
 
   const urls = buildEntryUrls(app.port(), config.publicBaseUrl);
+  writeBootInfo(config.dataDir, app.port(), urls, logger);
   logger.info('server_started', { port: app.port(), local: urls.local, lan: urls.lan });
 
   // 面向主机操作者的入口信息（非结构化，方便扫码）
