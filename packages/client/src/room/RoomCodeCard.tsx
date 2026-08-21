@@ -1,5 +1,4 @@
 import { SmartNetworkGuide } from './SmartNetworkGuide.tsx';
-import { useToast } from '../shared-ui/ToastContext.tsx';
 
 interface RoomCodeCardProps {
   gameName: string;
@@ -10,13 +9,6 @@ interface RoomCodeCardProps {
 }
 
 export function RoomCodeCard({ gameName, roomCode, inviteUrl, online, max }: RoomCodeCardProps) {
-  const { showToast } = useToast();
-
-  async function copyRoomCode() {
-    await navigator.clipboard?.writeText(roomCode);
-    showToast('房间码已复制', 'success');
-  }
-
   return (
     <section className="room-code-card" aria-labelledby="room-code-title">
       <div className="room-code-card__head">

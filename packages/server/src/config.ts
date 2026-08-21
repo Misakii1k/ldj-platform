@@ -96,10 +96,17 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     dbPath: env.DB_PATH ?? resolve(dataDir, 'platform.db'),
     publicBaseUrl: env.PUBLIC_BASE_URL ?? null,
     logLevel: logLevel as ServerConfig['logLevel'],
-    allowedOrigins: (env.ALLOWED_ORIGINS ?? '')
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean),
+    // 默认放行 Capacitor WebView 源（APP 跨源连接）；ALLOWED_ORIGINS 可追加
+    allowedOrigins: [
+      ...new Set([
+        ...(env.ALLOWED_ORIGINS ?? '')
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean),
+        'http://localhost',
+        'https://localhost',
+      ]),
+    ],
     allowPrivateLlmUpstream: allowPrivateNetworkRaw === 'true',
     llm: {
       provider: llmProvider,

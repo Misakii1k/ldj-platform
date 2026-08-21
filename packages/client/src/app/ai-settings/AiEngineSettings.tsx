@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { THINKING_DEPTH_OPTIONS, type LlmProfileSummary, type LlmProviderType, type LlmSettingsView, type ThinkingDepth } from '@ldj/shared';
 import { useToast } from '../../shared-ui/ToastContext.tsx';
+import { buildApiUrl } from '../../connection/serverAddress.ts';
 import { buildModelRequestBody, createConfigFingerprint, diagnosticErrorMessage, markDiagnosticStale, modelCatalogErrorMessage, thinkingDepthDescription, type AiDiagnosticErrorCode, type AiDiagnosticState, type AiSettingsForm } from './aiSettingsState.ts';
 import { AiEngineStatus } from './AiEngineStatus.tsx';
 import { AiProfilePicker } from './AiProfilePicker.tsx';
@@ -91,7 +92,7 @@ export function AiEngineSettings() {
     const controller = new AbortController();
     void (async () => {
       try {
-        const response = await fetch('/api/settings/llm', { headers: { Accept: 'application/json' }, cache: 'no-store', signal: controller.signal });
+        const response = await fetch(buildApiUrl('/api/settings/llm'), { headers: { Accept: 'application/json' }, cache: 'no-store', signal: controller.signal });
         if (!response.ok) throw new Error(await responseMessage(response, `HTTP ${response.status}`));
         const payload: unknown = await response.json();
         if (!isSettingsView(payload)) throw new Error('返回的设置数据格式不正确');
@@ -156,7 +157,7 @@ export function AiEngineSettings() {
     setFetchingModels(true);
     setError(null);
     try {
-      const response = await fetch('/api/settings/llm/models', { method: 'POST', headers: authHeaders(), body: JSON.stringify(buildModelRequestBody(form)), signal: controller.signal });
+      const response = await fetch(buildApiUrl('/api/settings/llm/models'), { method: 'POST', headers: authHeaders(), body: JSON.stringify(buildModelRequestBody(form)), signal: controller.signal });
       let payload: unknown = null;
       try {
         payload = await response.json();
@@ -199,7 +200,7 @@ export function AiEngineSettings() {
       const body: Record<string, unknown> = { provider, baseUrl: baseUrl.trim(), model: model.trim(), thinkingDepth, timeoutMs: numericTimeout };
       if (clearApiKey) body.apiKey = null;
       else if (apiKey.trim()) body.apiKey = apiKey.trim();
-      const response = await fetch('/api/settings/llm/test', { method: 'POST', headers: authHeaders(), body: JSON.stringify(body), signal: controller.signal });
+      const response = await fetch(buildApiUrl('/api/settings/llm/test'), { method: 'POST', headers: authHeaders(), body: JSON.stringify(body), signal: controller.signal });
       const payload: unknown = await response.json();
       if (diagnosticController.current !== controller) return;
       if (!response.ok) {
@@ -232,7 +233,7 @@ export function AiEngineSettings() {
       const patch: Record<string, unknown> = { provider, baseUrl: baseUrl.trim(), model: model.trim(), thinkingDepth, timeoutMs: numericTimeout, profilesJson: JSON.stringify(profilesForServer(profiles)), activeProfileId: selectedProfileId || null };
       if (clearApiKey) patch.apiKey = null;
       else if (apiKey.trim()) patch.apiKey = apiKey.trim();
-      const response = await fetch('/api/settings/llm', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(patch) });
+      const response = await fetch(buildApiUrl('/api/settings/llm'), { method: 'PUT', headers: authHeaders(), body: JSON.stringify(patch) });
       if (!response.ok) {
         if (response.status === 403) setNeedsAdminToken(true);
         throw new Error(await responseMessage(response, `保存失败：HTTP ${response.status}`));

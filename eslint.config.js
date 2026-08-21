@@ -11,6 +11,8 @@ export default tseslint.config(
       'scratch/**',
       'eslint.config.js',
       'packages/client/vite.config.ts',
+      // Capacitor 安卓工程：Java/Gradle 与拷贝进去的 web 构建产物，不参与 JS lint
+      'packages/client/android/**',
     ],
   },
   js.configs.recommended,

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Wifi, Radio, ShieldAlert, CheckCircle2, Copy, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useToast } from '../shared-ui/ToastContext.tsx';
+import { buildApiUrl } from '../connection/serverAddress.ts';
 
 interface NetworkStatusData {
   local: string;
@@ -35,7 +36,7 @@ export function SmartNetworkGuide({ inviteUrl, roomCode }: SmartNetworkGuideProp
     let cancelled = false;
     async function fetchStatus() {
       try {
-        const res = await fetch('/api/network/status');
+        const res = await fetch(buildApiUrl('/api/network/status'));
         if (res.ok && !cancelled) {
           const data = await res.json() as NetworkStatusData;
           setNetData(data);

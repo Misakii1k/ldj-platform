@@ -235,6 +235,29 @@ function setSecurityHeaders(res: http.ServerResponse): void {
   res.setHeader('Referrer-Policy', 'no-referrer');
 }
 
+/**
+ * API 跨源放行（APP 场景）：Capacitor WebView 源为 http://localhost，
+ * 从 APP 内 fetch 局域网主机 IP 属跨源。仅对回环来源（本机 APP/开发服务器）
+ * 反射 Origin；局域网其他设备经同源页面访问，无需 CORS；未知来源不放行。
+ */
+function applyApiCors(req: http.IncomingMessage, res: http.ServerResponse): void {
+  const origin = req.headers.origin;
+  if (origin === undefined) return;
+  let parsed: URL;
+  try {
+    parsed = new URL(origin);
+  } catch {
+    return;
+  }
+  const hostname = parsed.hostname;
+  if (hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname !== '[::1]') return;
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, x-admin-token');
+  res.setHeader('Access-Control-Max-Age', '600');
+}
+
 export function createHttpServer(deps: HttpDeps): http.Server {
   const staticRoot = deps.staticDir ? resolve(deps.staticDir) : null;
   // 设置写接口每 IP 限流（SPEC §9.5）；/health/* 与读接口不限
@@ -255,6 +278,15 @@ export function createHttpServer(deps: HttpDeps): http.Server {
   return http.createServer((req, res) => {
     setSecurityHeaders(res);
     const url = (req.url ?? '/').split('?')[0]!;
+
+    if (url.startsWith('/api/')) {
+      applyApiCors(req, res);
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204);
+        res.end();
+        return;
+      }
+    }
 
     if (url === '/health/live') {
       res.writeHead(200, { 'content-type': 'application/json' });

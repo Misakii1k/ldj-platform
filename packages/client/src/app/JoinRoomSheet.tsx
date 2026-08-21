@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
+import { buildApiUrl } from '../connection/serverAddress.ts';
 import { describeError } from '../shared-ui/errors.ts';
 import { useToast } from '../shared-ui/ToastContext.tsx';
 import { SheetDialog } from './SheetDialog.tsx';
@@ -97,7 +98,7 @@ export function JoinRoomSheet({ onClose, initialRoomCode = '' }: JoinRoomSheetPr
   const refreshRooms = useCallback(async () => {
     setRoomsRefreshing(true);
     try {
-      const response = await fetch('/api/rooms', {
+      const response = await fetch(buildApiUrl('/api/rooms'), {
         headers: { Accept: 'application/json' },
         cache: 'no-store',
       });

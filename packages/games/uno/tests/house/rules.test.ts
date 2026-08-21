@@ -512,7 +512,7 @@ test('UNO-DIFF-002/DRAW：摸牌后无可出牌自动跳下家，有可出牌保
   assert.ok(r2.ok);
   assert.equal(r2.nextState.round.currentPlayerId, 'p1', '摸牌后有可出牌应保留当前玩家回合');
   assert.equal(r2.nextState.round.hasDrawnThisTurn, true, '当前玩家 hasDrawnThisTurn 应为 true');
-  const p1View = unoHouseModule.getPlayerView(r2.nextState, 'p1') as { me: { capabilities: string[]; playableCardIds: string[] } };
+  const p1View = unoHouseModule.getPlayerView(r2.nextState, 'p1') as { me: { capabilities: readonly string[]; playableCardIds: readonly string[] } };
   assert.ok(p1View.me.capabilities.includes('canPassAfterDraw'), '应具备 canPassAfterDraw 能力');
   assert.ok(!p1View.me.capabilities.includes('canDraw'), '本回合不能再次摸牌');
   assert.ok(p1View.me.playableCardIds.includes('deck-red-9'), '摸到的红 9 应该在 playableCardIds 中');

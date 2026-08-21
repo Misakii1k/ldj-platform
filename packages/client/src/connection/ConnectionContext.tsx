@@ -24,6 +24,7 @@ import {
   type Me,
 } from './types.ts';
 import { isRoomStatusStale } from './staleness.ts';
+import { buildWsUrl, subscribeServerBaseChange } from './serverAddress.ts';
 
 const ConnectionContext = createContext<ConnectionApi | null>(null);
 
@@ -233,8 +234,7 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
 
   // 连接 WebSocket
   const connect = useCallback(() => {
-    const proto = globalThis.location.protocol === 'https:' ? 'wss' : 'ws';
-    const url = `${proto}://${globalThis.location.host}/ws`;
+    const url = buildWsUrl();
     let socket: WebSocket;
     try {
       socket = new WebSocket(url);
@@ -305,6 +305,27 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
   // 用 ref 持有最新的 connect，避免循环依赖
   const connectRef = useRef(connect);
   connectRef.current = connect;
+
+  // 服务器地址变更（连接设置/主机模式切换）时立即重连到新地址
+  useEffect(() => {
+    return subscribeServerBaseChange(() => {
+      backoffRef.current = INITIAL_BACKOFF_MS;
+      const socket = socketRef.current;
+      if (socket) {
+        // 摘掉旧 socket 的回调避免其 onclose 再排一次重连
+        socket.onclose = null;
+        socket.onmessage = null;
+        socket.onopen = null;
+        socket.onerror = null;
+        try {
+          socket.close();
+        } catch {
+          // 忽略
+        }
+      }
+      connectRef.current();
+    });
+  }, []);
 
   // 初始连接
   useEffect(() => {

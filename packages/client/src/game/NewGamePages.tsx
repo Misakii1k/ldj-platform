@@ -38,7 +38,6 @@ export function UnoGamePage({ view }: { view: AnyView }) {
   const top = view.topDiscard ?? view.lastDiscard ?? view.previousDiscard ?? view.previousCard ?? null;
   const currentColor = view.currentColor ?? top?.color ?? null;
   const directionLabel = view.direction === -1 ? '逆时针' : '顺时针';
-  const mustDraw = view.pendingDraw > 0;
   const playableCardIds: string[] = me?.playableCardIds ?? [];
   const hasDrawnThisTurn = Boolean(me?.hasDrawnThisTurn);
 

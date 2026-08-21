@@ -9,7 +9,7 @@ import { TabletopOvalShell, type PlayerSeat } from '../../../shared-ui/TabletopO
 import { CardFanEngine, type CardItem } from '../../../shared-ui/CardFanEngine.tsx';
 import { GameIcon } from '../../../shared-ui/GameIcon.tsx';
 import { webAudio } from '../../../shared-ui/WebAudioManager.ts';
-import { nameFor, useGameAction, type MemberLike } from '../../useGameAction.ts';
+import { nameFor, useGameAction } from '../../useGameAction.ts';
 import {
   UNO_COLORS,
   UNO_COLOR_NAMES,
@@ -19,7 +19,6 @@ import {
   type UnoCard,
   type UnoColor,
   type UnoHousePlayerView,
-  type UnoHousePublicView,
 } from '../types.ts';
 
 interface Props {

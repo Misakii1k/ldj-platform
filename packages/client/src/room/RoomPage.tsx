@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useConnection } from '../connection/useConnection.ts';
+import { resolveServerBase } from '../connection/serverAddress.ts';
 import { useToast } from '../shared-ui/ToastContext.tsx';
 import { describeError } from '../shared-ui/errors.ts';
 import {
@@ -357,7 +358,7 @@ export function RoomPage() {
           <RoomCodeCard
             gameName={roomGame.displayName}
             roomCode={room.roomCode}
-            inviteUrl={`${window.location.origin}/join/${room.roomCode}`}
+            inviteUrl={`${resolveServerBase()}/join/${room.roomCode}`}
             online={onlinePlayers.length}
             max={maximumPlayers}
           />
