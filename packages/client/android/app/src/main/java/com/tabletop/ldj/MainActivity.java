@@ -8,6 +8,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         // 本地插件须在 super.onCreate 前注册
         registerPlugin(HostServerPlugin.class);
+        registerPlugin(NsdDiscoveryPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

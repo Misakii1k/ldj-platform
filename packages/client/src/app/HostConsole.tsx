@@ -8,6 +8,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Play, Square, Radio, Wifi, Loader2, CheckCircle2, Settings, LogIn } from 'lucide-react';
 import { HostServer } from './hostServer.ts';
 import { setRuntimeServerBase } from '../connection/serverAddress.ts';
+import { useAppMode } from './AppModeContext.tsx';
 
 interface NetStatusLite {
   local: string;
@@ -20,6 +21,7 @@ interface NetStatusLite {
 const POLL_MS = 1500;
 
 export function HostConsole() {
+  const { backToModeSelection } = useAppMode();
   const [phase, setPhase] = useState<'starting' | 'running' | 'error'>('starting');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [netStatus, setNetStatus] = useState<NetStatusLite | null>(null);
@@ -90,6 +92,9 @@ export function HostConsole() {
             <h1 className="host-console__title">主机模式</h1>
             <p className="host-console__subtitle">这台设备就是游戏服务器，局域网内免服务器直连</p>
           </div>
+          <button type="button" className="text-btn host-console__switch" onClick={backToModeSelection}>
+            切换身份
+          </button>
         </header>
 
         <section className={`host-status-card is-${phase}`} aria-live="polite">
