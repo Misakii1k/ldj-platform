@@ -27,8 +27,9 @@
     "build": "npm run build -w @ldj/client",
     "start:prod": "node packages/server/src/index.ts",
     "host": "node scripts/start-host-gui.mjs",
-    "build:apk": "npm run build && npm run sync:apk && cd packages/client/android && .\\gradlew.bat assembleDebug",
-    "sync:apk": "npx cap copy android -w @ldj/client"
+    "build:host-payload": "node scripts/build-server-bundle.mjs && node scripts/fetch-node-runtime.mjs",
+    "build:apk": "npm run build && npm run build:host-payload && cd packages/client && npx cap copy android && cd android && .\\gradlew.bat assembleDebug",
+    "sync:apk": "cd packages/client && npx cap copy android"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
