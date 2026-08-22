@@ -19,10 +19,18 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    packagingOptions {
+        jniLibs {
+            // node 以 libldjnode.so 形式经 jniLibs 打包；legacy 打包会在安装时把
+            // native 库解压到 nativeLibraryDir（targetSdk 29+ 下唯一允许 exec 的位置）
+            useLegacyPackaging = true
+        }
+    }
     sourceSets {
         main {
             // 内嵌服务器载荷（node 运行时/server bundle/client dist），由 scripts/fetch-node-runtime.mjs 组装
-            assets.srcDirs += ['../../../build/app-host/android-assets']
+            // app → android → client → packages → 仓库根/build/app-host
+            assets.srcDirs += ['../../../../build/app-host/android-assets']
         }
     }
     buildTypes {

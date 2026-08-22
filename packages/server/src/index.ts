@@ -6,6 +6,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import qrcode from 'qrcode-terminal';
+import { Bonjour, type Service } from 'bonjour-service';
 import { loadConfig } from './config.ts';
 import { createLogger } from './boot/logger.ts';
 import { startPerfStats } from './boot/perfStats.ts';
@@ -28,7 +29,8 @@ function resolveClientDistFromModule(): string {
 }
 
 /** 把实际监听端口与入口地址写给宿主（APP 原生层轮询读取；端口冲突自动换端口后以此为准） */
-function writeBootInfo(dataDir: string, port: number, urls: ReturnType<typeof buildEntryUrls>, logger: ReturnType<typeof createLogger>): void {
+function writeBootInfo(dataDir: string | undefined, port: number, urls: ReturnType<typeof buildEntryUrls>, logger: ReturnType<typeof createLogger>): void {
+  if (dataDir === undefined) return;
   try {
     mkdirSync(dataDir, { recursive: true });
     writeFileSync(resolve(dataDir, 'boot.json'), JSON.stringify({
@@ -60,6 +62,24 @@ async function main(): Promise<void> {
   writeBootInfo(config.dataDir, app.port(), urls, logger);
   logger.info('server_started', { port: app.port(), local: urls.local, lan: urls.lan });
 
+  // mDNS 局域网自动发现（_ldj._tcp）；MDNS_DISABLE=1 可关闭
+  let mdnsService: Service | null = null;
+  let mdns: Bonjour | null = null;
+  if (process.env.MDNS_DISABLE !== '1') {
+    try {
+      mdns = new Bonjour();
+      mdnsService = mdns.publish({
+        name: 'ldj-server',
+        type: 'ldj',
+        port: app.port(),
+        txt: { app: 'ldj-platform', version: SERVER_VERSION },
+      });
+      logger.info('mdns_published', { type: 'ldj', port: app.port() });
+    } catch (err) {
+      logger.warn('mdns_publish_failed', { message: (err as Error).message });
+    }
+  }
+
   // 面向主机操作者的入口信息（非结构化，方便扫码）
   console.log('\n=== 局域网桌游平台已启动 ===');
   console.log(`本机访问：${urls.local}`);
@@ -77,6 +97,12 @@ async function main(): Promise<void> {
 
   const stop = (signal: string): void => {
     logger.info('signal_received', { signal });
+    try {
+      mdnsService?.stop();
+      mdns?.destroy();
+    } catch {
+      // mDNS 清理失败不影响停机
+    }
     void app
       .shutdown()
       .then(() => process.exit(0))

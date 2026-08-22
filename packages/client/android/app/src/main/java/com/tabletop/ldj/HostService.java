@@ -21,12 +21,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 内嵌服务器前台服务：把 APK assets 里的 Node 运行时与服务器载荷解压到
- * filesDir 后，以子进程方式执行 server-bundle.cjs（HTTP+WS+SQLite 完整服务端）。
+ * 内嵌服务器前台服务。
  *
- * 子进程以参数数组形式启动（不经 shell），全部路径由应用私有目录常量派生，
- * 不存在外部输入参与命令构造。实际监听端口以 DATA_DIR/boot.json 为准
- * （8080 被占时服务器自动换端口）。
+ * node 二进制以 libldjnode.so 形式经 jniLibs 打包，安装时被解压到
+ * nativeLibraryDir——targetSdk 29+ 的 W^X 策略禁止 exec 应用数据目录，
+ * nativeLibraryDir 是唯一允许 exec 的应用自有位置。
+ * 依赖库与服务器载荷从 assets 解压到 filesDir，经 LD_LIBRARY_PATH 供
+ * 动态链接器加载（dlopen 的 mmap-exec 不受 exec 限制）。
+ *
+ * 子进程以参数数组形式启动（不经 shell），路径均由应用私有目录常量派生。
+ * 实际监听端口以 DATA_DIR/boot.json 为准（8080 被占时自动换端口）。
  */
 public class HostService extends Service {
 
@@ -34,8 +38,9 @@ public class HostService extends Service {
     private static final String CHANNEL_ID = "ldj_host";
     private static final int NOTIFICATION_ID = 1001;
     /** 载荷结构版本：变更后强制重新解压 */
-    private static final String PAYLOAD_VERSION = "1";
+    private static final String PAYLOAD_VERSION = "3";
     private static final int MAX_RESTARTS = 3;
+    private static final String NODE_LIB_NAME = "libldjnode.so";
 
     private static volatile boolean shouldRun = false;
     private static volatile Process nodeProcess = null;
@@ -126,11 +131,13 @@ public class HostService extends Service {
 
     private void spawnNode() throws Exception {
         File filesDir = getFilesDir();
+        File node = new File(getApplicationInfo().nativeLibraryDir, NODE_LIB_NAME);
+        if (!node.exists()) throw new IllegalStateException("node 二进制缺失（nativeLibraryDir）：" + node);
         String abi = pickAbi();
         if (abi == null) throw new IllegalStateException("设备 ABI 不受支持（需要 arm64-v8a 或 x86_64）");
         File runtime = new File(new File(filesDir, "apphost"), "runtime-" + abi);
         List<String> cmd = new ArrayList<>();
-        cmd.add(new File(runtime, "bin/node").getAbsolutePath());
+        cmd.add(node.getAbsolutePath());
         cmd.add(new File(filesDir, "apphost/server-bundle.cjs").getAbsolutePath());
         File dataDir = new File(filesDir, "data");
         dataDir.mkdirs();
@@ -146,7 +153,7 @@ public class HostService extends Service {
 
         // 参数数组直启，不经 shell；路径均为应用私有目录常量派生
         nodeProcess = Runtime.getRuntime().exec(cmd.toArray(new String[0]), env.toArray(new String[0]), filesDir);
-        Log.i(TAG, "node 已启动 pid=" + nodeProcess.pid() + " abi=" + abi);
+        Log.i(TAG, "node 已启动 abi=" + abi);
     }
 
     private static void stopNodeProcess() {
@@ -163,30 +170,19 @@ public class HostService extends Service {
         }
     }
 
-    /** 设备主 ABI 是否有对应运行时 */
+    /** 依赖库按 ABI 解压，需与 nativeLibraryDir 实际选中的 ABI 一致 */
     private String pickAbi() {
         for (String abi : Build.SUPPORTED_ABIS) {
             if ("arm64-v8a".equals(abi) || "x86_64".equals(abi)) {
-                if (assetOrFileExists("apphost/runtime-" + abi + "/bin/node")) return abi;
+                if (new File(getFilesDir(), "apphost/runtime-" + abi + "/lib").isDirectory()) return abi;
             }
         }
         return null;
     }
 
-    private boolean assetOrFileExists(String relative) {
-        File extracted = new File(getFilesDir(), relative);
-        if (extracted.exists()) return true;
-        try {
-            getAssets().open(relative).close();
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
     /**
      * 把 assets/apphost 拷贝到 filesDir/apphost（幂等：marker 版本一致则跳过）。
-     * 只解压当前 ABI 的 runtime；client-dist 与 server bundle 全量拷贝。
+     * 只解压当前 ABI 的依赖库；client-dist 与 server bundle 全量拷贝。
      */
     private void ensurePayload() throws Exception {
         File payloadRoot = new File(getFilesDir(), "apphost");

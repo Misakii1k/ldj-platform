@@ -99,3 +99,6 @@ app/src/main/assets/public
 app/src/main/assets/capacitor.config.json
 app/src/main/assets/capacitor.plugins.json
 app/src/main/res/xml/config.xml
+
+# node 二进制经 fetch-node-runtime.mjs 再生（45MB/ABI，不入库）
+app/src/main/jniLibs/

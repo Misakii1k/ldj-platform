@@ -11,7 +11,7 @@
  * 用法：node scripts/fetch-node-runtime.mjs [--arch=aarch64|x86_64] （缺省双架构）
  */
 import { mkdir, readFile, readdir, writeFile, cp, rm } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { copyFileSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,6 +20,8 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const MIRROR = 'https://packages.termux.dev/apt/termux-main';
 const CACHE = resolve(root, 'build/app-host/cache');
 const ASSETS = resolve(root, 'build/app-host/android-assets/apphost');
+/** node 二进制经 jniLibs 打包（targetSdk 29+ 禁止 exec 应用数据目录，nativeLibraryDir 是唯一可执行位置） */
+const JNI_LIBS = resolve(root, 'packages/client/android/app/src/main/jniLibs');
 
 /** Termux 架构 → Android ABI */
 const ARCH_ABI = { aarch64: 'arm64-v8a', 'x86_64': 'x86_64' };
@@ -93,6 +95,26 @@ function extractDeb(debPath, stageDir, memberName) {
             }
             console.log(`  （跳过符号链接：${errText.split('\n').filter((l) => l.includes('symlink')).length} 条）`);
           }
+          // 物化运行时需要的 soname 软链（libz.so.1→libz.so.1.3.2 等）为真实拷贝：
+          // Windows 无法创建 unix 软链，且 Android 端只做平铺文件拷贝
+          const listing = spawnSync('tar', ['-tvf', `${name}.raw`], { cwd: stageDir, stdio: 'pipe' });
+          const libPrefix = 'data/data/com.termux/files/usr/lib/';
+          let materialized = 0;
+          for (const line of (listing.stdout?.toString() ?? '').split('\n')) {
+            const m = line.match(/^l\S*\s+\S+\s+\d+\s+\S+\s+\S+\s+(\S+) -> (\S+)$/);
+            if (!m) continue;
+            const linkPath = m[1].replace(/^\.\//, '');
+            if (!linkPath.startsWith(libPrefix)) continue;
+            const linkName = linkPath.slice(libPrefix.length).split('/')[0];
+            const targetName = m[2].split('/').pop();
+            const src = join(stageDir, libPrefix, targetName);
+            const dst = join(stageDir, libPrefix, linkName);
+            if (targetName && linkName && !linkName.includes('/') && existsSync(src) && !existsSync(dst)) {
+              copyFileSync(src, dst);
+              materialized += 1;
+            }
+          }
+          if (materialized > 0) console.log(`  （物化 soname 软链：${materialized} 条）`);
           rm(join(stageDir, `${name}.raw`)).finally(resolvePromise);
         }),
     );
@@ -135,13 +157,15 @@ for (const arch of arches) {
 
   // Termux 包的内部前缀（deb 内 usr 实际位于该路径下）
   const prefix = join(stage, 'data', 'data', 'com.termux', 'files', 'usr');
-  const runtimeDir = join(ASSETS, `runtime-${abi}`);
-  await rm(runtimeDir, { recursive: true, force: true });
-  await mkdir(join(runtimeDir, 'bin'), { recursive: true });
-  await mkdir(join(runtimeDir, 'lib'), { recursive: true });
+  // node 二进制 → jniLibs（libldjnode.so，安装时解压到 nativeLibraryDir 且可执行）
+  await mkdir(join(JNI_LIBS, abi), { recursive: true });
   const nodeBin = join(prefix, 'bin/node');
   if (!existsSync(nodeBin)) throw new Error(`stage 中缺少 usr/bin/node（${arch}）`);
-  await cp(nodeBin, join(runtimeDir, 'bin/node'));
+  await cp(nodeBin, join(JNI_LIBS, abi, 'libldjnode.so'));
+  // 依赖库 → assets 载荷（解压到 filesDir 后经 LD_LIBRARY_PATH 供 dlopen）
+  const runtimeDir = join(ASSETS, `runtime-${abi}`);
+  await rm(runtimeDir, { recursive: true, force: true });
+  await mkdir(join(runtimeDir, 'lib'), { recursive: true });
   const libDir = join(prefix, 'lib');
   let libCount = 0;
   for (const so of await readdir(libDir)) {
@@ -150,7 +174,7 @@ for (const arch of arches) {
       libCount += 1;
     }
   }
-  console.log(`runtime-${abi}: node + ${libCount} 个依赖库`);
+  console.log(`runtime-${abi}: libldjnode.so + ${libCount} 个依赖库`);
 }
 
 // 服务端 bundle 与客户端静态资源（ABI 无关，只放一份）
