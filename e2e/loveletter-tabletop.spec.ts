@@ -14,6 +14,12 @@ const ROLE_VALUE: Record<string, number> = {
   guard: 1, priest: 2, baron: 3, handmaid: 4, prince: 5, king: 6, countess: 7, princess: 8,
 };
 
+declare global {
+  interface Window {
+    __gameEventCount?: number;
+  }
+}
+
 interface Me {
   playerId: string;
   resumeToken: string;
@@ -24,6 +30,19 @@ interface Me {
 async function openBrowser(browser: Browser, me: Me): Promise<Page> {
   const context = await browser.newContext();
   const page = await context.newPage();
+  // 出牌成功判定依赖 game_event 计数：情书出牌后立即摸牌，手牌数量不减少
+  await page.addInitScript(() => {
+    const OrigWS = window.WebSocket;
+    window.__gameEventCount = 0;
+    window.WebSocket = class extends OrigWS {
+      constructor(...args: unknown[]) {
+        super(...(args as [string | URL | null, string[]?]));
+        this.addEventListener('message', (e: MessageEvent) => {
+          if (String(e.data).includes('"type":"game_event"')) window.__gameEventCount += 1;
+        });
+      }
+    };
+  });
   await page.addInitScript(
     ([key, value]) => { localStorage.setItem(key, value); },
     [ME_STORAGE_KEY, JSON.stringify({ ...me, seatRole: 'player' })],
@@ -46,6 +65,7 @@ async function driveHost(
 ): Promise<Record<string, unknown>> {
   let lastView: Record<string, unknown> = {};
   let actedSignature = '';
+  const failedCardIds = new Set<string>();
   for (let step = 0; step < 2500; step += 1) {
     // 轮询最新权威状态（不按序消费旧帧），避免满负荷下读到过期回合造成竞态。
     const frame = host.client.latestGameState((v) => v.gameId === 'loveletter');
@@ -69,6 +89,7 @@ async function driveHost(
       current: view.currentPlayerId,
       hand: (view.me.hand ?? []).map((card) => card.id).sort(),
     });
+    if (signature !== actedSignature) failedCardIds.clear();
     if (signature === actedSignature) {
       await new Promise((resolve) => setTimeout(resolve, 100));
       continue;
@@ -81,31 +102,41 @@ async function driveHost(
     );
     // 总能选出一张合法可出之牌：伯爵夫人强制 → 无需目标（侍女/伯爵夫人/公主）→ 王子自选 → 有合法目标的其他牌。
     // 守卫/牧师/男爵/国王在无合法目标时也可无目标打出。
-    const roles = hand.map((card) => card.role);
+    const playable = hand.filter((entry) => !failedCardIds.has(entry.id));
+    if (playable.length === 0) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      continue;
+    }
+    const roles = playable.map((entry) => entry.role);
     const forcedCountess = mustPlayCountess(roles);
-    let card = hand[0]!;
+    let card = playable[0]!;
     let target: string | undefined;
     let guess: string | undefined;
     if (forcedCountess) {
-      card = hand.find((entry) => entry.role === 'countess')!;
-    } else if (hand.some((entry) => entry.role === 'handmaid' || entry.role === 'countess' || entry.role === 'princess')) {
-      card = hand.find((entry) => entry.role === 'handmaid' || entry.role === 'countess' || entry.role === 'princess')!;
-    } else if (hand.some((entry) => entry.role === 'prince')) {
-      card = hand.find((entry) => entry.role === 'prince')!;
+      card = playable.find((entry) => entry.role === 'countess')!;
+    } else if (playable.some((entry) => entry.role === 'handmaid' || entry.role === 'countess' || entry.role === 'princess')) {
+      card = playable.find((entry) => entry.role === 'handmaid' || entry.role === 'countess' || entry.role === 'princess')!;
+    } else if (playable.some((entry) => entry.role === 'prince')) {
+      card = playable.find((entry) => entry.role === 'prince')!;
       target = hostId;
     } else {
-      card = hand[0]!;
+      card = playable[0]!;
       target = otherTargets.length > 0 ? otherTargets[0]!.playerId : undefined;
       if (card.role === 'guard') guess = 'princess';
     }
-    await host.gameAction({
+    const ack = await host.gameAction({
       type: 'play_card',
       playerId: hostId,
       cardId: card.id,
       ...(target ? { targetPlayerId: target } : {}),
       ...(guess ? { guessedRole: guess } : {}),
     });
-    actedSignature = signature;
+    if (ack.type === 'ack') {
+      actedSignature = signature;
+    } else {
+      // 规则拒绝（如伯爵夫人强制/目标无效）：换一张重试，不能跳过否则双向死锁
+      failedCardIds.add(card.id);
+    }
     await new Promise((resolve) => setTimeout(resolve, 150));
   }
   throw new Error('房主驱动超时');
@@ -167,12 +198,14 @@ test.describe('D7-C loveletter 完整局', () => {
           const idx = order[attempt]!;
           await handCards.nth(idx).click({ timeout: 1000 }).catch(() => {});
           const opponent = page.locator('.ll-opponent.is-targetable, .ll-target-self-btn, .loveletter-target button').first();
-          if (await opponent.count().catch(() => 0) > 0) {
+          const oppN = await opponent.count().catch(() => 0);
+          if (oppN > 0) {
             await opponent.click({ timeout: 1000 }).catch(() => {});
           }
           // 守卫需猜身份：优先猜「公主」（守卫不能猜守卫）
           const rolePicker = page.locator('.ll-role-picker, .loveletter-guess');
-          if (await rolePicker.isVisible().catch(() => false)) {
+          const pickerVisible = await rolePicker.isVisible().catch(() => false);
+          if (pickerVisible) {
             const princess = rolePicker.getByRole('button', { name: '公主' });
             if (await princess.count().catch(() => 0) > 0) {
               await princess.click({ timeout: 1000 }).catch(() => {});
@@ -182,14 +215,17 @@ test.describe('D7-C loveletter 完整局', () => {
           }
           const playBtn = page.getByRole('button', { name: /打出「/ });
           await playBtn.waitFor({ state: 'visible', timeout: 2000 }).catch(() => {});
-          if (!(await playBtn.isEnabled().catch(() => false))) {
+          const btnEnabled = await playBtn.isEnabled().catch(() => false);
+          if (!btnEnabled) {
             await page.getByRole('button', { name: '重选' }).click({ timeout: 1000 }).catch(() => {});
             continue;
           }
+          // 出牌成功 = game_event 推进（情书出牌后立即摸牌，手牌数不减少）
+          const eventsBefore = await page.evaluate(() => window.__gameEventCount ?? 0);
           await playBtn.click({ timeout: 1000 }).catch(() => {});
-          await page.waitForTimeout(500);
-          const remaining = await page.locator('.loveletter-card').count().catch(() => 0);
-          if (remaining < handCount) {
+          await page.waitForTimeout(700);
+          const eventsAfter = await page.evaluate(() => window.__gameEventCount ?? 0);
+          if (eventsAfter > eventsBefore) {
             played = true;
           } else {
             await page.getByRole('button', { name: '重选' }).click({ timeout: 1000 }).catch(() => {});

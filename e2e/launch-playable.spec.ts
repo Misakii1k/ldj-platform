@@ -142,7 +142,7 @@ test.describe('D5 P2b 上架建房链路', () => {
     const roomPage = page.locator('.room-page');
     await expect(roomPage).toBeVisible({ timeout: 20_000 });
     await expect(roomPage).toHaveAttribute('data-game-id', 'undercover');
-    const roomCode = (await page.locator('.room-code').textContent())?.trim() ?? '';
+    const roomCode = (await page.locator('.smart-network-code').textContent())?.trim() ?? '';
     expect(roomCode).toMatch(/^[A-Z0-9]{5}$/);
     await expect(page.getByText('谁是卧底 · 房间大厅').first()).toBeVisible();
 
@@ -185,7 +185,8 @@ test.describe('D5 P2b 上架建房链路', () => {
     const roomPage = page.locator('.room-page');
     await expect(roomPage).toBeVisible({ timeout: 20_000 });
     await expect(roomPage).toHaveAttribute('data-game-id', 'werewolf');
-    await expect(page.locator('.room-code')).toBeVisible();
+    // 房间号经智能组网卡展示（RoomCodeCard 重设计后 .room-code 已移除）
+    await expect(page.locator('.smart-network-code')).toBeVisible();
     await expect(page.getByText('狼人杀 · 房间大厅').first()).toBeVisible();
 
     await context.close();
@@ -206,26 +207,26 @@ test.describe('D5 P2b 上架建房链路', () => {
     const roomPage = page.locator('.room-page');
     await expect(roomPage).toBeVisible({ timeout: 20_000 });
     await expect(roomPage).toHaveAttribute('data-game-id', 'landlord');
-    await expect(page.locator('.room-code')).toBeVisible();
+    await expect(page.locator('.smart-network-code')).toBeVisible();
     await expect(page.getByText('斗地主 · 房间大厅').first()).toBeVisible();
 
     // 玩法模式以点选芯片呈现（不再用下拉），默认档为第一个规则集
     const ruleset = page.getByRole('radiogroup', { name: '玩法模式' });
     await expect(ruleset.getByRole('radio')).toHaveCount(2);
     await expect(ruleset.getByRole('radio').nth(0)).toBeChecked();
-    await expect(ruleset.getByRole('radio').nth(1)).toHaveText('Legacy 兼容基线');
+    await expect(ruleset.getByRole('radio').nth(1)).toHaveText('经典叫分（1/2/3分直接定庄）');
     await context.close();
   });
 
-  test('uno：blocked_rights 不出现在首页生产目录，不可建房', async ({ browser }) => {
+  test('uno：上架 playable 出现在首页目录，可建房', async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.setViewportSize({ width: 1280, height: 800 });
     await gotoHome(page);
 
-    await expect(homeCard(page, 'UNO')).toHaveCount(0);
-    // G2-B 上架后 playable 10 款（含奶酪大盗、以鹅传鹅、暗夜证词、铃铛对决、伪人测试）
-    await expect(page.getByRole('button', { name: '创建房间' })).toHaveCount(10);
+    // 64aa03e 起 UNO 开放为 playable（此前 blocked_rights 用例随之过时）
+    await expect(homeCard(page, 'UNO')).toBeVisible({ timeout: 20_000 });
+    await expect(homeCard(page, 'UNO').getByRole('button', { name: '创建房间' })).toBeEnabled();
 
     await context.close();
   });
