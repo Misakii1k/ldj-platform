@@ -17,6 +17,7 @@ import { gooseRelayModule } from '@ldj/game-goose-relay/server';
 import { nightTestimonyModule } from '@ldj/game-night-testimony/server';
 import { bellClashModule } from '@ldj/game-bell-clash/server';
 import { echoJudgeModule } from '@ldj/game-echo-judge/server';
+import { partySandboxModule } from '@ldj/game-party-sandbox/server';
 import type { SessionRow } from './session.ts';
 
 export type ErasedGameModule = GameModule<unknown, unknown, unknown, unknown, unknown, unknown, unknown>;
@@ -46,6 +47,7 @@ const MODULES: RegisteredGameModule[] = [
   nightTestimonyModule,
   bellClashModule,
   echoJudgeModule,
+  partySandboxModule,
 ];
 
 function keyOf(gameId: string, rulesetId: string): string {

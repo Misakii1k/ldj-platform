@@ -17,8 +17,9 @@ export function UserAvatar({
   className = '',
   style = {},
 }: UserAvatarProps) {
-  const isCustomImage = avatar && (avatar.startsWith('data:image/') || avatar.startsWith('http://') || avatar.startsWith('https://') || avatar.startsWith('/'));
-  const isPreset = avatar && avatar.startsWith('preset:');
+  const isNotion = !!avatar && (avatar.startsWith('preset:notion') || avatar.startsWith('notion'));
+  const isCustomImage = !!avatar && !isNotion && (avatar.startsWith('data:image/') || avatar.startsWith('http://') || avatar.startsWith('https://') || avatar.startsWith('/'));
+  const isPreset = !!avatar && avatar.startsWith('preset:') && !isNotion;
   const presetId = isPreset ? avatar.replace('preset:', '') : 'fox';
   const preset = PRESET_AVATARS.find((p) => p.id === presetId) || PRESET_AVATARS[0]!;
 
@@ -38,6 +39,39 @@ export function UserAvatar({
     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
     ...style,
   };
+
+  if (isNotion) {
+    const notionId = avatar!.replace('preset:', '');
+    const src = notionId.startsWith('notion60_')
+      ? `/assets/avatars/notion60/avatar_${notionId.replace('notion60_', '')}.png`
+      : `/assets/avatars/notion/${notionId}.png`;
+    return (
+      <div
+        className={`user-avatar user-avatar--notion ${className}`}
+        style={{
+          ...containerStyle,
+          backgroundColor: '#fffdf7',
+          border: '2px solid #29241f',
+        }}
+        title={nickname}
+      >
+        <img
+          src={src}
+          alt={nickname}
+          style={{
+            width: '92%',
+            height: '92%',
+            objectFit: 'contain',
+            display: 'block',
+          }}
+          onError={(e) => {
+            // fallback
+            (e.target as HTMLImageElement).src = '/assets/avatars/notion60/avatar_01.png';
+          }}
+        />
+      </div>
+    );
+  }
 
   if (isCustomImage) {
     return (

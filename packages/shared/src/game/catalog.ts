@@ -8,7 +8,7 @@ import { buildRulesetRegistry, type GameRulesetEntry, type RulesetRegistry } fro
 export const GAME_AVAILABILITY = ['playable', 'coming_soon', 'internal_prototype', 'blocked_rights'] as const;
 export type GameAvailability = (typeof GAME_AVAILABILITY)[number];
 
-export const GAME_THEMES = ['berry', 'sunset', 'mint', 'violet', 'ocean'] as const;
+export const GAME_THEMES = ['berry', 'sunset', 'mint', 'violet', 'ocean', 'cyan'] as const;
 export type GameTheme = (typeof GAME_THEMES)[number];
 
 export const GAME_BOT_SUPPORT = ['none', 'rule', 'rule_and_llm'] as const;
@@ -432,7 +432,19 @@ export const GAME_CATALOG = [
         '【角色技能】卫兵猜牌淘汰、神父看牌、男爵比点数、侍女免疫、王子弃牌、国王换牌、公主离手即死。',
         '【最终胜负】牌堆耗尽时手牌点数最大者获胜，或全场只剩最后一人存活直接获胜。',
       ],
-    }),
+    }, [
+      {
+        key: 'cardTracker',
+        kind: 'select',
+        label: '记牌器辅助',
+        description: '开启后在局内提供 1–8 号卡牌已出与剩余张数实时统计及历史出牌流水记录',
+        defaultValue: 'enabled',
+        choices: [
+          { value: 'enabled', label: '开启记牌器' },
+          { value: 'disabled', label: '关闭记牌器' },
+        ],
+      },
+    ], { cardTracker: 'enabled' }),
     botSupport: 'rule',
     visualTheme: { accent: 'sunset', surface: 'cards' },
   },
@@ -644,6 +656,40 @@ export const GAME_CATALOG = [
     ]),
     botSupport: 'rule',
     visualTheme: { accent: 'sunset', surface: 'social' },
+  },
+  {
+    id: 'party-sandbox',
+    displayName: '创意工坊',
+    minPlayers: 2,
+    maxPlayers: 12,
+    availability: 'playable',
+    summary: '开放式物理道具沙盒 + AI 小助手「锵锵」，左轮手枪轮盘、摇骰盅、抢答铃、万能牌堆、计时炸弹自由选择！',
+    tags: ['沙盒', '创意工坊', 'AI助手', '聚会'],
+    theme: 'cyan',
+    rulesets: [
+      {
+        id: 'party_sandbox_v1',
+        label: '聚会沙盒（自由道具 + AI锵锵）',
+        description: '无强制系统输赢裁决，全员自由操作左轮、骰子、铃铛、自定义卡牌、计时器等道具，享受纯粹聚会互动！',
+        details: [
+          '【物理道具】包含俄罗斯轮盘左轮手枪、多面骰子骰盅、抢答铃、卡牌堆、计时器、硬币等。',
+          '【AI 助手 锵锵】支持自然语言对话与一键布置桌面道具/生成卡牌内容。',
+          '【自由互动】全员自由操作，动作毫秒级同步广播并实时记录于桌面动态日志。',
+        ],
+      },
+    ],
+    setup: defaultSetup({
+      id: 'party_sandbox_v1',
+      label: '聚会沙盒（自由道具 + AI锵锵）',
+      description: '无强制系统输赢裁决，全员自由操作左轮、骰子、铃铛、自定义卡牌、计时器等道具，享受纯粹聚会互动！',
+      details: [
+        '【物理道具】包含俄罗斯轮盘左轮手枪、多面骰子骰盅、抢答铃、卡牌堆、计时器、硬币等。',
+        '【AI 助手 锵锵】支持自然语言对话与一键布置桌面道具/生成卡牌内容。',
+        '【自由互动】全员自由操作，动作毫秒级同步广播并实时记录于桌面动态日志。',
+      ],
+    }, []),
+    botSupport: 'rule',
+    visualTheme: { accent: 'cyan', surface: 'board' },
   },
 ] as const satisfies readonly GameCatalogEntry[];
 

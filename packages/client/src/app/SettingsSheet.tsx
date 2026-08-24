@@ -32,7 +32,7 @@ export function SettingsSheet({ onClose }: SettingsSheetProps) {
           onClick={() => setActiveTab('ai')}
         >
           <span className="tab-icon">🤖</span>
-          <span>AI 陪练引擎</span>
+          <span>AI 引擎</span>
         </button>
 
         <button
@@ -43,7 +43,7 @@ export function SettingsSheet({ onClose }: SettingsSheetProps) {
           onClick={() => setActiveTab('tts')}
         >
           <span className="tab-icon">🎙️</span>
-          <span>语音法官 TTS</span>
+          <span>语音 TTS</span>
         </button>
 
         {native && (

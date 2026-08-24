@@ -262,6 +262,9 @@ export function createHttpServer(deps: HttpDeps): http.Server {
   const staticRoot = deps.staticDir ? resolve(deps.staticDir) : null;
   // 设置写接口每 IP 限流（SPEC §9.5）；/health/* 与读接口不限
   const settingsWriteLimiter = new RateLimiter(DEFAULT_RULES.settingsWrite);
+  // 定期清理过期窗口，防止长驻服务器（APP 内嵌主机）内存无限增长
+  const limiterSweeper = setInterval(() => settingsWriteLimiter.sweep(), 60_000);
+  limiterSweeper.unref?.();
 
   const rateLimitSettingsWrite = (req: http.IncomingMessage, res: http.ServerResponse): boolean => {
     const key = `ip:${req.socket.remoteAddress ?? 'unknown'}`;
@@ -577,7 +580,15 @@ export function createHttpServer(deps: HttpDeps): http.Server {
 
     // 静态托管：防目录穿越
     if (staticRoot && existsSync(staticRoot)) {
-      const rel = url === '/' ? 'index.html' : decodeURIComponent(url.slice(1));
+      let rel: string;
+      try {
+        rel = url === '/' ? 'index.html' : decodeURIComponent(url.slice(1));
+      } catch {
+        // 畸形百分号编码（如 /%zz）会抛 URIError，绝不能让其成为未捕获异常击穿进程
+        res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
+        res.end('Bad Request');
+        return;
+      }
       const candidate = normalize(join(staticRoot, rel));
       if (candidate.startsWith(staticRoot + sep) || candidate === join(staticRoot, 'index.html')) {
         const target =

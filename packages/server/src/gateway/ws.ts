@@ -139,6 +139,7 @@ export class WsGateway {
   readonly #gameActionLimiter = new RateLimiter(DEFAULT_RULES.gameAction);
   readonly #joinLimiter: RateLimiter;
   readonly #reservationSweeper: ReturnType<typeof setInterval>;
+  readonly #limiterSweeper: ReturnType<typeof setInterval>;
   #sweeping = false;
 
   constructor(deps: WsGatewayDeps) {
@@ -173,6 +174,15 @@ export class WsGateway {
       void this.#sweepReservations();
     }, deps.reservationSweepMs ?? DEFAULT_RESERVATION_SWEEP_MS);
     this.#reservationSweeper.unref?.();
+    // 限流窗口定期清理：connectionId/IP 键会随连接数无限增长（长驻主机尤其明显）
+    this.#limiterSweeper = setInterval(() => {
+      const now = Date.now();
+      this.#messageLimiter.sweep(now);
+      this.#chatLimiter.sweep(now);
+      this.#gameActionLimiter.sweep(now);
+      this.#joinLimiter.sweep(now);
+    }, 60_000);
+    this.#limiterSweeper.unref?.();
   }
 
   async #sweepReservations(): Promise<void> {
@@ -1178,6 +1188,7 @@ export class WsGateway {
   /** 优雅关闭：停止接收新连接并关闭现有连接（FR-BOOT-004） */
   async close(): Promise<void> {
     clearInterval(this.#reservationSweeper);
+    clearInterval(this.#limiterSweeper);
     for (const timer of this.#hostTransferTimers.values()) {
       clearTimeout(timer);
     }

@@ -36,12 +36,27 @@ function parseState(input: unknown): EchoJudgeState {
     throw new Error('伪人测试 状态必须是对象');
   }
   const state = structuredClone(input) as EchoJudgeState;
+  state.accusations = state.accusations ?? [];
+  state.caughtImpostors = state.caughtImpostors ?? [];
+  state.wrongAccusations = state.wrongAccusations ?? [];
+  state.escapedImpostors = state.escapedImpostors ?? [];
   assertEchoJudgeInvariants(state);
   return state;
 }
 
 /** 玩家可发起的动作类型（其余仅允许 system 投递） */
-const PLAYER_ACTIONS = new Set<string>(['start_round', 'submit_answer', 'accuse', 'resolve_round']);
+const PLAYER_ACTIONS = new Set<string>([
+  'choose_role',
+  'pick_topic_card',
+  'start_round',
+  'finish_speaking',
+  'submit_answer',
+  'accuse',
+  'resolve_round',
+]);
+
+/** 规则自行调度、允许 system 超时兜底投递的动作（timerRunner 以 system actor 投递） */
+const SYSTEM_FALLBACK_ACTIONS = new Set<string>(['submit_answer', 'finish_speaking', 'resolve_round']);
 
 function playerMatches(actor: Actor, action: EchoJudgeAction): boolean {
   return actor.kind === 'player' && 'playerId' in action && actor.playerId === action.playerId;
@@ -72,7 +87,6 @@ export const echoJudgeModule: GameModuleV2<
   assertInvariants: assertEchoJudgeInvariants,
   snapshotMigrations: {},
   createInitialState(ctx: GameContext, players: string[], config: EchoJudgeConfig) {
-    // 首轮判官为队首玩家；出题由 start_round 驱动（判官输入题目）
     const judgeId = players[0]!;
     const { roles, triggerWords } = assignRoles(players, judgeId, ctx.random);
     const state = createEchoJudgeState(players, config, judgeId, '', roles, triggerWords);
@@ -80,9 +94,10 @@ export const echoJudgeModule: GameModuleV2<
     return state;
   },
   reduce(_ctx: GameContext, state, actor, action) {
-    // submit_answer 允许 system 超时兜底（自动提交"超时未答"）；其余玩家动作必须身份一致。
-    if (action.type === 'submit_answer' && actor.kind === 'system') {
-      // 超时兜底放行（rules 层校验顺序与重复）
+    // finish_speaking/resolve_round/submit_answer 允许 system 超时兜底（自动推进/自动提交）；
+    // 其余玩家动作必须身份一致。
+    if (actor.kind === 'system' && SYSTEM_FALLBACK_ACTIONS.has(action.type)) {
+      // 规则自调度的超时兜底放行
     } else if (PLAYER_ACTIONS.has(action.type)) {
       if (actor.kind !== 'player') {
         return { ok: false, code: 'ACTION_NOT_ALLOWED', message: '该动作只允许玩家发起' };
@@ -93,7 +108,10 @@ export const echoJudgeModule: GameModuleV2<
     } else if (actor.kind !== 'system') {
       return { ok: false, code: 'ACTION_NOT_ALLOWED', message: '该动作只允许系统发起' };
     }
-    const reduced = reduceEchoJudgeState(state, action, { now: _ctx.now });
+    const reduced = reduceEchoJudgeState(state, action, {
+      now: _ctx.now,
+      random: _ctx.random as never,
+    });
     if (!reduced.ok) return reduced;
     assertEchoJudgeInvariants(reduced.nextState);
     return {

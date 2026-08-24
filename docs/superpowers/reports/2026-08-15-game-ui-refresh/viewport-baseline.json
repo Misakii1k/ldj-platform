@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-21T10:09:42.972Z",
+  "generatedAt": "2026-08-24T09:22:53.946Z",
   "strictTouch": false,
   "games": [
     {
@@ -12,14 +12,12 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 124x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34"
+            "button.tabletop-sound-btn.tabletop-recommend-chip \"📐推荐横屏\" 44x34",
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
           ],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 250x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 274x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -31,14 +29,12 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 124x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34"
+            "button.tabletop-sound-btn.tabletop-recommend-chip \"📐推荐横屏\" 44x34",
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
           ],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 320x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 344x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -50,11 +46,9 @@
           "clientWidth": 844,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34",
+            "button.tabletop-sound-btn.tabletop-recommend-chip \"📐推荐横屏\" 44x34",
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34",
             "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 542x41"
           ],
           "primaryActions": [
@@ -70,11 +64,9 @@
           "clientWidth": 768,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 85x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 84x34",
-            "button.tabletop-sound-btn \"音效开\" 84x34"
+            "button.tabletop-sound-btn.tabletop-recommend-chip \"📐推荐横屏\" 97x34",
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x44 首屏可见"
@@ -89,11 +81,9 @@
           "clientWidth": 1280,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 85x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 84x34",
-            "button.tabletop-sound-btn \"音效开\" 84x34"
+            "button.tabletop-sound-btn.tabletop-recommend-chip \"📐推荐横屏\" 97x34",
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x44 首屏可见"
@@ -113,14 +103,11 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"📜本局规则\" 44x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 124x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
           ],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 250x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 274x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -132,14 +119,11 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"📜本局规则\" 44x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 124x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
           ],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 320x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 344x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -151,11 +135,8 @@
           "clientWidth": 844,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"📜本局规则\" 97x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34",
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34",
             "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 542x41"
           ],
           "primaryActions": [
@@ -171,11 +152,8 @@
           "clientWidth": 768,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"📜本局规则\" 97x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 85x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 84x34",
-            "button.tabletop-sound-btn \"音效开\" 84x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 530x44 首屏可见"
@@ -190,11 +168,8 @@
           "clientWidth": 1280,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"📜本局规则\" 97x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 85x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 84x34",
-            "button.tabletop-sound-btn \"音效开\" 84x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 530x44 首屏可见"
@@ -214,14 +189,11 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 124x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
           ],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 250x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 274x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -233,14 +205,11 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 124x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
           ],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 320x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 344x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -252,11 +221,8 @@
           "clientWidth": 844,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34",
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34",
             "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 542x41"
           ],
           "primaryActions": [
@@ -272,11 +238,8 @@
           "clientWidth": 768,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 85x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 84x34",
-            "button.tabletop-sound-btn \"音效开\" 84x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x44 首屏可见"
@@ -291,11 +254,8 @@
           "clientWidth": 1280,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 85x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 84x34",
-            "button.tabletop-sound-btn \"音效开\" 84x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x44 首屏可见"
@@ -315,14 +275,11 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 124x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
           ],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"抢当头鹅 👑\" 250x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"抢当头鹅 👑\" 274x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -334,14 +291,11 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 124x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
           ],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"抢当头鹅 👑\" 320x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"抢当头鹅 👑\" 344x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -353,11 +307,8 @@
           "clientWidth": 844,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34",
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34",
             "button.tabletop-action.tabletop-action--primary \"抢当头鹅 👑\" 542x41"
           ],
           "primaryActions": [
@@ -373,11 +324,8 @@
           "clientWidth": 768,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 85x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 84x34",
-            "button.tabletop-sound-btn \"音效开\" 84x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"抢当头鹅 👑\" 530x44 首屏可见"
@@ -392,11 +340,8 @@
           "clientWidth": 1280,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 85x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 84x34",
-            "button.tabletop-sound-btn \"音效开\" 84x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"抢当头鹅 👑\" 530x44 首屏可见"
@@ -416,14 +361,11 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"📜本局规则\" 97x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 124x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
           ],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 250x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 274x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -435,14 +377,11 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"📜本局规则\" 97x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 124x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
           ],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 320x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 344x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -454,11 +393,8 @@
           "clientWidth": 844,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"📜本局规则\" 97x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34",
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34",
             "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 542x41"
           ],
           "primaryActions": [
@@ -474,11 +410,8 @@
           "clientWidth": 768,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"📜本局规则\" 97x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 85x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 84x34",
-            "button.tabletop-sound-btn \"音效开\" 84x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x44 首屏可见"
@@ -493,11 +426,8 @@
           "clientWidth": 1280,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"📜本局规则\" 97x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 85x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 84x34",
-            "button.tabletop-sound-btn \"音效开\" 84x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x44 首屏可见"
@@ -517,14 +447,11 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 124x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
           ],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 120x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 132x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -536,14 +463,11 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 124x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
           ],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 155x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 167x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -555,11 +479,8 @@
           "clientWidth": 844,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34",
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34",
             "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 268x41",
             "button.tabletop-action \"重选\" 268x41"
           ],
@@ -576,11 +497,8 @@
           "clientWidth": 768,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 85x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 84x34",
-            "button.tabletop-sound-btn \"音效开\" 84x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 260x44 首屏可见"
@@ -595,11 +513,8 @@
           "clientWidth": 1280,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 85x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 84x34",
-            "button.tabletop-sound-btn \"音效开\" 84x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 260x44 首屏可见"
@@ -619,17 +534,11 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 124x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34",
-            "button.sg-chip.sg-chip--btn \"问 房主\" 70x30",
-            "button.sg-chip.sg-chip--btn \"问 玩家3\" 78x30",
-            "button.sg-chip.sg-chip--btn \"问 玩家4\" 78x30"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
           ],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"在本页选择对象并输入问题\" 250x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 132x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -641,17 +550,11 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 124x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34",
-            "button.sg-chip.sg-chip--btn \"问 房主\" 70x30",
-            "button.sg-chip.sg-chip--btn \"问 玩家3\" 78x30",
-            "button.sg-chip.sg-chip--btn \"问 玩家4\" 78x30"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
           ],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"在本页选择对象并输入问题\" 320x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 167x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -663,18 +566,12 @@
           "clientWidth": 844,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34",
-            "button.sg-chip.sg-chip--btn \"问 房主\" 70x30",
-            "button.sg-chip.sg-chip--btn \"问 玩家3\" 78x30",
-            "button.sg-chip.sg-chip--btn \"问 玩家4\" 78x30",
-            "button.tabletop-action.tabletop-action--primary \"在本页选择对象并输入问题\" 542x41"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34",
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 268x41"
           ],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"在本页选择对象并输入问题\" 542x41 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 268x41 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -686,17 +583,11 @@
           "clientWidth": 768,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 85x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 84x34",
-            "button.tabletop-sound-btn \"音效开\" 84x34",
-            "button.sg-chip.sg-chip--btn \"问 房主\" 70x30",
-            "button.sg-chip.sg-chip--btn \"问 玩家3\" 78x30",
-            "button.sg-chip.sg-chip--btn \"问 玩家4\" 78x30"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
           ],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"在本页选择对象并输入问题\" 530x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 260x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -708,17 +599,11 @@
           "clientWidth": 1280,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 75x34",
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 85x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 84x34",
-            "button.tabletop-sound-btn \"音效开\" 84x34",
-            "button.sg-chip.sg-chip--btn \"问 房主\" 70x30",
-            "button.sg-chip.sg-chip--btn \"问 玩家3\" 78x30",
-            "button.sg-chip.sg-chip--btn \"问 玩家4\" 78x30"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
           ],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"在本页选择对象并输入问题\" 530x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 260x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -735,9 +620,8 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -750,9 +634,8 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -765,9 +648,8 @@
           "clientWidth": 844,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -780,9 +662,8 @@
           "clientWidth": 768,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 85x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 84x34",
-            "button.tabletop-sound-btn \"音效开\" 84x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -795,9 +676,8 @@
           "clientWidth": 1280,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 85x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 84x34",
-            "button.tabletop-sound-btn \"音效开\" 84x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -815,10 +695,8 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.game-leave__button \"返回大厅 / 退出\" 124x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -831,10 +709,8 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.game-leave__button \"返回大厅 / 退出\" 124x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -847,10 +723,8 @@
           "clientWidth": 844,
           "offenders": [],
           "smallTargets": [
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 44x34",
-            "button.tabletop-sound-btn \"音效开\" 44x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -863,10 +737,8 @@
           "clientWidth": 768,
           "offenders": [],
           "smallTargets": [
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 85x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 84x34",
-            "button.tabletop-sound-btn \"音效开\" 84x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -879,10 +751,8 @@
           "clientWidth": 1280,
           "offenders": [],
           "smallTargets": [
-            "button.game-leave__button \"返回大厅 / 退出\" 141x34",
-            "button.tabletop-sound-btn.tabletop-viewmode-btn \"🖥️切大屏\" 85x34",
-            "button.tabletop-sound-btn.tabletop-orient-btn \"切横屏\" 84x34",
-            "button.tabletop-sound-btn \"音效开\" 84x34"
+            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
+            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
           ],
           "primaryActions": [],
           "seatCollisions": [],

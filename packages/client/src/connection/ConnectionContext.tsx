@@ -42,6 +42,8 @@ const INITIAL_BACKOFF_MS = 1000;
 const MAX_BACKOFF_MS = 30_000;
 /** 心跳轮询间隔：房间内周期性查询权威状态（D7-A §6 遗留修复） */
 const ROOM_STATUS_POLL_MS = 15_000;
+/** welcome 看门狗：socket 已开但迟迟未收到合法 envelope（协议不匹配等），主动断开走重连 */
+const WELCOME_TIMEOUT_MS = 8_000;
 
 function generateRequestId(): string {
   return `r_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
@@ -109,6 +111,7 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resumeAttemptedRef = useRef(false);
   const resumeRecoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const welcomeWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { stateRef.current = state; }, [state]);
   useEffect(() => { meRef.current = me; }, [me]);
@@ -234,6 +237,20 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
 
   // 连接 WebSocket
   const connect = useCallback(() => {
+    // 若存在未完成的旧 socket（CONNECTING/CLOSING），先摘回调并关闭，
+    // 避免双 socket 并发处理 welcome / 旧 onclose 再排一次重连
+    const stale = socketRef.current;
+    if (stale && stale.readyState !== WebSocket.OPEN) {
+      stale.onclose = null;
+      stale.onmessage = null;
+      stale.onopen = null;
+      stale.onerror = null;
+      try {
+        stale.close();
+      } catch {
+        // 忽略
+      }
+    }
     const url = buildWsUrl();
     let socket: WebSocket;
     try {
@@ -247,17 +264,38 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
 
     socket.onopen = () => {
       backoffRef.current = INITIAL_BACKOFF_MS;
-      // welcome 会通过 onmessage 到达
+      // 看门狗：socket 已打开但迟迟未收到合法 envelope（如协议版本不匹配被静默丢弃），
+      // 主动断开走重连，避免永久停在"正在连接服务器…"
+      if (welcomeWatchdogRef.current !== null) clearTimeout(welcomeWatchdogRef.current);
+      welcomeWatchdogRef.current = setTimeout(() => {
+        welcomeWatchdogRef.current = null;
+        const cur = socketRef.current;
+        if (cur === socket && cur.readyState === WebSocket.OPEN && stateRef.current.connState !== 'connected') {
+          try {
+            cur.close();
+          } catch {
+            // 忽略
+          }
+        }
+      }, WELCOME_TIMEOUT_MS);
     };
 
     socket.onmessage = (event) => {
       // 严格 envelope 校验：版本/类型/序号/时间戳不合法的一律丢弃（D3 Task 9）。
       const envelope = parseServerEnvelope(event.data as string);
       if (envelope === null) return;
+      if (welcomeWatchdogRef.current !== null) {
+        clearTimeout(welcomeWatchdogRef.current);
+        welcomeWatchdogRef.current = null;
+      }
       processEnvelope(envelope);
     };
 
     socket.onclose = (event) => {
+      if (welcomeWatchdogRef.current !== null) {
+        clearTimeout(welcomeWatchdogRef.current);
+        welcomeWatchdogRef.current = null;
+      }
       // 清空 pending 请求
       for (const [, pending] of pendingRef.current) {
         clearTimeout(pending.timeout);
@@ -356,6 +394,33 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // 当应用从后台切换回前台时，立即检查连接并主动恢复，消除切后台返回后的延迟等待
+  useEffect(() => {
+    const handleWake = () => {
+      if (document.hidden) return;
+      const s = stateRef.current;
+      const socket = socketRef.current;
+      const isOpen = socket !== null && socket.readyState === WebSocket.OPEN;
+      if (!isOpen && shouldReconnectRef.current) {
+        if (reconnectTimerRef.current !== null) {
+          clearTimeout(reconnectTimerRef.current);
+          reconnectTimerRef.current = null;
+        }
+        backoffRef.current = INITIAL_BACKOFF_MS;
+        connect();
+      } else if (isOpen && s.room !== null) {
+        void send('room_status', {}).catch(() => {});
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleWake);
+    window.addEventListener('focus', handleWake);
+    return () => {
+      document.removeEventListener('visibilitychange', handleWake);
+      window.removeEventListener('focus', handleWake);
+    };
+  }, [connect, send]);
+
   // 自动恢复（welcome 后如有 me 则发 resume_room）
   useEffect(() => {
     if (state.connState === 'connected' && !resumeAttemptedRef.current && meRef.current) {
@@ -405,6 +470,10 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
     if (state.connState !== 'connected' || meRef.current === null) return;
     const roomCode = meRef.current.roomCode;
     const timer = setInterval(() => {
+      if (meRef.current === null) {
+        clearInterval(timer);
+        return;
+      }
       void send('room_status', {})
         .then((envelope) => {
           const s = stateRef.current;
@@ -427,7 +496,7 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
         });
     }, ROOM_STATUS_POLL_MS);
     return () => clearInterval(timer);
-  }, [state.connState, send, sendRaw]);
+  }, [state.connState, send, sendRaw, me]);
 
   // 快速自愈：当房间状态为 IN_GAME 但本地 game 为 null 时，自动快速补发 resync，消除人工点击/刷新等待
   useEffect(() => {

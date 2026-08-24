@@ -2,7 +2,7 @@ import { TabletopOvalShell, type PlayerSeat, type TabletopTheme } from '../../sh
 import { GameLeaveButton } from '../GameLeaveButton.tsx';
 import type { TabletopShellProps } from './types.ts';
 
-export function TabletopShell({ title, phase, phaseKey, gameId, spectator, players, actions, drawer, rulesButton, theme, hideSeats, children }: TabletopShellProps) {
+export function TabletopShell({ title, phase, phaseKey, gameId, spectator, players, actions, drawer, rulesButton, theme, hideSeats, stageFit = 'arena', children }: TabletopShellProps) {
   // 主题优先使用调用方显式指定；缺失时按游戏标题兜底（游戏专属 felt 主题由各游页面直接给出）
   let resolvedTheme: TabletopTheme = theme ?? 'party';
   if (theme === undefined) {
@@ -16,7 +16,7 @@ export function TabletopShell({ title, phase, phaseKey, gameId, spectator, playe
     }
   }
 
-  const seats: PlayerSeat[] = players.map((p) => ({
+  const seats: PlayerSeat[] = (players ?? []).map((p) => ({
     id: p.id,
     name: p.name,
     isCurrentTurn: p.active,
@@ -27,11 +27,12 @@ export function TabletopShell({ title, phase, phaseKey, gameId, spectator, playe
   return (
     <TabletopOvalShell
       title={title}
-      subtitle={`阶段：${phase}${spectator ? ' · (观战模式)' : ''}`}
+      subtitle={`阶段：${phase ?? '对局中'}${spectator ? ' · (观战模式)' : ''}`}
       gameId={gameId}
       theme={resolvedTheme}
       players={seats}
       hideSeats={hideSeats}
+      stageFit={stageFit}
       phaseKey={phaseKey ?? phase}
       topRightControls={
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

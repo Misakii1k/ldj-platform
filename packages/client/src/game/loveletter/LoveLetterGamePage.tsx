@@ -2,7 +2,7 @@
  * loveletter_classic16_v1 客户端主页面（TabletopShell 消费方）。
  * 只消费严格解析后的情书视角（loveletter/types.ts parseLoveLetterView）。
  * 手牌只属于本人：观战视角不含手牌，页面仅在 me 存在时渲染手牌区。
- * 视觉：信笺宫廷主题——信封手牌、蜡封徽章、移除堆、好感红心进度。
+ * 视觉：信笺宫廷主题——信封手牌、蜡封徽章、移除堆、好感红心进度、实时记牌器与卡牌技能悬浮。
  */
 import { useEffect, useRef, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
@@ -11,11 +11,114 @@ import { ActionDock } from '../tabletop/ActionDock.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
 import { webAudio } from '../../shared-ui/WebAudioManager.ts';
-import { LOVELETTER_ROLES, type LoveLetterPlayerView, type LoveLetterRole } from './types.ts';
+import { LOVELETTER_ROLES, type LoveLetterPlayerView, type LoveLetterRole, type LoveLetterCard } from './types.ts';
 
-const ROLE_LABELS: Record<LoveLetterRole, string> = {
+export const ROLE_LABELS: Record<LoveLetterRole, string> = {
   guard: '守卫', priest: '牧师', baron: '男爵', handmaid: '侍女',
   prince: '王子', king: '国王', countess: '伯爵夫人', princess: '公主',
+};
+
+export interface RoleAbilityMeta {
+  role: LoveLetterRole;
+  name: string;
+  value: number;
+  totalCount: number;
+  icon: string;
+  badge: string;
+  summary: string;
+  description: string;
+  tips: string;
+}
+
+export const ROLE_ABILITIES: Record<LoveLetterRole, RoleAbilityMeta> = {
+  guard: {
+    role: 'guard',
+    name: '守卫 (Guard)',
+    value: 1,
+    totalCount: 5,
+    icon: '🛡️',
+    badge: '猜牌淘汰',
+    summary: '指定一名其他玩家并猜测其手牌（不能猜守卫），猜中淘汰！',
+    description: '指定一名未被侍女庇护的其他玩家，猜测对方持有的角色牌（不可猜守卫）。若猜测正确，该玩家立即被淘汰出局！',
+    tips: '牌库中数量最多（共 5 张），是试探与击杀的主力牌。',
+  },
+  priest: {
+    role: 'priest',
+    name: '牧师 (Priest)',
+    value: 2,
+    totalCount: 2,
+    icon: '📜',
+    badge: '秘密查验',
+    summary: '秘密查验一名其他玩家的手牌（仅你可见）。',
+    description: '指定一名未被侍女庇护的其他玩家，秘密查看其当前手牌。查验结果记录在你的专属记录本中。',
+    tips: '掌握绝对情报，下回合配合守卫指名必杀或男爵绝杀。',
+  },
+  baron: {
+    role: 'baron',
+    name: '男爵 (Baron)',
+    value: 3,
+    totalCount: 2,
+    icon: '⚔️',
+    badge: '暗中比点',
+    summary: '与一名玩家秘密比对手牌点数，较小者淘汰。',
+    description: '指定一名未被侍女庇护的其他玩家，私下比对各自手牌点数。点数较小者立即被淘汰出局；点数相同则平安无事。',
+    tips: '手持高点数牌（如王子、国王、伯爵夫人）时主动发起决斗。',
+  },
+  handmaid: {
+    role: 'handmaid',
+    name: '侍女 (Handmaid)',
+    value: 4,
+    totalCount: 2,
+    icon: '✨',
+    badge: '免受影响',
+    summary: '直到你的下个回合开始前，免疫所有卡牌效果。',
+    description: '打出后获得神圣庇护，直到你的下一个回合开始前，任何其他玩家打出的卡牌效果均无法以你为目标。',
+    tips: '当局势危险或被多人盯上时打出保命，安全渡过轮次。',
+  },
+  prince: {
+    role: 'prince',
+    name: '王子 (Prince)',
+    value: 5,
+    totalCount: 2,
+    icon: '👑',
+    badge: '强迫弃牌',
+    summary: '指定任意一名玩家（可自选），迫使其弃牌并重摸。',
+    description: '指定任意一名未被侍女庇护的玩家（可以选择自己），迫使其弃掉当前手牌并重新摸一张（若弃掉公主则该玩家直接出局）。',
+    tips: '破除对手关键手牌；当自己被查验暴露时对自己使用洗白手牌。',
+  },
+  king: {
+    role: 'king',
+    name: '国王 (King)',
+    value: 6,
+    totalCount: 1,
+    icon: '⚜️',
+    badge: '强制换牌',
+    summary: '指定一名其他玩家，与对方强制交换各自的手牌。',
+    description: '指定一名未被侍女庇护的其他玩家，与对方强制交换各自的手牌。',
+    tips: '获知对方持有公主或高点数牌时，强行掠夺换牌。',
+  },
+  countess: {
+    role: 'countess',
+    name: '伯爵夫人 (Countess)',
+    value: 7,
+    totalCount: 1,
+    icon: '💎',
+    badge: '皇室羁绊',
+    summary: '手中同时有王子或国王时，必须打出伯爵夫人。',
+    description: '无指定效果。但若你的另一张手牌是王子 (5) 或国王 (6)，你必须打出伯爵夫人，不可打出王子或国王。',
+    tips: '打出伯爵夫人往往让对手怀疑你手握王子或国王，可作为虚晃一枪的心理战。',
+  },
+  princess: {
+    role: 'princess',
+    name: '公主 (Princess)',
+    value: 8,
+    totalCount: 1,
+    icon: '💖',
+    badge: '离手即死',
+    summary: '点数最高 (8)！若打出或被迫弃掉，立即淘汰出局。',
+    description: '全场点数最高（8 点）。牌库耗尽比拼点数时持有公主必胜。但无论因任何原因打出或被弃掉，立即淘汰！',
+    tips: '必须死守在手中，小心被王子迫使弃牌。',
+  },
 };
 
 const NEEDS_TARGET: readonly LoveLetterRole[] = ['guard', 'priest', 'baron', 'prince', 'king'];
@@ -36,6 +139,13 @@ interface LLRoundSummary {
   affectionTarget: number;
 }
 
+/** 历史各轮出牌与结算归档 */
+interface LLHistoricalRound {
+  round: number;
+  winnerIds: string[];
+  discards: Array<{ playerId: string; cards: LoveLetterCard[] }>;
+}
+
 const FEED_TTL_MS = 6000;
 const ROUND_BANNER_TTL_MS = 4200;
 
@@ -52,24 +162,48 @@ export function LoveLetterGamePage({ view }: Props) {
   const isSpectator = me === null;
   const rulesRef = useRef<HTMLButtonElement | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [trackerOpen, setTrackerOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [targetId, setTargetId] = useState<string | null>(null);
   const [guessedRole, setGuessedRole] = useState<LoveLetterRole | null>(null);
   const [feed, setFeed] = useState<LLFeedItem[]>([]);
+  const feedRef = useRef<LLFeedItem[]>([]);
+  useEffect(() => {
+    feedRef.current = feed;
+  }, [feed]);
   const [roundBanner, setRoundBanner] = useState<LLRoundSummary | null>(null);
   const [finalSummary, setFinalSummary] = useState<LLRoundSummary | null>(null);
+  const [roundHistory, setRoundHistory] = useState<LLHistoricalRound[]>([]);
+  const [hoveredRole, setHoveredRole] = useState<LoveLetterRole | null>(null);
+  const [detailRole, setDetailRole] = useState<LoveLetterRole | null>(null);
+  const [activeTrackerTab, setActiveTrackerTab] = useState<'tracker' | 'history'>('tracker');
   const prevViewRef = useRef<LoveLetterPlayerView | null>(null);
   const feedIdRef = useRef(0);
   const timersRef = useRef<number[]>([]);
+  const longPressTimerRef = useRef<number | null>(null);
 
   useEffect(() => () => {
     for (const timer of timersRef.current) window.clearTimeout(timer);
     timersRef.current = [];
+    if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
   }, []);
 
-  // —— 视图差分战报：把每一步操作与本轮胜负翻译成玩家能看懂的反馈。
-  // 服务端每次动作都会推全量视角，相邻两帧之间的差异即"刚发生了什么"。
+  function handleTouchStart(role: LoveLetterRole) {
+    if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = window.setTimeout(() => {
+      setDetailRole(role);
+    }, 450);
+  }
+
+  function handleTouchEnd() {
+    if (longPressTimerRef.current) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }
+
+  // —— 视图差分战报与轮次历史归档
   useEffect(() => {
     const prev = prevViewRef.current;
     prevViewRef.current = view;
@@ -77,15 +211,13 @@ export function LoveLetterGamePage({ view }: Props) {
 
     const nameOf = (id: string) => (id === myId ? '你' : nameFor(members, id));
 
-    // 回合边界：轮次号前进或进入终局。此时弃牌堆/淘汰表已重置，
-    // 唯一可靠的结算信号是好感增加值——加了的 就是本轮胜者。
+    // 回合边界：轮次号前进或进入终局
     if (view.round !== prev.round || view.phase === 'game_over') {
       const winnerIds = view.players
         .filter((p) => (view.affection[p.playerId] ?? 0) > (prev.affection[p.playerId] ?? 0))
         .map((p) => p.playerId);
       if (winnerIds.length === 0) return;
-      // 结算前只剩 2 名存活且牌库不止 1 张：一次出牌最多淘汰 1 人，
-      // 这种局面收轮必然是"对手出局、最后存活"；否则是牌库耗尽比点数。
+
       const prevAlive = prev.players.filter((p) => !prev.eliminatedPlayers.includes(p.playerId)).length;
       const summary: LLRoundSummary = {
         round: prev.round,
@@ -94,6 +226,20 @@ export function LoveLetterGamePage({ view }: Props) {
         affection: { ...view.affection },
         affectionTarget: view.affectionTarget,
       };
+
+      // 归档上一轮出牌记录
+      setRoundHistory((prevHist) => [
+        ...prevHist,
+        {
+          round: prev.round,
+          winnerIds,
+          discards: prev.players.map((p) => ({
+            playerId: p.playerId,
+            cards: [...p.discarded],
+          })),
+        },
+      ]);
+
       if (view.phase === 'game_over') {
         setFinalSummary(summary);
       } else {
@@ -110,7 +256,7 @@ export function LoveLetterGamePage({ view }: Props) {
 
     const additions: { text: string; kind: LLFeedItem['kind'] }[] = [];
 
-    // 出牌者 = 上一帧的当前玩家；其弃牌堆新增的第一张就是刚打出的牌
+    // 出牌者 = 上一帧的当前玩家
     const actorId = prev.currentPlayerId;
     if (actorId !== null) {
       const beforePile = prev.players.find((p) => p.playerId === actorId)?.discarded.length ?? 0;
@@ -120,7 +266,7 @@ export function LoveLetterGamePage({ view }: Props) {
       }
     }
 
-    // 非出牌者弃牌堆增长且未出局 → 王子弃牌效果（出局者的弃牌增长是淘汰清手，跳过）
+    // 王子弃牌
     for (const player of view.players) {
       if (player.playerId === actorId) continue;
       const before = prev.players.find((p) => p.playerId === player.playerId)?.discarded.length ?? 0;
@@ -150,18 +296,17 @@ export function LoveLetterGamePage({ view }: Props) {
     }
 
     if (additions.length > 0) {
-      setFeed((current) => {
-        const next = [...current];
-        for (const addition of additions) {
-          const id = ++feedIdRef.current;
-          next.push({ id, ...addition });
-          const timer = window.setTimeout(() => {
-            setFeed((items) => items.filter((item) => item.id !== id));
-          }, FEED_TTL_MS);
-          timersRef.current.push(timer);
-        }
-        return next.slice(-4);
-      });
+      // 先算好数组与定时器，再一次性 setFeed——副作用（setTimeout/timersRef）不进 updater
+      const next = [...feedRef.current];
+      for (const addition of additions) {
+        const id = ++feedIdRef.current;
+        next.push({ id, ...addition });
+        const timer = window.setTimeout(() => {
+          setFeed((items) => items.filter((item) => item.id !== id));
+        }, FEED_TTL_MS);
+        timersRef.current.push(timer);
+      }
+      setFeed(next.slice(-4));
       if (additions.some((addition) => addition.kind === 'play')) webAudio.playCardPlay();
     }
   }, [view]);
@@ -215,6 +360,36 @@ export function LoveLetterGamePage({ view }: Props) {
 
   const canPlayDisabled = !canPlay;
 
+  // —— 实时牌池统计计算 (Card Tracker Calculation)
+  const trackerStats = LOVELETTER_ROLES.map((role) => {
+    const meta = ROLE_ABILITIES[role];
+    const playerDiscards: Record<string, number> = {};
+    let totalDiscarded = 0;
+    for (const p of view.players) {
+      const count = (p.discarded ?? []).filter((c) => c.role === role).length;
+      if (count > 0) playerDiscards[p.playerId] = count;
+      totalDiscarded += count;
+    }
+    const removedCount = (view.removedCards ?? []).filter((c) => c.role === role).length;
+    const myCount = (me?.hand ?? []).filter((c) => c.role === role).length;
+    const knownTotal = totalDiscarded + removedCount + myCount;
+    const remainingUnknown = Math.max(0, meta.totalCount - knownTotal);
+    const isExhausted = knownTotal >= meta.totalCount;
+
+    return {
+      role,
+      meta,
+      playerDiscards,
+      totalDiscarded,
+      removedCount,
+      myCount,
+      knownTotal,
+      remainingUnknown,
+      isExhausted,
+      totalCount: meta.totalCount,
+    };
+  });
+
   return (
     <TabletopShell
       title="情书"
@@ -226,16 +401,26 @@ export function LoveLetterGamePage({ view }: Props) {
       hideSeats={true}
       theme="letter"
       rulesButton={(
-        <button ref={rulesRef} type="button" className="tabletop-rules-btn" onClick={() => setRulesOpen(true)}>
-          本局规则
-        </button>
+        <div className="tabletop-btn-group">
+          <button
+            type="button"
+            className={`tabletop-rules-btn ll-tracker-toggle-btn ${trackerOpen ? 'is-active' : ''}`}
+            onClick={() => setTrackerOpen(!trackerOpen)}
+            title="实时记牌器与出牌记录"
+          >
+            🧮 记牌器
+          </button>
+          <button ref={rulesRef} type="button" className="tabletop-rules-btn" onClick={() => setRulesOpen(true)}>
+            本局规则
+          </button>
+        </div>
       )}
       actions={(
         <ActionDock
           primary={{ id: 'play', label: selectedCard ? `打出「${ROLE_LABELS[selectedCard.role]}」` : '打出所选牌', disabled: canPlayDisabled, onAction: () => void play() }}
           secondary={[{ id: 'clear', label: '重选', disabled: selectedCard === null, onAction: resetSelection }]}
           busy={busy}
-          waitingReason={view.phase === 'game_over' ? undefined : myTurn ? '轮到你了，从手牌中选一张打出' : `${nameFor(members, view.currentPlayerId)} 正在出牌`}
+          waitingReason={view.phase === 'game_over' ? undefined : myTurn ? '轮到你了，从手牌中选一张打出（悬浮/长按可看技能）' : `${nameFor(members, view.currentPlayerId)} 正在出牌`}
         />
       )}
       drawer={rulesOpen && (
@@ -287,9 +472,30 @@ export function LoveLetterGamePage({ view }: Props) {
                     ))}
                   </div>
 
+                  {/* 对手本轮已打出的弃牌 */}
+                  {(player.discarded ?? []).length > 0 && (
+                    <div className="ll-opponent-discards" title={`${nameFor(members, player.playerId)} 本轮已出牌`}>
+                      {(player.discarded ?? []).map((card, idx) => (
+                        <div
+                          key={`${card.id}-${idx}`}
+                          className="ll-discard-pill"
+                          onMouseEnter={() => setHoveredRole(card.role)}
+                          onMouseLeave={() => setHoveredRole(null)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDetailRole(card.role);
+                          }}
+                        >
+                          <span className="ll-discard-pill__val">{card.value}</span>
+                          <span className="ll-discard-pill__name">{ROLE_LABELS[card.role]}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   {showRolePicker && (
                     <div className="ll-role-picker" onClick={(e) => e.stopPropagation()}>
-                      <h4>猜测身份</h4>
+                      <h4>猜测对手手牌身份</h4>
                       <div className="ll-role-grid">
                         {LOVELETTER_ROLES.filter((role) => role !== 'guard').map((role) => (
                           <button
@@ -297,6 +503,8 @@ export function LoveLetterGamePage({ view }: Props) {
                             type="button"
                             className={`ll-role-btn ${guessedRole === role ? 'is-active' : ''}`}
                             onClick={() => setGuessedRole(role)}
+                            onMouseEnter={() => setHoveredRole(role)}
+                            onMouseLeave={() => setHoveredRole(null)}
                           >
                             <img src={`/assets/loveletter/${role}.jpg`} alt="" className="ll-role-thumb" />
                             <span>{ROLE_LABELS[role]}</span>
@@ -319,11 +527,18 @@ export function LoveLetterGamePage({ view }: Props) {
             </div>
             {(view.removedCards ?? []).length > 0 && (
               <div className="ll-removed-zone">
+                <span className="ll-zone-label">移除弃牌（公开）</span>
                 <div className="ll-removed-cards">
                   {(view.removedCards ?? []).map((card) => (
-                    <div key={card.id} className="ll-mini-card">
+                    <div
+                      key={card.id}
+                      className="ll-mini-card"
+                      onMouseEnter={() => setHoveredRole(card.role)}
+                      onMouseLeave={() => setHoveredRole(null)}
+                      onClick={() => setDetailRole(card.role)}
+                    >
                       <img src={`/assets/loveletter/${card.role}.jpg`} alt="" className="ll-mini-thumb" />
-                      <span>{ROLE_LABELS[card.role]}</span>
+                      <span>{ROLE_LABELS[card.role]} ({card.value})</span>
                     </div>
                   ))}
                 </div>
@@ -340,9 +555,23 @@ export function LoveLetterGamePage({ view }: Props) {
                     type="button"
                     className={`env-card loveletter-card loveletter-card--${card.role} ${selectedCardId === card.id ? 'is-selected' : ''}`}
                     onClick={() => { setSelectedCardId(card.id); setTargetId(null); setGuessedRole(null); }}
+                    onMouseEnter={() => setHoveredRole(card.role)}
+                    onMouseLeave={() => setHoveredRole(null)}
+                    onTouchStart={() => handleTouchStart(card.role)}
+                    onTouchEnd={handleTouchEnd}
                     aria-pressed={selectedCardId === card.id}
                   >
                     <span className="loveletter-card__corner-value" aria-label={`点数 ${card.value}`}>{card.value}</span>
+                    <div
+                      className="ll-card-info-badge"
+                      title="点击查看技能详情"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDetailRole(card.role);
+                      }}
+                    >
+                      ℹ️
+                    </div>
                     <div className="loveletter-card__art">
                       <img src={`/assets/loveletter/${card.role}.jpg`} alt={ROLE_LABELS[card.role]} className="loveletter-card__img" />
                     </div>
@@ -354,19 +583,32 @@ export function LoveLetterGamePage({ view }: Props) {
                 ))}
               </div>
 
-
               {isPrince && needsTargetChoice && targetOptions.includes(myId!) && (
                 <button
                   type="button"
                   className={`ll-target-self-btn ${targetId === myId ? 'is-selected' : ''}`}
                   onClick={() => setTargetId(myId!)}
                 >
-                  王子对自己使用
+                  王子对自己使用（重摸）
                 </button>
               )}
             </div>
           )}
 
+          {/* 悬浮技能即时预览卡片 (Hover Preview Card) */}
+          {hoveredRole && !detailRole && (
+            <div className="ll-hover-ability-popover" aria-hidden="true">
+              <div className="ll-hover-ability-popover__header">
+                <span className="ll-hover-ability-popover__badge">{ROLE_ABILITIES[hoveredRole].value} 点</span>
+                <strong>{ROLE_ABILITIES[hoveredRole].name}</strong>
+                <span className="ll-hover-ability-popover__count">全剧 {ROLE_ABILITIES[hoveredRole].totalCount} 张</span>
+              </div>
+              <p className="ll-hover-ability-popover__desc">{ROLE_ABILITIES[hoveredRole].description}</p>
+              <span className="ll-hover-ability-popover__tip">💡 技巧：{ROLE_ABILITIES[hoveredRole].tips}</span>
+            </div>
+          )}
+
+          {/* 查验记录抽屉 */}
           {me && (me.inspections ?? []).length > 0 && (
             <div className={`ll-history-notebook ${historyOpen ? 'is-open' : ''}`}>
               <button
@@ -411,7 +653,7 @@ export function LoveLetterGamePage({ view }: Props) {
             </div>
           )}
 
-          {/* 轮次结算横幅：谁赢、怎么赢、好感进度 */}
+          {/* 轮次结算横幅 */}
           {roundBanner && (
             <div
               className={`ll-round-banner ${myId && roundBanner.winnerIds.includes(myId) ? 'is-me-win' : myId ? 'is-me-lose' : ''}`}
@@ -432,6 +674,177 @@ export function LoveLetterGamePage({ view }: Props) {
                     .map((id) => `${nameFor(members, id)} ${roundBanner.affection[id] ?? 0}/${roundBanner.affectionTarget}`)
                     .join(' · ')}
                 </span>
+              </div>
+            </div>
+          )}
+
+          {/* 实时记牌器与出牌历史抽屉面板 (Card Tracker Modal / Drawer) */}
+          {trackerOpen && (
+            <div className="ll-tracker-backdrop" onClick={() => setTrackerOpen(false)}>
+              <div className="ll-tracker-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="ll-tracker-modal__head">
+                  <div className="ll-tracker-modal__title">
+                    <span>🧮</span>
+                    <h3>情书实时记牌器 &amp; 出牌记录</h3>
+                  </div>
+                  <button type="button" className="ll-tracker-modal__close" onClick={() => setTrackerOpen(false)}>✕</button>
+                </div>
+
+                <div className="ll-tracker-tabs">
+                  <button
+                    type="button"
+                    className={`ll-tracker-tab ${activeTrackerTab === 'tracker' ? 'is-active' : ''}`}
+                    onClick={() => setActiveTrackerTab('tracker')}
+                  >
+                    📊 牌池实时统计（16张）
+                  </button>
+                  <button
+                    type="button"
+                    className={`ll-tracker-tab ${activeTrackerTab === 'history' ? 'is-active' : ''}`}
+                    onClick={() => setActiveTrackerTab('history')}
+                  >
+                    📜 历史出牌记录（{roundHistory.length + 1} 轮）
+                  </button>
+                </div>
+
+                <div className="ll-tracker-content">
+                  {activeTrackerTab === 'tracker' ? (
+                    <div className="ll-tracker-table">
+                      <div className="ll-tracker-table__header">
+                        <span>卡牌与点数</span>
+                        <span>总数</span>
+                        <span>已明示 (弃/手/除)</span>
+                        <span>未知剩余</span>
+                        <span>出牌详情</span>
+                      </div>
+                      <div className="ll-tracker-table__rows">
+                        {trackerStats.map((item) => (
+                          <div
+                            key={item.role}
+                            className={`ll-tracker-row ${item.isExhausted ? 'is-exhausted' : ''}`}
+                            onClick={() => setDetailRole(item.role)}
+                          >
+                            <div className="ll-tracker-row__name">
+                              <span className="ll-tracker-row__val">{item.meta.value}</span>
+                              <img src={`/assets/loveletter/${item.role}.jpg`} alt="" className="ll-tracker-row__thumb" />
+                              <div>
+                                <strong>{ROLE_LABELS[item.role]}</strong>
+                                <small>{item.meta.badge}</small>
+                              </div>
+                            </div>
+                            <span className="ll-tracker-row__total">{item.totalCount} 张</span>
+                            <div className="ll-tracker-row__known">
+                              <span className="ll-tracker-row__known-num">{item.knownTotal} 张</span>
+                              <div className="ll-tracker-row__bar">
+                                <div
+                                  className="ll-tracker-row__bar-fill"
+                                  style={{ width: `${(item.knownTotal / item.totalCount) * 100}%` }}
+                                />
+                              </div>
+                            </div>
+                            <span className={`ll-tracker-row__remain ${item.remainingUnknown === 0 ? 'is-zero' : ''}`}>
+                              {item.remainingUnknown === 0 ? '已打光 ✓' : `${item.remainingUnknown} 张`}
+                            </span>
+                            <div className="ll-tracker-row__who">
+                              {Object.entries(item.playerDiscards).map(([pid, count]) => (
+                                <span key={pid} className="ll-tracker-player-tag">
+                                  {pid === myId ? '你' : nameFor(members, pid)}: {count}
+                                </span>
+                              ))}
+                              {item.removedCount > 0 && <span className="ll-tracker-player-tag is-removed">移除: {item.removedCount}</span>}
+                              {item.myCount > 0 && <span className="ll-tracker-player-tag is-hand">手牌: {item.myCount}</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="ll-history-rounds-list">
+                      {/* 当前轮出牌记录 */}
+                      <div className="ll-history-round-card is-current">
+                        <div className="ll-history-round-card__header">
+                          <strong>第 {view.round} 轮（当前进行中）</strong>
+                          <span className="ll-history-round-badge">进行中</span>
+                        </div>
+                        <div className="ll-history-round-card__discards">
+                          {view.players.map((p) => (
+                            <div key={p.playerId} className="ll-history-player-line">
+                              <span className="ll-history-player-name">{nameFor(members, p.playerId)}:</span>
+                              {(p.discarded ?? []).length === 0 ? (
+                                <span className="ll-history-empty">暂未出牌</span>
+                              ) : (
+                                <div className="ll-history-cards-flow">
+                                  {(p.discarded ?? []).map((card, i) => (
+                                    <span key={i} className="ll-history-card-tag" onClick={() => setDetailRole(card.role)}>
+                                      {card.value} {ROLE_LABELS[card.role]}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* 往期各轮完整记录 */}
+                      {roundHistory.length === 0 ? (
+                        <p className="sg-hint">暂无往轮记录，每轮对局结束后历史将自动沉淀于此。</p>
+                      ) : (
+                        roundHistory.slice().reverse().map((roundItem) => (
+                          <div key={roundItem.round} className="ll-history-round-card">
+                            <div className="ll-history-round-card__header">
+                              <strong>第 {roundItem.round} 轮</strong>
+                              <span className="ll-history-round-winner">
+                                获胜：{roundItem.winnerIds.map((id) => nameFor(members, id)).join('、')}
+                              </span>
+                            </div>
+                            <div className="ll-history-round-card__discards">
+                              {roundItem.discards.map((p) => (
+                                <div key={p.playerId} className="ll-history-player-line">
+                                  <span className="ll-history-player-name">{nameFor(members, p.playerId)}:</span>
+                                  <div className="ll-history-cards-flow">
+                                    {p.cards.map((card, i) => (
+                                      <span key={i} className="ll-history-card-tag" onClick={() => setDetailRole(card.role)}>
+                                        {card.value} {ROLE_LABELS[card.role]}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 卡牌能力详细弹窗 (Detail Ability Modal) */}
+          {detailRole && (
+            <div className="ll-ability-detail-backdrop" onClick={() => setDetailRole(null)}>
+              <div className="ll-ability-detail-modal" onClick={(e) => e.stopPropagation()}>
+                <button type="button" className="ll-ability-detail-close" onClick={() => setDetailRole(null)}>✕</button>
+                <div className="ll-ability-detail-banner">
+                  <img src={`/assets/loveletter/${detailRole}.jpg`} alt="" className="ll-ability-detail-img" />
+                  <div className="ll-ability-detail-meta">
+                    <span className="ll-ability-detail-value">{ROLE_ABILITIES[detailRole].value} 点</span>
+                    <h3>{ROLE_ABILITIES[detailRole].name}</h3>
+                    <span className="ll-ability-detail-tag">牌库共有 {ROLE_ABILITIES[detailRole].totalCount} 张 · {ROLE_ABILITIES[detailRole].badge}</span>
+                  </div>
+                </div>
+                <div className="ll-ability-detail-body">
+                  <div className="ll-ability-detail-section">
+                    <h4>【角色技能】</h4>
+                    <p>{ROLE_ABILITIES[detailRole].description}</p>
+                  </div>
+                  <div className="ll-ability-detail-section">
+                    <h4>【实战战术提示】</h4>
+                    <p>{ROLE_ABILITIES[detailRole].tips}</p>
+                  </div>
+                </div>
               </div>
             </div>
           )}

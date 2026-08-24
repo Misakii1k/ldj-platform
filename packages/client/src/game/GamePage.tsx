@@ -2,7 +2,7 @@
  * 游戏页：先按 moduleId 分流到各游戏，再按 phase 渲染对应子视图。
  * game_state payload 经 asPlayerView 解析后分发。
  */
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
 import { GameLeaveButton } from './GameLeaveButton.tsx';
 import { asPlayerView } from './types.ts';
@@ -17,6 +17,7 @@ import { GameOverView } from './GameOverView.tsx';
 import { TabletopOvalShell } from '../shared-ui/TabletopOvalShell.tsx';
 import { TabletopSettlementDock } from './TabletopSettlementDock.tsx';
 import { nameFor } from './useGameAction.ts';
+import { setAppImmersiveMode } from '../native/immersive.ts';
 
 
 
@@ -32,6 +33,7 @@ const GooseRelayGamePage = lazy(() => import('./goose-relay/GooseRelayGamePage.t
 const NightTestimonyGamePage = lazy(() => import('./night-testimony/NightTestimonyGamePage.tsx').then((module) => ({ default: module.NightTestimonyGamePage })));
 const BellClashGamePage = lazy(() => import('./bell-clash/BellClashGamePage.tsx').then((module) => ({ default: module.BellClashGamePage })));
 const EchoJudgeGamePage = lazy(() => import('./echo-judge/EchoJudgeGamePage.tsx').then((module) => ({ default: module.EchoJudgeGamePage })));
+const PartySandboxGamePage = lazy(() => import('./party-sandbox/PartySandboxGamePage.tsx').then((module) => ({ default: module.PartySandboxGamePage })));
 
 import { GameIcon } from '../shared-ui/GameIcon.tsx';
 
@@ -216,6 +218,15 @@ function UndercoverGamePage({ game }: { game: ActiveGame }) {
 export function GamePage() {
   const { state } = useConnection();
   const game = state.game;
+
+  // 进入对局全局自动沉浸隐藏状态栏，退出对局时恢复
+  useEffect(() => {
+    void setAppImmersiveMode(true);
+    return () => {
+      void setAppImmersiveMode(false);
+    };
+  }, []);
+
   if (game === null) return <GameLoadingCard>等待对局数据…</GameLoadingCard>;
 
   let content;
@@ -324,10 +335,19 @@ export function GamePage() {
     case 'echo-judge': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameErrorCard title="回声法官数据格式异常" />;
+        content = <GameErrorCard title="伪人测试数据格式异常" />;
         break;
       }
       content = <EchoJudgeGamePage view={parsed.view as import('./echo-judge/types.ts').EchoJudgePlayerView} />;
+      break;
+    }
+    case 'party-sandbox': {
+      const parsed = parseGameView(game);
+      if (!parsed.ok) {
+        content = <GameErrorCard title="创意工坊数据格式异常" />;
+        break;
+      }
+      content = <PartySandboxGamePage view={parsed.view as import('./party-sandbox/types.ts').PartySandboxPlayerView} />;
       break;
     }
     default:

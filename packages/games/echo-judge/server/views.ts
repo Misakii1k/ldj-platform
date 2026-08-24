@@ -9,6 +9,15 @@ const pid = z.string().min(1).max(64);
 const phaseEnum = z.enum(['judge_setup', 'answering', 'judgment', 'game_over']);
 const roleEnum = z.enum(['human', 'impostor']);
 
+const topicCardViewSchema = z
+  .object({
+    id: z.string().min(1),
+    text: z.string().min(1),
+    category: z.enum(['life', 'imagination', 'emotion', 'weird', 'philosophy', 'social']),
+    categoryLabel: z.string().min(1),
+  })
+  .strict();
+
 const echoJudgeRevealSchema = z
   .object({
     round: z.number().int().positive(),
@@ -17,8 +26,10 @@ const echoJudgeRevealSchema = z
     roles: z.record(pid, roleEnum),
     triggerWords: z.record(pid, z.string()),
     answers: z.record(pid, z.string()),
-    accusation: pid.nullable(),
-    caughtImpostor: z.boolean().nullable(),
+    accusations: z.array(pid),
+    caughtImpostors: z.array(pid),
+    wrongAccusations: z.array(pid),
+    escapedImpostors: z.array(pid),
     scores: z.record(pid, z.number().int()),
   })
   .strict();
@@ -33,9 +44,13 @@ const echoJudgePublicViewSchema = z
     round: z.number().int().positive(),
     judgeId: pid,
     question: z.string(),
+    topicCardId: z.string().nullable(),
+    currentSpeakerId: pid.nullable(),
     allAnswered: z.boolean(),
     answeredCount: z.number().int().nonnegative(),
-    caughtImpostor: z.boolean().nullable(),
+    accusations: z.array(pid).nullable(),
+    caughtImpostors: z.array(pid).nullable(),
+    escapedImpostors: z.array(pid).nullable(),
     scores: z.record(pid, z.number().int()),
     winners: z.array(pid),
     reveal: echoJudgeRevealSchema.nullable(),
@@ -49,7 +64,9 @@ const echoJudgePlayerViewSchema = echoJudgePublicViewSchema.extend({
       isJudge: z.boolean(),
       role: roleEnum.nullable(),
       triggerWord: z.string().nullable(),
+      pendingTopicChoices: z.array(topicCardViewSchema).nullable(),
       myTurn: z.boolean(),
+      isCurrentSpeaker: z.boolean(),
     })
     .strict()
     .nullable(),
@@ -65,34 +82,47 @@ function parseOrThrow<T>(schema: z.ZodType<unknown>, input: unknown, label: stri
 }
 
 function buildPublicView(state: EchoJudgeState): EchoJudgePublicView {
-  const answeredCount = Object.keys(state.answers).length;
-  const allAnswered = state.answerOrder.length > 0 && state.answerOrder.every((id) => state.answers[id] !== undefined);
+  const answeredCount = Object.keys(state.answers ?? {}).length;
+  const allAnswered = (state.answerOrder ?? []).length > 0 && (state.answerOrder ?? []).every((id) => state.answers?.[id] !== undefined);
+  const currentSpeaker =
+    state.phase === 'answering' && !allAnswered
+      ? (state.currentSpeakerId ?? state.answerOrder?.[answeredCount] ?? null)
+      : null;
+
+  const showJudgmentResults = state.phase === 'judgment' || state.phase === 'game_over';
+
   return {
     gameId: 'echo-judge',
     rulesetId: 'echo_judge_v1',
     schemaVersion: 1,
     phase: state.phase,
-    players: [...state.players],
-    round: state.round,
-    judgeId: state.judgeId,
-    question: state.question,
+    players: [...(state.players ?? [])],
+    round: state.round ?? 1,
+    judgeId: state.judgeId ?? state.players?.[0] ?? '',
+    question: state.question ?? '',
+    topicCardId: state.topicCardId ?? null,
+    currentSpeakerId: currentSpeaker,
     allAnswered,
     answeredCount,
-    caughtImpostor: state.caughtImpostor,
-    scores: { ...state.scores },
-    winners: [...state.winners],
+    accusations: showJudgmentResults ? [...(state.accusations ?? [])] : null,
+    caughtImpostors: showJudgmentResults ? [...(state.caughtImpostors ?? [])] : null,
+    escapedImpostors: showJudgmentResults ? [...(state.escapedImpostors ?? [])] : null,
+    scores: { ...(state.scores ?? {}) },
+    winners: [...(state.winners ?? [])],
     reveal:
       state.phase === 'game_over'
         ? {
-            round: state.round,
+            round: state.round ?? 1,
             judgeId: state.judgeId,
-            question: state.question,
-            roles: { ...state.roles },
-            triggerWords: { ...state.triggerWords },
-            answers: { ...state.answers },
-            accusation: state.accusation,
-            caughtImpostor: state.caughtImpostor,
-            scores: { ...state.scores },
+            question: state.question ?? '',
+            roles: { ...(state.roles ?? {}) },
+            triggerWords: { ...(state.triggerWords ?? {}) },
+            answers: { ...(state.answers ?? {}) },
+            accusations: [...(state.accusations ?? [])],
+            caughtImpostors: [...(state.caughtImpostors ?? [])],
+            wrongAccusations: [...(state.wrongAccusations ?? [])],
+            escapedImpostors: [...(state.escapedImpostors ?? [])],
+            scores: { ...(state.scores ?? {}) },
           }
         : null,
   };
@@ -103,23 +133,36 @@ export function buildEchoJudgePlayerView(
   playerId: string,
 ): EchoJudgePlayerView {
   const base = buildPublicView(state);
-  if (!state.players.includes(playerId)) return { ...base, me: null };
+  if (!state.players?.includes(playerId)) return { ...base, me: null };
   const isJudge = state.judgeId === playerId;
-  const answered = Object.keys(state.answers).length;
+  const answered = Object.keys(state.answers ?? {}).length;
   const myTurn =
     state.phase === 'answering' &&
     !isJudge &&
-    state.answers[playerId] === undefined &&
-    state.answerOrder[answered] === playerId;
+    state.answers?.[playerId] === undefined &&
+    state.answerOrder?.[answered] === playerId;
+
+  const isCurrentSpeaker = base.currentSpeakerId === playerId;
+  const showPendingCards = isJudge && state.phase === 'judge_setup' && state.pendingTopicChoices !== null;
+
   return {
     ...base,
     me: {
       playerId,
       isJudge,
-      // 判官不知伪人是谁 → role 为 null；玩家本人知身份
-      role: isJudge ? null : (state.roles[playerId] ?? null),
-      triggerWord: state.roles[playerId] === 'impostor' ? (state.triggerWords[playerId] ?? null) : null,
+      role: isJudge ? null : (state.roles?.[playerId] ?? null),
+      triggerWord: state.roles?.[playerId] === 'impostor' ? (state.triggerWords?.[playerId] ?? null) : null,
+      pendingTopicChoices:
+        showPendingCards && state.pendingTopicChoices
+          ? state.pendingTopicChoices.map((c) => ({
+              id: c.id,
+              text: c.text,
+              category: c.category,
+              categoryLabel: c.categoryLabel,
+            }))
+          : null,
       myTurn,
+      isCurrentSpeaker,
     },
   };
 }

@@ -164,7 +164,6 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
       theme={dynamicTheme}
       players={[]}
       currentUserId={model.self?.playerId}
-      topRightControls={<GameLeaveButton />}
       phaseKey={phaseKey}
       centerArena={centerArena}
       bottomBar={bottomBar}

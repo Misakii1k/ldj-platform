@@ -18,9 +18,29 @@ const echoJudgeActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('begin') }).strict('动作 字段无效'),
   z
     .object({
+      type: z.literal('choose_role'),
+      playerId: pid,
+      role: z.enum(['human', 'impostor']),
+    })
+    .strict('动作 字段无效'),
+  z
+    .object({
+      type: z.literal('pick_topic_card'),
+      playerId: pid,
+      cardId: z.string().min(1, { message: '题目卡 ID 不能为空' }),
+    })
+    .strict('动作 字段无效'),
+  z
+    .object({
       type: z.literal('start_round'),
       playerId: pid,
       question: z.string().min(1, { message: '题目不能为空' }).max(200, { message: '题目过长' }),
+    })
+    .strict('动作 字段无效'),
+  z
+    .object({
+      type: z.literal('finish_speaking'),
+      playerId: pid,
     })
     .strict('动作 字段无效'),
   z
@@ -31,7 +51,11 @@ const echoJudgeActionSchema = z.discriminatedUnion('type', [
     })
     .strict('动作 字段无效'),
   z
-    .object({ type: z.literal('accuse'), playerId: pid, targetPlayerId: pid })
+    .object({
+      type: z.literal('accuse'),
+      playerId: pid,
+      targetPlayerIds: z.array(pid),
+    })
     .strict('动作 字段无效'),
   z.object({ type: z.literal('resolve_round'), playerId: pid }).strict('动作 字段无效'),
   z

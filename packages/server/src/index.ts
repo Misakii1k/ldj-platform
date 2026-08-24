@@ -2,7 +2,7 @@
  * 启动入口（FR-BOOT-001/002/004）。
  * 前台运行；SIGINT/SIGTERM 优雅停止；启动失败以非零退出码结束。
  */
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import qrcode from 'qrcode-terminal';
@@ -47,6 +47,25 @@ function writeBootInfo(dataDir: string | undefined, port: number, urls: ReturnTy
     logger.warn('boot_info_write_failed', { message: (err as Error).message });
   }
 }
+
+/** 停机/启动失败时删除 boot.json，避免宿主读到陈旧端口与地址误判"运行中" */
+function removeBootInfo(dataDir: string | undefined): void {
+  if (dataDir === undefined) return;
+  try {
+    rmSync(resolve(dataDir, 'boot.json'), { force: true });
+  } catch {
+    // 清理失败不影响停机
+  }
+}
+
+// 嵌入运行时（APP 内嵌 node）的最后一道防线：请求级错误已有各自的 try/catch，
+// 但仍不允许任何未捕获异常/拒绝击穿进程——LAN 上一个畸形请求不该干掉整局游戏。
+process.on('uncaughtException', (err) => {
+  console.error('uncaught_exception', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('unhandled_rejection', reason);
+});
 
 async function main(): Promise<void> {
   const config = loadConfig();
@@ -105,9 +124,13 @@ async function main(): Promise<void> {
     }
     void app
       .shutdown()
-      .then(() => process.exit(0))
+      .then(() => {
+        removeBootInfo(config.dataDir);
+        process.exit(0);
+      })
       .catch((err: unknown) => {
         logger.error('shutdown_failed', { message: (err as Error).message });
+        removeBootInfo(config.dataDir);
         process.exit(1);
       });
   };
@@ -117,5 +140,10 @@ async function main(): Promise<void> {
 
 main().catch((err: unknown) => {
   console.error('启动失败：', (err as Error).message);
+  try {
+    removeBootInfo(loadConfig().dataDir);
+  } catch {
+    // 配置本身非法时无法取得 dataDir，跳过清理
+  }
   process.exit(1);
 });

@@ -1,5 +1,6 @@
 import type { GameEffect } from '@ldj/shared';
 import { parseEchoJudgeAction, parseEchoJudgeConfig } from './schemas.ts';
+import { drawThreeTopicCards, TOPIC_DECK, type TopicCard } from './questionDeck.ts';
 import {
   type EchoJudgeAction,
   type EchoJudgeEvent,
@@ -13,17 +14,11 @@ export interface EchoRandom {
   shuffle<T>(items: readonly T[]): T[];
 }
 
-/** 伪人数量：3–4 人 1、5–8 人 2、9–12 人 3（平台裁定，原版比例未确认） */
-export function impostorCountFor(players: number): number {
-  if (players <= 4) return 1;
-  if (players <= 8) return 2;
-  return 3;
-}
-
 /** 触发词库（原创表达，不复制原版词卡） */
 export const TRIGGER_WORDS = [
   '月亮', '面条', '雨伞', '抽屉', '薄荷', '风筝', '纽扣', '邮筒',
   '青苔', '铅笔', '窗帘', '冰块', '南瓜', '水壶', '篝火', '围巾',
+  '指南针', '气球', '沙漏', '贝壳', '书签', '手电筒', '怀表', '望远镜',
 ] as const;
 
 const deny = (message: string): EchoJudgeReduceResult => ({
@@ -41,15 +36,15 @@ const idempotent = (state: EchoJudgeState): EchoJudgeReduceResult => ({
 
 const system = (text: string): GameEffect => ({ type: 'system_message', text });
 
-/** 伪人数量与触发词分配（随机取伪人，每人一个不重复触发词） */
+/** 开局/每轮初始化分配身份：除判官外默认初始化（可选伪人/人类），并为伪人派发触发词 */
 export function assignRoles(
   players: readonly string[],
   judgeId: string,
   random: EchoRandom,
 ): { roles: Record<string, EchoJudgeRole>; triggerWords: Record<string, string> } {
   const candidates = random.shuffle(players.filter((id) => id !== judgeId));
-  const count = impostorCountFor(players.length);
-  const impostors = candidates.slice(0, count);
+  // 初始默认分配 1 名伪人（其余可在出题阶段自由切换），其余为人类
+  const impostors = candidates.slice(0, 1);
   const roles: Record<string, EchoJudgeRole> = {};
   for (const id of players) {
     roles[id] = impostors.includes(id) ? 'impostor' : 'human';
@@ -76,9 +71,6 @@ export function createEchoJudgeState(
   }
   const config = parseEchoJudgeConfig(configInput);
   if (!players.includes(judgeId)) throw new Error('判官不在本局');
-  // 创建时总是 judge_setup 阶段，题目可空（由 start_round 出题后置非空）
-  const impostors = players.filter((id) => roles[id] === 'impostor');
-  if (impostors.length !== impostorCountFor(players.length)) throw new Error('伪人数量无效');
   for (const id of players) {
     if (id === judgeId) {
       if (roles[id] !== 'human') throw new Error('判官不能是伪人');
@@ -86,6 +78,7 @@ export function createEchoJudgeState(
       throw new Error('身份无效');
     }
   }
+  const initialCards = TOPIC_DECK.slice(0, 3);
   const state: EchoJudgeState = {
     schemaVersion: 1,
     phase: 'judge_setup',
@@ -94,12 +87,18 @@ export function createEchoJudgeState(
     round: 1,
     judgeId,
     question,
+    topicCardId: null,
+    pendingTopicChoices: [...initialCards],
+    usedTopicCardIds: [],
     roles: { ...roles },
     triggerWords: { ...triggerWords },
     answerOrder: players.filter((id) => id !== judgeId),
     answers: {},
-    accusation: null,
-    caughtImpostor: null,
+    currentSpeakerId: null,
+    accusations: [],
+    caughtImpostors: [],
+    wrongAccusations: [],
+    escapedImpostors: [],
     scores: Object.fromEntries(players.map((id) => [id, 0])),
     winners: [],
   };
@@ -107,70 +106,108 @@ export function createEchoJudgeState(
   return state;
 }
 
-/** 找下一位可当判官的人类玩家（跳过伪人与已当过判官者）；无则返回 null（终局） */
+/** 找下一位可当判官的玩家；每位玩家当一次判官后终局 */
 function nextJudge(state: EchoJudgeState): string | null {
-  const humanCount = state.players.filter((id) => state.roles[id] === 'human').length;
-  // 每轮由不同人类玩家当判官：已进行 round 轮（含本轮）
-  if (state.round >= humanCount) return null;
+  if (state.round >= state.players.length) return null;
   const start = state.players.indexOf(state.judgeId);
-  for (let offset = 1; offset <= state.players.length; offset += 1) {
-    const candidate = state.players[(start + offset) % state.players.length]!;
-    if (state.roles[candidate] === 'human') return candidate;
-  }
-  return null;
+  const nextCandidate = state.players[(start + 1) % state.players.length]!;
+  return nextCandidate;
 }
 
-/** 结算本轮：判官指认 → 计分 → 终局或进入下一轮 */
+/** 结算本轮：判官多选指认 → 计分 → 终局或进入下一轮 */
 function settleRound(
   state: EchoJudgeState,
   events: EchoJudgeEvent[],
   effects: GameEffect[],
   now: number,
+  random?: EchoRandom,
 ): void {
-  const accused = state.accusation!;
-  const caught = state.roles[accused] === 'impostor';
-  state.caughtImpostor = caught;
-  // 计分：判官抓对 +1 / 抓错 penalty；被抓伪人 −1；隐藏成功伪人 +2
-  state.scores[state.judgeId] = (state.scores[state.judgeId] ?? 0) + (caught ? 1 : state.config.judgeWrongPenalty);
-  if (caught) {
-    state.scores[accused] = (state.scores[accused] ?? 0) - 1;
-  } else {
-    for (const id of state.players) {
-      if (id !== state.judgeId && state.roles[id] === 'impostor') {
-        state.scores[id] = (state.scores[id] ?? 0) + 2;
-      }
-    }
-  }
-  events.push({ type: 'accused', playerId: accused, caughtImpostor: caught });
-  events.push({ type: 'round_resolved', scores: { ...state.scores } });
-  effects.push(system(caught ? `判官抓对了！${accused} 是伪人` : `判官抓错了，伪人隐藏成功`));
+  const targetIds = state.accusations;
+  const actualImpostors = state.players.filter((id) => id !== state.judgeId && state.roles[id] === 'impostor');
+  const caught = targetIds.filter((id) => state.roles[id] === 'impostor');
+  const wrong = targetIds.filter((id) => state.roles[id] === 'human');
+  const escaped = actualImpostors.filter((id) => !targetIds.includes(id));
 
-  // 轮换到下一名人类玩家当判官；无更多人类判官则终局
+  state.caughtImpostors = caught;
+  state.wrongAccusations = wrong;
+  state.escapedImpostors = escaped;
+
+  // 1. 判官计分
+  let judgeScoreDelta = 0;
+  if (actualImpostors.length === 0 && targetIds.length === 0) {
+    // 场上原本 0 个伪人且判官英明未指认任何人：判官 +1
+    judgeScoreDelta += 1;
+  } else {
+    // 每抓对 1 个伪人 +1；每误抓 1 个人类扣分
+    judgeScoreDelta += caught.length * 1 + wrong.length * state.config.judgeWrongPenalty;
+  }
+  state.scores[state.judgeId] = (state.scores[state.judgeId] ?? 0) + judgeScoreDelta;
+
+  // 2. 被抓伪人扣分
+  for (const id of caught) {
+    state.scores[id] = (state.scores[id] ?? 0) - 1;
+  }
+
+  // 3. 成功隐藏逃脱的伪人每人 +2
+  for (const id of escaped) {
+    state.scores[id] = (state.scores[id] ?? 0) + 2;
+  }
+
+  events.push({
+    type: 'accused',
+    playerId: state.judgeId,
+    targetPlayerIds: [...targetIds],
+    caughtCount: caught.length,
+    wrongCount: wrong.length,
+  });
+  events.push({ type: 'round_resolved', scores: { ...state.scores } });
+
+  const msg = caught.length > 0
+    ? `判官指认结束：成功抓出伪人（${caught.join('、')}）！${wrong.length > 0 ? `误抓了正常人类（${wrong.join('、')}）` : ''}`
+    : wrong.length > 0
+      ? `判官指认失败：误抓了正常人类（${wrong.join('、')}），伪人潜伏成功！`
+      : actualImpostors.length === 0
+        ? '场上无伪人，判官明察秋毫！'
+        : '判官未指认任何人，伪人全员潜伏成功！';
+  effects.push(system(msg));
+
+  // 轮换到下一位判官；全部玩家轮流当过判官后终局
   const next = nextJudge(state);
   if (next === null) {
     state.phase = 'game_over';
+    state.currentSpeakerId = null;
     const maxScore = Math.max(...Object.values(state.scores));
     state.winners = state.players.filter((id) => state.scores[id] === maxScore);
     events.push({ type: 'game_finished', winners: [...state.winners] });
-    effects.push(system('所有玩家都当过判官，游戏结束！'));
+    effects.push(system('所有玩家都担任过审判长，游戏结束！'));
     return;
   }
+
   state.round += 1;
   state.judgeId = next;
   state.phase = 'judge_setup';
   state.question = '';
+  state.topicCardId = null;
   state.answers = {};
-  state.accusation = null;
-  // caughtImpostor 保留为最近一轮结果（供 UI 展示），不随轮换清空
+  // 保持上轮指认战报直到新指认产生
+
+  // 新一轮默认初始身份分配（非判官玩家可在出题阶段随时自由切换）
+  const rnd = random ?? { nextInt: (min, max) => min, shuffle: (arr) => [...arr] };
+  const reassigned = assignRoles(state.players, next, rnd);
+  state.roles = reassigned.roles;
+  state.triggerWords = reassigned.triggerWords;
+
+  state.pendingTopicChoices = drawThreeTopicCards(TOPIC_DECK, state.usedTopicCardIds, rnd);
   events.push({ type: 'round_started', round: state.round, judgeId: next });
-  effects.push(system(`轮到 ${next} 当判官，请出题`));
+  events.push({ type: 'topic_cards_offered', judgeId: next, cards: [...state.pendingTopicChoices] });
+  effects.push(system(`第 ${state.round} 轮开始，轮到 ${next} 当审判长，请挑选题目卡`));
   void now;
 }
 
 export function reduceEchoJudgeState(
   state: EchoJudgeState,
   actionInput: EchoJudgeAction | unknown,
-  ctx: { now: number },
+  ctx: { now: number; random?: EchoRandom },
 ): EchoJudgeReduceResult {
   let action: EchoJudgeAction;
   try {
@@ -179,12 +216,27 @@ export function reduceEchoJudgeState(
     return deny(error instanceof Error ? error.message : '动作无效');
   }
 
+  const random = ctx.random ?? {
+    nextInt: (min, max) => min,
+    shuffle: (arr) => [...arr],
+  };
+
   if (action.type === 'begin') {
+    // 幂等：仅"全新未抽卡"的初始状态生效；重放/已开局/已终局一律原样返回，
+    // 否则 at-least-once 重投会重抽题卡并改写出题选项
+    if (state.phase !== 'judge_setup' || (state.pendingTopicChoices?.length ?? 0) > 0) {
+      return idempotent(state);
+    }
+    const next = structuredClone(state);
+    next.pendingTopicChoices = drawThreeTopicCards(TOPIC_DECK, next.usedTopicCardIds, random);
     return {
       ok: true,
-      nextState: state,
-      events: [{ type: 'round_started', round: 1, judgeId: state.judgeId }],
-      effects: [system('伪人测试开始！判官出题，其余玩家依次回答')],
+      nextState: next,
+      events: [
+        { type: 'round_started', round: 1, judgeId: state.judgeId },
+        { type: 'topic_cards_offered', judgeId: state.judgeId, cards: [...next.pendingTopicChoices] },
+      ],
+      effects: [system('伪人测试开始！审判长挑选题目，非审判长玩家可自由选择当人类或伪人')],
     };
   }
   if (state.phase === 'game_over') return idempotent(state);
@@ -193,7 +245,7 @@ export function reduceEchoJudgeState(
   const events: EchoJudgeEvent[] = [];
   const effects: GameEffect[] = [];
 
-  // 玩家退出（系统动作，§6.7 席位保留期）：从局内移除；无足够玩家则中局结束
+  // 玩家退出（系统动作）
   if (action.type === 'player_forfeited') {
     const forfeited = action.playerIds.filter((id) => next.players.includes(id));
     if (forfeited.length === 0) return idempotent(state);
@@ -205,10 +257,10 @@ export function reduceEchoJudgeState(
       delete next.triggerWords[id];
       next.answerOrder = next.answerOrder.filter((p) => p !== id);
     }
-    // 剩余玩家不足 3 人或判官已退出且无可轮换判官 → 终局（其余玩家获胜）
     const remaining = next.players.length;
     if (remaining < 3) {
       next.phase = 'game_over';
+      next.currentSpeakerId = null;
       next.winners = [...next.players];
       events.push({ type: 'game_finished', winners: [...next.players] });
       effects.push(system('玩家退出，对局结束'));
@@ -216,66 +268,166 @@ export function reduceEchoJudgeState(
       return { ok: true, nextState: next, events, effects };
     }
     if (!next.players.includes(next.judgeId)) {
-      // 判官退出：轮换到下一名人类判官；无可轮换则终局
       const newJudge = nextJudge(next);
       if (newJudge === null) {
         next.phase = 'game_over';
+        next.currentSpeakerId = null;
         next.winners = [...next.players];
         events.push({ type: 'game_finished', winners: [...next.players] });
-        effects.push(system('判官退出，对局结束'));
+        effects.push(system('审判长退出，对局结束'));
         assertEchoJudgeInvariants(next);
         return { ok: true, nextState: next, events, effects };
       }
       next.judgeId = newJudge;
       next.phase = 'judge_setup';
       next.question = '';
+      next.topicCardId = null;
       next.answers = {};
-      next.accusation = null;
+      next.currentSpeakerId = null;
+      next.accusations = [];
+      next.pendingTopicChoices = drawThreeTopicCards(TOPIC_DECK, next.usedTopicCardIds, random);
       events.push({ type: 'round_started', round: next.round, judgeId: newJudge });
-      effects.push(system(`判官退出，轮到 ${newJudge} 当判官`));
+      events.push({ type: 'topic_cards_offered', judgeId: newJudge, cards: [...next.pendingTopicChoices] });
+      effects.push(system(`审判长退出，轮到 ${newJudge} 担任审判长`));
+    } else if (next.currentSpeakerId && !next.players.includes(next.currentSpeakerId)) {
+      // 当前发言者退出：按"已作答数"推进下一个；若已无人可答，直接进入审判阶段，
+      // 避免 currentSpeakerId=null 后 phase 停留在 answering 造成永久卡死
+      if (next.phase === 'answering') {
+        const answered = Object.keys(next.answers).length;
+        if (answered >= next.answerOrder.length) {
+          next.phase = 'judgment';
+          next.currentSpeakerId = null;
+          next.accusations = [];
+          events.push({ type: 'judgment_started' });
+          effects.push(system('发言者退出，所有剩余玩家已作答，审判长请指认伪人'));
+          effects.push({
+            type: 'schedule_timer',
+            timerId: `judgment-${next.round}`,
+            deadlineAt: ctx.now + state.config.judgmentSeconds * 1000,
+            action: { type: 'resolve_round', playerId: next.judgeId },
+          });
+        } else {
+          next.currentSpeakerId = next.answerOrder[answered] ?? null;
+          if (next.currentSpeakerId) {
+            events.push({ type: 'speaker_advanced', speakerId: next.currentSpeakerId });
+          }
+        }
+      } else {
+        const answered = Object.keys(next.answers).length;
+        next.currentSpeakerId = next.answerOrder[answered] ?? null;
+      }
     }
     assertEchoJudgeInvariants(next);
     return { ok: true, nextState: next, events, effects };
   }
 
-  // 判官出题（judge_setup 阶段）
-  if (action.type === 'start_round') {
-    if (action.playerId !== next.judgeId) return deny('只有判官可以出题');
+  // 自由选择当人类或伪人（仅在出题阶段允许非审判长玩家操作）
+  if (action.type === 'choose_role') {
+    if (next.phase !== 'judge_setup') return deny('只能在出题准备阶段自由选择身份');
+    if (action.playerId === next.judgeId) return deny('审判长为主持人，不能选择伪人身份');
+    if (!next.players.includes(action.playerId)) return deny('玩家不在本局');
+
+    if (action.role === 'impostor') {
+      next.roles[action.playerId] = 'impostor';
+      if (!next.triggerWords[action.playerId]) {
+        const usedWords = new Set(Object.values(next.triggerWords));
+        const availableWords = TRIGGER_WORDS.filter((w) => !usedWords.has(w));
+        const pool = availableWords.length > 0 ? availableWords : TRIGGER_WORDS;
+        next.triggerWords[action.playerId] = pool[random.nextInt(0, pool.length)]!;
+      }
+    } else {
+      next.roles[action.playerId] = 'human';
+      delete next.triggerWords[action.playerId];
+    }
+
+    events.push({ type: 'role_chosen', playerId: action.playerId, role: action.role });
+    assertEchoJudgeInvariants(next);
+    return { ok: true, nextState: next, events, effects };
+  }
+
+  // 审判长 3 选 1 挑选题卡
+  if (action.type === 'pick_topic_card') {
+    if (action.playerId !== next.judgeId) return deny('只有审判长可以出题');
     if (next.phase !== 'judge_setup') return deny('当前不能出题');
     if (next.question !== '') return deny('本轮已出题');
-    next.question = action.question;
+
+    // 只能从本轮提供的 3 张题卡中选择（pendingTopicChoices 为 null 视为已选过）
+    const card = next.pendingTopicChoices?.find((c) => c.id === action.cardId);
+    if (!card) return deny('只能选择提供的 3 张题卡');
+
+    next.question = card.text;
+    next.topicCardId = card.id;
+    next.usedTopicCardIds.push(card.id);
+    next.pendingTopicChoices = null;
     next.phase = 'answering';
     next.answerOrder = next.players.filter((id) => id !== next.judgeId);
     next.answers = {};
-    events.push({ type: 'roles_assigned' });
-    effects.push(system(`题目：${action.question}——请非判官玩家依次回答`));
-    const first = next.answerOrder[0];
-    if (first) {
+    const firstSpeaker = next.answerOrder[0] ?? null;
+    next.currentSpeakerId = firstSpeaker;
+
+    events.push({ type: 'topic_card_picked', judgeId: next.judgeId, cardId: card.id, text: card.text });
+    if (firstSpeaker) {
+      events.push({ type: 'speaker_advanced', speakerId: firstSpeaker });
       effects.push({
         type: 'schedule_timer',
-        timerId: `answer-${next.round}-${first}`,
+        timerId: `answer-${next.round}-${firstSpeaker}`,
         deadlineAt: ctx.now + state.config.answerSeconds * 1000,
-        action: { type: 'submit_answer', playerId: first, text: '（超时未答）' },
+        action: { type: 'finish_speaking', playerId: firstSpeaker },
       });
     }
+    effects.push(system(`审判长已出题：「${card.text}」，请 ${firstSpeaker} 开始口头发言`));
     assertEchoJudgeInvariants(next);
     return { ok: true, nextState: next, events, effects };
   }
 
-  // 依次回答
-  if (action.type === 'submit_answer') {
-    if (next.phase !== 'answering') return deny('当前不能回答');
-    if (action.playerId === next.judgeId) return deny('判官不能回答');
-    if (next.answers[action.playerId] !== undefined) return deny('你已经回答过');
-    const orderIndex = next.answerOrder.indexOf(action.playerId);
-    const answered = Object.keys(next.answers).length;
-    if (orderIndex !== answered) return deny('还没轮到你回答');
-    next.answers[action.playerId] = action.text;
-    events.push({ type: 'answer_submitted', playerId: action.playerId });
-    if (next.answerOrder.every((id) => next.answers[id] !== undefined)) {
+  // 自定义出题
+  if (action.type === 'start_round') {
+    if (action.playerId !== next.judgeId) return deny('只有审判长可以出题');
+    if (next.phase !== 'judge_setup') return deny('当前不能出题');
+    if (next.question !== '') return deny('本轮已出题');
+
+    next.question = action.question;
+    next.topicCardId = null;
+    next.pendingTopicChoices = null;
+    next.phase = 'answering';
+    next.answerOrder = next.players.filter((id) => id !== next.judgeId);
+    next.answers = {};
+    const firstSpeaker = next.answerOrder[0] ?? null;
+    next.currentSpeakerId = firstSpeaker;
+
+    events.push({ type: 'topic_card_picked', judgeId: next.judgeId, cardId: '', text: action.question });
+    if (firstSpeaker) {
+      events.push({ type: 'speaker_advanced', speakerId: firstSpeaker });
+      effects.push({
+        type: 'schedule_timer',
+        timerId: `answer-${next.round}-${firstSpeaker}`,
+        deadlineAt: ctx.now + state.config.answerSeconds * 1000,
+        action: { type: 'finish_speaking', playerId: firstSpeaker },
+      });
+    }
+    effects.push(system(`审判长已出题：「${action.question}」，请 ${firstSpeaker} 开始口头发言`));
+    assertEchoJudgeInvariants(next);
+    return { ok: true, nextState: next, events, effects };
+  }
+
+  // 口头发言推进
+  if (action.type === 'finish_speaking') {
+    if (next.phase !== 'answering') return deny('当前非发言阶段');
+    const speaker = next.currentSpeakerId;
+    if (!speaker) return deny('当前无正在发言者');
+    if (action.playerId !== speaker && action.playerId !== next.judgeId) {
+      return deny('只有当前发言者或审判长可以推进发言');
+    }
+    next.answers[speaker] = '（口头发言完毕）';
+    events.push({ type: 'answer_submitted', playerId: speaker });
+
+    const answeredCount = Object.keys(next.answers).length;
+    if (answeredCount >= next.answerOrder.length) {
       next.phase = 'judgment';
+      next.currentSpeakerId = null;
+      next.accusations = [];
       events.push({ type: 'judgment_started' });
-      effects.push(system('全部回答完毕，判官请指认一名伪人'));
+      effects.push(system('全部发言完毕，审判长请指认潜伏的伪人（可多选）'));
       effects.push({
         type: 'schedule_timer',
         timerId: `judgment-${next.round}`,
@@ -283,62 +435,79 @@ export function reduceEchoJudgeState(
         action: { type: 'resolve_round', playerId: next.judgeId },
       });
     } else {
+      const nextSpeaker = next.answerOrder[answeredCount]!;
+      next.currentSpeakerId = nextSpeaker;
+      events.push({ type: 'speaker_advanced', speakerId: nextSpeaker });
       effects.push({
         type: 'schedule_timer',
-        timerId: `answer-${next.round}-${action.playerId}`,
+        timerId: `answer-${next.round}-${nextSpeaker}`,
         deadlineAt: ctx.now + state.config.answerSeconds * 1000,
-        action: { type: 'submit_answer', playerId: action.playerId, text: '（超时未答）' },
+        action: { type: 'finish_speaking', playerId: nextSpeaker },
       });
     }
     assertEchoJudgeInvariants(next);
     return { ok: true, nextState: next, events, effects };
   }
 
-  // 判官指认
-  if (action.type === 'accuse') {
-    if (next.phase !== 'judgment') return deny('当前不能指认');
-    if (action.playerId !== next.judgeId) return deny('只有判官可以指认');
-    if (action.targetPlayerId === next.judgeId) return deny('不能指认自己');
-    if (!next.players.includes(action.targetPlayerId)) return deny('目标不在本局');
-    if (next.accusation !== null) return deny('本局已指认');
-    next.accusation = action.targetPlayerId;
-    settleRound(next, events, effects, ctx.now);
+  // 提交文本回答
+  if (action.type === 'submit_answer') {
+    if (next.phase !== 'answering') return deny('当前不能回答');
+    if (action.playerId === next.judgeId) return deny('审判长不能回答');
+    if (next.answers[action.playerId] !== undefined) return deny('你已经回答过');
+    const orderIndex = next.answerOrder.indexOf(action.playerId);
+    const answered = Object.keys(next.answers).length;
+    if (orderIndex !== answered) return deny('还没轮到你回答');
+    next.answers[action.playerId] = action.text;
+    events.push({ type: 'answer_submitted', playerId: action.playerId });
+
+    const answeredCount = Object.keys(next.answers).length;
+    if (answeredCount >= next.answerOrder.length) {
+      next.phase = 'judgment';
+      next.currentSpeakerId = null;
+      next.accusations = [];
+      events.push({ type: 'judgment_started' });
+      effects.push(system('全部回答完毕，审判长请指认伪人'));
+      effects.push({
+        type: 'schedule_timer',
+        timerId: `judgment-${next.round}`,
+        deadlineAt: ctx.now + state.config.judgmentSeconds * 1000,
+        action: { type: 'resolve_round', playerId: next.judgeId },
+      });
+    } else {
+      const nextSpeaker = next.answerOrder[answeredCount]!;
+      next.currentSpeakerId = nextSpeaker;
+      events.push({ type: 'speaker_advanced', speakerId: nextSpeaker });
+      effects.push({
+        type: 'schedule_timer',
+        timerId: `answer-${next.round}-${nextSpeaker}`,
+        deadlineAt: ctx.now + state.config.answerSeconds * 1000,
+        action: { type: 'finish_speaking', playerId: nextSpeaker },
+      });
+    }
     assertEchoJudgeInvariants(next);
     return { ok: true, nextState: next, events, effects };
   }
 
-  // 判官指认超时兜底：自动跳过（不计分，直接下一轮）
+  // 审判长多选指认
+  if (action.type === 'accuse') {
+    if (next.phase !== 'judgment') return deny('当前不能指认');
+    if (action.playerId !== next.judgeId) return deny('只有审判长可以指认');
+    if (action.targetPlayerIds.includes(next.judgeId)) return deny('不能指认审判长自己');
+    if (action.targetPlayerIds.some((id) => !next.players.includes(id))) return deny('目标不在本局');
+    if (new Set(action.targetPlayerIds).size !== action.targetPlayerIds.length) return deny('指认列表有重复');
+
+    next.accusations = [...action.targetPlayerIds];
+    settleRound(next, events, effects, ctx.now, random);
+    assertEchoJudgeInvariants(next);
+    return { ok: true, nextState: next, events, effects };
+  }
+
+  // 审判长指认超时兜底（按指认 0 人结算）
   if (action.type === 'resolve_round') {
     if (next.phase !== 'judgment') return idempotent(state);
     if (action.playerId !== next.judgeId) return idempotent(state);
-    // 判官未指认：伪人全部隐藏成功 +2，判官不扣分
-    next.caughtImpostor = false;
-    for (const id of next.players) {
-      if (id !== next.judgeId && next.roles[id] === 'impostor') {
-        next.scores[id] = (next.scores[id] ?? 0) + 2;
-      }
-    }
-    events.push({ type: 'accused', playerId: '', caughtImpostor: false });
-    events.push({ type: 'round_resolved', scores: { ...next.scores } });
-    effects.push(system('判官超时未指认，伪人全部隐藏成功'));
-    const nextJudgeId = nextJudge(next);
-    if (nextJudgeId === null) {
-      next.phase = 'game_over';
-      const maxScore = Math.max(...Object.values(next.scores));
-      next.winners = next.players.filter((id) => next.scores[id] === maxScore);
-      events.push({ type: 'game_finished', winners: [...next.winners] });
-      effects.push(system('所有玩家都当过判官，游戏结束！'));
-    } else {
-      next.round += 1;
-      next.judgeId = nextJudgeId;
-      next.phase = 'judge_setup';
-      next.question = '';
-      next.answers = {};
-      next.accusation = null;
-      // caughtImpostor 保留为最近一轮结果
-      events.push({ type: 'round_started', round: next.round, judgeId: nextJudgeId });
-      effects.push(system(`轮到 ${nextJudgeId} 当判官，请出题`));
-    }
+    next.accusations = [];
+    settleRound(next, events, effects, ctx.now, random);
     assertEchoJudgeInvariants(next);
     return { ok: true, nextState: next, events, effects };
   }
@@ -355,11 +524,8 @@ export function assertEchoJudgeInvariants(state: EchoJudgeState): void {
   ) {
     throw new Error('玩家列表无效');
   }
-  // 玩家退出（player_forfeited）后终局：判官/伪人比例可因缩员不匹配
   if (state.phase !== 'game_over' && !state.players.includes(state.judgeId)) throw new Error('判官不在本局');
   if (state.question.length > 0 && state.question.length > 200) throw new Error('题目过长');
-  const impostors = state.players.filter((id) => state.roles[id] === 'impostor');
-  if (state.phase !== 'game_over' && impostors.length !== impostorCountFor(state.players.length)) throw new Error('伪人数量无效');
   if (state.phase !== 'game_over' && state.roles[state.judgeId] !== 'human') throw new Error('判官不能是伪人');
   for (const id of state.players) {
     if (state.roles[id] !== 'human' && state.roles[id] !== 'impostor') throw new Error('身份无效');
@@ -374,7 +540,12 @@ export function assertEchoJudgeInvariants(state: EchoJudgeState): void {
     if (!state.players.includes(id)) throw new Error('回答者不在本局');
     if (typeof text !== 'string') throw new Error('回答无效');
   }
-  if (state.accusation !== null && !state.players.includes(state.accusation)) throw new Error('指认目标无效');
+  if (state.accusations.some((id) => !state.players.includes(id))) {
+    throw new Error('指认目标无效');
+  }
+  if (state.phase === 'judgment' && state.accusations.includes(state.judgeId)) {
+    throw new Error('指认目标无效');
+  }
   for (const id of state.players) {
     if (!Number.isInteger(state.scores[id])) throw new Error('分数无效');
   }

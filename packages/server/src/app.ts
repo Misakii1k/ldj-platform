@@ -309,7 +309,11 @@ export function createApp(
         const listenOnPort = (port: number, attempt: number): void => {
           const onError = (err: Error): void => {
             server.off('listening', onListening);
-            if (config.port === 0 && attempt < DYNAMIC_TEST_PORT_RETRIES && isListenRetryable(err)) {
+            // 配置端口被占（EADDRINUSE）或 PORT=0 自动选口时，换动态端口重试；
+            // 实际监听端口会写入 boot.json，宿主以 boot.json 为准（8080 被占自动换端口）。
+            // EACCES 只在 PORT=0 时重试，配置了固定端口时报错退出而非静默换口。
+            const code = (err as { code?: string }).code;
+            if (attempt < DYNAMIC_TEST_PORT_RETRIES && isListenRetryable(err) && (config.port === 0 || code === 'EADDRINUSE')) {
               listenOnPort(nextDynamicTestPort(), attempt + 1);
               return;
             }

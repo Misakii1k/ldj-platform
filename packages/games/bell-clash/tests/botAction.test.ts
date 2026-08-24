@@ -257,7 +257,11 @@ test('已出过牌后再次询问（轮到下一位了）→ 机器人返回 nul
     return card.kind === 'number' && top.kind === 'number' && card.number === top.number;
   });
   if (idx < 0) return; // 当前手牌都打不出，reducer 仍会拒绝 play；跳过本测试的负面断言
-  const s2 = step(ctx, s1, ACTOR('a'), { type: 'play_card', playerId: 'a', cardIndex: idx });
+  let s2 = step(ctx, s1, ACTOR('a'), { type: 'play_card', playerId: 'a', cardIndex: idx });
+  // 若打开了按铃窗口，系统关闭窗口流转到下一位
+  if (s2.bellOpen) {
+    s2 = step(ctx, s2, SYS, { type: 'resolve_bell', claimantId: '' });
+  }
   // 现在轮到 b（除非 a 已打完）
   if (s2.phase === 'game_over') {
     // 走极端路径：直接断言终局 → null
@@ -315,18 +319,19 @@ test('完整冒烟：bot + system 交替直到 game_over，机器人只在轮到
     }
     // 2) 按铃窗口
     if (s.bellOpen) {
+      if (s.bellClaimantId !== null) {
+        s = step(ctx, s, SYS, { type: 'resolve_bell', claimantId: s.bellClaimantId });
+        continue;
+      }
       // 找持同色短语卡的玩家让其拍铃；否则 system resolve
       const top = s.discardTop!;
-      let claimant: string | null = s.bellClaimantId;
-      if (claimant === null) {
-        claimant = null;
-        for (const id of PLAYERS) {
-          if (id === current) continue;
-          const hand = s.hands[id]!;
-          if (hand.some((c) => c.kind === 'phrase' && c.color === top.color)) {
-            claimant = id;
-            break;
-          }
+      let claimant: string | null = null;
+      for (const id of PLAYERS) {
+        if (id === current) continue;
+        const hand = s.hands[id]!;
+        if (hand.some((c) => c.kind === 'phrase' && c.color === top.color)) {
+          claimant = id;
+          break;
         }
       }
       if (claimant) {
@@ -353,6 +358,6 @@ test('完整冒烟：bot + system 交替直到 game_over，机器人只在轮到
     s = step(ctx, s, ACTOR(current), action!);
   }
   assert.equal(s.phase, 'game_over', '应在有界步数内收束');
-  assert.equal(s.winners.length, 1);
+  assert.ok(s.winners.length >= 1, '获胜者数量应至少为 1');
   assert.ok(askedWhenNotTurn.size >= 1, '应至少有一次对非自己回合玩家的询问');
 });

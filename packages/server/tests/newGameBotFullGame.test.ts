@@ -67,7 +67,7 @@ async function forceAdvanceTimers(
   if (!due) return false;
   db.prepare(
     `UPDATE timers SET deadline_at = ? WHERE session_id = ? AND timer_id = ? AND status = 'pending'`,
-  ).run(Date.now() - 1, due.session_id, due.timer_id);
+  ).run(Date.now() - 10000, due.session_id, due.timer_id);
   const fired = await executor.executeInternal({
     roomId,
     handler: (tx) => consumeDueTimer(tx, due.session_id, due.timer_id),
@@ -92,11 +92,15 @@ async function injectHumanAction(
   const random = createSeededRandom(`human:${roomId}:${step}`);
   let action: unknown;
   try {
-    action = module.pickBotAction({ view, playerId: humanId, random } as BotDecisionInput<unknown>);
-  } catch {
+    const decision = module.pickBotAction({ view, playerId: humanId, random } as BotDecisionInput<unknown>);
+    if (!decision) return false;
+    action = typeof decision === 'object' && 'action' in decision ? (decision as { action: unknown }).action : decision;
+  } catch (err) {
     return false;
   }
-  if (action === null || action === undefined) return false;
+  if (action === null || action === undefined) {
+    return false;
+  }
   try {
     await executor.executeOnRoom({
       roomId,
@@ -106,7 +110,6 @@ async function injectHumanAction(
     });
     return true;
   } catch {
-    // 动作被规则拒绝（重复投票等，属预期）：忽略，靠计时器兜底
     return false;
   }
 }

@@ -1,21 +1,25 @@
 /**
- * 伪人测试（判官模式）echo_judge_v1 —— 原版规则基线类型。
+ * 伪人测试（判官模式）echo_judge_v1 —— 原版规则与自由选阵营/多选指认升级类型。
  *
- * 原版《伪人测试》（摩点「易溶Studio」2025 众筹，3–12 人）判官模式核心机制（2026-08-10 调研，B/C 级）：
- * - 选定判官出题，秘密分配身份（人类/伪人）；伪人获得秘密"触发词"卡。
- * - 非判官玩家依次回答：人类可以说谎，伪人必须自然地把触发词藏进话里。
- * - 全部答完 → 判官指认一名伪人。
- * - 计分（B/C 级）：判官抓对 +1、被抓伪人 −1、隐藏成功 +2；
- *   判官抓错扣分（原版细则缺失 → 平台裁定 −1）。
- * - 伪人数量：3–4 人 1、5–8 人 2、9–12 人 3（平台裁定，原版比例未确认）。
- * - 结束：每人当一次判官后结束（平台裁定），累计最高分获胜。
+ * 核心机制：
+ * - 选定判官抽 3 选 1 题目出题；
+ * - 非判官玩家可自由选择当【正常人类】或【异常伪人】；选择伪人者获得秘密触发词；
+ * - 非判官玩家依次口头发言：人类可说谎，伪人必须自然地把触发词藏进话里；
+ * - 全部答完 → 判官多选指认嫌疑人；
+ * - 复合计分：
+ *   - 抓对伪人：每抓对 1 名伪人，判官 +1、被抓伪人 -1；
+ *   - 误抓人类：每误抓 1 名人类，判官扣分（默认 -1）；
+ *   - 潜伏成功：场上未被抓出的伪人，每人 +2；
+ *   - 全场无伪人且空指认：判官 +1；
+ * - 结束：所有玩家轮流担任过判官后结束，累计最高分获胜。
  */
 import type { GameEffect } from '@ldj/shared';
+import type { TopicCard } from './questionDeck.ts';
 
 export type EchoJudgePhase =
-  | 'judge_setup' // 判官出题 + 身份分配
-  | 'answering' // 玩家依次回答
-  | 'judgment' // 判官指认
+  | 'judge_setup' // 判官出题 + 玩家自由选择身份
+  | 'answering' // 玩家依次口头作答
+  | 'judgment' // 判官多选指认
   | 'game_over';
 
 export type EchoJudgeRole = 'human' | 'impostor';
@@ -48,6 +52,12 @@ export interface EchoJudgeState {
   judgeId: string;
   /** 本轮题目（判官出题） */
   question: string;
+  /** 当前题目卡 ID（若通过抽卡出题） */
+  topicCardId: string | null;
+  /** 判官出题阶段待挑选的 3 张题目卡 */
+  pendingTopicChoices: TopicCard[] | null;
+  /** 已使用的题目卡 ID */
+  usedTopicCardIds: string[];
   /** 本轮身份：玩家 → 人类/伪人（判官不知伪人是谁） */
   roles: Record<string, EchoJudgeRole>;
   /** 伪人触发词（仅伪人本人可见） */
@@ -55,10 +65,16 @@ export interface EchoJudgeState {
   /** 回答顺序（从判官下一位起）与已提交回答 */
   answerOrder: string[];
   answers: Record<string, string>;
-  /** 判官指认的伪人 */
-  accusation: string | null;
-  /** 判官抓对 */
-  caughtImpostor: boolean | null;
+  /** 当前正在口头发言的玩家 ID */
+  currentSpeakerId: string | null;
+  /** 判官指认的嫌疑人列表 */
+  accusations: string[];
+  /** 判官抓对的伪人列表 */
+  caughtImpostors: string[];
+  /** 判官误抓的人类列表 */
+  wrongAccusations: string[];
+  /** 潜伏成功逃脱的伪人列表 */
+  escapedImpostors: string[];
   /** 累计分数 */
   scores: Record<string, number>;
   winners: string[];
@@ -66,18 +82,24 @@ export interface EchoJudgeState {
 
 export type EchoJudgeAction =
   | { type: 'begin' }
+  | { type: 'choose_role'; playerId: string; role: EchoJudgeRole }
+  | { type: 'pick_topic_card'; playerId: string; cardId: string }
   | { type: 'start_round'; playerId: string; question: string }
+  | { type: 'finish_speaking'; playerId: string }
   | { type: 'submit_answer'; playerId: string; text: string }
-  | { type: 'accuse'; playerId: string; targetPlayerId: string }
+  | { type: 'accuse'; playerId: string; targetPlayerIds: string[] }
   | { type: 'resolve_round'; playerId: string }
   | { type: 'player_forfeited'; playerIds: string[] };
 
 export type EchoJudgeEvent =
   | { type: 'round_started'; round: number; judgeId: string }
-  | { type: 'roles_assigned' }
+  | { type: 'topic_cards_offered'; judgeId: string; cards: TopicCard[] }
+  | { type: 'topic_card_picked'; judgeId: string; cardId: string; text: string }
+  | { type: 'role_chosen'; playerId: string; role: EchoJudgeRole }
+  | { type: 'speaker_advanced'; speakerId: string }
   | { type: 'answer_submitted'; playerId: string }
   | { type: 'judgment_started' }
-  | { type: 'accused'; playerId: string; caughtImpostor: boolean }
+  | { type: 'accused'; playerId: string; targetPlayerIds: string[]; caughtCount: number; wrongCount: number }
   | { type: 'round_resolved'; scores: Record<string, number> }
   | { type: 'game_finished'; winners: string[] };
 
@@ -92,8 +114,10 @@ export interface EchoJudgeReveal {
   roles: Record<string, EchoJudgeRole>;
   triggerWords: Record<string, string>;
   answers: Record<string, string>;
-  accusation: string | null;
-  caughtImpostor: boolean | null;
+  accusations: string[];
+  caughtImpostors: string[];
+  wrongAccusations: string[];
+  escapedImpostors: string[];
   scores: Record<string, number>;
 }
 
@@ -106,12 +130,16 @@ export interface EchoJudgePublicView {
   round: number;
   judgeId: string;
   question: string;
-  /** 回答是否已全部提交 */
+  topicCardId: string | null;
+  currentSpeakerId: string | null;
+  /** 回答是否已全部提交/发言完毕 */
   allAnswered: boolean;
-  /** 已提交回答的玩家数 */
+  /** 已完成发言/提交回答的玩家数 */
   answeredCount: number;
-  /** 判官指认结果（judgment 后） */
-  caughtImpostor: boolean | null;
+  /** 判官指认结果（judgment / game_over 时展示） */
+  accusations: string[] | null;
+  caughtImpostors: string[] | null;
+  escapedImpostors: string[] | null;
   scores: Record<string, number>;
   winners: string[];
   reveal: EchoJudgeReveal | null;
@@ -125,8 +153,12 @@ export interface EchoJudgePlayerView extends EchoJudgePublicView {
     role: EchoJudgeRole | null;
     /** 我的触发词（仅伪人可见） */
     triggerWord: string | null;
-    /** 轮到我回答 */
+    /** 判官出题阶段待挑选的 3 张卡牌（非判官为 null） */
+    pendingTopicChoices: TopicCard[] | null;
+    /** 轮到我发言/回答 */
     myTurn: boolean;
+    /** 我当前是否正在发言 */
+    isCurrentSpeaker: boolean;
   } | null;
 }
 

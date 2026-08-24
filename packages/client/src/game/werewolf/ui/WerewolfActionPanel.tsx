@@ -23,26 +23,12 @@ export function WerewolfActionPanel({ groups, waitingHint, busy, phaseKey, onAct
 
   return (
     <section className="werewolf-actions" aria-label="可执行操作" aria-busy={busy} data-busy={busy || undefined}>
-      <GameActionFeedback
-        active={busy}
-        feedbackKey={`${phaseKey}:busy`}
-        className="focused-game-feedback"
-        variant="info"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {busy ? '正在同步决策，请勿重复操作…' : null}
-      </GameActionFeedback>
-      <GameActionFeedback
-        active={!busy && groups.length > 0}
-        feedbackKey={`${phaseKey}:${groups.map((group) => group.id).join(',')}`}
-        className="focused-game-feedback"
-        variant="warning"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {!busy && groups.length > 0 ? '轮到你行动，请完成本阶段选择。' : null}
-      </GameActionFeedback>
+      {busy && (
+        <div className="werewolf-actions__busy-hint">
+          <span className="werewolf-actions__waiting-dot" />
+          <span>处理中…</span>
+        </div>
+      )}
       {groups.map((group) => (
         <div key={group.id} className="werewolf-actions__group">
           <div className="werewolf-actions__header-line">

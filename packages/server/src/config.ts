@@ -29,8 +29,9 @@ export interface ServerConfig {
   host: string;
   port: number;
   dbPath: string;
-  /** 数据目录（SQLite、启动信息 boot.json 等）；APP 内嵌运行时由原生层注入 */
-  dataDir: string;
+    /** 数据目录（SQLite、启动信息 boot.json 等）；APP 内嵌运行时由原生层注入。
+     *  可选：测试手工构造配置时省略（此时不写 boot.json） */
+    dataDir?: string;
   /** 显式覆盖二维码地址（FR-BOOT-002） */
   publicBaseUrl: string | null;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
@@ -54,8 +55,9 @@ export interface ServerConfig {
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
+  // PORT=0 表示自动选端口（嵌入运行时 8080 被占时由 app.ts 回退到动态端口，实际端口写入 boot.json）
   const port = Number(env.PORT ?? 8080);
-  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+  if (!Number.isInteger(port) || port < 0 || port > 65535) {
     throw new Error(`非法端口：${env.PORT}`);
   }
   const dataDir = env.DATA_DIR ?? './data';

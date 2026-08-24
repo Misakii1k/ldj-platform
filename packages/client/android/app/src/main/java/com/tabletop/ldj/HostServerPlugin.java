@@ -14,6 +14,13 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.ByteArrayOutputStream;
+import java.net.Inet4Address;
+import java.net.NetworkInterface;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
@@ -75,6 +82,37 @@ public class HostServerPlugin extends Plugin {
                 ret.put("error", "boot.json 解析失败");
             }
         }
+        call.resolve(ret);
+    }
+
+    /**
+     * 枚举设备全部 IPv4 非 loopback 网卡地址（Java NetworkInterface 视角）。
+     * 用作 node os.networkInterfaces() 在 Android 上漏检热点网卡时的兜底校验，
+     * 让前端能把真实热点 IP 作为二维码候选。
+     */
+    @PluginMethod
+    public void lanAddresses(PluginCall call) {
+        JSONArray arr = new JSONArray();
+        try {
+            Enumeration<NetworkInterface> ifs = NetworkInterface.getNetworkInterfaces();
+            for (NetworkInterface nif : Collections.list(ifs)) {
+                if (nif.isLoopback() || !nif.isUp()) continue;
+                Enumeration<java.net.InetAddress> addrs = nif.getInetAddresses();
+                for (java.net.InetAddress addr : Collections.list(addrs)) {
+                    if (!(addr instanceof Inet4Address)) continue;
+                    if (addr.isLoopbackAddress()) continue;
+                    JSONObject item = new JSONObject();
+                    item.put("interfaceName", nif.getName());
+                    item.put("address", addr.getHostAddress());
+                    arr.put(item);
+                }
+            }
+        } catch (Exception e) {
+            call.reject("枚举网卡失败：" + e.getMessage());
+            return;
+        }
+        JSObject ret = new JSObject();
+        ret.put("addresses", arr);
         call.resolve(ret);
     }
 

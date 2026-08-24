@@ -2,7 +2,7 @@ import type { Actor, GameContext, GameModuleV2 } from '@ldj/shared';
 import { NIGHT_TESTIMONY_MANIFEST } from '../shared/manifest.ts';
 import { parseNightTestimonyAction, parseNightTestimonyConfig } from './schemas.ts';
 import { pickNightTestimonyBotAction } from './bot.ts';
-import { assignWardenAndCrimes, assertNightTestimonyInvariants, createNightTestimonyState, reduceNightTestimonyState } from './rules.ts';
+import { assignRolesAndCrimes, assertNightTestimonyInvariants, createNightTestimonyState, reduceNightTestimonyState } from './rules.ts';
 import {
   buildNightTestimonyPlayerView,
   buildNightTestimonySpectatorView,
@@ -30,30 +30,34 @@ function parseState(input: unknown): NightTestimonyState {
     throw new Error('囚徒之夜 状态必须是对象');
   }
   const state = structuredClone(input) as NightTestimonyState;
+  state.playerYesCounts = state.playerYesCounts ?? Object.fromEntries((state.players ?? []).map((id) => [id, 0]));
+  state.revealedIdentities = state.revealedIdentities ?? {};
+  state.history = state.history ?? [];
+  state.currentQuestion = state.currentQuestion ?? null;
+  state.currentQuestionAnswers = state.currentQuestionAnswers ?? {};
+  state.usedCardIds = state.usedCardIds ?? [];
+  state.questionerIndex = state.questionerIndex ?? 0;
+  state.currentQuestionerId = state.currentQuestionerId ?? state.players?.[0] ?? '';
   assertNightTestimonyInvariants(state);
   return state;
 }
 
 /** 玩家可发起的动作类型（其余仅允许 system 投递） */
-const PLAYER_ACTIONS = new Set<string>(['ask', 'answer', 'cast_vote', 'submit_guesses']);
+const PLAYER_ACTIONS = new Set<string>([
+  'pick_question_card',
+  'answer_question',
+  'self_expose',
+  'cast_vote',
+  'submit_guesses',
+]);
 
 function playerMatches(actor: Actor, action: NightTestimonyAction): boolean {
   return actor.kind === 'player' && 'playerId' in action && actor.playerId === action.playerId;
 }
 
 function result(state: NightTestimonyState): NightTestimonyResult | null {
-  if (state.phase !== 'game_over') return null;
-  if (state.wardenRevealed === false) {
-    return { winners: [...state.winners], wardenRevealed: false, crimesAllGuessed: false };
-  }
-  if (state.wardenGuesses !== null && state.crimesAllGuessed !== null) {
-    return {
-      winners: [...state.winners],
-      wardenRevealed: true,
-      crimesAllGuessed: state.crimesAllGuessed,
-    };
-  }
-  return null;
+  if (state.phase !== 'game_over' || state.guessingInProgress) return null;
+  return { winners: [...state.winners] };
 }
 
 export const nightTestimonyModule: GameModuleV2<
@@ -77,8 +81,8 @@ export const nightTestimonyModule: GameModuleV2<
   assertInvariants: assertNightTestimonyInvariants,
   snapshotMigrations: {},
   createInitialState(ctx: GameContext, players: string[], config: NightTestimonyConfig) {
-    const { wardenId, crimes } = assignWardenAndCrimes(players, ctx.random);
-    const state = createNightTestimonyState(players, config, wardenId, crimes);
+    const { wardenId, crimes, extraCrime } = assignRolesAndCrimes(players, ctx.random);
+    const state = createNightTestimonyState(players, config, wardenId, crimes, extraCrime);
     assertNightTestimonyInvariants(state);
     return state;
   },

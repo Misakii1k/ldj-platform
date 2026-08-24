@@ -48,33 +48,38 @@ const STORAGE_KEY_AVATAR = 'ldj_user_avatar';
 
 export function UserProfileProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile>(() => {
-    const savedName = localStorage.getItem(STORAGE_KEY_NICKNAME);
-    const savedAvatar = localStorage.getItem(STORAGE_KEY_AVATAR);
     const defaultName = DEFAULT_NICKNAMES[Math.floor(Math.random() * DEFAULT_NICKNAMES.length)]!;
     const defaultAvatar = 'preset:fox';
-    return {
-      nickname: savedName && savedName.trim() ? savedName.trim() : defaultName,
-      avatar: savedAvatar || defaultAvatar,
-    };
+    try {
+      const savedName = localStorage.getItem(STORAGE_KEY_NICKNAME);
+      const savedAvatar = localStorage.getItem(STORAGE_KEY_AVATAR);
+      return {
+        nickname: savedName && savedName.trim() ? savedName.trim() : defaultName,
+        avatar: savedAvatar || defaultAvatar,
+      };
+    } catch {
+      // localStorage 不可用（WebView 隐私模式等）：用默认值，避免启动即崩溃
+      return { nickname: defaultName, avatar: defaultAvatar };
+    }
   });
 
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_NICKNAME, profile.nickname);
-    localStorage.setItem(STORAGE_KEY_AVATAR, profile.avatar);
+    try {
+      localStorage.setItem(STORAGE_KEY_NICKNAME, profile.nickname);
+      localStorage.setItem(STORAGE_KEY_AVATAR, profile.avatar);
+    } catch {
+      // localStorage 不可用时忽略
+    }
   }, [profile]);
 
   const saveProfile = (next: Partial<UserProfile>) => {
-    setProfile((prev) => {
-      const updated = {
-        nickname: next.nickname !== undefined ? next.nickname.trim() : prev.nickname,
-        avatar: next.avatar !== undefined ? next.avatar : prev.avatar,
-      };
-      localStorage.setItem(STORAGE_KEY_NICKNAME, updated.nickname);
-      localStorage.setItem(STORAGE_KEY_AVATAR, updated.avatar);
-      return updated;
-    });
+    // 只做纯状态更新；持久化由上面的 profile effect 完成（updater 必须无副作用）
+    setProfile((prev) => ({
+      nickname: next.nickname !== undefined ? next.nickname.trim() : prev.nickname,
+      avatar: next.avatar !== undefined ? next.avatar : prev.avatar,
+    }));
   };
 
   const setNickname = (nickname: string) => saveProfile({ nickname });

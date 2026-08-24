@@ -58,13 +58,26 @@ export function TtsSettings() {
         <div className="tts-engine-grid">
           <button
             type="button"
+            className={`tts-engine-card ${config.engine === 'system_tts' ? 'is-active' : ''}`}
+            onClick={() => handleEngineChange('system_tts')}
+          >
+            <div className="engine-icon">📱</div>
+            <div className="engine-meta">
+              <strong>系统原生 TTS (System TTS)</strong>
+              <span>安卓系统底层引擎 · 离线零延迟 · 免配置</span>
+            </div>
+            {config.engine === 'system_tts' && <span className="engine-check">✓ 推荐使用</span>}
+          </button>
+
+          <button
+            type="button"
             className={`tts-engine-card ${config.engine === 'web_speech' ? 'is-active' : ''}`}
             onClick={() => handleEngineChange('web_speech')}
           >
             <div className="engine-icon">🌐</div>
             <div className="engine-meta">
-              <strong>系统原生 Web Speech API</strong>
-              <span>免配置 · 零网络延迟 · 本地中文发音</span>
+              <strong>浏览器 Web Speech API</strong>
+              <span>网页标准发音 · 本地发音人切换</span>
             </div>
             {config.engine === 'web_speech' && <span className="engine-check">✓ 当前使用</span>}
           </button>
@@ -84,7 +97,47 @@ export function TtsSettings() {
         </div>
       </div>
 
-      {config.engine === 'web_speech' ? (
+      {config.engine === 'system_tts' ? (
+        <div className="tts-subpanel">
+          <p className="tts-hint" style={{ margin: '0 0 12px', fontSize: '0.84rem', color: '#4b5563' }}>
+            ✨ 已启用系统原生 Text-To-Speech 服务。将直接使用 Android 手机系统内置的语音引擎（如小米小爱、华为、Google 语音服务等）进行法官主持与播报。
+          </p>
+
+          <div className="form-row-sliders">
+            <div className="form-group">
+              <label>语速调节：{config.rate.toFixed(1)}x</label>
+              <input
+                type="range"
+                min="0.7"
+                max="1.5"
+                step="0.1"
+                value={config.rate}
+                onChange={(e) => {
+                  const updated = { ...config, rate: parseFloat(e.target.value) };
+                  setConfig(updated);
+                  saveTtsSettings(updated);
+                }}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>音调调节：{config.pitch.toFixed(1)}</label>
+              <input
+                type="range"
+                min="0.8"
+                max="1.2"
+                step="0.1"
+                value={config.pitch}
+                onChange={(e) => {
+                  const updated = { ...config, pitch: parseFloat(e.target.value) };
+                  setConfig(updated);
+                  saveTtsSettings(updated);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      ) : config.engine === 'web_speech' ? (
         <div className="tts-subpanel">
           <div className="form-group">
             <label htmlFor="tts-voice-select">系统发音人</label>

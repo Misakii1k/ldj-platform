@@ -2,8 +2,11 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App.tsx';
 import { isNativeApp } from './app/nativePlatform.ts';
+import { initGestureLock } from './shared-ui/gestureLock.ts';
 import './styles.css';
 import './shared-ui/GameMotion.css';
+
+initGestureLock();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useConnection } from '../connection/useConnection.ts';
-import { resolveServerBase } from '../connection/serverAddress.ts';
+import { resolveShareBase } from '../connection/serverAddress.ts';
 import { useToast } from '../shared-ui/ToastContext.tsx';
 import { describeError } from '../shared-ui/errors.ts';
 import {
@@ -91,6 +91,7 @@ export function RoomPage() {
     (m) => m.playerId === me.playerId && m.isHost,
   );
   const myPlayerId = me?.playerId ?? null;
+  const myMember = room?.members.find((m) => m.playerId === myPlayerId);
 
   // P1-9：成员昵称索引（聊天渲染共用）
   const memberNames = useMemo(() => {
@@ -358,7 +359,7 @@ export function RoomPage() {
           <RoomCodeCard
             gameName={roomGame.displayName}
             roomCode={room.roomCode}
-            inviteUrl={`${resolveServerBase()}/join/${room.roomCode}`}
+            inviteUrl={`${resolveShareBase()}/join/${room.roomCode}`}
             online={onlinePlayers.length}
             max={maximumPlayers}
           />
@@ -468,14 +469,63 @@ export function RoomPage() {
             )}
           </div>
           <div className="action-bar room-console__actions">
-            <button type="button" className="leave-btn" onClick={handleLeaveRoom} disabled={busy}>离开房间</button>
-            {room.status === 'POST_GAME' && isHost && <button type="button" className="room-console__secondary room-inline-btn" onClick={handleReturnToLobby} disabled={busy || !synced}>返回大厅</button>}
-            {isHost && (room.status === 'LOBBY' || room.status === 'POST_GAME') && <button type="button" className="game-card__action room-inline-btn" onClick={handleStartGame} disabled={busy || !synced || !canStart}>开始游戏</button>}
-            {isHost && (room.status === 'LOBBY' || room.status === 'POST_GAME') && roomGame.botSupport !== 'none' && <button type="button" className="room-console__secondary room-inline-btn" onClick={() => handleAddBot('rule')} disabled={busy || !synced || seatsFull} title={seatsFull ? '席位已满' : '凑人数用，按规则自动参与'}>添加机器人</button>}
-            {isHost && (room.status === 'LOBBY' || room.status === 'POST_GAME') && roomGame.botSupport === 'rule_and_llm' && state.llmAvailable && <button type="button" className="room-console__secondary room-inline-btn" onClick={() => handleAddBot('llm')} disabled={busy || !synced || seatsFull} title={seatsFull ? '席位已满' : '由 AI 大模型智能陪玩，异常时自动退回普通机器人'}>添加 AI 玩家</button>}
-            {isHost && (room.status === 'LOBBY' || room.status === 'POST_GAME') && roomGame.botSupport !== 'none' && botCount > 0 && <button type="button" className="room-console__secondary room-inline-btn" onClick={() => handleRemoveBot()} disabled={busy || !synced} title="移除最后加入的机器人">移除机器人（{botCount}）</button>}
-            {isHost && room.status === 'IN_GAME' && <button type="button" className="danger-btn" onClick={() => setConfirmState({ kind: 'abort' })} disabled={busy || !synced}>终止对局</button>}
-            {isHost && !confirmState && room.status !== 'CLOSED' && <button type="button" className="danger-btn" onClick={() => setConfirmState({ kind: 'close' })} disabled={busy || !synced}>解散房间</button>}
+            {myMember && myMember.seatRole === 'player' && myMember.botKind === null && (room.status === 'LOBBY' || room.status === 'POST_GAME') && (
+              <button
+                type="button"
+                className={`room-console__btn room-console__btn--ready ${myMember.ready ? 'is-ready' : 'is-not-ready'}`}
+                onClick={() => handleToggleReady(myMember.ready)}
+                disabled={busy || !synced}
+              >
+                <GameIcon name={myMember.ready ? 'star' : 'hourglass'} size={18} />
+                <span>{myMember.ready ? '我已就绪 (点击取消)' : '点击就绪准备'}</span>
+              </button>
+            )}
+            <button type="button" className="room-console__btn room-console__btn--leave" onClick={handleLeaveRoom} disabled={busy}>
+              <GameIcon name="door_exit" size={18} />
+              <span>离开房间</span>
+            </button>
+            {room.status === 'POST_GAME' && isHost && (
+              <button type="button" className="room-console__btn room-console__btn--secondary" onClick={handleReturnToLobby} disabled={busy || !synced}>
+                <GameIcon name="horn" size={18} />
+                <span>返回大厅</span>
+              </button>
+            )}
+            {isHost && (room.status === 'LOBBY' || room.status === 'POST_GAME') && (
+              <button type="button" className="room-console__btn room-console__btn--primary" onClick={handleStartGame} disabled={busy || !synced || !canStart}>
+                <GameIcon name="cards_deck" size={18} />
+                <span>开始游戏</span>
+              </button>
+            )}
+            {isHost && (room.status === 'LOBBY' || room.status === 'POST_GAME') && roomGame.botSupport !== 'none' && (
+              <button type="button" className="room-console__btn room-console__btn--secondary" onClick={() => handleAddBot('rule')} disabled={busy || !synced || seatsFull} title={seatsFull ? '席位已满' : '凑人数用，按规则自动参与'}>
+                <GameIcon name="robot" size={18} />
+                <span>添加机器人</span>
+              </button>
+            )}
+            {isHost && (room.status === 'LOBBY' || room.status === 'POST_GAME') && roomGame.botSupport === 'rule_and_llm' && state.llmAvailable && (
+              <button type="button" className="room-console__btn room-console__btn--secondary" onClick={() => handleAddBot('llm')} disabled={busy || !synced || seatsFull} title={seatsFull ? '席位已满' : '由 AI 大模型智能陪玩，异常时自动退回普通机器人'}>
+                <GameIcon name="star" size={18} />
+                <span>添加 AI 玩家</span>
+              </button>
+            )}
+            {isHost && (room.status === 'LOBBY' || room.status === 'POST_GAME') && roomGame.botSupport !== 'none' && botCount > 0 && (
+              <button type="button" className="room-console__btn room-console__btn--secondary" onClick={() => handleRemoveBot()} disabled={busy || !synced} title="移除最后加入的机器人">
+                <GameIcon name="uno_skip" size={18} />
+                <span>移除机器人（{botCount}）</span>
+              </button>
+            )}
+            {isHost && room.status === 'IN_GAME' && (
+              <button type="button" className="room-console__btn room-console__btn--danger" onClick={() => setConfirmState({ kind: 'abort' })} disabled={busy || !synced}>
+                <GameIcon name="bomb" size={18} />
+                <span>终止对局</span>
+              </button>
+            )}
+            {isHost && !confirmState && room.status !== 'CLOSED' && (
+              <button type="button" className="room-console__btn room-console__btn--danger" onClick={() => setConfirmState({ kind: 'close' })} disabled={busy || !synced}>
+                <GameIcon name="door_exit" size={18} />
+                <span>解散房间</span>
+              </button>
+            )}
           </div>
           {/* 2-5：开始游戏禁用原因常驻可见（替代仅 title 提示与重复横幅） */}
           {isHost && (room.status === 'LOBBY' || room.status === 'POST_GAME') && !canStart && (

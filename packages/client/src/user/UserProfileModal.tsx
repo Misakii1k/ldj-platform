@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect, type ChangeEvent, type FormEvent } from 'react';
+import { useState, useMemo, useRef, useEffect, type ChangeEvent, type FormEvent } from 'react';
 import { useUserProfile, PRESET_AVATARS } from './UserProfileContext.tsx';
+import { NOTION_AVATARS, NOTION_CATEGORIES } from './notionAvatars.ts';
 import { UserAvatar } from './UserAvatar.tsx';
 import { GameIcon } from '../shared-ui/GameIcon.tsx';
 import { SheetDialog } from '../app/SheetDialog.tsx';
@@ -7,6 +8,11 @@ import { SheetDialog } from '../app/SheetDialog.tsx';
 interface UserProfileModalProps {
   onClose?: () => void;
 }
+
+const CATEGORIES = [
+  ...NOTION_CATEGORIES,
+  { id: 'classic', name: '⭐ 经典彩绘' },
+] as const;
 
 export function UserProfileModal({ onClose }: UserProfileModalProps) {
   const { profile, saveProfile, isProfileModalOpen, closeProfileModal } = useUserProfile();
@@ -18,6 +24,18 @@ export function UserProfileModal({ onClose }: UserProfileModalProps) {
 
   const [draftName, setDraftName] = useState(profile.nickname);
   const [selectedAvatar, setSelectedAvatar] = useState(profile.avatar);
+  const [activeCategory, setActiveCategory] = useState<string>('all');
+
+  // 构建当前展示头像列表
+  const displayAvatars = useMemo(() => {
+    if (activeCategory === 'classic') {
+      return PRESET_AVATARS.map((p) => ({ id: p.id, name: p.name }));
+    }
+    if (activeCategory === 'all') {
+      return NOTION_AVATARS.map((p) => ({ id: p.id, name: p.name }));
+    }
+    return NOTION_AVATARS.filter((p) => p.category === activeCategory).map((p) => ({ id: p.id, name: p.name }));
+  }, [activeCategory]);
 
   // 裁切器状态
   const [croppingImageSrc, setCroppingImageSrc] = useState<string | null>(null);
@@ -163,26 +181,7 @@ export function UserProfileModal({ onClose }: UserProfileModalProps) {
         </>
       }
     >
-      <form id="user-profile-form" onSubmit={handleSave} className="room-sheet__form">
-        {/* 当前头像与昵称大号预览 */}
-        <div className="profile-modal__preview-box">
-          <UserAvatar avatar={selectedAvatar} nickname={draftName} size={72} />
-          <div className="profile-modal__preview-info">
-            <label className="profile-modal__label">游戏昵称</label>
-            <input
-              ref={firstInputRef}
-              type="text"
-              className="profile-modal__name-input"
-              value={draftName}
-              onChange={(e) => setDraftName(e.target.value)}
-              placeholder="请输入你的昵称"
-              maxLength={16}
-              required
-            />
-            <span className="profile-modal__hint">将在所有房间与对局桌面上展示（最多16字）</span>
-          </div>
-        </div>
-
+      <form id="user-profile-form" onSubmit={handleSave} className="room-sheet__form profile-modal__form">
         {/* 自定义图片裁切区域 */}
         {croppingImageSrc ? (
           <div className="profile-crop-panel">
@@ -225,44 +224,90 @@ export function UserProfileModal({ onClose }: UserProfileModalProps) {
             </div>
           </div>
         ) : (
-          /* 头像库与上传按钮 */
-          <div className="profile-modal__section">
-            <div className="profile-modal__section-header">
-              <span className="profile-modal__label">选择专属桌游头像</span>
-              <button
-                type="button"
-                className="profile-upload-trigger"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <GameIcon name="cards_deck" size={14} style={{ marginRight: '4px' }} />
-                上传本地图片裁切…
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={handleFileChange}
-              />
+          <div className="profile-modal__layout">
+            {/* 左栏（横屏时为侧边栏，竖屏时为顶部栏）：大图预览 + 昵称输入 + 上传入口 */}
+            <div className="profile-modal__sidebar">
+              <div className="profile-modal__preview-box">
+                <UserAvatar avatar={selectedAvatar} nickname={draftName} size={76} />
+                <div className="profile-modal__preview-info">
+                  <label className="profile-modal__label" htmlFor="profile-nickname-input">游戏昵称</label>
+                  <input
+                    id="profile-nickname-input"
+                    ref={firstInputRef}
+                    type="text"
+                    className="profile-modal__name-input"
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    placeholder="请输入你的昵称"
+                    maxLength={16}
+                    required
+                  />
+                  <span className="profile-modal__hint">展示于房间与对局桌面上（最多16字）</span>
+                </div>
+              </div>
+
+              <div className="profile-modal__upload-bar">
+                <button
+                  type="button"
+                  className="profile-upload-trigger"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <GameIcon name="cards_deck" size={14} style={{ marginRight: '6px' }} />
+                  上传自定义图片裁切…
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleFileChange}
+                />
+              </div>
             </div>
 
-            <div className="profile-preset-grid">
-              {PRESET_AVATARS.map((item) => {
-                const presetVal = `preset:${item.id}`;
-                const isSelected = selectedAvatar === presetVal;
-                return (
+            {/* 右栏（横屏时占满右侧，竖屏时位于下方）：分类标签 + 头像网格 */}
+            <div className="profile-modal__main">
+              <div className="profile-modal__section-header">
+                <span className="profile-modal__label">选择专属桌游头像</span>
+                <span className="profile-modal__count-badge">{displayAvatars.length} 款可用</span>
+              </div>
+
+              {/* 分类筛选标签 */}
+              <div className="profile-category-tabs" role="tablist" aria-label="头像分类">
+                {CATEGORIES.map((cat) => (
                   <button
-                    key={item.id}
+                    key={cat.id}
                     type="button"
-                    className={`profile-preset-card ${isSelected ? 'is-selected' : ''}`}
-                    onClick={() => setSelectedAvatar(presetVal)}
+                    role="tab"
+                    aria-selected={activeCategory === cat.id}
+                    className={`profile-category-tab ${activeCategory === cat.id ? 'is-active' : ''}`}
+                    onClick={() => setActiveCategory(cat.id)}
                   >
-                    <UserAvatar avatar={presetVal} size={46} />
-                    <span className="profile-preset-name">{item.name}</span>
-                    {isSelected && <span className="profile-preset-check">✓</span>}
+                    {cat.name}
                   </button>
-                );
-              })}
+                ))}
+              </div>
+
+              {/* 自适应紧凑正方头像网格 */}
+              <div className="profile-preset-grid">
+                {displayAvatars.map((item) => {
+                  const presetVal = `preset:${item.id}`;
+                  const isSelected = selectedAvatar === presetVal;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={`profile-preset-card ${isSelected ? 'is-selected' : ''}`}
+                      onClick={() => setSelectedAvatar(presetVal)}
+                      title={item.name}
+                    >
+                      <UserAvatar avatar={presetVal} size={46} />
+                      <span className="profile-preset-name">{item.name}</span>
+                      {isSelected && <span className="profile-preset-check">✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}

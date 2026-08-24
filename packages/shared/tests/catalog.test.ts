@@ -24,7 +24,7 @@ test('GAME_CATALOG：游戏 ID 唯一且人数范围有效', () => {
 });
 
 test('GAME_CATALOG：现有内部模块保留机器人能力声明', () => {
-  const ruleOnlyGames = new Set(['durian', 'loveletter', 'cheese-thief', 'goose-relay', 'night-testimony', 'bell-clash', 'echo-judge']);
+  const ruleOnlyGames = new Set(['durian', 'loveletter', 'cheese-thief', 'goose-relay', 'night-testimony', 'bell-clash', 'echo-judge', 'party-sandbox']);
   for (const game of GAME_CATALOG) {
     if (ruleOnlyGames.has(game.id)) {
       assert.equal(game.botSupport, 'rule', `${game.id} 应声明规则机器人`);
@@ -79,13 +79,14 @@ test('GAME_CATALOG：D1 规则集 ID 与目录状态已冻结', () => {
       { id: 'night-testimony', availability: 'playable', rulesetId: 'night_testimony_v1' },
       { id: 'bell-clash', availability: 'playable', rulesetId: 'bell_clash_v1' },
       { id: 'echo-judge', availability: 'playable', rulesetId: 'echo_judge_v1' },
+      { id: 'party-sandbox', availability: 'playable', rulesetId: 'party_sandbox_v1' },
     ],
   );
 });
 
 test('GAME_CATALOG：证据已批准的游戏作为 playable 建房', () => {
   const playableIds = GAME_CATALOG.filter((game) => game.availability === 'playable').map((game) => game.id).sort();
-  assert.deepEqual(playableIds, ['bell-clash', 'cheese-thief', 'durian', 'echo-judge', 'goose-relay', 'landlord', 'loveletter', 'night-testimony', 'undercover', 'uno', 'werewolf']);
+  assert.deepEqual(playableIds, ['bell-clash', 'cheese-thief', 'durian', 'echo-judge', 'goose-relay', 'landlord', 'loveletter', 'night-testimony', 'party-sandbox', 'undercover', 'uno', 'werewolf']);
   assert.equal(getPlayableGameCatalogEntry('uno')?.id, 'uno');
   assert.equal(getPlayableGameCatalogEntry('undercover')?.id, 'undercover');
   assert.equal(getPlayableGameCatalogEntry('werewolf')?.id, 'werewolf');
@@ -97,6 +98,7 @@ test('GAME_CATALOG：证据已批准的游戏作为 playable 建房', () => {
   assert.equal(getPlayableGameCatalogEntry('night-testimony')?.id, 'night-testimony');
   assert.equal(getPlayableGameCatalogEntry('bell-clash')?.id, 'bell-clash');
   assert.equal(getPlayableGameCatalogEntry('echo-judge')?.id, 'echo-judge');
+  assert.equal(getPlayableGameCatalogEntry('party-sandbox')?.id, 'party-sandbox');
   assert.equal(getPlayableGameCatalogEntry('unknown_game'), undefined);
 });
 
@@ -117,11 +119,11 @@ test('GAME_CATALOG：D1 无默认可玩游戏', () => {
 
 test('listGamesForPlayerCount：生产目录展示 playable 与 coming_soon，隐藏内部或权利阻断项', () => {
   const all = listGamesForPlayerCount(null);
-  assert.deepEqual(all.map((game) => game.id).sort(), ['bell-clash', 'cheese-thief', 'durian', 'echo-judge', 'goose-relay', 'landlord', 'loveletter', 'night-testimony', 'undercover', 'uno', 'werewolf']);
-  assert.deepEqual(listGamesForPlayerCount(4).map((game) => game.id).sort(), ['bell-clash', 'cheese-thief', 'durian', 'echo-judge', 'loveletter', 'night-testimony', 'undercover', 'uno']);
-  assert.deepEqual(listGamesForPlayerCount(3).map((game) => game.id).sort(), ['bell-clash', 'durian', 'echo-judge', 'landlord', 'loveletter', 'night-testimony', 'uno']);
-  assert.deepEqual(listGamesForPlayerCount(12).map((game) => game.id).sort(), ['echo-judge', 'undercover', 'werewolf']);
-  assert.deepEqual(listGamesForPlayerCount(2).map((game) => game.id).sort(), ['bell-clash', 'durian', 'loveletter', 'uno']);
-  assert.deepEqual(listGamesForPlayerCount(5).map((game) => game.id).sort(), ['bell-clash', 'cheese-thief', 'durian', 'echo-judge', 'goose-relay', 'night-testimony', 'undercover', 'uno']);
+  assert.deepEqual(all.map((game) => game.id).sort(), ['bell-clash', 'cheese-thief', 'durian', 'echo-judge', 'goose-relay', 'landlord', 'loveletter', 'night-testimony', 'party-sandbox', 'undercover', 'uno', 'werewolf']);
+  assert.deepEqual(listGamesForPlayerCount(4).map((game) => game.id).sort(), ['bell-clash', 'cheese-thief', 'durian', 'echo-judge', 'loveletter', 'night-testimony', 'party-sandbox', 'undercover', 'uno']);
+  assert.deepEqual(listGamesForPlayerCount(3).map((game) => game.id).sort(), ['bell-clash', 'durian', 'echo-judge', 'landlord', 'loveletter', 'night-testimony', 'party-sandbox', 'uno']);
+  assert.deepEqual(listGamesForPlayerCount(12).map((game) => game.id).sort(), ['echo-judge', 'party-sandbox', 'undercover', 'werewolf']);
+  assert.deepEqual(listGamesForPlayerCount(2).map((game) => game.id).sort(), ['bell-clash', 'durian', 'loveletter', 'party-sandbox', 'uno']);
+  assert.deepEqual(listGamesForPlayerCount(5).map((game) => game.id).sort(), ['bell-clash', 'cheese-thief', 'durian', 'echo-judge', 'goose-relay', 'night-testimony', 'party-sandbox', 'undercover', 'uno']);
   assert.deepEqual(PLAYER_COUNT_OPTIONS, [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
 });

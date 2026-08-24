@@ -73,7 +73,7 @@ export const bellClashModule: GameModuleV2<
   snapshotMigrations: {},
   createInitialState(ctx: GameContext, players: string[], config: BellClashConfig) {
     const parsedConfig = parseBellClashConfig(config);
-    const deck = ctx.random.shuffle(buildDeck());
+    const deck = ctx.random.shuffle(buildDeck(ctx.random));
     const hands: Record<string, BellClashCard[]> = {};
     for (const id of players) {
       hands[id] = [];

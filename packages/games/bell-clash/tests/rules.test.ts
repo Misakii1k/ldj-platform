@@ -38,14 +38,16 @@ function accepted(state: BellClashState, action: unknown, now = NOW) {
   return result.nextState;
 }
 
-test('牌库构建：4 色数字 1–8 各 2 张 + 每色短语卡 2 张', () => {
+test('牌库构建：4 色数字 1–6 各 1 张 + 每色高频短语卡 18 张（75% 短语卡）', () => {
   const deck = buildDeck();
   const numbers = deck.filter((card) => card.kind === 'number');
   const phrases = deck.filter((card) => card.kind === 'phrase');
-  assert.equal(numbers.length, 4 * 8 * 2);
-  assert.equal(phrases.length, 4 * 2);
+  assert.equal(numbers.length, 4 * 6);
+  assert.equal(phrases.length, 4 * 18);
+  assert.equal(deck.length, 96);
+  assert.equal(phrases.length / deck.length, 0.75);
   for (const color of ['red', 'yellow', 'green', 'blue'] as const) {
-    assert.equal(phrases.filter((card) => card.color === color).length, 2);
+    assert.equal(phrases.filter((card) => card.color === color).length, 18);
   }
 });
 

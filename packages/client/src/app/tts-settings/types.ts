@@ -1,8 +1,8 @@
-export type TtsEngineType = 'web_speech' | 'custom_api';
+export type TtsEngineType = 'system_tts' | 'web_speech' | 'custom_api';
 
 export interface TtsSettingsConfig {
   engine: TtsEngineType;
-  /** Web Speech 参数 */
+  /** Web Speech / System TTS 参数 */
   voiceURI?: string;
   rate: number; // 0.8 ~ 1.5
   pitch: number; // 0.8 ~ 1.2
@@ -15,7 +15,7 @@ export interface TtsSettingsConfig {
 }
 
 export const DEFAULT_TTS_CONFIG: TtsSettingsConfig = {
-  engine: 'web_speech',
+  engine: 'system_tts',
   voiceURI: '',
   rate: 1.0,
   pitch: 1.0,

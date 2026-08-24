@@ -28,6 +28,7 @@ export interface TabletopShellProps {
   readonly drawer?: ReactNode;
   readonly rulesButton?: ReactNode;
   readonly hideSeats?: boolean;
+  readonly stageFit?: 'safe' | 'arena';
   readonly phaseKey?: string;
   readonly children: ReactNode;
 }

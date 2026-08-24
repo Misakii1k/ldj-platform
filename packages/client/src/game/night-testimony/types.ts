@@ -1,20 +1,65 @@
 /** night_testimony_v1 客户端严格视角类型与解析器（与服务端视图形状一一对应）。 */
 
-export const CRIMES = ['arson', 'theft', 'forgery', 'smuggling', 'fraud', 'kidnap'] as const;
+export const CRIMES = [
+  'arson',
+  'theft',
+  'forgery',
+  'smuggling',
+  'fraud',
+  'kidnap',
+  'littering',
+  'public_urination',
+  'noise_nuisance',
+  'graffiti',
+  'dine_and_dash',
+  'line_cutting',
+  'scalping',
+  'public_smoking',
+  'hacker',
+  'wifi_leeching',
+  'scalp_bot',
+  'spoilers',
+  'water_army',
+  'office_theft',
+  'pickpocket',
+  'bike_theft',
+  'counterfeiter',
+  'blackmail',
+  'prison_break',
+  'poisoning',
+  'grave_robbery',
+  'transnational_crime',
+  'money_laundering',
+  'museum_heist',
+  'arms_trafficking',
+  'espionage',
+  'poaching',
+  'pyramid_scheme',
+  'sea_pirate',
+  'impersonation',
+] as const;
 export type CrimeId = (typeof CRIMES)[number];
 export type NightTestimonyPhase = 'question' | 'deduction' | 'vote' | 'game_over';
 
-export interface AnswerRecord {
+export interface QuestionCardView {
+  id: string;
+  text: string;
+  category: 'motive' | 'method' | 'time' | 'scene' | 'property' | 'personnel';
+  categoryLabel: string;
+}
+
+export interface QuestionRecord {
+  questionIndex: number;
   questionerId: string;
-  responderId: string;
+  cardId: string;
   question: string;
-  answer: 'yes' | 'no';
+  answers: Record<string, 'yes' | 'no'>;
 }
 
 export interface NightTestimonyReveal {
   wardenId: string;
   crimes: Record<string, CrimeId>;
-  answers: AnswerRecord[];
+  history: QuestionRecord[];
   extraCrime: CrimeId | null;
   accusedId: string | null;
   wardenRevealed: boolean;
@@ -28,11 +73,23 @@ export interface NightTestimonyPublicView {
   schemaVersion: 1;
   phase: NightTestimonyPhase;
   players: string[];
-  yesTrack: AnswerRecord[];
-  askedCount: number;
+  currentQuestionerId: string;
+  questionIndex: number;
   questionLimit: number;
+  maxYesPerPlayer: number;
+  history: QuestionRecord[];
+  playerYesCounts: Record<string, number>;
+  currentQuestion: {
+    questionIndex: number;
+    questionerId: string;
+    cardId: string;
+    text: string;
+    answers: Record<string, 'yes' | 'no'>;
+  } | null;
+  revealedIdentities: Record<string, CrimeId | 'warden'>;
   extraCrime: CrimeId | null;
-  hasPendingQuestion: boolean;
+  availableGuessCrimes: CrimeId[] | null;
+  votedPlayerIds: string[];
   accusedId: string | null;
   wardenRevealed: boolean | null;
   guessingInProgress: boolean;
@@ -45,18 +102,20 @@ export interface NightTestimonyPlayerView extends NightTestimonyPublicView {
     playerId: string;
     isWarden: boolean;
     crime: CrimeId | null;
-    yesLeft: number;
-    noLeft: number;
-    pendingQuestion: { questionerId: string; text: string } | null;
+    myYesCount: number;
+    hasAnsweredCurrent: boolean;
+    hasVoted: boolean;
+    pendingCardChoices: QuestionCardView[] | null;
   } | null;
 }
 
 const PUBLIC_KEYS = [
-  'gameId', 'rulesetId', 'schemaVersion', 'phase', 'players', 'yesTrack',
-  'askedCount', 'questionLimit', 'extraCrime', 'hasPendingQuestion',
+  'gameId', 'rulesetId', 'schemaVersion', 'phase', 'players', 'currentQuestionerId',
+  'questionIndex', 'questionLimit', 'maxYesPerPlayer', 'history', 'playerYesCounts',
+  'currentQuestion', 'revealedIdentities', 'extraCrime', 'availableGuessCrimes', 'votedPlayerIds',
   'accusedId', 'wardenRevealed', 'guessingInProgress', 'winners', 'reveal',
 ] as const;
-const ME_KEYS = ['playerId', 'isWarden', 'crime', 'yesLeft', 'noLeft', 'pendingQuestion'] as const;
+const ME_KEYS = ['playerId', 'isWarden', 'crime', 'myYesCount', 'hasAnsweredCurrent', 'hasVoted', 'pendingCardChoices'] as const;
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -89,28 +148,63 @@ function isCrime(value: unknown): value is CrimeId {
   return typeof value === 'string' && (CRIMES as readonly string[]).includes(value);
 }
 
-function parseAnswer(value: unknown): AnswerRecord | null {
-  if (!isObject(value) || Object.keys(value).length !== 4) return null;
-  if (!isPlayerId(value.questionerId) || !isPlayerId(value.responderId)) return null;
-  if (typeof value.question !== 'string' || value.question.length < 1) return null;
-  if (value.answer !== 'yes' && value.answer !== 'no') return null;
-  return { questionerId: value.questionerId, responderId: value.responderId, question: value.question, answer: value.answer };
+function parseAnswersRecord(value: unknown): Record<string, 'yes' | 'no'> | null {
+  if (!isObject(value)) return null;
+  const result: Record<string, 'yes' | 'no'> = {};
+  for (const key of Object.keys(value)) {
+    if (!isPlayerId(key)) return null;
+    const v = value[key];
+    if (v !== 'yes' && v !== 'no') return null;
+    result[key] = v;
+  }
+  return result;
 }
 
-function parseAnswers(value: unknown): AnswerRecord[] | null {
+function parseQuestionRecord(value: unknown): QuestionRecord | null {
+  if (!isObject(value) || !hasExactKeys(value, ['questionIndex', 'questionerId', 'cardId', 'question', 'answers'])) return null;
+  if (!isNonNegativeInteger(value.questionIndex) || !isPlayerId(value.questionerId)) return null;
+  if (typeof value.cardId !== 'string' || typeof value.question !== 'string') return null;
+  const answers = parseAnswersRecord(value.answers);
+  if (answers === null) return null;
+  return {
+    questionIndex: value.questionIndex as number,
+    questionerId: value.questionerId,
+    cardId: value.cardId,
+    question: value.question,
+    answers,
+  };
+}
+
+function parseHistory(value: unknown): QuestionRecord[] | null {
   if (!Array.isArray(value)) return null;
-  const answers: AnswerRecord[] = [];
+  const list: QuestionRecord[] = [];
   for (const item of value) {
-    const parsed = parseAnswer(item);
+    const parsed = parseQuestionRecord(item);
     if (parsed === null) return null;
-    answers.push(parsed);
+    list.push(parsed);
   }
-  return answers;
+  return list;
+}
+
+function parseCurrentQuestion(value: unknown): NightTestimonyPublicView['currentQuestion'] | null {
+  if (value === null) return null;
+  if (!isObject(value) || !hasExactKeys(value, ['questionIndex', 'questionerId', 'cardId', 'text', 'answers'])) return null;
+  if (!isNonNegativeInteger(value.questionIndex) || !isPlayerId(value.questionerId)) return null;
+  if (typeof value.cardId !== 'string' || typeof value.text !== 'string') return null;
+  const answers = parseAnswersRecord(value.answers);
+  if (answers === null) return null;
+  return {
+    questionIndex: value.questionIndex as number,
+    questionerId: value.questionerId,
+    cardId: value.cardId,
+    text: value.text,
+    answers,
+  };
 }
 
 function parseReveal(value: unknown): NightTestimonyReveal | null {
   if (value === null) return null;
-  if (!isObject(value) || !hasExactKeys(value, ['wardenId', 'crimes', 'answers', 'extraCrime', 'accusedId', 'wardenRevealed', 'wardenGuesses', 'crimesAllGuessed'])) return null;
+  if (!isObject(value) || !hasExactKeys(value, ['wardenId', 'crimes', 'history', 'extraCrime', 'accusedId', 'wardenRevealed', 'wardenGuesses', 'crimesAllGuessed'])) return null;
   if (!isPlayerId(value.wardenId) || !isBool(value.wardenRevealed) || !isBool(value.crimesAllGuessed)) return null;
   if (value.extraCrime !== null && !isCrime(value.extraCrime)) return null;
   if (value.accusedId !== null && !isPlayerId(value.accusedId)) return null;
@@ -120,8 +214,8 @@ function parseReveal(value: unknown): NightTestimonyReveal | null {
     if (!isCrime(value.crimes[key])) return null;
     crimes[key] = value.crimes[key];
   }
-  const answers = parseAnswers(value.answers);
-  if (answers === null) return null;
+  const history = parseHistory(value.history);
+  if (history === null) return null;
   let wardenGuesses: Record<string, CrimeId> | null = null;
   if (value.wardenGuesses !== null) {
     if (!isObject(value.wardenGuesses)) return null;
@@ -134,7 +228,7 @@ function parseReveal(value: unknown): NightTestimonyReveal | null {
   return {
     wardenId: value.wardenId,
     crimes,
-    answers,
+    history,
     extraCrime: value.extraCrime as CrimeId | null,
     accusedId: value.accusedId as string | null,
     wardenRevealed: value.wardenRevealed,
@@ -148,27 +242,53 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): NightTestimo
   if (view.gameId !== 'night-testimony' || view.rulesetId !== 'night_testimony_v1' || view.schemaVersion !== 1) return null;
   const phases: NightTestimonyPhase[] = ['question', 'deduction', 'vote', 'game_over'];
   if (typeof view.phase !== 'string' || !phases.includes(view.phase as NightTestimonyPhase)) return null;
-  if (!isPlayerIds(view.players)) return null;
-  const yesTrack = parseAnswers(view.yesTrack);
-  if (yesTrack === null || !isNonNegativeInteger(view.askedCount) || !isNonNegativeInteger(view.questionLimit) || (view.questionLimit as number) < 1) return null;
+  if (!isPlayerIds(view.players) || !isPlayerId(view.currentQuestionerId)) return null;
+  if (!isNonNegativeInteger(view.questionIndex) || !isNonNegativeInteger(view.questionLimit) || !isNonNegativeInteger(view.maxYesPerPlayer)) return null;
+  const history = parseHistory(view.history);
+  if (history === null) return null;
+  if (!isObject(view.playerYesCounts) || !isObject(view.revealedIdentities)) return null;
+  const playerYesCounts: Record<string, number> = {};
+  for (const k of Object.keys(view.playerYesCounts)) {
+    if (!isNonNegativeInteger(view.playerYesCounts[k])) return null;
+    playerYesCounts[k] = view.playerYesCounts[k];
+  }
+  const revealedIdentities: Record<string, CrimeId | 'warden'> = {};
+  for (const k of Object.keys(view.revealedIdentities)) {
+    const v = view.revealedIdentities[k];
+    if (v !== 'warden' && !isCrime(v)) return null;
+    revealedIdentities[k] = v;
+  }
+  const currentQuestion = parseCurrentQuestion(view.currentQuestion);
+  if (currentQuestion === null && view.currentQuestion !== null) return null;
   if (view.extraCrime !== null && !isCrime(view.extraCrime)) return null;
-  if (!isBool(view.hasPendingQuestion)) return null;
+  let availableGuessCrimes: CrimeId[] | null = null;
+  if (view.availableGuessCrimes !== null) {
+    if (!Array.isArray(view.availableGuessCrimes) || !view.availableGuessCrimes.every(isCrime)) return null;
+    availableGuessCrimes = [...view.availableGuessCrimes];
+  }
   if (view.accusedId !== null && !isPlayerId(view.accusedId)) return null;
   if (view.wardenRevealed !== null && !isBool(view.wardenRevealed)) return null;
-  if (!isBool(view.guessingInProgress) || !isPlayerIds(view.winners)) return null;
+  if (!isPlayerIds(view.votedPlayerIds) || !isBool(view.guessingInProgress) || !isPlayerIds(view.winners)) return null;
   const reveal = parseReveal(view.reveal);
   if (reveal === null && view.reveal !== null) return null;
+
   return {
     gameId: 'night-testimony',
     rulesetId: 'night_testimony_v1',
     schemaVersion: 1,
     phase: view.phase as NightTestimonyPhase,
     players: [...view.players],
-    yesTrack,
-    askedCount: view.askedCount as number,
+    currentQuestionerId: view.currentQuestionerId as string,
+    questionIndex: view.questionIndex as number,
     questionLimit: view.questionLimit as number,
+    maxYesPerPlayer: view.maxYesPerPlayer as number,
+    history,
+    playerYesCounts,
+    currentQuestion,
+    revealedIdentities,
     extraCrime: view.extraCrime as CrimeId | null,
-    hasPendingQuestion: view.hasPendingQuestion as boolean,
+    availableGuessCrimes,
+    votedPlayerIds: [...view.votedPlayerIds],
     accusedId: view.accusedId as string | null,
     wardenRevealed: view.wardenRevealed as boolean | null,
     guessingInProgress: view.guessingInProgress as boolean,
@@ -177,27 +297,39 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): NightTestimo
   };
 }
 
-function parsePending(value: unknown): { questionerId: string; text: string } | null {
+function parseQuestionCards(value: unknown): QuestionCardView[] | null {
   if (value === null) return null;
-  if (!isObject(value) || Object.keys(value).length !== 2) return null;
-  if (!isPlayerId(value.questionerId) || typeof value.text !== 'string' || value.text.length < 1) return null;
-  return { questionerId: value.questionerId, text: value.text };
+  if (!Array.isArray(value)) return null;
+  const list: QuestionCardView[] = [];
+  for (const item of value) {
+    if (!isObject(item)) return null;
+    if (typeof item.id !== 'string' || typeof item.text !== 'string' || typeof item.category !== 'string' || typeof item.categoryLabel !== 'string') return null;
+    list.push({
+      id: item.id,
+      text: item.text,
+      category: item.category as QuestionCardView['category'],
+      categoryLabel: item.categoryLabel,
+    });
+  }
+  return list;
 }
 
 function parseMe(value: unknown): NightTestimonyPlayerView['me'] {
   if (value === null) return null;
   if (!isObject(value) || !hasExactKeys(value, ME_KEYS) || !isPlayerId(value.playerId)) return null;
-  if (!isBool(value.isWarden) || !isNonNegativeInteger(value.yesLeft) || !isNonNegativeInteger(value.noLeft)) return null;
+  if (!isBool(value.isWarden) || !isNonNegativeInteger(value.myYesCount) || !isBool(value.hasAnsweredCurrent) || !isBool(value.hasVoted)) return null;
   if (value.crime !== null && !isCrime(value.crime)) return null;
-  const pendingQuestion = parsePending(value.pendingQuestion);
-  if (pendingQuestion === null && value.pendingQuestion !== null) return null;
+  const pendingCardChoices = parseQuestionCards(value.pendingCardChoices);
+  if (pendingCardChoices === null && value.pendingCardChoices !== null) return null;
+
   return {
     playerId: value.playerId,
     isWarden: value.isWarden,
     crime: value.crime as CrimeId | null,
-    yesLeft: value.yesLeft as number,
-    noLeft: value.noLeft as number,
-    pendingQuestion,
+    myYesCount: value.myYesCount as number,
+    hasAnsweredCurrent: value.hasAnsweredCurrent as boolean,
+    hasVoted: value.hasVoted,
+    pendingCardChoices,
   };
 }
 

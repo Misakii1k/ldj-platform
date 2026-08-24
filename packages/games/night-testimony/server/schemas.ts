@@ -1,19 +1,17 @@
-/** night_testimony_v1 — strict zod schemas（config/action）。状态形状校验由 invariant 承担。 */
 import { z } from 'zod';
 import { CRIMES } from './types.ts';
 import type { NightTestimonyAction, ResolvedNightTestimonyConfig } from './types.ts';
 
 const pid = z.string().min(1, { message: '玩家 ID 无效' }).max(64, { message: '玩家 ID 无效' });
-const seconds = z.number().int().min(1, { message: '时长无效' }).max(600, { message: '时长无效' });
-const crime = z.enum(CRIMES, { message: '罪行无效' });
+const crimeSchema = z.enum(CRIMES, { message: '罪行无效' });
 
 const nightTestimonyConfigSchema = z
   .object({
     rulesetId: z.literal('night_testimony_v1').optional(),
-    questionSeconds: seconds.default(120),
-    deductionSeconds: seconds.default(60),
-    voteSeconds: seconds.default(30),
-    questionLimit: z.number().int().min(1).max(12).default(5),
+    maxYesPerPlayer: z.number().int().min(1).max(10).default(3),
+    questionLimit: z.number().int().min(1).max(20).default(5),
+    questionSeconds: z.number().int().min(1).max(600).default(90),
+    voteSeconds: z.number().int().min(1).max(600).default(90),
   })
   .passthrough();
 
@@ -21,34 +19,46 @@ const nightTestimonyActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('begin') }).strict('动作 字段无效'),
   z
     .object({
-      type: z.literal('ask'),
+      type: z.literal('pick_question_card'),
       playerId: pid,
-      targetPlayerId: pid,
-      text: z.string().min(1, { message: '问题不能为空' }).max(200, { message: '问题过长' }),
+      cardId: z.string().min(1, { message: '问题卡 ID 不能为空' }),
     })
     .strict('动作 字段无效'),
   z
-    .object({ type: z.literal('answer'), playerId: pid, answer: z.enum(['yes', 'no']) })
+    .object({
+      type: z.literal('answer_question'),
+      playerId: pid,
+      answer: z.enum(['yes', 'no'], { message: '回答必须是 yes 或 no' }),
+    })
     .strict('动作 字段无效'),
-  z.object({ type: z.literal('resolve_question') }).strict('动作 字段无效'),
-  z.object({ type: z.literal('end_deduction') }).strict('动作 字段无效'),
   z
-    .object({ type: z.literal('cast_vote'), playerId: pid, targetPlayerId: pid })
+    .object({
+      type: z.literal('self_expose'),
+      playerId: pid,
+    })
     .strict('动作 字段无效'),
-  z.object({ type: z.literal('resolve_vote') }).strict('动作 字段无效'),
+  z
+    .object({
+      type: z.literal('cast_vote'),
+      playerId: pid,
+      targetPlayerId: pid,
+    })
+    .strict('动作 字段无效'),
   z
     .object({
       type: z.literal('submit_guesses'),
       playerId: pid,
-      guesses: z.record(pid, crime),
+      guesses: z.record(pid, crimeSchema),
     })
     .strict('动作 字段无效'),
   z
     .object({
       type: z.literal('player_forfeited'),
-      playerIds: z.array(pid).min(1).max(12),
+      playerIds: z.array(pid).min(1).max(6),
     })
     .strict('动作 字段无效'),
+  z.object({ type: z.literal('question_timeout') }).strict('动作 字段无效'),
+  z.object({ type: z.literal('vote_timeout') }).strict('动作 字段无效'),
 ]);
 
 function parseOrThrow<T>(schema: z.ZodType<unknown>, input: unknown, label: string): T {

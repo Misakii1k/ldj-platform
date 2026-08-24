@@ -15,6 +15,8 @@ import { safeGetItem, safeRemoveItem, safeSetItem } from '../lib/safeStorage.ts'
 const MANUAL_SERVER_BASE_KEY = 'ldj_server_base';
 
 let runtimeOverride: string | null = null;
+/** LAN 可达分享地址（主机模式）：连接层用回环地址直连本机内嵌服务器，分享给其他玩家则用网卡地址 */
+let shareOverride: string | null = null;
 const listeners = new Set<() => void>();
 
 /**
@@ -77,6 +79,26 @@ export function setRuntimeServerBase(base: string | null): void {
 
 export function getRuntimeServerBase(): string | null {
   return runtimeOverride;
+}
+
+/** 记录面向其他玩家的 LAN 可达地址（主机模式：二维码/候选地址的 origin）；传 null 清除 */
+export function setShareServerBase(base: string | null): void {
+  if (base === null) {
+    shareOverride = null;
+    notifyListeners();
+    return;
+  }
+  const normalized = normalizeServerBase(base);
+  if (normalized === null) return;
+  shareOverride = normalized;
+  notifyListeners();
+}
+
+/** 邀请/分享用的服务器根地址：优先 LAN 可达地址，否则与连接地址一致（无尾部斜杠） */
+export function resolveShareBase(): string {
+  const share = shareOverride;
+  if (share) return share;
+  return resolveServerBase();
 }
 
 /** 解析当前应连接的服务器根地址（无尾部斜杠） */

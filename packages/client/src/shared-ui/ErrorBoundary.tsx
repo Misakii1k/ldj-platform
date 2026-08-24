@@ -68,6 +68,11 @@ export class ErrorBoundary extends Component<Props, State> {
             >
               刷新并恢复对局
             </button>
+            {this.state.error && (
+              <pre style={{ textAlign: 'left', fontSize: '0.72rem', color: '#dc2626', background: '#fee2e2', padding: '8px', borderRadius: '8px', overflow: 'auto', maxHeight: '140px', marginTop: '12px', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                {String(this.state.error?.stack || this.state.error?.message || this.state.error)}
+              </pre>
+            )}
           </div>
         </main>
       );

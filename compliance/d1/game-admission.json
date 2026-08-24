@@ -423,6 +423,33 @@
           }
         }
       ]
+    },
+    {
+      "gameId": "party-sandbox",
+      "catalogStatus": "playable",
+      "rulesets": [
+        {
+          "rulesetId": "party_sandbox_v1",
+          "kind": "platform_variant",
+          "releaseStatus": "playable",
+          "sourceDocuments": [
+            "packages/games/party-sandbox/server/module.ts"
+          ],
+          "includedExtensions": [],
+          "excludedExtensions": [],
+          "digitalAdaptations": [
+            "聚会自由道具沙盒：物理左轮、骰盅、抢答铃、万能牌堆、计时器与 AI 助手锵锵"
+          ],
+          "rights": {
+            "status": "approved",
+            "recordId": "internal-admission-g2-2026-08-10-p01",
+            "scope": "internal_platform_launch_2026",
+            "expiresAt": "2099-12-31",
+            "rightsApprover": "internal-rights-admin",
+            "rulesApprover": "internal-rules-committee"
+          }
+        }
+      ]
     }
   ],
   "forbidden": {

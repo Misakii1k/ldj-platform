@@ -115,8 +115,11 @@ export function applyRoomCommand(
       };
     }
     case 'transfer_host': {
+      // 机器人 seat_role 也是 'player'，但永远不会操作/断线，转移给它会永久锁死房间
       const target = db
-        .prepare('SELECT connection_status, seat_role FROM room_members WHERE room_id = ? AND player_id = ?')
+        .prepare(
+          'SELECT connection_status, seat_role FROM room_members WHERE room_id = ? AND player_id = ? AND is_bot = 0',
+        )
         .get(roomId, payload.targetPlayerId) as
         | { connection_status: string; seat_role: string }
         | undefined;

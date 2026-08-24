@@ -8,8 +8,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.content.res.AssetManager;
+import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.util.Log;
 
 import java.io.File;
@@ -19,6 +21,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 内嵌服务器前台服务。
@@ -44,6 +47,9 @@ public class HostService extends Service {
 
     private static volatile boolean shouldRun = false;
     private static volatile Process nodeProcess = null;
+    private static PowerManager.WakeLock wakeLock = null;
+    private static WifiManager.WifiLock wifiLock = null;
+    private static WifiManager.MulticastLock multicastLock = null;
 
     private Thread bootThread = null;
 
@@ -56,9 +62,12 @@ public class HostService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         startForegroundCompat();
+        acquireLocks();
         synchronized (HostService.class) {
-            if (bootThread != null && bootThread.isAlive()) {
-                Log.i(TAG, "已在启动中，忽略重复 start");
+            // 幂等：监控线程存活（含重启休眠期）或 node 进程存活时忽略重复 start，
+            // 否则会 spawn 出第二个 node 进程（EADDRINUSE 死掉或被错误跟踪）
+            if ((bootThread != null && bootThread.isAlive()) || isRunning()) {
+                Log.i(TAG, "已在运行/启动中，忽略重复 start");
                 return START_STICKY;
             }
             shouldRun = true;
@@ -71,6 +80,10 @@ public class HostService extends Service {
 
     @Override
     public void onDestroy() {
+        // 必须复位 shouldRun：否则 dataSync 时限/system 回收后，仍在跑的监控线程
+        // 会在 2 秒后重新拉起孤儿 node 进程（无前台服务、无锁，还会与 START_STICKY 重建竞态）
+        shouldRun = false;
+        releaseLocks();
         stopNodeProcess();
         super.onDestroy();
     }
@@ -89,8 +102,89 @@ public class HostService extends Service {
     /** 停止 node 子进程并结束服务 */
     public static void requestStop(Context context) {
         shouldRun = false;
+        releaseLocks();
         stopNodeProcess();
+        // 等监控线程确认退出，避免紧随其后的 start() 撞上"已在启动中"被吞掉导致主机不回来
+        Thread bt = bootThread;
+        if (bt != null && bt != Thread.currentThread()) {
+            try {
+                bt.join(5000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
         context.stopService(new Intent(context, HostService.class));
+    }
+
+    private synchronized void acquireLocks() {
+        try {
+            if (wakeLock == null) {
+                PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+                if (pm != null) {
+                    wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "tabletop:host_service_wakelock");
+                    wakeLock.setReferenceCounted(false);
+                    wakeLock.acquire();
+                    Log.i(TAG, "已获取 Partial WakeLock，保障主机后台暂离持续运行");
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "获取 WakeLock 失败: " + e.getMessage());
+        }
+
+        try {
+            if (wifiLock == null) {
+                WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                if (wm != null) {
+                    wifiLock = wm.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "tabletop:host_service_wifilock");
+                    wifiLock.setReferenceCounted(false);
+                    wifiLock.acquire();
+                    Log.i(TAG, "已获取 WifiLock，保障局域网数据吞吐");
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "获取 WifiLock 失败: " + e.getMessage());
+        }
+
+        try {
+            if (multicastLock == null) {
+                WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                if (wm != null) {
+                    multicastLock = wm.createMulticastLock("tabletop:host_service_multicast");
+                    multicastLock.setReferenceCounted(false);
+                    multicastLock.acquire();
+                    // 无 MulticastLock 时 Wi-Fi 驱动会过滤多播包，mDNS（_ldj._tcp）应答不可达
+                    Log.i(TAG, "已获取 MulticastLock，保障 mDNS 多播可达");
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "获取 MulticastLock 失败: " + e.getMessage());
+        }
+    }
+
+    private static synchronized void releaseLocks() {
+        try {
+            if (wakeLock != null && wakeLock.isHeld()) {
+                wakeLock.release();
+                Log.i(TAG, "已释放 WakeLock");
+            }
+        } catch (Exception ignored) {}
+        wakeLock = null;
+
+        try {
+            if (wifiLock != null && wifiLock.isHeld()) {
+                wifiLock.release();
+                Log.i(TAG, "已释放 WifiLock");
+            }
+        } catch (Exception ignored) {}
+        wifiLock = null;
+
+        try {
+            if (multicastLock != null && multicastLock.isHeld()) {
+                multicastLock.release();
+                Log.i(TAG, "已释放 MulticastLock");
+            }
+        } catch (Exception ignored) {}
+        multicastLock = null;
     }
 
     private void boot() {
@@ -109,6 +203,20 @@ public class HostService extends Service {
             spawnNode();
             Process p = nodeProcess;
             if (p == null) break;
+            // stderr 必须被排空：node 写满 ~64KB 管道缓冲后会阻塞写入，
+            // 进程不退、stdout 不关，监控线程将永远卡在 out.read()
+            final InputStream err = p.getErrorStream();
+            Thread errPump = new Thread(() -> {
+                byte[] ebuf = new byte[4096];
+                int m;
+                try {
+                    while ((m = err.read(ebuf)) > 0) {
+                        Log.w(TAG, "[node-stderr] " + new String(ebuf, 0, m).trim());
+                    }
+                } catch (Exception ignored) {}
+            }, "host-node-stderr");
+            errPump.setDaemon(true);
+            errPump.start();
             try {
                 InputStream out = p.getInputStream();
                 byte[] buf = new byte[4096];
@@ -159,15 +267,22 @@ public class HostService extends Service {
     private static void stopNodeProcess() {
         Process p = nodeProcess;
         nodeProcess = null;
-        if (p != null) {
-            p.destroy(); // SIGTERM → 服务端优雅停机
+        if (p == null) return;
+        p.destroy(); // SIGTERM → 服务端优雅停机
+        // 等待放到后台线程：主线程无上限 waitFor 会触发 ANR（node 优雅停机可能拖秒级）
+        Thread waiter = new Thread(() -> {
             try {
-                p.waitFor();
+                if (!p.waitFor(3, TimeUnit.SECONDS)) {
+                    p.destroyForcibly();
+                    p.waitFor(1, TimeUnit.SECONDS);
+                }
             } catch (InterruptedException e) {
                 p.destroyForcibly();
                 Thread.currentThread().interrupt();
             }
-        }
+        }, "host-node-stop");
+        waiter.setDaemon(true);
+        waiter.start();
     }
 
     /** 依赖库按 ABI 解压，需与 nativeLibraryDir 实际选中的 ABI 一致 */
@@ -248,6 +363,16 @@ public class HostService extends Service {
         }
     }
 
+    /** Android 15+（targetSdk 35+）：dataSync 前台服务有累计时长配额（约 6h/24h），配额耗尽时系统回调 */
+    @Override
+    public void onTimeout(int startId, int fgsType) {
+        Log.w(TAG, "前台服务 dataSync 时限到达，停止主机服务");
+        shouldRun = false;
+        releaseLocks();
+        stopNodeProcess();
+        stopSelf(startId);
+    }
+
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= 26) {
             NotificationChannel channel = new NotificationChannel(
@@ -262,9 +387,9 @@ public class HostService extends Service {
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26
             ? new Notification.Builder(this, CHANNEL_ID)
             : new Notification.Builder(this);
-        builder.setContentTitle("聚乐桌主机运行中")
-            .setContentText("局域网内玩家可连接加入")
-            .setSmallIcon(R.mipmap.ic_launcher)
+        builder.setContentTitle("聚乐桌主机服务运行中")
+            .setContentText("局域网对局服务保持后台运行，其他玩家可正常游玩")
+            .setSmallIcon(R.drawable.ic_stat_host)
             .setOngoing(true);
         Notification notification = builder.build();
         if (Build.VERSION.SDK_INT >= 30) {

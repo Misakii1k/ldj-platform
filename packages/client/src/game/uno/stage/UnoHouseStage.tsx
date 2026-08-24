@@ -8,6 +8,7 @@ import { useCountdown } from '../../../shared-ui/useCountdown.ts';
 import { TabletopOvalShell, type PlayerSeat } from '../../../shared-ui/TabletopOvalShell.tsx';
 import { CardFanEngine, type CardItem } from '../../../shared-ui/CardFanEngine.tsx';
 import { GameIcon } from '../../../shared-ui/GameIcon.tsx';
+import { UserAvatar } from '../../../user/UserAvatar.tsx';
 import { webAudio } from '../../../shared-ui/WebAudioManager.ts';
 import { nameFor, useGameAction } from '../../useGameAction.ts';
 import {
@@ -58,23 +59,28 @@ export function UnoHouseStage({ view }: Props) {
     const currentCallers = new Set(
       view.players.filter((p) => p.unoCalled).map((p) => p.playerId),
     );
-    for (const caller of currentCallers) {
-      if (!prevUnoCallersRef.current.has(caller)) {
-        setUnoShouter(nameFor(members, caller));
-        webAudio.playUnoShout();
-        const t = setTimeout(() => setUnoShouter(null), 1800);
-        return () => clearTimeout(t);
-      }
+    const fresh = Array.from(currentCallers).filter((c) => !prevUnoCallersRef.current.has(c));
+    if (fresh.length > 0) {
+      // 本批新增的喊 UNO 者只触发一次动效；多个同时喊时印章显示最后一个
+      setUnoShouter(nameFor(members, fresh[fresh.length - 1]!));
+      webAudio.playUnoShout();
     }
+    // 无论有无新增都要推进 prev ref，否则同一玩家会反复触发音效/印章
     prevUnoCallersRef.current = currentCallers;
+    const t = setTimeout(() => setUnoShouter(null), 1800);
+    return () => clearTimeout(t);
   }, [view.players, members]);
 
   const canPlay = (cardId: string): boolean =>
     phase === 'round_playing'
     && me !== null
-    && !inWindow
     && !busy
-    && ((me.playableCardIds ?? []).includes(cardId) || caps.has('canStackPenalty'));
+    && (
+      // 罚牌/质疑窗口内：仅响应者可点击任意牌叠加罚牌（走 stack_penalty 分支）
+      (inWindow && caps.has('canStackPenalty'))
+      // 正常回合：只能出可出的牌
+      || (!inWindow && (me.playableCardIds ?? []).includes(cardId))
+    );
 
   const cardColor = (card: UnoCard): string => ('color' in card ? card.color : 'wild');
 
@@ -173,11 +179,55 @@ export function UnoHouseStage({ view }: Props) {
   const directionLabel = view.direction === -1 ? '逆时针' : '顺时针';
   const isCW = view.direction === 1;
 
+  const opponents = view.players.filter((p) => p.playerId !== me?.playerId);
+
   // 中央舞台牌桌
   const centerArena = (
     <div className="uno-tabletop-arena">
       {/* 顺时针 / 逆时针流光旋转方向环 */}
       <div className={`uno-direction-compass ${isCW ? 'is-cw' : 'is-ccw'}`} aria-hidden="true" />
+
+      {/* 牌桌对手环绕席位（竖屏/小屏核心对手展示） */}
+      {opponents.length > 0 && (
+        <div className="uno-opponents-ring" data-count={opponents.length}>
+          {opponents.map((opp) => {
+            const oppMember = members.find((m) => m.playerId === opp.playerId);
+            const isCurrent = opp.playerId === view.currentPlayerId;
+            const oppIdx = view.players.findIndex((p) => p.playerId === opp.playerId);
+            const oppScore = view.cumulativeScores?.[oppIdx];
+
+            return (
+              <div
+                key={opp.playerId}
+                className={`uno-opponent-station ${isCurrent ? 'is-active-turn' : ''} ${opp.unoCalled ? 'is-uno-shout' : ''}`}
+                data-player-id={opp.playerId}
+              >
+                <div className="uno-opponent-avatar-box">
+                  <UserAvatar
+                    avatar={oppMember?.avatar}
+                    nickname={nameFor(members, opp.playerId)}
+                    size={34}
+                    className="uno-opponent-avatar"
+                  />
+                  {isCurrent && <div className="uno-opponent-turn-halo" />}
+                  {opp.unoCalled && <span className="uno-opponent-uno-badge">UNO!</span>}
+                </div>
+
+                <div className="uno-opponent-info">
+                  <span className="uno-opponent-name">{nameFor(members, opp.playerId)}</span>
+                  <div className="uno-opponent-cards-tag">
+                    <GameIcon name="cards_deck" size={11} style={{ marginRight: '2px' }} />
+                    <strong>{opp.handCount}</strong> 张
+                  </div>
+                  {oppScore !== undefined && (
+                    <span className="uno-opponent-score">{oppScore}分</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* 罚牌与竞速横幅 */}
       {view.pendingPenalty && (
@@ -381,6 +431,7 @@ export function UnoHouseStage({ view }: Props) {
         currentUserId={me?.playerId}
         centerArena={centerArena}
         bottomBar={bottomBar}
+        onShowRules={() => setShowRules(true)}
       />
 
       {/* 四色大轮盘选色弹窗 */}

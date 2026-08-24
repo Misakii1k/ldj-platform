@@ -4,7 +4,7 @@ import { deterministicContext } from '../../../shared/tests/helpers/versionedGam
 import { nightTestimonyModule } from '../server/module.ts';
 import { createNightTestimonyState } from '../server/rules.ts';
 import { crimeLabel } from '../server/views.ts';
-import type { NightTestimonyState } from '../server/types.ts';
+import { CRIMES, type NightTestimonyState } from '../server/types.ts';
 
 const players = ['a', 'b', 'c', 'd'];
 
@@ -54,7 +54,7 @@ test('囚徒之夜 终局前私密信息不进视图：wardenId/crimes 不外泄
 });
 
 test('囚徒之夜 罪行标签映射存在且覆盖全部罪行', () => {
-  for (const crime of ['arson', 'theft', 'forgery', 'smuggling', 'fraud', 'kidnap'] as const) {
+  for (const crime of CRIMES) {
     assert.ok(crimeLabel(crime).length > 0, `${crime} 应有中文标签`);
   }
 });

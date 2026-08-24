@@ -69,7 +69,6 @@ export function GameHomePage() {
           </div>
           <div className="home-header__actions">
             <UserProfileBadge onClick={() => setActiveSheet('profile')} />
-            <div className="home-local-badge">局域网极速联机</div>
             <button
               type="button"
               className="home-header__button"

@@ -1,17 +1,18 @@
 import type { GameEffect } from '@ldj/shared';
 import { parseNightTestimonyAction, parseNightTestimonyConfig } from './schemas.ts';
+import { drawThreeQuestionCards, QUESTION_DECK, type QuestionCard } from './questionDeck.ts';
+import { crimeLabel } from './views.ts';
 import {
   CRIMES,
-  NO_COUNT,
-  YES_COUNT,
   type CrimeId,
   type NightTestimonyAction,
   type NightTestimonyEvent,
   type NightTestimonyReduceResult,
   type NightTestimonyState,
+  type QuestionRecord,
 } from './types.ts';
 
-export interface TestimonyRandom {
+export interface NightRandom {
   nextInt(minInclusive: number, maxExclusive: number): number;
   shuffle<T>(items: readonly T[]): T[];
 }
@@ -31,21 +32,162 @@ const idempotent = (state: NightTestimonyState): NightTestimonyReduceResult => (
 
 const system = (text: string): GameEffect => ({ type: 'system_message', text });
 
-/** 随机选择狱警 + 分配罪行卡（每囚犯一罪，互异；狱警无罪） */
-export function assignWardenAndCrimes(
-  players: readonly string[],
-  random: TestimonyRandom,
-): { wardenId: string; crimes: Record<string, CrimeId> } {
-  const wardenIndex = random.nextInt(0, players.length);
-  const wardenId = players[wardenIndex]!;
-  const inmates = players.filter((id) => id !== wardenId);
-  const pool = random.shuffle([...CRIMES]);
-  if (pool.length < inmates.length) throw new Error('罪行池不足以分配全部囚犯');
-  const crimes: Record<string, CrimeId> = {};
-  inmates.forEach((id, index) => {
-    crimes[id] = pool[index]!;
+/** 提问阶段超时（出题者未选卡/有人未作答时自动推进） */
+function scheduleQuestionTimeout(state: NightTestimonyState, now: number): GameEffect {
+  return {
+    type: 'schedule_timer',
+    timerId: 'nt-question-timeout',
+    deadlineAt: now + state.config.questionSeconds * 1000,
+    action: { type: 'question_timeout' },
+  };
+}
+
+/** 投票阶段超时（到点按现有票结算） */
+function scheduleVoteTimeout(state: NightTestimonyState, now: number): GameEffect {
+  return {
+    type: 'schedule_timer',
+    timerId: 'nt-vote-timeout',
+    deadlineAt: now + state.config.voteSeconds * 1000,
+    action: { type: 'vote_timeout' },
+  };
+}
+
+/** 投票结算：按现有票数开票（cast_vote 全员投完与 vote_timeout 到点共用） */
+function settleVotes(
+  next: NightTestimonyState,
+  events: NightTestimonyEvent[],
+  effects: GameEffect[],
+): void {
+  const tally: Record<string, number> = {};
+  for (const target of Object.values(next.votes)) {
+    tally[target] = (tally[target] ?? 0) + 1;
+  }
+  let maxVotes = -1;
+  let accused = next.players[0]!;
+  for (const [target, count] of Object.entries(tally)) {
+    if (count > maxVotes) {
+      maxVotes = count;
+      accused = target;
+    }
+  }
+
+  const isWarden = accused === next.wardenId;
+  next.accusedId = accused;
+  next.wardenRevealed = isWarden;
+  events.push({ type: 'vote_resolved', accusedId: accused, isWarden });
+
+  if (!isWarden) {
+    // 票出的是囚犯（狱警未被投出）-> 狱警直接独胜！
+    next.phase = 'game_over';
+    next.guessingInProgress = false;
+    next.winners = [next.wardenId];
+    events.push({ type: 'game_finished', winners: [next.wardenId] });
+    effects.push(system(`投票结果：${accused} 被票出，但不是狱警！潜伏狱警 ${next.wardenId} 赢得最终胜利！`));
+  } else {
+    // 票出的是狱警 -> 触发狱警终局猜罪！
+    next.phase = 'game_over';
+    next.guessingInProgress = true;
+    const set = new Set<CrimeId>(Object.values(next.crimes));
+    if (next.extraCrime) set.add(next.extraCrime);
+    const availableCrimes = Array.from(set);
+    events.push({ type: 'guessing_started', availableCrimes });
+    effects.push(system(`潜伏狱警 ${next.wardenId} 被票出！进入终局猜罪翻盘环节！`));
+  }
+}
+
+/** 当前问题已全员作答后的推进：入库、判断停止条件、轮转下一位出题者或进入投票 */
+function advanceQuestion(
+  next: NightTestimonyState,
+  events: NightTestimonyEvent[],
+  effects: GameEffect[],
+  random: NightRandom,
+  now: number,
+): void {
+  const current = next.currentQuestion;
+  if (current === null) return;
+  const record: QuestionRecord = {
+    questionIndex: current.questionIndex,
+    questionerId: current.questionerId,
+    cardId: current.cardId,
+    question: current.text,
+    answers: { ...next.currentQuestionAnswers },
+  };
+  next.history.push(record);
+  events.push({
+    type: 'question_completed',
+    questionIndex: record.questionIndex,
+    answers: record.answers,
   });
-  return { wardenId, crimes };
+
+  const hitMaxYes = Object.values(next.playerYesCounts).some((count) => count >= next.config.maxYesPerPlayer);
+  const hitLimit = next.history.length >= next.config.questionLimit;
+
+  if (hitMaxYes || hitLimit) {
+    next.phase = 'vote';
+    next.currentQuestion = null;
+    next.currentQuestionAnswers = {};
+    next.pendingCardChoices = null;
+    events.push({ type: 'vote_started' });
+    effects.push(
+      system(
+        hitMaxYes
+          ? '有玩家累计回答达到 3 次「是」，提问终止，进入投票！'
+          : '已完成 5 轮全员审讯，提问终止，进入投票！',
+      ),
+    );
+    effects.push(scheduleVoteTimeout(next, now));
+  } else {
+    let nextIdx = next.questionerIndex;
+    let nextQId = '';
+    for (let step = 1; step <= next.players.length; step++) {
+      const idx = (next.questionerIndex + step) % next.players.length;
+      const pid = next.players[idx]!;
+      if (next.revealedIdentities[pid] === undefined) {
+        nextIdx = idx;
+        nextQId = pid;
+        break;
+      }
+    }
+    if (!nextQId) {
+      next.phase = 'vote';
+      next.currentQuestion = null;
+      next.currentQuestionAnswers = {};
+      next.pendingCardChoices = null;
+      events.push({ type: 'vote_started' });
+      effects.push(system('所有未自告囚犯已完成审讯，进入投票！'));
+      effects.push(scheduleVoteTimeout(next, now));
+    } else {
+      next.questionerIndex = nextIdx;
+      next.currentQuestionerId = nextQId;
+      next.currentQuestion = null;
+      next.currentQuestionAnswers = {};
+      next.pendingCardChoices = drawThreeQuestionCards(QUESTION_DECK, next.usedCardIds, random);
+      events.push({
+        type: 'question_card_offered',
+        questionerId: next.currentQuestionerId,
+        cards: [...next.pendingCardChoices],
+      });
+      effects.push(system(`轮到 ${next.currentQuestionerId} 挑选下一道审讯卡`));
+      effects.push(scheduleQuestionTimeout(next, now));
+    }
+  }
+}
+
+export function assignRolesAndCrimes(
+  players: readonly string[],
+  random: NightRandom,
+): { wardenId: string; crimes: Record<string, CrimeId>; extraCrime: CrimeId } {
+  const shuffledPlayers = random.shuffle([...players]);
+  const wardenId = shuffledPlayers[0]!;
+  const inmates = shuffledPlayers.slice(1);
+  const shuffledCrimes = random.shuffle([...CRIMES]);
+  const crimes: Record<string, CrimeId> = {};
+  inmates.forEach((inmateId, index) => {
+    crimes[inmateId] = shuffledCrimes[index]!;
+  });
+  // 额外随机混入一张干扰罪行卡
+  const extraCrime = shuffledCrimes[inmates.length]!;
+  return { wardenId, crimes, extraCrime };
 }
 
 export function createNightTestimonyState(
@@ -53,22 +195,29 @@ export function createNightTestimonyState(
   configInput: unknown = {},
   wardenId: string,
   crimes: Record<string, CrimeId>,
+  extraCrime: CrimeId | null = null,
 ): NightTestimonyState {
-  if (players.length < 3 || players.length > 6) throw new Error('囚徒之夜需要 3 至 6 名玩家');
+  if (players.length < 3 || players.length > 6) {
+    throw new Error('囚徒之夜需要 3 至 6 名玩家');
+  }
   if (new Set(players).size !== players.length || players.some((id) => id.length < 1)) {
     throw new Error('玩家列表无效');
   }
   const config = parseNightTestimonyConfig(configInput);
-  if (!players.includes(wardenId)) throw new Error('狱警不在本局');
+  if (!players.includes(wardenId)) throw new Error('狱警必须在玩家列表中');
   const inmates = players.filter((id) => id !== wardenId);
-  if (Object.keys(crimes).length !== inmates.length) throw new Error('罪行卡数量与囚犯数不一致');
-  const seen = new Set<CrimeId>();
-  for (const id of inmates) {
-    const crime = crimes[id];
-    if (!crime || !(CRIMES as readonly string[]).includes(crime)) throw new Error('罪行卡无效');
-    if (seen.has(crime)) throw new Error('罪行卡重复');
-    seen.add(crime);
+  const crimeValues = inmates.map((id) => crimes[id]);
+  if (crimeValues.some((c) => c === undefined || !CRIMES.includes(c))) {
+    throw new Error('囚犯罪行未完全分配或无效');
   }
+  if (new Set(crimeValues).size !== inmates.length) {
+    throw new Error('囚犯罪行必须互不相同');
+  }
+  if (crimes[wardenId] !== undefined) {
+    throw new Error('狱警不能分配罪行');
+  }
+
+  const initialCards = QUESTION_DECK.slice(0, 3);
   const state: NightTestimonyState = {
     schemaVersion: 1,
     phase: 'question',
@@ -76,14 +225,20 @@ export function createNightTestimonyState(
     config,
     wardenId,
     crimes: { ...crimes },
-    yesLeft: Object.fromEntries(players.map((id) => [id, YES_COUNT])),
-    noLeft: Object.fromEntries(players.map((id) => [id, NO_COUNT])),
-    answers: [],
-    extraCrime: null,
-    pendingQuestion: null,
+    extraCrime,
+    questionerIndex: 0,
+    currentQuestionerId: players[0]!,
+    pendingCardChoices: [...initialCards],
+    usedCardIds: [],
+    currentQuestion: null,
+    currentQuestionAnswers: {},
+    history: [],
+    playerYesCounts: Object.fromEntries(players.map((id) => [id, 0])),
+    revealedIdentities: {},
     votes: {},
     accusedId: null,
     wardenRevealed: null,
+    guessingInProgress: false,
     wardenGuesses: null,
     crimesAllGuessed: null,
     winners: [],
@@ -92,77 +247,10 @@ export function createNightTestimonyState(
   return state;
 }
 
-/** 问答阶段结束：进入推理阶段（额外罪行卡公开混入） */
-function enterDeduction(
-  state: NightTestimonyState,
-  events: NightTestimonyEvent[],
-  effects: GameEffect[],
-  random: TestimonyRandom,
-  now: number,
-): void {
-  // 从罪行池取一张未被使用的罪行作为额外卡（公开混入）
-  const used = new Set(Object.values(state.crimes));
-  const available = CRIMES.filter((c) => !used.has(c));
-  state.extraCrime = available[random.nextInt(0, available.length)]!;
-  state.phase = 'deduction';
-  events.push({ type: 'deduction_started', extraCrime: state.extraCrime });
-  effects.push(system('推理阶段：一张额外罪行卡混入了公开牌堆'));
-  effects.push({
-    type: 'schedule_timer',
-    timerId: 'deduction',
-    deadlineAt: now + state.config.deductionSeconds * 1000,
-    action: { type: 'end_deduction' },
-  });
-}
-
-/** 结算：最高票被票出并揭示身份；若狱警被票出进入猜罪环节，否则狱警胜 */
-function settleVote(
-  state: NightTestimonyState,
-  events: NightTestimonyEvent[],
-  effects: GameEffect[],
-  votes: Record<string, string>,
-): void {
-  const counts: Record<string, number> = {};
-  for (const target of Object.values(votes)) {
-    counts[target] = (counts[target] ?? 0) + 1;
-  }
-  const maxVotes = Math.max(0, ...state.players.map((id) => counts[id] ?? 0));
-  const top = maxVotes === 0 ? [] : state.players.filter((id) => (counts[id] ?? 0) === maxVotes);
-  // 平票：按座位顺序取第一位（平台裁定）
-  const accusedId = top[0] ?? null;
-  state.accusedId = accusedId;
-  const isWarden = accusedId === state.wardenId;
-  events.push({ type: 'accused_revealed', accusedId: accusedId ?? '', isWarden });
-  if (!isWarden || accusedId === null) {
-    // 票出囚犯（或无人投票）→ 狱警胜利
-    state.wardenRevealed = false;
-    state.phase = 'game_over';
-    state.winners = [state.wardenId];
-    events.push({ type: 'game_finished', winners: [...state.winners] });
-    effects.push(system(accusedId === null ? '无人被票出，狱警逃脱！' : '票错了！被票出的是囚犯，狱警获胜'));
-    return;
-  }
-  // 票出狱警 → 进入猜罪环节
-  state.wardenRevealed = true;
-  state.phase = 'game_over';
-  state.wardenGuesses = null;
-  events.push({ type: 'game_finished', winners: [] });
-  effects.push(system('狱警被票出了！狱警现在要猜出所有囚犯的罪行'));
-}
-
-/** 狱警猜罪：全部正确 → 狱警单独获胜，否则囚犯获胜 */
-function settleGuesses(state: NightTestimonyState, guesses: Record<string, CrimeId>): void {
-  const inmates = state.players.filter((id) => id !== state.wardenId);
-  const allCorrect = inmates.every((id) => guesses[id] === state.crimes[id]);
-  state.wardenGuesses = { ...guesses };
-  state.crimesAllGuessed = allCorrect;
-  state.winners = allCorrect ? [state.wardenId] : state.players.filter((id) => id !== state.wardenId);
-}
-
 export function reduceNightTestimonyState(
   state: NightTestimonyState,
   actionInput: NightTestimonyAction | unknown,
-  ctx: { now: number; random: TestimonyRandom },
+  ctx: { now: number; random?: NightRandom },
 ): NightTestimonyReduceResult {
   let action: NightTestimonyAction;
   try {
@@ -171,154 +259,434 @@ export function reduceNightTestimonyState(
     return deny(error instanceof Error ? error.message : '动作无效');
   }
 
+  const random = ctx.random ?? {
+    nextInt: (min, max) => min,
+    shuffle: (arr) => [...arr],
+  };
+
   if (action.type === 'begin') {
+    // 幂等：仅开局最初（无已问问题、无进行中问题）生效；重放/进行中/已终局一律原样返回
+    if (state.phase !== 'question' || state.currentQuestion !== null || state.history.length > 0) {
+      return idempotent(state);
+    }
+    const next = structuredClone(state);
+    if (!next.pendingCardChoices || next.pendingCardChoices.length === 0) {
+      next.pendingCardChoices = drawThreeQuestionCards(QUESTION_DECK, next.usedCardIds, random);
+    }
     return {
       ok: true,
-      nextState: state,
-      events: [{ type: 'question_started' }],
+      nextState: next,
+      events: [
+        { type: 'round_started' },
+        { type: 'question_card_offered', questionerId: next.currentQuestionerId, cards: [...next.pendingCardChoices] },
+      ],
       effects: [
-        system('狱警已混入人群。问答阶段开始，用 YES/NO 追踪蛛丝马迹！'),
-        {
-          type: 'schedule_timer',
-          timerId: 'question',
-          deadlineAt: ctx.now + state.config.questionSeconds * 1000,
-          action: { type: 'resolve_question' },
-        },
+        system('囚徒之夜开始！顺时针轮流出题，全员提交 YES/NO 进行审讯推理'),
+        scheduleQuestionTimeout(next, ctx.now),
       ],
     };
   }
-  if (state.phase === 'game_over' && state.wardenGuesses !== null) return idempotent(state);
+
+  if (state.phase === 'game_over' && !state.guessingInProgress) {
+    return idempotent(state);
+  }
 
   const next = structuredClone(state);
   const events: NightTestimonyEvent[] = [];
   const effects: GameEffect[] = [];
 
-  // 玩家退出（系统动作，§6.7）：从局内移除；玩家不足则终局（剩余玩家获胜）
+  // 玩家退出处理
   if (action.type === 'player_forfeited') {
     const forfeited = action.playerIds.filter((id) => next.players.includes(id));
     if (forfeited.length === 0) return idempotent(state);
     for (const id of forfeited) {
       next.players = next.players.filter((p) => p !== id);
-      delete next.votes[id];
       delete next.crimes[id];
+      delete next.playerYesCounts[id];
+      delete next.revealedIdentities[id];
+      delete next.votes[id];
+      delete next.currentQuestionAnswers[id];
     }
-    if (next.players.length < 2 || !next.players.includes(next.wardenId)) {
-      // 狱警退出或玩家不足 → 剩余玩家获胜（中局结束）
+    if (next.players.length < 3 || forfeited.includes(next.wardenId)) {
       next.phase = 'game_over';
-      next.wardenRevealed = false;
+      next.guessingInProgress = false;
       next.winners = [...next.players];
       events.push({ type: 'game_finished', winners: [...next.players] });
-      effects.push(system('玩家退出，对局结束'));
+      effects.push(system('对局人数不足或关键角色离开，对局提前结束'));
+      assertNightTestimonyInvariants(next);
+      return { ok: true, nextState: next, events, effects };
+    }
+    if (!next.players.includes(next.currentQuestionerId)) {
+      next.questionerIndex = next.questionerIndex % next.players.length;
+      next.currentQuestionerId = next.players[next.questionerIndex]!;
+      next.currentQuestion = null;
+      next.currentQuestionAnswers = {};
+      next.pendingCardChoices = drawThreeQuestionCards(QUESTION_DECK, next.usedCardIds, random);
+      effects.push(scheduleQuestionTimeout(next, ctx.now));
     }
     assertNightTestimonyInvariants(next);
     return { ok: true, nextState: next, events, effects };
   }
 
-  // 提问
-  if (action.type === 'ask') {
-    if (next.phase !== 'question') return deny('当前不能提问');
-    if (!next.players.includes(action.playerId)) return deny('只有参局玩家可以操作');
-    if (action.targetPlayerId === action.playerId) return deny('不能问自己');
-    if (!next.players.includes(action.targetPlayerId)) return deny('目标不在本局');
-    if (next.pendingQuestion !== null) return deny('已有待回答的问题');
-    if (next.answers.length >= next.config.questionLimit) return deny('已达问答上限');
-    next.pendingQuestion = { questionerId: action.playerId, responderId: action.targetPlayerId, text: action.text };
-    events.push({ type: 'question_asked', questionerId: action.playerId, responderId: action.targetPlayerId, text: action.text });
-    assertNightTestimonyInvariants(next);
-    return { ok: true, nextState: next, events, effects };
-  }
+  // 主动自告 / 自曝身份
+  if (action.type === 'self_expose') {
+    if (next.phase !== 'question' && next.phase !== 'vote') {
+      return deny('当前阶段不能自告身份');
+    }
+    if (!next.players.includes(action.playerId)) return deny('玩家不在本局');
+    if (next.revealedIdentities[action.playerId] !== undefined) {
+      return deny('你已经自告过身份');
+    }
 
-  // 回答（仅被问者可答）
-  if (action.type === 'answer') {
-    if (next.phase !== 'question') return deny('当前不能回答');
-    if (next.pendingQuestion === null) return deny('当前没有问题待回答');
-    if (action.playerId !== next.pendingQuestion.responderId) return deny('还没轮到你回答');
-    const record = {
-      questionerId: next.pendingQuestion.questionerId,
-      responderId: action.playerId,
-      question: next.pendingQuestion.text,
-      answer: action.answer,
-    };
-    if (action.answer === 'yes') {
-      if (next.yesLeft[action.playerId]! <= 0) return deny('YES 标记已用完');
-      next.yesLeft[action.playerId]! -= 1;
+    if (action.playerId === next.wardenId) {
+      // 狱警主动自曝身份 -> 直接跳过提问与投票，立即进入终局猜罪！
+      next.revealedIdentities[action.playerId] = 'warden';
+      next.wardenRevealed = true;
+      next.accusedId = next.wardenId;
+      next.phase = 'game_over';
+      next.guessingInProgress = true;
+      next.currentQuestion = null;
+      next.pendingCardChoices = null;
+
+      const set = new Set<CrimeId>(Object.values(next.crimes));
+      if (next.extraCrime) set.add(next.extraCrime);
+      const availableCrimes = Array.from(set);
+
+      events.push({ type: 'identity_exposed', playerId: action.playerId, identity: 'warden' });
+      events.push({ type: 'guessing_started', availableCrimes });
+      effects.push(system(`🚨 狱警 ${action.playerId} 主动自曝！直接进入终局猜罪环节！`));
+      assertNightTestimonyInvariants(next);
+      return { ok: true, nextState: next, events, effects };
     } else {
-      if (next.noLeft[action.playerId]! <= 0) return deny('NO 标记已用完');
-      next.noLeft[action.playerId]! -= 1;
+      // 罪犯自告 -> 公开真实罪行，排除狱警嫌疑
+      const crime = next.crimes[action.playerId]!;
+      next.revealedIdentities[action.playerId] = crime;
+      events.push({ type: 'identity_exposed', playerId: action.playerId, identity: crime });
+      effects.push(system(`📢 玩家 ${action.playerId} 主动自告身份！公开真实罪行：【${crimeLabel(crime)}】，确认为罪犯（排除狱警嫌疑）！`));
+
+      // 若在提问阶段，检查是否需要推进出题或题目完成
+      if (next.phase === 'question') {
+        const unexposed = next.players.filter((p) => next.revealedIdentities[p] === undefined);
+        if (unexposed.length === 0) {
+          next.phase = 'vote';
+          next.currentQuestion = null;
+          next.currentQuestionAnswers = {};
+          next.pendingCardChoices = null;
+          events.push({ type: 'vote_started' });
+          effects.push(system('所有囚犯均已自告身份，提问终止，进入指认狱警投票！'));
+          effects.push(scheduleVoteTimeout(next, ctx.now));
+        } else if (next.currentQuestion !== null) {
+          const isComplete = unexposed.every((p) => next.currentQuestionAnswers[p] !== undefined);
+          if (isComplete) {
+            const record: QuestionRecord = {
+              questionIndex: next.currentQuestion.questionIndex,
+              questionerId: next.currentQuestion.questionerId,
+              cardId: next.currentQuestion.cardId,
+              question: next.currentQuestion.text,
+              answers: { ...next.currentQuestionAnswers },
+            };
+            next.history.push(record);
+            events.push({
+              type: 'question_completed',
+              questionIndex: record.questionIndex,
+              answers: record.answers,
+            });
+
+            const hitMaxYes = Object.values(next.playerYesCounts).some((count) => count >= next.config.maxYesPerPlayer);
+            const hitLimit = next.history.length >= next.config.questionLimit;
+
+            if (hitMaxYes || hitLimit) {
+              next.phase = 'vote';
+              next.currentQuestion = null;
+              next.currentQuestionAnswers = {};
+              next.pendingCardChoices = null;
+              events.push({ type: 'vote_started' });
+              effects.push(
+                system(
+                  hitMaxYes
+                    ? '有玩家累计回答达到 3 次「是」，提问终止，进入投票！'
+                    : '已完成 5 轮全员审讯，提问终止，进入投票！',
+                ),
+              );
+            } else {
+              let nextIdx = next.questionerIndex;
+              let nextQId = '';
+              for (let step = 1; step <= next.players.length; step++) {
+                const idx = (next.questionerIndex + step) % next.players.length;
+                const pid = next.players[idx]!;
+                if (next.revealedIdentities[pid] === undefined) {
+                  nextIdx = idx;
+                  nextQId = pid;
+                  break;
+                }
+              }
+              if (!nextQId) {
+                next.phase = 'vote';
+                next.currentQuestion = null;
+                next.currentQuestionAnswers = {};
+                next.pendingCardChoices = null;
+                events.push({ type: 'vote_started' });
+                effects.push(system('所有未自告囚犯已完成审讯，进入投票！'));
+                effects.push(scheduleVoteTimeout(next, ctx.now));
+              } else {
+                next.questionerIndex = nextIdx;
+                next.currentQuestionerId = nextQId;
+                next.currentQuestion = null;
+                next.currentQuestionAnswers = {};
+                next.pendingCardChoices = drawThreeQuestionCards(QUESTION_DECK, next.usedCardIds, random);
+
+                events.push({
+                  type: 'question_card_offered',
+                  questionerId: next.currentQuestionerId,
+                  cards: [...next.pendingCardChoices],
+                });
+                effects.push(system(`轮到 ${next.currentQuestionerId} 挑选下一道审讯卡`));
+                effects.push(scheduleQuestionTimeout(next, ctx.now));
+              }
+            }
+          }
+        } else if (next.currentQuestion === null && next.currentQuestionerId === action.playerId) {
+          // 当前出题者自告 -> 轮转到下一个未自告出题者
+          let nextIdx = next.questionerIndex;
+          let nextQId = '';
+          for (let step = 1; step <= next.players.length; step++) {
+            const idx = (next.questionerIndex + step) % next.players.length;
+            const pid = next.players[idx]!;
+            if (next.revealedIdentities[pid] === undefined) {
+              nextIdx = idx;
+              nextQId = pid;
+              break;
+            }
+          }
+          if (!nextQId) {
+            next.phase = 'vote';
+            next.currentQuestion = null;
+            next.currentQuestionAnswers = {};
+            next.pendingCardChoices = null;
+            events.push({ type: 'vote_started' });
+            effects.push(system('所有囚犯均已自告身份，进入投票！'));
+            effects.push(scheduleVoteTimeout(next, ctx.now));
+          } else {
+            next.questionerIndex = nextIdx;
+            next.currentQuestionerId = nextQId;
+            next.pendingCardChoices = drawThreeQuestionCards(QUESTION_DECK, next.usedCardIds, random);
+            events.push({
+              type: 'question_card_offered',
+              questionerId: next.currentQuestionerId,
+              cards: [...next.pendingCardChoices],
+            });
+            effects.push(system(`出题者已自告身份，轮转至 ${next.currentQuestionerId} 挑选下一道审讯卡`));
+            effects.push(scheduleQuestionTimeout(next, ctx.now));
+          }
+        }
+      }
+
+      assertNightTestimonyInvariants(next);
+      return { ok: true, nextState: next, events, effects };
     }
-    next.answers.push(record);
-    next.pendingQuestion = null;
-    events.push({ type: 'answered', questionerId: record.questionerId, responderId: record.responderId, answer: record.answer });
-    // 某玩家 YES 用完 或 达到问答上限 → 立即进入推理
-    const yesExhausted = state.players.some((id) => next.yesLeft[id]! <= 0);
-    if (yesExhausted || next.answers.length >= next.config.questionLimit) {
-      enterDeduction(next, events, effects, ctx.random, ctx.now);
-    }
-    assertNightTestimonyInvariants(next);
-    return { ok: true, nextState: next, events, effects };
   }
 
-  // 问答计时器兜底
-  if (action.type === 'resolve_question') {
-    if (next.phase !== 'question') return idempotent(state);
-    enterDeduction(next, events, effects, ctx.random, ctx.now);
-    assertNightTestimonyInvariants(next);
-    return { ok: true, nextState: next, events, effects };
-  }
+  // 顺时针出题者 3 选 1 挑选题卡
+  if (action.type === 'pick_question_card') {
+    if (next.phase !== 'question') return deny('当前不是提问阶段');
+    if (action.playerId !== next.currentQuestionerId) return deny('还没轮到你出题');
+    if (next.revealedIdentities[action.playerId] !== undefined) return deny('已自告身份的玩家不参与出题');
+    if (next.currentQuestion !== null) return deny('当前问题全员尚未作答完毕');
 
-  // 推理结束 → 投票
-  if (action.type === 'end_deduction') {
-    if (next.phase !== 'deduction') return idempotent(state);
-    next.phase = 'vote';
-    events.push({ type: 'vote_started' });
-    effects.push(system('请投票选出你怀疑的狱警'));
-    effects.push({
-      type: 'schedule_timer',
-      timerId: 'vote',
-      deadlineAt: ctx.now + state.config.voteSeconds * 1000,
-      action: { type: 'resolve_vote' },
+    // 只能从本轮提供的 3 张问题卡中选择（pendingCardChoices 为 null 视为已选过）
+    const card = next.pendingCardChoices?.find((c) => c.id === action.cardId);
+    if (!card) return deny('只能选择提供的 3 张问题卡');
+
+    next.usedCardIds.push(card.id);
+    next.pendingCardChoices = null;
+    const qIndex = next.history.length + 1;
+    next.currentQuestion = {
+      questionIndex: qIndex,
+      questionerId: action.playerId,
+      cardId: card.id,
+      text: card.text,
+    };
+    next.currentQuestionAnswers = {};
+
+    events.push({
+      type: 'question_asked',
+      questionIndex: qIndex,
+      questionerId: action.playerId,
+      cardId: card.id,
+      text: card.text,
     });
+    effects.push(system(`第 ${qIndex} 题由 ${action.playerId} 提出：「${card.text}」——请全员提交是或否`));
+    // 重武装作答超时（同 id 定时器被替换为最新期限）
+    effects.push(scheduleQuestionTimeout(next, ctx.now));
     assertNightTestimonyInvariants(next);
     return { ok: true, nextState: next, events, effects };
   }
 
-  // 投票
+  // 全员提交当前问题的 YES / NO 作答
+  if (action.type === 'answer_question') {
+    if (next.phase !== 'question') return deny('当前不是提问阶段');
+    if (next.currentQuestion === null) return deny('当前无待回答的问题');
+    if (!next.players.includes(action.playerId)) return deny('玩家不在本局');
+    if (next.revealedIdentities[action.playerId] !== undefined) {
+      return deny('已自告身份的玩家不参与问题回答');
+    }
+    if (next.currentQuestionAnswers[action.playerId] !== undefined) {
+      return deny('你已经回答过当前问题');
+    }
+
+    next.currentQuestionAnswers[action.playerId] = action.answer;
+    if (action.answer === 'yes') {
+      next.playerYesCounts[action.playerId] = (next.playerYesCounts[action.playerId] ?? 0) + 1;
+    }
+
+    events.push({
+      type: 'question_answered',
+      questionIndex: next.currentQuestion.questionIndex,
+      playerId: action.playerId,
+      answer: action.answer,
+    });
+
+    // 检查所有未自告身份的玩家是否都已作答
+    const unexposed = next.players.filter((p) => next.revealedIdentities[p] === undefined);
+    const isComplete = unexposed.every((p) => next.currentQuestionAnswers[p] !== undefined);
+    if (isComplete) {
+      // 入库 + 停止条件判断 + 轮转/进入投票（与 question_timeout 共用推进逻辑）
+      advanceQuestion(next, events, effects, random, ctx.now);
+    }
+
+    assertNightTestimonyInvariants(next);
+    return { ok: true, nextState: next, events, effects };
+  }
+
+  // 投票选出潜伏狱警
   if (action.type === 'cast_vote') {
-    if (next.phase !== 'vote') return deny('当前不能投票');
-    if (!next.players.includes(action.playerId)) return deny('只有参局玩家可以操作');
-    if (action.targetPlayerId === action.playerId) return deny('不能投自己');
-    if (!next.players.includes(action.targetPlayerId)) return deny('目标不在本局');
-    if (next.votes[action.playerId] !== undefined) return deny('你已经投过票');
+    if (next.phase !== 'vote') return deny('当前不是投票阶段');
+    if (!next.players.includes(action.playerId)) return deny('玩家不在本局');
+
+    // 只剩一名未自告玩家（其余全部自告为罪犯）时，狱警身份已被锁定：
+    // 投票无合法目标（禁投自己/已自告者），直接判定狱警被票出进入终局猜罪，避免永久卡死
+    const unexposedPlayers = next.players.filter((p) => next.revealedIdentities[p] === undefined);
+    if (unexposedPlayers.length <= 1) {
+      const accused = unexposedPlayers[0] ?? next.wardenId;
+      next.accusedId = accused;
+      next.wardenRevealed = true;
+      next.phase = 'game_over';
+      next.guessingInProgress = true;
+      const set = new Set<CrimeId>(Object.values(next.crimes));
+      if (next.extraCrime) set.add(next.extraCrime);
+      const availableCrimes = Array.from(set);
+      events.push({ type: 'vote_resolved', accusedId: accused, isWarden: true });
+      events.push({ type: 'guessing_started', availableCrimes });
+      effects.push(system(`所有罪犯均已自告身份，潜伏狱警 ${next.wardenId} 无处藏身，进入终局猜罪翻盘环节！`));
+      assertNightTestimonyInvariants(next);
+      return { ok: true, nextState: next, events, effects };
+    }
+
+    if (action.targetPlayerId === action.playerId) return deny('不能投票给自己');
+    if (!next.players.includes(action.targetPlayerId)) return deny('投票目标不在本局');
+    if (next.revealedIdentities[action.targetPlayerId] !== undefined) {
+      return deny('不能投票指认已自告身份的罪犯');
+    }
+    if (next.votes[action.playerId] !== undefined) return deny('你已经投过票了');
+
     next.votes[action.playerId] = action.targetPlayerId;
-    events.push({ type: 'vote_cast', playerId: action.playerId });
-    if (next.players.every((id) => next.votes[id] !== undefined)) {
-      settleVote(next, events, effects, next.votes);
+    events.push({ type: 'vote_cast', playerId: action.playerId, targetPlayerId: action.targetPlayerId });
+
+    // 全员投票完毕 -> 开票结算
+    if (Object.keys(next.votes).length >= next.players.length) {
+      settleVotes(next, events, effects);
     }
+
     assertNightTestimonyInvariants(next);
     return { ok: true, nextState: next, events, effects };
   }
 
-  // 投票计时器兜底
-  if (action.type === 'resolve_vote') {
-    if (next.phase !== 'vote') return idempotent(state);
-    settleVote(next, events, effects, next.votes);
-    assertNightTestimonyInvariants(next);
-    return { ok: true, nextState: next, events, effects };
-  }
-
-  // 狱警猜罪（仅被票出的狱警）
+  // 狱警提交终局猜罪
   if (action.type === 'submit_guesses') {
-    if (next.phase !== 'game_over') return deny('当前不能猜罪');
-    if (next.wardenRevealed !== true || next.wardenGuesses !== null) return deny('当前不能猜罪');
-    if (action.playerId !== next.wardenId) return deny('只有狱警可以猜罪');
+    if (!next.guessingInProgress) return deny('当前不在猜罪环节');
+    if (action.playerId !== next.wardenId) return deny('只有狱警可以提交猜罪');
+
     const inmates = next.players.filter((id) => id !== next.wardenId);
-    if (Object.keys(action.guesses).length !== inmates.length) return deny('必须为每名囚犯猜一个罪行');
-    for (const id of inmates) {
-      if (!CRIMES.includes(action.guesses[id]!)) return deny('罪行无效');
+    const guessKeys = Object.keys(action.guesses);
+    if (inmates.some((id) => !guessKeys.includes(id))) {
+      return deny('必须为所有囚犯指定罪行');
     }
-    settleGuesses(next, action.guesses);
+
+    const allCorrect = inmates.every((id) => action.guesses[id] === next.crimes[id]);
+    next.wardenGuesses = { ...action.guesses };
+    next.crimesAllGuessed = allCorrect;
+    next.guessingInProgress = false;
+    next.phase = 'game_over';
+    next.winners = allCorrect ? [next.wardenId] : inmates;
+
+    events.push({ type: 'guesses_resolved', allCorrect });
     events.push({ type: 'game_finished', winners: [...next.winners] });
-    effects.push(system(next.crimesAllGuessed ? '狱警猜中了全部罪行，单独获胜！' : '狱警猜错了，囚犯们获胜！'));
+    effects.push(
+      system(
+        allCorrect
+          ? `🏆 狱警准确猜出了全部囚犯的真实罪行，惊天翻盘独胜！`
+          : `🎉 狱警猜罪失败，囚犯联盟（${inmates.join('、')}）赢得最终胜利！`,
+      ),
+    );
+
+    assertNightTestimonyInvariants(next);
+    return { ok: true, nextState: next, events, effects };
+  }
+
+  // 提问阶段超时（系统计时器）：出题者未选卡 → 自动选第一张；有人未作答 → 自动补"否"并推进
+  if (action.type === 'question_timeout') {
+    if (next.phase !== 'question') return idempotent(state);
+    if (next.currentQuestion === null) {
+      if (!next.pendingCardChoices || next.pendingCardChoices.length === 0) return idempotent(state);
+      const autoCard = next.pendingCardChoices[0]!;
+      next.usedCardIds.push(autoCard.id);
+      next.pendingCardChoices = null;
+      const qIndex = next.history.length + 1;
+      next.currentQuestion = {
+        questionIndex: qIndex,
+        questionerId: next.currentQuestionerId,
+        cardId: autoCard.id,
+        text: autoCard.text,
+      };
+      next.currentQuestionAnswers = {};
+      events.push({
+        type: 'question_asked',
+        questionIndex: qIndex,
+        questionerId: next.currentQuestionerId,
+        cardId: autoCard.id,
+        text: autoCard.text,
+      });
+      effects.push(system(`出题超时，系统代 ${next.currentQuestionerId} 选题：「${autoCard.text}」——请全员提交是或否`));
+      effects.push(scheduleQuestionTimeout(next, ctx.now));
+    } else {
+      // 作答超时：未作答的未自告玩家按"否"计入，然后照常推进（不重复推 question_completed）
+      const unexposedPlayers = next.players.filter((p) => next.revealedIdentities[p] === undefined);
+      let autoAnswered = false;
+      for (const p of unexposedPlayers) {
+        if (next.currentQuestionAnswers[p] === undefined) {
+          next.currentQuestionAnswers[p] = 'no';
+          autoAnswered = true;
+        }
+      }
+      if (!autoAnswered) return idempotent(state);
+      advanceQuestion(next, events, effects, random, ctx.now);
+    }
+    assertNightTestimonyInvariants(next);
+    return { ok: true, nextState: next, events, effects };
+  }
+
+  // 投票阶段超时（系统计时器）：到点按现有票结算；无人投票则狱警直接获胜
+  if (action.type === 'vote_timeout') {
+    if (next.phase !== 'vote') return idempotent(state);
+    if (Object.keys(next.votes).length === 0) {
+      next.phase = 'game_over';
+      next.guessingInProgress = false;
+      next.winners = [next.wardenId];
+      events.push({ type: 'game_finished', winners: [next.wardenId] });
+      effects.push(system('投票超时无人指认，潜伏狱警成功隐藏，赢得最终胜利！'));
+    } else {
+      settleVotes(next, events, effects);
+    }
     assertNightTestimonyInvariants(next);
     return { ok: true, nextState: next, events, effects };
   }
@@ -335,46 +703,21 @@ export function assertNightTestimonyInvariants(state: NightTestimonyState): void
   ) {
     throw new Error('玩家列表无效');
   }
-  // 狱警退出（player_forfeited 中局结束）后终局：允许 wardenId 不在剩余 players
-  if (state.phase !== 'game_over' && !state.players.includes(state.wardenId)) throw new Error('狱警不在本局');
+  if (state.phase !== 'game_over' && !state.players.includes(state.wardenId)) {
+    throw new Error('狱警不在本局');
+  }
   const inmates = state.players.filter((id) => id !== state.wardenId);
   for (const id of inmates) {
-    if (!CRIMES.includes(state.crimes[id]!)) throw new Error('罪行卡无效');
+    if (state.phase !== 'game_over' && !CRIMES.includes(state.crimes[id] as CrimeId)) {
+      throw new Error(`囚犯 ${id} 罪行无效`);
+    }
   }
-  if (state.phase !== 'game_over' && Object.keys(state.crimes).length !== inmates.length) {
-    throw new Error('罪行卡数量与囚犯数不一致');
+  if (state.crimes[state.wardenId] !== undefined) {
+    throw new Error('狱警不能有罪行');
   }
   for (const id of state.players) {
-    if (!Number.isInteger(state.yesLeft[id]) || state.yesLeft[id]! < 0 || state.yesLeft[id]! > YES_COUNT) {
-      throw new Error('YES 标记无效');
-    }
-    if (!Number.isInteger(state.noLeft[id]) || state.noLeft[id]! < 0 || state.noLeft[id]! > NO_COUNT) {
-      throw new Error('NO 标记无效');
-    }
-  }
-  for (const record of state.answers) {
-    if (!state.players.includes(record.questionerId) || !state.players.includes(record.responderId)) {
-      throw new Error('问答记录无效');
-    }
-    if (record.answer !== 'yes' && record.answer !== 'no') throw new Error('回答无效');
-  }
-  if (state.answers.length > state.config.questionLimit) throw new Error('问答数量超限');
-  if (state.pendingQuestion !== null) {
-    if (!state.players.includes(state.pendingQuestion.questionerId)) throw new Error('待答问题无效');
-  }
-  if (state.extraCrime !== null && !CRIMES.includes(state.extraCrime)) throw new Error('额外罪行卡无效');
-  if (state.phase === 'vote' || state.phase === 'game_over') {
-    if (state.accusedId !== null && !state.players.includes(state.accusedId)) throw new Error('被票者无效');
-  }
-  if (state.phase === 'game_over' && state.wardenRevealed !== null) {
-    // 票出囚犯 → 狱警胜（winners 非空）；票出狱警 → 进入猜罪环节（winners 待填）
-    if (state.wardenRevealed === true && state.wardenGuesses === null) {
-      // 待猜罪中间态：允许
-    } else if (state.winners.length === 0) {
-      throw new Error('终局状态无效');
-    }
-    if (state.wardenGuesses !== null && state.crimesAllGuessed === null) {
-      throw new Error('猜罪结果未填');
+    if (!Number.isInteger(state.playerYesCounts[id]) || state.playerYesCounts[id]! < 0) {
+      throw new Error('玩家 YES 计数无效');
     }
   }
 }

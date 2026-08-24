@@ -71,7 +71,7 @@ test('伪人测试 完整局：判官出题 → 依次回答 → 指认 → 轮�
   assert.equal(s.phase, 'judgment');
   // 判官指认第一个回答者
   const target = order[0]!;
-  const accused = echoJudgeModule.reduce(ctx, s, actor(judge), { type: 'accuse', playerId: judge, targetPlayerId: target });
+  const accused = echoJudgeModule.reduce(ctx, s, actor(judge), { type: 'accuse', playerId: judge, targetPlayerIds: [target] });
   assert.equal(accused.ok, true);
   if (!accused.ok) return;
   s = accused.nextState;

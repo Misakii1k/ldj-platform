@@ -56,12 +56,12 @@ export function PhaseLead({ eyebrow, title, description, aside }: {
   );
 }
 
-export function GameCountdown({ seconds, label = '剩余时间' }: { seconds: number; label?: string }) {
+export function GameCountdown({ seconds, label = '剩余' }: { seconds: number; label?: string }) {
   const ended = seconds <= 0;
   const urgent = seconds > 0 && seconds <= 5;
   return (
     <div className={`game-countdown ${urgent ? 'urgent' : ''} ${ended ? 'ended' : ''}`} role="timer" aria-live="off">
-      <span className="countdown-label">{ended ? '阶段切换' : label}</span>
+      <span className="countdown-label">{ended ? '切换' : label}</span>
       <GameCountdownPulse secondsLeft={seconds} urgentAt={5} active={!ended}>
         <strong>{ended ? '—' : seconds}</strong>
       </GameCountdownPulse>

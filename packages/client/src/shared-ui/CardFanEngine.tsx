@@ -32,9 +32,10 @@ interface FanMetrics {
   lift: number;
   slope: number;
   maxAngleCap: number;
+  containerWidth: number;
 }
 
-const FALLBACK_METRICS: FanMetrics = { width: 76, height: 112, lift: 24, slope: 0.8, maxAngleCap: 40 };
+const FALLBACK_METRICS: FanMetrics = { width: 76, height: 112, lift: 24, slope: 0.8, maxAngleCap: 40, containerWidth: 360 };
 
 /** 出牌飞出动画时长（CSS transition 与延迟回调共用） */
 const PLAY_ANIM_MS = 180;
@@ -47,30 +48,40 @@ export interface FanLayout {
 }
 
 /**
- * 扇形手牌几何纯函数：角度展开（受上限约束）与横向叠牌间距。
- * 单张牌不偏转；相邻角度步进上限 6°，横向步进兼顾牌宽与总宽约束。
+ * 扇形手牌几何纯函数：
+ * - 随卡牌数量增多自动自适应收缩 stepX 叠牌间距，确保在手机竖屏窄视口下完整容纳；
+ * - 角度展开平滑限幅，防止边缘卡牌过度倾斜。
  */
 export function computeFanLayout(
   total: number,
   cardWidth: number,
   maxFanAngle: number,
-  angleCap: number
+  angleCap: number,
+  containerWidth: number = 360
 ): FanLayout {
   if (total <= 1) {
     return { stepAngle: 0, startAngle: 0, stepX: 0, startX: 0 };
   }
   const effMaxAngle = Math.min(maxFanAngle, angleCap);
-  const stepAngle = Math.min(effMaxAngle / (total - 1), 6);
+  // 角度步进：卡牌越多单步张角越收敛
+  const stepAngle = Math.min(effMaxAngle / (total - 1), 32 / (total - 1), 5);
   const startAngle = -((total - 1) * stepAngle) / 2;
-  const stepX = Math.min(cardWidth * 0.48, Math.max(20, 580 / total));
+
+  // 可用横向跨度（预留安全边距）
+  const usableWidth = Math.max(140, Math.min(containerWidth - 16, 760));
+  const maxSpan = Math.max(80, usableWidth - cardWidth);
+
+  // 基础理想步长（约 42% 牌宽），随卡牌增多自动收缩
+  const idealStepX = Math.min(cardWidth * 0.44, 36);
+  const stepX = Math.min(idealStepX, Math.max(12, maxSpan / (total - 1)));
   const startX = -((total - 1) * stepX) / 2;
+
   return { stepAngle, startAngle, stepX, startX };
 }
 
 /**
- * 扇形手牌几何令牌驱动（styles.css `.card-fan-container` 定义 --fan-*，多尺寸适配层按断点覆盖）。
- * 纸牌宽高/选中上浮/坡度系数/最大张角全部从 computed style 读取，JS 不再硬编码断点数值；
- * 窗口尺寸变化时经 ResizeObserver + resize 重读令牌。
+ * 扇形手牌几何令牌驱动：
+ * 从 computed style 与容器尺寸读取真实数据，自适应横屏/竖屏及各种分辨率。
  */
 function useFanMetrics(ref: React.RefObject<HTMLElement | null>): FanMetrics {
   const [metrics, setMetrics] = useState<FanMetrics>(FALLBACK_METRICS);
@@ -84,12 +95,14 @@ function useFanMetrics(ref: React.RefObject<HTMLElement | null>): FanMetrics {
     };
     const read = () => {
       const cs = getComputedStyle(el);
+      const rect = el.getBoundingClientRect();
       setMetrics({
         width: num(cs, '--fan-card-w', FALLBACK_METRICS.width),
         height: num(cs, '--fan-card-h', FALLBACK_METRICS.height),
         lift: num(cs, '--fan-lift', FALLBACK_METRICS.lift),
         slope: num(cs, '--fan-slope', FALLBACK_METRICS.slope),
         maxAngleCap: num(cs, '--fan-max-angle-cap', FALLBACK_METRICS.maxAngleCap),
+        containerWidth: rect.width > 0 ? rect.width : (typeof window !== 'undefined' ? window.innerWidth : 360),
       });
     };
     read();
@@ -118,14 +131,16 @@ export function CardFanEngine({
   playButtonText = '出牌',
 }: CardFanEngineProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const deckRef = useRef<HTMLDivElement | null>(null);
   const metrics = useFanMetrics(containerRef);
   const effCardWidth = cardWidth ?? metrics.width;
   const effCardHeight = cardHeight ?? metrics.height;
   const [internalSelected, setInternalSelected] = useState<string[]>([]);
   const activeSelected = onSelectCards ? selectedCardIds : internalSelected;
 
-  // 邻卡联动：hover/focus 某张牌时，邻近牌按距离轻微抬升
-  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  // 手指滑动/长按/hover 聚焦牌索引，触发风琴式向两侧展开
+  const [peekIdx, setPeekIdx] = useState<number | null>(null);
+  const isPointerDownRef = useRef(false);
 
   // 出牌飞出动画：目标牌渐隐离场后再提交业务回调
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -163,7 +178,6 @@ export function CardFanEngine({
     const targetCard = cards.find((c) => activeSelected.includes(c.id));
     if (targetCard && onPlayCard) {
       webAudio.playCardPlay();
-      // 先播放 180ms 飞出动画，再提交业务（期间禁用出牌按钮防双击）
       setPlayingId(targetCard.id);
       playTimerRef.current = window.setTimeout(() => {
         playTimerRef.current = null;
@@ -174,14 +188,42 @@ export function CardFanEngine({
     }
   };
 
-  // 弧度与横向展开计算
+  // 弧度与横向展开计算（包含卡牌过多时的自适应缩紧）
   const total = cards.length;
   const { stepAngle, startAngle, stepX, startX } = computeFanLayout(
     total,
     effCardWidth,
     maxFanAngle,
-    metrics.maxAngleCap
+    metrics.maxAngleCap,
+    metrics.containerWidth
   );
+
+  // 手指滑动/触摸探索卡牌辅助函数
+  const updatePeekFromClientX = (clientX: number) => {
+    if (total <= 0 || !deckRef.current) return;
+    const rect = deckRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const relX = clientX - centerX;
+    const approxIdx = Math.round((relX - startX) / (stepX || 1));
+    const clamped = Math.max(0, Math.min(total - 1, approxIdx));
+    setPeekIdx(clamped);
+  };
+
+  const handleDeckPointerDown = (e: React.PointerEvent) => {
+    isPointerDownRef.current = true;
+    updatePeekFromClientX(e.clientX);
+  };
+
+  const handleDeckPointerMove = (e: React.PointerEvent) => {
+    if (isPointerDownRef.current || e.pointerType === 'mouse') {
+      updatePeekFromClientX(e.clientX);
+    }
+  };
+
+  const handleDeckPointerUp = () => {
+    isPointerDownRef.current = false;
+    setPeekIdx(null);
+  };
 
   return (
     <div className="card-fan-container" ref={containerRef}>
@@ -201,25 +243,56 @@ export function CardFanEngine({
       )}
 
       {/* 扇形卡牌渲染区 */}
-      <div className="card-fan-deck" style={{ height: effCardHeight + 28 }}>
+      <div
+        className="card-fan-deck"
+        ref={deckRef}
+        style={{ height: effCardHeight + 28 }}
+        onPointerDown={handleDeckPointerDown}
+        onPointerMove={handleDeckPointerMove}
+        onPointerUp={handleDeckPointerUp}
+        onPointerCancel={handleDeckPointerUp}
+        onPointerLeave={handleDeckPointerUp}
+      >
         {cards.map((card, idx) => {
           const isSelected = activeSelected.includes(card.id);
           const isPlaying = playingId === card.id;
-          const angle = startAngle + idx * stepAngle;
-          const translateX = startX + idx * stepX;
+          const isPeeking = peekIdx === idx;
+          const baseAngle = startAngle + idx * stepAngle;
+          let angle = baseAngle;
+          let translateX = startX + idx * stepX;
+          let translateY = isSelected ? -metrics.lift : Math.abs(angle) * metrics.slope;
+          let scale = isSelected ? 1.06 : 1;
+          let zIndex = isSelected || isPlaying ? 100 + idx : idx;
 
-          // 邻卡联动抬升：距 hover 牌 1 格抬 8px、2 格抬 4px（选中态优先，不叠加）
-          let neighborLift = 0;
-          if (hoverIdx !== null && !isSelected && !isPlaying) {
-            const dist = Math.abs(idx - hoverIdx);
-            if (dist === 1) neighborLift = 8;
-            else if (dist === 2) neighborLift = 4;
+          // 邻卡风琴式向两侧避让展开（手指长按/滑动/hover 时的清晰观察动效）
+          if (peekIdx !== null && !isPlaying) {
+            const dist = Math.abs(idx - peekIdx);
+            if (isPeeking) {
+              // 当前聚焦选中的卡牌：大幅抬升、放大、最高层级、稍微摆正角度
+              translateY -= (metrics.lift + 14);
+              scale = 1.16;
+              angle = baseAngle * 0.45;
+              zIndex = 300;
+            } else if (dist === 1) {
+              // 相邻第 1 格：向两侧推开 18px，轻微抬升与微调角度
+              const sign = idx < peekIdx ? -1 : 1;
+              translateX += sign * 18;
+              translateY -= 12;
+              scale = 1.06;
+              zIndex = 200;
+            } else if (dist === 2) {
+              // 相邻第 2 格：向两侧推开 9px
+              const sign = idx < peekIdx ? -1 : 1;
+              translateX += sign * 9;
+              translateY -= 5;
+              scale = 1.02;
+              zIndex = 150;
+            } else if (dist === 3) {
+              const sign = idx < peekIdx ? -1 : 1;
+              translateX += sign * 4;
+            }
           }
 
-          const translateY = isSelected
-            ? -metrics.lift
-            : Math.abs(angle) * metrics.slope - neighborLift;
-          const scale = isSelected ? 1.06 : 1;
           const transform = `translateX(${translateX}px) rotate(${angle}deg) translateY(${translateY}px) scale(${scale})`;
 
           return (
@@ -228,21 +301,22 @@ export function CardFanEngine({
               type="button"
               className={`card-fan-item ${isSelected ? 'card-fan-item--selected' : ''} ${
                 isPlaying ? 'card-fan-item--playing' : ''
-              } ${
+              } ${isPeeking ? 'card-fan-item--peeking' : ''} ${
                 card.disabled || disabled ? 'card-fan-item--disabled' : ''
               } ${card.colorTheme ? `card-fan-item--${card.colorTheme}` : ''} ${card.imageUrl ? 'card-fan-item--has-image' : ''}`}
               style={{
                 transform,
-                zIndex: isSelected || isPlaying ? 100 + idx : idx,
+                zIndex,
                 width: effCardWidth,
                 height: effCardHeight,
               }}
               onClick={() => handleCardClick(card)}
-              onMouseEnter={() => setHoverIdx(idx)}
-              onMouseLeave={() => setHoverIdx((cur) => (cur === idx ? null : cur))}
-              onFocus={() => setHoverIdx(idx)}
-              onBlur={() => setHoverIdx((cur) => (cur === idx ? null : cur))}
+              onMouseEnter={() => setPeekIdx(idx)}
+              onMouseLeave={() => setPeekIdx((cur) => (cur === idx ? null : cur))}
+              onFocus={() => setPeekIdx(idx)}
+              onBlur={() => setPeekIdx((cur) => (cur === idx ? null : cur))}
               disabled={card.disabled || disabled}
+              aria-label={typeof card.label === 'string' ? card.label : undefined}
             >
               {card.imageUrl ? (
                 <img src={card.imageUrl} alt={typeof card.label === 'string' ? card.label : ''} className="card-fan-image" />
