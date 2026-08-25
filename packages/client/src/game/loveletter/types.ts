@@ -27,6 +27,7 @@ export interface LoveLetterPublicView {
   players: { playerId: string; handCount: number; discarded: LoveLetterCard[] }[];
   round: number;
   deckCount: number;
+  removedCount: number;
   removedCards: LoveLetterCard[];
   eliminatedPlayers: string[];
   protectedPlayers: string[];
@@ -47,7 +48,7 @@ export interface LoveLetterPlayerView extends LoveLetterPublicView {
 
 const PUBLIC_KEYS = [
   'gameId', 'rulesetId', 'schemaVersion', 'phase', 'players', 'round', 'deckCount',
-  'removedCards', 'eliminatedPlayers', 'protectedPlayers', 'currentPlayerId',
+  'removedCount', 'removedCards', 'eliminatedPlayers', 'protectedPlayers', 'currentPlayerId',
   'affection', 'affectionTarget', 'roundWinners', 'winners',
 ] as const;
 const ME_KEYS = ['playerId', 'hand', 'inspections'] as const;
@@ -116,6 +117,7 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): LoveLetterPu
     if (discarded === null) return null;
     players.push({ playerId: item.playerId, handCount: item.handCount, discarded });
   }
+  if (!isNonNegativeInteger(view.removedCount)) return null;
   const removedCards = parseCards(view.removedCards);
   if (removedCards === null) return null;
   if (!Array.isArray(view.eliminatedPlayers) || !view.eliminatedPlayers.every(isPlayerId)) return null;
@@ -136,6 +138,7 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): LoveLetterPu
     players,
     round: view.round as number,
     deckCount: view.deckCount as number,
+    removedCount: view.removedCount as number,
     removedCards,
     eliminatedPlayers: [...view.eliminatedPlayers],
     protectedPlayers: [...view.protectedPlayers],

@@ -1,9 +1,9 @@
 /**
- * 游戏视口合约（五档常用尺寸适配 · 验收门）。
+ * 游戏视口合约（七档常用尺寸适配 · 验收门）。
  *
- * 范围内 9 款游戏（排除 undercover / werewolf）× 五档验收视口：
- *   320×568（小屏下限）/ 390×844（手机竖屏首要）/ 844×390（手机横屏）/
- *   768×1024（平板）/ 1280×800（桌面）
+ * 范围内 12 款游戏 × 七档验收视口：
+ *   320×568（小屏下限）/ 360×800（超长安卓）/ 390×844（手机竖屏首要）/
+ *   412×915（超长全面屏）/ 844×390（手机横屏）/ 768×1024（平板）/ 1280×800（桌面）
  *
  * 硬性断言（每款游戏每档）：
  * - 根文档无横向溢出：documentElement.scrollWidth <= clientWidth + 1（uno-house 先例）；
@@ -31,7 +31,9 @@ const STRICT_TOUCH = process.env.VIEWPORT_STRICT_TOUCH === '1';
 
 const VIEWPORTS = [
   { name: '320x568', width: 320, height: 568 },
+  { name: '360x800', width: 360, height: 800 },
   { name: '390x844', width: 390, height: 844 },
+  { name: '412x915', width: 412, height: 915 },
   { name: '844x390', width: 844, height: 390 },
   { name: '768x1024', width: 768, height: 1024 },
   { name: '1280x800', width: 1280, height: 800 },
@@ -136,6 +138,27 @@ const GAME_CASES: GameCase[] = [
     count: 3,
     config: { rulesetId: 'landlord_platform_v1', variant: 'standard' },
     readySelector: '.tabletop-shell, .landlord-stage',
+  },
+  {
+    id: 'undercover',
+    label: '谁是卧底',
+    count: 6,
+    config: {},
+    readySelector: '.tabletop-shell, .uc-stage, .game-phase',
+  },
+  {
+    id: 'werewolf',
+    label: '狼人杀',
+    count: 8,
+    config: {},
+    readySelector: '.tabletop-shell, .werewolf-arena, .werewolf-wing, .seat-ring',
+  },
+  {
+    id: 'party-sandbox',
+    label: '创意工坊',
+    count: 3,
+    config: { rulesetId: 'party_sandbox_v1' },
+    readySelector: '.tabletop-shell, .sandbox-arena',
   },
 ];
 
@@ -294,9 +317,9 @@ async function preparePlayerPage(
   return page;
 }
 
-test.describe('G3-B 游戏视口合约（五档常用尺寸）', () => {
+test.describe('G3-B 游戏视口合约（七档常用尺寸）', () => {
   for (const game of GAME_CASES) {
-    test(`${game.id} ${game.label}：5 档视口无横向溢出`, async ({ browser }) => {
+    test(`${game.id} ${game.label}：7 档视口无横向溢出`, async ({ browser }) => {
       test.setTimeout(120_000);
 
       const seeded = seedRoom(DB_PATH, { gameId: game.id, count: game.count, ready: true, config: game.config });
@@ -340,6 +363,13 @@ test.describe('G3-B 游戏视口合约（五档常用尺寸）', () => {
             if (entry.bottomFit.length > 0) {
               failures.push(`[${vp.name}] 底部溢出：${entry.bottomFit.join(' | ')}`);
             }
+            if (game.id === 'werewolf' && (vp.name === '390x844' || vp.name === '360x800' || vp.name === '412x915')) {
+              const wingCount = await page.locator('.werewolf-wing').count();
+              const ringVisible = await page.locator('.werewolf-desktop-seat-ring, .seat-ring').first().isVisible().catch(() => false);
+              if (wingCount === 0 && !ringVisible) {
+                failures.push(`[${vp.name}] 狼人杀席位缺失：左右翼与马蹄环均不可见`);
+              }
+            }
             if (STRICT_TOUCH) {
               for (const action of entry.primaryActions) {
                 const sizeMatch = /(\d+)x(\d+)/.exec(action);
@@ -355,7 +385,7 @@ test.describe('G3-B 游戏视口合约（五档常用尺寸）', () => {
           }
           REPORT.push({ game: `${game.id} ${game.label}`, entries });
 
-          expect(failures, `${game.label} 五档视口几何违例：\n${failures.join('\n')}`).toEqual([]);
+          expect(failures, `${game.label} 七档视口几何违例：\n${failures.join('\n')}`).toEqual([]);
         } finally {
           await page.context().close();
         }

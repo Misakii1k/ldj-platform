@@ -1,5 +1,4 @@
 import { TabletopOvalShell, type PlayerSeat, type TabletopTheme } from '../../shared-ui/TabletopOvalShell.tsx';
-import { GameLeaveButton } from '../GameLeaveButton.tsx';
 import type { TabletopShellProps } from './types.ts';
 
 export function TabletopShell({ title, phase, phaseKey, gameId, spectator, players, actions, drawer, rulesButton, theme, hideSeats, stageFit = 'arena', children }: TabletopShellProps) {
@@ -34,14 +33,9 @@ export function TabletopShell({ title, phase, phaseKey, gameId, spectator, playe
       hideSeats={hideSeats}
       stageFit={stageFit}
       phaseKey={phaseKey ?? phase}
-      topRightControls={
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {rulesButton}
-          <GameLeaveButton />
-        </div>
-      }
+      topRightControls={rulesButton}
       centerArena={
-        <div style={{ width: '100%', height: '100%', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', overflowY: 'auto' }}>
+        <div className="tabletop-shell-stage">
           {children}
         </div>
       }

@@ -86,6 +86,33 @@ export function GameChatDrawer() {
     hasDragged: boolean;
   } | null>(null);
 
+  useEffect(() => {
+    const clampSavedPos = () => {
+      setBtnPos((prev) => {
+        if (!prev) return prev;
+        const btnSize = 56;
+        const next = {
+          x: Math.max(8, Math.min(window.innerWidth - btnSize - 8, prev.x)),
+          y: Math.max(8, Math.min(window.innerHeight - btnSize - 8, prev.y)),
+        };
+        if (next.x === prev.x && next.y === prev.y) return prev;
+        try {
+          localStorage.setItem('ldj_chat_btn_pos', JSON.stringify(next));
+        } catch {
+          // ignore
+        }
+        return next;
+      });
+    };
+    clampSavedPos();
+    window.addEventListener('resize', clampSavedPos);
+    window.addEventListener('orientationchange', clampSavedPos);
+    return () => {
+      window.removeEventListener('resize', clampSavedPos);
+      window.removeEventListener('orientationchange', clampSavedPos);
+    };
+  }, []);
+
   const handleBtnPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     const btn = e.currentTarget;
     const rect = btn.getBoundingClientRect();

@@ -88,6 +88,7 @@ export interface LoveLetterPublicView {
   players: { playerId: string; handCount: number; discarded: LoveLetterCard[] }[];
   round: number;
   deckCount: number;
+  removedCount: number;
   removedCards: LoveLetterCard[];
   eliminatedPlayers: string[];
   protectedPlayers: string[];

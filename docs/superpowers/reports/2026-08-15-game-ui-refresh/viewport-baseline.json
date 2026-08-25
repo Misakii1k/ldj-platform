@@ -1,442 +1,7 @@
 {
-  "generatedAt": "2026-08-24T09:22:53.946Z",
+  "generatedAt": "2026-08-25T17:12:22.025Z",
   "strictTouch": false,
   "games": [
-    {
-      "game": "bell-clash 铃铛对决",
-      "entries": [
-        {
-          "viewport": "320x568",
-          "overflowX": 0,
-          "scrollWidth": 320,
-          "clientWidth": 320,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-recommend-chip \"📐推荐横屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 274x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "390x844",
-          "overflowX": 0,
-          "scrollWidth": 390,
-          "clientWidth": 390,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-recommend-chip \"📐推荐横屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 344x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "844x390",
-          "overflowX": 0,
-          "scrollWidth": 844,
-          "clientWidth": 844,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-recommend-chip \"📐推荐横屏\" 44x34",
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34",
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 542x41"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 542x41 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "768x1024",
-          "overflowX": 0,
-          "scrollWidth": 768,
-          "clientWidth": 768,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-recommend-chip \"📐推荐横屏\" 97x34",
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "1280x800",
-          "overflowX": 0,
-          "scrollWidth": 1280,
-          "clientWidth": 1280,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-recommend-chip \"📐推荐横屏\" 97x34",
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        }
-      ]
-    },
-    {
-      "game": "durian Durian 榴莲店长",
-      "entries": [
-        {
-          "viewport": "320x568",
-          "overflowX": 0,
-          "scrollWidth": 320,
-          "clientWidth": 320,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 274x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "390x844",
-          "overflowX": 0,
-          "scrollWidth": 390,
-          "clientWidth": 390,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 344x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "844x390",
-          "overflowX": 0,
-          "scrollWidth": 844,
-          "clientWidth": 844,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34",
-            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 542x41"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 542x41 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "768x1024",
-          "overflowX": 0,
-          "scrollWidth": 768,
-          "clientWidth": 768,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 530x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "1280x800",
-          "overflowX": 0,
-          "scrollWidth": 1280,
-          "clientWidth": 1280,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 530x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        }
-      ]
-    },
-    {
-      "game": "echo-judge 伪人测试",
-      "entries": [
-        {
-          "viewport": "320x568",
-          "overflowX": 0,
-          "scrollWidth": 320,
-          "clientWidth": 320,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 274x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "390x844",
-          "overflowX": 0,
-          "scrollWidth": 390,
-          "clientWidth": 390,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 344x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "844x390",
-          "overflowX": 0,
-          "scrollWidth": 844,
-          "clientWidth": 844,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34",
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 542x41"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 542x41 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "768x1024",
-          "overflowX": 0,
-          "scrollWidth": 768,
-          "clientWidth": 768,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "1280x800",
-          "overflowX": 0,
-          "scrollWidth": 1280,
-          "clientWidth": 1280,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        }
-      ]
-    },
-    {
-      "game": "goose-relay 以鹅传鹅",
-      "entries": [
-        {
-          "viewport": "320x568",
-          "overflowX": 0,
-          "scrollWidth": 320,
-          "clientWidth": 320,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"抢当头鹅 👑\" 274x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "390x844",
-          "overflowX": 0,
-          "scrollWidth": 390,
-          "clientWidth": 390,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"抢当头鹅 👑\" 344x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "844x390",
-          "overflowX": 0,
-          "scrollWidth": 844,
-          "clientWidth": 844,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34",
-            "button.tabletop-action.tabletop-action--primary \"抢当头鹅 👑\" 542x41"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"抢当头鹅 👑\" 542x41 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "768x1024",
-          "overflowX": 0,
-          "scrollWidth": 768,
-          "clientWidth": 768,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"抢当头鹅 👑\" 530x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "1280x800",
-          "overflowX": 0,
-          "scrollWidth": 1280,
-          "clientWidth": 1280,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"抢当头鹅 👑\" 530x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        }
-      ]
-    },
-    {
-      "game": "cheese-thief 奶酪大盗",
-      "entries": [
-        {
-          "viewport": "320x568",
-          "overflowX": 0,
-          "scrollWidth": 320,
-          "clientWidth": 320,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 274x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "390x844",
-          "overflowX": 0,
-          "scrollWidth": 390,
-          "clientWidth": 390,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 344x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "844x390",
-          "overflowX": 0,
-          "scrollWidth": 844,
-          "clientWidth": 844,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34",
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 542x41"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 542x41 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "768x1024",
-          "overflowX": 0,
-          "scrollWidth": 768,
-          "clientWidth": 768,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "1280x800",
-          "overflowX": 0,
-          "scrollWidth": 1280,
-          "clientWidth": 1280,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        }
-      ]
-    },
     {
       "game": "loveletter 情书",
       "entries": [
@@ -446,12 +11,22 @@
           "scrollWidth": 320,
           "clientWidth": 320,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
-          ],
+          "smallTargets": [],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 132x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 274x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "360x800",
+          "overflowX": 0,
+          "scrollWidth": 360,
+          "clientWidth": 360,
+          "offenders": [],
+          "smallTargets": [],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 230x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -462,12 +37,22 @@
           "scrollWidth": 390,
           "clientWidth": 390,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
-          ],
+          "smallTargets": [],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 167x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 260x44 首屏可见"
+          ],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "412x915",
+          "overflowX": 0,
+          "scrollWidth": 412,
+          "clientWidth": 412,
+          "offenders": [],
+          "smallTargets": [],
+          "primaryActions": [
+            "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 282x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -479,8 +64,6 @@
           "clientWidth": 844,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34",
             "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 268x41",
             "button.tabletop-action \"重选\" 268x41"
           ],
@@ -496,10 +79,7 @@
           "scrollWidth": 768,
           "clientWidth": 768,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
-          ],
+          "smallTargets": [],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 260x44 首屏可见"
           ],
@@ -512,249 +92,10 @@
           "scrollWidth": 1280,
           "clientWidth": 1280,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
-          ],
+          "smallTargets": [],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"打出所选牌\" 260x44 首屏可见"
           ],
-          "seatCollisions": [],
-          "bottomFit": []
-        }
-      ]
-    },
-    {
-      "game": "night-testimony 暗夜证词",
-      "entries": [
-        {
-          "viewport": "320x568",
-          "overflowX": 0,
-          "scrollWidth": 320,
-          "clientWidth": 320,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 132x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "390x844",
-          "overflowX": 0,
-          "scrollWidth": 390,
-          "clientWidth": 390,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 167x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "844x390",
-          "overflowX": 0,
-          "scrollWidth": 844,
-          "clientWidth": 844,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34",
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 268x41"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 268x41 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "768x1024",
-          "overflowX": 0,
-          "scrollWidth": 768,
-          "clientWidth": 768,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 260x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "1280x800",
-          "overflowX": 0,
-          "scrollWidth": 1280,
-          "clientWidth": 1280,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 260x44 首屏可见"
-          ],
-          "seatCollisions": [],
-          "bottomFit": []
-        }
-      ]
-    },
-    {
-      "game": "uno UNO house",
-      "entries": [
-        {
-          "viewport": "320x568",
-          "overflowX": 0,
-          "scrollWidth": 320,
-          "clientWidth": 320,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
-          ],
-          "primaryActions": [],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "390x844",
-          "overflowX": 0,
-          "scrollWidth": 390,
-          "clientWidth": 390,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
-          ],
-          "primaryActions": [],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "844x390",
-          "overflowX": 0,
-          "scrollWidth": 844,
-          "clientWidth": 844,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
-          ],
-          "primaryActions": [],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "768x1024",
-          "overflowX": 0,
-          "scrollWidth": 768,
-          "clientWidth": 768,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
-          ],
-          "primaryActions": [],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "1280x800",
-          "overflowX": 0,
-          "scrollWidth": 1280,
-          "clientWidth": 1280,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
-          ],
-          "primaryActions": [],
-          "seatCollisions": [],
-          "bottomFit": []
-        }
-      ]
-    },
-    {
-      "game": "landlord 斗地主",
-      "entries": [
-        {
-          "viewport": "320x568",
-          "overflowX": 0,
-          "scrollWidth": 320,
-          "clientWidth": 320,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
-          ],
-          "primaryActions": [],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "390x844",
-          "overflowX": 0,
-          "scrollWidth": 390,
-          "clientWidth": 390,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
-          ],
-          "primaryActions": [],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "844x390",
-          "overflowX": 0,
-          "scrollWidth": 844,
-          "clientWidth": 844,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 44x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 44x34"
-          ],
-          "primaryActions": [],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "768x1024",
-          "overflowX": 0,
-          "scrollWidth": 768,
-          "clientWidth": 768,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
-          ],
-          "primaryActions": [],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "1280x800",
-          "overflowX": 0,
-          "scrollWidth": 1280,
-          "clientWidth": 1280,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-exit-btn \"🚪退出\" 73x34",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 73x34"
-          ],
-          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         }

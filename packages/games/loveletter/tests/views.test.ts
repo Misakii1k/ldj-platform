@@ -21,6 +21,12 @@ test('情书视图严格解析：build→parse 往返一致且只暴露本人手
   const spectator = loveLetterModule.getSpectatorView(state);
   assert.deepEqual(loveLetterModule.parseSpectatorView(spectator), spectator);
   assert.equal('me' in spectator, false);
+  assert.equal(spectator.removedCount, 1);
+  assert.deepEqual(spectator.removedCards, []);
+  for (const card of state.removedCards) {
+    assert.equal(JSON.stringify(spectator).includes(card.id), false);
+    assert.equal(JSON.stringify(loveLetterModule.getPlayerView(state, 'a')).includes(card.id), false);
+  }
   // 手牌绝不进入他人/观战视角
   for (const card of state.hands.a!) {
     assert.equal(JSON.stringify(loveLetterModule.getPlayerView(state, 'b')).includes(card.id), false);

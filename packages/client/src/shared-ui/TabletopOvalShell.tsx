@@ -324,6 +324,8 @@ export function TabletopOvalShell({
           </div>
 
           <div className="tabletop-header__actions">
+            {topRightControls}
+
             {/* 宽幅推荐小贴士 */}
             {(recommendLandscape || gameId === 'party-sandbox' || gameId === 'bell-clash') && orientation === 'portrait' && (
               <button
@@ -333,21 +335,9 @@ export function TabletopOvalShell({
                 title="当前游戏推荐横屏游玩体验更佳"
               >
                 <span className="tabletop-sound-btn__icon" aria-hidden="true">📐</span>
-                <span className="tabletop-sound-btn__label">推荐横屏</span>
+                <span className="tabletop-sound-btn__label tabletop-recommend-chip__label">横屏</span>
               </button>
             )}
-
-            {/* 顶栏快速退出/解散按钮 */}
-            <button
-              type="button"
-              className="tabletop-sound-btn tabletop-exit-btn"
-              onClick={() => setConfirmDialogState('leave')}
-              title={isHost ? '退出或解散房间' : '退出当前房间'}
-              aria-label="退出或解散"
-            >
-              <span className="tabletop-sound-btn__icon" aria-hidden="true">🚪</span>
-              <span className="tabletop-sound-btn__label">退出</span>
-            </button>
 
             {/* 极简快捷菜单按钮 */}
             <button

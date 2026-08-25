@@ -12,10 +12,15 @@ import { parseLandlordPlatformView } from './landlord/types.ts';
 import { parseDurianView } from './durian/types.ts';
 import { parseLoveLetterView } from './loveletter/types.ts';
 import { parseCheeseThiefView } from './cheese-thief/types.ts';
+import { parseCheeseThiefSimView } from './cheese-thief/simTypes.ts';
 import { parseGooseRelayView } from './goose-relay/types.ts';
+import { parseGooseRelaySimView } from './goose-relay/simTypes.ts';
 import { parseNightTestimonyView } from './night-testimony/types.ts';
+import { parseNightTestimonySimView } from './night-testimony/simTypes.ts';
 import { parseBellClashView } from './bell-clash/types.ts';
+import { parseBellClashSimView } from './bell-clash/simTypes.ts';
 import { parseEchoJudgeView } from './echo-judge/types.ts';
+import { parseEchoJudgeSimView } from './echo-judge/simTypes.ts';
 import { parsePartySandboxView } from './party-sandbox/types.ts';
 import type { GameStatePayload } from './types.ts';
 
@@ -53,7 +58,7 @@ const REGISTRY: Readonly<Record<string, GameViewParser>> = {
     parsePlayerView: (view) => parseDurianView(view, 'player'),
     parseSpectatorView: (view) => parseDurianView(view, 'spectator'),
   },
-  'loveletter:loveletter_classic16_v1:1': {
+  'loveletter:loveletter_classic16_v1:2': {
     parsePlayerView: (view) => parseLoveLetterView(view, 'player'),
     parseSpectatorView: (view) => parseLoveLetterView(view, 'spectator'),
   },
@@ -61,21 +66,41 @@ const REGISTRY: Readonly<Record<string, GameViewParser>> = {
     parsePlayerView: (view) => parseCheeseThiefView(view, 'player'),
     parseSpectatorView: (view) => parseCheeseThiefView(view, 'spectator'),
   },
+  'cheese-thief:cheese_thief_sim_v1:1': {
+    parsePlayerView: (view) => parseCheeseThiefSimView(view),
+    parseSpectatorView: (view) => parseCheeseThiefSimView(view),
+  },
   'goose-relay:goose_relay_classic_v1:2': {
     parsePlayerView: (view) => parseGooseRelayView(view, 'player'),
     parseSpectatorView: (view) => parseGooseRelayView(view, 'spectator'),
+  },
+  'goose-relay:goose_relay_sim_v1:1': {
+    parsePlayerView: (view) => parseGooseRelaySimView(view),
+    parseSpectatorView: (view) => parseGooseRelaySimView(view),
   },
   'night-testimony:night_testimony_v1:1': {
     parsePlayerView: (view) => parseNightTestimonyView(view, 'player'),
     parseSpectatorView: (view) => parseNightTestimonyView(view, 'spectator'),
   },
+  'night-testimony:night_testimony_sim_v1:1': {
+    parsePlayerView: (view) => parseNightTestimonySimView(view),
+    parseSpectatorView: (view) => parseNightTestimonySimView(view),
+  },
   'bell-clash:bell_clash_v1:1': {
     parsePlayerView: (view) => parseBellClashView(view, 'player'),
     parseSpectatorView: (view) => parseBellClashView(view, 'spectator'),
   },
+  'bell-clash:bell_clash_sim_v1:1': {
+    parsePlayerView: (view) => parseBellClashSimView(view),
+    parseSpectatorView: (view) => parseBellClashSimView(view),
+  },
   'echo-judge:echo_judge_v1:1': {
     parsePlayerView: (view) => parseEchoJudgeView(view, 'player'),
     parseSpectatorView: (view) => parseEchoJudgeView(view, 'spectator'),
+  },
+  'echo-judge:echo_judge_sim_v1:1': {
+    parsePlayerView: (view) => parseEchoJudgeSimView(view),
+    parseSpectatorView: (view) => parseEchoJudgeSimView(view),
   },
   'party-sandbox:party_sandbox_v1:1': {
     parsePlayerView: (view) => parsePartySandboxView(view, 'player'),

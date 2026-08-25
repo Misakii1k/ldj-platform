@@ -17,7 +17,7 @@ function deckWith(prefix: LoveLetterRole[]): LoveLetterCard[] {
   return [...selected, ...remaining];
 }
 
-const winningDeck = deckWith(['guard', 'guard', 'guard', 'guard', 'guard', 'princess', 'priest']);
+const winningDeck = deckWith(['guard', 'guard', 'guard', 'princess', 'priest']);
 const config = {
   rulesetId: 'loveletter_classic16_v1',
   deckOrder: winningDeck,
@@ -25,7 +25,7 @@ const config = {
 };
 const steps = Array.from({ length: 7 }, () => ({
   actor: actor('a'),
-  action: { type: 'play_card' as const, playerId: 'a', cardId: 'guard-5', targetPlayerId: 'b', guessedRole: 'princess' },
+  action: { type: 'play_card' as const, playerId: 'a', cardId: 'guard-3', targetPlayerId: 'b', guessedRole: 'princess' },
 }));
 
 test('情书契约套件：identity/initial/viewSchemas', () => {

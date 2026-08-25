@@ -370,7 +370,7 @@ export function LoveLetterGamePage({ view }: Props) {
       if (count > 0) playerDiscards[p.playerId] = count;
       totalDiscarded += count;
     }
-    const removedCount = (view.removedCards ?? []).filter((c) => c.role === role).length;
+    const removedCount = 0;
     const myCount = (me?.hand ?? []).filter((c) => c.role === role).length;
     const knownTotal = totalDiscarded + removedCount + myCount;
     const remainingUnknown = Math.max(0, meta.totalCount - knownTotal);
@@ -427,7 +427,7 @@ export function LoveLetterGamePage({ view }: Props) {
         <GameDrawer kind="rules" title="本局规则" triggerRef={rulesRef} onClose={() => setRulesOpen(false)}>
           <p>经典 16 张牌，摸 1 打 1。伯爵夫人在手且王子/国王在手时必须先打出伯爵夫人。</p>
           <p>弃掉公主即淘汰；牌库耗尽时先比手牌点数，再比弃牌区点数。</p>
-          <p>先攒够好感阈值（{view.affectionTarget}）的玩家获胜：2 人 7、3 人 5、4 人 4。</p>
+          <p>先攒够好感阈值（{view.affectionTarget}）的玩家获胜：2 人 7、3 人 5、4 人 4。两人局开局暗置移除 1 张牌，牌面不对任何人公开。</p>
         </GameDrawer>
       )}
     >
@@ -525,20 +525,14 @@ export function LoveLetterGamePage({ view }: Props) {
                 <div className="ll-card-back top" />
               </div>
             </div>
-            {(view.removedCards ?? []).length > 0 && (
+            {(view.removedCount ?? 0) > 0 && (
               <div className="ll-removed-zone">
-                <span className="ll-zone-label">移除弃牌（公开）</span>
+                <span className="ll-zone-label">移除弃牌（不公开）</span>
                 <div className="ll-removed-cards">
-                  {(view.removedCards ?? []).map((card) => (
-                    <div
-                      key={card.id}
-                      className="ll-mini-card"
-                      onMouseEnter={() => setHoveredRole(card.role)}
-                      onMouseLeave={() => setHoveredRole(null)}
-                      onClick={() => setDetailRole(card.role)}
-                    >
-                      <img src={`/assets/loveletter/${card.role}.jpg`} alt="" className="ll-mini-thumb" />
-                      <span>{ROLE_LABELS[card.role]} ({card.value})</span>
+                  {Array.from({ length: view.removedCount }, (_, index) => (
+                    <div key={`removed-${index}`} className="ll-mini-card ll-mini-card--hidden" aria-label="暗置移除的牌">
+                      <div className="ll-card-back ll-mini-thumb" />
+                      <span>暗置</span>
                     </div>
                   ))}
                 </div>

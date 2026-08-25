@@ -22,7 +22,7 @@ function deckWith(prefix: LoveLetterRole[]): LoveLetterCard[] {
 
 function initial(ctx: GameContext = deterministicContext(), forcePriest = false) {
   const config = forcePriest
-    ? { rulesetId: 'loveletter_classic16_v1' as const, deckOrder: deckWith(['guard', 'guard', 'guard', 'guard', 'priest', 'princess', 'guard']) }
+    ? { rulesetId: 'loveletter_classic16_v1' as const, deckOrder: deckWith(['guard', 'guard', 'priest', 'princess', 'guard']) }
     : { rulesetId: 'loveletter_classic16_v1' as const };
   return loveLetterModule.createInitialState(ctx, players, loveLetterModule.parseConfig(config));
 }
@@ -78,7 +78,7 @@ test('情书终局动作返回正式结果候选', () => {
   const ctx = deterministicContext();
   const state = loveLetterModule.createInitialState(ctx, players, loveLetterModule.parseConfig({
     rulesetId: 'loveletter_classic16_v1',
-    deckOrder: deckWith(['guard', 'guard', 'guard', 'guard', 'guard', 'princess', 'priest']),
+    deckOrder: deckWith(['guard', 'guard', 'guard', 'princess', 'priest']),
   }));
   state.affection.a = 6;
   const guard = state.hands.a!.find((card) => card.role === 'guard')!;
@@ -91,7 +91,7 @@ test('情书终局动作返回正式结果候选', () => {
 });
 
 test('情书稳定完整轨迹结果 only-once 且快照可重放', () => {
-  const winningDeck = deckWith(['guard', 'guard', 'guard', 'guard', 'guard', 'princess', 'priest']);
+  const winningDeck = deckWith(['guard', 'guard', 'guard', 'princess', 'priest']);
   const config = {
     rulesetId: 'loveletter_classic16_v1',
     deckOrder: winningDeck,
@@ -102,7 +102,7 @@ test('情书稳定完整轨迹结果 only-once 且快照可重放', () => {
     action: {
       type: 'play_card',
       playerId: 'a',
-      cardId: 'guard-5',
+      cardId: 'guard-3',
       targetPlayerId: 'b',
       guessedRole: 'princess',
     },

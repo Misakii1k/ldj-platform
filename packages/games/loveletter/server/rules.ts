@@ -64,7 +64,7 @@ function prepareRound(
   validateDeck(deckOrder);
   const deck = deckOrder.map((card) => ({ ...card }));
   const reserveCard = deck.shift()!;
-  const removedCards = players.length === 2 ? deck.splice(0, 3) : [];
+  const removedCards = players.length === 2 ? deck.splice(0, 1) : [];
   const hands: Record<string, LoveLetterCard[]> = Object.fromEntries(players.map((id) => [id, [deck.shift()!]]));
   hands[starterId]!.push(deck.shift()!);
   return {

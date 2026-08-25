@@ -28,7 +28,7 @@ import type {
 export const LOVELETTER_VERSIONED_IDENTITY = {
   engineContractVersion: 2 as const,
   rulesetId: 'loveletter_classic16_v1',
-  viewVersion: 1,
+  viewVersion: 2,
 } as const;
 
 function parseState(input: unknown): LoveLetterState {

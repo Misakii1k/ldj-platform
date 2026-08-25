@@ -13,8 +13,8 @@ test('情书 manifest shape 与模块身份一致', () => {
   assert.equal(loveLetterModule.manifest.id, 'loveletter');
   assert.equal(loveLetterModule.identity.rulesetId, 'loveletter_classic16_v1');
   assert.equal(loveLetterModule.identity.engineContractVersion, 2);
-  assert.equal(loveLetterModule.identity.viewVersion, 1);
-  assert.deepEqual(LOVELETTER_VERSIONED_IDENTITY, { engineContractVersion: 2, rulesetId: 'loveletter_classic16_v1', viewVersion: 1 });
+  assert.equal(loveLetterModule.identity.viewVersion, 2);
+  assert.deepEqual(LOVELETTER_VERSIONED_IDENTITY, { engineContractVersion: 2, rulesetId: 'loveletter_classic16_v1', viewVersion: 2 });
   assert.deepEqual(loveLetterModule.registeredRulesets, ['loveletter_classic16_v1']);
   assert.equal(loveLetterModule.defaultRulesetId, 'loveletter_classic16_v1');
 });

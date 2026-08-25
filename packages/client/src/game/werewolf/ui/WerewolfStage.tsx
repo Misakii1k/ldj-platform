@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { GameActionFeedback } from '../../../shared-ui/GameMotion.tsx';
 import { TabletopOvalShell, type TabletopTheme } from '../../../shared-ui/TabletopOvalShell.tsx';
-import { GameLeaveButton } from '../../GameLeaveButton.tsx';
 import { buildWerewolfPhaseKey } from '../motion.ts';
 import type { WerewolfPresentationModel } from '../presentation.ts';
 import { EyeBlinkTransition } from './EyeBlinkTransition.tsx';
@@ -24,7 +23,7 @@ interface WerewolfStageProps {
 export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfStageProps) {
   const [mobileLayout, setMobileLayout] = useState(false);
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 899px), (orientation: landscape) and (max-height: 520px)');
+    const mediaQuery = window.matchMedia('(max-width: 767px), (orientation: landscape) and (max-height: 520px)');
     const update = () => setMobileLayout(mediaQuery.matches);
     update();
     mediaQuery.addEventListener('change', update);

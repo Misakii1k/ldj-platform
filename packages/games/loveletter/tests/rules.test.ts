@@ -21,8 +21,8 @@ function deckWith(prefix: LoveLetterRole[]): LoveLetterCard[] {
 }
 
 function stateWithDeals(a: LoveLetterRole, b: LoveLetterRole, draw: LoveLetterRole, futureDeckOrders?: LoveLetterCard[][]) {
-  // 两人局：第 1 张备用，第 2–4 张公开移除，第 5/6 张发给 a/b，第 7 张由 a 摸取。
-  const deckOrder = deckWith(['guard', 'priest', 'baron', 'handmaid', a, b, draw]);
+  // 两人局：第 1 张备用，第 2 张暗置移除，第 3/4 张发给 a/b，第 5 张由 a 摸取。
+  const deckOrder = deckWith(['guard', 'priest', a, b, draw]);
   return createLoveLetterState(['a', 'b'], { deckOrder, ...(futureDeckOrders ? { futureDeckOrders } : {}) });
 }
 
@@ -42,10 +42,10 @@ test('经典牌组恰为 16 张且角色数量正确', () => {
   );
 });
 
-test('2–4 人初始化、两人备用与公开移除、摸一张开始回合', () => {
+test('2–4 人初始化、两人备用与暗置移除一张、摸一张开始回合', () => {
   const two = createLoveLetterState(['a', 'b']);
   assert.equal(two.reserveCard !== null, true);
-  assert.equal(two.removedCards.length, 3);
+  assert.equal(two.removedCards.length, 1);
   assert.equal(two.hands.a!.length, 2);
   assert.equal(two.hands.b!.length, 1);
   assert.equal(createLoveLetterState(['a', 'b', 'c']).affectionTarget, 5);
