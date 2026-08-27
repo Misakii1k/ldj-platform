@@ -7,9 +7,8 @@ import {
   type IdentityCardState,
 } from '../src/shared-ui/IdentityFlipCard.tsx';
 
-test('初始状态为未按压、未锁定常驻且背面遮蔽', () => {
+test('初始状态为未按压且背面遮蔽', () => {
   assert.equal(INITIAL_IDENTITY_CARD_STATE.isPressing, false);
-  assert.equal(INITIAL_IDENTITY_CARD_STATE.isLockedOpen, false);
   assert.equal(computeIsRevealed(INITIAL_IDENTITY_CARD_STATE, false), false);
 });
 
@@ -53,28 +52,11 @@ test('观战者或不可交互状态下禁止长按揭开', () => {
   assert.equal(computeIsRevealed(lockedState, false), false);
 });
 
-test('支持锁定常驻查看并在再次点击后解锁', () => {
-  let state = INITIAL_IDENTITY_CARD_STATE;
+test('环境防窥：切换后台或失焦时强制扣回', () => {
+  const openState: IdentityCardState = { isPressing: true };
+  assert.equal(computeIsRevealed(openState, false), true);
 
-  // 点击锁键锁定常驻
-  state = reduceIdentityCardState(state, { type: 'toggle_lock', canInteract: true, isSpectator: false });
-  assert.equal(state.isLockedOpen, true);
-  assert.equal(computeIsRevealed(state, false), true);
-
-  // 再次点击解锁
-  state = reduceIdentityCardState(state, { type: 'toggle_lock', canInteract: true, isSpectator: false });
-  assert.equal(state.isLockedOpen, false);
-  assert.equal(computeIsRevealed(state, false), false);
-});
-
-test('环境防窥：切换后台或失焦时强制扣回并清除锁定状态', () => {
-  // 处于常驻锁定态
-  const lockedState: IdentityCardState = { isPressing: true, isLockedOpen: true };
-  assert.equal(computeIsRevealed(lockedState, false), true);
-
-  // 触发切后台或失焦
-  const resetState = reduceIdentityCardState(lockedState, { type: 'emergency_hide' });
+  const resetState = reduceIdentityCardState(openState, { type: 'emergency_hide' });
   assert.equal(resetState.isPressing, false);
-  assert.equal(resetState.isLockedOpen, false);
   assert.equal(computeIsRevealed(resetState, false), false);
 });

@@ -245,7 +245,7 @@ test('模型目录区分超时、网络失败、非法配置并传递私网策�
     }), 'UPSTREAM_TIMEOUT');
     await expectCatalogError(fetchLlmModels({
       provider: 'openai',
-      baseUrl: 'not-a-url',
+      baseUrl: 'http://bad host',
       apiKey: null,
     }), 'INVALID_CONFIG');
     for (const baseUrl of [

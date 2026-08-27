@@ -417,4 +417,28 @@ test.describe('全页面视觉识别与多视口走查', () => {
     await ctPage.context().close();
     await durianPage.context().close();
   });
+
+  test('6c. 桌面模拟模式（奶酪大盗 / 铃铛对决 / 暗夜证词 / 伪人测试 / 鹅传鹅）自由道具走查', async ({ browser }) => {
+    type SimShotSpec = { file: string; gameId: string; count: number; config: Record<string, unknown>; nickname: string };
+    const simSpecs: SimShotSpec[] = [
+      { file: '24_sim_cheese_thief.png', gameId: 'cheese-thief', count: 5, config: { rulesetId: 'cheese_thief_sim_v1', roleCards: true }, nickname: '盗鼠模拟' },
+      { file: '25_sim_bell_clash.png', gameId: 'bell-clash', count: 3, config: { rulesetId: 'bell_clash_sim_v1', handSize: 3 }, nickname: '叮铃模拟' },
+      { file: '26_sim_goose_relay.png', gameId: 'goose-relay', count: 5, config: { rulesetId: 'goose_relay_sim_v1', candidateCount: 9 }, nickname: '鹅传模拟' },
+      { file: '27_sim_night_testimony.png', gameId: 'night-testimony', count: 4, config: { rulesetId: 'night_testimony_sim_v1' }, nickname: '证词模拟' },
+      { file: '28_sim_echo_judge.png', gameId: 'echo-judge', count: 4, config: { rulesetId: 'echo_judge_sim_v1' }, nickname: '伪人模拟' },
+    ];
+    for (const spec of simSpecs) {
+      const seeded = seedRoom(DB_PATH, { gameId: spec.gameId, count: spec.count, ready: true, config: spec.config });
+      const driver = await RoomDriver.resume(WS_URL, seeded.roomCode, seeded.hostId, seeded.hostResumeToken);
+      const startAck = await driver.startGame(spec.config);
+      if (startAck.type !== 'ack') throw new Error(`${spec.gameId} sim startGame 失败：${startAck.payload?.code ?? ''} ${startAck.payload?.message ?? ''}`);
+      const page = await preparePlayerPage(browser, 1280, 800, { ...seeded.players[0]!, roomCode: seeded.roomCode, nickname: spec.nickname });
+      await page.goto(BASE_URL);
+      await expect(page.locator('.tabletop-shell').first()).toBeVisible({ timeout: 20_000 });
+      await page.waitForTimeout(400);
+      await saveScreenshot(page, spec.file);
+      driver.client.close();
+      await page.context().close();
+    }
+  });
 });

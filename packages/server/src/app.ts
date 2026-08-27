@@ -242,6 +242,13 @@ export function createApp(
         logger.error('bot_outcome_broadcast_failed', { roomId, message: (err as Error).message });
       }
     },
+    onChat: (roomId, messages) => {
+      try {
+        ws.broadcastToRoom(roomId, 'chat_batch', { messages });
+      } catch (err) {
+        logger.error('bot_chat_broadcast_failed', { roomId, message: (err as Error).message });
+      }
+    },
   });
 
   // D4-B P3：外部裁判队列接线。

@@ -10,6 +10,7 @@ import type {
   WerewolfTeam,
   WerewolfView,
 } from './types.ts';
+import type { ChatMessageView } from '@ldj/shared';
 import type { MemberLike } from '../useGameAction.ts';
 import { nameFor } from '../useGameAction.ts';
 
@@ -96,6 +97,37 @@ export const WEREWOLF_ROLE_ARTWORK: Record<WerewolfRole, string> = {
   idiot: '/assets/roles/idiot.png',
 };
 
+export const WEREWOLF_ROLE_DETAILS: Record<WerewolfRole, { skill: string; win: string }> = {
+  wolf: {
+    skill: '夜晚与同伴商议，刀死一名玩家。白天隐藏身份，引导放逐好人。',
+    win: '屠边或屠城成功：消灭所有神职，或消灭所有村民。',
+  },
+  seer: {
+    skill: '每晚查验一名存活玩家，得知对方属于狼人还是好人。',
+    win: '好人获胜：放逐全部狼人。',
+  },
+  witch: {
+    skill: '解药救当晚刀口，毒药毒死一名玩家。各用一次，同一晚通常不能又救又毒。',
+    win: '好人获胜：放逐全部狼人。',
+  },
+  guard: {
+    skill: '每晚守护一名玩家，使其免疫当晚刀杀。不能连续两晚守同一人。',
+    win: '好人获胜：放逐全部狼人。',
+  },
+  hunter: {
+    skill: '被刀或被票出局时可开枪带走一名存活玩家。被毒杀通常不能开枪。',
+    win: '好人获胜：放逐全部狼人。',
+  },
+  idiot: {
+    skill: '被白天放逐时翻牌免死，之后失去投票权，但仍计为存活。',
+    win: '好人获胜：放逐全部狼人。',
+  },
+  villager: {
+    skill: '没有夜间技能。靠发言、投票和信息判断找出狼人。',
+    win: '好人获胜：放逐全部狼人。',
+  },
+};
+
 export interface WerewolfTeammateInfo {
   readonly playerId: string;
   readonly name: string;
@@ -153,6 +185,8 @@ export interface WerewolfPresentationModel {
     readonly headline: string;
     readonly rows: readonly { readonly name: string; readonly roleLabel: string }[];
   } | null;
+  /** 当前发言者最近一条公屏，遗言阶段同样适用 */
+  readonly speakerLine: string | null;
 }
 
 function teamLabel(team: WerewolfTeam | null): string {
@@ -448,13 +482,29 @@ function voteLedgerOf(view: WerewolfView, members: readonly MemberLike[]) {
   };
 }
 
+export function latestSpeakerLine(
+  speakerId: string | null,
+  chat: readonly ChatMessageView[],
+): string | null {
+  if (!speakerId) return null;
+  for (let index = chat.length - 1; index >= 0; index -= 1) {
+    const message = chat[index];
+    if (message && message.kind === 'player' && message.fromPlayerId === speakerId && message.text.trim()) {
+      return message.text.trim();
+    }
+  }
+  return null;
+}
+
 export function buildWerewolfPresentation(
   view: WerewolfView,
   members: readonly MemberLike[],
+  chat: readonly ChatMessageView[] = [],
 ): WerewolfPresentationModel {
   const me = view.me;
   const actionGroups = buildActionGroups(view, members);
   const voting = view.phase === 'voting' || view.phase === 'runoff_voting';
+  const speakerId = view.phase === 'last_words' ? view.lastWordsPlayerId : view.currentSpeakerId;
 
   return {
     phase: view.phase,
@@ -473,7 +523,9 @@ export function buildWerewolfPresentation(
         alive: player.alive,
         statusLabel: statusLabelOf(view, player.playerId),
         isSelf: player.playerId === me?.playerId,
-        isSpeaking: player.playerId === view.currentSpeakerId,
+        isSpeaking:
+          player.playerId === view.currentSpeakerId
+          || (view.phase === 'last_words' && player.playerId === view.lastWordsPlayerId),
         isWolfTeammate: (me?.wolfTeammateIds ?? []).includes(player.playerId),
         idiotRevealed: player.idiotRevealed,
         revealedRoleLabel: player.revealedRole ? WEREWOLF_ROLE_NAMES[player.revealedRole] : null,
@@ -522,6 +574,7 @@ export function buildWerewolfPresentation(
     waitingHint: waitingHintOf(view, actionGroups.length > 0),
     voteProgress: voting ? { submitted: view.votesSubmitted, expected: view.votesExpected } : null,
     voteLedger: view.phase === 'vote_result' ? voteLedgerOf(view, members) : null,
+    speakerLine: latestSpeakerLine(speakerId, chat),
     reveal: view.reveal
       ? {
           headline: view.aborted ? '本局已中止' : `${teamLabel(view.winner)}获胜`,

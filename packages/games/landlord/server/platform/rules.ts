@@ -318,7 +318,7 @@ function basePublicView(state: PlatformState): PlatformPublicView {
     schemaVersion: 1,
     phase: state.phase,
     players: state.players.map((playerId) => ({ playerId, handCount: state.hands[playerId]?.length ?? 0 })),
-    bottomCards: [],
+    bottomCards: state.landlordId ? state.bottomCards.map((c) => ({ ...c })) : [],
     bids: state.bids.map((b) => ({ playerId: b.playerId, score: b.score })),
     currentBidderId: state.currentBidderId,
     landlordId: state.landlordId,
@@ -342,10 +342,8 @@ export function buildPlatformPublicView(state: PlatformState): PlatformPublicVie
 export function buildPlatformPlayerView(state: PlatformState, playerId: string): PlatformPlayerView {
   const base = basePublicView(state);
   if (!state.players.includes(playerId)) return { ...base, me: null };
-  const isLandlord = state.landlordId === playerId;
   return {
     ...base,
-    bottomCards: isLandlord ? state.bottomCards.map((c) => ({ ...c })) : [],
     me: { playerId, hand: (state.hands[playerId] ?? []).map((c) => ({ ...c })) },
   };
 }

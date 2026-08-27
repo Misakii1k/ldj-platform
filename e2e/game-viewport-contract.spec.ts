@@ -68,7 +68,7 @@ const GAME_CASES: GameCase[] = [
   },
   {
     id: 'durian',
-    label: 'Durian 榴莲店长',
+    label: 'DURING',
     count: 2,
     config: { rulesetId: 'durian_orchard_v1', orderDeck: DURIAN_ORDER_DECK },
     readySelector: '.tabletop-shell',

@@ -51,17 +51,14 @@ export type IdentityCardAction =
   | { type: 'pointer_down'; canInteract: boolean; isSpectator: boolean }
   | { type: 'pointer_up' }
   | { type: 'pointer_cancel' }
-  | { type: 'toggle_lock'; canInteract: boolean; isSpectator: boolean }
-  | { type: 'emergency_hide' }; // blur or visibilitychange
+  | { type: 'emergency_hide' };
 
 export interface IdentityCardState {
   isPressing: boolean;
-  isLockedOpen: boolean;
 }
 
 export const INITIAL_IDENTITY_CARD_STATE: IdentityCardState = {
   isPressing: false,
-  isLockedOpen: false,
 };
 
 export function reduceIdentityCardState(
@@ -75,18 +72,15 @@ export function reduceIdentityCardState(
     case 'pointer_up':
     case 'pointer_cancel':
       return { ...state, isPressing: false };
-    case 'toggle_lock':
-      if (!action.canInteract || action.isSpectator) return state;
-      return { ...state, isLockedOpen: !state.isLockedOpen };
     case 'emergency_hide':
-      return { isPressing: false, isLockedOpen: false };
+      return { isPressing: false };
     default:
       return state;
   }
 }
 
 export function computeIsRevealed(state: IdentityCardState, isSpectator: boolean): boolean {
-  return (state.isPressing || state.isLockedOpen) && !isSpectator;
+  return state.isPressing && !isSpectator;
 }
 
 const DEFAULT_THEME_BADGES: Record<IdentityCardTheme, string> = {
@@ -117,9 +111,8 @@ export function IdentityFlipCard({
   children,
 }: IdentityFlipCardProps) {
   const [isPressing, setIsPressing] = useState(false);
-  const [isLockedOpen, setIsLockedOpen] = useState(false);
 
-  const isRevealed = (isPressing || isLockedOpen) && !isSpectator;
+  const isRevealed = isPressing && !isSpectator;
 
   // 触发振动与音效反馈
   const triggerFeedback = useCallback(() => {
@@ -142,7 +135,6 @@ export function IdentityFlipCard({
   useEffect(() => {
     const hideAndLock = () => {
       setIsPressing(false);
-      setIsLockedOpen(false);
     };
 
     const onVisibility = () => {
@@ -179,7 +171,6 @@ export function IdentityFlipCard({
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (!canInteract || isSpectator) return;
     // 忽略小锁按钮本身的 pointer 事件穿透
-    if ((e.target as HTMLElement).closest('.identity-card-lock-btn')) return;
     e.preventDefault();
     setIsPressing(true);
     triggerFeedback();
@@ -198,16 +189,6 @@ export function IdentityFlipCard({
       setIsPressing(false);
     }
   }, [isPressing]);
-
-  const handleToggleLock = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!canInteract || isSpectator) return;
-    setIsLockedOpen((prev) => {
-      const next = !prev;
-      triggerFeedback();
-      return next;
-    });
-  }, [canInteract, isSpectator, triggerFeedback]);
 
   const displayBadge = badgeLabel || DEFAULT_THEME_BADGES[theme];
   const hintsArray = Array.isArray(secretHints)
@@ -232,9 +213,7 @@ export function IdentityFlipCard({
     >
       {/* 3D 翻牌主舞台 */}
       <div
-        className={`identity-flip-card ${isRevealed ? 'is-revealed' : ''} ${
-          isLockedOpen ? 'is-locked' : ''
-        }`}
+        className={`identity-flip-card ${isRevealed ? 'is-revealed' : ''}`}
         onPointerMove={handlePointerMove}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
@@ -273,19 +252,6 @@ export function IdentityFlipCard({
           <div className="identity-card-front">
             <div className="identity-card-front__aura" />
             <div className="identity-card-holo-foil" />
-            
-            {/* 右上角常驻锁止按钮 */}
-            {canInteract && !isSpectator && (
-              <button
-                type="button"
-                className={`identity-card-lock-btn ${isLockedOpen ? 'is-locked' : ''}`}
-                onClick={handleToggleLock}
-                title={isLockedOpen ? '解锁（恢复松手自动防窥）' : '锁定常驻显示（便于查看）'}
-                aria-label={isLockedOpen ? '已锁定常驻，点击解除' : '点击锁定常驻显示'}
-              >
-                {isLockedOpen ? '🔓 已常驻' : '🔒 锁常驻'}
-              </button>
-            )}
 
             <div className="identity-card-front__header">
               {roleSubtitle && (
@@ -328,7 +294,7 @@ export function IdentityFlipCard({
 
             <div className="identity-card-front__footer">
               <span className="identity-card-front__safe-hint">
-                {isLockedOpen ? '👀 离开页面将自动遮挡' : '👀 松手瞬间自动遮扣防窥'}
+                松手后自动遮挡
               </span>
             </div>
           </div>

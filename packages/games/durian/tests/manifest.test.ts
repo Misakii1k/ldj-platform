@@ -5,7 +5,7 @@ import { durianModule, DURIAN_VERSIONED_IDENTITY } from '../server/index.ts';
 
 test('durian manifest shape 与模块身份一致', () => {
   assert.equal(DURIAN_MANIFEST.id, 'durian');
-  assert.equal(DURIAN_MANIFEST.displayName, 'During');
+  assert.equal(DURIAN_MANIFEST.displayName, 'DURING');
   assert.equal(DURIAN_MANIFEST.version, '0.1.0');
   assert.equal(DURIAN_MANIFEST.maxPlayers, 7);
   assert.equal(DURIAN_MANIFEST.stateSchemaVersion, 1);

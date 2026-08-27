@@ -52,6 +52,11 @@ test('ai settings state：规范化 Base URL 的空白和末尾斜杠', () => {
   assert.equal(normalizeBaseUrl('   '), '');
 });
 
+test('ai settings state：省略协议头时补全 https', () => {
+  assert.equal(normalizeBaseUrl('api.example.com/v1'), 'https://api.example.com/v1');
+  assert.equal(normalizeBaseUrl(' api.anthropic.com '), 'https://api.anthropic.com');
+});
+
 test('ai settings state：关键字段指纹对等价表单保持稳定', () => {
   const first = createConfigFingerprint(form);
   const equivalent = createConfigFingerprint({

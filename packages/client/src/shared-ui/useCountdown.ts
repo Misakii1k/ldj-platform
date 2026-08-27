@@ -20,11 +20,16 @@ function nowMs(): number {
  * @param deadlineAt 服务端绝对时间戳（毫秒）；null 表示无倒计时
  * @param serverNow 最近一次服务端 serverNow（用于时钟校正，可选）
  */
-export function useCountdown(deadlineAt: number | null, serverNow?: number): Countdown {
+function toDeadlineMs(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+export function useCountdown(deadlineAt: number | null | undefined, serverNow?: number): Countdown {
+  const deadlineMs = toDeadlineMs(deadlineAt);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
-    if (deadlineAt === null) return;
+    if (deadlineMs === null) return;
 
     let timeoutId = 0;
     let cancelled = false;
@@ -33,7 +38,7 @@ export function useCountdown(deadlineAt: number | null, serverNow?: number): Cou
       window.clearTimeout(timeoutId);
       if (cancelled || document.hidden) return;
       setTick((current) => current + 1);
-      const remaining = Math.max(0, deadlineAt - Date.now());
+      const remaining = Math.max(0, deadlineMs - Date.now());
       const delay = Math.min(1000, Math.max(120, remaining % 1000 || 1000));
       timeoutId = window.setTimeout(schedule, delay);
     };
@@ -54,18 +59,18 @@ export function useCountdown(deadlineAt: number | null, serverNow?: number): Cou
       window.clearTimeout(timeoutId);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [deadlineAt]);
+  }, [deadlineMs]);
 
   // 时钟偏移：服务端时间 - 本地时间（>0 表示本地慢）
   const offset = serverNow !== undefined && serverNow > 0 ? serverNow - nowMs() : 0;
   // 用 tick 强制重算
   void tick;
 
-  if (deadlineAt === null) {
+  if (deadlineMs === null) {
     return { secondsLeft: 0, expired: false };
   }
   const adjustedNow = nowMs() + offset;
-  const remain = Math.ceil((deadlineAt - adjustedNow) / 1000);
+  const remain = Math.ceil((deadlineMs - adjustedNow) / 1000);
   return {
     secondsLeft: Math.max(0, remain),
     expired: remain <= 0,

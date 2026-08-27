@@ -24,6 +24,7 @@ export interface CardFanEngineProps {
   cardHeight?: number;  // 显式覆盖牌高 (px)；缺省读样式表 --fan-card-h 令牌（随断点变化）
   disabled?: boolean;
   playButtonText?: string;
+  hidePlayButton?: boolean;
 }
 
 interface FanMetrics {
@@ -129,6 +130,7 @@ export function CardFanEngine({
   cardHeight,
   disabled = false,
   playButtonText = '出牌',
+  hidePlayButton = false,
 }: CardFanEngineProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const deckRef = useRef<HTMLDivElement | null>(null);
@@ -210,12 +212,14 @@ export function CardFanEngine({
   };
 
   const handleDeckPointerDown = (e: React.PointerEvent) => {
-    isPointerDownRef.current = true;
+    if (e.pointerType === 'touch') {
+      isPointerDownRef.current = true;
+    }
     updatePeekFromClientX(e.clientX);
   };
 
   const handleDeckPointerMove = (e: React.PointerEvent) => {
-    if (isPointerDownRef.current || e.pointerType === 'mouse') {
+    if (e.pointerType === 'mouse' || isPointerDownRef.current) {
       updatePeekFromClientX(e.clientX);
     }
   };
@@ -225,10 +229,15 @@ export function CardFanEngine({
     setPeekIdx(null);
   };
 
+  const handleDeckPointerLeave = () => {
+    isPointerDownRef.current = false;
+    setPeekIdx(null);
+  };
+
   return (
     <div className="card-fan-container" ref={containerRef}>
       {/* 选牌后的出牌操作浮条 */}
-      {activeSelected.length > 0 && onPlayCard && (
+      {activeSelected.length > 0 && onPlayCard && !hidePlayButton && (
         <div className="card-fan-action-bar">
           <button
             type="button"
@@ -251,7 +260,7 @@ export function CardFanEngine({
         onPointerMove={handleDeckPointerMove}
         onPointerUp={handleDeckPointerUp}
         onPointerCancel={handleDeckPointerUp}
-        onPointerLeave={handleDeckPointerUp}
+        onPointerLeave={handleDeckPointerLeave}
       >
         {cards.map((card, idx) => {
           const isSelected = activeSelected.includes(card.id);
@@ -311,11 +320,9 @@ export function CardFanEngine({
                 height: effCardHeight,
               }}
               onClick={() => handleCardClick(card)}
-              onMouseEnter={() => setPeekIdx(idx)}
-              onMouseLeave={() => setPeekIdx((cur) => (cur === idx ? null : cur))}
               onFocus={() => setPeekIdx(idx)}
               onBlur={() => setPeekIdx((cur) => (cur === idx ? null : cur))}
-              disabled={card.disabled || disabled}
+              aria-disabled={card.disabled || disabled || undefined}
               aria-label={typeof card.label === 'string' ? card.label : undefined}
             >
               {card.imageUrl ? (

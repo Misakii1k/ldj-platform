@@ -24,19 +24,33 @@ export interface LlmDecision<A> {
   option: BotActionOption<A>;
   /** 模型给的一句话理由，写日志便于观察它在想什么 */
   reason: string | null;
+  /** 需要发言时模型写的公屏正文；模块未声明 speech 时恒为 null */
+  speech: string | null;
 }
 
-const SYSTEM_PROMPT = [
-  '你在陪人类玩一局桌游，请像一个认真的玩家那样做决定。',
-  '你只能从给出的候选动作里选一个，用它的编号回答。',
-  '严格按 JSON 回复，不要加解释文字或代码块标记：',
-  '{"choice": "<候选动作编号>", "reason": "<一句话理由，20 字以内>"}',
-].join('\n');
+function buildSystemPrompt(needsSpeech: boolean): string {
+  const lines = [
+    '你在陪人类玩一局桌游，请像一个认真的玩家那样做决定。',
+    '行动前先看大家已经说过的话：结合桌上已有的发言和局势再做决定，不要无视别人的发言。',
+    '你只能从给出的候选动作里选一个，用它的编号回答。',
+    '严格按 JSON 回复，不要加解释文字或代码块标记：',
+  ];
+  if (needsSpeech) {
+    lines.push('{"choice": "<候选动作编号>", "speech": "<公屏发言，1到2句中文>", "reason": "<一句话理由，20 字以内>"}');
+    lines.push('speech 是说给桌上其他人听的：接大家已经说出的话茬（附和、质疑或补充），不要复述别人说过的内容；也不要在里面报身份或夜间结果。');
+  } else {
+    lines.push('{"choice": "<候选动作编号>", "reason": "<一句话理由，20 字以内>"}');
+  }
+  return lines.join('\n');
+}
 
 function buildUserPrompt<A>(prompt: BotPromptContext<A>): string {
   const lines = [prompt.roleBrief, '', prompt.situation, '', '可选动作：'];
   for (const option of prompt.options) {
     lines.push(`${option.id}. ${option.label}`);
+  }
+  if (prompt.speech) {
+    lines.push('', `同时写一段公屏发言（最多 ${prompt.speech.maxChars} 字）：${prompt.speech.instruction}`);
   }
   lines.push('', '请选择一个编号。');
   return lines.join('\n');
@@ -46,17 +60,18 @@ function buildUserPrompt<A>(prompt: BotPromptContext<A>): string {
 function extractChoice<A>(
   raw: string,
   options: readonly BotActionOption<A>[],
-): { id: string; reason: string | null } | null {
+): { id: string; reason: string | null; speech: string | null } | null {
   const trimmed = raw.trim();
   const fenced = /```(?:json)?\s*([\s\S]*?)```/.exec(trimmed);
   const candidate = fenced?.[1]?.trim() ?? trimmed;
 
   try {
-    const parsed = JSON.parse(candidate) as { choice?: unknown; reason?: unknown };
+    const parsed = JSON.parse(candidate) as { choice?: unknown; reason?: unknown; speech?: unknown };
     const choice = typeof parsed.choice === 'string' ? parsed.choice.trim() : '';
     if (options.some((o) => o.id === choice)) {
       const reason = typeof parsed.reason === 'string' ? parsed.reason.slice(0, 60) : null;
-      return { id: choice, reason };
+      const speech = typeof parsed.speech === 'string' ? parsed.speech.trim() : null;
+      return { id: choice, reason, speech };
     }
   } catch {
     // 不是合法 JSON，走下面的宽松匹配
@@ -65,7 +80,7 @@ function extractChoice<A>(
   const byLength = [...options].sort((a, b) => b.id.length - a.id.length);
   for (const option of byLength) {
     if (new RegExp(`(^|[^0-9])${option.id}([^0-9]|$)`).test(candidate)) {
-      return { id: option.id, reason: null };
+      return { id: option.id, reason: null, speech: null };
     }
   }
   return null;
@@ -104,7 +119,7 @@ export class LlmClient {
         model: this.#config.model,
         apiKey: this.#config.apiKey,
         thinkingDepth: this.#config.thinkingDepth,
-        system: SYSTEM_PROMPT,
+        system: buildSystemPrompt(Boolean(prompt.speech)),
         user: buildUserPrompt(prompt),
         maxOutputTokens: 400,
         temperature: 0.7,
@@ -150,7 +165,11 @@ export class LlmClient {
         reason: choice.reason,
         elapsedMs: Date.now() - startedAt,
       });
-      return { option, reason: choice.reason };
+      return {
+        option,
+        reason: choice.reason,
+        speech: prompt.speech ? choice.speech : null,
+      };
     } catch (error) {
       const aborted = (error as Error).name === 'AbortError';
       this.#logger.warn(aborted ? 'llm_timeout' : 'llm_request_failed', {

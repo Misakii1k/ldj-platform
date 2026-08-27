@@ -5,7 +5,7 @@ import {
   type LlmProviderType,
   type ThinkingDepth,
 } from '@ldj/shared';
-import { normalizeLlmBaseUrl } from './llmBaseUrl.ts';
+import { normalizeLlmBaseUrl, hasVersionedPath } from './llmBaseUrl.ts';
 
 export interface LlmInferenceRequestInput {
   provider: LlmProviderType;
@@ -28,7 +28,7 @@ const THINKING_BUDGETS: Partial<Record<ThinkingDepth, number>> = {
 function appendEndpoint(baseUrl: string, suffix: string): string {
   const normalized = normalizeLlmBaseUrl(baseUrl);
   if (normalized.endsWith(suffix)) return normalized;
-  return normalized.endsWith('/v1') ? `${normalized}${suffix}` : `${normalized}/v1${suffix}`;
+  return hasVersionedPath(normalized) ? `${normalized}${suffix}` : `${normalized}/v1${suffix}`;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -51,7 +51,7 @@ export function buildInferenceUrl(baseUrl: string, provider: LlmProviderType): s
 export function buildModelsUrl(baseUrl: string): string {
   const normalized = normalizeLlmBaseUrl(baseUrl);
   if (normalized.endsWith('/models')) return normalized;
-  return normalized.endsWith('/v1') ? `${normalized}/models` : `${normalized}/v1/models`;
+  return hasVersionedPath(normalized) ? `${normalized}/models` : `${normalized}/v1/models`;
 }
 
 export function buildModelsHeaders(
@@ -126,24 +126,39 @@ export function extractText(provider: LlmProviderType, body: unknown): string | 
     const message = asRecord(choice?.message);
     const text = normalizedString(message?.content);
     if (text !== null) return text;
+    const reasoning = normalizedString(message?.reasoning_content);
+    if (reasoning !== null) return reasoning;
   }
   return null;
 }
 
 export function parseModelPage(body: unknown): { ids: string[]; nextUrl: string | null } {
   const record = asRecord(body);
-  if (record === null) return { ids: [], nextUrl: null };
+  if (record === null && !Array.isArray(body)) return { ids: [], nextUrl: null };
   const ids: string[] = [];
   const seen = new Set<string>();
-  if (Array.isArray(record.data)) {
-    for (const item of record.data) {
-      const id = normalizedString(asRecord(item)?.id, 128);
+  const list = record !== null
+    ? (Array.isArray(record.data) ? record.data : Array.isArray(record.models) ? record.models : null)
+    : (Array.isArray(body) ? body : null);
+
+  if (list !== null) {
+    for (const item of list) {
+      let id: string | null = null;
+      if (typeof item === 'string') {
+        id = normalizedString(item, 128);
+      } else {
+        const itemRecord = asRecord(item);
+        id = normalizedString(itemRecord?.id, 128)
+          ?? normalizedString(itemRecord?.name, 128)
+          ?? normalizedString(itemRecord?.model, 128);
+      }
       if (id !== null && !seen.has(id)) {
         seen.add(id);
         ids.push(id);
       }
     }
   }
+  if (record === null) return { ids, nextUrl: null };
   const explicitNext = normalizedString(record.next) ?? normalizedString(record.next_page);
   if (explicitNext !== null) return { ids, nextUrl: explicitNext };
   const lastId = normalizedString(record.last_id, 128);

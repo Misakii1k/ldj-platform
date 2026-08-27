@@ -5,7 +5,7 @@ import { nightTestimonyModule, NIGHT_TESTIMONY_VERSIONED_IDENTITY } from '../ser
 
 test('囚徒之夜 manifest shape 与模块身份一致', () => {
   assert.equal(NIGHT_TESTIMONY_MANIFEST.id, 'night-testimony');
-  assert.equal(NIGHT_TESTIMONY_MANIFEST.displayName, '囚徒之夜');
+  assert.equal(NIGHT_TESTIMONY_MANIFEST.displayName, '暗夜证词');
   assert.equal(NIGHT_TESTIMONY_MANIFEST.minPlayers, 3);
   assert.equal(NIGHT_TESTIMONY_MANIFEST.maxPlayers, 6);
   assert.equal(NIGHT_TESTIMONY_MANIFEST.stateSchemaVersion, 1);

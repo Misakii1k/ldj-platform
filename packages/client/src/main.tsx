@@ -5,6 +5,7 @@ import { isNativeApp } from './app/nativePlatform.ts';
 import { initGestureLock } from './shared-ui/gestureLock.ts';
 import './styles.css';
 import './shared-ui/GameMotion.css';
+import './shared-ui/game-ui.css';
 
 initGestureLock();
 

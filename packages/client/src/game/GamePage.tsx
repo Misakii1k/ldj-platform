@@ -2,9 +2,9 @@
  * 游戏页：先按 moduleId 分流到各游戏，再按 phase 渲染对应子视图。
  * game_state payload 经 asPlayerView 解析后分发。
  */
-import { lazy, Suspense, useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
+import { lazyWithRetry } from '../shared-ui/lazyWithRetry.ts';
 import { useConnection } from '../connection/useConnection.ts';
-import { GameLeaveButton } from './GameLeaveButton.tsx';
 import { asPlayerView } from './types.ts';
 import { parseGameView } from './viewRegistry.ts';
 import { GamePhaseRail } from './GameChrome.tsx';
@@ -19,21 +19,24 @@ import { TabletopSettlementDock } from './TabletopSettlementDock.tsx';
 import { nameFor } from './useGameAction.ts';
 import { setAppImmersiveMode } from '../native/immersive.ts';
 
-
-
-const UnoGamePage = lazy(() => import('./NewGamePages.tsx').then((module) => ({ default: module.UnoGamePage })));
-const LandlordGamePage = lazy(() => import('./NewGamePages.tsx').then((module) => ({ default: module.LandlordGamePage })));
-const WerewolfGamePage = lazy(() => import('./werewolf/WerewolfGamePage.tsx').then((module) => ({ default: module.WerewolfGamePage })));
-const UnoHouseStage = lazy(() => import('./uno/stage/UnoHouseStage.tsx').then((module) => ({ default: module.UnoHouseStage })));
-const UndercoverBlankStage = lazy(() => import('./undercover/stage/UndercoverBlankStage.tsx').then((module) => ({ default: module.UndercoverBlankStage })));
-const DurianGamePage = lazy(() => import('./durian/DurianGamePage.tsx').then((module) => ({ default: module.DurianGamePage })));
-const LoveLetterGamePage = lazy(() => import('./loveletter/LoveLetterGamePage.tsx').then((module) => ({ default: module.LoveLetterGamePage })));
-const CheeseThiefGamePage = lazy(() => import('./cheese-thief/CheeseThiefGamePage.tsx').then((module) => ({ default: module.CheeseThiefGamePage })));
-const GooseRelayGamePage = lazy(() => import('./goose-relay/GooseRelayGamePage.tsx').then((module) => ({ default: module.GooseRelayGamePage })));
-const NightTestimonyGamePage = lazy(() => import('./night-testimony/NightTestimonyGamePage.tsx').then((module) => ({ default: module.NightTestimonyGamePage })));
-const BellClashGamePage = lazy(() => import('./bell-clash/BellClashGamePage.tsx').then((module) => ({ default: module.BellClashGamePage })));
-const EchoJudgeGamePage = lazy(() => import('./echo-judge/EchoJudgeGamePage.tsx').then((module) => ({ default: module.EchoJudgeGamePage })));
-const PartySandboxGamePage = lazy(() => import('./party-sandbox/PartySandboxGamePage.tsx').then((module) => ({ default: module.PartySandboxGamePage })));
+const UnoGamePage = lazyWithRetry(() => import('./NewGamePages.tsx').then((module) => ({ default: module.UnoGamePage })), 'uno');
+const LandlordGamePage = lazyWithRetry(() => import('./NewGamePages.tsx').then((module) => ({ default: module.LandlordGamePage })), 'landlord');
+const WerewolfGamePage = lazyWithRetry(() => import('./werewolf/WerewolfGamePage.tsx').then((module) => ({ default: module.WerewolfGamePage })), 'werewolf');
+const UnoHouseStage = lazyWithRetry(() => import('./uno/stage/UnoHouseStage.tsx').then((module) => ({ default: module.UnoHouseStage })), 'uno-house');
+const UndercoverBlankStage = lazyWithRetry(() => import('./undercover/stage/UndercoverBlankStage.tsx').then((module) => ({ default: module.UndercoverBlankStage })), 'undercover');
+const DurianGamePage = lazyWithRetry(() => import('./durian/DurianGamePage.tsx').then((module) => ({ default: module.DurianGamePage })), 'durian');
+const LoveLetterGamePage = lazyWithRetry(() => import('./loveletter/LoveLetterGamePage.tsx').then((module) => ({ default: module.LoveLetterGamePage })), 'loveletter');
+const CheeseThiefGamePage = lazyWithRetry(() => import('./cheese-thief/CheeseThiefGamePage.tsx').then((module) => ({ default: module.CheeseThiefGamePage })), 'cheese-thief');
+const GooseRelayGamePage = lazyWithRetry(() => import('./goose-relay/GooseRelayGamePage.tsx').then((module) => ({ default: module.GooseRelayGamePage })), 'goose-relay');
+const NightTestimonyGamePage = lazyWithRetry(() => import('./night-testimony/NightTestimonyGamePage.tsx').then((module) => ({ default: module.NightTestimonyGamePage })), 'night-testimony');
+const BellClashGamePage = lazyWithRetry(() => import('./bell-clash/BellClashGamePage.tsx').then((module) => ({ default: module.BellClashGamePage })), 'bell-clash');
+const EchoJudgeGamePage = lazyWithRetry(() => import('./echo-judge/EchoJudgeGamePage.tsx').then((module) => ({ default: module.EchoJudgeGamePage })), 'echo-judge');
+const PartySandboxGamePage = lazyWithRetry(() => import('./party-sandbox/PartySandboxGamePage.tsx').then((module) => ({ default: module.PartySandboxGamePage })), 'party-sandbox');
+const BellClashSimStage = lazyWithRetry(() => import('./bell-clash/BellClashSimStage.tsx').then((module) => ({ default: module.BellClashSimStage })), 'bell-clash-sim');
+const EchoJudgeSimStage = lazyWithRetry(() => import('./echo-judge/EchoJudgeSimStage.tsx').then((module) => ({ default: module.EchoJudgeSimStage })), 'echo-judge-sim');
+const NightTestimonySimStage = lazyWithRetry(() => import('./night-testimony/NightTestimonySimStage.tsx').then((module) => ({ default: module.NightTestimonySimStage })), 'night-testimony-sim');
+const GooseRelaySimStage = lazyWithRetry(() => import('./goose-relay/GooseRelaySimStage.tsx').then((module) => ({ default: module.GooseRelaySimStage })), 'goose-relay-sim');
+const CheeseThiefSimStage = lazyWithRetry(() => import('./cheese-thief/CheeseThiefSimStage.tsx').then((module) => ({ default: module.CheeseThiefSimStage })), 'cheese-thief-sim');
 
 import { GameIcon } from '../shared-ui/GameIcon.tsx';
 
@@ -203,7 +206,6 @@ function UndercoverGamePage({ game }: { game: ActiveGame }) {
       currentUserId={view.me?.playerId}
       phaseKey={`${view.phase}:${view.round}:${view.currentSpeakerId ?? 'idle'}`}
       phaseBannerText={view.phase === 'speaking' && view.currentSpeakerId === view.me?.playerId ? '轮到你发言' : undefined}
-      topRightControls={<GameLeaveButton />}
       centerArena={
         <div className="uc-stage" data-uc-phase={view.phase}>
           {view.phase !== 'game_over' && <GamePhaseRail phase={view.phase} />}
@@ -281,7 +283,7 @@ export function GamePage() {
     case 'durian': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameErrorCard title="During 数据格式异常" />;
+        content = <GameErrorCard title="DURING 数据格式异常" />;
         break;
       }
       content = <DurianGamePage view={parsed.view as import('./durian/types.ts').DurianPlayerView} />;
@@ -302,7 +304,10 @@ export function GamePage() {
         content = <GameErrorCard title="奶酪大盗数据格式异常" />;
         break;
       }
-      content = <CheeseThiefGamePage view={parsed.view as import('./cheese-thief/types.ts').CheeseThiefPlayerView} />;
+      const v = parsed.view;
+      content = isRecord(v) && v.rulesetId === 'cheese_thief_sim_v1'
+        ? <CheeseThiefSimStage view={v as unknown as import('./cheese-thief/simTypes.ts').CheeseThiefSimPlayerView} />
+        : <CheeseThiefGamePage view={parsed.view as import('./cheese-thief/types.ts').CheeseThiefPlayerView} />;
       break;
     }
     case 'goose-relay': {
@@ -311,25 +316,34 @@ export function GamePage() {
         content = <GameErrorCard title="以鹅传鹅数据格式异常" />;
         break;
       }
-      content = <GooseRelayGamePage view={parsed.view as import('./goose-relay/types.ts').GooseRelayPlayerView} />;
+      const v = parsed.view;
+      content = isRecord(v) && v.rulesetId === 'goose_relay_sim_v1'
+        ? <GooseRelaySimStage view={v as unknown as import('./goose-relay/simTypes.ts').GooseRelaySimPlayerView} />
+        : <GooseRelayGamePage view={parsed.view as import('./goose-relay/types.ts').GooseRelayPlayerView} />;
       break;
     }
     case 'night-testimony': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameErrorCard title="囚徒之夜数据格式异常" />;
+        content = <GameErrorCard title="暗夜证词数据格式异常" />;
         break;
       }
-      content = <NightTestimonyGamePage view={parsed.view as import('./night-testimony/types.ts').NightTestimonyPlayerView} />;
+      const v = parsed.view;
+      content = isRecord(v) && v.rulesetId === 'night_testimony_sim_v1'
+        ? <NightTestimonySimStage view={v as unknown as import('./night-testimony/simTypes.ts').NightTestimonySimPlayerView} />
+        : <NightTestimonyGamePage view={parsed.view as import('./night-testimony/types.ts').NightTestimonyPlayerView} />;
       break;
     }
     case 'bell-clash': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameErrorCard title="Ding 数据格式异常" />;
+        content = <GameErrorCard title="铃铛对决数据格式异常" />;
         break;
       }
-      content = <BellClashGamePage view={parsed.view as import('./bell-clash/types.ts').BellClashPlayerView} />;
+      const v = parsed.view;
+      content = isRecord(v) && v.rulesetId === 'bell_clash_sim_v1'
+        ? <BellClashSimStage view={v as unknown as import('./bell-clash/simTypes.ts').BellClashSimPlayerView} />
+        : <BellClashGamePage view={parsed.view as import('./bell-clash/types.ts').BellClashPlayerView} />;
       break;
     }
     case 'echo-judge': {
@@ -338,7 +352,10 @@ export function GamePage() {
         content = <GameErrorCard title="伪人测试数据格式异常" />;
         break;
       }
-      content = <EchoJudgeGamePage view={parsed.view as import('./echo-judge/types.ts').EchoJudgePlayerView} />;
+      const v = parsed.view;
+      content = isRecord(v) && v.rulesetId === 'echo_judge_sim_v1'
+        ? <EchoJudgeSimStage view={v as unknown as import('./echo-judge/simTypes.ts').EchoJudgeSimPlayerView} />
+        : <EchoJudgeGamePage view={parsed.view as import('./echo-judge/types.ts').EchoJudgePlayerView} />;
       break;
     }
     case 'party-sandbox': {

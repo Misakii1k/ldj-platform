@@ -46,6 +46,19 @@ test('协议端点拒绝携带凭据、query 或 hash 的 Base URL', () => {
   }
 });
 
+test('Base URL 支持省略协议头，且非 v1 版本路径不重复插入 /v1', () => {
+  assert.equal(buildInferenceUrl('api.example.com/v1', 'openai'), 'https://api.example.com/v1/chat/completions');
+  assert.equal(buildInferenceUrl('api.anthropic.com', 'anthropic'), 'https://api.anthropic.com/v1/messages');
+  assert.equal(buildModelsUrl('api.example.com/v1'), 'https://api.example.com/v1/models');
+  assert.equal(
+    buildInferenceUrl('https://open.bigmodel.cn/api/paas/v4', 'openai'),
+    'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+  );
+  assert.equal(buildModelsUrl('https://open.bigmodel.cn/api/paas/v4'), 'https://open.bigmodel.cn/api/paas/v4/models');
+  assert.equal(buildInferenceUrl('http://127.0.0.1:11434', 'openai'), 'http://127.0.0.1:11434/v1/chat/completions');
+  assert.throws(() => buildInferenceUrl('api.example.com/v1?token=secret', 'openai'));
+});
+
 test('OpenAI reasoning 请求省略 temperature 并原样发送思考深度', () => {
   const request = buildInferenceRequest(inferenceInput('openai', 'max'));
   assert.deepEqual(request.headers, {

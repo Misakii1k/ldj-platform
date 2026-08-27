@@ -41,6 +41,7 @@ export function UnoHouseStage({ view }: Props) {
   const { act, busy, error } = useGameAction();
   const [wildCardId, setWildCardId] = useState<string | null>(null);
   const [showRules, setShowRules] = useState(false);
+  const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
   const [unoShouter, setUnoShouter] = useState<string | null>(null);
   const prevUnoCallersRef = useRef<Set<string>>(new Set());
 
@@ -95,10 +96,12 @@ export function UnoHouseStage({ view }: Props) {
     if (inWindow && caps.has('canStackPenalty')) {
       if (card.kind === 'wild' || card.kind === 'wild4') setWildCardId(card.id);
       else void act({ type: 'stack_penalty', cardId: card.id });
+      setSelectedCardIds([]);
       return;
     }
     if (card.kind === 'wild' || card.kind === 'wild4') setWildCardId(card.id);
     else void act({ type: 'play_card', cardId: card.id });
+    setSelectedCardIds([]);
   }
 
   function confirmWild(color: UnoColor) {
@@ -110,6 +113,7 @@ export function UnoHouseStage({ view }: Props) {
       void act({ type: 'play_card', cardId: wildCardId, declaredColor: color });
     }
     setWildCardId(null);
+    setSelectedCardIds([]);
   }
 
   // 轮到自己时触发轻微触觉反馈
@@ -164,6 +168,14 @@ export function UnoHouseStage({ view }: Props) {
       score: view.cumulativeScores?.[playerIdx],
     };
   });
+
+  const handIds = (me?.hand ?? []).map((card) => card.id).join('|');
+  useEffect(() => {
+    setSelectedCardIds((prev) => {
+      const next = prev.filter((id) => (me?.hand ?? []).some((card) => card.id === id));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [handIds, me?.hand]);
 
   // 映射手牌扇形
   const fanCards: CardItem[] = (me?.hand ?? []).map((card) => ({
@@ -308,10 +320,24 @@ export function UnoHouseStage({ view }: Props) {
       {/* 快捷操作浮条 */}
       {!isSpectator && me && (
         <div className="uno-floating-controls">
-          {caps.has('canDraw') && (
+          {selectedCardIds.length > 0 && (
             <button
               type="button"
               className="uno-floating-btn btn-primary"
+              disabled={busy || phase !== 'round_playing'}
+              onClick={() => {
+                const target = (me?.hand ?? []).find((card) => selectedCardIds.includes(card.id));
+                if (target) handlePlayCard(target);
+              }}
+            >
+              <GameIcon name="rocket" size={16} />
+              出牌
+            </button>
+          )}
+          {caps.has('canDraw') && (
+            <button
+              type="button"
+              className={`uno-floating-btn ${selectedCardIds.length > 0 ? 'btn-outline' : 'btn-primary'}`}
               disabled={busy}
               onClick={() => {
                 webAudio.playDealCards();
@@ -402,12 +428,10 @@ export function UnoHouseStage({ view }: Props) {
       {!isSpectator && me && (
         <CardFanEngine
           cards={fanCards}
+          selectedCardIds={selectedCardIds}
+          onSelectCards={setSelectedCardIds}
+          hidePlayButton
           disabled={busy || phase !== 'round_playing'}
-          onPlayCard={(cardItem) => {
-            const rawCard = cardItem.raw as UnoCard;
-            if (rawCard) handlePlayCard(rawCard);
-          }}
-          playButtonText="出牌"
         />
       )}
 

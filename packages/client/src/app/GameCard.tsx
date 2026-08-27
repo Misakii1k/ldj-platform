@@ -13,7 +13,7 @@ function gameMark(gameId: string): string {
     case 'uno': return 'UNO';
     case 'landlord': return '斗';
     case 'werewolf': return '狼';
-    case 'durian': return '榴';
+    case 'durian': return 'D';
     case 'loveletter': return '情';
     case 'cheese-thief': return '奶';
     case 'goose-relay': return '鹅';
@@ -45,7 +45,13 @@ export function GameCard({ game, onCreate }: GameCardProps) {
 
   return (
     <article className={`game-card game-card--${game.theme} ${isFeatured ? 'game-card--featured' : ''}`}>
-      {isFeatured && <span className="game-card__ticket" aria-hidden="true">01</span>}
+      <span
+        className={`game-card__ticket game-card__ticket--${game.maturity.toLowerCase()}`}
+        title={`成熟度 ${game.maturity}`}
+        aria-label={`成熟度 ${game.maturity}`}
+      >
+        {game.maturity}
+      </span>
       <div className="game-card__meta">
         <span className={`game-card__availability ${isPlayable ? 'is-live' : ''}`}>
           {availabilityLabel(game)}

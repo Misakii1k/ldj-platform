@@ -419,7 +419,7 @@ test('PUT 本机无口令：成功 200，返回脱敏视图', async () => {
   }
 });
 
-test('PUT 更换连接且未提交新密钥时清除服务端旧密钥', async () => {
+test('PUT 更换连接时保留服务端旧密钥（密钥按预设独立保存）', async () => {
   const app = await startApp({
     llm: {
       provider: 'openai',
@@ -437,7 +437,7 @@ test('PUT 更换连接且未提交新密钥时清除服务端旧密钥', async (
       baseUrl: 'https://new.example/v1',
     });
     assert.equal(res.status, 200);
-    assert.equal((res.body as Record<string, unknown>).hasApiKey, false);
+    assert.equal((res.body as Record<string, unknown>).hasApiKey, true);
   } finally {
     await app.shutdown();
   }
@@ -585,7 +585,7 @@ test('PUT 校验失败（非法 URL）→ 400 + INVALID_SETTINGS + 提示文案'
   const app = await startApp();
   try {
     const res = await request(app.port(), 'PUT', '/api/settings/llm', {
-      baseUrl: 'not-a-url',
+      baseUrl: 'http://bad host',
     });
     assert.equal(res.status, 400);
     const body = res.body as Record<string, unknown>;
@@ -651,7 +651,7 @@ test('POST /api/settings/llm/test 沿用设置写入接口的管理员鉴权', a
       app.port(),
       'POST',
       '/api/settings/llm/test',
-      { baseUrl: 'not-a-url' },
+      { baseUrl: 'http://bad host' },
       { 'x-admin-token': 'secret' },
     );
     assert.equal(allowed.status, 400);

@@ -64,8 +64,10 @@ function normalizeInput(input: LlmModelCatalogInput): Required<LlmModelCatalogIn
 }
 
 function isModelPage(body: unknown): boolean {
-  if (typeof body !== 'object' || body === null || Array.isArray(body)) return false;
-  return Array.isArray((body as Record<string, unknown>).data);
+  if (typeof body !== 'object' || body === null) return false;
+  if (Array.isArray(body)) return true;
+  const record = body as Record<string, unknown>;
+  return Array.isArray(record.data) || Array.isArray(record.models);
 }
 
 function mapStatus(status: number): never {

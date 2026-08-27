@@ -37,7 +37,7 @@ function isAlwaysBlockedIpv4(address: string): boolean {
     || a === 100 && b >= 64 && b <= 127
     || a === 169 && b === 254
     || a === 192 && (b === 0 || parts[2] === 2 || b === 88 && parts[2] === 99)
-    || a === 198 && (b === 18 || b === 19 || b === 51 && parts[2] === 100)
+    || a === 198 && b === 51 && parts[2] === 100
     || a === 203 && b === 0 && parts[2] === 113
     || a >= 224;
 }
@@ -159,8 +159,14 @@ export async function safeFetch(
       headers: Object.fromEntries(new Headers(init.headers)),
       signal: init.signal ?? undefined,
       lookup: (_hostname, options, callback) => {
-        if (typeof options === 'object' && options.all) callback(null, resolved.addresses);
-        else callback(null, selected.address, selected.family);
+        if (typeof options === 'object' && options.all) {
+          callback(null, resolved.addresses);
+        } else {
+          const family = typeof options === 'object' ? options.family : undefined;
+          const match = family ? resolved.addresses.find((a) => a.family === family) : undefined;
+          const chosen = match ?? selected;
+          callback(null, chosen.address, chosen.family);
+        }
       },
     }, (response) => {
       const headers = new Headers();

@@ -72,7 +72,28 @@ test('OpenAI 客户端通过协议层返回合法候选', async () => {
     const result = await new LlmClient(config(upstream.baseUrl), logger).decide(prompt, meta);
     assert.equal(result?.option.id, '2');
     assert.equal(result?.reason, '更稳妥');
+    assert.equal(result?.speech, null);
     assert.equal(captured.body?.model, 'model-1');
+  } finally {
+    await upstream.close();
+  }
+});
+
+test('模块声明 speech 时解析公屏正文', async () => {
+  const speakingPrompt: BotPromptContext<{ move: string }> = {
+    ...prompt,
+    speech: { maxChars: 300, instruction: '说一句给桌上听的话' },
+  };
+  const upstream = await listen((_req, res) => {
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({
+      choices: [{ message: { content: '{"choice":"1","speech":"先听身份再投票","reason":"稳"}' } }],
+    }));
+  });
+  try {
+    const result = await new LlmClient(config(upstream.baseUrl), logger).decide(speakingPrompt, meta);
+    assert.equal(result?.option.id, '1');
+    assert.equal(result?.speech, '先听身份再投票');
   } finally {
     await upstream.close();
   }

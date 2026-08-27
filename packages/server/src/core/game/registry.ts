@@ -12,11 +12,11 @@ import { landlordModule, landlordPlatformModule } from '@ldj/game-landlord/serve
 import { werewolfModule, werewolfV2Module } from '@ldj/game-werewolf/server';
 import { durianModule } from '@ldj/game-durian/server';
 import { loveLetterModule } from '@ldj/game-loveletter/server';
-import { cheeseThiefModule } from '@ldj/game-cheese-thief/server';
-import { gooseRelayModule } from '@ldj/game-goose-relay/server';
-import { nightTestimonyModule } from '@ldj/game-night-testimony/server';
-import { bellClashModule } from '@ldj/game-bell-clash/server';
-import { echoJudgeModule } from '@ldj/game-echo-judge/server';
+import { cheeseThiefModule, cheeseThiefSimModule } from '@ldj/game-cheese-thief/server';
+import { gooseRelayModule, gooseRelaySimModule } from '@ldj/game-goose-relay/server';
+import { nightTestimonyModule, nightTestimonySimModule } from '@ldj/game-night-testimony/server';
+import { bellClashModule, bellClashSimModule } from '@ldj/game-bell-clash/server';
+import { echoJudgeModule, echoJudgeSimModule } from '@ldj/game-echo-judge/server';
 import { partySandboxModule } from '@ldj/game-party-sandbox/server';
 import type { SessionRow } from './session.ts';
 
@@ -43,10 +43,15 @@ const MODULES: RegisteredGameModule[] = [
   durianModule,
   loveLetterModule,
   cheeseThiefModule,
+  cheeseThiefSimModule,
   gooseRelayModule,
+  gooseRelaySimModule,
   nightTestimonyModule,
+  nightTestimonySimModule,
   bellClashModule,
+  bellClashSimModule,
   echoJudgeModule,
+  echoJudgeSimModule,
   partySandboxModule,
 ];
 

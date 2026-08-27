@@ -180,7 +180,7 @@ export function BellClashGamePage({ view }: Props) {
 
   return (
     <TabletopShell
-      title="Ding (铃铛对决)"
+      title="铃铛对决"
       phase={phaseLabel(view.phase)}
       gameId="bell-clash"
       phaseKey={`${view.phase}:${view.currentPlayerId}:${view.bellOpen ? `bell:${view.bellClaimantId ?? 'open'}` : 'turn'}:${view.phase === 'game_over' ? view.winners.join(',') || 'no-winner' : 'active'}`}
@@ -210,7 +210,7 @@ export function BellClashGamePage({ view }: Props) {
         )
       }
       drawer={rulesOpen && (
-        <GameDrawer kind="rules" title="Ding · 游戏规则" triggerRef={rulesRef} onClose={() => setRulesOpen(false)}>
+        <GameDrawer kind="rules" title="铃铛对决 · 游戏规则" triggerRef={rulesRef} onClose={() => setRulesOpen(false)}>
           <h4>🎴 核心机制（UNO 式出牌 + 抢铃）</h4>
           <p>1. <strong>UNO 出牌</strong>：打出与弃牌堆顶<strong>同颜色</strong>或<strong>同数字</strong>的牌；打不出则摸一张牌。</p>
           <p>2. <strong>行动短语卡</strong>：牌面印有一句生活短语（如「好耶！」、「等等」）。当场上有玩家在现实对话或行动中触发该内容时，持有同色短语卡的玩家可<strong>立刻拍铃抢夺回合</strong>并打出该牌！</p>

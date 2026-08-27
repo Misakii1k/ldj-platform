@@ -72,8 +72,13 @@ const MODEL_CATALOG_ERROR_MESSAGES: Record<AiModelCatalogErrorCode, string> = {
   INVALID_RESPONSE: '模型目录返回了无法识别的响应，请手动输入模型 ID',
 };
 
+const URL_SCHEME_PATTERN = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
+
 export function normalizeBaseUrl(baseUrl: string): string {
-  return baseUrl.trim().replace(/\/+$/, '');
+  const trimmed = baseUrl.trim();
+  if (trimmed === '') return '';
+  const withScheme = URL_SCHEME_PATTERN.test(trimmed) ? trimmed : `https://${trimmed}`;
+  return withScheme.replace(/\/+$/, '');
 }
 
 export function buildModelRequestBody(form: AiSettingsForm): Record<string, unknown> {

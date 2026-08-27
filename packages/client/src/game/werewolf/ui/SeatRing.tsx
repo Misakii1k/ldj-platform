@@ -34,20 +34,20 @@ function splitHorseshoe(count: number): HorseshoeSplit {
 function horseshoePosition(index: number, count: number): CSSProperties {
   const { top, right, bottom, left } = splitHorseshoe(count);
   if (index < top) {
-    return { left: `${50 + (index - (top - 1) / 2) * 18}%`, top: '12%' };
+    return { left: `${50 + (index - (top - 1) / 2) * 18}%`, top: '8%' };
   }
   if (index < top + right) {
-    const span = right > 1 ? 48 / (right - 1) : 0;
-    return { left: '88%', top: `${(20 + span * (index - top)).toFixed(2)}%` };
+    const span = right > 1 ? 52 / (right - 1) : 0;
+    return { left: '88%', top: `${(18 + span * (index - top)).toFixed(2)}%` };
   }
   if (index < top + right + bottom) {
-    // 底列自右向左衔接右列与左列
+    // 底列自右向左衔接右列与左列，下移避开中央角色身份卡
     const order = index - (top + right);
-    return { left: `${58 - order * 18}%`, top: '80%' };
+    return { left: `${58 - order * 18}%`, top: '86%' };
   }
   const k = index - top - right - bottom;
-  const span = left > 1 ? 48 / (left - 1) : 0;
-  return { left: '12%', top: `${(68 - span * k).toFixed(2)}%` };
+  const span = left > 1 ? 52 / (left - 1) : 0;
+  return { left: '12%', top: `${(70 - span * k).toFixed(2)}%` };
 }
 
 export function SeatChip({ seat, style }: { seat: WerewolfSeatModel; style?: CSSProperties }) {

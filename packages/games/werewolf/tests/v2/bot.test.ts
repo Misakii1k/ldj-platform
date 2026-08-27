@@ -43,7 +43,7 @@ test('v2 机器人动作经 parseAction 后全被 reducer 接受（夜间）', (
   }
 });
 
-test('v2 狼人自刀时机器人候选含自己（open-kill 口径一致）', () => {
+test('v2 狼人默认不自刀，但 prompt 候选仍含自己（open-kill 口径）', () => {
   const state = startedNight(IDS);
   const wolf = byRole(state, 'wolf')[0]!;
   const view = werewolfV2Module.getPlayerView(state, wolf);
@@ -52,7 +52,15 @@ test('v2 狼人自刀时机器人候选含自己（open-kill 口径一致）', (
     playerId: wolf,
     random: createSeededRandom('v2-bot-self'),
   });
-  assert.deepEqual(action, { type: 'night_kill', targetPlayerId: wolf });
+  assert.ok(action && typeof action === 'object' && 'type' in action && action.type === 'night_kill');
+  assert.notEqual((action as { targetPlayerId?: string }).targetPlayerId, wolf);
+
+  const prompt = werewolfV2Module.buildBotPrompt?.({
+    view,
+    playerId: wolf,
+    random: createSeededRandom('v2-prompt-self'),
+  });
+  assert.ok(prompt?.options.some((option) => option.id === wolf));
 });
 
 test('v2 botPrompt 候选动作全部可被 reducer 接受', () => {

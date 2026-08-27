@@ -1,0 +1,566 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   游戏前端 UI 统一层 (Unified Game UI Layer)
+
+   目标：在保留各游戏题材美术与主舞台的前提下，把顶栏、席位、按钮、面板、
+   徽章、倒计时、抽屉、结算坞等「UI 骨架与组件」收敛到平台
+   「实体复古纸牌派对」设计令牌。
+
+   引入顺序：main.tsx 中在 styles.css / GameMotion.css 之后导入，
+   利用 CSS 源顺序覆盖既有 bespoke 样式（安全、可回退、不改 TSX）。
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* 1. 唯一权威调色板 */
+  --gp-paper: #fff4df;
+  --gp-surface: #fffdf7;
+  --gp-surface-strong: #fffaf0;
+  --gp-ink: #292722;
+  --gp-muted: #716b61;
+  --gp-line: #292722;
+  --gp-green: #08715d;
+  --gp-green-dark: #055848;
+  --gp-coral: #ef513d;
+  --gp-coral-dark: #d6382a;
+  --gp-yellow: #f7c84b;
+  --gp-purple: #7358a7;
+  --gp-danger: #dc2626;
+  --gp-success: #16a34a;
+  --gp-warning: #f59e0b;
+
+  /* 2. 兼容别名：把既有两套命名空间收敛到统一令牌。
+     此后游戏内 --game-* 与外壳 --home-* 同源，不再出现两套近似但不同的墨色/珊瑚红。 */
+  --game-paper: var(--gp-paper);
+  --game-surface: var(--gp-surface);
+  --game-ink: var(--gp-ink);
+  --game-muted: var(--gp-muted);
+  --game-line: var(--gp-line);
+  --game-green: var(--gp-green);
+  --game-green-dark: var(--gp-green-dark);
+  --game-coral: var(--gp-coral);
+  --game-yellow: var(--gp-yellow);
+  --game-purple: var(--gp-purple);
+
+  --home-paper: var(--gp-paper);
+  --home-surface: var(--gp-surface);
+  --home-ink: var(--gp-ink);
+  --home-muted: var(--gp-muted);
+  --home-coral: var(--gp-coral);
+  --home-coral-dark: var(--gp-coral-dark);
+  --home-green: var(--gp-green);
+  --home-yellow: var(--gp-yellow);
+
+  /* 3. UI 几何 / 触控 / 动效令牌（统一组件配方） */
+  --gp-radius-sm: 10px;
+  --gp-radius-md: 14px;
+  --gp-radius-lg: 20px;
+  --gp-radius-pill: 999px;
+  --gp-border: 3px solid var(--gp-line);
+  --gp-border-sm: 2.5px solid var(--gp-line);
+  --gp-shadow: 0 5px 0 var(--gp-line);
+  --gp-shadow-sm: 0 3px 0 var(--gp-line);
+  --gp-shadow-lg: 0 7px 0 var(--gp-line);
+  --gp-shadow-press: 0 1px 0 var(--gp-line);
+  --gp-touch: 44px;
+  --gp-dock-offset: 92px;
+  --gp-chrome-header: 46px;
+  --gp-motion: 140ms;
+  --gp-font: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+/* ══════════════════════════════════════════════════════════
+   4. 统一 UI 原语（.gp-*）
+   后续新游戏/新组件直接复用这些类；既有组件经下方归一化层对齐。
+   ══════════════════════════════════════════════════════════ */
+
+.gp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--gp-touch);
+  padding: 8px 16px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-md);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  font-family: var(--gp-font);
+  font-size: 0.9rem;
+  font-weight: 900;
+  line-height: 1.15;
+  box-shadow: var(--gp-shadow-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    transform var(--gp-motion) ease,
+    box-shadow var(--gp-motion) ease,
+    background var(--gp-motion) ease,
+    border-color var(--gp-motion) ease,
+    opacity var(--gp-motion) ease;
+}
+
+.gp-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--gp-shadow);
+}
+
+.gp-btn:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: var(--gp-shadow-press);
+}
+
+.gp-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: saturate(0.65);
+}
+
+.gp-btn--primary { background: var(--gp-yellow); color: var(--gp-ink); }
+.gp-btn--accent  { background: var(--gp-coral); color: #ffffff; }
+.gp-btn--green   { background: var(--gp-green); color: #ffffff; }
+.gp-btn--ghost   { background: var(--gp-surface); color: var(--gp-ink); }
+.gp-btn--danger  { background: var(--gp-danger); color: #ffffff; }
+
+.gp-btn--sm {
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  border-radius: var(--gp-radius-sm);
+}
+
+.gp-panel {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border: var(--gp-border);
+  border-radius: var(--gp-radius-lg);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  box-shadow: var(--gp-shadow);
+}
+
+.gp-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  border-bottom: 2px solid color-mix(in srgb, var(--gp-muted) 22%, transparent);
+}
+
+.gp-panel__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: var(--gp-ink);
+}
+
+.gp-panel__meta {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--gp-muted);
+}
+
+.gp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 2px 10px;
+  border: 2px solid var(--gp-line);
+  border-radius: var(--gp-radius-pill);
+  background: var(--gp-yellow);
+  color: var(--gp-ink);
+  font-size: 0.72rem;
+  font-weight: 900;
+  box-shadow: 0 2px 0 var(--gp-line);
+}
+
+.gp-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border: 1.5px solid color-mix(in srgb, var(--gp-line) 72%, transparent);
+  border-radius: var(--gp-radius-pill);
+  background: color-mix(in srgb, var(--gp-muted) 10%, var(--gp-surface));
+  color: var(--gp-muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.gp-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 2px solid var(--gp-line);
+  border-radius: var(--gp-radius-pill);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  font-size: 0.8rem;
+  font-weight: 800;
+  box-shadow: var(--gp-shadow-sm);
+}
+
+.gp-chip--btn { cursor: pointer; }
+.gp-chip--btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--gp-shadow); }
+.gp-chip--btn:active:not(:disabled) { transform: translateY(2px); box-shadow: var(--gp-shadow-press); }
+.gp-chip--btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.gp-chip--selected { background: var(--gp-coral); color: #ffffff; }
+
+.gp-countdown {
+  display: grid;
+  place-items: center;
+  min-width: 56px;
+  min-height: 56px;
+  padding: 6px;
+  border: var(--gp-border);
+  border-radius: 50%;
+  background: var(--gp-yellow);
+  color: var(--gp-ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  box-shadow: var(--gp-shadow);
+}
+
+.gp-countdown--urgent {
+  background: var(--gp-coral);
+  color: #ffffff;
+}
+
+.gp-segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-sm);
+  background: color-mix(in srgb, var(--gp-muted) 12%, var(--gp-surface));
+  box-shadow: var(--gp-shadow-sm);
+}
+
+.gp-segment__pill {
+  min-height: 32px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--gp-muted);
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.gp-segment__pill:hover:not(.is-active) {
+  color: var(--gp-ink);
+  background: color-mix(in srgb, var(--gp-ink) 8%, transparent);
+}
+
+.gp-segment__pill.is-active {
+  background: var(--gp-yellow);
+  color: var(--gp-ink);
+  border: 1.5px solid var(--gp-line);
+  box-shadow: 1px 1.5px 0 var(--gp-line);
+}
+
+.gp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(26, 22, 18, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.gp-sheet {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 560px);
+  max-height: min(88dvh, 720px);
+  overflow: hidden;
+  border: var(--gp-border);
+  border-radius: var(--gp-radius-lg);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  box-shadow: var(--gp-shadow-lg);
+}
+
+.gp-dock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border-top: 2px solid color-mix(in srgb, var(--gp-muted) 22%, transparent);
+  background: color-mix(in srgb, var(--gp-surface) 86%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.gp-empty,
+.gp-error {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--gp-radius-sm);
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.gp-empty {
+  color: var(--gp-muted);
+  background: color-mix(in srgb, var(--gp-muted) 10%, var(--gp-surface));
+  border: 2px dashed color-mix(in srgb, var(--gp-muted) 45%, transparent);
+}
+
+.gp-error {
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 2px solid #ef4444;
+}
+
+/* ══════════════════════════════════════════════════════════
+   5. 既有组件归一化层
+   不改 TSX，只把现有类收敛到上面的统一配方。
+   ══════════════════════════════════════════════════════════ */
+
+/* 5.1 共享确认弹窗 / 错误面板 / 倒计时 */
+.confirm-dialog {
+  border: var(--gp-border);
+  border-radius: var(--gp-radius-lg);
+  box-shadow: var(--gp-shadow-lg);
+}
+
+.confirm-btn {
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-md);
+  box-shadow: var(--gp-shadow-sm);
+  min-height: var(--gp-touch);
+  font-weight: 900;
+}
+
+.confirm-btn--primary { background: var(--gp-yellow); color: var(--gp-ink); }
+.confirm-btn--cancel  { background: var(--gp-surface); color: var(--gp-ink); }
+.confirm-btn--danger  { background: var(--gp-coral); }
+
+.game-error-panel {
+  border: var(--gp-border);
+  border-radius: var(--gp-radius-lg);
+  box-shadow: var(--gp-shadow-lg);
+}
+
+.game-error-icon {
+  background: var(--gp-yellow);
+  border: var(--gp-border-sm);
+  box-shadow: var(--gp-shadow-sm);
+}
+
+.game-countdown {
+  border: var(--gp-border);
+  box-shadow: var(--gp-shadow);
+}
+
+/* 5.2 统一桌面外壳：顶栏控件 / 抽屉 / 席位 */
+.tabletop-sound-btn,
+.tabletop-rules-btn,
+.cheese-tts-icon-btn,
+.ll-tracker-toggle-btn {
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-sm);
+  box-shadow: 2px 2.5px 0 var(--gp-line);
+}
+
+.tabletop-drawer-panel {
+  border: var(--gp-border);
+  border-radius: var(--gp-radius-lg);
+  box-shadow: var(--gp-shadow-lg);
+}
+
+.tabletop-drawer-close-btn {
+  border: var(--gp-border-sm);
+  box-shadow: var(--gp-shadow-sm);
+}
+
+.tabletop-drawer-item {
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-md);
+  box-shadow: var(--gp-shadow-sm);
+  min-height: var(--gp-touch);
+}
+
+.tabletop-seat {
+  border: 2px solid var(--gp-line);
+  box-shadow: 2px 2px 0 var(--gp-line);
+}
+
+.tabletop-action-stack {
+  gap: 10px;
+}
+
+/* 5.3 各游戏主操作按钮：统一形状 / 触控高度 / 实体投影。
+      主题色（如狼人杀金、奶酪夜色）保留，仅统一结构配方。 */
+
+/* 亮色主题通用动作按钮 */
+.landlord-btn,
+.uno-floating-btn,
+.sandbox-btn,
+.goose-modal-btn,
+.goose-card-dock-btn,
+.durian-verdict-btn,
+.durian-sim-draw-btn,
+.testimony-crime-btn,
+.echo-role-btn {
+  border-style: solid;
+  border-width: 2.5px;
+  border-color: var(--gp-line);
+  border-radius: var(--gp-radius-md);
+  min-height: var(--gp-touch);
+  font-weight: 900;
+  box-shadow: var(--gp-shadow-sm);
+  transition:
+    transform var(--gp-motion) ease,
+    box-shadow var(--gp-motion) ease,
+    background var(--gp-motion) ease,
+    border-color var(--gp-motion) ease,
+    opacity var(--gp-motion) ease;
+}
+
+.landlord-btn:hover:not(:disabled),
+.uno-floating-btn:hover:not(:disabled),
+.sandbox-btn:hover:not(:disabled),
+.goose-modal-btn:hover:not(:disabled),
+.goose-card-dock-btn:hover:not(:disabled),
+.durian-verdict-btn:hover:not(:disabled),
+.durian-sim-draw-btn:hover:not(:disabled),
+.testimony-crime-btn:hover:not(:disabled),
+.echo-role-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--gp-shadow);
+}
+
+.landlord-btn:active:not(:disabled),
+.uno-floating-btn:active:not(:disabled),
+.sandbox-btn:active:not(:disabled),
+.goose-modal-btn:active:not(:disabled),
+.goose-card-dock-btn:active:not(:disabled),
+.durian-verdict-btn:active:not(:disabled),
+.durian-sim-draw-btn:active:not(:disabled),
+.testimony-crime-btn:active:not(:disabled),
+.echo-role-btn:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: var(--gp-shadow-press);
+}
+
+/* UNO：从「软阴影细边」改为平台实体纸牌质感 */
+.uno-floating-controls {
+  background: color-mix(in srgb, var(--gp-surface) 92%, transparent);
+  border: var(--gp-border-sm);
+  box-shadow: var(--gp-shadow-sm);
+}
+
+.uno-floating-btn { background: var(--gp-surface); color: var(--gp-ink); }
+.uno-floating-btn.btn-primary { background: var(--gp-coral); color: #ffffff; }
+.uno-floating-btn.btn-danger  { background: var(--gp-danger); color: #ffffff; }
+.uno-floating-btn.btn-outline { background: var(--gp-surface); color: var(--gp-ink); }
+
+.uno-color-wheel-dialog {
+  border: var(--gp-border);
+  border-radius: var(--gp-radius-lg);
+  box-shadow: var(--gp-shadow-lg), 0 24px 64px rgba(0, 0, 0, 0.4);
+}
+
+.uno-color-wheel-btn {
+  border: var(--gp-border-sm);
+  box-shadow: var(--gp-shadow-sm);
+}
+
+.uno-color-wheel-cancel {
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-md);
+  box-shadow: var(--gp-shadow-sm);
+  min-height: var(--gp-touch);
+  font-weight: 900;
+}
+
+/* 斗地主：与身份条同高的胶囊，主按钮黄、叫分珊瑚红 */
+.landlord-btn {
+  min-height: 36px;
+  border-radius: 999px;
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+}
+.landlord-btn--primary { background: var(--gp-yellow); color: var(--gp-ink); }
+.landlord-btn--bid { background: var(--gp-coral); color: #ffffff; }
+.landlord-btn--pass { background: color-mix(in srgb, var(--gp-yellow) 55%, #ffffff); color: var(--gp-ink); }
+.landlord-btn--reset { background: color-mix(in srgb, var(--gp-danger) 12%, #ffffff); color: var(--gp-danger); }
+
+/* 创意工坊：统一按钮骨架，保留派对色彩语义 */
+.sandbox-btn { background: var(--gp-surface); color: var(--gp-ink); }
+.sandbox-btn--primary { background: var(--gp-yellow); color: var(--gp-ink); }
+.sandbox-btn--secondary { background: color-mix(in srgb, var(--gp-green) 16%, #ffffff); color: var(--gp-green); }
+.sandbox-btn--outline { background: var(--gp-surface); color: var(--gp-ink); }
+.sandbox-btn--cancel { background: color-mix(in srgb, var(--gp-muted) 12%, #ffffff); color: var(--gp-muted); }
+.sandbox-btn--peek,
+.sandbox-btn--peek-hide {
+  border-radius: var(--gp-radius-pill);
+  min-height: 32px;
+}
+
+/* 狼人杀：暗夜金主题保留配色，仅统一结构（触控高度 / 圆角 / 实体投影） */
+.werewolf-action-btn {
+  border-width: 2px;
+  border-radius: var(--gp-radius-sm);
+  min-height: var(--gp-touch);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* 奶酪大盗：夜色主题保留琥珀/绿语义色，统一结构配方 */
+.cheese-steal-silent-btn {
+  border-width: 2.5px;
+  min-height: var(--gp-touch);
+}
+
+/* 5.4 共享小游戏舞台（sg-*）：消除硬编码中性灰，走统一令牌 */
+.sg-hint { color: var(--gp-muted); }
+.sg-chip { border: 2px solid var(--gp-line); box-shadow: var(--gp-shadow-sm); min-height: 32px; }
+.sg-chip--btn:hover:not(:disabled) { box-shadow: var(--gp-shadow); }
+.sg-chip--btn:active:not(:disabled) { box-shadow: var(--gp-shadow-press); }
+.sg-panel { border: var(--gp-border); border-radius: var(--gp-radius-lg); box-shadow: var(--gp-shadow); }
+
+/* 以鹅传鹅等新游中的模态/投票/标签统一令牌 */
+.goose-peek-btn { border: 2px solid var(--gp-line); box-shadow: var(--gp-shadow-sm); }
+.goose-card-dock-btn { background: var(--gp-surface); }
+.goose-vote-target-btn { border: var(--gp-border); box-shadow: var(--gp-shadow); }
+.goose-evil-player-badge { border: var(--gp-border-sm); box-shadow: var(--gp-shadow-sm); }
+.goose-dock-tag { border-width: 2px; }
+
+/* 情书牌面属于题材美术，不改；仅把顶部切换控件归入统一分段样式 */
+.tabletop-btn-group { gap: 6px; }
+
+/* 减少动态效果：尊重系统偏好（覆盖本层过渡） */
+@media (prefers-reduced-motion: reduce) {
+  .gp-btn,
+  .gp-chip--btn,
+  .gp-segment__pill,
+  .landlord-btn,
+  .uno-floating-btn,
+  .sandbox-btn,
+  .goose-modal-btn,
+  .goose-card-dock-btn,
+  .durian-verdict-btn,
+  .durian-sim-draw-btn,
+  .testimony-crime-btn,
+  .echo-role-btn,
+  .werewolf-action-btn,
+  .cheese-steal-silent-btn {
+    transition: none !important;
+  }
+}

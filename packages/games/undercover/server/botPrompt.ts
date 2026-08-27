@@ -57,6 +57,22 @@ const ROLE_BRIEF = `你在玩「谁是卧底」。每人拿到一个词，大多
 平民要找出卧底并投票淘汰；卧底要隐藏自己，活到卧底人数不少于平民人数就赢。
 你只知道自己的词，不知道自己是平民还是卧底——这需要你从别人的发言里推断。`;
 
+const SPEECH_INSTRUCTION =
+  '用 1 到 2 句中文描述你拿到的词的特征或用途，接前面玩家的话茬（附和或质疑）；不要直接说出你的词，也不要点破谁可能是卧底。';
+
+/** 把近期公屏翻译成带席位号的对话记录；没有发言时返回空串 */
+function describeRecentChat(
+  view: UndercoverPlayerView,
+  input: BotDecisionInput<UndercoverPlayerView>,
+): string {
+  const chat = (input.recentChat ?? []).slice(-12);
+  if (chat.length === 0) return '';
+  const lines = chat.map((line) =>
+    `${line.fromPlayerId ? seatName(view, line.fromPlayerId) : '系统'}：${line.text}`,
+  );
+  return ['目前大家的发言：', ...lines].join('\n');
+}
+
 export function buildUndercoverBotPrompt(
   input: BotDecisionInput<UndercoverPlayerView>,
 ): BotPromptContext<UndercoverAction> | null {
@@ -85,11 +101,14 @@ export function buildUndercoverBotPrompt(
     case 'speaking': {
       if (view.currentSpeakerId !== playerId) return null;
       // 发言内容走聊天通道，动作本身只是"我说完了"。
-      // 让模型也走一遍决策，是为了将来把它的发言文本接到聊天里。
+      // speech 请求让模型写真正的描述词发言，BotRunner 会先发到公屏再结束发言。
       return {
         roleBrief: ROLE_BRIEF,
-        situation: `${header}\n轮到你发言。你需要描述自己的词，但不能直接说出它——说得太具体会暴露卧底身份，说得太模糊会被当成卧底。`,
+        situation: `${header}\n轮到你发言。你需要描述自己的词，但不能直接说出它——说得太具体会暴露卧底身份，说得太模糊会被当成卧底。${
+          describeRecentChat(view, input) ? `\n${describeRecentChat(view, input)}` : ''
+        }`,
         options: [{ id: 'done', label: '结束我的发言', action: { type: 'finish_speech' } }],
+        speech: { maxChars: 120, instruction: SPEECH_INSTRUCTION },
       };
     }
 
@@ -101,11 +120,12 @@ export function buildUndercoverBotPrompt(
         .filter((p) => p.alive && p.playerId !== playerId)
         .filter((p) => !runoff || view.runoffCandidates.includes(p.playerId));
       if (targets.length === 0) return null;
+      const chatBlock = describeRecentChat(view, input);
       return {
         roleBrief: ROLE_BRIEF,
         situation: `${header}\n${
           runoff ? '进入加赛投票，只能投候选人。' : '现在投票淘汰你认为是卧底的人。'
-        }`,
+        }结合大家的发言判断谁拿到了不同的词。${chatBlock ? `\n${chatBlock}` : ''}`,
         options: targets.map((p) => ({
           id: p.playerId,
           label: `投票淘汰 ${p.seat + 1} 号玩家`,

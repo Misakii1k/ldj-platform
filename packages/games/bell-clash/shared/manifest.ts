@@ -2,7 +2,7 @@ import type { GameManifest } from '@ldj/shared';
 
 export const BELL_CLASH_MANIFEST = {
   id: 'bell-clash',
-  displayName: 'Ding',
+  displayName: '铃铛对决',
   version: '0.1.0',
   minPlayers: 2,
   maxPlayers: 7,

@@ -15,15 +15,23 @@
  * 4. 有步数上限。策略写错导致"投了动作但状态没推进"时，必须能停下来报错，
  *    而不是把房间队列占满。
  */
-import type { Actor, BotPromptContext } from '@ldj/shared';
+import type { Actor, BotChatLine, BotDecisionInput, BotPromptContext, ChatMessageView } from '@ldj/shared';
+import {
+  asWerewolfPlayView,
+  cannedWerewolfSpeech,
+  overlayWerewolfBotPrompt,
+  pickWerewolfPlayAction,
+} from '@ldj/game-werewolf/server';
 import type { Logger } from '../../boot/logger.ts';
 import type { Db } from '../../persistence/db.ts';
 import type { RoomCommandExecutor, TxContext } from '../executor.ts';
 import { CommandError } from '../executor.ts';
 import { createSeededRandom } from '@ldj/shared';
+import { applyChatSend, listChatAfter } from '../commands/chat.ts';
 import { listBotMembers, type BotMemberRow } from '../commands/bots.ts';
 import { getSessionGameModule, type RegisteredGameModule } from './registry.ts';
 import { applySessionAction, getActiveSession, loadSessionState, type GameActionOutcome } from './session.ts';
+import { sanitizeBotSpeech } from './botSpeech.ts';
 import type { LlmClient } from './llmClient.ts';
 
 /**
@@ -52,6 +60,8 @@ export interface BotRunnerDeps {
   llm?: () => LlmClient | null;
   /** 每步之间的延迟；测试传 0 以同步跑完 */
   thinkDelayMs?: number;
+  /** 机器人公屏落库后广播；不推动 roomSeq */
+  onChat?: (roomId: string, messages: ChatMessageView[]) => void;
 }
 
 /** 事务外读到的一份状态切片，用来在事务外做决策 */
@@ -69,6 +79,8 @@ interface PlannedAction {
   action: unknown;
   /** 决策来源，只用于日志 */
   via: 'rule' | 'llm';
+  /** 结束发言/遗言前先发到公屏的正文 */
+  speech: string | null;
 }
 
 /** 事务外读一眼当前对局；返回 null 表示没有可推进的对局 */
@@ -105,17 +117,18 @@ async function planNextAction(
   // 每次决策前重新取一次：设置面板改完就换客户端，不用重启（见 LlmProvider）
   const llm = deps.llm?.() ?? null;
   const { module } = peek;
+  const recentChat = recentChatLines(deps.db, roomId);
 
   for (const bot of bots) {
     const random = createSeededRandom(`bot:${peek.sessionId}:${peek.lastSeq}:${bot.playerId}`);
     const view = module.getPlayerView(peek.state, bot.playerId);
-    const input = { view, playerId: bot.playerId, random };
+    const input: BotDecisionInput<unknown> = { view, playerId: bot.playerId, random, recentChat };
 
     // —— LLM 决策：拿候选项问模型，只接受它回的 id ——
     if (bot.kind === 'llm' && llm && module.buildBotPrompt) {
       let prompt: BotPromptContext<unknown> | null = null;
       try {
-        prompt = module.buildBotPrompt(input);
+        prompt = decoratePrompt(peek.moduleId, input, module.buildBotPrompt(input));
       } catch (err) {
         logger.error('bot_prompt_threw', {
           roomId,
@@ -133,7 +146,12 @@ async function planNextAction(
           moduleId: peek.moduleId,
         });
         if (decision) {
-          return { botId: bot.playerId, action: decision.option.action, via: 'llm' };
+          return {
+            botId: bot.playerId,
+            action: decision.option.action,
+            via: 'llm',
+            speech: speechForAction(peek.moduleId, input, decision.option.action, decision.speech),
+          };
         }
         // 模型没给出可用选择：落到规则策略，别让它干等
         logger.info('bot_llm_fallback', { roomId, botId: bot.playerId, moduleId: peek.moduleId });
@@ -143,7 +161,7 @@ async function planNextAction(
     // —— 规则策略：rule 机器人的正途，也是 llm 机器人的兜底 ——
     let action: unknown;
     try {
-      action = module.pickBotAction!(input);
+      action = pickAction(peek.moduleId, input, module);
     } catch (err) {
       logger.error('bot_strategy_threw', {
         roomId,
@@ -154,9 +172,59 @@ async function planNextAction(
       continue;
     }
     if (action === null || action === undefined) continue;
-    return { botId: bot.playerId, action, via: 'rule' };
+    return {
+      botId: bot.playerId,
+      action,
+      via: 'rule',
+      speech: speechForAction(peek.moduleId, input, action, null),
+    };
   }
   return null;
+}
+
+function recentChatLines(db: Db, roomId: string): BotChatLine[] {
+  return listChatAfter(db, roomId, null)
+    .filter((message) => message.kind === 'player')
+    .slice(-32)
+    .map((message) => ({ fromPlayerId: message.fromPlayerId, text: message.text }));
+}
+
+function decoratePrompt(
+  moduleId: string,
+  input: BotDecisionInput<unknown>,
+  prompt: BotPromptContext<unknown> | null,
+): BotPromptContext<unknown> | null {
+  return moduleId === 'werewolf' ? overlayWerewolfBotPrompt(input, prompt) : prompt;
+}
+
+function pickAction(
+  moduleId: string,
+  input: BotDecisionInput<unknown>,
+  module: RegisteredGameModule,
+): unknown {
+  if (moduleId === 'werewolf') {
+    const play = pickWerewolfPlayAction(input);
+    if (play !== null) return play;
+  }
+  return module.pickBotAction!(input);
+}
+
+function isSpeechTurnAction(action: unknown): boolean {
+  if (typeof action !== 'object' || action === null) return false;
+  const type = (action as { type?: unknown }).type;
+  return type === 'finish_speech' || type === 'finish_last_words';
+}
+
+function speechForAction(
+  moduleId: string,
+  input: BotDecisionInput<unknown>,
+  action: unknown,
+  llmSpeech: string | null,
+): string | null {
+  if (!isSpeechTurnAction(action)) return null;
+  const view = moduleId === 'werewolf' ? asWerewolfPlayView(input.view) : null;
+  const fallback = view ? cannedWerewolfSpeech(view, input.playerId) : '先听大家发言。';
+  return sanitizeBotSpeech(llmSpeech, fallback);
 }
 
 /**
@@ -281,6 +349,11 @@ export class BotRunner {
       }
       if (this.#stopped) return;
 
+      if (planned.speech) {
+        const posted = await commitBotSpeech(roomId, planned, peek, this.#deps);
+        if (!posted) continue;
+      }
+
       let result: { roomSeq: number; outcome: GameActionOutcome } | null;
       try {
         result = await executor.executeInternal({
@@ -307,5 +380,48 @@ export class BotRunner {
 
     // 走到上限说明策略在原地打转：留证据，别静默
     this.#deps.logger.warn('bot_steps_exhausted', { roomId, limit: MAX_BOT_STEPS_PER_TRIGGER });
+  }
+}
+
+async function commitBotSpeech(
+  roomId: string,
+  planned: PlannedAction,
+  peek: SessionPeek,
+  deps: BotRunnerDeps,
+): Promise<boolean> {
+  if (!planned.speech) return true;
+  const { executor, logger, onChat } = deps;
+  try {
+    const result = await executor.executeOnRoom({
+      roomId,
+      actorScope: `bot:${planned.botId}`,
+      requestId: `bot-chat:${peek.sessionId}:${peek.lastSeq}:${planned.botId}`,
+      bumpSeq: false,
+      handler: (tx) => {
+        const session = getActiveSession(tx.db, roomId);
+        if (!session || session.status !== 'ACTIVE' || session.last_seq !== peek.lastSeq) return null;
+        return applyChatSend(tx, roomId, planned.botId, planned.speech!);
+      },
+    });
+    if (result.outcome === null) return false;
+    if (!result.replayed) {
+      try {
+        onChat?.(roomId, [result.outcome]);
+      } catch (err) {
+        logger.error('bot_chat_broadcast_failed', { roomId, message: (err as Error).message });
+      }
+    }
+    return true;
+  } catch (err) {
+    if (err instanceof CommandError) {
+      logger.warn('bot_chat_rejected', {
+        roomId,
+        botId: planned.botId,
+        message: err.message,
+      });
+      return true;
+    }
+    logger.error('bot_chat_failed', { roomId, message: (err as Error).message });
+    return true;
   }
 }

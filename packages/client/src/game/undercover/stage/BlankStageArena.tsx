@@ -6,7 +6,6 @@ import { useState, type CSSProperties } from 'react';
 import { useConnection } from '../../../connection/useConnection.ts';
 import { GameActionFeedback, GameCountdownPulse } from '../../../shared-ui/GameMotion.tsx';
 import { useCountdown } from '../../../shared-ui/useCountdown.ts';
-import { GameLeaveButton } from '../../GameLeaveButton.tsx';
 import { nameFor, useGameAction } from '../../useGameAction.ts';
 import { GameCountdown, GamePhaseRail, PhaseLead } from '../../GameChrome.tsx';
 import { TabletopOvalShell } from '../../../shared-ui/TabletopOvalShell.tsx';
@@ -137,7 +136,6 @@ export function BlankStageArena({ view }: Props) {
       stageFit="arena"
       players={seats}
       currentUserId={me === null ? undefined : me.playerId}
-      topRightControls={<GameLeaveButton />}
       phaseKey={phaseKey}
       centerArena={
         <div

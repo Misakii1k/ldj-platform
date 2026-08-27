@@ -223,11 +223,11 @@ test('platform 超时 token 失配：陈旧计时器被拒为 noop 且不推进'
   assert.deepEqual(out.state, s, '陈旧超时不得推进状态');
 });
 
-test('platform 视图遮滤：手牌只对自己；底牌仅地主可见；牌型公开', () => {
+test('platform 视图遮滤：手牌只对自己；地主确定后底牌公开；牌型公开', () => {
   const s = startedPlaying(PLAYERS, [2, 0, 0]);
   const spectator = landlordPlatformModule.getSpectatorView(s);
   assert.equal('me' in spectator, false);
-  assert.equal(spectator.bottomCards.length, 0, '观战视角不得见底牌');
+  assert.deepEqual(spectator.bottomCards, s.bottomCards, '地主确定后观战视角可见底牌');
   assert.equal(spectator.players.find((p) => p.playerId === 'p0')?.handCount, 20);
 
   const p0View = landlordPlatformModule.getPlayerView(s, 'p0');
@@ -235,7 +235,7 @@ test('platform 视图遮滤：手牌只对自己；底牌仅地主可见；牌�
   assert.deepEqual(p0View.bottomCards, s.bottomCards, '地主视角可见底牌');
   const p1View = landlordPlatformModule.getPlayerView(s, 'p1');
   assert.equal(p1View.me?.hand.length, 17);
-  assert.equal(p1View.bottomCards.length, 0, '农民视角不得见底牌');
+  assert.deepEqual(p1View.bottomCards, s.bottomCards, '地主确定后农民视角可见底牌');
   const p2View = landlordPlatformModule.getPlayerView(s, 'p2');
   assert.deepEqual(
     [...p1View.me!.hand, ...p2View.me!.hand].map((c) => c.id),

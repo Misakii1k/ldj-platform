@@ -194,9 +194,12 @@ export function WerewolfRoleSpotlight({ model }: WerewolfRoleSpotlightProps) {
       <div className="werewolf-spotlight werewolf-spotlight--speaking">
         <div className="werewolf-spotlight__speaker-halo">
           <span className="werewolf-spotlight__wave" />
-          <span className="werewolf-spotlight__speaker-tag">正在发言</span>
+          <span className="werewolf-spotlight__speaker-tag">{phase === 'last_words' ? '正在留遗言' : '正在发言'}</span>
           <strong className="werewolf-spotlight__speaker-name">{speakingSeat.seatLabel} {speakingSeat.name}</strong>
         </div>
+        <p className="werewolf-spotlight__speaker-line">
+          {model.speakerLine ?? '正在组织语言…'}
+        </p>
       </div>
     );
   }

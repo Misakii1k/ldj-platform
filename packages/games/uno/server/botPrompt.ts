@@ -63,6 +63,16 @@ const ROLE_BRIEF = `你在玩 UNO。轮到你时，要打出一张与台面顶�
 打不出就摸一张，摸到能打的可以接着打，否则本回合结束。
 谁先把手牌打完谁赢，所以尽量少留牌；手上只剩一张时要喊 UNO。`;
 
+/** 桌上闲聊：让模型知道大家在说什么（UNO 无发言环节，仅作气氛参考） */
+function describeTableTalk(view: UnoPlayerView, input: BotDecisionInput<UnoPlayerView>): string {
+  const chat = (input.recentChat ?? []).slice(-6);
+  if (chat.length === 0) return '';
+  const lines = chat.map((line) =>
+    `${line.fromPlayerId ? seatLabel(view, line.fromPlayerId) : '系统'}：${line.text}`,
+  );
+  return ['桌上闲聊：', ...lines].join('\n');
+}
+
 export function buildUnoBotPrompt(
   input: BotDecisionInput<UnoPlayerView>,
 ): BotPromptContext<UnoAction> | null {
@@ -141,9 +151,10 @@ export function buildUnoBotPrompt(
     options.push({ id: 'draw', label: '不打，摸一张牌', action: { type: 'draw_card' } });
   }
 
+  const tableTalk = describeTableTalk(view, input);
   return {
     roleBrief: ROLE_BRIEF,
-    situation: `${header}\n轮到你出牌。手牌越少越接近胜利，也要留意别人快出完了。`,
+    situation: `${header}\n轮到你出牌。手牌越少越接近胜利，也要留意别人快出完了。${tableTalk ? `\n${tableTalk}` : ''}`,
     options,
   };
 }

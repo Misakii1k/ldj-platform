@@ -2,7 +2,7 @@ import type { GameManifest } from '@ldj/shared';
 
 export const DURIAN_MANIFEST = {
   id: 'durian',
-  displayName: 'During',
+  displayName: 'DURING',
   version: '0.1.0',
   minPlayers: 2,
   maxPlayers: 7,

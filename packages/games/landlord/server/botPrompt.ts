@@ -58,6 +58,16 @@ const ROLE_BRIEF = `你在玩斗地主。叫分最高的人当地主，拿到 3 
 地主先出牌完就赢；任意一个农民出完牌，两个农民一起赢。
 压牌必须同牌型同张数且点数更大，炸弹能压任何非炸弹牌型，王炸最大。`;
 
+/** 桌上闲聊：让模型知道大家在说什么（斗地主无发言环节，仅作气氛与意图参考） */
+function describeTableTalk(input: BotDecisionInput<LandlordPlayerView>): string {
+  const chat = (input.recentChat ?? []).slice(-6);
+  if (chat.length === 0) return '';
+  const lines = chat.map((line) =>
+    `${line.fromPlayerId ? seatLabel(input.view, line.fromPlayerId) : '系统'}：${line.text}`,
+  );
+  return ['桌上闲聊：', ...lines].join('\n');
+}
+
 export function buildLandlordBotPrompt(
   input: BotDecisionInput<LandlordPlayerView>,
 ): BotPromptContext<LandlordAction> | null {
@@ -84,7 +94,8 @@ export function buildLandlordBotPrompt(
         bigCards.length > 0 ? `其中大牌：${bigCards.join(' ')}。` : '你手上没有 A 以上的大牌。',
         bidsSoFar,
         '现在轮到你叫分。叫得高更可能当地主，但地主要独自对抗两家；不叫（0 分）就稳当农民。',
-      ].join('\n'),
+        describeTableTalk(input),
+      ].filter(Boolean).join('\n'),
       options: [
         { id: '0', label: '不叫（0 分）', action: { type: 'bid_score', score: 0 } },
         ...([1, 2, 3] as const)
@@ -168,7 +179,8 @@ export function buildLandlordBotPrompt(
       header,
       `${fromWho} 出的是 ${currentDesc}，轮到你决定压不压。`,
       '压牌会消耗手上的大牌；如果压牌的人是队友，通常应该过。',
-    ].join('\n'),
+      describeTableTalk(input),
+    ].filter(Boolean).join('\n'),
     options,
   };
 }

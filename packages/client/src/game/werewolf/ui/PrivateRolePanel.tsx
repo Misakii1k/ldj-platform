@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import type { WerewolfSelfModel } from '../presentation.ts';
-import { IdentityFlipCard } from '../../../shared-ui/IdentityFlipCard.tsx';
+import { WEREWOLF_ROLE_DETAILS, type WerewolfSelfModel } from '../presentation.ts';
 
 interface PrivateRolePanelProps {
   readonly self: WerewolfSelfModel | null;
@@ -62,16 +61,29 @@ export function PrivateRolePanel({ self, synced: _synced }: PrivateRolePanelProp
 
       {showDetail && (
         <div className="werewolf-compact-role__popover" role="dialog" aria-label="身份详情">
-          <IdentityFlipCard
-            theme="gothic"
-            variant="compact"
-            roleName={self.roleLabel}
-            roleSubtitle={isWolf ? '狼人阵营' : '好人阵营'}
-            roleCamp={isWolf ? 'evil' : 'good'}
-            artworkUrl={self.artworkUrl}
-            secretHints={[self.roleHint]}
-            canInteract={true}
-          />
+          <div className="werewolf-compact-role__popover-header">
+            <img src={self.artworkUrl} alt="" className="werewolf-compact-role__popover-art" />
+            <div>
+              <h3>{self.roleLabel}</h3>
+              <span className="werewolf-compact-role__popover-tag">
+                {isWolf ? '狼人阵营' : '好人阵营'}
+              </span>
+            </div>
+          </div>
+          <p className="werewolf-compact-role__popover-hint">
+            <strong>技能</strong>
+            {WEREWOLF_ROLE_DETAILS[self.role].skill}
+          </p>
+          <p className="werewolf-compact-role__popover-hint">
+            <strong>获胜</strong>
+            {WEREWOLF_ROLE_DETAILS[self.role].win}
+          </p>
+          {self.roleHint && (
+            <p className="werewolf-compact-role__popover-hint">
+              <strong>本局</strong>
+              {self.roleHint}
+            </p>
+          )}
         </div>
       )}
     </aside>

@@ -7,7 +7,7 @@ import { seedRoom } from './helpers/dbClient.ts';
 import { RoomDriver } from './helpers/wsClient.ts';
 import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL } from './helpers/serverEnv.ts';
 
-const ARTIFACT_DIR = path.resolve('C:/Users/87850/.gemini/antigravity/brain/000a5de9-3625-46f8-8228-425d7498996e');
+const ARTIFACT_DIR = path.resolve('C:/Users/87850/.gemini/antigravity/brain/884af4c7-8e29-45cf-91a8-ec7b2fa16acd');
 
 interface Me {
   playerId: string;
@@ -124,7 +124,7 @@ test.describe('Durian 界面视觉、无溢出视口、设备端切换与聊天 
       await page.getByRole('button', { name: '🖥️ 桌面端' }).click();
       await expect(page.getByRole('button', { name: '🖥️ 桌面端' })).toHaveClass(/is-active/);
 
-      // 桌面端应展示中央抢单按铃与需求看板、对号错号中央板
+      // 桌面端应展示中央质疑按铃与生效看板、对号错号中央板
       await expect(page.locator('.durian-sim-bell-btn-compact')).toBeVisible();
       await expect(page.locator('.durian-table-center-board')).toBeVisible();
       await expect(page.locator('.durian-table-counter--left')).toBeVisible();

@@ -25,9 +25,7 @@ export function AiProfilePicker(props: AiProfilePickerProps) {
         {profiles.map((profile) => (
           <div key={profile.id} className={`settings-profile-chip ${selectedId === profile.id ? 'is-active' : ''}`}>
             <button type="button" onClick={() => onApply(profile)} disabled={disabled}>{profile.name}</button>
-            {!profile.builtIn && (
-              <button type="button" className="settings-profile-delete" aria-label={`删除预设 ${profile.name}`} onClick={() => onDelete(profile)} disabled={disabled}>×</button>
-            )}
+            <button type="button" className="settings-profile-delete" aria-label={`删除预设 ${profile.name}`} onClick={() => onDelete(profile)} disabled={disabled}>×</button>
           </div>
         ))}
       </div>

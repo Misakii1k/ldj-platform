@@ -260,13 +260,15 @@ export function TabletopOvalShell({
   };
 
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>(() => {
+    const preferLandscape = Boolean(recommendLandscape || gameId === 'landlord');
     try {
       const saved = localStorage.getItem('ldj_tabletop_orientation');
-      if (saved === 'portrait' || saved === 'landscape') return saved;
+      if (saved === 'landscape') return 'landscape';
+      if (saved === 'portrait' && !preferLandscape) return 'portrait';
     } catch {
-      // 存储被禁用（隐私模式等）时安全回退竖屏
+      // 存储被禁用（隐私模式等）时按游戏推荐回退
     }
-    return 'portrait';
+    return preferLandscape ? 'landscape' : 'portrait';
   });
 
   const [viewMode, setViewMode] = useState<'player' | 'table'>(() => {
@@ -327,7 +329,7 @@ export function TabletopOvalShell({
             {topRightControls}
 
             {/* 宽幅推荐小贴士 */}
-            {(recommendLandscape || gameId === 'party-sandbox' || gameId === 'bell-clash') && orientation === 'portrait' && (
+            {(recommendLandscape || gameId === 'party-sandbox' || gameId === 'bell-clash' || gameId === 'landlord') && orientation === 'portrait' && (
               <button
                 type="button"
                 className="tabletop-sound-btn tabletop-recommend-chip"

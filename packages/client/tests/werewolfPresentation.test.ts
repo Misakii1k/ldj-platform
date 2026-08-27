@@ -193,6 +193,28 @@ test('票数只透传服务端进度，投票结果与终局复盘按公开字�
   assert.equal(over.reveal?.rows.length, 6);
 });
 
+test('发言阶段取当前发言者最新公屏，座位号从 1 开始', () => {
+  const discussion = buildWerewolfPresentation(
+    view('discussion', { currentSpeakerId: 's' }),
+    members,
+    [
+      { cursor: 1, kind: 'player', fromPlayerId: 'w1', text: '旧发言', at: 1 },
+      { cursor: 2, kind: 'player', fromPlayerId: 's', text: '3 号先听身份再投票', at: 2 },
+    ],
+  );
+  assert.equal(discussion.seats.find((seat) => seat.playerId === 's')?.seatLabel, '3 号');
+  assert.equal(discussion.speakerLine, '3 号先听身份再投票');
+
+  const lastWords = buildWerewolfPresentation(
+    view('last_words', { lastWordsPlayerId: 'w1', me: { ...baseMe, lastWordsPending: true } }),
+    members,
+    [{ cursor: 3, kind: 'player', fromPlayerId: 'w1', text: '听预言家的', at: 3 }],
+  );
+  assert.equal(lastWords.seats.find((seat) => seat.playerId === 'w1')?.isSpeaking, true);
+  assert.equal(lastWords.speakerLine, '听预言家的');
+});
+
+
 test('视图解析接受无 me 的观战视角，并拒绝旧 schema、规则矛盾及未支持上游字段', () => {
   const spectator = structuredClone(view('night')) as Record<string, unknown>;
   delete spectator.me;

@@ -15,9 +15,11 @@ import { RoomCommandExecutor } from '../src/core/executor.ts';
 import { applyRoomCommand } from '../src/core/commands/roomCommand.ts';
 import { seedRoom } from './helpers/seedRoom.ts';
 import { BotRunner } from '../src/core/game/botRunner.ts';
-import { getActiveSession, type GameActionOutcome } from '../src/core/game/session.ts';
+import { applySessionAction, getActiveSession, loadSessionState, type GameActionOutcome } from '../src/core/game/session.ts';
+import { getSessionGameModule } from '../src/core/game/registry.ts';
+import { pickWerewolfPlayAction } from '@ldj/game-werewolf/server';
 import { createLogger } from '../src/boot/logger.ts';
-import type { BotKind } from '@ldj/shared';
+import { createSeededRandom, type BotKind } from '@ldj/shared';
 
 const silentLogger = createLogger('error', {}, () => {});
 
@@ -33,11 +35,11 @@ interface Ctx {
   hostId: string;
 }
 
-async function setup(): Promise<Ctx> {
+async function setup(gameId = 'undercover'): Promise<Ctx> {
   const db = openDb({ path: ':memory:' });
   migrate(db);
   const executor = new RoomCommandExecutor(db);
-  const seeded = seedRoom(db, { ready: true });
+  const seeded = seedRoom(db, { ready: true, gameId });
   return { db, executor, roomId: seeded.roomId, hostId: seeded.hostId };
 }
 
@@ -198,6 +200,65 @@ test('BotRunner：房间里没有机器人时 trigger 是无操作', async () =>
     // 没有活跃会话、也没有机器人 —— 不该抛错
     await runner.triggerAndWait(ctx.roomId);
     assert.ok(true);
+  } finally {
+    closeDb(ctx.db);
+  }
+});
+
+test('BotRunner：狼人杀机器人结束发言前会先写公屏', async () => {
+  const ctx = await setup('werewolf');
+  try {
+    await addBots(ctx, 5);
+    await hostCommand(ctx, { command: 'start_game' });
+
+    const chats: string[] = [];
+    const runner = new BotRunner({
+      db: ctx.db,
+      executor: ctx.executor,
+      logger: silentLogger,
+      thinkDelayMs: 0,
+      onOutcome: () => {},
+      onChat: (_roomId, messages) => {
+        chats.push(...messages.map((message) => message.text));
+      },
+    });
+
+    let lastSeq = -1;
+    for (let round = 0; round < 40; round++) {
+      await runner.triggerAndWait(ctx.roomId);
+      const session = getActiveSession(ctx.db, ctx.roomId);
+      if (!session) break;
+      const module = getSessionGameModule(session);
+      if (module) {
+        const view = module.getPlayerView(loadSessionState(session, module).state, ctx.hostId);
+        const hostAction = pickWerewolfPlayAction({
+          view,
+          playerId: ctx.hostId,
+          random: createSeededRandom(`host:${session.last_seq}`),
+        });
+        if (hostAction) {
+          await ctx.executor.executeInternal({
+            roomId: ctx.roomId,
+            handler: (tx) => {
+              const current = getActiveSession(tx.db, ctx.roomId);
+              if (!current) return null;
+              return applySessionAction(tx, current, { kind: 'player', playerId: ctx.hostId }, hostAction, null);
+            },
+          });
+        }
+      }
+      const after = getActiveSession(ctx.db, ctx.roomId);
+      if (!after) break;
+      if (after.last_seq === lastSeq) break;
+      lastSeq = after.last_seq;
+    }
+
+    const rows = ctx.db
+      .prepare(`SELECT text, from_player_id FROM chat_messages WHERE room_id = ? AND kind = 'player'`)
+      .all(ctx.roomId) as { text: string; from_player_id: string | null }[];
+    assert.ok(rows.length > 0, '应落下机器人公屏发言');
+    assert.ok(rows.every((row) => row.text.length >= 1 && row.text.length <= 300));
+    assert.ok(chats.length > 0, '公屏应通过 onChat 广播');
   } finally {
     closeDb(ctx.db);
   }

@@ -4360,32 +4360,40 @@ p { margin: 0.5rem 0; }
   justify-content: space-between;
   gap: 6px;
   padding: 6px 10px;
-  background: #ffffff;
-  border: 2px solid #e2e8f0;
+  background: var(--gp-surface, #fffdf7);
+  border: 2.5px solid var(--game-line, #292722);
   border-radius: 10px;
-  box-shadow: 0 2px 0 rgba(45, 38, 30, 0.05);
-  transition: transform 0.12s ease, border-color 0.12s ease;
+  box-shadow: 0 2px 0 var(--game-line, #292722);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
-.durian-counter-item:hover {
-  border-color: #f59e0b;
+.durian-table-counter--left .durian-counter-item:hover {
   transform: translateY(-1px);
+}
+
+.durian-table-counter--right .durian-counter-item:hover {
+  transform: translateY(1px);
+}
+
+/* 桌面端：右侧看板给对面玩家读，整块倒置 */
+.durian-table-counter--right {
+  transform: rotate(180deg);
 }
 
 .durian-counter-name {
   font-size: 0.82rem;
   font-weight: 900;
-  color: #1e293b;
+  color: var(--game-ink, #292722);
   flex: 1;
 }
 
 .durian-counter-pill {
   font-size: 0.92rem;
   font-weight: 900;
-  color: #0f172a;
-  background: linear-gradient(135deg, #fef08a 0%, #facc15 100%);
-  border: 1.5px solid #a16207;
-  box-shadow: 0 2px 0 #a16207;
+  color: var(--game-ink, #292722);
+  background: var(--gp-yellow, #f7c84b);
+  border: 2px solid var(--game-line, #292722);
+  box-shadow: 0 2px 0 var(--game-line, #292722);
   border-radius: 999px;
   padding: 1px 8px;
   min-width: 24px;
@@ -4393,13 +4401,17 @@ p { margin: 0.5rem 0; }
   line-height: 1.2;
 }
 
-/* 竖屏窄视口：三列折叠为上下布局，中央看板优先全宽，两侧统计收为紧凑横条 */
+/* 竖屏窄视口：只留一条生效统计在顶上，去掉对面重复看板 */
 @media (max-width: 640px) {
   .durian-tabletop-arena {
     grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(0, 1fr) auto;
-    gap: 8px;
-    overflow-y: auto;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 6px;
+    overflow: hidden;
+  }
+
+  .durian-tabletop-arena > .durian-table-counter--left {
+    order: 0;
   }
 
   .durian-tabletop-arena > .durian-table-center-board {
@@ -4407,39 +4419,110 @@ p { margin: 0.5rem 0; }
     min-height: 0;
   }
 
-  .durian-tabletop-arena > .durian-table-counter--left {
-    order: 2;
-  }
-
   .durian-tabletop-arena > .durian-table-counter--right {
-    order: 3;
-    transform: none;
+    display: none;
   }
 
   .durian-table-counter {
     height: auto;
     flex-direction: row;
     align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
+    gap: 6px;
+    padding: 4px 8px;
+    border-width: 2.5px;
+    border-radius: 12px;
+    box-shadow: 0 3px 0 var(--game-line, #2d261e);
   }
 
   .durian-table-counter .durian-counter-header {
     border-bottom: none;
     border-right: 2px dashed rgba(45, 38, 30, 0.2);
-    padding: 0 10px 0 0;
+    padding: 2px 8px 2px 0;
     flex-shrink: 0;
+    font-size: 0.72rem;
+  }
+
+  .durian-counter-header__icon {
+    font-size: 0.86rem;
   }
 
   .durian-counter-list {
     flex-direction: row;
-    flex-wrap: wrap;
-    gap: 5px;
-    overflow: visible;
+    flex-wrap: nowrap;
+    gap: 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
   }
 
   .durian-counter-item {
-    padding: 3px 8px;
+    padding: 2px 6px;
+    border-width: 2px;
+    box-shadow: 0 1px 0 var(--game-line, #292722);
+  }
+
+  .durian-counter-name {
+    font-size: 0.72rem;
+  }
+
+  .durian-counter-pill {
+    font-size: 0.76rem;
+    min-width: 18px;
+    padding: 0 5px;
+  }
+
+  .durian-board-header {
+    gap: 6px;
+    padding: 5px 8px;
+  }
+
+  .durian-board-header__half {
+    font-size: 0.74rem;
+    padding: 3px 6px;
+  }
+
+  .durian-board-stack-scroll {
+    padding: 8px 10px;
+  }
+
+  .durian-board-card-row .durian-card {
+    height: 42px;
+  }
+
+  .durian-table-bottom-bar {
+    padding: 6px 8px;
+    gap: 8px;
+  }
+
+  .durian-sim-draw-btn {
+    padding: 6px 10px;
+    border-radius: 12px;
+  }
+
+  .durian-sim-draw-btn__icon {
+    font-size: 1.15rem;
+  }
+
+  .durian-sim-draw-btn__text strong {
+    font-size: 0.82rem;
+  }
+
+  .durian-sim-bell-btn-compact {
+    padding: 6px 12px;
+    font-size: 0.84rem;
+  }
+
+  .durian-sim-bell-icon {
+    font-size: 1.1rem;
+  }
+
+  .durian-sim-choice-title {
+    font-size: 0.74rem;
+  }
+
+  .durian-sim-card-flip .durian-card--large {
+    height: 88px;
+    min-height: 88px;
+    max-width: 100%;
   }
 }
 
@@ -4464,7 +4547,7 @@ p { margin: 0.5rem 0; }
   grid-template-columns: 1fr auto 1fr;
   gap: 10px;
   align-items: center;
-  background: #f8fafc;
+  background: var(--gp-paper, #fff4df);
   border-bottom: 2.5px solid var(--game-line, #2d261e);
   padding: 8px 14px;
   flex-shrink: 0;
@@ -4483,17 +4566,17 @@ p { margin: 0.5rem 0; }
 }
 
 .durian-board-header__half--crossed {
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  color: #991b1b;
-  border: 2px solid #f87171;
-  box-shadow: 0 2px 0 #fca5a5;
+  background: color-mix(in srgb, var(--gp-coral, #ef513d) 16%, #fffdf7);
+  color: var(--gp-coral-dark, #d6382a);
+  border: 2.5px solid var(--game-line, #292722);
+  box-shadow: 0 2px 0 var(--game-line, #292722);
 }
 
 .durian-board-header__half--checked {
-  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-  color: #166534;
-  border: 2px solid #4ade80;
-  box-shadow: 0 2px 0 #86efac;
+  background: color-mix(in srgb, var(--gp-green, #08715d) 16%, #fffdf7);
+  color: var(--gp-green-dark, #055848);
+  border: 2.5px solid var(--game-line, #292722);
+  box-shadow: 0 2px 0 var(--game-line, #292722);
 }
 
 .durian-board-header__spine {
@@ -4505,9 +4588,9 @@ p { margin: 0.5rem 0; }
 .durian-board-header__spine-badge {
   font-size: 0.76rem;
   font-weight: 900;
-  color: #64748b;
-  background: #e2e8f0;
-  border: 1.5px solid #cbd5e1;
+  color: var(--game-ink, #292722);
+  background: var(--gp-surface, #fffdf7);
+  border: 2px solid var(--game-line, #292722);
   border-radius: 999px;
   padding: 1px 6px;
 }
@@ -4539,7 +4622,7 @@ p { margin: 0.5rem 0; }
   justify-content: center;
   gap: 8px;
   padding: 40px 16px;
-  color: #64748b;
+  color: var(--game-muted, #716b61);
   text-align: center;
 }
 
@@ -4551,12 +4634,12 @@ p { margin: 0.5rem 0; }
 .durian-board-empty__title {
   font-size: 1.05rem;
   font-weight: 900;
-  color: #334155;
+  color: var(--game-ink, #292722);
 }
 
 .durian-board-empty__sub {
   font-size: 0.84rem;
-  color: #64748b;
+  color: var(--game-muted, #716b61);
 }
 
 .durian-board-card-row {
@@ -4590,7 +4673,7 @@ p { margin: 0.5rem 0; }
 .durian-board-card-index {
   font-size: 0.8rem;
   font-weight: 900;
-  color: #64748b;
+  color: var(--game-muted, #716b61);
   width: 28px;
   text-align: right;
   flex-shrink: 0;
@@ -4620,22 +4703,23 @@ p { margin: 0.5rem 0; }
 .durian-flip-hint {
   font-size: 0.74rem;
   font-weight: 900;
-  color: #ffffff;
-  background: #f59e0b;
+  color: var(--game-ink, #292722);
+  background: var(--gp-yellow, #f7c84b);
   padding: 3px 8px;
+  border: 2px solid var(--game-line, #292722);
   border-radius: 999px;
-  box-shadow: 0 2px 0 #b45309;
+  box-shadow: 0 2px 0 var(--game-line, #292722);
   white-space: nowrap;
   animation: autostart-pop 0.3s ease;
 }
 
-/* 底部操作条（摸牌大胶囊 + 金属质感抢单大按铃） */
+/* 底部操作条（摸牌 + 质疑按铃） */
 .durian-table-bottom-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 10px 16px;
-  background: #f8fafc;
+  background: var(--gp-paper, #fff4df);
   border-top: 2.5px solid var(--game-line, #2d261e);
   flex-shrink: 0;
 }
@@ -4644,24 +4728,24 @@ p { margin: 0.5rem 0; }
   display: flex;
   align-items: center;
   gap: 10px;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: #ffffff;
+  background: var(--gp-yellow, #f7c84b);
+  color: var(--game-ink, #292722);
   border: 3px solid var(--game-line, #2d261e);
   border-radius: 16px;
-  box-shadow: 0 4px 0 var(--game-line, #2d261e), 0 6px 16px rgba(217, 119, 6, 0.25);
+  box-shadow: 0 4px 0 var(--game-line, #2d261e);
   padding: 8px 16px;
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
 }
 
 .durian-sim-draw-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 0 var(--game-line, #2d261e), 0 10px 20px rgba(217, 119, 6, 0.35);
+  box-shadow: 0 6px 0 var(--game-line, #2d261e);
 }
 
 .durian-sim-draw-btn:active:not(:disabled) {
   transform: translateY(2px);
-  box-shadow: 0 2px 0 var(--game-line, #2d261e);
+  box-shadow: 0 1px 0 var(--game-line, #2d261e);
 }
 
 .durian-sim-draw-btn:disabled {
@@ -4684,12 +4768,11 @@ p { margin: 0.5rem 0; }
 .durian-sim-draw-btn__text strong {
   font-size: 0.96rem;
   font-weight: 900;
-  text-shadow: 0 1px 0 rgba(0,0,0,0.2);
 }
 
 .durian-sim-draw-btn__text small {
   font-size: 0.76rem;
-  opacity: 0.9;
+  color: var(--game-muted, #716b61);
 }
 
 .durian-sim-choice-popup {
@@ -4704,22 +4787,28 @@ p { margin: 0.5rem 0; }
   color: #78350f;
 }
 
+/* 桌面公共看板与摸牌选择面：两侧正向阅读；立牌才对折倒置 */
+.durian-sim-card-flip .durian-card-half:first-child,
+.durian-board-card-row .durian-card-half:first-child,
+.durian-placement-item .durian-card-half:first-child {
+  transform: none;
+}
+
 .durian-sim-bell-btn-compact {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: radial-gradient(circle at 35% 25%, #fffbeb 0%, #fef08a 25%, #f59e0b 65%, #b45309 100%);
-  color: #451a03;
+  background: radial-gradient(circle at 35% 25%, #fff8db 0%, var(--gp-yellow, #f7c84b) 55%, #d4a017 100%);
+  color: var(--game-ink, #292722);
   border: 3.5px solid var(--game-line, #2d261e);
   border-radius: 999px;
-  box-shadow: 0 6px 0 var(--game-line, #2d261e), 0 10px 24px rgba(245, 158, 11, 0.45);
+  box-shadow: 0 6px 0 var(--game-line, #2d261e);
   padding: 10px 22px;
   font-weight: 900;
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
   position: relative;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .durian-sim-bell-cap {
@@ -4735,12 +4824,12 @@ p { margin: 0.5rem 0; }
 }
 
 .durian-sim-bell-btn-compact:hover {
-  transform: translateY(-2px) scale(1.03);
-  box-shadow: 0 8px 0 var(--game-line, #2d261e), 0 14px 28px rgba(245, 158, 11, 0.55);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 0 var(--game-line, #2d261e);
 }
 
 .durian-sim-bell-btn-compact:active {
-  transform: translateY(4px) scale(0.96);
+  transform: translateY(4px);
   box-shadow: 0 2px 0 var(--game-line, #2d261e);
 }
 
@@ -4807,10 +4896,10 @@ p { margin: 0.5rem 0; }
   align-items: center;
   gap: 6px;
   padding: 6px 18px;
-  background: rgba(45, 38, 30, 0.08);
-  border: 1.5px dashed rgba(45, 38, 30, 0.2);
+  background: var(--gp-paper, #fff4df);
+  border: 2px dashed var(--game-line, #292722);
   border-radius: 999px;
-  color: #78350f;
+  color: var(--game-ink, #292722);
   font-size: 0.88rem;
   font-weight: 800;
   letter-spacing: 0.02em;
@@ -4829,6 +4918,20 @@ p { margin: 0.5rem 0; }
   border-radius: 26px;
   box-shadow: 0 10px 0 var(--game-line, #2d261e);
   flex-direction: column;
+}
+
+.durian-player-fullscreen-secret .durian-secret-icon {
+  font-size: 3.6rem;
+}
+
+.durian-player-fullscreen-secret .durian-secret-text {
+  font-size: 1.35rem;
+}
+
+.durian-player-fullscreen-secret small {
+  margin-top: 8px;
+  font-size: 0.95rem;
+  color: var(--game-muted, #716b61);
 }
 
 .durian-card.durian-card--large {
@@ -5081,93 +5184,7 @@ p { margin: 0.5rem 0; }
   background-image: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.08), rgba(239, 68, 68, 0.08) 6px, transparent 6px, transparent 12px) !important;
 }
 
-/* 布局主容�?*/
-.durian-main-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
-  width: 100%;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-/* 桌面清单与汇总看�?*/
-.durian-board {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px 14px;
-  background: #ffffff;
-  border: 3px solid var(--game-line, #2d261e);
-  border-radius: 16px;
-  box-shadow: 0 4px 0 var(--game-line, #2d261e);
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.durian-summary-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding-bottom: 8px;
-  border-bottom: 2px dashed rgba(45, 38, 30, .18);
-  flex-shrink: 0;
-}
-
-.durian-summary-left {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.durian-placements-title {
-  margin: 0;
-  font-size: .95rem;
-  font-weight: 900;
-  color: #0f172a;
-}
-
-.durian-placements-hint {
-  font-size: .76rem;
-  font-weight: 700;
-  color: #64748b;
-}
-
-.durian-summary-right {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.durian-deck-count {
-  font-size: .84rem;
-  font-weight: 800;
-  color: #0f172a;
-}
-
-.durian-deck-count strong {
-  color: #f59e0b;
-  font-size: .95rem;
-}
-
-.durian-modifier-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  border-radius: 6px;
-  background: #ffedd5;
-  color: #c2410c;
-  font-size: .74rem;
-  font-weight: 900;
-  border: 1.5px solid #fb923c;
-}
-
-/* 中央桌面已放置卡牌看�?*/
+/* 中央桌面已放置卡牌看板 */
 .durian-center-board {
   display: flex;
   flex-direction: column;
@@ -5294,59 +5311,6 @@ p { margin: 0.5rem 0; }
   box-shadow: 0 0 0 3px rgba(245, 158, 11, .4);
 }
 
-/* 翻牌选择方向界面 */
-.durian-choice-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px 14px;
-  background: #fffbeb;
-  border: 3px solid #d97706;
-  border-radius: 14px;
-  box-shadow: 0 4px 0 #92400e;
-  animation: phase-enter .2s ease both;
-  flex-shrink: 0;
-}
-
-.durian-choice-options {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.durian-choice-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 10px 8px;
-  background: #ffffff;
-  border: 2.5px solid var(--game-line, #2d261e);
-  border-radius: 12px;
-  box-shadow: 0 4px 0 var(--game-line, #2d261e);
-  cursor: pointer;
-  font-weight: 800;
-  transition: transform .12s ease, box-shadow .12s ease;
-}
-
-.durian-choice-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 0 var(--game-line, #2d261e);
-  background: #f0fdf4;
-}
-
-.durian-choice-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 var(--game-line, #2d261e);
-}
-
-.durian-choice-badge {
-  color: #059669;
-  font-size: .8rem;
-  font-weight: 800;
-}
-
 /* 质疑结算看板 */
 /* 精简紧凑卡牌条（�?5 张出牌起使用，带 ×�?标识，省空间防溢出） */
 .durian-card-compact {
@@ -5384,14 +5348,14 @@ p { margin: 0.5rem 0; }
 }
 
 .durian-compact-half--crossed {
-  background: #f8fafc;
-  color: #94a3b8;
-  opacity: 0.7;
+  background: color-mix(in srgb, var(--gp-muted, #716b61) 12%, #fffdf7);
+  color: var(--game-muted, #716b61);
+  opacity: 0.78;
 }
 
 .durian-compact-half--checked {
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  color: #166534;
+  background: color-mix(in srgb, var(--gp-green, #08715d) 14%, #fffdf7);
+  color: var(--gp-green-dark, #055848);
   font-weight: 900;
 }
 
@@ -6697,20 +6661,6 @@ p { margin: 0.5rem 0; }
   color: var(--game-ink, #221e1a);
 }
 
-.durian-sim-bell-icon {
-  font-size: 1.8rem;
-}
-
-.durian-sim-bell-label {
-  font-size: .95rem;
-  font-weight: 900;
-  color: #1e293b;
-}
-
-.durian-sim-bell-btn:active {
-  transform: translateY(5px);
-  box-shadow: 0 3px 0 var(--game-line, #2d261e), 0 6px 10px rgba(0, 0, 0, .15);
-}
 
 
 
@@ -7761,9 +7711,6 @@ p { margin: 0.5rem 0; }
 .goose-evil-player-badge { padding: 6px 14px; border: 2.5px solid #d32f2f; border-radius: 999px; background: #ffebee; color: #c62828; font-weight: 900; font-size: .88rem; }
 .goose-votes-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
 .goose-vote-stat-item { display: flex; justify-content: space-between; padding: 6px 10px; border-radius: 8px; background: #f5f5f5; font-size: .84rem; font-weight: 800; }
-.durian-bell__copy { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
-.durian-bell__copy strong { font-size: 1.02rem; font-weight: 900; }
-.durian-bell__copy span { font-size: .76rem; font-weight: 700; opacity: .85; }
 @keyframes phase-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 .uc-panel__head { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; }
 .uc-panel__head h3 { margin: 0; color: var(--game-ink); font-size: .99rem; font-weight: 900; }
@@ -8287,8 +8234,10 @@ p { margin: 0.5rem 0; }
   --tabletop-accent: var(--room-coral);
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   align-items: start;
+  align-content: start;
   margin: 0;
   padding: clamp(16px, 1.3vw, 22px);
+  min-height: 0;
   border-width: 3px;
   border-radius: 20px;
   background: #fffaf0;
@@ -10657,6 +10606,64 @@ p { margin: 0.5rem 0; }
   font-size: 0.78rem;
 }
 
+.ai-key-saved-tag {
+  color: #075544;
+  font-size: 0.76rem;
+  font-weight: 800;
+  margin-left: 6px;
+}
+
+.ai-key-hint {
+  display: block;
+  margin-top: 4px;
+  color: #075544;
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.ai-key-hint--pending {
+  color: #925400;
+}
+
+/* API Key 输入 + 小眼睛明文切换 */
+.ai-key-input-wrap {
+  position: relative;
+  display: block;
+}
+
+.ai-key-input-wrap input {
+  width: 100%;
+  padding-right: 44px;
+}
+
+.ai-key-reveal {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--home-muted);
+  cursor: pointer;
+  padding: 0;
+}
+
+.ai-key-reveal:hover:not(:disabled) {
+  color: var(--home-ink);
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.ai-key-reveal:focus-visible {
+  outline: 2px solid var(--home-ink);
+  outline-offset: -2px;
+}
+
 .ai-quick-connect__actions,
 .ai-diagnostic {
   grid-column: 1 / -1;
@@ -11815,10 +11822,6 @@ html[data-motion-level="off"] *::after {
   --tabletop-felt: #173f35;
   --tabletop-accent: #e85d3f;
   --tabletop-gold: #e8bd62;
-  min-height: 100dvh;
-  padding: calc(var(--safe-top) + 12px) 12px calc(var(--safe-bottom) + 12px);
-  color: var(--tabletop-paper);
-  background: radial-gradient(circle at 20% 0, #2d6a59 0, transparent 34%), linear-gradient(145deg, #173f35, #0d2722 72%);
 }
 
 .tabletop-shell__header,
@@ -12085,9 +12088,11 @@ html[data-motion-level="off"] *::after {
 
 .tabletop-setup {
   display: grid;
+  align-content: start;
   gap: 12px;
   margin: 14px 0;
   padding: 18px;
+  min-height: 0;
   color: var(--tabletop-ink);
   border: 2px solid var(--tabletop-ink);
   border-radius: 18px;
@@ -12953,13 +12958,25 @@ html[data-motion-level="off"] *::after {
 /* 发言高亮（紧凑胶囊收敛） */
 .werewolf-spotlight--speaking {
   justify-content: center;
+  flex-direction: column;
+  align-items: center;
   background: rgba(197, 160, 89, 0.15);
   border-color: var(--wc-gold, #c5a059);
-  padding: 6px 20px;
+  padding: 8px 20px 10px;
   width: auto !important;
   max-width: 380px !important;
   margin: 0 auto;
-  border-radius: 999px !important;
+  border-radius: 22px !important;
+}
+
+.werewolf-spotlight__speaker-line {
+  margin: 6px 0 0;
+  max-width: 100%;
+  color: #fff6e0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
 }
 
 .werewolf-spotlight__speaker-halo {
@@ -13537,14 +13554,28 @@ html[data-motion-level="off"] *::after {
 }
 
 .werewolf-compact-role__popover-hint {
-  margin: 0;
+  margin: 0 0 8px;
   font-size: 0.74rem;
   color: var(--wc-paper, #f0e6d2);
   line-height: 1.45;
 }
 
+.werewolf-compact-role__popover-hint:last-child {
+  margin-bottom: 0;
+}
+
+.werewolf-compact-role__popover-hint strong {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--wc-gold, #c5a059);
+}
+
 .tabletop-theme-tribunal-day .werewolf-compact-role__popover-hint {
   color: #3b2d1d;
+}
+
+.tabletop-theme-tribunal-day .werewolf-compact-role__popover-hint strong {
+  color: #92400e;
 }
 
 /* 操作面板（WerewolfActionPanel�?*/
@@ -13886,6 +13917,11 @@ html[data-motion-level="off"] *::after {
   .werewolf-spotlight__speaker-name {
     font-size: 0.78rem !important;
     line-height: 1.2 !important;
+  }
+
+  .werewolf-spotlight__speaker-line {
+    font-size: 0.72rem;
+    margin-top: 4px;
   }
 
   /* 席位卡片紧凑排布与完整文字呈现，绝不截断 */
@@ -14636,6 +14672,10 @@ html[data-motion-level="off"] *::after {
   justify-content: center;
   gap: 8px;
   flex-wrap: wrap;
+  width: fit-content;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
   padding: 6px 12px;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(10px);
@@ -15005,12 +15045,13 @@ html[data-motion-level="off"] *::after {
   box-sizing: border-box;
   gap: 2px;
   box-shadow: 2px 2.5px 0 var(--home-ink, #312d28);
+  overflow: hidden;
 }
 
 .durian-role-pill,
 .cheese-role-pill,
 .tabletop-role-pill {
-  height: 24px;
+  height: 100%;
   padding: 0 8px;
   border: none;
   border-radius: 6px;
@@ -15019,7 +15060,7 @@ html[data-motion-level="off"] *::after {
   font-size: 0.76rem;
   font-weight: 850;
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition: background 0.12s ease, color 0.12s ease;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -15036,15 +15077,16 @@ html[data-motion-level="off"] *::after {
 
 .durian-role-pill.is-active,
 .cheese-role-pill.is-active,
-.tabletop-role-pill.is-active,
-.cheese-tts-icon-btn.is-active,
-.ll-tracker-toggle-btn.is-active {
-  background: var(--home-yellow, #ffd43b) !important;
-  color: var(--home-ink, #312d28) !important;
-  font-weight: 950 !important;
-  border: 1.5px solid var(--home-ink, #312d28) !important;
-  box-shadow: 1px 1.5px 0 var(--home-ink, #312d28) !important;
-  border-radius: 6px !important;
+.tabletop-role-pill.is-active {
+  background: var(--home-yellow, #ffd43b);
+  color: var(--home-ink, #312d28);
+  font-weight: 950;
+}
+
+.cheese-tts-icon-btn.is-active {
+  background: var(--home-yellow, #ffd43b);
+  color: var(--home-ink, #312d28);
+  font-weight: 950;
 }
 
 /* 沉浸式游戏舞台全景区域（高度与宽度全面展开） */
@@ -15896,7 +15938,7 @@ html[data-motion-level="off"] *::after {
 }
 
 /* 触摸按下反馈（移动端模拟 hover） */
-.card-fan-item:not(:disabled):active {
+.card-fan-item:not([aria-disabled='true']):active {
   filter: brightness(1.08);
 }
 
@@ -15912,14 +15954,16 @@ html[data-motion-level="off"] *::after {
 }
 
 .landlord-self-badge {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-height: 36px;
   background: #fffdfa;
-  padding: 4px 14px;
+  padding: 4px 12px;
   border-radius: 999px;
   border: 2.5px solid var(--game-line);
   box-shadow: 0 3px 0 var(--game-line);
+  box-sizing: border-box;
 }
 
 .landlord-self-name {
@@ -15945,17 +15989,22 @@ html[data-motion-level="off"] *::after {
 }
 
 .landlord-btn {
-  padding: 6px 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 4px 14px;
   border-radius: 999px;
   font-weight: 900;
-  font-size: 0.92rem;
+  font-size: 0.85rem;
   cursor: pointer;
   border: 2.5px solid var(--game-line);
   background: #ffffff;
   color: var(--game-ink);
   transition: transform 0.12s ease, box-shadow 0.12s ease;
-  box-shadow: 0 4px 0 var(--game-line);
+  box-shadow: 0 3px 0 var(--game-line);
   white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .landlord-btn:hover:not(:disabled) {
@@ -16003,33 +16052,32 @@ html[data-motion-level="off"] *::after {
   color: #c92a2a;
 }
 
-.landlord-wait-tag {
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: #212529;
-  background: #fffdfa;
-  padding: 5px 16px;
+.landlord-wait-tag,
+.landlord-game-over-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 4px 12px;
   border-radius: 999px;
   border: 2.5px solid var(--game-line, #2d261e);
   box-shadow: 0 3px 0 var(--game-line, #2d261e);
+  background: #fffdfa;
+  color: var(--game-ink, #292722);
+  font-size: 0.85rem;
+  font-weight: 900;
   white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .landlord-game-over-tag {
-  font-size: 1.08rem;
-  font-weight: 900;
-  color: #92400e;
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  padding: 8px 24px;
-  border-radius: 20px;
-  border: 2px solid #f59e0b;
-  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
+  background: var(--game-yellow, #ffd43b);
 }
 
 /* 斗地主横向牌架与手牌 */
 .landlord-hand-container {
   width: 100%;
   max-width: 100%;
+  min-width: 0;
   display: flex;
   justify-content: center;
   align-items: flex-end;
@@ -16055,7 +16103,7 @@ html[data-motion-level="off"] *::after {
   background: transparent;
   border: none;
   padding: 0;
-  margin-left: -34px;
+  margin-left: calc(-1 * var(--landlord-card-overlap, 34px));
   cursor: pointer;
   transform-origin: bottom center;
   transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.15s ease;
@@ -16075,8 +16123,8 @@ html[data-motion-level="off"] *::after {
 .landlord-hand-card svg {
   width: 64px;
   height: 92px;
-  border-radius: 8px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
   display: block;
   pointer-events: none;
 }
@@ -16343,10 +16391,13 @@ html[data-motion-level="off"] *::after {
     font-size: 0.75rem;
   }
 
-  .landlord-btn {
-    padding: 6px 12px;
-    font-size: 0.8rem;
-    border-radius: 16px;
+  .landlord-btn,
+  .landlord-wait-tag,
+  .landlord-game-over-tag {
+    min-height: 32px;
+    padding: 3px 10px;
+    font-size: 0.78rem;
+    border-radius: 999px;
   }
 
   .landlord-hand-rack {
@@ -16355,7 +16406,7 @@ html[data-motion-level="off"] *::after {
   }
 
   .landlord-hand-card {
-    margin-left: -40px;
+    margin-left: calc(-1 * var(--landlord-card-overlap, 40px));
   }
 
   .landlord-hand-card .playing-card,
@@ -16403,7 +16454,16 @@ html[data-motion-level="off"] *::after {
 .card-fan-action-bar {
   position: absolute;
   top: -48px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
   z-index: 300;
+  pointer-events: none;
+}
+
+.card-fan-action-bar .card-fan-play-btn {
+  pointer-events: auto;
 }
 
 .card-fan-play-btn {
@@ -16464,7 +16524,7 @@ html[data-motion-level="off"] *::after {
 }
 
 /* 触摸按下反馈（移动端�?hover�?*/
-.card-fan-item:not(:disabled):active {
+.card-fan-item:not([aria-disabled='true']):active {
   filter: brightness(1.08);
 }
 
@@ -16650,15 +16710,30 @@ html[data-motion-level="off"] *::after {
   }
   .tabletop-header__kicker { display: none !important; }
   .tabletop-recommend-chip__label { display: none !important; }
+  .tabletop-seats-bar {
+    mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 28px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 28px), transparent 100%);
+  }
   .tabletop-header__title { font-size: 0.98rem !important; line-height: 1.1 !important; }
   .tabletop-header__sub { font-size: 0.7rem !important; margin: 0 !important; }
   .tabletop-header__actions { gap: 5px !important; }
   .tabletop-sound-btn,
+  .tabletop-rules-btn,
+  .cheese-tts-icon-btn,
+  .ll-tracker-toggle-btn,
   .tabletop-orient-btn,
   .game-leave__button {
-    padding: 4px 7px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    padding: 0 8px !important;
     font-size: 0.72rem !important;
-    border-radius: 12px !important;
+    border-radius: 10px !important;
+    box-shadow: 2px 2.5px 0 var(--home-ink, #312d28) !important;
+  }
+  .tabletop-sound-btn__label,
+  .tabletop-rules-btn .durian-btn-text,
+  .tabletop-rules-btn .cheese-btn-text {
+    display: none;
   }
   .tabletop-arena-container { padding: 4px !important; }
   .tabletop-oval-felt { border-width: 4px; }
@@ -19067,8 +19142,9 @@ html[data-motion-level="off"] *::after {
 
 /* ════════ 1. 卡牌背面 (遮蔽�? ════════ */
 .identity-card-back {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border: 2px solid rgba(255, 255, 255, 0.16);
+  background: linear-gradient(180deg, #fffdf7 0%, #fff4df 100%);
+  border: 3px solid var(--game-line, #292722);
+  box-shadow: 0 6px 0 var(--game-line, #292722);
   z-index: 2;
   transform: rotateY(0deg);
 }
@@ -19116,13 +19192,13 @@ html[data-motion-level="off"] *::after {
 .identity-card-back__badge {
   font-size: 0.96rem;
   letter-spacing: 2px;
-  color: #f1f5f9;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8), 0 0 12px rgba(255, 255, 255, 0.2);
+  color: var(--game-ink, #292722);
+  text-shadow: none;
 }
 
 .identity-card-back__action-tip {
   font-size: 0.85rem;
-  color: #94a3b8;
+  color: var(--game-muted, #716b61);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -19132,7 +19208,7 @@ html[data-motion-level="off"] *::after {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #38bdf8;
+  color: var(--game-ink, #292722);
   font-weight: 700;
   animation: pulseTip 2s infinite ease-in-out;
 }
@@ -19144,8 +19220,9 @@ html[data-motion-level="off"] *::after {
 
 /* ════════ 2. 卡牌正面 (揭示�? ════════ */
 .identity-card-front {
-  background: linear-gradient(145deg, #1e2433 0%, #111622 100%);
-  border: 2px solid rgba(255, 255, 255, 0.22);
+  background: linear-gradient(180deg, #fffdf7 0%, #fff4df 100%);
+  border: 3px solid var(--game-line, #292722);
+  box-shadow: 0 6px 0 var(--game-line, #292722);
   transform: rotateY(180deg);
   padding: 16px;
   justify-content: space-between;
@@ -19643,8 +19720,9 @@ html[data-motion-level="off"] *::after {
 
 /* ════════ 1. 卡牌背面 (遮蔽�? ════════ */
 .identity-card-back {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border: 2px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, #fffdf7 0%, #fff4df 100%);
+  border: 3px solid var(--game-line, #292722);
+  box-shadow: 0 6px 0 var(--game-line, #292722);
   z-index: 2;
   transform: rotateY(0deg);
 }
@@ -19653,7 +19731,7 @@ html[data-motion-level="off"] *::after {
   position: relative;
   margin: 10px;
   flex: 1;
-  border: 1.5px dashed rgba(255, 255, 255, 0.2);
+  border: 1.5px dashed rgba(41, 39, 34, 0.28);
   border-radius: 14px;
   display: flex;
   flex-direction: column;
@@ -19692,13 +19770,13 @@ html[data-motion-level="off"] *::after {
 .identity-card-back__badge {
   font-size: 0.95rem;
   letter-spacing: 2px;
-  color: #cbd5e1;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+  color: var(--game-ink, #292722);
+  text-shadow: none;
 }
 
 .identity-card-back__action-tip {
   font-size: 0.85rem;
-  color: #94a3b8;
+  color: var(--game-muted, #716b61);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -19708,7 +19786,7 @@ html[data-motion-level="off"] *::after {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #38bdf8;
+  color: var(--game-ink, #292722);
   font-weight: 700;
   animation: pulseTip 2s infinite ease-in-out;
 }
@@ -19720,8 +19798,9 @@ html[data-motion-level="off"] *::after {
 
 /* ════════ 2. 卡牌正面 (揭示�? ════════ */
 .identity-card-front {
-  background: linear-gradient(145deg, #1e2433 0%, #111622 100%);
-  border: 2px solid rgba(255, 255, 255, 0.18);
+  background: linear-gradient(180deg, #fffdf7 0%, #fff4df 100%);
+  border: 3px solid var(--game-line, #292722);
+  box-shadow: 0 6px 0 var(--game-line, #292722);
   transform: rotateY(180deg);
   padding: 16px;
   justify-content: space-between;
@@ -19778,9 +19857,9 @@ html[data-motion-level="off"] *::after {
   font-weight: 800;
   padding: 2px 10px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #93c5fd;
-  border: 1px solid rgba(147, 197, 253, 0.3);
+  background: #fff4df;
+  color: var(--game-ink, #292722);
+  border: 1.5px solid var(--game-line, #292722);
 }
 
 .identity-card-front__content {
@@ -19813,8 +19892,8 @@ html[data-motion-level="off"] *::after {
   margin: 0;
   font-size: 1.45rem;
   font-weight: 900;
-  color: #ffffff;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  color: var(--game-ink, #292722);
+  text-shadow: none;
   letter-spacing: 1px;
 }
 
@@ -19832,7 +19911,7 @@ html[data-motion-level="off"] *::after {
 
 .identity-card-front__secret-word-box .secret-label {
   font-size: 0.72rem;
-  color: #fbbf24;
+  color: var(--game-muted, #716b61);
   font-weight: 700;
   letter-spacing: 1px;
 }
@@ -19840,7 +19919,7 @@ html[data-motion-level="off"] *::after {
 .identity-card-front__secret-word-box .secret-word {
   font-size: 1.35rem;
   font-weight: 900;
-  color: #fff;
+  color: var(--game-ink, #292722);
   letter-spacing: 2px;
 }
 
@@ -19855,36 +19934,33 @@ html[data-motion-level="off"] *::after {
 .identity-hint-text {
   margin: 0;
   font-size: 0.82rem;
-  color: #cbd5e1;
+  color: var(--game-muted, #716b61);
   line-height: 1.4;
 }
 
 .identity-card-front__footer {
   text-align: center;
   font-size: 0.74rem;
-  color: #64748b;
+  color: var(--game-muted, #716b61);
   padding-top: 4px;
 }
 
 /* ════════ 3. 卡牌主题外观 (Themes) ════════ */
 
 /* 机密档案 (Confidential) */
-.theme-confidential .identity-card-back {
-  background: linear-gradient(135deg, #422006 0%, #291203 100%);
-  border-color: #b45309;
+.theme-confidential .identity-card-back,
+.theme-confidential .identity-card-front {
+  background: linear-gradient(180deg, #fffdf7 0%, #fff4df 100%);
+  border-color: var(--game-line, #292722);
 }
 .theme-confidential .identity-card-back__border {
-  border-color: rgba(245, 158, 11, 0.4);
+  border-color: rgba(41, 39, 34, 0.28);
 }
 .theme-confidential .identity-card-back__emblem::after {
   content: '📁';
 }
 .theme-confidential .identity-card-back__badge {
-  color: #fde68a;
-}
-.theme-confidential .identity-card-front {
-  background: linear-gradient(145deg, #2e1065 0%, #1e1b4b 100%);
-  border-color: #a855f7;
+  color: var(--game-ink, #292722);
 }
 
 /* 暗夜哥特 (Gothic 狼人杀) */
@@ -19948,23 +20024,29 @@ html[data-motion-level="off"] *::after {
 
 .identity-confirm-btn {
   width: 100%;
-  padding: 12px 20px;
+  min-height: 44px;
+  padding: 10px 20px;
   font-size: 0.96rem;
-  font-weight: 800;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  color: #fff;
-  border: 1px solid #60a5fa;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+  font-weight: 900;
+  border-radius: 999px;
+  background: var(--gp-yellow, #f7c84b);
+  color: var(--gp-ink, #292722);
+  border: 2.5px solid var(--gp-line, #292722);
+  box-shadow: 0 4px 0 var(--gp-line, #292722);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.identity-confirm-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--gp-line, #292722);
 }
 
 .identity-confirm-btn:disabled {
-  background: #334155;
-  color: #94a3b8;
-  border-color: #475569;
-  box-shadow: none;
+  background: #fff4df;
+  color: var(--game-muted, #716b61);
+  border-color: var(--gp-line, #292722);
+  box-shadow: 0 2px 0 var(--gp-line, #292722);
   cursor: not-allowed;
 }
 

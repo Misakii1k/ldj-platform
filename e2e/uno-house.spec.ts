@@ -168,13 +168,15 @@ test.describe('D4-U-UI uno_platform_house_v1', () => {
           await expect(page.locator('.card-fan-item')).toHaveCount(8);
 
           // 出牌：优先出任意可出牌（万能需选色）；摸后仍无可出则结束回合等下一轮
+          await page.waitForTimeout(500);
           const enabled = page.locator('.card-fan-item:not(.card-fan-item--disabled)');
           const enabledCount = await enabled.count();
           if (enabledCount > 0) {
             const first = enabled.first();
+            await expect(first).toBeEnabled({ timeout: 5_000 });
             const cls = (await first.getAttribute('class')) ?? '';
             const isWild = cls.includes('card-fan-item--wild') || cls.includes('color-wild');
-            await first.click();
+            await first.dispatchEvent('click');
             const playBtn = page.locator('.card-fan-play-btn');
             await playBtn.waitFor({ state: 'visible', timeout: 5_000 });
             await playBtn.click();

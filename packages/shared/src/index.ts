@@ -5,6 +5,7 @@ export * from './domain/room.ts';
 export * from './domain/settings.ts';
 export * from './game/contract.ts';
 export * from './game/versionedContract.ts';
+export * from './game/sim.ts';
 export * from './game/sessionStatus.ts';
 export * from './game/tabletop/index.ts';
 export * from './game/bot.ts';

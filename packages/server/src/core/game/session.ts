@@ -533,24 +533,28 @@ export function startGame(tx: TxContext, roomId: string, gameConfig: unknown): S
     | { status: string; game_id: string | null }
     | undefined;
   if (!room) throw new CommandError('ROOM_NOT_FOUND');
-  if (room.status !== 'LOBBY') {
-    throw new CommandError('ACTION_NOT_ALLOWED', '只能在大厅中开始游戏');
+  if (room.status !== 'LOBBY' && room.status !== 'POST_GAME') {
+    throw new CommandError('ACTION_NOT_ALLOWED', '只能在大厅或结算页开始游戏');
   }
   if (getActiveSession(db, roomId)) {
     throw new CommandError('ACTION_NOT_ALLOWED', '已有进行中的对局');
   }
+  if (room.status === 'POST_GAME') {
+    db.prepare(`UPDATE rooms SET status = 'LOBBY', updated_at = ? WHERE id = ?`).run(now, roomId);
+  }
 
+  const resolvedConfig = gameConfig ?? parseRoomGameConfig(db, roomId);
   const moduleId = room.game_id ?? DEFAULT_GAME_ID;
   // D4-F1：先解析权威规则集，再按 (gameId, rulesetId) 取模块。
   // 这样同一游戏可并行承载 legacy 与版本化规则集；未指定 rulesetId 仍走游戏默认。
   // rulesetId 是平台元数据，不属于模块 config；解析后从传给模块的配置中剥离，
   // 避免 strict 模块 schema（如卧底）拒绝未知键。
-  const rulesetId = resolveRulesetForStart(moduleId, gameConfig ?? {});
+  const rulesetId = resolveRulesetForStart(moduleId, resolvedConfig ?? {});
   const module = getGameModule(moduleId, rulesetId);
   if (!module) {
     throw new CommandError('INTERNAL_ERROR', `规则集模块不可用：${moduleId}/${rulesetId}`);
   }
-  const moduleConfig = (gameConfig as Record<string, unknown> | null | undefined) ?? {};
+  const moduleConfig = (resolvedConfig as Record<string, unknown> | null | undefined) ?? {};
   const { rulesetId: _platformRuleset, ...restConfig } = moduleConfig;
 
   // 开局重新校验连接状态（§5.9/D-6）：只有在线玩家参与本局

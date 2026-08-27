@@ -27,7 +27,7 @@ export function WerewolfGamePage({ view: rawView }: { view: unknown }) {
     );
   }
 
-  const model = buildWerewolfPresentation(view, state.room?.members ?? []);
+  const model = buildWerewolfPresentation(view, state.room?.members ?? [], state.chat);
   return (
     <WerewolfStage
       model={model}

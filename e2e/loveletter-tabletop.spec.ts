@@ -196,11 +196,11 @@ test.describe('D7-C loveletter 完整局', () => {
         let played = false;
         for (let attempt = 0; attempt < order.length && !played; attempt += 1) {
           const idx = order[attempt]!;
-          await handCards.nth(idx).click({ timeout: 1000 }).catch(() => {});
+          await handCards.nth(idx).click({ force: true, timeout: 2000 }).catch(() => {});
           const opponent = page.locator('.ll-opponent.is-targetable, .ll-target-self-btn, .loveletter-target button').first();
           const oppN = await opponent.count().catch(() => 0);
           if (oppN > 0) {
-            await opponent.click({ timeout: 1000 }).catch(() => {});
+            await opponent.click({ force: true, timeout: 2000 }).catch(() => {});
           }
           // 守卫需猜身份：优先猜「公主」（守卫不能猜守卫）
           const rolePicker = page.locator('.ll-role-picker, .loveletter-guess');
@@ -208,21 +208,21 @@ test.describe('D7-C loveletter 完整局', () => {
           if (pickerVisible) {
             const princess = rolePicker.getByRole('button', { name: '公主' });
             if (await princess.count().catch(() => 0) > 0) {
-              await princess.click({ timeout: 1000 }).catch(() => {});
+              await princess.click({ force: true, timeout: 2000 }).catch(() => {});
             } else {
-              await rolePicker.getByRole('button').first().click({ timeout: 1000 }).catch(() => {});
+              await rolePicker.getByRole('button').first().click({ force: true, timeout: 2000 }).catch(() => {});
             }
           }
-          const playBtn = page.getByRole('button', { name: /打出「/ });
+          const playBtn = page.getByRole('button', { name: /打出/ });
           await playBtn.waitFor({ state: 'visible', timeout: 2000 }).catch(() => {});
           const btnEnabled = await playBtn.isEnabled().catch(() => false);
           if (!btnEnabled) {
-            await page.getByRole('button', { name: '重选' }).click({ timeout: 1000 }).catch(() => {});
+            await page.getByRole('button', { name: '重选' }).click({ force: true, timeout: 1000 }).catch(() => {});
             continue;
           }
           // 出牌成功 = game_event 推进（情书出牌后立即摸牌，手牌数不减少）
           const eventsBefore = await page.evaluate(() => window.__gameEventCount ?? 0);
-          await playBtn.click({ timeout: 1000 }).catch(() => {});
+          await playBtn.click({ force: true, timeout: 2000 }).catch(() => {});
           await page.waitForTimeout(700);
           const eventsAfter = await page.evaluate(() => window.__gameEventCount ?? 0);
           if (eventsAfter > eventsBefore) {

@@ -17,6 +17,17 @@ export interface BotDecisionInput<PV> {
   playerId: string;
   /** 需要随机时使用；与游戏本身的 RNG 独立，不影响对局可重放性 */
   random: RandomSource;
+  /**
+   * 近期公屏摘要（平台注入，不含他人私密身份）。
+   * 未注入时策略必须仍能工作——旧调用方不会传这个字段。
+   */
+  recentChat?: readonly BotChatLine[];
+}
+
+/** 公屏一行：只给发言者 id 与正文，不含角色或夜间结果 */
+export interface BotChatLine {
+  fromPlayerId: string | null;
+  text: string;
 }
 
 /**
@@ -51,6 +62,19 @@ export interface BotPromptContext<A> {
   options: BotActionOption<A>[];
   /** 该游戏的身份与目标提示，作为系统提示的一部分 */
   roleBrief: string;
+  /**
+   * 需要模型同时写一段公屏发言时填写。
+   * 未声明则模型不必给 speech，平台也不会把理由发到公屏。
+   */
+  speech?: BotSpeechRequest;
+}
+
+/** 发言正文走聊天通道，不进入 reduce */
+export interface BotSpeechRequest {
+  /** 与 chatTextSchema 上限一致 */
+  maxChars: number;
+  /** 告诉模型这段话怎么写（禁止报身份、1–2 句等） */
+  instruction: string;
 }
 
 /**

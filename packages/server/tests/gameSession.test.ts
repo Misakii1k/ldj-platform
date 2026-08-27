@@ -263,6 +263,27 @@ test('对局闭环：投票淘汰至卧底胜/平民胜 → FINISHED + game_resu
   }
 });
 
+test('结算页立即开局：POST_GAME 可直接 start_game，不必先 return_to_lobby', async () => {
+  const ctx = await setupRoom(4);
+  try {
+    await startGameAs(ctx, ctx.hostId);
+    await ctx.executor.executeOnRoom({
+      roomId: ctx.roomId,
+      actorScope: 'conn:host',
+      requestId: nextReq(),
+      handler: (tx) => applyRoomCommand(tx, ctx.roomId, ctx.hostId, { command: 'abort_game' }),
+    });
+    assert.equal(roomStatus(ctx.db, ctx.roomId), 'POST_GAME');
+    ctx.db.prepare(`UPDATE room_members SET ready = 1 WHERE room_id = ?`).run(ctx.roomId);
+    const started = await startGameAs(ctx, ctx.hostId);
+    assert.equal(roomStatus(ctx.db, ctx.roomId), 'IN_GAME');
+    assert.ok(started.outcome.gameStarted);
+    assert.ok(getActiveSession(ctx.db, ctx.roomId));
+  } finally {
+    closeDb(ctx.db);
+  }
+});
+
 test('abort_game：仅房主可终止；会话 ABORTED 不写战绩；IN_GAME 踢参局玩家被拒', async () => {
   const ctx = await setupRoom(5);
   try {

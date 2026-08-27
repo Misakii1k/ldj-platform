@@ -3,6 +3,7 @@ import { THINKING_DEPTH_OPTIONS, type LlmProfileSummary, type LlmProviderType, t
 import { useToast } from '../../shared-ui/ToastContext.tsx';
 import { buildApiUrl } from '../../connection/serverAddress.ts';
 import { buildModelRequestBody, createConfigFingerprint, diagnosticErrorMessage, markDiagnosticStale, modelCatalogErrorMessage, thinkingDepthDescription, type AiDiagnosticErrorCode, type AiDiagnosticState, type AiSettingsForm } from './aiSettingsState.ts';
+import { forgetKey, loadRememberedKey, rememberKey } from './apiKeyMemory.ts';
 import { AiEngineStatus } from './AiEngineStatus.tsx';
 import { AiProfilePicker } from './AiProfilePicker.tsx';
 import { AiQuickConnect } from './AiQuickConnect.tsx';
@@ -15,9 +16,38 @@ const BUILT_IN_PROFILES: ApiProfile[] = [
   { id: 'ollama-preset', name: 'Ollama 本地端点', provider: 'openai', baseUrl: 'http://127.0.0.1:11434/v1', model: 'qwen2.5', thinkingDepth: 'off', timeoutMs: 30000, builtIn: true },
 ];
 const BUILT_IN_IDS = new Set(BUILT_IN_PROFILES.map((profile) => profile.id));
+const DISMISSED_PRESET_KEY = 'ldj_llm_dismissed_presets';
 
 function profileFromServer(profile: LlmProfileSummary): ApiProfile {
   return { ...profile, builtIn: BUILT_IN_IDS.has(profile.id) };
+}
+
+function readDismissedPresetIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DISMISSED_PRESET_KEY);
+    if (!raw) return new Set();
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(parsed.filter((id): id is string => typeof id === 'string'));
+  } catch {
+    return new Set();
+  }
+}
+
+function rememberDismissedPreset(id: string) {
+  const next = readDismissedPresetIds();
+  next.add(id);
+  try {
+    localStorage.setItem(DISMISSED_PRESET_KEY, JSON.stringify([...next]));
+  } catch {
+    // ignore
+  }
+}
+
+function resolveLoadedProfiles(serverProfiles: readonly LlmProfileSummary[]): ApiProfile[] {
+  if (serverProfiles.length > 0) return serverProfiles.map(profileFromServer);
+  const dismissed = readDismissedPresetIds();
+  return BUILT_IN_PROFILES.filter((profile) => !dismissed.has(profile.id));
 }
 
 function profilesForServer(profiles: readonly ApiProfile[]): LlmProfileSummary[] {
@@ -60,7 +90,9 @@ export function AiEngineSettings() {
   const [hasApiKey, setHasApiKey] = useState(false);
   const [clearApiKey, setClearApiKey] = useState(false);
   const [fromEnv, setFromEnv] = useState(false);
-  const [profiles, setProfiles] = useState<ApiProfile[]>(BUILT_IN_PROFILES);
+  const [profiles, setProfiles] = useState<ApiProfile[]>(() =>
+    BUILT_IN_PROFILES.filter((profile) => !readDismissedPresetIds().has(profile.id)),
+  );
   const [selectedProfileId, setSelectedProfileId] = useState('');
   const [creatingProfile, setCreatingProfile] = useState(false);
   const [newProfileName, setNewProfileName] = useState('');
@@ -103,8 +135,10 @@ export function AiEngineSettings() {
         setTimeoutMs(String(payload.timeoutMs));
         setHasApiKey(payload.hasApiKey);
         setFromEnv(payload.fromEnv);
-        setProfiles(payload.profiles.length ? payload.profiles.map(profileFromServer) : BUILT_IN_PROFILES);
+        setProfiles(resolveLoadedProfiles(payload.profiles));
         setSelectedProfileId(payload.activeProfileId ?? '');
+        // 服务端不回显密钥；把本机此前输入过的值回填进密码框（小眼睛可查看）
+        setApiKey(loadRememberedKey(payload.activeProfileId ?? '') ?? '');
       } catch (err) {
         if ((err as Error).name !== 'AbortError') setError((err as Error).message || '加载设置失败');
       } finally {
@@ -134,7 +168,8 @@ export function AiEngineSettings() {
     setThinkingDepth(profile.thinkingDepth);
     setTimeoutMs(String(profile.timeoutMs));
     setModels([]);
-    setApiKey(profile.apiKey ?? '');
+    // 密钥按预设记忆回填：本机存过就用它，其次用会话里带着的
+    setApiKey(loadRememberedKey(profile.id) ?? profile.apiKey ?? '');
     setClearApiKey(false);
     showToast(`已载入预设「${profile.name}」`, 'info');
   }
@@ -247,11 +282,18 @@ export function AiEngineSettings() {
       setTimeoutMs(String(payload.timeoutMs));
       setHasApiKey(payload.hasApiKey);
       setFromEnv(payload.fromEnv);
-      setProfiles(payload.profiles.length ? payload.profiles.map(profileFromServer) : BUILT_IN_PROFILES);
+      setProfiles(resolveLoadedProfiles(payload.profiles));
       setSelectedProfileId(payload.activeProfileId ?? '');
-      setApiKey('');
+      if (clearApiKey) {
+        // 已确认清除：目标槽的本地记忆一并删掉
+        forgetKey(selectedProfileId || '');
+        setApiKey('');
+      } else if (apiKey.trim()) {
+        // 保存成功：把输入框里的值按预设记住，重开页面仍可查看
+        rememberKey(selectedProfileId || '', apiKey.trim());
+      }
       setClearApiKey(false);
-      showToast('AI 设置已保存并即时生效', 'success');
+      showToast('AI 设置与 API Key 已保存并即时生效', 'success');
     } catch (err) {
       const message = (err as Error).message || '保存设置失败';
       setError(message);
@@ -270,7 +312,7 @@ export function AiEngineSettings() {
         <p>先选择预设并填写密钥，测试成功后即可保存启用；修改无需重启服务。</p>
       </header>
       <AiEngineStatus provider={provider} model={model} hasApiKey={hasApiKey} diagnostic={diagnostic} />
-      <AiProfilePicker profiles={profiles} selectedId={selectedProfileId} disabled={disabled} creating={creatingProfile} newName={newProfileName} onApply={applyProfile} onDelete={(profile) => { setProfiles((current) => current.filter((item) => item.id !== profile.id)); if (selectedProfileId === profile.id) setSelectedProfileId(''); }} onCreatingChange={setCreatingProfile} onNewNameChange={setNewProfileName} onCreate={createProfile} />
+      <AiProfilePicker profiles={profiles} selectedId={selectedProfileId} disabled={disabled} creating={creatingProfile} newName={newProfileName} onApply={applyProfile} onDelete={(profile) => { rememberDismissedPreset(profile.id); setProfiles((current) => current.filter((item) => item.id !== profile.id)); if (selectedProfileId === profile.id) setSelectedProfileId(''); }} onCreatingChange={setCreatingProfile} onNewNameChange={setNewProfileName} onCreate={createProfile} />
       <AiQuickConnect apiKey={apiKey} hasApiKey={hasApiKey && !clearApiKey} disabled={disabled} saving={saving} diagnostic={diagnostic} inputRef={keyRef} onApiKeyChange={(value) => { setApiKey(value); if (value) setClearApiKey(false); }} onTest={() => void testConnection()} />
       <article className="ai-current-model" aria-label="当前模型">
         <span>当前模型</span>
@@ -285,7 +327,7 @@ export function AiEngineSettings() {
         <section id="ai-advanced-settings" className="ai-advanced-content">
           <div className="ai-settings-grid">
             <label className="room-sheet__field" htmlFor="settings-provider"><span>服务商接口协议</span><select id="settings-provider" value={provider} onChange={(event) => { setProvider(event.target.value as LlmProviderType); setModels([]); }} disabled={disabled}><option value="openai">OpenAI / 兼容接口</option><option value="anthropic">Anthropic Claude</option></select></label>
-            <label className="room-sheet__field" htmlFor="settings-base-url"><span>接口地址 Base URL</span><input id="settings-base-url" type="url" value={baseUrl} onChange={(event) => { setBaseUrl(event.target.value); setModels([]); }} disabled={disabled} placeholder="https://api.example.com/v1" /><small>{fromEnv ? '当前默认来自环境变量。' : ''}留空保存将回落到启动配置。</small></label>
+            <label className="room-sheet__field" htmlFor="settings-base-url"><span>接口地址 Base URL</span><input id="settings-base-url" type="text" inputMode="url" autoComplete="off" spellCheck={false} value={baseUrl} onChange={(event) => { setBaseUrl(event.target.value); setModels([]); }} disabled={disabled} placeholder="https://api.example.com/v1 或 api.example.com" /><small>{fromEnv ? '当前默认来自环境变量。' : ''}支持根地址、带 /v1 或完整端点路径，可省略 https://；留空保存将回落到启动配置。</small></label>
             <AiModelPicker model={model} models={models} disabled={disabled} fetching={fetchingModels} onModelChange={setModel} onRefresh={() => void fetchModels()} />
             <label className="room-sheet__field" htmlFor="settings-thinking-depth"><span>思考深度</span><select id="settings-thinking-depth" value={thinkingDepth} onChange={(event) => setThinkingDepth(event.target.value as ThinkingDepth)} disabled={disabled}>{THINKING_DEPTH_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select><small>{thinkingDepthDescription(provider)}</small></label>
             <label className="room-sheet__field" htmlFor="settings-timeout"><span>单次决策超时（毫秒）</span><input id="settings-timeout" type="number" min="1000" max="120000" step="1" value={timeoutMs} onChange={(event) => setTimeoutMs(event.target.value)} aria-invalid={timeoutInvalid ? 'true' : undefined} aria-describedby={timeoutInvalid && error ? 'ai-settings-error' : undefined} required disabled={disabled} /></label>

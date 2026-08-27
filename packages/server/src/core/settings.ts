@@ -26,6 +26,9 @@ const KEY_LLM_TIMEOUT_MS = 'llm.timeoutMs';
 const KEY_LLM_PROFILES = 'llm.profiles';
 const KEY_LLM_ACTIVE_PROFILE_ID = 'llm.activeProfileId';
 
+/** 按预设独立保存密钥的键前缀：<前缀><profileId>。旧的全局 KEY_LLM_API_KEY 仍是回落。 */
+const PROFILE_KEY_PREFIX = 'llm.apiKey.';
+
 export const LLM_TIMEOUT_MIN_MS = 1000;
 export const LLM_TIMEOUT_MAX_MS = 120_000;
 const MAX_LLM_PROFILES = 32;
@@ -154,8 +157,19 @@ function normalizeBaseUrl(value: string | null): string | null {
   try {
     return normalizeLlmBaseUrl(value);
   } catch {
-    throw new SettingsError('接口地址不是合法 URL，例如 http://127.0.0.1:11434/v1 或 https://api.anthropic.com');
+    throw new SettingsError('接口地址不是合法 URL；支持带或不带 /v1 的地址、完整端点路径，也可省略 https:// 前缀');
   }
+}
+
+/** 读某个预设的独立密钥；预设没存过再看全局旧键（兼容升级前的数据） */
+function readProfileApiKey(db: Db, profileId: string): string | null {
+  const own = readRaw(db, PROFILE_KEY_PREFIX + profileId);
+  if (own !== null) return own;
+  return readRaw(db, KEY_LLM_API_KEY);
+}
+
+function writeProfileApiKey(db: Db, profileId: string, apiKey: string | null, now: number): void {
+  writeRaw(db, PROFILE_KEY_PREFIX + profileId, apiKey, now);
 }
 
 /**
@@ -169,17 +183,28 @@ export function resolveLlmConfig(db: Db, envFallback: LlmConfig): LlmConfig {
       ? 'openai'
       : (envFallback.provider ?? 'openai');
   const baseUrl = readRaw(db, KEY_LLM_BASE_URL);
-  const apiKey = readRaw(db, KEY_LLM_API_KEY);
   const model = readRaw(db, KEY_LLM_MODEL);
   const thinkingDepthRaw = readRaw(db, KEY_LLM_THINKING_DEPTH);
   const thinkingDepth = normalizeThinkingDepth(thinkingDepthRaw) ?? envFallback.thinkingDepth;
   const timeoutRaw = readRaw(db, KEY_LLM_TIMEOUT_MS);
   const timeoutMs = timeoutRaw === null ? null : Number(timeoutRaw);
 
+  // 密钥跟着激活预设走：预设存过自己的钥就用它；
+  // 否则回落全局旧键（升级前数据），再回落 env。
+  const activeProfileIdRaw = readRaw(db, KEY_LLM_ACTIVE_PROFILE_ID);
+  const activeProfilesJson = readRaw(db, KEY_LLM_PROFILES);
+  let profileApiKey: string | null = null;
+  if (activeProfileIdRaw !== null && activeProfilesJson !== null && activeProfilesJson.includes(activeProfileIdRaw)) {
+    profileApiKey = readProfileApiKey(db, activeProfileIdRaw);
+  }
+  const globalApiKey = readRaw(db, KEY_LLM_API_KEY);
+
   return {
     provider,
     baseUrl: baseUrl ?? envFallback.baseUrl,
-    apiKey: apiKey === '' ? null : apiKey ?? envFallback.apiKey,
+    apiKey: profileApiKey !== null
+      ? (profileApiKey === '' ? null : profileApiKey)
+      : globalApiKey === '' ? null : globalApiKey ?? envFallback.apiKey,
     model: model ?? envFallback.model,
     thinkingDepth,
     timeoutMs:
@@ -217,7 +242,6 @@ export function updateLlmSettings(
   envFallback: LlmConfig,
   now: number = Date.now(),
 ): LlmConfig {
-  const current = resolveLlmConfig(db, envFallback);
   const normalized: {
     provider?: LlmProviderType;
     baseUrl?: string | null;
@@ -244,11 +268,8 @@ export function updateLlmSettings(
     normalized.apiKey = trimmed === '' ? null : trimmed;
   }
 
-  const providerChanged = normalized.provider !== undefined && normalized.provider !== current.provider;
-  const baseUrlChanged = normalized.baseUrl !== undefined && normalized.baseUrl !== current.baseUrl;
-  if (patch.apiKey === undefined && (providerChanged || baseUrlChanged)) {
-    normalized.apiKey = '';
-  }
+  // 切换 provider/baseUrl 不再清掉已存密钥：密钥按预设独立保存，
+  // 同一预设内换地址或回来都保持可用；不同预设的钥本来就互不相干。
 
   if (patch.model !== undefined) {
     const trimmed = patch.model.trim();
@@ -298,10 +319,22 @@ export function updateLlmSettings(
     }
   }
 
+  // 提交了密钥时写进激活预设的独立槽；没有激活预设仍写全局键（未用预设功能的场景）
+  // 注意：patch.activeProfileId 为显式 null 时不能回落到库里的旧激活 id（会写错槽）
+  const apiKeyTargetProfileId = patch.apiKey !== undefined
+    ? (normalized.activeProfileId !== undefined
+        ? normalized.activeProfileId
+        : readRaw(db, KEY_LLM_ACTIVE_PROFILE_ID))
+    : undefined;
+
   withTransaction(db, () => {
     if (normalized.provider !== undefined) writeRaw(db, KEY_LLM_PROVIDER, normalized.provider, now);
     if (normalized.baseUrl !== undefined) writeRaw(db, KEY_LLM_BASE_URL, normalized.baseUrl, now);
-    if (normalized.apiKey !== undefined) writeRaw(db, KEY_LLM_API_KEY, normalized.apiKey, now);
+    if (apiKeyTargetProfileId !== null && apiKeyTargetProfileId !== undefined && normalized.apiKey !== undefined) {
+      writeProfileApiKey(db, apiKeyTargetProfileId, normalized.apiKey, now);
+    } else if (normalized.apiKey !== undefined) {
+      writeRaw(db, KEY_LLM_API_KEY, normalized.apiKey, now);
+    }
     if (normalized.model !== undefined) writeRaw(db, KEY_LLM_MODEL, normalized.model, now);
     if (normalized.thinkingDepth !== undefined) writeRaw(db, KEY_LLM_THINKING_DEPTH, normalized.thinkingDepth, now);
     if (normalized.timeoutMs !== undefined) writeRaw(db, KEY_LLM_TIMEOUT_MS, String(normalized.timeoutMs), now);

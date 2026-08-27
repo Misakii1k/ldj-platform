@@ -1,4 +1,5 @@
 export { cheeseThiefModule, CHEESE_THIEF_VERSIONED_IDENTITY } from './module.ts';
+export { cheeseThiefSimModule, CHEESE_THIEF_SIM_IDENTITY } from './sim/module.ts';
 export * from './types.ts';
 export * from './schemas.ts';
 export * from './rules.ts';

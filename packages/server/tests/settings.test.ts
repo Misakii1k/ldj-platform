@@ -48,10 +48,10 @@ const envNoKey: LlmConfig = {
 
 // ==================== 校验分支（应抛 SettingsError）====================
 
-test('baseUrl 非法（not-a-url）→ SettingsError', () => {
+test('baseUrl 非法（http://bad host）→ SettingsError', () => {
   const db = freshDb();
   assert.throws(
-    () => updateLlmSettings(db, { baseUrl: 'not-a-url' }, envFallback),
+    () => updateLlmSettings(db, { baseUrl: 'http://bad host' }, envFallback),
     SettingsError,
   );
   db.close();
@@ -290,21 +290,21 @@ test('patch.apiKey = ""（空字符串 trim 后也空）→ 库中删除该项',
   db.close();
 });
 
-test('更换 provider 且未提交新密钥时清除旧密钥', () => {
+test('更换 provider 不清除已存密钥（密钥按预设独立保存）', () => {
   const db = freshDb();
   updateLlmSettings(db, { provider: 'openai', apiKey: 'old-key' }, envNoKey);
   const result = updateLlmSettings(db, { provider: 'anthropic' }, envNoKey);
-  assert.equal(result.apiKey, null);
-  assert.equal(getLlmSettingsView(db, envNoKey).hasApiKey, false);
+  assert.equal(result.apiKey, 'old-key');
+  assert.equal(getLlmSettingsView(db, envNoKey).hasApiKey, true);
   db.close();
 });
 
-test('更换 baseUrl 且未提交新密钥时清除旧密钥', () => {
+test('更换 baseUrl 不清除已存密钥（密钥按预设独立保存）', () => {
   const db = freshDb();
   updateLlmSettings(db, { baseUrl: 'https://old.example/v1', apiKey: 'old-key' }, envNoKey);
   const result = updateLlmSettings(db, { baseUrl: 'https://new.example/v1' }, envNoKey);
-  assert.equal(result.apiKey, null);
-  assert.equal(getLlmSettingsView(db, envNoKey).hasApiKey, false);
+  assert.equal(result.apiKey, 'old-key');
+  assert.equal(getLlmSettingsView(db, envNoKey).hasApiKey, true);
   db.close();
 });
 
@@ -380,5 +380,75 @@ test('旧 API 预设思考深度 8192 解析并保存为 max', () => {
   const stored = db.prepare('SELECT value FROM app_settings WHERE key = ?')
     .get('llm.profiles') as { value: string };
   assert.equal(JSON.parse(stored.value)[0].thinkingDepth, 'max');
+  db.close();
+});
+
+// ==================== 按预设独立存密钥 ===================
+
+test('提交密钥时写入激活预设的独立槽，切到其他预设互不影响', () => {
+  const db = freshDb();
+  const bothProfiles = JSON.stringify([
+    { id: 'a', name: 'A', provider: 'openai', baseUrl: 'https://a.example/v1', model: 'ma', thinkingDepth: 'off', timeoutMs: 20000, hasApiKey: false },
+    { id: 'b', name: 'B', provider: 'openai', baseUrl: 'https://b.example/v1', model: 'mb', thinkingDepth: 'off', timeoutMs: 20000, hasApiKey: false },
+  ]);
+  updateLlmSettings(db, { profilesJson: bothProfiles }, envNoKey);
+
+  // 激活 a 并存钥 → 落在 llm.apiKey.a
+  updateLlmSettings(db, { apiKey: 'key-for-a', activeProfileId: 'a' }, envNoKey);
+  assert.equal(resolveLlmConfig(db, envNoKey).apiKey, 'key-for-a');
+
+  // 切到 b：b 没有自己的钥，也不该看到 a 的
+  updateLlmSettings(db, { activeProfileId: 'b' }, envNoKey);
+  assert.equal(resolveLlmConfig(db, envNoKey).apiKey, null);
+
+  // 切回 a：钥还在
+  updateLlmSettings(db, { activeProfileId: 'a' }, envNoKey);
+  assert.equal(resolveLlmConfig(db, envNoKey).apiKey, 'key-for-a');
+  db.close();
+});
+
+test('清除密钥（patch.apiKey=null）按激活目标生效且互不波及', () => {
+  const db = freshDb();
+  const bothProfiles = JSON.stringify([
+    { id: 'a', name: 'A', provider: 'openai', baseUrl: 'https://a.example/v1', model: 'ma', thinkingDepth: 'off', timeoutMs: 20000, hasApiKey: true },
+    { id: 'b', name: 'B', provider: 'openai', baseUrl: 'https://b.example/v1', model: 'mb', thinkingDepth: 'off', timeoutMs: 20000, hasApiKey: true },
+  ]);
+  updateLlmSettings(db, { profilesJson: bothProfiles, activeProfileId: 'b' }, envNoKey);
+  updateLlmSettings(db, { apiKey: 'key-b', activeProfileId: 'b' }, envNoKey);
+  // 全局旧键放一份模拟升级前数据；无独立槽的预设回落读它
+  updateLlmSettings(db, { apiKey: 'global-legacy', activeProfileId: null }, envNoKey);
+
+  // 显式取消激活（activeProfileId=null）提交的钥写全局键，不能误写进 b 的槽
+  assert.equal(resolveLlmConfig(db, envNoKey).apiKey, 'global-legacy');
+
+  // 激活 a（自己没存过钥 → 回落读全局旧键）
+  updateLlmSettings(db, { activeProfileId: 'a' }, envNoKey);
+  assert.equal(resolveLlmConfig(db, envNoKey).apiKey, 'global-legacy');
+
+  // 清除：目标是 a 的槽；a 自己没有槽，清除后仍读到全局旧键（原样保留）
+  updateLlmSettings(db, { apiKey: null }, envNoKey);
+  assert.equal(resolveLlmConfig(db, envNoKey).apiKey, 'global-legacy');
+  db.close();
+});
+
+test('显式 activeProfileId=null 提交密钥写全局键，不动预设槽', () => {
+  const db = freshDb();
+  const bothProfiles = JSON.stringify([
+    { id: 'a', name: 'A', provider: 'openai', baseUrl: 'https://a.example/v1', model: 'ma', thinkingDepth: 'off', timeoutMs: 20000, hasApiKey: true },
+    { id: 'b', name: 'B', provider: 'openai', baseUrl: 'https://b.example/v1', model: 'mb', thinkingDepth: 'off', timeoutMs: 20000, hasApiKey: true },
+  ]);
+  updateLlmSettings(db, { profilesJson: bothProfiles, activeProfileId: 'b' }, envNoKey);
+  updateLlmSettings(db, { apiKey: 'key-b', activeProfileId: 'b' }, envNoKey);
+
+  // 取消激活并存钥 → 全局键更新，b 的槽保持
+  updateLlmSettings(db, { apiKey: 'fresh-global', activeProfileId: null }, envNoKey);
+  const bSlot = db.prepare('SELECT value FROM app_settings WHERE key = ?').get('llm.apiKey.b') as { value: string };
+  assert.equal(bSlot.value, 'key-b');
+  const globalSlot = db.prepare('SELECT value FROM app_settings WHERE key = ?').get('llm.apiKey') as { value: string };
+  assert.equal(globalSlot.value, 'fresh-global');
+
+  // b 自己的钥不受影响
+  updateLlmSettings(db, { activeProfileId: 'b' }, envNoKey);
+  assert.equal(resolveLlmConfig(db, envNoKey).apiKey, 'key-b');
   db.close();
 });

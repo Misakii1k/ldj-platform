@@ -264,7 +264,7 @@ export function NightTestimonyGamePage({ view }: Props) {
 
   return (
     <TabletopShell
-      title="囚徒之夜"
+      title="暗夜证词"
       phase={phaseLabel(view.phase)}
       gameId="night-testimony"
       phaseKey={`${view.phase}:${view.currentQuestionerId}:${view.questionIndex}:${view.phase === 'game_over' ? view.winners.join(',') || 'no-winner' : view.guessingInProgress ? 'guessing' : isQuestionActive ? 'answering' : 'picking'}`}
@@ -285,7 +285,7 @@ export function NightTestimonyGamePage({ view }: Props) {
         />
       }
       drawer={rulesOpen && (
-        <GameDrawer kind="rules" title="囚徒之夜 · 案卷规则" triggerRef={rulesRef} onClose={() => setRulesOpen(false)}>
+        <GameDrawer kind="rules" title="暗夜证词 · 案卷规则" triggerRef={rulesRef} onClose={() => setRulesOpen(false)}>
           <h4>⚖️ 核心机制</h4>
           <p>1. <strong>狱警潜伏</strong>：一名狱警伪装成囚犯潜伏其中，可撒谎；其余囚犯各有专属罪行卡，必须如实回答。</p>
           <p>2. <strong>广播提问与全员作答</strong>：顺时针轮流 3 选 1 挑题向全场提问，全员（含出题者与狱警）共同提交「是」或「否」。</p>

@@ -211,29 +211,25 @@ export function CheeseThiefGamePage({ view }: Props) {
       >
         <span>{ttsEnabled ? '🔊 语音' : '🔇 静音'}</span>
       </button>
-      <button ref={rulesRef} type="button" className="tabletop-rules-btn" onClick={() => setRulesOpen(true)}>
-        <span className="cheese-btn-icon">📜</span>
-        <span className="cheese-btn-text">本局规则</span>
-      </button>
     </div>
   );
 
   return (
     <TabletopShell
       title="奶酪大盗"
-      phase={`${phaseLabel(view.phase)}${
-        deviceRole === 'table' ? ' · 🖥️ 桌面中央端' : ' · 📱 玩家手牌端'
-      }`}
+      phase={phaseLabel(view.phase)}
+      phaseKey={`${view.phase}:${view.currentHour}`}
       gameId="cheese-thief"
       spectator={isSpectator}
       players={players}
       theme="night"
       hideSeats={isSimulatorTable}
       rulesButton={headerControls}
+      stageFit="arena"
       actions={
-        !isSimulatorTable ? (
+        primary ? (
           <ActionDock
-            primary={primary ?? { id: 'wait', label: '等待阶段推进', disabled: true, onAction: () => {} }}
+            primary={primary}
             secondary={secondary}
             busy={busy}
             waitingReason={waitingReason ?? undefined}
@@ -291,6 +287,27 @@ export function CheeseThiefGamePage({ view }: Props) {
           data-cheese-state={presentationState}
           aria-busy={busy}
         >
+          {/* 夜间推进时刻轴置顶展示 */}
+          {view.phase === 'night' && (
+            <section className="cheese-night" aria-label="夜间时间轴">
+              <div className="cheese-moon" aria-hidden="true"><span className="cheese-moon__glow" /></div>
+              <div className="cheese-night__copy">
+                <strong>{view.currentHour >= 1 && view.currentHour <= 6 ? `夜深了……第 ${view.currentHour} 时刻` : '夜幕降临'}</strong>
+                <span>{me?.wakeHour === view.currentHour ? '【轮到你的时刻，请睁眼！】' : '闭眼装睡，轮到你的时刻才睁眼。'}</span>
+              </div>
+              <ol className="cheese-hours" aria-label="第六时刻推进">
+                {[1, 2, 3, 4, 5, 6].map((hour) => (
+                  <li
+                    key={hour}
+                    className={`cheese-hours__dot ${view.currentHour === hour ? 'is-current' : ''} ${view.currentHour > hour && view.currentHour <= 6 ? 'is-done' : ''}`}
+                  >
+                    {hour}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+
           {me && (
             <section className="cheese-secret-card" aria-label="我的私密身份与3D骰盅">
               <div className="cheese-secret-card__header">
@@ -350,27 +367,6 @@ export function CheeseThiefGamePage({ view }: Props) {
                   )}
                 </div>
               )}
-            </section>
-          )}
-
-          {/* 夜间推进时刻轴 */}
-          {view.phase === 'night' && (
-            <section className="cheese-night" aria-label="夜间时间轴">
-              <div className="cheese-moon" aria-hidden="true"><span className="cheese-moon__glow" /></div>
-              <div className="cheese-night__copy">
-                <strong>{view.currentHour >= 1 && view.currentHour <= 6 ? `夜深了……第 ${view.currentHour} 时刻` : '夜幕降临'}</strong>
-                <span>{me?.wakeHour === view.currentHour ? '【轮到你的时刻，请睁眼！】' : '闭眼装睡，轮到你的时刻才睁眼。'}</span>
-              </div>
-              <ol className="cheese-hours" aria-label="第六时刻推进">
-                {[1, 2, 3, 4, 5, 6].map((hour) => (
-                  <li
-                    key={hour}
-                    className={`cheese-hours__dot ${view.currentHour === hour ? 'is-current' : ''} ${view.currentHour > hour && view.currentHour <= 6 ? 'is-done' : ''}`}
-                  >
-                    {hour}
-                  </li>
-                ))}
-              </ol>
             </section>
           )}
 

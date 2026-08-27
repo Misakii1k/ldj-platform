@@ -187,17 +187,15 @@ function FaceCardCenter({ rank, suit, color }: { rank: string; suit: string; col
   return (
     <g>
       {/* 华丽金边画框背景 */}
-      <rect x="46" y="55" width="158" height="250" rx="14" ry="14"
-        fill="#fbf8f0" stroke="#d4af37" strokeWidth="2.5" />
-      <rect x="52" y="61" width="146" height="238" rx="10" ry="10"
-        fill="none" stroke="rgba(212,175,55,0.4)" strokeWidth="1" strokeDasharray="4 2" />
+      <rect x="30" y="38" width="190" height="284" rx="10" ry="10"
+        fill="#fbf8f0" stroke="#d4af37" strokeWidth="1.6" />
 
       {/* 人物肖像插画 */}
       {artImg ? (
         <image
           href={artImg}
-          x="52" y="61"
-          width="146" height="238"
+          x="34" y="42"
+          width="182" height="276"
           preserveAspectRatio="xMidYMid meet"
         />
       ) : (
@@ -232,15 +230,15 @@ function JokerCenter({ big, uid }: { big: boolean; uid: string }) {
       <circle cx="125" cy="180" r="90" fill={`url(#${glowId})`} />
 
       {/* 装饰边框 */}
-      <rect x="42" y="55" width="166" height="250" rx="16" ry="16"
-        fill="none" stroke={big ? '#eab308' : '#64748b'} strokeWidth="1.8" strokeDasharray="6 3" />
+      <rect x="28" y="36" width="194" height="288" rx="12" ry="12"
+        fill="none" stroke={big ? '#eab308' : '#64748b'} strokeWidth="1.2" strokeDasharray="5 3" />
 
       {/* 大王/小王插画 */}
       {artImg ? (
         <image
           href={artImg}
-          x="44" y="60"
-          width="162" height="240"
+          x="32" y="40"
+          width="186" height="280"
           preserveAspectRatio="xMidYMid meet"
         />
       ) : (
@@ -296,12 +294,8 @@ export function PlayingCard({ rank, suit, className }: PlayingCardProps) {
         </filter>
       </defs>
 
-      {/* 2.5D 实体卡面底层与边框 */}
-      <rect x="2" y="2" width="246" height="356" rx="16" ry="16"
-        fill={`url(#${surfaceGradId})`} stroke="#2b2722" strokeWidth="2.5" filter={`url(#${dropShadowId})`} />
-      {/* 2.5D 高光内框 */}
-      <rect x="6" y="6" width="238" height="348" rx="12" ry="12"
-        fill="none" stroke={`url(#${bevelGradId})`} strokeWidth="1.6" />
+      <rect x="1" y="1" width="248" height="358" rx="12" ry="12"
+        fill={`url(#${surfaceGradId})`} stroke="#2b2722" strokeWidth="1.8" filter={`url(#${dropShadowId})`} />
 
       {/* 角标 */}
       <Corner rank={rank} suit={suit} color={color} />
@@ -319,8 +313,8 @@ export function PlayingCard({ rank, suit, className }: PlayingCardProps) {
         <g>
           <image
             href={CARD_ART_MAP.spades_A}
-            x="35" y="80"
-            width="180" height="200"
+            x="28" y="62"
+            width="194" height="236"
             preserveAspectRatio="xMidYMid meet"
           />
         </g>
@@ -331,8 +325,8 @@ export function PlayingCard({ rank, suit, className }: PlayingCardProps) {
         <g>
           <image
             href={SUIT_ART_MAP[suit]}
-            x="50" y="105"
-            width="150" height="150"
+            x="40" y="88"
+            width="170" height="184"
             preserveAspectRatio="xMidYMid meet"
           />
         </g>

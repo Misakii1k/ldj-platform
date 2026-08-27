@@ -14,6 +14,16 @@ export type GameTheme = (typeof GAME_THEMES)[number];
 export const GAME_BOT_SUPPORT = ['none', 'rule', 'rule_and_llm'] as const;
 export type GameBotSupport = (typeof GAME_BOT_SUPPORT)[number];
 
+/**
+ * 游戏成熟度等级（登记规范 M1–M4）：
+ * - M1 规则就绪·UI 毛坯（通用壳占位，能跑完一局）
+ * - M2 可用未美（功能 UI 完整、e2e 通过，无专属美术）
+ * - M3 UI 完整（专属美术/动效/多分辨率适配，未真机实测）
+ * - M4 可正常游玩（真机多人实测、弱网验证、无已知严重 bug）
+ */
+export const GAME_MATURITY = ['M1', 'M2', 'M3', 'M4'] as const;
+export type GameMaturity = (typeof GAME_MATURITY)[number];
+
 export interface GameVisualTheme {
   accent: GameTheme;
   surface: 'cards' | 'social' | 'board';
@@ -25,6 +35,7 @@ export interface GameCatalogEntry {
   minPlayers: number;
   maxPlayers: number;
   availability: GameAvailability;
+  maturity: GameMaturity;
   summary: string;
   tags: readonly string[];
   theme: GameTheme;
@@ -75,6 +86,7 @@ export const GAME_CATALOG = [
     minPlayers: 4,
     maxPlayers: 12,
     availability: 'playable',
+    maturity: 'M4',
     summary: '每人获得专属词条，用巧妙描述传递信息，找出隐藏在人群中的卧底！',
     tags: ['推理', '轻松', '语言表达'],
     theme: 'berry',
@@ -153,6 +165,7 @@ export const GAME_CATALOG = [
     minPlayers: 2,
     maxPlayers: 6,
     availability: 'playable',
+    maturity: 'M4',
     summary: '颜色、数字与功能卡牌的激情碰撞！最后一张牌时刻别忘了高喊 UNO！',
     tags: ['卡牌', '轻松', '快节奏'],
     theme: 'sunset',
@@ -235,6 +248,7 @@ export const GAME_CATALOG = [
     minPlayers: 3,
     maxPlayers: 3,
     availability: 'playable',
+    maturity: 'M4',
     summary: '经典三人欢乐对决，叫分抢庄、妙算牌型与队友默契缺一不可！',
     tags: ['卡牌', '策略', '经典'],
     theme: 'mint',
@@ -290,6 +304,7 @@ export const GAME_CATALOG = [
     minPlayers: 6,
     maxPlayers: 12,
     availability: 'playable',
+    maturity: 'M4',
     summary: '暗夜交锋，白天博弈！用逻辑与敏锐洞察在真伪间探寻胜利之光。',
     tags: ['推理', '阵营', '社交'],
     theme: 'violet',
@@ -348,10 +363,11 @@ export const GAME_CATALOG = [
   },
   {
     id: 'durian',
-    displayName: 'During',
+    displayName: 'DURING',
     minPlayers: 2,
     maxPlayers: 7,
     availability: 'playable',
+    maturity: 'M3',
     summary: '头顶暗牌（只看别人不看自己）、翻牌自选生效、猴子捣乱与按铃质疑超卖！',
     tags: ['推理', '心理', '聚会'],
     theme: 'mint',
@@ -386,7 +402,7 @@ export const GAME_CATALOG = [
         defaultValue: 'standard',
         choices: [
           { value: 'standard', label: '标准模式（系统判定）' },
-          { value: 'simulator', label: '桌面互动模式（带 3D 铃铛）' },
+          { value: 'simulator', label: '桌面互动模式（手机立牌 + 公共看板）' },
         ],
       },
       {
@@ -408,6 +424,7 @@ export const GAME_CATALOG = [
     minPlayers: 2,
     maxPlayers: 4,
     availability: 'playable',
+    maturity: 'M3',
     summary: '经典 16 张手牌：揣测心意、淘汰对手，把情书送到公主手中。',
     tags: ['卡牌', '推理', '经典'],
     theme: 'sunset',
@@ -454,6 +471,7 @@ export const GAME_CATALOG = [
     minPlayers: 4,
     maxPlayers: 8,
     availability: 'playable',
+    maturity: 'M4',
     summary: '掷骰决定醒来时刻、独醒偷奶酪、共犯掩护与平票同出局，欢乐聚会推理！',
     tags: ['推理', '阵营', '聚会'],
     theme: 'mint',
@@ -467,6 +485,16 @@ export const GAME_CATALOG = [
           '【独醒与偷看】独自醒来且奶酪在场者拿走奶酪成为怪盗并可偷看他人骰子。',
           '【共犯掩护】怪盗秘密选定一名共犯共同掩护。',
           '【投票胜负】白天讨论后投票，好人投中大盗则好人胜，否则大盗与共犯胜。',
+        ],
+      },
+      {
+        id: 'cheese_thief_sim_v1',
+        label: '桌面模拟（无判定 · 自由道具）',
+        description: '系统只负责私密掷苏醒时辰与私密分配身份角色牌，不偷奶酪不投票，规则由玩家自由定！',
+        details: [
+          '【时辰私密】每人私密掷 1–6 苏醒时辰，可随时重掷。',
+          '【身份角色牌】可选私密分配猫/狗/白鼠身份卡。',
+          '【无系统判定】不偷奶酪、不投票、不记分，适合按线下原版规则自由玩。',
         ],
       },
     ],
@@ -487,7 +515,7 @@ export const GAME_CATALOG = [
         label: '对局模式',
         defaultValue: 'simulator',
         choices: [
-          { value: 'simulator', label: '3D 沉浸模式（含 3D 骰盅）' },
+          { value: 'simulator', label: '玩家端（含 3D 骰盅）' },
           { value: 'standard', label: '标准模式（系统判定）' },
         ],
       },
@@ -495,6 +523,17 @@ export const GAME_CATALOG = [
       { key: 'nightHourSeconds', kind: 'integer', label: '每时刻时长（秒）', defaultValue: 20, min: 5, max: 600, step: 1 },
       { key: 'discussionSeconds', kind: 'integer', label: '讨论时长（秒）', defaultValue: 120, min: 1, max: 600, step: 1 },
       { key: 'voteSeconds', kind: 'integer', label: '投票时长（秒）', defaultValue: 30, min: 1, max: 600, step: 1 },
+    ], {}, [
+      {
+        id: 'cheese_thief_sim_v1',
+        label: '桌面模拟（无判定 · 自由道具）',
+        description: '系统只负责私密掷苏醒时辰与私密分配身份角色牌，不偷奶酪不投票，规则由玩家自由定！',
+        details: [
+          '【时辰私密】每人私密掷 1–6 苏醒时辰，可随时重掷。',
+          '【身份角色牌】可选私密分配猫/狗/白鼠身份卡。',
+          '【无系统判定】不偷奶酪、不投票、不记分，适合按线下原版规则自由玩。',
+        ],
+      },
     ]),
     botSupport: 'rule',
     visualTheme: { accent: 'mint', surface: 'board' },
@@ -505,6 +544,7 @@ export const GAME_CATALOG = [
     minPlayers: 5,
     maxPlayers: 9,
     availability: 'playable',
+    maturity: 'M4',
     summary: '抢当头鹅、选卡指派、动作接力传递、末棒倒序指认、票选揪恶，爆笑动作传递！',
     tags: ['传递', '阵营', '聚会'],
     theme: 'sunset',
@@ -518,6 +558,16 @@ export const GAME_CATALOG = [
           '【动作接力】后续玩家依次单向观看前一位的肢体表演并向后模仿传递。',
           '【倒序指认】由最后一棒倒序向前指认自己理解的案情。',
           '【揪出恶鹅】全员投票找出潜伏在队伍中捣乱的恶鹅。',
+        ],
+      },
+      {
+        id: 'goose_relay_sim_v1',
+        label: '桌面模拟（无判定 · 自由道具）',
+        description: '系统只负责随机候选鹅卡展示、随机头鹅指派与案情卡私密发放，不接力不投票，规则由玩家自由定！',
+        details: [
+          '【鹅卡布置】随机 9 张候选鹅卡公开展示，随机指派头鹅。',
+          '【案情私密】凶手与受害者案情卡仅头鹅可见，可随时重布置。',
+          '【无系统判定】不接力、不指认、不投票、不记分，适合按线下原版规则自由玩。',
         ],
       },
     ],
@@ -538,16 +588,28 @@ export const GAME_CATALOG = [
       { key: 'discussionSeconds', kind: 'integer', label: '讨论时长（秒，0=跳过）', defaultValue: 60, min: 0, max: 600, step: 1 },
       { key: 'accuseSeconds', kind: 'integer', label: '每人指认时长（秒）', defaultValue: 30, min: 1, max: 600, step: 1 },
       { key: 'voteSeconds', kind: 'integer', label: '投票时长（秒）', defaultValue: 30, min: 1, max: 600, step: 1 },
+    ], {}, [
+      {
+        id: 'goose_relay_sim_v1',
+        label: '桌面模拟（无判定 · 自由道具）',
+        description: '系统只负责随机候选鹅卡展示、随机头鹅指派与案情卡私密发放，不接力不投票，规则由玩家自由定！',
+        details: [
+          '【鹅卡布置】随机 9 张候选鹅卡公开展示，随机指派头鹅。',
+          '【案情私密】凶手与受害者案情卡仅头鹅可见，可随时重布置。',
+          '【无系统判定】不接力、不指认、不投票、不记分，适合按线下原版规则自由玩。',
+        ],
+      },
     ]),
     botSupport: 'rule',
     visualTheme: { accent: 'sunset', surface: 'board' },
   },
   {
     id: 'night-testimony',
-    displayName: '囚徒之夜',
+    displayName: '暗夜证词',
     minPlayers: 3,
     maxPlayers: 6,
     availability: 'playable',
+    maturity: 'M3',
     summary: '狱警伪装潜伏、YES/NO 问答轨迹、推理混卡、票选揪警与猜罪，阵营身份推理！',
     tags: ['推理', '身份', '聚会'],
     theme: 'violet',
@@ -560,6 +622,16 @@ export const GAME_CATALOG = [
           '【狱警潜伏】一名狱警伪装成囚犯，囚犯按各自罪行卡回答，狱警可撒谎。',
           '【问答轨迹】使用 YES/NO 记号标记问答历史，根据逻辑矛盾推理身份。',
           '【终局猜罪】票选出狱警后，若狱警能猜出所有囚犯的真实罪行则逆转获胜。',
+        ],
+      },
+      {
+        id: 'night_testimony_sim_v1',
+        label: '桌面模拟（无判定 · 自由道具）',
+        description: '系统只负责随机罪行私密分配（狱警标记 + 干扰卡）与问题卡抽取，不票选不猜罪，规则由玩家自由定！',
+        details: [
+          '【罪行分配】每人私密获得一张互异罪行，随机一人为狱警（无罪行），另有公开干扰罪行卡。',
+          '【问题卡抽取】40 张审讯题卡随机抽取展示。',
+          '【无系统判定】不票选、不猜罪、不记分，适合按线下原版规则自由玩。',
         ],
       },
     ],
@@ -577,16 +649,28 @@ export const GAME_CATALOG = [
       { key: 'deductionSeconds', kind: 'integer', label: '推理时长（秒）', defaultValue: 60, min: 1, max: 600, step: 1 },
       { key: 'voteSeconds', kind: 'integer', label: '投票时长（秒）', defaultValue: 30, min: 1, max: 600, step: 1 },
       { key: 'questionLimit', kind: 'integer', label: '问答上限（次）', defaultValue: 5, min: 1, max: 12, step: 1 },
+    ], {}, [
+      {
+        id: 'night_testimony_sim_v1',
+        label: '桌面模拟（无判定 · 自由道具）',
+        description: '系统只负责随机罪行私密分配（狱警标记 + 干扰卡）与问题卡抽取，不票选不猜罪，规则由玩家自由定！',
+        details: [
+          '【罪行分配】每人私密获得一张互异罪行，随机一人为狱警（无罪行），另有公开干扰罪行卡。',
+          '【问题卡抽取】40 张审讯题卡随机抽取展示。',
+          '【无系统判定】不票选、不猜罪、不记分，适合按线下原版规则自由玩。',
+        ],
+      },
     ]),
     botSupport: 'rule',
     visualTheme: { accent: 'violet', surface: 'board' },
   },
   {
     id: 'bell-clash',
-    displayName: 'Ding',
+    displayName: '铃铛对决',
     minPlayers: 2,
     maxPlayers: 7,
     availability: 'playable',
+    maturity: 'M3',
     summary: '颜色数字出牌 + 行动短语卡 + 按铃抢回合，先出完手牌者胜，快节奏卡牌反应！',
     tags: ['反应', '卡牌', '聚会'],
     theme: 'berry',
@@ -599,6 +683,16 @@ export const GAME_CATALOG = [
           '【卡牌出牌】打出同色或同数字手牌，无牌可出摸一张。',
           '【短语拍铃】手牌印有日常口癖或动作短语，有玩家触发即可拍铃抢出牌。',
           '【先出完胜】先将手中所有牌打光者获胜。',
+        ],
+      },
+      {
+        id: 'bell_clash_sim_v1',
+        label: '桌面模拟（无判定 · 自由道具）',
+        description: '系统只负责随机发牌/翻牌与按铃、骰子、计时器等道具，不判胜负不记分，规则由玩家自由定！',
+        details: [
+          '【随机发牌】每人 8 张主题牌，可重发/摸牌/翻牌。',
+          '【自由道具】按铃、骰子、计时器随桌使用。',
+          '【无系统判定】不记分、不判胜负，适合按线下原版规则自由玩。',
         ],
       },
     ],
@@ -615,6 +709,17 @@ export const GAME_CATALOG = [
       { key: 'handSize', kind: 'integer', label: '每人手牌数', defaultValue: 8, min: 1, max: 12, step: 1 },
       { key: 'turnSeconds', kind: 'integer', label: '出牌时长（秒）', defaultValue: 30, min: 1, max: 600, step: 1 },
       { key: 'bellSeconds', kind: 'integer', label: '按铃窗口（秒）', defaultValue: 10, min: 1, max: 600, step: 1 },
+    ], {}, [
+      {
+        id: 'bell_clash_sim_v1',
+        label: '桌面模拟（无判定 · 自由道具）',
+        description: '系统只负责随机发牌/翻牌与按铃、骰子、计时器等道具，不判胜负不记分，规则由玩家自由定！',
+        details: [
+          '【随机发牌】每人 8 张主题牌，可重发/摸牌/翻牌。',
+          '【自由道具】按铃、骰子、计时器随桌使用。',
+          '【无系统判定】不记分、不判胜负，适合按线下原版规则自由玩。',
+        ],
+      },
     ]),
     botSupport: 'rule',
     visualTheme: { accent: 'berry', surface: 'board' },
@@ -625,6 +730,7 @@ export const GAME_CATALOG = [
     minPlayers: 3,
     maxPlayers: 12,
     availability: 'playable',
+    maturity: 'M3',
     summary: '判官出题、伪人藏触发词、依次回答、判官指认，语言伪装与逻辑推理！',
     tags: ['伪装', '推理', '聚会'],
     theme: 'sunset',
@@ -637,6 +743,16 @@ export const GAME_CATALOG = [
           '【判官出题】轮流担任判官并提出开放式问题，其余玩家依次作答。',
           '【伪人藏词】伪人拿到专属触发词，回答时必须自然念出触发词且不被判官识破。',
           '【指认计分】判官指认抓对得分、抓错扣分；多轮后累计得分最高者获胜。',
+        ],
+      },
+      {
+        id: 'echo_judge_sim_v1',
+        label: '桌面模拟（无判定 · 自由道具）',
+        description: '系统只负责随机词条私密分配与题卡抽取，不判伪人不记分，规则由玩家自由定！',
+        details: [
+          '【词条分配】每人私密获得一个触发词，可随时重新分配。',
+          '【题卡抽取】36 张主题题卡随机抽取展示。',
+          '【无系统判定】不判伪人、不记分，适合按线下原版规则自由玩。',
         ],
       },
     ],
@@ -653,6 +769,17 @@ export const GAME_CATALOG = [
       { key: 'answerSeconds', kind: 'integer', label: '每人回答时长（秒）', defaultValue: 30, min: 1, max: 600, step: 1 },
       { key: 'judgmentSeconds', kind: 'integer', label: '判官指认时长（秒）', defaultValue: 30, min: 1, max: 600, step: 1 },
       { key: 'judgeWrongPenalty', kind: 'integer', label: '判官抓错扣分', defaultValue: -1, min: -10, max: 0, step: 1 },
+    ], {}, [
+      {
+        id: 'echo_judge_sim_v1',
+        label: '桌面模拟（无判定 · 自由道具）',
+        description: '系统只负责随机词条私密分配与题卡抽取，不判伪人不记分，规则由玩家自由定！',
+        details: [
+          '【词条分配】每人私密获得一个触发词，可随时重新分配。',
+          '【题卡抽取】36 张主题题卡随机抽取展示。',
+          '【无系统判定】不判伪人、不记分，适合按线下原版规则自由玩。',
+        ],
+      },
     ]),
     botSupport: 'rule',
     visualTheme: { accent: 'sunset', surface: 'social' },
@@ -663,6 +790,7 @@ export const GAME_CATALOG = [
     minPlayers: 2,
     maxPlayers: 12,
     availability: 'playable',
+    maturity: 'M2',
     summary: '开放式物理道具沙盒 + AI 小助手「锵锵」，左轮手枪轮盘、摇骰盅、抢答铃、万能牌堆、计时炸弹自由选择！',
     tags: ['沙盒', '创意工坊', 'AI助手', '聚会'],
     theme: 'cyan',

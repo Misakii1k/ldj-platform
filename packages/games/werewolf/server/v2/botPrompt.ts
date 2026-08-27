@@ -4,6 +4,7 @@
  * 女巫无夜袭目标不产候选；守卫不守自己与昨夜目标）。
  */
 import type { BotActionOption, BotDecisionInput, BotPromptContext } from '@ldj/shared';
+import { overlayWerewolfBotPrompt } from '../play.ts';
 import type { V2Action, V2PlayerView, V2Role } from './types.ts';
 
 const ROLE_NAMES: Record<V2Role, string> = { wolf: '狼人', villager: '村民', seer: '预言家', witch: '女巫', guard: '守卫', hunter: '猎人', idiot: '白痴' };
@@ -13,6 +14,10 @@ const targetOptions = (view: V2PlayerView, targets: readonly { playerId: string 
   targets.map((p) => ({ id: p.playerId, label: `${verb} ${seat(view, p.playerId)}`, action: mk(p.playerId) }));
 
 export function buildV2BotPrompt(input: BotDecisionInput<V2PlayerView>): BotPromptContext<V2Action> | null {
+  return overlayWerewolfBotPrompt(input, buildV2BotPromptCore(input));
+}
+
+function buildV2BotPromptCore(input: BotDecisionInput<V2PlayerView>): BotPromptContext<V2Action> | null {
   const { view, playerId } = input;
   const me = view.me;
   if (!me || me.forfeited || view.phase === 'game_over') return null;

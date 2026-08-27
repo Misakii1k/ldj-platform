@@ -446,6 +446,20 @@ export function GooseRelayGamePage({ view }: Props) {
 
       {/* 舞台区：自适应紧凑排布，空间完全舒展 */}
       <div className="sg-stage goose-game-stage">
+        {/* 抢头鹅初始阶段展台 */}
+        {view.phase === 'claim_head' && (
+          <section className="sg-panel goose-claim-hero-panel" style={{ textAlign: 'center', padding: '24px 20px', maxWidth: '480px', margin: '20px auto' }}>
+            <div style={{ fontSize: '2.4rem', marginBottom: '8px' }} aria-hidden="true">👑 🦆</div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 900, margin: '0 0 6px' }}>谁来担当发题头鹅？</h3>
+            <p style={{ fontSize: '0.88rem', opacity: 0.85, margin: 0, lineHeight: 1.6 }}>
+              头鹅将从 9 张特征卡中秘密选定【1 凶手 + 1 受害鸭】，并开启第一棒肢体表演！
+            </p>
+            <div style={{ marginTop: '12px', fontSize: '0.82rem', color: '#b45309', fontWeight: 700 }}>
+              👇 点击下方操作栏「抢当头鹅」，先到先得！
+            </div>
+          </section>
+        )}
+
         {/* 顶部身份提示栏 */}
         {me && me.role && (
           <div
