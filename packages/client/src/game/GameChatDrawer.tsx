@@ -212,7 +212,7 @@ export function GameChatDrawer() {
               <button type="button" className="game-chat-close" onClick={() => setOpen(false)} aria-label="关闭对局聊天">×</button>
             </header>
 
-            <div className="game-chat-notice">提示：聊天内容房间全员可见，切勿暴露自己的秘密词条！</div>
+            <div className="game-chat-notice">提示：聊天内容房间全员可见，请勿泄露自己的私密身份或词条！</div>
             <div className="game-chat-messages" ref={listRef} aria-live="polite">
               {state.chat.length === 0 ? (
                 <div className="game-chat-empty"><span aria-hidden="true">···</span><strong>暂无消息记录</strong><p>发一条消息，与这一桌好友打个招呼吧。</p></div>

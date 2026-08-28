@@ -51,7 +51,7 @@ public class HostService extends Service {
     private static WifiManager.WifiLock wifiLock = null;
     private static WifiManager.MulticastLock multicastLock = null;
 
-    private Thread bootThread = null;
+    private static volatile Thread bootThread = null;
 
     @Override
     public void onCreate() {

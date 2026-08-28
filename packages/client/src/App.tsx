@@ -128,6 +128,8 @@ function Router() {
         <h1>对局已开始</h1>
         <p className="loading">正在同步牌局数据…</p>
         <button type="button" className="primary-btn" onClick={resync}>重新同步</button>
+        {/* 逃生口：对局数据长时间无法同步时（如服务端会话残留），允许用户主动退出返回首页 */}
+        <button type="button" className="text-btn" onClick={reset}>离开对局，返回首页</button>
       </main>
     );
   } else {

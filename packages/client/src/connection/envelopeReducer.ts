@@ -225,7 +225,10 @@ export function applyEnvelope(
         return { state, effects };
       }
       const incomingSeq = envelope.roomSeq ?? payload.seq;
-      if (state.roomSeq !== null && incomingSeq < state.roomSeq) {
+      // roomSeq 是「每房间独立」的序号：换房（join/resume 到另一个房间）时旧房的 seq 毫无可比性。
+      // 若不在这里放行，旧房的高 seq 会把新房的权威快照当旧帧永久丢弃，Router 卡死在旧对局画面。
+      const roomSwitched = state.room !== null && state.room.roomCode !== payload.roomCode;
+      if (!roomSwitched && state.roomSeq !== null && incomingSeq < state.roomSeq) {
         // 丢弃旧快照前主动重同步，避免成员列表因一次乱序永久停留在旧状态。
         effects.push({ type: 'send_resync' });
         return { state, effects };
@@ -235,7 +238,7 @@ export function applyEnvelope(
       // 进入 IN_GAME 时，若 game.moduleId 与房间当前游戏不一致（切换了游戏模块），
       // 同样清空旧对局，让 App.tsx 正确显示 Loading 界面等待新 game_state。
       let nextGame = state.game;
-      if (payload.status === 'LOBBY' || payload.status === 'CLOSED') {
+      if (roomSwitched || payload.status === 'LOBBY' || payload.status === 'CLOSED') {
         nextGame = null;
       } else if (payload.status === 'IN_GAME' && state.game !== null) {
         // 检查模块是否一致：gameId 为房间当前选定游戏
@@ -254,6 +257,8 @@ export function applyEnvelope(
         // room_snapshot 是权威恢复基线；允许跳号但不再触发重复 resync。
         roomSeq: incomingSeq,
         closeReason: null,
+        // 换房时旧房聊天不得带入新房
+        ...(roomSwitched ? { chat: [], chatCursor: null } : {}),
       }, 'synced');
       // 权威完整快照可直接建立跳号后的恢复基线，不再要求第二轮 resync。
       return { state: nextState, effects };

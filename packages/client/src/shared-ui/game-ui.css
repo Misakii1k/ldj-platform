@@ -490,10 +490,11 @@
   font-weight: 900;
 }
 
-/* 斗地主：与身份条同高的胶囊，主按钮黄、叫分珊瑚红 */
+/* 斗地主：主按钮黄、叫分珊瑚红；圆角走统一 --gp-radius-md（跨游戏配方一致断言） */
 .landlord-btn {
-  min-height: 36px;
-  border-radius: 999px;
+  /* 触控目标下限 44px（UI 一致性门断言），36px 不达标 */
+  min-height: 44px;
+  border-radius: var(--gp-radius-md);
   background: var(--gp-surface);
   color: var(--gp-ink);
 }

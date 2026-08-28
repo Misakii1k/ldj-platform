@@ -13624,6 +13624,10 @@ html[data-motion-level="off"] *::after {
   display: flex;
   align-items: center;
   gap: 10px;
+  /* 窄屏允许换行堆叠并收缩：标题+提示行会把按钮挤到视口外（实测 412px 视口溢出 32px） */
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .werewolf-actions__header-line {
@@ -13647,7 +13651,8 @@ html[data-motion-level="off"] *::after {
 .werewolf-actions__hint {
   font-size: 0.65rem;
   color: var(--wc-text-dim, rgba(240, 230, 210, 0.6));
-  white-space: nowrap;
+  /* 长提示允许折行，不再把整组撑出容器 */
+  white-space: normal;
 }
 
 .werewolf-actions__options {
@@ -13672,7 +13677,10 @@ html[data-motion-level="off"] *::after {
   color: var(--wc-paper, #f0e6d2);
   cursor: pointer;
   transition: all 0.16s ease;
-  white-space: nowrap;
+  /* 长昵称允许按钮内折行，防止按钮最小宽度撑破窄屏列 */
+  white-space: normal;
+  text-align: center;
+  min-width: 0;
 }
 
 .tabletop-theme-tribunal-day .werewolf-action-btn {
@@ -15992,9 +16000,9 @@ html[data-motion-level="off"] *::after {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 36px;
+  /* 触控目标下限 44px（UI 一致性门断言），36px 不达标；圆角由 game-ui 统一层提供 */
+  min-height: 44px;
   padding: 4px 14px;
-  border-radius: 999px;
   font-weight: 900;
   font-size: 0.85rem;
   cursor: pointer;
@@ -16391,7 +16399,7 @@ html[data-motion-level="off"] *::after {
     font-size: 0.75rem;
   }
 
-  .landlord-btn,
+  /* .landlord-btn 不参与紧凑压缩：触控目标下限 44px（UI 一致性门断言） */
   .landlord-wait-tag,
   .landlord-game-over-tag {
     min-height: 32px;
@@ -17290,8 +17298,8 @@ html[data-motion-level="off"] *::after {
   cursor: pointer;
   position: relative;
   transition: all 0.12s ease;
-  aspect-ratio: 1 / 1.18;
-  min-height: 72px;
+  /* 头像46 + 名字行14 + gap4 + padding12 ≈ 76：低于此值内容必然溢出裁字（实测窄屏四列复现） */
+  min-height: 76px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -17309,6 +17317,9 @@ html[data-motion-level="off"] *::after {
 }
 
 .profile-preset-name {
+  /* flex:none + 显式行高：防止被 flex 挤压成 0 高导致字形竖裁（实测四列窄卡下复现） */
+  flex: none;
+  line-height: 1.25;
   font-size: 0.68rem;
   font-weight: 800;
   color: var(--home-ink, #221e1a);
