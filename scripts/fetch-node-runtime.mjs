@@ -10,14 +10,14 @@
  * 前置：先运行 node scripts/build-server-bundle.mjs 与 npm run build。
  * 用法：node scripts/fetch-node-runtime.mjs [--arch=aarch64|x86_64] （缺省双架构）
  */
-import { mkdir, readFile, readdir, writeFile, cp, rm } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile, cp, rm, stat } from 'node:fs/promises';
 import { copyFileSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const MIRROR = 'https://packages.termux.dev/apt/termux-main';
+const MIRROR = process.env.TERMUX_MIRROR || 'https://mirrors.sustech.edu.cn/termux/apt/termux-main';
 const CACHE = resolve(root, 'build/app-host/cache');
 const ASSETS = resolve(root, 'build/app-host/android-assets/apphost');
 /** node 二进制经 jniLibs 打包（targetSdk 29+ 禁止 exec 应用数据目录，nativeLibraryDir 是唯一可执行位置） */
@@ -32,7 +32,12 @@ const argvArch = process.argv.find((a) => a.startsWith('--arch='));
 const arches = argvArch ? [argvArch.slice('--arch='.length)] : Object.keys(ARCH_ABI);
 
 async function fetchTo(url, dest) {
-  if (existsSync(dest)) return;
+  if (existsSync(dest)) {
+    try {
+      const s = await stat(dest);
+      if (s.size > 0) return;
+    } catch {}
+  }
   console.log(`下载 ${url}`);
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${url}`);
@@ -76,6 +81,9 @@ function extractDeb(debPath, stageDir, memberName) {
               `${name}.raw`,
               '--exclude=data/data/com.termux/files/usr/share',
               '--exclude=data/data/com.termux/files/usr/etc',
+              '--exclude=data/data/com.termux/files/usr/bin/corepack',
+              '--exclude=data/data/com.termux/files/usr/bin/npm',
+              '--exclude=data/data/com.termux/files/usr/bin/npx',
             ],
             { cwd: stageDir, stdio: 'pipe' },
           );
@@ -83,17 +91,20 @@ function extractDeb(debPath, stageDir, memberName) {
           if (result.status !== 0) {
             const hardErrors = errText
               .split('\n')
+              .map((l) => l.trim())
               .filter(
                 (line) =>
-                  line.includes('tar:')
+                  line.length > 0
                   && !line.includes('symlink')
+                  && !line.includes("Can't create")
+                  && !line.includes('Error exit delayed')
                   && !line.includes('Exiting with failure status'),
               );
             if (hardErrors.length > 0) {
               reject(new Error(`tar 解包失败(${result.status}): ${errText}`));
               return;
             }
-            console.log(`  （跳过符号链接：${errText.split('\n').filter((l) => l.includes('symlink')).length} 条）`);
+            console.log(`  （跳过符号链接/无法创建的文件：${errText.split('\n').filter((l) => l.includes('symlink') || l.includes("Can't create")).length} 条）`);
           }
           // 物化运行时需要的 soname 软链（libz.so.1→libz.so.1.3.2 等）为真实拷贝：
           // Windows 无法创建 unix 软链，且 Android 端只做平铺文件拷贝
