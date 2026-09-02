@@ -29,6 +29,7 @@
     "host": "node scripts/start-host-gui.mjs",
     "build:host-payload": "node scripts/build-server-bundle.mjs && node scripts/fetch-node-runtime.mjs",
     "build:apk": "npm run build && npm run build:host-payload && cd packages/client && npx cap copy android && cd android && .\\gradlew.bat assembleDebug",
+    "build:apk:release": "npm run build && npm run build:host-payload && cd packages/client && npx cap copy android && cd android && .\\gradlew.bat assembleRelease",
     "sync:apk": "cd packages/client && npx cap copy android"
   },
   "devDependencies": {
