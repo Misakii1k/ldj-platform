@@ -106,16 +106,34 @@ test('解析器严格拒绝多余字段与非法配置', () => {
   assert.throws(() => parseCheeseThiefConfig({ accomplicesByPlayers: { 4: { count: 5, known: true } } }), /共犯数量无效/);
 });
 
-test('独醒且奶酪在场 → 该玩家成为盗贼；同醒/无人醒不盗取', () => {
+test('独醒且奶酪在场 → 大盗在其时刻点击偷取；同醒/无人醒不盗取', () => {
   let state = makeState();
   state = accepted(state, { type: 'advance_night', hour: 1 });
   assert.equal(state.thiefId, null, '多人同醒不盗取');
   state = accepted(state, { type: 'advance_night', hour: 2 });
   assert.equal(state.thiefId, null, '无人醒来不盗取');
+  // 无人醒来的时刻点击偷取被拒
+  assert.throws(() => accepted(state, { type: 'steal_cheese', playerId: 'a' }), /此刻没有独醒的大盗/);
   state = accepted(state, { type: 'advance_night', hour: 3 });
+  assert.equal(state.thiefId, null, '时刻开始不自动盗取，等待大盗点击');
+  state = accepted(state, { type: 'advance_night', hour: 4 });
+  // 大盗未点击 → 时刻结束兜底自动盗取（stealHour 记为其醒来的时刻）
   assert.equal(state.thiefId, 'c');
   assert.equal(state.stealHour, 3);
   assert.equal(state.cheeseStolen, true);
+});
+
+test('大盗在其独醒时刻点击偷取 → 立即生效且不可重复偷', () => {
+  let state = makeState();
+  state = accepted(state, { type: 'advance_night', hour: 1 });
+  state = accepted(state, { type: 'advance_night', hour: 2 });
+  state = accepted(state, { type: 'advance_night', hour: 3 });
+  state = accepted(state, { type: 'steal_cheese', playerId: 'c' });
+  assert.equal(state.thiefId, 'c');
+  assert.equal(state.stealHour, 3);
+  assert.equal(state.cheeseStolen, true);
+  // 已偷走后再次偷取被拒
+  assert.throws(() => accepted(state, { type: 'steal_cheese', playerId: 'a' }), /已经被偷走/);
 });
 
 test('整夜未盗（每个时刻 0 或 ≥2 人醒）→ 无盗贼，投票后全员获胜', () => {

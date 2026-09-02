@@ -121,6 +121,13 @@ export function buildRoomSnapshot(db: Db, roomId: string): RoomSnapshotView {
     )
     .all(roomId) as unknown as MemberRow[];
 
+  let parsedConfig: Record<string, unknown> = {};
+  try {
+    parsedConfig = JSON.parse(room.config_json);
+  } catch {
+    parsedConfig = {};
+  }
+
   const members: RoomMemberView[] = memberRows.map((m) => ({
     playerId: m.player_id,
     nickname: m.nickname,
@@ -138,7 +145,7 @@ export function buildRoomSnapshot(db: Db, roomId: string): RoomSnapshotView {
     status: room.status as RoomStatus,
     seq: room.seq,
     gameId: game.id,
-    config: JSON.parse(room.config_json),
+    config: parsedConfig,
     members,
   };
 }

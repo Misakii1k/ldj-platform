@@ -17,6 +17,7 @@ const cheeseThiefConfigSchema = z
   .object({
     rulesetId: z.literal('cheese_thief_classic_v1').optional(),
     mode: z.enum(['standard', 'simulator']).default('standard'),
+    roleRevealSeconds: seconds.default(17),
     nightHourSeconds: seconds.default(20),
     accompliceSelectSeconds: seconds.default(15),
     discussionSeconds: seconds.default(120),
@@ -38,6 +39,7 @@ const cheeseThiefActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('choose_hour'), playerId: pid, hour }).strict('动作 字段无效'),
   z.object({ type: z.literal('resolve_hour_choice') }).strict('动作 字段无效'),
   z.object({ type: z.literal('advance_night'), hour }).strict('动作 字段无效'),
+  z.object({ type: z.literal('steal_cheese'), playerId: pid }).strict('动作 字段无效'),
   z.object({ type: z.literal('peek_die'), playerId: pid, targetPlayerId: pid }).strict('动作 字段无效'),
   z.object({ type: z.literal('skip_peek'), playerId: pid }).strict('动作 字段无效'),
   z
@@ -82,6 +84,7 @@ export function parseCheeseThiefConfig(input: unknown): ResolvedCheeseThiefConfi
   const parsed = parseOrThrow<{
     rulesetId?: 'cheese_thief_classic_v1';
     mode: 'standard' | 'simulator';
+    roleRevealSeconds: number;
     nightHourSeconds: number;
     accompliceSelectSeconds: number;
     discussionSeconds: number;
@@ -99,6 +102,7 @@ export function parseCheeseThiefConfig(input: unknown): ResolvedCheeseThiefConfi
   return {
     rulesetId: parsed.rulesetId ?? 'cheese_thief_classic_v1',
     mode: parsed.mode ?? 'standard',
+    roleRevealSeconds: parsed.roleRevealSeconds,
     nightHourSeconds: parsed.nightHourSeconds,
     accompliceSelectSeconds: parsed.accompliceSelectSeconds,
     discussionSeconds: parsed.discussionSeconds,

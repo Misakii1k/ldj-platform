@@ -147,7 +147,7 @@ export function createCheeseThiefState(
     config,
     wakeHours: { ...wakeHours },
     hourChoices: hourChoices ? Object.fromEntries(Object.entries(hourChoices)) : null,
-    currentHour: hourChoices ? 0 : 1,
+    currentHour: 0,
     lastProcessedHour: 0,
     cheeseStolen: false,
     thiefId: null,
@@ -246,6 +246,16 @@ function endNight(
   ctx: ReduceCtx,
 ): void {
   state.currentHour = 0;
+  // 第 6 时刻收尾兜底：独醒的大盗没有点击取走时，时刻结束自动取走
+  if (!state.cheeseStolen) {
+    const wakers6 = state.players.filter((id) => state.wakeHours[id] === NIGHT_END_HOUR);
+    if (wakers6.length === 1) {
+      state.cheeseStolen = true;
+      state.thiefId = wakers6[0]!;
+      state.stealHour = NIGHT_END_HOUR;
+      events.push({ type: 'cheese_stolen', thiefId: state.thiefId, stealHour: NIGHT_END_HOUR });
+    }
+  }
   const rule = accompliceRuleFor(state);
   if (state.thiefId !== null && rule.count > 0) {
     if (rule.known) {
@@ -288,7 +298,7 @@ function enterDawn(
 
 /** 该玩家当前是否可执行「偷看骰子」：轮到自己的时刻，若独醒即可查看场上任意一位玩家的骰子点数；若2人或以上同醒则无法查看 */
 function canPeek(state: CheeseThiefState, playerId: string): boolean {
-  if (state.phase !== 'night') return false;
+  if (state.phase !== 'night' || state.currentHour === 0) return false;
   if (state.wakeHours[playerId] !== state.currentHour) return false;
   const solo = state.players.filter((id) => state.wakeHours[id] === state.currentHour).length === 1;
   if (!solo) return false;
@@ -307,7 +317,7 @@ export function reduceCheeseThiefState(
     return deny(error instanceof Error ? error.message : '动作无效');
   }
 
-  // 开局：4 人局进入两骰自选；否则直接进入夜晚第 1 时刻。
+  // 开局：4 人局进入两骰自选；否则进入夜间确认阶段（10秒）后推进第 1 时刻。
   if (action.type === 'begin') {
     if (state.phase === 'hour_choice') {
       return {
@@ -329,7 +339,15 @@ export function reduceCheeseThiefState(
       ok: true,
       nextState: state,
       events: [],
-      effects: [system('夜幕降临，各鼠暗自决定醒来时刻……'), nightTimer(state.config, ctx.now, 1)],
+      effects: [
+        system('夜幕降临，天黑请闭眼，请确认你的骰子与身份……'),
+        {
+          type: 'schedule_timer',
+          timerId: 'night-1',
+          deadlineAt: ctx.now + state.config.roleRevealSeconds * 1000,
+          action: { type: 'advance_night', hour: 1 },
+        },
+      ],
     };
   }
   if (state.phase === 'game_over') return idempotent(state);
@@ -374,8 +392,17 @@ export function reduceCheeseThiefState(
     events.push({ type: 'hour_chosen', playerId: action.playerId });
     if (next.players.every((id) => next.wakeHours[id] !== undefined)) {
       next.phase = 'night';
-      next.currentHour = 1;
-      effects.push(system('夜幕降临，各鼠暗自决定醒来时刻……'), nightTimer(state.config, ctx.now, 1));
+      next.currentHour = 0;
+      next.lastProcessedHour = 0;
+      effects.push(
+        system('时刻选择完毕，天黑请闭眼，请确认你的骰子与身份……'),
+        {
+          type: 'schedule_timer',
+          timerId: 'night-1',
+          deadlineAt: ctx.now + next.config.roleRevealSeconds * 1000,
+          action: { type: 'advance_night', hour: 1 },
+        },
+      );
     }
     assertCheeseThiefInvariants(next);
     return { ok: true, nextState: next, events, effects };
@@ -392,8 +419,17 @@ export function reduceCheeseThiefState(
       }
     }
     next.phase = 'night';
-    next.currentHour = 1;
-    effects.push(system('夜幕降临，各鼠暗自决定醒来时刻……'), nightTimer(state.config, ctx.now, 1));
+    next.currentHour = 0;
+    next.lastProcessedHour = 0;
+    effects.push(
+      system('时刻选择完毕，天黑请闭眼，请确认你的骰子与身份……'),
+      {
+        type: 'schedule_timer',
+        timerId: 'night-1',
+        deadlineAt: ctx.now + next.config.roleRevealSeconds * 1000,
+        action: { type: 'advance_night', hour: 1 },
+      },
+    );
     assertCheeseThiefInvariants(next);
     return { ok: true, nextState: next, events, effects };
   }
@@ -404,15 +440,18 @@ export function reduceCheeseThiefState(
     if (next.phase !== 'night' || action.hour !== next.lastProcessedHour + 1) {
       return idempotent(state);
     }
-    next.currentHour = action.hour;
-    const wakers = next.players.filter((id) => next.wakeHours[id] === action.hour);
-    if (!next.cheeseStolen && wakers.length === 1) {
-      // 独醒且奶酪在场 → 取走奶酪成为大盗
-      next.cheeseStolen = true;
-      next.thiefId = wakers[0]!;
-      next.stealHour = action.hour;
-      events.push({ type: 'cheese_stolen', thiefId: next.thiefId, stealHour: action.hour });
+    // 上一时刻收尾兜底：独醒的大盗没有点击取走时，时刻结束自动取走（stealHour 仍记为其醒来的时刻）
+    const prevHour = action.hour - 1;
+    if (prevHour >= 1 && !next.cheeseStolen) {
+      const prevWakers = next.players.filter((id) => next.wakeHours[id] === prevHour);
+      if (prevWakers.length === 1) {
+        next.cheeseStolen = true;
+        next.thiefId = prevWakers[0]!;
+        next.stealHour = prevHour;
+        events.push({ type: 'cheese_stolen', thiefId: next.thiefId, stealHour: prevHour });
+      }
     }
+    next.currentHour = action.hour;
     next.lastProcessedHour = action.hour;
     events.push({ type: 'hour_revealed', hour: action.hour });
     if (action.hour === NIGHT_END_HOUR) {
@@ -420,6 +459,21 @@ export function reduceCheeseThiefState(
     } else {
       effects.push(nightTimer(state.config, ctx.now, action.hour + 1));
     }
+    assertCheeseThiefInvariants(next);
+    return { ok: true, nextState: next, events, effects };
+  }
+
+  // 桌面交互偷取：仅当"当前时刻恰有一名独醒者"（即大盗在其醒来的时刻）可偷；
+  // 奶酪已被偷走后不可再偷；桌面设备匿名，点击按当前时刻归属给该独醒大盗。
+  if (action.type === 'steal_cheese') {
+    if (next.phase !== 'night') return deny('夜晚才能取走奶酪');
+    if (next.cheeseStolen) return deny('奶酪已经被偷走了');
+    const wakers = next.players.filter((id) => next.wakeHours[id] === next.currentHour);
+    if (wakers.length !== 1) return deny('此刻没有独醒的大盗，无法取走奶酪');
+    next.cheeseStolen = true;
+    next.thiefId = wakers[0]!;
+    next.stealHour = next.currentHour;
+    events.push({ type: 'cheese_stolen', thiefId: next.thiefId, stealHour: next.stealHour });
     assertCheeseThiefInvariants(next);
     return { ok: true, nextState: next, events, effects };
   }
@@ -601,14 +655,13 @@ export function assertCheeseThiefInvariants(state: CheeseThiefState): void {
     }
   }
   if (state.phase === 'night') {
-    if (state.currentHour < 1 || state.currentHour > NIGHT_END_HOUR) {
+    if (state.currentHour < 0 || state.currentHour > NIGHT_END_HOUR) {
       throw new Error('夜间时刻无效');
     }
     if (state.lastProcessedHour < 0 || state.lastProcessedHour > NIGHT_END_HOUR) {
       throw new Error('夜间已处理时刻无效');
     }
-    // currentHour 与已处理时刻一致（窗口内），或尚未处理任何时刻时 currentHour=1
-    if (state.currentHour !== state.lastProcessedHour && !(state.lastProcessedHour === 0 && state.currentHour === 1)) {
+    if (state.currentHour !== state.lastProcessedHour) {
       throw new Error('夜间时刻与已处理时刻不一致');
     }
   }

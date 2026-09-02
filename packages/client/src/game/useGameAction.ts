@@ -24,13 +24,14 @@ export interface GameActionApi {
   act: (payload: unknown) => Promise<void>;
   busy: boolean;
   error: string | null;
+  clearError: () => void;
 }
 
 /** 无显式键的既有消费者共用的默认作用域键 */
 const DEFAULT_ACTION_KEY: ActionKey = { action: 'game_action', object: 'table' };
 
 export function useGameAction(): GameActionApi {
-  const { state, act: actScoped, errorFor } = useScopedAction();
+  const { state, act: actScoped, errorFor, clearError: clearErrorScoped } = useScopedAction();
   const busy = isBusy(state, DEFAULT_ACTION_KEY);
   const error = errorFor(DEFAULT_ACTION_KEY);
 
@@ -38,5 +39,9 @@ export function useGameAction(): GameActionApi {
     await actScoped(DEFAULT_ACTION_KEY, payload);
   }, [actScoped]);
 
-  return { act, busy, error };
+  const clearError = useCallback(() => {
+    clearErrorScoped(DEFAULT_ACTION_KEY);
+  }, [clearErrorScoped]);
+
+  return { act, busy, error, clearError };
 }

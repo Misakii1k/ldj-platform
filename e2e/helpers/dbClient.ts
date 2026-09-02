@@ -74,14 +74,16 @@ export function seedRoom(dbPath: string, options: SeedOptions = {}): SeededRoom 
     const roomCode = newRoomCode((code) =>
       Boolean(db.prepare('SELECT 1 FROM rooms WHERE code = ?').get(code)),
     );
-    const configJson = JSON.stringify({ gameConfig: options.config ?? {} });
-    const ready = options.ready === true ? 1 : 0;
-
     const players: SeededPlayer[] = [];
     for (let seat = 1; seat <= count; seat += 1) {
       players.push({ playerId: newPlayerId(), resumeToken: newResumeToken(), seat });
     }
     const hostId = players[0]!.playerId;
+
+    const configJson = JSON.stringify({
+      gameConfig: options.config ?? {},
+    });
+    const ready = options.ready === true ? 1 : 0;
 
     db.prepare(
       `INSERT INTO rooms

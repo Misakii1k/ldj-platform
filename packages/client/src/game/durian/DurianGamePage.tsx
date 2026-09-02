@@ -5,6 +5,7 @@ import { nameFor, useGameAction } from '../useGameAction.ts';
 import { ActionDock } from '../tabletop/ActionDock.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
+import { webAudio } from '../../shared-ui/WebAudioManager.ts';
 import { FruitIcon, FruitGroup } from './FruitGraphic.tsx';
 import {
   DURIAN_FRUITS,
@@ -17,25 +18,9 @@ import {
 } from './types.ts';
 
 function playTurnCue() {
-  try {
-    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    if (AudioCtx) {
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(987.77, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(1318.51, ctx.currentTime + 0.06);
-      gain.gain.setValueAtTime(0.28, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.4);
-    }
-  } catch {
-    // ignore
-  }
+  // 走全局音频引擎（常驻 AudioContext）：此前每次新建 AudioContext，
+  // 移动端无手势上下文时保持 suspended，导致"轮到你"提示音静默失效。
+  webAudio.playTurnAlert();
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
     try {
       navigator.vibrate([40, 30, 40]);
@@ -169,6 +154,13 @@ export function DurianGamePage({ view }: Props) {
     }
     prevTurnRef.current = isMyTurn;
   }, [isMyTurn]);
+
+  // 首次手势解锁常驻 AudioContext：之后无需盯屏，"轮到你"的音效+震动必然可闻
+  useEffect(() => {
+    const unlock = () => webAudio.unlock();
+    document.addEventListener('pointerdown', unlock, { once: true });
+    return () => document.removeEventListener('pointerdown', unlock);
+  }, []);
 
   // 模拟器玩家端操作非法时，用低频提示音 + 震动反馈（桌面端不弹错误提示）
   const prevErrorRef = useRef<string | null>(null);

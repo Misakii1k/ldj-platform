@@ -1,6 +1,6 @@
 import type { GameSetupOption, GameSetupSpec } from '@ldj/shared';
 
-export type SetupConfig = Readonly<Record<string, string | number | boolean>>;
+export type SetupConfig = Readonly<Record<string, string | number | boolean | null | undefined>>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -42,8 +42,9 @@ export function applySetupValue(
 
 export function readRoomGameConfig(setup: GameSetupSpec, roomConfig: unknown): SetupConfig {
   let config = buildSetupConfig(setup);
-  if (isRecord(roomConfig) && isRecord(roomConfig.gameConfig)) {
-    for (const [key, value] of Object.entries(roomConfig.gameConfig)) {
+  if (isRecord(roomConfig)) {
+    const rawGameConfig = isRecord(roomConfig.gameConfig) ? roomConfig.gameConfig : roomConfig;
+    for (const [key, value] of Object.entries(rawGameConfig)) {
       try {
         config = applySetupValue(setup, config, key, value);
       } catch {
@@ -64,5 +65,5 @@ export function readRoomGameConfig(setup: GameSetupSpec, roomConfig: unknown): S
 export function buildModuleConfig(setup: GameSetupSpec, config: SetupConfig): SetupConfig {
   const allowed = new Set(setup.options.map((option) => option.key));
   if (setup.rulesets.length > 1) allowed.add('rulesetId');
-  return Object.fromEntries(Object.entries(config).filter(([key]) => allowed.has(key)));
+  return Object.fromEntries(Object.entries(config).filter(([key, val]) => allowed.has(key) && val !== undefined));
 }

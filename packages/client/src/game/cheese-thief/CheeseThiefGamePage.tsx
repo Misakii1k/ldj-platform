@@ -2,7 +2,7 @@
  * cheese_thief_classic_v1 客户端主页面（线下辅助与模拟模式双模体系）。
  * 支持「📱 玩家手牌端（3D 骰盅防偷窥）」与「🖥️ 桌面中央端（案发大屏与 TTS 法官）」
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
 import { resolveInitialDeviceRole } from '../../app/appMode.ts';
 import { nameFor, useGameAction } from '../useGameAction.ts';
@@ -41,7 +41,7 @@ interface Props {
 export function CheeseThiefGamePage({ view }: Props) {
   const { state } = useConnection();
   const members = state.room?.members ?? [];
-  const { act, busy, error } = useGameAction();
+  const { act, busy, error, clearError } = useGameAction();
   const me = view.me;
   const myId = me?.playerId ?? null;
   const isSpectator = me === null;
@@ -50,6 +50,11 @@ export function CheeseThiefGamePage({ view }: Props) {
   const [peekTarget, setPeekTarget] = useState<string | null>(null);
   const [voteTarget, setVoteTarget] = useState<string | null>(null);
   const [accomplicePicks, setAccomplicePicks] = useState<string[]>([]);
+
+  // 阶段或时刻变更时，自动清理陈旧错误提示
+  useEffect(() => {
+    clearError();
+  }, [view.phase, view.currentHour, clearError]);
 
   // 模拟模式设备角色：'table' 桌面中央大屏，'player' 玩家手牌端
   const isSimulator = view.mode === 'simulator';
@@ -68,12 +73,16 @@ export function CheeseThiefGamePage({ view }: Props) {
 
   const isSimulatorTable = deviceRole === 'table';
 
-  // 专属 TTS 法官主持 Hook
+  // 专属 TTS/录音法官主持 Hook
   const { ttsEnabled, toggleTts } = useCheeseTTS({
     phase: view.phase,
     currentHour: view.currentHour,
     mode: view.mode,
     isTable: isSimulatorTable || !isSimulator,
+    thiefCaught: view.thiefCaught,
+    cheeseStolen: view.cheeseStolen,
+    revealedCat: view.revealedCat,
+    revealedDog: view.revealedDog,
   });
 
   const myTurnAccomplice =
@@ -265,7 +274,27 @@ export function CheeseThiefGamePage({ view }: Props) {
       >
         {phaseAnnouncement}{waitingReason ? `。${waitingReason}` : ''}
       </p>
-      {error && <p className="game-error cheese-feedback cheese-feedback--error" role="alert">{error}</p>}
+      {error && (
+        <p
+          className="game-error cheese-feedback cheese-feedback--error"
+          role="alert"
+          onClick={clearError}
+          title="点击关闭提示"
+        >
+          <span>{error}</span>
+          <button
+            type="button"
+            className="game-error-close-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              clearError();
+            }}
+            aria-label="关闭错误提示"
+          >
+            ✕
+          </button>
+        </p>
+      )}
 
       {/* 🖥️ 桌面端呈现 */}
       {isSimulatorTable ? (
@@ -276,7 +305,9 @@ export function CheeseThiefGamePage({ view }: Props) {
           ttsEnabled={ttsEnabled}
           onToggleTts={toggleTts}
           onStealCheese={() => {
-            // 静音偷取：大盗已记录
+            // 真实偷取动作：服务端校验"当前时刻恰有独醒大盗"才受理（桌面匿名点击按时刻归属）；
+            // 受理后 cheeseStolen 保持到天亮，不会在下一时刻回退。
+            if (myId) void act({ type: 'steal_cheese', playerId: myId });
           }}
         />
       ) : (

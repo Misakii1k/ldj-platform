@@ -4,6 +4,21 @@ import { describeError } from '../shared-ui/errors.ts';
 import { ChatMessageList } from '../shared-ui/ChatMessageList.tsx';
 import { useDragPanel } from '../shared-ui/useDragPanel.ts';
 
+/** 悬浮聊天按钮尺寸回退值（CSS min-width/min-height，运行时以 getBoundingClientRect 实测为准） */
+const CHAT_BTN_FALLBACK_SIZE = { width: 94, height: 48 };
+/** 拖拽/贴边时按钮与视口边缘的最小间距 */
+const CHAT_BTN_EDGE_MARGIN = 8;
+
+/** 贴边吸附：水平方向吸附到最近的左/右边缘，垂直方向仅夹取在视口内。输入相同返回相同结果。 */
+function snapChatBtn(pos: { x: number; y: number }, size: { width: number; height: number }): { x: number; y: number } {
+  const centerX = pos.x + size.width / 2;
+  const x = centerX < window.innerWidth / 2
+    ? CHAT_BTN_EDGE_MARGIN
+    : window.innerWidth - size.width - CHAT_BTN_EDGE_MARGIN;
+  const y = Math.max(CHAT_BTN_EDGE_MARGIN, Math.min(window.innerHeight - size.height - CHAT_BTN_EDGE_MARGIN, pos.y));
+  return { x, y };
+}
+
 export function GameChatDrawer() {
   const { state, me, send } = useConnection();
   const [open, setOpen] = useState(false);
@@ -62,7 +77,10 @@ export function GameChatDrawer() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [open]);
 
-  // 聊天按钮拖拽位置支持与持久化
+  // 聊天按钮拖拽位置支持与持久化（松手自动吸附贴边）
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const [snapping, setSnapping] = useState(false);
+  const dragMovedRef = useRef(false);
   const [btnPos, setBtnPos] = useState<{ x: number; y: number } | null>(() => {
     try {
       const saved = localStorage.getItem('ldj_chat_btn_pos');
@@ -83,6 +101,8 @@ export function GameChatDrawer() {
     startY: number;
     initLeft: number;
     initTop: number;
+    lastX: number;
+    lastY: number;
     hasDragged: boolean;
   } | null>(null);
 
@@ -90,11 +110,10 @@ export function GameChatDrawer() {
     const clampSavedPos = () => {
       setBtnPos((prev) => {
         if (!prev) return prev;
-        const btnSize = 56;
-        const next = {
-          x: Math.max(8, Math.min(window.innerWidth - btnSize - 8, prev.x)),
-          y: Math.max(8, Math.min(window.innerHeight - btnSize - 8, prev.y)),
-        };
+        const rect = triggerRef.current?.getBoundingClientRect();
+        const size = rect ? { width: rect.width, height: rect.height } : CHAT_BTN_FALLBACK_SIZE;
+        // 视口变化（旋转/缩放）后同样按贴边规则归位
+        const next = snapChatBtn(prev, size);
         if (next.x === prev.x && next.y === prev.y) return prev;
         try {
           localStorage.setItem('ldj_chat_btn_pos', JSON.stringify(next));
@@ -116,11 +135,15 @@ export function GameChatDrawer() {
   const handleBtnPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     const btn = e.currentTarget;
     const rect = btn.getBoundingClientRect();
+    setSnapping(false); // 重新拖拽时关闭吸附过渡，保证跟手
+    dragMovedRef.current = false;
     btnDragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
       initLeft: rect.left,
       initTop: rect.top,
+      lastX: rect.left,
+      lastY: rect.top,
       hasDragged: false,
     };
 
@@ -130,18 +153,26 @@ export function GameChatDrawer() {
       const dy = moveEvent.clientY - btnDragRef.current.startY;
       if (Math.hypot(dx, dy) > 4) {
         btnDragRef.current.hasDragged = true;
+        dragMovedRef.current = true;
       }
       if (btnDragRef.current.hasDragged) {
-        const nextX = Math.max(8, Math.min(window.innerWidth - rect.width - 8, btnDragRef.current.initLeft + dx));
-        const nextY = Math.max(8, Math.min(window.innerHeight - rect.height - 8, btnDragRef.current.initTop + dy));
+        const nextX = Math.max(CHAT_BTN_EDGE_MARGIN, Math.min(window.innerWidth - rect.width - CHAT_BTN_EDGE_MARGIN, btnDragRef.current.initLeft + dx));
+        const nextY = Math.max(CHAT_BTN_EDGE_MARGIN, Math.min(window.innerHeight - rect.height - CHAT_BTN_EDGE_MARGIN, btnDragRef.current.initTop + dy));
+        btnDragRef.current.lastX = nextX;
+        btnDragRef.current.lastY = nextY;
         setBtnPos({ x: nextX, y: nextY });
       }
     };
 
     const handlePointerUp = () => {
-      if (btnDragRef.current?.hasDragged && btnPos) {
+      const drag = btnDragRef.current;
+      if (drag?.hasDragged) {
+        // 松手自动吸附贴边：水平吸到最近左/右边缘，垂直留在夹取位置并持久化
+        const snapped = snapChatBtn({ x: drag.lastX, y: drag.lastY }, { width: rect.width, height: rect.height });
+        setBtnPos(snapped);
+        setSnapping(true);
         try {
-          localStorage.setItem('ldj_chat_btn_pos', JSON.stringify(btnPos));
+          localStorage.setItem('ldj_chat_btn_pos', JSON.stringify(snapped));
         } catch {
           // ignore
         }
@@ -181,11 +212,15 @@ export function GameChatDrawer() {
   return (
     <>
       <button
+        ref={triggerRef}
         type="button"
-        className={`game-chat-trigger ${open ? 'is-open' : ''}`}
+        className={`game-chat-trigger ${snapping ? 'is-snapping' : ''} ${open ? 'is-open' : ''}`}
         onPointerDown={handleBtnPointerDown}
         onClick={() => {
-          if (!btnDragRef.current?.hasDragged) setOpen(true);
+          if (!dragMovedRef.current) setOpen(true);
+        }}
+        onTransitionEnd={(event) => {
+          if (event.propertyName === 'left' || event.propertyName === 'top') setSnapping(false);
         }}
         style={btnPos ? { left: `${btnPos.x}px`, top: `${btnPos.y}px`, right: 'auto', bottom: 'auto', transform: 'none', touchAction: 'none' } : { touchAction: 'none' }}
         aria-label={unreadCount > 0 ? `打开对局聊天，${unreadCount} 条未读消息` : '打开对局聊天'}

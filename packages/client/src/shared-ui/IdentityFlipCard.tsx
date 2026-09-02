@@ -244,6 +244,7 @@ export function IdentityFlipCard({
                 ) : (
                   <span className="tip-disabled">🔒 身份已锁定</span>
                 )}
+                <span className="identity-card-back__note">其他玩家不可翻动</span>
               </div>
             </div>
           </div>

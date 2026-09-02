@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { speakText } from '../../app/tts-settings/ttsManager.ts';
+import { cheeseVoice, hasCue } from './cheeseVoice.ts';
+import { webAudio } from '../../shared-ui/WebAudioManager.ts';
 import type { CheeseThiefPhase } from './types.ts';
 
 interface UseCheeseTTSOptions {
@@ -9,11 +10,10 @@ interface UseCheeseTTSOptions {
   mode: 'standard' | 'simulator';
   isTable: boolean;
   nightHourSeconds?: number;
-}
-
-interface ToneHandle {
-  oscillator: OscillatorNode;
-  gain: GainNode;
+  thiefCaught?: boolean | null;
+  cheeseStolen?: boolean;
+  revealedCat?: string | null;
+  revealedDog?: string | null;
 }
 
 export function useCheeseTTS({
@@ -22,47 +22,19 @@ export function useCheeseTTS({
   currentHour,
   mode,
   isTable,
-  nightHourSeconds = 20,
+  nightHourSeconds = 10,
+  thiefCaught = null,
+  cheeseStolen = true,
+  revealedCat = null,
+  revealedDog = null,
 }: UseCheeseTTSOptions) {
-  const [ttsEnabled, setTtsEnabled] = useState(enabled);
-  const [_voicesLoaded, setVoicesLoaded] = useState(false);
+  const [ttsEnabled, setTtsEnabled] = useState(enabled && !webAudio.isMuted());
   const lastSpokenKeyRef = useRef<string>('');
-  const audioCtxRef = useRef<AudioContext | null>(null);
+  const prevCatRef = useRef<string | null>(null);
+  const prevDogRef = useRef<string | null>(null);
   const countdownTimersRef = useRef<Array<ReturnType<typeof setTimeout>>>([]);
-  const toneHandlesRef = useRef<Set<ToneHandle>>(new Set());
   const mountedRef = useRef(true);
-  const [visibilityRevision, setVisibilityRevision] = useState(0);
-
-  const cancelSpeech = useCallback(() => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
-  }, []);
-
-  const clearToneHandles = useCallback(() => {
-    const ctx = audioCtxRef.current;
-    const now = ctx?.currentTime ?? 0;
-    for (const { oscillator, gain } of toneHandlesRef.current) {
-      try {
-        gain.gain.cancelScheduledValues(now);
-        gain.gain.setValueAtTime(0.0001, now);
-      } catch (error) {
-        void error;
-      }
-      try {
-        oscillator.stop();
-      } catch (error) {
-        void error;
-      }
-      try {
-        oscillator.disconnect();
-        gain.disconnect();
-      } catch (error) {
-        void error;
-      }
-    }
-    toneHandlesRef.current.clear();
-  }, []);
+  const runIdRef = useRef(0);
 
   // 清除未完成的倒计时
   const clearTimers = useCallback(() => {
@@ -70,8 +42,7 @@ export function useCheeseTTS({
       clearTimeout(id);
     }
     countdownTimersRef.current = [];
-    clearToneHandles();
-  }, [clearToneHandles]);
+  }, []);
 
   const scheduleTimer = useCallback((callback: () => void, delayMs: number) => {
     if (typeof window === 'undefined') return;
@@ -82,207 +53,110 @@ export function useCheeseTTS({
     countdownTimersRef.current.push(timerId);
   }, []);
 
-  // 初始化 Web Audio 上下文
-  const getAudioContext = useCallback(() => {
-    if (!mountedRef.current || typeof window === 'undefined') return null;
-    if (!audioCtxRef.current) {
-      const AudioCtx =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (AudioCtx) {
-        audioCtxRef.current = new AudioCtx();
-      }
-    }
-    if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
-      void audioCtxRef.current.resume();
-    }
-    return audioCtxRef.current;
-  }, []);
-
-  // 合成提示音
-  const playTone = useCallback(
-    (freq: number, type: OscillatorType, duration: number, gainVal = 0.2) => {
-      if (!ttsEnabled) return;
-      try {
-        const ctx = getAudioContext();
-        if (!ctx) return;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const handle = { oscillator: osc, gain };
-        toneHandlesRef.current.add(handle);
-        const release = () => {
-          toneHandlesRef.current.delete(handle);
-          try {
-            osc.disconnect();
-            gain.disconnect();
-          } catch (error) {
-            void error;
-          }
-        };
-        osc.addEventListener('ended', release, { once: true });
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, ctx.currentTime);
-        gain.gain.setValueAtTime(gainVal, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + duration);
-      } catch {
-        // Ignore audio errors
-      }
-    },
-    [getAudioContext, ttsEnabled]
-  );
-
-  const playNightGong = useCallback(() => {
-    playTone(220, 'sine', 1.8, 0.35);
-    scheduleTimer(() => playTone(110, 'triangle', 2.2, 0.25), 100);
-  }, [playTone, scheduleTimer]);
-
-  const playDawnAlarm = useCallback(() => {
-    playTone(587.33, 'triangle', 0.4, 0.3);
-    scheduleTimer(() => playTone(880, 'sine', 0.6, 0.35), 200);
-    scheduleTimer(() => playTone(1174.66, 'sine', 0.8, 0.4), 400);
-  }, [playTone, scheduleTimer]);
-
-  const playTick = useCallback(() => {
-    playTone(800, 'sine', 0.08, 0.18);
-  }, [playTone]);
-
-  // 语音播报函数（使用用户在设置中选择的 TTS 引擎）
-  const speak = useCallback(
-    (text: string, interrupt = true) => {
-      if (!ttsEnabled || !mountedRef.current) return;
-      void speakText(text, undefined, interrupt);
-    },
-    [ttsEnabled]
-  );
-
+  // 同步静音与卸载监听
   useEffect(() => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    const handleVoicesChanged = () => setVoicesLoaded(true);
-    window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
+    mountedRef.current = true;
     return () => {
-      window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+      mountedRef.current = false;
       clearTimers();
+      cheeseVoice.stopAll();
     };
   }, [clearTimers]);
 
+  // 身份卡揭晓监听
   useEffect(() => {
-    mountedRef.current = true;
-    if (typeof document === 'undefined') return;
+    if (!ttsEnabled || webAudio.isMuted()) return;
+    if (revealedCat && revealedCat !== prevCatRef.current) {
+      prevCatRef.current = revealedCat;
+      cheeseVoice.interrupt();
+      void cheeseVoice.playCue('identity_cat');
+    }
+  }, [revealedCat, ttsEnabled]);
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        clearTimers();
-        cancelSpeech();
-        return;
-      }
-      lastSpokenKeyRef.current = '';
-      setVisibilityRevision((revision) => revision + 1);
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      mountedRef.current = false;
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      clearTimers();
-      cancelSpeech();
-      const ctx = audioCtxRef.current;
-      audioCtxRef.current = null;
-      if (ctx) void ctx.close().catch(() => {});
-    };
-  }, [cancelSpeech, clearTimers]);
-
-  // 根据阶段和时刻自动播报主持词与倒计时
   useEffect(() => {
-    // 每次阶段或时刻变更，立即终止过往未完成的发音与倒计时，防止排队积压
-    clearTimers();
-    cancelSpeech();
-    if (!ttsEnabled || (mode === 'simulator' && !isTable)) return;
+    if (!ttsEnabled || webAudio.isMuted()) return;
+    if (revealedDog && revealedDog !== prevDogRef.current) {
+      prevDogRef.current = revealedDog;
+      cheeseVoice.interrupt();
+      void cheeseVoice.playCue('identity_dog');
+    }
+  }, [revealedDog, ttsEnabled]);
+
+  // 根据阶段和时刻自动播报真实主持词与倒计时
+  useEffect(() => {
+    if (!ttsEnabled || webAudio.isMuted() || (mode === 'simulator' && !isTable)) return;
     if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
 
     const key = `${phase}-${currentHour}`;
+    // 只有当阶段或时刻确实改变时才打断旧语音并启动新播报，避免重渲染时误伤正在播放的语音
     if (lastSpokenKeyRef.current === key) return;
     lastSpokenKeyRef.current = key;
 
+    clearTimers();
+    cheeseVoice.interrupt();
+    runIdRef.current += 1;
+    const currentRunId = runIdRef.current;
+    const isActive = () => mountedRef.current && runIdRef.current === currentRunId;
+
     if (phase === 'night') {
-      if (currentHour === 0 || currentHour === 1) {
-        playNightGong();
-        speak('天黑请闭眼。夜间 1 点，1 点玩家请睁眼。', true);
-      } else {
-        playNightGong();
-        speak(`夜间 ${currentHour} 点，${currentHour} 点玩家请睁眼。`, true);
-      }
-
-      // 最后 5 秒倒计时播报（使用 interrupt=true 强行对齐秒拍，彻底消除队列滞后积压）
       const hourDuration = Math.max(5, nightHourSeconds);
-      const countdownStartMs = Math.max(0, (hourDuration - 5) * 1000);
 
-      scheduleTimer(() => {
-        playTick();
-        speak('5', true);
-      }, countdownStartMs);
+      const runNightHour = async () => {
+        if (currentHour === 0) {
+          // 开场准备阶段：播放「20_开场_游戏即将开始」，播放完毕后紧接着播放「11_读秒_5秒」
+          await cheeseVoice.playCue('game_start_intro');
+          if (!isActive()) return;
+          await cheeseVoice.playCue('countdown_5');
+        } else if (currentHour === 1) {
+          // 倒计时结束正式切入 1 点：播报「01_开场_天黑请闭眼」与「02_一点叫醒」
+          await cheeseVoice.playCue('night_start');
+          if (!isActive()) return;
+          await cheeseVoice.playCue('wake_1');
+          if (!isActive()) return;
 
-      scheduleTimer(() => {
-        playTick();
-        speak('4', true);
-      }, countdownStartMs + 1000);
+          // 1点时刻最后 5 秒播报「11_读秒_5秒」
+          const countdownStartMs = Math.max(0, (hourDuration - 5) * 1000);
+          scheduleTimer(() => {
+            if (isActive()) {
+              void cheeseVoice.playCue('countdown_5');
+            }
+          }, countdownStartMs);
+        } else if (currentHour >= 2 && currentHour <= 6) {
+          await cheeseVoice.playCue(`wake_${currentHour}`);
+          if (!isActive()) return;
 
-      scheduleTimer(() => {
-        playTick();
-        speak('3', true);
-      }, countdownStartMs + 2000);
+          // 倒计时最后 5 秒播报「11_读秒_5秒」
+          const countdownStartMs = Math.max(0, (hourDuration - 5) * 1000);
+          scheduleTimer(() => {
+            if (isActive()) {
+              void cheeseVoice.playCue('countdown_5');
+            }
+          }, countdownStartMs);
+        }
+      };
 
-      scheduleTimer(() => {
-        playTick();
-        speak('2', true);
-      }, countdownStartMs + 3000);
-
-      scheduleTimer(() => {
-        playNightGong();
-        speak('1，请闭眼', true);
-      }, countdownStartMs + 4000);
+      void runNightHour();
     } else if (phase === 'accomplice_select') {
-      playNightGong();
-      speak('大盗请在暗中确认共犯。', true);
+      // 08_共犯指定.wav 含有完整的大盗指定与闭眼主持词，完整播放不被截断
+      const runAccomplice = async () => {
+        await cheeseVoice.playCue('accomplice_select');
+      };
 
-      // 共犯选择 15 秒专属倒计时
-      const selectDuration = 15;
-      const countdownStartMs = Math.max(0, (selectDuration - 5) * 1000);
-
-      scheduleTimer(() => {
-        playTick();
-        speak('5', true);
-      }, countdownStartMs);
-
-      scheduleTimer(() => {
-        playTick();
-        speak('4', true);
-      }, countdownStartMs + 1000);
-
-      scheduleTimer(() => {
-        playTick();
-        speak('3', true);
-      }, countdownStartMs + 2000);
-
-      scheduleTimer(() => {
-        playTick();
-        speak('2', true);
-      }, countdownStartMs + 3000);
-
-      scheduleTimer(() => {
-        playNightGong();
-        speak('1，请闭眼', true);
-      }, countdownStartMs + 4000);
+      void runAccomplice();
     } else if (phase === 'dawn') {
-      playDawnAlarm();
-      speak('天亮了，所有人请睁眼！桌上的奶酪不见了！请大家自由讨论找出大盗！', true);
+      // 天亮了，所有人请睁眼（按用户要求：不播放“白天讨论”音频）
+      void cheeseVoice.playCue('dawn');
     } else if (phase === 'vote') {
-      speak('讨论结束，请大家秘密指认你怀疑的奶酪大盗！', true);
+      void cheeseVoice.playCue('vote_start');
     } else if (phase === 'game_over') {
-      speak('投票结束，现在揭晓所有人的骰子与真相！', true);
+      // 终局揭晓
+      if (!cheeseStolen) {
+        void cheeseVoice.playCue('game_over_peace');
+      } else if (thiefCaught === true) {
+        void cheeseVoice.playCue('game_over_village');
+      } else if (thiefCaught === false) {
+        void cheeseVoice.playCue('game_over_thief');
+      }
     }
 
     return () => clearTimers();
@@ -293,36 +167,30 @@ export function useCheeseTTS({
     isTable,
     ttsEnabled,
     nightHourSeconds,
-    speak,
-    playNightGong,
-    playDawnAlarm,
-    playTick,
+    thiefCaught,
+    cheeseStolen,
     clearTimers,
-    cancelSpeech,
     scheduleTimer,
-    visibilityRevision,
   ]);
 
   const toggleTts = useCallback(() => {
     setTtsEnabled((prev) => {
       const next = !prev;
       if (!next) {
-        cancelSpeech();
         clearTimers();
+        cheeseVoice.stopAll();
       } else {
         lastSpokenKeyRef.current = '';
       }
       return next;
     });
-  }, [cancelSpeech, clearTimers]);
+  }, [clearTimers]);
 
   return {
     ttsEnabled,
     toggleTts,
-    speak,
-    playTone,
-    playDawnAlarm,
-    playNightGong,
-    playTick,
   };
 }
+
+// 导出别名以便向后兼容
+export const useCheeseVoice = useCheeseTTS;

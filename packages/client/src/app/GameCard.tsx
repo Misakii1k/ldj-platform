@@ -20,7 +20,6 @@ function gameMark(gameId: string): string {
     case 'night-testimony': return '证';
     case 'bell-clash': return '铃';
     case 'echo-judge': return '伪';
-    case 'party-sandbox': return '创';
     default: return '玩';
   }
 }

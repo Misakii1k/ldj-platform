@@ -59,7 +59,6 @@ export function WordRevealView({ view }: Props) {
               roleName={isBlank ? '白板' : myWord}
               roleSubtitle={isBlank ? '特殊身份 · 白板' : '秘密词条'}
               roleCamp={isBlank ? 'special' : 'neutral'}
-              secretWord={!isBlank && myWord ? myWord : undefined}
               secretHints={
                 isBlank
                   ? ['你没有词条！请仔细聆听其他人的描述，推测出词条并伪装自己。']

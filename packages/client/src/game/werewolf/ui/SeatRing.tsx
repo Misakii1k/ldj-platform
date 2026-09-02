@@ -50,7 +50,19 @@ function horseshoePosition(index: number, count: number): CSSProperties {
   return { left: '12%', top: `${(70 - span * k).toFixed(2)}%` };
 }
 
-export function SeatChip({ seat, style }: { seat: WerewolfSeatModel; style?: CSSProperties }) {
+export function SeatChip({
+  seat,
+  style,
+  onSelectTarget,
+  isTargetSelected = false,
+}: {
+  seat: WerewolfSeatModel;
+  style?: CSSProperties;
+  /** 该席位有点选动作时回调（点击头像后就地选择目标），参数为席位与卡片位置。 */
+  onSelectTarget?: (seat: WerewolfSeatModel, rect: DOMRect) => void;
+  isTargetSelected?: boolean;
+}) {
+  const targetable = onSelectTarget !== undefined && seat.targetActions.length > 0;
   return (
     <li
       key={seat.playerId}
@@ -60,9 +72,20 @@ export function SeatChip({ seat, style }: { seat: WerewolfSeatModel; style?: CSS
         seat.isSelf ? 'is-self' : '',
         seat.isSpeaking ? 'is-speaking' : '',
         seat.isWolfTeammate ? 'is-ally' : '',
+        targetable ? 'is-targetable' : '',
+        targetable && isTargetSelected ? 'is-target-selected' : '',
       ].filter(Boolean).join(' ')}
       style={style}
       aria-current={seat.isSpeaking ? 'step' : undefined}
+      onClick={targetable ? (event) => onSelectTarget(seat, event.currentTarget.getBoundingClientRect()) : undefined}
+      onKeyDown={targetable ? (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onSelectTarget(seat, event.currentTarget.getBoundingClientRect());
+        }
+      } : undefined}
+      role={targetable ? 'button' : undefined}
+      tabIndex={targetable ? 0 : undefined}
     >
       <div className="seat-chip__head">
         <div className="seat-chip__head-left">
@@ -108,7 +131,17 @@ export function SeatChip({ seat, style }: { seat: WerewolfSeatModel; style?: CSS
   );
 }
 
-export function SeatRing({ seats, mood, className = '' }: SeatRingProps & { className?: string }) {
+export function SeatRing({
+  seats,
+  mood,
+  className = '',
+  onSelectTarget,
+  selectedPlayerId,
+}: SeatRingProps & {
+  className?: string;
+  onSelectTarget?: (seat: WerewolfSeatModel, rect: DOMRect) => void;
+  selectedPlayerId?: string | null;
+}) {
   const count = seats.length;
   const dense = count >= DENSE_MIN_COUNT;
   return (
@@ -120,7 +153,15 @@ export function SeatRing({ seats, mood, className = '' }: SeatRingProps & { clas
       <ol className="seat-ring__list">
         {seats.map((seat, index) => {
           const style = horseshoePosition(index, count);
-          return <SeatChip key={seat.playerId} seat={seat} style={style} />;
+          return (
+            <SeatChip
+              key={seat.playerId}
+              seat={seat}
+              style={style}
+              onSelectTarget={onSelectTarget}
+              isTargetSelected={selectedPlayerId === seat.playerId}
+            />
+          );
         })}
       </ol>
     </section>

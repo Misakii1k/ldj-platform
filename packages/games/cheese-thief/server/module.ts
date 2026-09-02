@@ -50,6 +50,7 @@ const PLAYER_ACTIONS = new Set<string>([
   'reveal_dog',
   'cast_vote',
   'cast_abstention',
+  'steal_cheese',
 ]);
 
 function playerMatches(actor: Actor, action: CheeseThiefAction): boolean {

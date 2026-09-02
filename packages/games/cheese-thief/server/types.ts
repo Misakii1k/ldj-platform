@@ -38,6 +38,8 @@ export interface CheeseThiefConfig {
   rulesetId?: 'cheese_thief_classic_v1';
   /** 对局模式：standard 纯手机标准模式，simulator 桌面中央+手牌双端模拟模式，默认 standard */
   mode?: 'standard' | 'simulator';
+  /** 开场确认骰子与身份时长（秒），默认 10 */
+  roleRevealSeconds?: number;
   /** 每个夜间时刻的展示时长（秒），默认 10 */
   nightHourSeconds?: number;
   /** 天亮讨论时长（秒），默认 120 */
@@ -58,6 +60,7 @@ export interface CheeseThiefConfig {
 export interface ResolvedCheeseThiefConfig {
   rulesetId?: 'cheese_thief_classic_v1';
   mode: 'standard' | 'simulator';
+  roleRevealSeconds: number;
   nightHourSeconds: number;
   accompliceSelectSeconds: number;
   discussionSeconds: number;
@@ -125,6 +128,7 @@ export type CheeseThiefAction =
   | { type: 'choose_hour'; playerId: string; hour: number }
   | { type: 'resolve_hour_choice' } // 系统：4 人局超时，未选择者取首候选
   | { type: 'advance_night'; hour: number }
+  | { type: 'steal_cheese'; playerId: string }
   | { type: 'peek_die'; playerId: string; targetPlayerId: string }
   | { type: 'skip_peek'; playerId: string }
   | { type: 'select_accomplice'; playerId: string; accompliceIds: string[] }
@@ -173,6 +177,8 @@ export interface CheeseThiefPublicView {
   schemaVersion: 1;
   phase: CheeseThiefPhase;
   players: string[];
+  /** 奶酪是否已被取走（夜间公开：桌台与各端可见；大盗身份仍保密） */
+  cheeseStolen: boolean;
   mode: 'standard' | 'simulator';
   /** night 阶段当前时刻；其余阶段为 0 */
   currentHour: number;

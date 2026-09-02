@@ -552,12 +552,15 @@ test('奶酪大盗 bot 冒烟扩展：bot 参与 peek/共犯/猫狗+系统推进
     if (!r.ok) throw new Error(r.message);
     s = r.nextState;
   }
-  // 时刻 3：c 独醒盗取
+  // 时刻 3：c 独醒盗取（桌面点击 steal_cheese；未点击时由时刻结束兜底）
   for (let hour = 2; hour <= 3; hour += 1) {
     const r = reduceCheeseThiefState(s, { type: 'advance_night', hour }, { now: NOW, random: ctx.random });
     if (!r.ok) throw new Error(r.message);
     s = r.nextState;
   }
+  const stolen = reduceCheeseThiefState(s, { type: 'steal_cheese', playerId: 'c' }, { now: NOW, random: ctx.random });
+  if (!stolen.ok) throw new Error(stolen.message);
+  s = stolen.nextState;
   assert.equal(s.thiefId, 'c');
   // 时刻 5：d 独醒可偷看 → 让 bot 决定
   for (let hour = 4; hour <= 5; hour += 1) {

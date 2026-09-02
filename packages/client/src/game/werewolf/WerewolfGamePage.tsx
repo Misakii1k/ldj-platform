@@ -1,6 +1,5 @@
 /**
  * 狼人杀页：月相审判桌。
- * 只消费服务端权威视角，动作原样走 game_action；不在客户端推进阶段或判定胜负。
  */
 import { useConnection } from '../../connection/useConnection.ts';
 import { useGameAction } from '../useGameAction.ts';
@@ -28,6 +27,7 @@ export function WerewolfGamePage({ view: rawView }: { view: unknown }) {
   }
 
   const model = buildWerewolfPresentation(view, state.room?.members ?? [], state.chat);
+
   return (
     <WerewolfStage
       model={model}

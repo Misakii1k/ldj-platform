@@ -94,6 +94,7 @@ export function TabletopOvalShell({
   const [muted, setMuted] = useState(webAudio.isMuted());
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [confirmDialogState, setConfirmDialogState] = useState<'leave' | 'dissolve' | null>(null);
+  const [landscapeTipDismissed, setLandscapeTipDismissed] = useState(false);
   const [busyAction, setBusyAction] = useState(false);
   const { level: motionLevel } = useMotion();
   const landscapeShort = useLandscapeShort();
@@ -298,11 +299,16 @@ export function TabletopOvalShell({
     }
   }, [orientation]);
 
+  /** 竖屏时值得建议横屏的游戏：显式推荐 + 已知宽幅游戏（与默认横屏判断一致） */
+  const suggestLandscape = Boolean(recommendLandscape || gameId === 'bell-clash' || gameId === 'landlord');
+
   const toggleViewMode = () => {
     setViewMode((prev) => (prev === 'player' ? 'table' : 'player'));
   };
 
   const toggleOrientation = () => {
+    // 切到竖屏后横幅需要出现（斗地主等强制横屏默认值下，这是横幅唯一的展示时机）；
+    // 是否关闭由用户点 ✕ 决定
     setOrientation((prev) => (prev === 'portrait' ? 'landscape' : 'portrait'));
   };
 
@@ -328,8 +334,8 @@ export function TabletopOvalShell({
           <div className="tabletop-header__actions">
             {topRightControls}
 
-            {/* 宽幅推荐小贴士 */}
-            {(recommendLandscape || gameId === 'party-sandbox' || gameId === 'bell-clash' || gameId === 'landlord') && orientation === 'portrait' && (
+            {/* 宽幅推荐小贴士（横幅关闭后的常驻紧凑入口，避免与横幅重复） */}
+            {suggestLandscape && orientation === 'portrait' && landscapeTipDismissed && (
               <button
                 type="button"
                 className="tabletop-sound-btn tabletop-recommend-chip"
@@ -362,6 +368,26 @@ export function TabletopOvalShell({
           </div>
         )}
       </header>
+
+      {/* 竖屏横屏建议横幅：推荐横屏的游戏在竖屏下提示一次，可一键切换或关闭 */}
+      {suggestLandscape && orientation === 'portrait' && !landscapeTipDismissed && (
+        <div className="tabletop-landscape-tip" role="status">
+          <span className="tabletop-landscape-tip__icon" aria-hidden="true">📐</span>
+          <span className="tabletop-landscape-tip__text">{title}建议横屏游玩，桌面视野更宽敞</span>
+          <button type="button" className="tabletop-landscape-tip__switch" onClick={toggleOrientation}>
+            切换为横屏
+          </button>
+          <button
+            type="button"
+            className="tabletop-landscape-tip__close"
+            onClick={() => setLandscapeTipDismissed(true)}
+            aria-label="关闭横屏建议"
+            title="关闭横屏建议"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* 沉浸式游戏舞台全景区域（无桌子边界限制） */}
       <main className="tabletop-arena-container">

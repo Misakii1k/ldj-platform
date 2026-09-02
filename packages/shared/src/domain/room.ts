@@ -23,6 +23,13 @@ export const SESSION_STATUSES = [
 ] as const;
 export type SessionStatus = (typeof SESSION_STATUSES)[number];
 
+/** 房间配置公开领域模型 */
+export interface RoomConfiguration {
+  spectatorsAllowed?: boolean;
+  reservationMinutes?: number;
+  gameConfig?: Record<string, unknown>;
+}
+
 /** 房间成员的公开视图（不含任何凭证） */
 export interface RoomMemberView {
   playerId: string;

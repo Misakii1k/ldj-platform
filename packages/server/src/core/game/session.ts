@@ -555,10 +555,16 @@ export function startGame(tx: TxContext, roomId: string, gameConfig: unknown): S
     throw new CommandError('INTERNAL_ERROR', `规则集模块不可用：${moduleId}/${rulesetId}`);
   }
   const moduleConfig = (resolvedConfig as Record<string, unknown> | null | undefined) ?? {};
-  const { rulesetId: _platformRuleset, ...restConfig } = moduleConfig;
+  const roomRow = db.prepare('SELECT config_json FROM rooms WHERE id = ?').get(roomId) as { config_json: string } | undefined;
+  let roomConfigObj: Record<string, unknown> = {};
+  try {
+    roomConfigObj = JSON.parse(roomRow?.config_json ?? '{}');
+  } catch {
+    roomConfigObj = {};
+  }
 
   // 开局重新校验连接状态（§5.9/D-6）：只有在线玩家参与本局
-  const players = (
+  const allConnectedPlayers = (
     db
       .prepare(
         `SELECT player_id, ready FROM room_members
@@ -567,10 +573,11 @@ export function startGame(tx: TxContext, roomId: string, gameConfig: unknown): S
       )
       .all(roomId) as { player_id: string; ready: number }[]
   ).map((r) => r.player_id);
-  if (players.length < module.manifest.minPlayers || players.length > module.manifest.maxPlayers) {
+
+  if (allConnectedPlayers.length < module.manifest.minPlayers || allConnectedPlayers.length > module.manifest.maxPlayers) {
     throw new CommandError(
       'ACTION_NOT_ALLOWED',
-      `在线玩家需为 ${module.manifest.minPlayers}–${module.manifest.maxPlayers} 人（当前 ${players.length}）`,
+      `在线玩家需为 ${module.manifest.minPlayers}–${module.manifest.maxPlayers} 人（当前 ${allConnectedPlayers.length}）`,
     );
   }
   // 全员就绪校验：未准备的在线玩家不能开局
@@ -586,6 +593,11 @@ export function startGame(tx: TxContext, roomId: string, gameConfig: unknown): S
     throw new CommandError('ACTION_NOT_ALLOWED', `还有 ${notReadyCount} 名玩家未准备`);
   }
 
+  const rawMergedConfig: Record<string, unknown> = {
+    ...moduleConfig,
+  };
+  const { rulesetId: _platformRuleset, ...restConfig } = rawMergedConfig;
+
   let config: unknown;
   try {
     config = module.parseConfig(restConfig);
@@ -598,7 +610,7 @@ export function startGame(tx: TxContext, roomId: string, gameConfig: unknown): S
   const sessionId = randomUUID();
   const seed = randomUUID();
   const random = createSeededRandom(seed);
-  const initialState = module.createInitialState({ now, random }, players, config);
+  const initialState = module.createInitialState({ now, random }, allConnectedPlayers, config);
   if (isVersionedGameModule(module)) {
     module.assertInvariants(module.parseState(initialState));
   }
@@ -646,7 +658,7 @@ export function startGame(tx: TxContext, roomId: string, gameConfig: unknown): S
     null,
   );
 
-  return { sessionId, moduleId, playerIds: players, begin };
+  return { sessionId, moduleId, playerIds: allConnectedPlayers, begin };
 }
 
 /**
@@ -709,8 +721,8 @@ export function autoStartGame(
   roomId: string,
 ): StartGameOutcome | null {
   const { db, now } = tx;
-  const room = db.prepare('SELECT status, game_id FROM rooms WHERE id = ?').get(roomId) as
-    | { status: string; game_id: string | null }
+  const room = db.prepare('SELECT status, game_id, config_json FROM rooms WHERE id = ?').get(roomId) as
+    | { status: string; game_id: string | null; config_json: string }
     | undefined;
   if (!room) throw new CommandError('ROOM_NOT_FOUND');
   if (room.status !== 'LOBBY' && room.status !== 'POST_GAME') return null;
@@ -718,6 +730,13 @@ export function autoStartGame(
   const moduleId = room.game_id ?? DEFAULT_GAME_ID;
   const module = requireModule(moduleId);
 
+  let roomConfigObj: Record<string, unknown> = {};
+  try {
+    roomConfigObj = JSON.parse(room.config_json);
+  } catch {
+    roomConfigObj = {};
+  }
+  const config = parseRoomGameConfig(db, roomId);
   // 幂等复检：在线玩家数达标且全员就绪，否则放弃
   const players = (
     db
@@ -728,6 +747,7 @@ export function autoStartGame(
       )
       .all(roomId) as { player_id: string; ready: number }[]
   ).map((r) => r.player_id);
+
   if (players.length < module.manifest.minPlayers || players.length > module.manifest.maxPlayers) {
     return null;
   }
@@ -744,7 +764,6 @@ export function autoStartGame(
   if (room.status === 'POST_GAME') {
     db.prepare(`UPDATE rooms SET status = 'LOBBY', updated_at = ? WHERE id = ?`).run(now, roomId);
   }
-  const config = parseRoomGameConfig(db, roomId);
   return startGame(tx, roomId, config);
 }
 

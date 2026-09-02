@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-27T21:16:38.367Z",
+  "generatedAt": "2026-08-30T11:29:46.114Z",
   "strictTouch": false,
   "games": [
     {
@@ -12,7 +12,6 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-recommend-chip \"📐横屏\" 34x44",
             "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 34x44"
           ],
           "primaryActions": [
@@ -28,7 +27,6 @@
           "clientWidth": 360,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-recommend-chip \"📐横屏\" 34x44",
             "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 34x44"
           ],
           "primaryActions": [
@@ -44,7 +42,6 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-recommend-chip \"📐横屏\" 34x44",
             "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 34x44"
           ],
           "primaryActions": [
@@ -60,7 +57,6 @@
           "clientWidth": 412,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-recommend-chip \"📐横屏\" 34x44",
             "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 34x44"
           ],
           "primaryActions": [
@@ -1057,100 +1053,6 @@
           "clientWidth": 412,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 34x44"
-          ],
-          "primaryActions": [],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "844x390",
-          "overflowX": 0,
-          "scrollWidth": 844,
-          "clientWidth": 844,
-          "offenders": [],
-          "smallTargets": [],
-          "primaryActions": [],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "768x1024",
-          "overflowX": 0,
-          "scrollWidth": 768,
-          "clientWidth": 768,
-          "offenders": [],
-          "smallTargets": [],
-          "primaryActions": [],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "1280x800",
-          "overflowX": 0,
-          "scrollWidth": 1280,
-          "clientWidth": 1280,
-          "offenders": [],
-          "smallTargets": [],
-          "primaryActions": [],
-          "seatCollisions": [],
-          "bottomFit": []
-        }
-      ]
-    },
-    {
-      "game": "party-sandbox 创意工坊",
-      "entries": [
-        {
-          "viewport": "320x568",
-          "overflowX": 0,
-          "scrollWidth": 320,
-          "clientWidth": 320,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-recommend-chip \"📐横屏\" 34x44",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 34x44"
-          ],
-          "primaryActions": [],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "360x800",
-          "overflowX": 0,
-          "scrollWidth": 360,
-          "clientWidth": 360,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-recommend-chip \"📐横屏\" 34x44",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 34x44"
-          ],
-          "primaryActions": [],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "390x844",
-          "overflowX": 0,
-          "scrollWidth": 390,
-          "clientWidth": 390,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-recommend-chip \"📐横屏\" 34x44",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 34x44"
-          ],
-          "primaryActions": [],
-          "seatCollisions": [],
-          "bottomFit": []
-        },
-        {
-          "viewport": "412x915",
-          "overflowX": 0,
-          "scrollWidth": 412,
-          "clientWidth": 412,
-          "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-recommend-chip \"📐横屏\" 34x44",
             "button.tabletop-sound-btn.tabletop-menu-btn \"⚙️菜单\" 34x44"
           ],
           "primaryActions": [],

@@ -433,8 +433,42 @@ class WebAudioEngine {
         osc.connect(gain);
         gain.connect(ctx.destination);
 
-        osc.start(ctx.currentTime + i * 0.07);
-        osc.stop(ctx.currentTime + i * 0.07 + 0.06);
+      osc.start(ctx.currentTime + i * 0.07);
+      osc.stop(ctx.currentTime + i * 0.07 + 0.06);
+    }
+    } catch {
+      // Audio playback blocked or not supported
+    }
+  }
+
+  /** 首次用户手势时调用：解锁 AudioContext，保证后续"轮到你"提示音在移动端可发声 */
+  public unlock() {
+    this.getContext();
+  }
+
+  /** 轮到你行动：清脆两连升调叮咚（模拟端玩家不必盯屏，听声+震动即知轮到自己） */
+  public playTurnAlert() {
+    try {
+      if (this.muted) return;
+      const ctx = this.getContext();
+      if (!ctx) return;
+
+      for (let i = 0; i < 2; i++) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(987.77, ctx.currentTime + i * 0.14);
+        osc.frequency.exponentialRampToValueAtTime(1318.51, ctx.currentTime + i * 0.14 + 0.06);
+
+        gain.gain.setValueAtTime(this.volume * 0.6, ctx.currentTime + i * 0.14);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.14 + 0.3);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(ctx.currentTime + i * 0.14);
+        osc.stop(ctx.currentTime + i * 0.14 + 0.3);
       }
     } catch {
       // Audio playback blocked or not supported

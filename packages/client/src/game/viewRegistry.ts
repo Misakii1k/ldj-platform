@@ -21,7 +21,6 @@ import { parseBellClashView } from './bell-clash/types.ts';
 import { parseBellClashSimView } from './bell-clash/simTypes.ts';
 import { parseEchoJudgeView } from './echo-judge/types.ts';
 import { parseEchoJudgeSimView } from './echo-judge/simTypes.ts';
-import { parsePartySandboxView } from './party-sandbox/types.ts';
 import type { GameStatePayload } from './types.ts';
 
 interface GameViewParser {
@@ -102,14 +101,10 @@ const REGISTRY: Readonly<Record<string, GameViewParser>> = {
     parsePlayerView: (view) => parseEchoJudgeSimView(view),
     parseSpectatorView: (view) => parseEchoJudgeSimView(view),
   },
-  'party-sandbox:party_sandbox_v1:1': {
-    parsePlayerView: (view) => parsePartySandboxView(view, 'player'),
-    parseSpectatorView: (view) => parsePartySandboxView(view, 'spectator'),
-  },
 };
 
 /** 已迁移到 V2 的游戏：缺失版本化判别符时必须失败关闭，不能静默降级。 */
-const VERSIONED_MODULE_IDS = new Set(['undercover', 'uno', 'durian', 'loveletter', 'cheese-thief', 'goose-relay', 'night-testimony', 'bell-clash', 'echo-judge', 'party-sandbox']);
+const VERSIONED_MODULE_IDS = new Set(['undercover', 'uno', 'durian', 'loveletter', 'cheese-thief', 'goose-relay', 'night-testimony', 'bell-clash', 'echo-judge']);
 
 export type ViewParseResult =
   | { ok: true; view: unknown }

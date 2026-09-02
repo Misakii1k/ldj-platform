@@ -17,6 +17,8 @@ export interface CheeseThiefPublicView {
   schemaVersion: 1;
   phase: CheeseThiefPhase;
   players: string[];
+  /** 夜间亦公开：奶酪是否已被取走（桌台/端上可见，盗贼身份仍保密）。 */
+  cheeseStolen: boolean;
   mode: 'standard' | 'simulator';
   currentHour: number;
   roleCardsEnabled: boolean;
@@ -47,7 +49,7 @@ export interface CheeseThiefPlayerView extends CheeseThiefPublicView {
 }
 
 const PUBLIC_KEYS = [
-  'gameId', 'rulesetId', 'schemaVersion', 'phase', 'players', 'mode', 'currentHour',
+  'gameId', 'rulesetId', 'schemaVersion', 'phase', 'players', 'cheeseStolen', 'mode', 'currentHour',
   'roleCardsEnabled', 'revealedCat', 'revealedDog', 'dogFirstVoter',
   'thiefCaught', 'winners', 'reveal',
 ] as const;
@@ -129,6 +131,7 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): CheeseThiefP
   const phases: CheeseThiefPhase[] = ['hour_choice', 'night', 'accomplice_select', 'dawn', 'vote', 'game_over'];
   if (typeof view.phase !== 'string' || !phases.includes(view.phase as CheeseThiefPhase)) return null;
   if (!isPlayerIds(view.players) || !isHour(view.currentHour)) return null;
+  if (!isBool(view.cheeseStolen)) return null;
   if (view.mode !== 'standard' && view.mode !== 'simulator') return null;
   if (!isBool(view.roleCardsEnabled)) return null;
   if (view.revealedCat !== null && !isPlayerId(view.revealedCat)) return null;
@@ -144,6 +147,7 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): CheeseThiefP
     schemaVersion: 1,
     phase: view.phase as CheeseThiefPhase,
     players: [...view.players],
+    cheeseStolen: view.cheeseStolen as boolean,
     mode: view.mode as 'standard' | 'simulator',
     currentHour: view.currentHour as number,
     roleCardsEnabled: view.roleCardsEnabled as boolean,

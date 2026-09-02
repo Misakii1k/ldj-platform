@@ -153,13 +153,6 @@ const GAME_CASES: GameCase[] = [
     config: {},
     readySelector: '.tabletop-shell, .werewolf-arena, .werewolf-wing, .seat-ring',
   },
-  {
-    id: 'party-sandbox',
-    label: '创意工坊',
-    count: 3,
-    config: { rulesetId: 'party_sandbox_v1' },
-    readySelector: '.tabletop-shell, .sandbox-arena',
-  },
 ];
 
 interface ViewportEntry {

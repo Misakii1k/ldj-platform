@@ -23,9 +23,9 @@ export function VoteLedger({ progress, ledger }: VoteLedgerProps) {
           ) : (
             <ul className="vote-ledger__rows">
               {ledger.rows.map((row) => (
-                <li key={row.name}>
-                  <span>{row.name}</span>
-                  <strong>{row.count} 票</strong>
+                <li key={row.name} className="vote-ledger__row-item">
+                  <span className="vote-ledger__candidate-name">{row.name}</span>
+                  <strong className="vote-ledger__candidate-count">{row.count} 票</strong>
                 </li>
               ))}
             </ul>

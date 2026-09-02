@@ -31,7 +31,6 @@ const GooseRelayGamePage = lazyWithRetry(() => import('./goose-relay/GooseRelayG
 const NightTestimonyGamePage = lazyWithRetry(() => import('./night-testimony/NightTestimonyGamePage.tsx').then((module) => ({ default: module.NightTestimonyGamePage })), 'night-testimony');
 const BellClashGamePage = lazyWithRetry(() => import('./bell-clash/BellClashGamePage.tsx').then((module) => ({ default: module.BellClashGamePage })), 'bell-clash');
 const EchoJudgeGamePage = lazyWithRetry(() => import('./echo-judge/EchoJudgeGamePage.tsx').then((module) => ({ default: module.EchoJudgeGamePage })), 'echo-judge');
-const PartySandboxGamePage = lazyWithRetry(() => import('./party-sandbox/PartySandboxGamePage.tsx').then((module) => ({ default: module.PartySandboxGamePage })), 'party-sandbox');
 const BellClashSimStage = lazyWithRetry(() => import('./bell-clash/BellClashSimStage.tsx').then((module) => ({ default: module.BellClashSimStage })), 'bell-clash-sim');
 const EchoJudgeSimStage = lazyWithRetry(() => import('./echo-judge/EchoJudgeSimStage.tsx').then((module) => ({ default: module.EchoJudgeSimStage })), 'echo-judge-sim');
 const NightTestimonySimStage = lazyWithRetry(() => import('./night-testimony/NightTestimonySimStage.tsx').then((module) => ({ default: module.NightTestimonySimStage })), 'night-testimony-sim');
@@ -356,15 +355,6 @@ export function GamePage() {
       content = isRecord(v) && v.rulesetId === 'echo_judge_sim_v1'
         ? <EchoJudgeSimStage view={v as unknown as import('./echo-judge/simTypes.ts').EchoJudgeSimPlayerView} />
         : <EchoJudgeGamePage view={parsed.view as import('./echo-judge/types.ts').EchoJudgePlayerView} />;
-      break;
-    }
-    case 'party-sandbox': {
-      const parsed = parseGameView(game);
-      if (!parsed.ok) {
-        content = <GameErrorCard title="创意工坊数据格式异常" />;
-        break;
-      }
-      content = <PartySandboxGamePage view={parsed.view as import('./party-sandbox/types.ts').PartySandboxPlayerView} />;
       break;
     }
     default:

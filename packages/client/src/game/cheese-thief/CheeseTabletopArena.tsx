@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { CheeseThiefPlayerView, CheeseThiefPublicView } from './types.ts';
 
 interface RoomMemberInfo {
@@ -24,16 +24,31 @@ export function CheeseTabletopArena({
   ttsEnabled = true,
   onToggleTts,
 }: CheeseTabletopArenaProps) {
-  const [stealTapped, setStealTapped] = useState(false);
+  // 奶酪是否已被取走：一律以服务端权威状态为准。
+  // 一旦偷取成功即保持到天亮，之后任何时刻都不会回退成"未偷走"；
+  // 只有当夜尚未被偷时，点击才是一次真实的偷取尝试（服务端校验当前时刻是否恰有独醒大盗）。
   const isNight = view.phase === 'night';
   const isDawn = view.phase === 'dawn';
   const isVote = view.phase === 'vote';
   const isGameOver = view.phase === 'game_over';
 
+  const [stealSubmitting, setStealSubmitting] = useState(false);
+  const submitLatchRef = useRef<number | null>(null);
+
   const memberNames = new Map(members.map((m) => [m.playerId, m.nickname]));
   const nameFor = (id: string | null | undefined) => (id ? memberNames.get(id) || id : '未知');
 
-  const isCheeseStolen = view.reveal ? Boolean(view.reveal.thiefId) : (isDawn || isVote || isGameOver);
+  const cheeseGone = view.cheeseStolen || (view.reveal ? Boolean(view.reveal.thiefId) : false);
+  const showStolenScene = cheeseGone && (isDawn || isVote || isGameOver);
+
+  const handleSteal = () => {
+    if (!isNight || cheeseGone || stealSubmitting) return;
+    setStealSubmitting(true);
+    onStealCheese?.();
+    // 提交节流：动作结果以服务端视图为准（成功→转已偷走展示；被拒→恢复可点）
+    if (submitLatchRef.current !== null) window.clearTimeout(submitLatchRef.current);
+    submitLatchRef.current = window.setTimeout(() => setStealSubmitting(false), 1200);
+  };
 
   return (
     <div className="cheese-tabletop-arena" data-phase={view.phase}>
@@ -72,38 +87,42 @@ export function CheeseTabletopArena({
       {/* 中央桌台案发区：大奶酪盘 */}
       <div className="cheese-center-table">
         <div className="cheese-wood-platter">
-          <div className={`cheese-cloth ${(stealTapped || isCheeseStolen) && (isDawn || isVote || isGameOver) ? 'is-stolen' : ''}`}>
+          <div className={`cheese-cloth ${showStolenScene ? 'is-stolen' : ''}`}>
             {isNight ? (
               <div className="cheese-night-stage">
-                <button
-                  type="button"
-                  className={`cheese-model-3d-btn ${stealTapped ? 'is-stolen' : ''}`}
-                  onClick={() => {
-                    const next = !stealTapped;
-                    setStealTapped(next);
-                    if (next) onStealCheese?.();
-                  }}
-                  title="【桌面交互】点击伸手偷走/放回奶酪"
-                >
-                  <div className="cheese-model-3d">
-                    <span className="cheese-model-emoji" aria-hidden="true">
-                      {stealTapped ? '🍽️' : '🧀'}
-                    </span>
-                    {!stealTapped && <div className="cheese-glow" />}
+                {cheeseGone ? (
+                  /* 偷取成功：空盘展示并保持到天亮（不可放回、不可重复偷） */
+                  <div className="cheese-model-3d-btn is-stolen" aria-live="polite">
+                    <div className="cheese-model-3d">
+                      <span className="cheese-model-emoji" aria-hidden="true">🍽️</span>
+                    </div>
+                    <div className="cheese-steal-status-badge">
+                      <span className="badge-stolen">✓ 奶酪已被悄悄取走</span>
+                    </div>
                   </div>
-                  <div className="cheese-steal-status-badge">
-                    {stealTapped ? (
-                      <span className="badge-stolen">✓ 奶酪已被悄悄取走（已隐秘记录）</span>
-                    ) : (
+                ) : (
+                  <button
+                    type="button"
+                    className={`cheese-model-3d-btn ${stealSubmitting ? 'is-submitting' : ''}`}
+                    onClick={handleSteal}
+                    disabled={stealSubmitting}
+                    title="【桌面交互】大盗在自己醒来的时刻点击偷走奶酪"
+                  >
+                    <div className="cheese-model-3d">
+                      <span className="cheese-model-emoji" aria-hidden="true">🧀</span>
+                      <div className="cheese-glow" />
+                    </div>
+                    <div className="cheese-steal-status-badge">
                       <span className="badge-ready">✋ 触摸/点击偷走奶酪</span>
-                    )}
-                  </div>
-                </button>
+                    </div>
+                  </button>
+                )}
                 <p className="cheese-night-guide">
                   {view.currentHour === 0 ? '夜幕降临…准备开始报时' : `当前时刻：${view.currentHour} 点`}
+                  <span className="cheese-night-guide__rule">只有大盗在自己醒来的时刻才能取走，其他玩家无法偷走</span>
                 </p>
               </div>
-            ) : (stealTapped || isCheeseStolen) ? (
+            ) : showStolenScene ? (
               <div className="cheese-stolen-stage">
                 <div className="cheese-stolen-crumbs">
                   <span className="crumbs-emoji">🍽️</span>
@@ -122,8 +141,6 @@ export function CheeseTabletopArena({
           </div>
         </div>
       </div>
-
-      {/* 玩家环桌座次雷达（顶栏已有完整席位条，此处删除避免重复堆叠） */}
 
       {/* 终局真相大揭秘 */}
       {isGameOver && view.reveal && (

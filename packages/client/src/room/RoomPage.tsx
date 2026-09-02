@@ -190,13 +190,27 @@ export function RoomPage() {
 
   function handleStartGame() {
     if (!selectedGame) return;
-    void doRoomCommand({ command: 'start_game', gameConfig: buildModuleConfig(selectedGame.setup, gameConfig) }, '开始游戏');
+    void doRoomCommand(
+      {
+        command: 'start_game',
+        gameConfig: buildModuleConfig(selectedGame.setup, gameConfig),
+      },
+      '开始游戏',
+    );
   }
 
   function handleGameConfigChange(next: SetupConfig) {
     if (!selectedGame) return;
     setGameConfig(next);
-    void doRoomCommand({ command: 'update_config', config: { gameConfig: buildModuleConfig(selectedGame.setup, next) } }, '保存规则');
+    void doRoomCommand(
+      {
+        command: 'update_config',
+        config: {
+          gameConfig: buildModuleConfig(selectedGame.setup, next),
+        },
+      },
+      '保存规则',
+    );
   }
 
   function handleToggleReady(ready: boolean) {
@@ -299,7 +313,8 @@ export function RoomPage() {
     onlinePlayers.length >= minimumPlayersToStart &&
     onlinePlayers.length <= maximumPlayers &&
     onlinePlayers.length > 0 &&
-    notReadyCount === 0;
+    notReadyCount === 0 &&
+    room.members.every((m) => m.connectionStatus === 'CONNECTED');
 
   const sortedMembers = [...room.members].sort((a, b) => {
     if (a.seatRole !== b.seatRole) return a.seatRole === 'player' ? -1 : 1;
