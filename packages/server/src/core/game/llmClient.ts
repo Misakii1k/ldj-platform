@@ -30,16 +30,16 @@ export interface LlmDecision<A> {
 
 function buildSystemPrompt(needsSpeech: boolean): string {
   const lines = [
-    '你在陪人类玩一局桌游，请像一个认真的玩家那样做决定。',
-    '行动前先看大家已经说过的话：结合桌上已有的发言和局势再做决定，不要无视别人的发言。',
-    '你只能从给出的候选动作里选一个，用它的编号回答。',
-    '严格按 JSON 回复，不要加解释文字或代码块标记：',
+    '你在陪真人玩家玩一局桌游，要扮演一名像样的玩家：按规则行动，像朋友聊天那样发言。',
+    '行动前先看局势与大家近期的发言：该回应就回应（附和、质疑或补充），不要复述别人说过的话，也不要假装某人说过什么——公屏没出现过的内容不要编造。',
+    '从「可选动作」里挑一个，把它的编号原样填进 choice 字段：只填列表行开头的代号本身，不要带上后面的说明（如列表是 "speech. 结束发言"，就填 "speech"），然后只输出一个 JSON 对象，不要任何其他文字：',
   ];
   if (needsSpeech) {
-    lines.push('{"choice": "<候选动作编号>", "speech": "<公屏发言，1到2句中文>", "reason": "<一句话理由，20 字以内>"}');
-    lines.push('speech 是说给桌上其他人听的：接大家已经说出的话茬（附和、质疑或补充），不要复述别人说过的内容；也不要在里面报身份或夜间结果。');
+    lines.push('{"choice":"编号","speech":"给全桌听的话","reason":"你选它的真实理由"}');
+    lines.push('speech 会公开展示给全桌，reason 只有系统能看到，其他玩家看不到，可以放心写真实想法。');
+    lines.push('speech 用口语短句，1 到 2 句；不要在里面报身份、夜间信息或阵营秘密——想隐瞒的事交给行动本身。');
   } else {
-    lines.push('{"choice": "<候选动作编号>", "reason": "<一句话理由，20 字以内>"}');
+    lines.push('{"choice":"编号","reason":"你选它的真实理由"}');
   }
   return lines.join('\n');
 }
@@ -51,12 +51,20 @@ function buildUserPrompt<A>(prompt: BotPromptContext<A>): string {
   }
   if (prompt.speech) {
     lines.push('', `同时写一段公屏发言（最多 ${prompt.speech.maxChars} 字）：${prompt.speech.instruction}`);
+    lines.push('公屏没人说话就自然起个话头，别假装在回应谁。');
   }
   lines.push('', '请选择一个编号。');
   return lines.join('\n');
 }
 
-/** 从模型回复里取出选中编号：先按 JSON 解，失败再宽松匹配 */
+/** 模型有时会把编号写成 "speech. 结束发言"（带上后面的说明），取点号/空格前的代号段再匹配 */
+function extractChoiceId(value: string): string {
+  const trimmed = value.trim();
+  const sep = trimmed.search(/[.\s。]/);
+  return sep === -1 ? trimmed : trimmed.slice(0, sep);
+}
+
+/** 从模型回复里取出选中编号：先按 JSON 解（兼容编号带 label 后缀），失败再宽松匹配 */
 function extractChoice<A>(
   raw: string,
   options: readonly BotActionOption<A>[],
@@ -68,10 +76,13 @@ function extractChoice<A>(
   try {
     const parsed = JSON.parse(candidate) as { choice?: unknown; reason?: unknown; speech?: unknown };
     const choice = typeof parsed.choice === 'string' ? parsed.choice.trim() : '';
-    if (options.some((o) => o.id === choice)) {
+    const id = choice.length > 0
+      ? options.find((o) => o.id === choice)?.id ?? options.find((o) => o.id === extractChoiceId(choice))?.id
+      : undefined;
+    if (id !== undefined) {
       const reason = typeof parsed.reason === 'string' ? parsed.reason.slice(0, 60) : null;
       const speech = typeof parsed.speech === 'string' ? parsed.speech.trim() : null;
-      return { id: choice, reason, speech };
+      return { id, reason, speech };
     }
   } catch {
     // 不是合法 JSON，走下面的宽松匹配
@@ -113,6 +124,23 @@ export class LlmClient {
     timer.unref?.();
 
     try {
+      // 输出预算按思考深度与发言字数动态放大：思考型模型会把预算消耗在
+      // reasoning 上，固定 400 会在长发言时把 content 截断成空。
+      const depthBase = this.#config.thinkingDepth === 'off' ? 400 : 1024;
+      const speechBudget = prompt.speech
+        ? Math.max(256, Math.ceil(prompt.speech.maxChars * 2))
+        : 0;
+      const maxOutputTokens = depthBase + speechBudget;
+
+      this.#logger.debug('llm_prompt_built', {
+        ...meta,
+        optionCount: prompt.options.length,
+        speechMaxChars: prompt.speech?.maxChars ?? null,
+        situationLength: prompt.situation.length,
+        thinkingDepth: this.#config.thinkingDepth,
+        maxOutputTokens,
+      });
+
       const requestUrl = buildInferenceUrl(this.#config.baseUrl, this.#config.provider);
       const request = buildInferenceRequest({
         provider: this.#config.provider,
@@ -121,7 +149,7 @@ export class LlmClient {
         thinkingDepth: this.#config.thinkingDepth,
         system: buildSystemPrompt(Boolean(prompt.speech)),
         user: buildUserPrompt(prompt),
-        maxOutputTokens: 400,
+        maxOutputTokens,
         temperature: 0.7,
       });
       const response = await safeFetch(requestUrl, {
@@ -145,7 +173,9 @@ export class LlmClient {
         return null;
       }
 
-      const content = extractText(this.#config.provider, await readLimitedJson(response));
+      const body = await readLimitedJson(response);
+      this.#logger.debug('llm_raw_reply', { ...meta, reply: JSON.stringify(body).slice(0, 200) });
+      const content = extractText(this.#config.provider, body);
       if (content === null) {
         this.#logger.warn('llm_empty_response', meta);
         return null;

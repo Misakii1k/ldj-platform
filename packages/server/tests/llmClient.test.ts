@@ -99,6 +99,27 @@ test('模块声明 speech 时解析公屏正文', async () => {
   }
 });
 
+test('模型把编号写成带 label 后缀时仍保留 speech/reason', async () => {
+  const speakingPrompt: BotPromptContext<{ move: string }> = {
+    ...prompt,
+    speech: { maxChars: 300, instruction: '说一句给桌上听的话' },
+  };
+  const upstream = await listen((_req, res) => {
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({
+      choices: [{ message: { content: '{"choice":"2. 防守","speech":"先听身份再投票","reason":"求稳"}' } }],
+    }));
+  });
+  try {
+    const result = await new LlmClient(config(upstream.baseUrl), logger).decide(speakingPrompt, meta);
+    assert.equal(result?.option.id, '2');
+    assert.equal(result?.speech, '先听身份再投票');
+    assert.equal(result?.reason, '求稳');
+  } finally {
+    await upstream.close();
+  }
+});
+
 test('Anthropic 客户端通过协议层返回合法候选', async () => {
   const captured: { body: Record<string, unknown> | null } = { body: null };
   const upstream = await listen(async (req, res) => {
@@ -129,7 +150,29 @@ test('OpenAI max 原样发送', async () => {
   try {
     await new LlmClient(config(upstream.baseUrl, 'openai', 'max'), logger).decide(prompt, meta);
     assert.equal(captured.body?.reasoning_effort, 'max');
-    assert.equal(captured.body?.max_tokens, 400);
+    assert.equal(captured.body?.max_tokens, 1024);
+  } finally {
+    await upstream.close();
+  }
+});
+
+test('声明 speech 时按最大字数放大输出预算', async () => {
+  const captured: { body: Record<string, unknown> | null } = { body: null };
+  const upstream = await listen(async (req, res) => {
+    captured.body = await readBody(req);
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({
+      choices: [{ message: { content: '{"choice":"1","speech":"好，先听你说","reason":"稳"}' } }],
+    }));
+  });
+  try {
+    const speakingPrompt: BotPromptContext<{ move: string }> = {
+      ...prompt,
+      speech: { maxChars: 300, instruction: '说一句给桌上听的话' },
+    };
+    await new LlmClient(config(upstream.baseUrl), logger).decide(speakingPrompt, meta);
+    // 深度 off：400 基准 + 300 字 × 2 向上取整
+    assert.equal(captured.body?.max_tokens, 400 + 600);
   } finally {
     await upstream.close();
   }
@@ -145,7 +188,7 @@ test('Anthropic max 映射 8192 思考预算', async () => {
   try {
     await new LlmClient(config(upstream.baseUrl, 'anthropic', 'max'), logger).decide(prompt, meta);
     assert.deepEqual(captured.body?.thinking, { type: 'enabled', budget_tokens: 8192 });
-    assert.equal(captured.body?.max_tokens, 8592);
+    assert.equal(captured.body?.max_tokens, 8192 + 1024);
   } finally {
     await upstream.close();
   }

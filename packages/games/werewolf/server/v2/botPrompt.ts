@@ -2,9 +2,11 @@
  * werewolf_platform_open_kill_v1 — LLM 决策材料。
  * 候选动作严格对齐 reduce 合法性（狼可刀任意存活含自己；预言家不能查自己；
  * 女巫无夜袭目标不产候选；守卫不守自己与昨夜目标）。
+ *
+ * 公屏上下文与阶段化 speech 声明由 BotRunner 的统一装饰层（play.ts 的
+ * overlayWerewolfBotPrompt）注入一次，这里只产出核心局面，避免重复叠加。
  */
 import type { BotActionOption, BotDecisionInput, BotPromptContext } from '@ldj/shared';
-import { overlayWerewolfBotPrompt } from '../play.ts';
 import type { V2Action, V2PlayerView, V2Role } from './types.ts';
 
 const ROLE_NAMES: Record<V2Role, string> = { wolf: '狼人', villager: '村民', seer: '预言家', witch: '女巫', guard: '守卫', hunter: '猎人', idiot: '白痴' };
@@ -14,7 +16,7 @@ const targetOptions = (view: V2PlayerView, targets: readonly { playerId: string 
   targets.map((p) => ({ id: p.playerId, label: `${verb} ${seat(view, p.playerId)}`, action: mk(p.playerId) }));
 
 export function buildV2BotPrompt(input: BotDecisionInput<V2PlayerView>): BotPromptContext<V2Action> | null {
-  return overlayWerewolfBotPrompt(input, buildV2BotPromptCore(input));
+  return buildV2BotPromptCore(input);
 }
 
 function buildV2BotPromptCore(input: BotDecisionInput<V2PlayerView>): BotPromptContext<V2Action> | null {

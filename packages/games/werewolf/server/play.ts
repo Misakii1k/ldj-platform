@@ -253,8 +253,12 @@ export function cannedWerewolfSpeech(view: WerewolfPlayView, playerId: string): 
 }
 
 export const WEREWOLF_SPEECH_INSTRUCTION =
-  '用 1 到 2 句中文像真人玩家那样发言或留遗言，不要直接说出自己的身份、查验结果或队友名单。座位号从 1 开始。';
+  '用 1 到 2 句口语化的中文发言或留遗言，像线下聚会随口说话：可以带语气词、可以有半句话，接前面人的话茬；不要复述别人说过的内容，也不要直接说出自己的身份、查验结果或队友名单。座位号从 1 开始。';
 
+/**
+ * 狼人共享装饰层：只负责注入近期公屏与阶段化 speech 声明。
+ * 身份/天数帧由各 builder 自己的 situation 头部提供，这里不重复叠，BotRunner 只调用一次。
+ */
 export function overlayWerewolfBotPrompt<A>(
   input: BotDecisionInput<unknown>,
   prompt: BotPromptContext<A> | null,
@@ -272,7 +276,6 @@ export function overlayWerewolfBotPrompt<A>(
     .join('\n');
 
   const extras: string[] = [];
-  extras.push(`你是${seatLabel(view, input.playerId)}，身份${ROLE_NAMES[view.me.role]}，第 ${view.day} 天。`);
   if (chat) extras.push(`近期公屏：\n${chat}`);
   else extras.push('近期公屏还没有玩家发言。');
 
