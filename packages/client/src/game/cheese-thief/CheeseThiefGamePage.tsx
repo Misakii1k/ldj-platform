@@ -1,6 +1,6 @@
 /**
  * cheese_thief_classic_v1 客户端主页面（线下辅助与模拟模式双模体系）。
- * 支持「📱 玩家手牌端（3D 骰盅防偷窥）」与「🖥️ 桌面中央端（案发大屏与 TTS 法官）」
+ * 支持「玩家手牌端（3D 骰盅防偷窥）」与「桌面中央端（案发大屏与 TTS 法官）」
  */
 import { useEffect, useRef, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
@@ -196,7 +196,7 @@ export function CheeseThiefGamePage({ view }: Props) {
           aria-pressed={deviceRole === 'player'}
           title="作为玩家个人手牌设备使用（持在手中）"
         >
-          <span className="cheese-btn-icon">📱</span>
+          
           <span className="cheese-btn-text">玩家端</span>
         </button>
         <button
@@ -206,7 +206,7 @@ export function CheeseThiefGamePage({ view }: Props) {
           aria-pressed={deviceRole === 'table'}
           title="作为桌面中央公共案发大屏使用（平放于桌面正中）"
         >
-          <span className="cheese-btn-icon">🖥️</span>
+          
           <span className="cheese-btn-text">桌面端</span>
         </button>
       </div>
@@ -218,7 +218,7 @@ export function CheeseThiefGamePage({ view }: Props) {
         aria-label={ttsEnabled ? '关闭语音法官主持' : '开启语音法官主持'}
         title={ttsEnabled ? '点击关闭语音法官主持' : '点击开启语音法官主持'}
       >
-        <span>{ttsEnabled ? '🔊 语音' : '🔇 静音'}</span>
+        <span>{ttsEnabled ? '语音' : '静音'}</span>
       </button>
     </div>
   );
@@ -247,7 +247,7 @@ export function CheeseThiefGamePage({ view }: Props) {
       }
       drawer={rulesOpen && (
         <GameDrawer kind="rules" title="本局规则" triggerRef={rulesRef} onClose={() => setRulesOpen(false)}>
-          <h4>🧀 奶酪大盗规则速览</h4>
+          <h4>奶酪大盗规则速览</h4>
           <p>1. <strong>掷骰定醒来时刻</strong>：每位玩家掷 6 面骰扣在骰盅内，决定夜间第几时刻醒来。</p>
           <p>2. <strong>夜间时刻推进</strong>：夜间 1→6 时刻依次推进，轮到自己点数时睁眼。独醒且奶酪在场者取走奶酪成为怪盗！</p>
           <p>3. <strong>独醒偷看</strong>：轮到自己时刻若独醒，可按住任意一位玩家的 3D 骰盅查验其骰子；若多人同醒则互相目击、无法偷看。</p>
@@ -346,7 +346,7 @@ export function CheeseThiefGamePage({ view }: Props) {
                   <span className="cheese-secret-card__icon" aria-hidden="true">🧀</span>
                   <h3>我的私密身份与 3D 骰盅</h3>
                 </div>
-                <span className="cheese-secret-card__privacy-tag">🔒 按住掀起 · 松手扣盖防窥</span>
+                <span className="cheese-secret-card__privacy-tag">按住掀起 · 松手扣盖防窥</span>
               </div>
 
               <div className="cheese-secret-card__body">
@@ -405,7 +405,7 @@ export function CheeseThiefGamePage({ view }: Props) {
           {view.phase === 'night' && me?.canPeek && (
             <section className="sg-panel" aria-label="查看对象选择">
               <div className="sg-panel__head">
-                <h3>🔍 轮到你且独醒！按住目标玩家骰盅掀开查验</h3>
+                <h3>轮到你且独醒！按住目标玩家骰盅掀开查验</h3>
                 <span>松手后自动扣盖并提交，或在下方直接跳过</span>
               </div>
               <div className="cheese-peek-grid">

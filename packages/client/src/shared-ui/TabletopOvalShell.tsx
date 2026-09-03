@@ -342,7 +342,6 @@ export function TabletopOvalShell({
                 onClick={toggleOrientation}
                 title="当前游戏推荐横屏游玩体验更佳"
               >
-                <span className="tabletop-sound-btn__icon" aria-hidden="true">📐</span>
                 <span className="tabletop-sound-btn__label tabletop-recommend-chip__label">横屏</span>
               </button>
             )}
@@ -355,7 +354,6 @@ export function TabletopOvalShell({
               title="展开游戏快捷菜单与设置"
               aria-label="打开快捷菜单"
             >
-              <span className="tabletop-sound-btn__icon" aria-hidden="true">⚙️</span>
               <span className="tabletop-sound-btn__label">菜单</span>
             </button>
           </div>
@@ -372,7 +370,6 @@ export function TabletopOvalShell({
       {/* 竖屏横屏建议横幅：推荐横屏的游戏在竖屏下提示一次，可一键切换或关闭 */}
       {suggestLandscape && orientation === 'portrait' && !landscapeTipDismissed && (
         <div className="tabletop-landscape-tip" role="status">
-          <span className="tabletop-landscape-tip__icon" aria-hidden="true">📐</span>
           <span className="tabletop-landscape-tip__text">{title}建议横屏游玩，桌面视野更宽敞</span>
           <button type="button" className="tabletop-landscape-tip__switch" onClick={toggleOrientation}>
             切换为横屏
@@ -448,13 +445,13 @@ export function TabletopOvalShell({
               ? '您是房主。选择「暂离返回主页」可保持房间在后台运行，其他朋友可继续正常游玩；选择「仅退出」将自动转让房主；选择「解散房间」将关闭房间。'
               : '选择「暂离返回主页」将保留您的席位，可在主页顶部随时一键返回；选择「退出房间」将释放席位。'
           }
-          confirmLabel="🏠 暂离返回主页"
+          confirmLabel="暂离返回主页"
           secondaryLabel={
             confirmDialogState === 'dissolve'
               ? '确认解散'
               : isHost
-              ? '💣 解散房间'
-              : '🚪 彻底退出'
+              ? '解散房间'
+              : '彻底退出'
           }
           onSecondary={
             confirmDialogState === 'dissolve'

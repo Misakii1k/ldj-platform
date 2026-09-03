@@ -51,7 +51,7 @@ export function createEchoJudgeSimState(
       dice: { diceCount: 1, sides: 6, values: [], lastRollBy: null },
       bell: { rungBy: null, ringCount: 0, lastRingAt: 0 },
     },
-    activityLogs: pushSimLog([], `🎭 已为每位玩家私密分配触发词`, 0),
+    activityLogs: pushSimLog([], `已为每位玩家私密分配触发词`, 0),
   };
 }
 
@@ -72,7 +72,7 @@ function drawTopic(state: EchoJudgeSimState, random: RandomSource, revealedBy: s
     ...state,
     topicArea: { card, revealedBy },
     usedTopicIds: [...state.usedTopicIds, card.id],
-    activityLogs: pushSimLog(state.activityLogs, `📜 ${revealedBy} 抽到题卡「${card.text.slice(0, 16)}…」`, 0),
+    activityLogs: pushSimLog(state.activityLogs, `${revealedBy} 抽到题卡「${card.text.slice(0, 16)}…」`, 0),
   };
   return { card, next };
 }
@@ -95,9 +95,9 @@ export function reduceEchoJudgeSim(
       const next: EchoJudgeSimState = {
         ...state,
         triggerWords,
-        activityLogs: pushSimLog(state.activityLogs, `🔀 ${action.playerId} 重新分配触发词`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 重新分配触发词`, now),
       };
-      return { ok: true, nextState: next, events: [], effects: [system('🔀 已为全员重新分配触发词（仅本人可见）')] };
+      return { ok: true, nextState: next, events: [], effects: [system('已为全员重新分配触发词（仅本人可见）')] };
     }
     case 'sim:draw_topic': {
       if (!state.players.includes(action.playerId)) return deny('玩家不在本局');
@@ -115,7 +115,7 @@ export function reduceEchoJudgeSim(
       const next: EchoJudgeSimState = {
         ...state,
         topicArea: null,
-        activityLogs: pushSimLog(state.activityLogs, `🗑️ ${action.playerId} 收起题卡`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 收起题卡`, now),
       };
       return { ok: true, nextState: next, events: [], effects: [] };
     }
@@ -132,7 +132,7 @@ export function reduceEchoJudgeSim(
       const next: EchoJudgeSimState = {
         ...state,
         props: { ...state.props, timer },
-        activityLogs: pushSimLog(state.activityLogs, `⏱️ ${action.playerId} 操作计时器（${action.op}）`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 操作计时器（${action.op}）`, now),
       };
       return { ok: true, nextState: next, events: [], effects: [] };
     }
@@ -143,13 +143,13 @@ export function reduceEchoJudgeSim(
       const next: EchoJudgeSimState = {
         ...state,
         props: { ...state.props, timer: nextTimer },
-        activityLogs: exploded ? pushSimLog(state.activityLogs, '💥 计时器到点！', now) : state.activityLogs,
+        activityLogs: exploded ? pushSimLog(state.activityLogs, '到点！', now) : state.activityLogs,
       };
       return {
         ok: true,
         nextState: next,
         events: exploded ? [{ type: 'sim_timer_exploded' }] : [],
-        effects: exploded ? [system('💥 计时器到点！')] : [],
+        effects: exploded ? [system('到点！')] : [],
       };
     }
     case 'sim:roll_dice': {
@@ -160,7 +160,7 @@ export function reduceEchoJudgeSim(
       const next: EchoJudgeSimState = {
         ...state,
         props: { ...state.props, dice: rolled },
-        activityLogs: pushSimLog(state.activityLogs, `🎲 ${action.playerId} 掷骰：${rolled.values.join('、')}`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 掷骰：${rolled.values.join('、')}`, now),
       };
       return { ok: true, nextState: next, events: [{ type: 'sim_dice_rolled', playerId: action.playerId, values: rolled.values }], effects: [] };
     }
@@ -172,9 +172,9 @@ export function reduceEchoJudgeSim(
       const next: EchoJudgeSimState = {
         ...state,
         props: { ...state.props, bell: nextBell },
-        activityLogs: pushSimLog(state.activityLogs, `🔔 ${action.playerId} 拍铃${first ? '（首响）' : ''}`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 拍铃${first ? '（首响）' : ''}`, now),
       };
-      return { ok: true, nextState: next, events: [{ type: 'sim_bell_rung', playerId: action.playerId, first }], effects: [system(first ? `🔔 ${action.playerId} 拍下第一声铃！` : `🔔 ${action.playerId} 又拍了一下铃`)] };
+      return { ok: true, nextState: next, events: [{ type: 'sim_bell_rung', playerId: action.playerId, first }], effects: [system(first ? `${action.playerId} 拍下第一声铃！` : `${action.playerId} 又拍了一下铃`)] };
     }
     case 'player_forfeited': {
       const forfeited = new Set(action.playerIds);
@@ -182,7 +182,7 @@ export function reduceEchoJudgeSim(
         ...state,
         players: state.players.filter((p) => !forfeited.has(p)),
         triggerWords: Object.fromEntries(Object.entries(state.triggerWords).filter(([p]) => !forfeited.has(p))),
-        activityLogs: pushSimLog(state.activityLogs, `🚪 ${action.playerIds.join('、')} 退出对局`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerIds.join('、')} 退出对局`, now),
       };
       return { ok: true, nextState: next, events: [], effects: [] };
     }

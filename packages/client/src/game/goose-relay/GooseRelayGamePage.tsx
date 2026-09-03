@@ -5,7 +5,7 @@
  * 1. 舞台空间精简自适应：主舞台仅展示身份、接力/指认轨、头鹅私密案情与简明状态，绝不撑爆屏幕；
  * 2. 遮罩层选卡与阅卡（Modal Mask）：
  *    - 9 张特征鸭卡在遮罩模态框中以 3x3 九宫格清晰呈现；
- *    - 头鹅定案与倒序指认阶段可直接在遮罩中点选「🔴 凶手鸭」与「🔵 受害鸭」并一键提交；
+ *    - 头鹅定案与倒序指认阶段可直接在遮罩中点选「凶手鸭」与「受害鸭」并一键提交；
  *    - 其他阶段可随时通过「查看 9 张特征鸭卡」遮罩随时复习全部卡牌。
  */
 import { useEffect, useRef, useState } from 'react';
@@ -114,9 +114,9 @@ export function GooseRelayGamePage({ view }: Props) {
     if (view.phase === 'game_over') {
       status = (view.winners ?? []).includes(playerId) ? '获胜' : '失败';
     } else if (playerId === view.headPlayerId) {
-      status = '头鹅 👑';
+      status = '头鹅';
     } else if (myId === playerId && me?.role === 'evil') {
-      status = '恶鹅 😈';
+      status = '恶鹅';
     } else if (view.phase === 'relay' && index === view.currentIndex) {
       status = '表演中';
     } else if (view.phase === 'accusation' && index === view.currentAccuserIndex) {
@@ -184,7 +184,7 @@ export function GooseRelayGamePage({ view }: Props) {
   if (view.phase === 'claim_head' && myId) {
     primary = {
       id: 'claim-head',
-      label: '抢当头鹅 👑',
+      label: '抢当头鹅',
       disabled: false,
       onAction: () => {
         void act({ type: 'claim_head', playerId: myId });
@@ -413,7 +413,7 @@ export function GooseRelayGamePage({ view }: Props) {
             onClose={() => setRulesOpen(false)}
           >
             <div className="goose-rules-content">
-              <h4>🎭 阵营与角色</h4>
+              <h4>阵营与角色</h4>
               <p>
                 <strong>头鹅（1人）</strong>：抢当头鹅，从 9 张展示卡中选 1 张凶手 + 1
                 张受害者开启第 1 棒动作表演。
@@ -426,7 +426,7 @@ export function GooseRelayGamePage({ view }: Props) {
                 <strong>恶鹅（1人）</strong>
                 ：潜伏卧底，故意在动作传递中添油加醋或歪曲案情，误导村民。
               </p>
-              <h4>🏆 胜负判定（OR 逻辑）</h4>
+              <h4>胜负判定（OR 逻辑）</h4>
               <p>
                 <strong>白鹅获胜</strong>：全员在倒序指认中【指对了案情】，或在投票中【投出了恶鹅】。
               </p>
@@ -449,13 +449,13 @@ export function GooseRelayGamePage({ view }: Props) {
         {/* 抢头鹅初始阶段展台 */}
         {view.phase === 'claim_head' && (
           <section className="sg-panel goose-claim-hero-panel" style={{ textAlign: 'center', padding: '24px 20px', maxWidth: '480px', margin: '20px auto' }}>
-            <div style={{ fontSize: '2.4rem', marginBottom: '8px' }} aria-hidden="true">👑 🦆</div>
+            
             <h3 style={{ fontSize: '1.25rem', fontWeight: 900, margin: '0 0 6px' }}>谁来担当发题头鹅？</h3>
             <p style={{ fontSize: '0.88rem', opacity: 0.85, margin: 0, lineHeight: 1.6 }}>
               头鹅将从 9 张特征卡中秘密选定【1 凶手 + 1 受害鸭】，并开启第一棒肢体表演！
             </p>
             <div style={{ marginTop: '12px', fontSize: '0.82rem', color: '#b45309', fontWeight: 700 }}>
-              👇 点击下方操作栏「抢当头鹅」，先到先得！
+              点击下方操作栏「抢当头鹅」，先到先得！
             </div>
           </section>
         )}
@@ -479,7 +479,7 @@ export function GooseRelayGamePage({ view }: Props) {
         {isHeadGoose && me?.observed && view.phase !== 'claim_head' && (
           <section className="sg-panel goose-head-secret-panel">
             <div className="sg-panel__head">
-              <h3>👑 头鹅案情卡（仅你可见）</h3>
+              <h3>头鹅案情卡（仅你可见）</h3>
               <button
                 type="button"
                 className="goose-peek-btn"
@@ -501,7 +501,7 @@ export function GooseRelayGamePage({ view }: Props) {
             {showSecretCase ? (
               <div className="goose-secret-cards-row">
                 <div className="goose-secret-card-item goose-secret-card--murderer">
-                  <span className="goose-secret-badge">🔴 凶手鸭</span>
+                  <span className="goose-secret-badge">凶手鸭</span>
                   <img
                     src={getGooseCard(me.observed.murderer).image}
                     alt={getGooseCard(me.observed.murderer).name}
@@ -510,7 +510,7 @@ export function GooseRelayGamePage({ view }: Props) {
                 </div>
                 <span className="goose-case-arrow">➔ 杀死了 ➔</span>
                 <div className="goose-secret-card-item goose-secret-card--victim">
-                  <span className="goose-secret-badge">🔵 受害鸭</span>
+                  <span className="goose-secret-badge">受害鸭</span>
                   <img
                     src={getGooseCard(me.observed.victim).image}
                     alt={getGooseCard(me.observed.victim).name}
@@ -529,7 +529,7 @@ export function GooseRelayGamePage({ view }: Props) {
           <section className="sg-panel" aria-label="接力进度轨">
             <div className="sg-panel__head">
               <h3>
-                {view.phase === 'accusation' ? '🔍 末棒倒序指认轨' : '🎭 动作传递接力轨'} ·{' '}
+                {view.phase === 'accusation' ? '末棒倒序指认轨' : '动作传递接力轨'} ·{' '}
                 {(view.lineOrder ?? []).length} 位玩家
               </h3>
               <span>{view.phase === 'accusation' ? '从末位倒序向前指认' : '从头鹅逐棒向后传递'}</span>
@@ -553,7 +553,7 @@ export function GooseRelayGamePage({ view }: Props) {
                     className={`goose-track__chip ${isCurrentRelay || isCurrentAccuse ? 'is-current' : ''} ${doneRelay || doneAccuse ? 'is-done' : ''} ${playerId === myId ? 'is-me' : ''}`}
                   >
                     <span className="goose-track__idx">
-                      {isHead ? '👑' : doneRelay || doneAccuse ? '✓' : index + 1}
+                      {isHead ? '头' : doneRelay || doneAccuse ? '✓' : index + 1}
                     </span>
                     <span className="goose-track__name">
                       {playerId === myId ? `${nameFor(members, playerId)} (我)` : nameFor(members, playerId)}
@@ -576,12 +576,12 @@ export function GooseRelayGamePage({ view }: Props) {
               <div className="goose-card-dock-summary">
                 {murdererPick && (
                   <span className="goose-dock-tag goose-dock-tag--m">
-                    🔴 凶手：{getGooseCard(murdererPick).name}
+                    凶手：{getGooseCard(murdererPick).name}
                   </span>
                 )}
                 {victimPick && (
                   <span className="goose-dock-tag goose-dock-tag--v">
-                    🔵 受害：{getGooseCard(victimPick).name}
+                    受害：{getGooseCard(victimPick).name}
                   </span>
                 )}
                 {!murdererPick && !victimPick && (
@@ -605,7 +605,7 @@ export function GooseRelayGamePage({ view }: Props) {
         {(view.candidateCards ?? []).length === 0 && view.phase === 'relay' && !isHeadGoose && (
           <section className="sg-panel goose-relay-focus-panel">
             <p className="goose-relay-focus-hint">
-              🎭 <strong>动作接力中</strong>：请专注观察前一位玩家的动作表演并向后传递。所有人表演完成后，将公布 9 张特征牌供讨论与指认！
+              <strong>动作接力中</strong>：请专注观察前一位玩家的动作表演并向后传递。所有人表演完成后，将公布 9 张特征牌供讨论与指认！
             </p>
           </section>
         )}
@@ -614,8 +614,8 @@ export function GooseRelayGamePage({ view }: Props) {
         {(view.accusations ?? []).length > 0 && view.phase !== 'game_over' && (
           <section className="sg-panel goose-accusations-history" aria-label="指认记录">
             <div className="sg-panel__head">
-              <h3>🔍 案情指认记录</h3>
-              <span>{view.caseMatched ? '🎉 已有人指对！' : '倒序指认推进中'}</span>
+              <h3>案情指认记录</h3>
+              <span>{view.caseMatched ? '已有人指对！' : '倒序指认推进中'}</span>
             </div>
             <ul className="goose-history-list">
               {(view.accusations ?? []).map((item, idx) => (
@@ -625,7 +625,7 @@ export function GooseRelayGamePage({ view }: Props) {
                 >
                   <span className="goose-history-name">{nameFor(members, item.playerId)}</span>
                   <span className="goose-history-result">
-                    {item.correct ? '✅ 还原真相（指对）' : '❌ 指认错误'}
+                    {item.correct ? '还原真相（指对）' : '指认错误'}
                   </span>
                 </li>
               ))}
@@ -639,8 +639,8 @@ export function GooseRelayGamePage({ view }: Props) {
             {(view.accusations ?? []).length > 0 && (
               <section className="sg-panel goose-accusations-history" aria-label="指认记录">
                 <div className="sg-panel__head">
-                  <h3>🔍 案情指认记录</h3>
-                  <span>{view.caseMatched ? '🎉 已有人指对！' : '倒序指认推进中'}</span>
+                  <h3>案情指认记录</h3>
+                  <span>{view.caseMatched ? '已有人指对！' : '倒序指认推进中'}</span>
                 </div>
                 <ul className="goose-history-list">
                   {(view.accusations ?? []).map((item, idx) => (
@@ -650,7 +650,7 @@ export function GooseRelayGamePage({ view }: Props) {
                     >
                       <span className="goose-history-name">{nameFor(members, item.playerId)}</span>
                       <span className="goose-history-result">
-                        {item.correct ? '✅ 还原真相（指对）' : '❌ 指认错误'}
+                        {item.correct ? '还原真相（指对）' : '指认错误'}
                       </span>
                     </li>
                   ))}
@@ -659,7 +659,7 @@ export function GooseRelayGamePage({ view }: Props) {
             )}
             <section className="sg-panel goose-vote-panel" aria-label="揪恶投票区">
               <div className="sg-panel__head">
-                <h3>🗳️ 揪恶投票</h3>
+                <h3>揪恶投票</h3>
                 <span>已投 {view.votesCast} / {view.players.length} 人</span>
               </div>
               <p className="goose-vote-instruction">
@@ -678,7 +678,7 @@ export function GooseRelayGamePage({ view }: Props) {
                         className={`goose-vote-target-btn ${isSelected ? 'is-selected' : ''}`}
                         onClick={() => setVoteTarget(pid)}
                       >
-                        <span className="goose-vote-target-avatar">🦆</span>
+                        <span className="goose-vote-target-avatar">鹅</span>
                         <strong className="goose-vote-target-name">{nameFor(members, pid)}</strong>
                         {isSelected && <span className="goose-vote-check">✓ 选定</span>}
                       </button>
@@ -695,12 +695,12 @@ export function GooseRelayGamePage({ view }: Props) {
             <div className="goose-game-over-banner">
               {(view.winners ?? []).some((id) => (view.reveal?.evilGeese ?? []).includes(id)) ? (
                 <div className="goose-result-card goose-result-card--evil">
-                  <h2>😈 恶鹅阵营获胜！</h2>
+                  <h2>恶鹅阵营获胜！</h2>
                   <p>白鹅未能还原案情真相，恶鹅也成功逃过了投票裁决！</p>
                 </div>
               ) : (
                 <div className="goose-result-card goose-result-card--white">
-                  <h2>🎉 白鹅村民阵营获胜！</h2>
+                  <h2>白鹅村民阵营获胜！</h2>
                   <p>
                     {view.reveal?.caseMatched && view.reveal?.evilIdentified
                       ? '白鹅既还原了案情真相，又成功揪出了潜伏的恶鹅！'
@@ -718,7 +718,7 @@ export function GooseRelayGamePage({ view }: Props) {
                 <h3>🪿 案件真相揭晓</h3>
                 <div className="goose-reveal-cards-row">
                   <div className="goose-reveal-card-item goose-reveal-card--m">
-                    <span className="goose-reveal-tag goose-reveal-tag--m">🔴 真正的凶手鸭</span>
+                    <span className="goose-reveal-tag goose-reveal-tag--m">真正的凶手鸭</span>
                     <img
                       src={getGooseCard(view.reveal.case.murderer).image}
                       alt={getGooseCard(view.reveal.case.murderer).name}
@@ -727,7 +727,7 @@ export function GooseRelayGamePage({ view }: Props) {
                   </div>
                   <span className="goose-reveal-arrow">➔ 杀死了 ➔</span>
                   <div className="goose-reveal-card-item goose-reveal-card--v">
-                    <span className="goose-reveal-tag goose-reveal-tag--v">🔵 真正的受害鸭</span>
+                    <span className="goose-reveal-tag goose-reveal-tag--v">真正的受害鸭</span>
                     <img
                       src={getGooseCard(view.reveal.case.victim).image}
                       alt={getGooseCard(view.reveal.case.victim).name}
@@ -740,11 +740,11 @@ export function GooseRelayGamePage({ view }: Props) {
 
             {/* 恶鹅身份揭晓 */}
             <div className="goose-reveal-identity-box">
-              <h3>😈 潜伏恶鹅揭晓</h3>
+              <h3>潜伏恶鹅揭晓</h3>
               <div className="goose-evil-names-list">
                 {(view.reveal?.evilGeese ?? []).map((pid) => (
                   <span key={pid} className="goose-evil-player-badge">
-                    🦆 {nameFor(members, pid)}
+                    {nameFor(members, pid)}
                   </span>
                 ))}
               </div>
@@ -752,7 +752,7 @@ export function GooseRelayGamePage({ view }: Props) {
 
             {/* 投票结果明细 */}
             <div className="goose-reveal-votes-box">
-              <h3>🗳️ 投票统计</h3>
+              <h3>投票统计</h3>
               <ul className="goose-votes-list">
                 {Object.entries(view.reveal?.voteCounts ?? {}).map(([pid, count]) => (
                   <li key={pid} className="goose-vote-stat-item">
@@ -786,14 +786,14 @@ export function GooseRelayGamePage({ view }: Props) {
                 <div>
                   <h3 className="goose-card-modal-title">
                     {view.phase === 'pick_cards' && isHeadGoose
-                      ? '👑 头鹅选卡定案'
+                      ? '头鹅选卡定案'
                       : view.phase === 'accusation' && myTurnAccuse
-                        ? '🔍 案情指认'
+                        ? '案情指认'
                         : '🪿 本局特征鸭卡池'}
                   </h3>
                   <p className="goose-card-modal-desc">
                     {isSelectionPhase
-                      ? '点击卡牌点选 1 张【🔴 凶手鸭】与 1 张【🔵 受害鸭】确立案情'
+                      ? '点击卡牌点选 1 张【凶手鸭】与 1 张【受害鸭】确立案情'
                       : '全场玩家可见的 9 张候选特征池'}
                   </p>
                 </div>
@@ -811,12 +811,12 @@ export function GooseRelayGamePage({ view }: Props) {
               {isSelectionPhase && (
                 <div className="goose-modal-selection-bar">
                   <div className={`goose-select-slot ${murdererPick ? 'is-picked' : ''}`}>
-                    <span className="slot-label">🔴 凶手鸭：</span>
+                    <span className="slot-label">凶手鸭：</span>
                     <strong>{murdererPick ? getGooseCard(murdererPick).name : '未点选'}</strong>
                   </div>
                   <span className="slot-divider">➔</span>
                   <div className={`goose-select-slot ${victimPick ? 'is-picked' : ''}`}>
-                    <span className="slot-label">🔵 受害鸭：</span>
+                    <span className="slot-label">受害鸭：</span>
                     <strong>{victimPick ? getGooseCard(victimPick).name : '未点选'}</strong>
                   </div>
                 </div>
@@ -841,10 +841,10 @@ export function GooseRelayGamePage({ view }: Props) {
                       }}
                     >
                       {isMurderer && (
-                        <div className="goose-modal-card-tag goose-modal-card-tag--m">🔴 凶手鸭</div>
+                        <div className="goose-modal-card-tag goose-modal-card-tag--m">凶手鸭</div>
                       )}
                       {isVictim && (
-                        <div className="goose-modal-card-tag goose-modal-card-tag--v">🔵 受害鸭</div>
+                        <div className="goose-modal-card-tag goose-modal-card-tag--v">受害鸭</div>
                       )}
                       <img
                         src={card.image}

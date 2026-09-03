@@ -408,7 +408,7 @@ export function LoveLetterGamePage({ view }: Props) {
             onClick={() => setTrackerOpen(!trackerOpen)}
             title="实时记牌器与出牌记录"
           >
-            🧮 记牌器
+            记牌器
           </button>
           <button ref={rulesRef} type="button" className="tabletop-rules-btn" onClick={() => setRulesOpen(true)}>
             本局规则
@@ -598,7 +598,7 @@ export function LoveLetterGamePage({ view }: Props) {
                 <span className="ll-hover-ability-popover__count">全剧 {ROLE_ABILITIES[hoveredRole].totalCount} 张</span>
               </div>
               <p className="ll-hover-ability-popover__desc">{ROLE_ABILITIES[hoveredRole].description}</p>
-              <span className="ll-hover-ability-popover__tip">💡 技巧：{ROLE_ABILITIES[hoveredRole].tips}</span>
+              <span className="ll-hover-ability-popover__tip">技巧：{ROLE_ABILITIES[hoveredRole].tips}</span>
             </div>
           )}
 
@@ -678,7 +678,6 @@ export function LoveLetterGamePage({ view }: Props) {
               <div className="ll-tracker-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="ll-tracker-modal__head">
                   <div className="ll-tracker-modal__title">
-                    <span>🧮</span>
                     <h3>情书实时记牌器 &amp; 出牌记录</h3>
                   </div>
                   <button type="button" className="ll-tracker-modal__close" onClick={() => setTrackerOpen(false)}>✕</button>
@@ -690,14 +689,14 @@ export function LoveLetterGamePage({ view }: Props) {
                     className={`ll-tracker-tab ${activeTrackerTab === 'tracker' ? 'is-active' : ''}`}
                     onClick={() => setActiveTrackerTab('tracker')}
                   >
-                    📊 牌池实时统计（16张）
+                    牌池实时统计（16张）
                   </button>
                   <button
                     type="button"
                     className={`ll-tracker-tab ${activeTrackerTab === 'history' ? 'is-active' : ''}`}
                     onClick={() => setActiveTrackerTab('history')}
                   >
-                    📜 历史出牌记录（{roundHistory.length + 1} 轮）
+                    历史出牌记录（{roundHistory.length + 1} 轮）
                   </button>
                 </div>
 

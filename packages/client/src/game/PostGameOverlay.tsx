@@ -29,14 +29,14 @@ function getSettlementSummary(
     const winnerName = winnerId ? nameFor(members, winnerId) : '';
     if (winnerTeam === 'landlord') {
       return {
-        title: '👑 地主获胜！',
+        title: '地主获胜！',
         subtitle: winnerName ? `${winnerName} 顶住围剿，成功跑完全部手牌！` : '地主一方赢下本局',
         icon: 'crown',
       };
     }
     if (winnerTeam === 'farmers') {
       return {
-        title: '👨‍🌾 农民获胜！',
+        title: '农民获胜！',
         subtitle: winnerName ? `${winnerName} 率先跑牌，农民团队同盟胜利！` : '农民同盟赢下本局',
         icon: 'trophy',
       };
@@ -48,7 +48,7 @@ function getSettlementSummary(
     const winnerId = typeof v.winnerId === 'string' ? v.winnerId : null;
     const winnerName = winnerId ? nameFor(members, winnerId) : '获胜玩家';
     return {
-      title: `🎉 ${winnerName} 率先出完手牌！`,
+      title: `${winnerName} 率先出完手牌！`,
       subtitle: 'UNO 派对胜利！准备好下一场反应速度战了吗？',
       icon: 'star',
     };
@@ -59,14 +59,14 @@ function getSettlementSummary(
     const winner = v.winner || v.winnerFaction;
     if (winner === 'werewolf' || winner === 'wolves') {
       return {
-        title: '🐺 狼人阵营获胜！',
+        title: '狼人阵营获胜！',
         subtitle: '黑夜笼罩村庄，狼人吞噬了最后的抵抗',
         icon: 'werewolf',
       };
     }
     if (winner === 'villagers' || winner === 'good') {
       return {
-        title: '🌟 好人阵营获胜！',
+        title: '好人阵营获胜！',
         subtitle: '驱散迷雾，正义村民成功处决所有狼人',
         icon: 'star',
       };
@@ -78,14 +78,14 @@ function getSettlementSummary(
     const winner = v.winner || v.winnerRole;
     if (winner === 'undercover') {
       return {
-        title: '🕵️ 卧底获胜！',
+        title: '卧底获胜！',
         subtitle: '伪装至深，卧底成功存活至最后！',
         icon: 'undercover',
       };
     }
     if (winner === 'civilian') {
       return {
-        title: '👥 平民获胜！',
+        title: '平民获胜！',
         subtitle: '敏锐洞察，平民成功揪出所有潜伏卧底！',
         icon: 'trophy',
       };
@@ -97,14 +97,14 @@ function getSettlementSummary(
   if (winnerId) {
     const winnerName = nameFor(members, winnerId);
     return {
-      title: `🏆 ${winnerName} 赢得本局胜利！`,
+      title: `${winnerName} 赢得本局胜利！`,
       subtitle: '精彩的策略对决！准备进行下一把',
       icon: 'trophy',
     };
   }
 
   return {
-    title: '🎉 本局对决已完成结算',
+    title: '本局对决已完成结算',
     subtitle: '所有玩家准备就绪后即可开启新一局',
     icon: 'trophy',
   };

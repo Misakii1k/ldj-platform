@@ -251,7 +251,7 @@ export function DurianGamePage({ view }: Props) {
   if (view.phase === 'turn_action' && isMyTurn && myId) {
     primary = {
       id: 'draw',
-      label: '从牌堆摸一张牌 🎴',
+      label: '从牌堆摸一张牌',
       disabled: view.deckCount === 0,
       onAction: () => void act({ type: 'draw_card', playerId: myId }),
     };
@@ -259,7 +259,7 @@ export function DurianGamePage({ view }: Props) {
       secondary = [
         {
           id: 'challenge',
-          label: `🔔 质疑上家 (${prevActorName})`,
+          label: `质疑上家 (${prevActorName})`,
           disabled: false,
           onAction: () => void act({ type: 'challenge', playerId: myId }),
         },
@@ -285,7 +285,7 @@ export function DurianGamePage({ view }: Props) {
   } else if (view.phase === 'challenge_result' && myId) {
     primary = {
       id: 'next-round',
-      label: view.mode === 'standard' && countdown > 0 ? `开始下一轮 (${countdown}s) ➡️` : '开始下一轮 ➡️',
+      label: view.mode === 'standard' && countdown > 0 ? `开始下一轮 (${countdown}s)` : '开始下一轮',
       disabled: false,
       onAction: () => void act({ type: 'next_round', playerId: myId }),
     };
@@ -371,7 +371,7 @@ export function DurianGamePage({ view }: Props) {
             onClick={() => selectDeviceRole('player')}
             title="作为玩家个人设备使用（持在手中/置于面前）"
           >
-            <span className="durian-btn-icon">📱</span>
+            
             <span className="durian-btn-text">玩家端</span>
           </button>
           <button
@@ -380,13 +380,13 @@ export function DurianGamePage({ view }: Props) {
             onClick={() => selectDeviceRole('table')}
             title="作为桌面中央公共设备使用（平放于桌面正中）"
           >
-            <span className="durian-btn-icon">🖥️</span>
+            
             <span className="durian-btn-text">桌面端</span>
           </button>
         </div>
       )}
       <button ref={rulesRef} type="button" className="tabletop-rules-btn" onClick={() => setRulesOpen(true)}>
-        <span className="durian-btn-icon">📜</span>
+        
         <span className="durian-btn-text">本局规则</span>
       </button>
     </div>
@@ -418,12 +418,12 @@ export function DurianGamePage({ view }: Props) {
       }
       drawer={rulesOpen && (
         <GameDrawer kind="rules" title="本局规则" triggerRef={rulesRef} onClose={() => setRulesOpen(false)}>
-          <h4>🎮 翻牌与暗牌质疑规则</h4>
+          <h4>翻牌与暗牌质疑规则</h4>
           <p>1. <strong>头顶暗牌</strong>：开局每人抽一张牌顶在头上，自己看不到，其他所有人都看得到。</p>
           <p>2. <strong>翻牌与生效</strong>：轮到自己时摸一张牌，选择将左侧还是右侧放在 ✓ 计入桌面总数（另一侧 ✗ 作废）。</p>
           <p>3. <strong>质疑判定</strong>：如果认为桌面上某种水果的累计数量已经超过了所有人头顶牌中该水果的总和，即可按铃质疑上家。</p>
           <p>4. <strong>胜负与扣分</strong>：质疑成功则上家输，质疑失败则质疑者输。第 1 轮输家扣 1 分、第 2 轮扣 2 分…累计超 7 分淘汰！7 轮后罚分最少者获胜。</p>
-          <h4>🐒 猴子功能牌</h4>
+          <h4>猴子功能牌</h4>
           <ul style={{ paddingLeft: '20px', lineHeight: '1.6' }}>
             <li><strong>翻转卡牌</strong>：选择桌面上已放置的一张水果牌，将其 ✓ 和 ✗ 方向互换。</li>
             <li><strong>无事发生</strong>：跳过本回合，直接轮到下家（下家仍可质疑你）。</li>
@@ -458,14 +458,14 @@ export function DurianGamePage({ view }: Props) {
             <section className="durian-table-center-board" aria-label="中央出牌看板">
               <div className="durian-board-header">
                 <div className="durian-board-header__half durian-board-header__half--crossed">
-                  <span className="durian-board-header__sign">❌</span>
+                  <span className="durian-board-header__sign">✗</span>
                   <span className="durian-board-header__label">作废不计 (✗)</span>
                 </div>
                 <div className="durian-board-header__spine">
                   <span className="durian-board-header__spine-badge">⟷</span>
                 </div>
                 <div className="durian-board-header__half durian-board-header__half--checked">
-                  <span className="durian-board-header__sign">✅</span>
+                  <span className="durian-board-header__sign">✓</span>
                   <span className="durian-board-header__label">桌面生效 (✓)</span>
                 </div>
               </div>
@@ -474,7 +474,7 @@ export function DurianGamePage({ view }: Props) {
                 <div className="durian-board-cards-stack">
                   {(view.tablePlacements ?? []).length === 0 ? (
                     <div className="durian-board-empty">
-                      <span className="durian-board-empty__icon">🎴</span>
+                      <span className="durian-board-empty__icon"></span>
                       <strong className="durian-board-empty__title">桌面上暂无出牌</strong>
                       <small className="durian-board-empty__sub">点击下方摸牌并选择生效半边</small>
                     </div>
@@ -495,7 +495,7 @@ export function DurianGamePage({ view }: Props) {
                             {isCompact ? (
                               <div className="durian-card-compact durian-card-compact--monkey">
                                 <FruitIcon fruit="monkey" size={20} />
-                                <span className="durian-compact-label">🐒 {MONKEY_SPECIAL_NAMES[placement.data.card.special]}</span>
+                                <span className="durian-compact-label">{MONKEY_SPECIAL_NAMES[placement.data.card.special]}</span>
                               </div>
                             ) : (
                               renderCardGraphic(placement.data.card, undefined, { showBadge: false, size: 36 })
@@ -542,7 +542,7 @@ export function DurianGamePage({ view }: Props) {
                           ) : (
                             renderCardGraphic(fruitCard, placement.data.checkHalf, { showBadge: false, size: 38 })
                           )}
-                          {isFlipTarget && <span className="durian-flip-hint">点击翻转 🔄</span>}
+                          {isFlipTarget && <span className="durian-flip-hint">点击翻转</span>}
                         </div>
                       );
                     })
@@ -591,7 +591,7 @@ export function DurianGamePage({ view }: Props) {
                         if (myId) void act({ type: 'draw_card', playerId: myId });
                       }}
                     >
-                      <span className="durian-sim-draw-btn__icon">🎴</span>
+                      
                       <div className="durian-sim-draw-btn__text">
                         <strong>从牌堆摸牌</strong>
                         <small>剩余 {view.deckCount} 张</small>
@@ -614,7 +614,7 @@ export function DurianGamePage({ view }: Props) {
                     title="点击按铃质疑上家"
                   >
                     <div className="durian-sim-bell-cap">
-                      <span className="durian-sim-bell-icon">🔔</span>
+                      
                     </div>
                     <span className="durian-sim-bell-text">质疑按铃</span>
                   </button>
@@ -646,13 +646,13 @@ export function DurianGamePage({ view }: Props) {
                   <div className="durian-player-fullscreen-card-wrap">
                     {renderCardGraphic(myForeheadEntry.card, undefined, { showBadge: false, size: 88, isLarge: true })}
                     <div className="durian-player-stand-watermark">
-                      <span className="durian-player-stand-watermark__icon">👑</span>
+                      
                       <span>面前暗牌 · 他人可见（请勿偷看）</span>
                     </div>
                   </div>
                 ) : (
                   <div className="durian-card durian-card--secret durian-card--large durian-player-fullscreen-secret">
-                    <span className="durian-secret-icon">❓</span>
+                    
                     <span className="durian-secret-text">我的面前暗牌（他人可见）</span>
                     <small>请将手机立于面前展示给其他玩家</small>
                   </div>
@@ -665,7 +665,7 @@ export function DurianGamePage({ view }: Props) {
             {/* 本局行动顺序条（首轮开局清晰展示，当前玩家高亮） */}
             {view.players.length > 1 && (
               <section className="durian-order-strip" aria-label="本局行动顺序">
-                <span className="durian-order-strip__label">🔄 出牌顺序</span>
+                <span className="durian-order-strip__label">出牌顺序</span>
                 <div className="durian-order-strip__chips">
                   {view.players.map((playerId, index) => {
                     const isCurrent = playerId === view.currentPlayerId;
@@ -697,24 +697,24 @@ export function DurianGamePage({ view }: Props) {
                   >
                     <div className="durian-forehead-slot__header">
                       <span className="durian-forehead-slot__name">
-                        {isMe ? (isRevealed ? '👑 我 (暗牌已揭示)' : '👑 我') : nameFor(members, playerId)}
+                        {isMe ? (isRevealed ? '我 (暗牌已揭示)' : '我') : nameFor(members, playerId)}
                         {isCurrent && ' (行动中)'}
                       </span>
                       <span className="durian-forehead-slot__penalty">
-                        💥 {penalty}/7 分
+                        {penalty}/7 分
                       </span>
                     </div>
 
                     {isMe && !isRevealed ? (
                       <div className="durian-card durian-card--secret">
-                        <span className="durian-secret-icon">❓</span>
+                        
                         <span className="durian-secret-text">我的头顶暗牌（他人可见）</span>
                       </div>
                     ) : visibleEntry ? (
                       renderCardGraphic(visibleEntry.card, undefined, { showBadge: true, size: 34 })
                     ) : (
                       <div className="durian-card durian-card--secret">
-                        <span className="durian-secret-icon">🎴</span>
+                        
                         <span className="durian-secret-text">未知手牌</span>
                       </div>
                     )}
@@ -725,14 +725,14 @@ export function DurianGamePage({ view }: Props) {
 
             <section className="durian-center-board" aria-label="桌面已放置卡牌">
               <div className="durian-board-headline">
-                <span className="durian-board-title">📜 桌面已放置卡牌 ({(view.tablePlacements ?? []).length} 张)</span>
+                <span className="durian-board-title">桌面已放置卡牌 ({(view.tablePlacements ?? []).length} 张)</span>
                 <span className="durian-board-deck-info">牌堆剩余: <strong>{view.deckCount}</strong> 张</span>
               </div>
 
               <div className="durian-placements-wrap">
                 {(view.tablePlacements ?? []).length === 0 ? (
                   <div className="durian-placements-empty">
-                    <span className="durian-placements-empty__icon">🎴</span>
+                    
                     <strong className="durian-placements-empty__title">桌面上暂无出牌</strong>
                     <span className="durian-placements-empty__desc">轮到先手玩家开始摸牌并选择生效半边</span>
                   </div>
@@ -768,7 +768,7 @@ export function DurianGamePage({ view }: Props) {
                           }}
                         >
                           <span className="durian-placement-item__author">
-                            #{index + 1} {nameFor(members, placement.data.placedBy)} 放置 {isFlipTarget && '👈 点击翻转'}
+                            #{index + 1} {nameFor(members, placement.data.placedBy)} 放置 {isFlipTarget && '点击翻转'}
                           </span>
                           {renderCardGraphic(fruitCard, placement.data.checkHalf, { showBadge: true, size: 34 })}
                         </div>
@@ -800,7 +800,7 @@ export function DurianGamePage({ view }: Props) {
                     <span>被质疑上家：<strong>{nameFor(members, view.lastChallenge.accusedId)}</strong></span>
                     {view.mode === 'standard' && (
                       <span className="durian-verdict-hero__timer">
-                        ⏱️ {countdown > 0 ? `${countdown}s 后自动进入下一轮` : '即将进入下一轮'}
+                        {countdown > 0 ? `${countdown}s 后自动进入下一轮` : '即将进入下一轮'}
                       </span>
                     )}
                   </div>
@@ -853,7 +853,7 @@ export function DurianGamePage({ view }: Props) {
                         >
                           {isOversold ? (
                             <>
-                              <span className="durian-stamp-icon">💥</span>
+                              <span className="durian-stamp-icon">罚</span>
                               <span className="durian-stamp-text">超卖 +{diff}</span>
                             </>
                           ) : (
@@ -877,7 +877,7 @@ export function DurianGamePage({ view }: Props) {
                     className="durian-verdict-btn"
                     onClick={() => void act({ type: 'next_round', playerId: myId })}
                   >
-                    {view.mode === 'standard' && countdown > 0 ? `开始下一轮 (${countdown}s) ➡️` : '开始下一轮 ➡️'}
+                    {view.mode === 'standard' && countdown > 0 ? `开始下一轮 (${countdown}s)` : '开始下一轮'}
                   </button>
                 </div>
               )}
@@ -889,22 +889,22 @@ export function DurianGamePage({ view }: Props) {
         {view.phase === 'game_over' && (
           <div className="winner-hero durian-over">
             <div className="durian-floating-fruits" aria-hidden="true">
-              <span className="durian-floating-item f1">🍋</span>
-              <span className="durian-floating-item f2">🍓</span>
-              <span className="durian-floating-item f3">🍌</span>
-              <span className="durian-floating-item f4">🍇</span>
-              <span className="durian-floating-item f5">🍎</span>
-              <span className="durian-floating-item f6">🐒</span>
-              <span className="durian-floating-item f7">🍋</span>
-              <span className="durian-floating-item f8">🍓</span>
-              <span className="durian-floating-item f9">🍌</span>
-              <span className="durian-floating-item f10">🍇</span>
-              <span className="durian-floating-item f11">🍎</span>
-              <span className="durian-floating-item f12">🎴</span>
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
             </div>
-            <h2 className="winner-title">🎉 游戏结束！罚分最低者获胜</h2>
+            <h2 className="winner-title">游戏结束！罚分最低者获胜</h2>
             <p style={{ fontSize: '1.2rem', fontWeight: 900, color: '#1e293b' }}>
-              🏆 获胜玩家：{(view.winners ?? []).map((id) => nameFor(members, id)).join('、')}
+              获胜玩家：{(view.winners ?? []).map((id) => nameFor(members, id)).join('、')}
             </p>
           </div>
         )}

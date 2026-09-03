@@ -107,9 +107,9 @@ export function reduceBellClashSim(
       const events: BellClashSimEvent[] = [];
       return {
         ok: true,
-        nextState: { ...next, activityLogs: pushSimLog(next.activityLogs, '🔀 重新发牌', now) },
+        nextState: { ...next, activityLogs: pushSimLog(next.activityLogs, '重新发牌', now) },
         events,
-        effects: [system('🔀 已按当前人数重新洗牌发牌')],
+        effects: [system('已按当前人数重新洗牌发牌')],
       };
     }
     case 'sim:draw': {
@@ -120,7 +120,7 @@ export function reduceBellClashSim(
         ...state,
         hands: { ...state.hands, [action.playerId]: [...(state.hands[action.playerId] ?? []), ...drawn] },
         drawPile: rest,
-        activityLogs: pushSimLog(state.activityLogs, `🃏 ${action.playerId} 摸了一张牌`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 摸了一张牌`, now),
       };
       return { ok: true, nextState: next, events: [], effects: [] };
     }
@@ -133,7 +133,7 @@ export function reduceBellClashSim(
         next.drawPile = rest;
         next.hands[pid] = [...(next.hands[pid] ?? []), ...drawn];
       }
-      next.activityLogs = pushSimLog(next.activityLogs, '📤 每人发了一张牌', now);
+      next.activityLogs = pushSimLog(next.activityLogs, '每人发了一张牌', now);
       return { ok: true, nextState: next, events: [], effects: [] };
     }
     case 'sim:play_table': {
@@ -146,7 +146,7 @@ export function reduceBellClashSim(
         hands: { ...state.hands, [action.playerId]: hand.filter((_, i) => i !== action.cardIndex) },
         discardTop: card,
         tableCards: [...state.tableCards, { card, playedBy: action.playerId }],
-        activityLogs: pushSimLog(state.activityLogs, `🎴 ${action.playerId} 打出【${describeCard(card)}】`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 打出【${describeCard(card)}】`, now),
       };
       return { ok: true, nextState: next, events: [{ type: 'sim_card_played', playerId: action.playerId, card }], effects: [] };
     }
@@ -159,7 +159,7 @@ export function reduceBellClashSim(
         ...state,
         drawPile: rest,
         discardTop: card,
-        activityLogs: pushSimLog(state.activityLogs, `🔄 ${action.playerId} 翻牌：【${describeCard(card)}】`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 翻牌：【${describeCard(card)}】`, now),
       };
       return { ok: true, nextState: next, events: [], effects: [] };
     }
@@ -176,7 +176,7 @@ export function reduceBellClashSim(
       const next: BellClashSimState = {
         ...state,
         props: { ...state.props, timer },
-        activityLogs: pushSimLog(state.activityLogs, `⏱️ ${action.playerId} 操作计时器（${action.op}）`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 操作计时器（${action.op}）`, now),
       };
       return { ok: true, nextState: next, events: [], effects: [] };
     }
@@ -187,10 +187,10 @@ export function reduceBellClashSim(
       const next: BellClashSimState = {
         ...state,
         props: { ...state.props, timer: nextTimer },
-        activityLogs: exploded ? pushSimLog(state.activityLogs, '💥 计时器到点！', now) : state.activityLogs,
+        activityLogs: exploded ? pushSimLog(state.activityLogs, '到点！', now) : state.activityLogs,
       };
       const events: BellClashSimEvent[] = exploded ? [{ type: 'sim_timer_exploded' }] : [];
-      const effects: ReturnType<typeof system>[] = exploded ? [system('💥 计时器到点！')] : [];
+      const effects: ReturnType<typeof system>[] = exploded ? [system('到点！')] : [];
       return { ok: true, nextState: next, events, effects };
     }
     case 'sim:roll_dice': {
@@ -201,7 +201,7 @@ export function reduceBellClashSim(
       const next: BellClashSimState = {
         ...state,
         props: { ...state.props, dice: rolled },
-        activityLogs: pushSimLog(state.activityLogs, `🎲 ${action.playerId} 掷骰：${rolled.values.join('、')}`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 掷骰：${rolled.values.join('、')}`, now),
       };
       return { ok: true, nextState: next, events: [{ type: 'sim_dice_rolled', playerId: action.playerId, values: rolled.values }], effects: [] };
     }
@@ -213,9 +213,9 @@ export function reduceBellClashSim(
       const next: BellClashSimState = {
         ...state,
         props: { ...state.props, bell: nextBell },
-        activityLogs: pushSimLog(state.activityLogs, `🔔 ${action.playerId} 拍铃${first ? '（首响）' : ''}`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 拍铃${first ? '（首响）' : ''}`, now),
       };
-      return { ok: true, nextState: next, events: [{ type: 'sim_bell_rung', playerId: action.playerId, first }], effects: [system(first ? `🔔 ${action.playerId} 拍下第一声铃！` : `🔔 ${action.playerId} 又拍了一下铃`) ] };
+      return { ok: true, nextState: next, events: [{ type: 'sim_bell_rung', playerId: action.playerId, first }], effects: [system(first ? `${action.playerId} 拍下第一声铃！` : `${action.playerId} 又拍了一下铃`) ] };
     }
     case 'player_forfeited': {
       const forfeited = new Set(action.playerIds);
@@ -223,7 +223,7 @@ export function reduceBellClashSim(
         ...state,
         players: state.players.filter((p) => !forfeited.has(p)),
         hands: Object.fromEntries(Object.entries(state.hands).filter(([p]) => !forfeited.has(p))),
-        activityLogs: pushSimLog(state.activityLogs, `🚪 ${action.playerIds.join('、')} 退出对局`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerIds.join('、')} 退出对局`, now),
       };
       return { ok: true, nextState: next, events: [], effects: [] };
     }

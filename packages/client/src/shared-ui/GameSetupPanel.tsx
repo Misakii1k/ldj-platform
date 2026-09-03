@@ -103,7 +103,7 @@ export function GameSetupPanel({ setup, value, disabled = false, variant = 'defa
 
               {activeRulesetModal.details && activeRulesetModal.details.length > 0 && (
                 <div className="rules-detail-modal__points">
-                  <h4>💡 核心要点</h4>
+                  <h4>核心要点</h4>
                   <ul>
                     {activeRulesetModal.details.map((point, idx) => (
                       <li key={idx}>{point}</li>

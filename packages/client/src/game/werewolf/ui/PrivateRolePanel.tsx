@@ -12,7 +12,6 @@ export function PrivateRolePanel({ self, synced: _synced }: PrivateRolePanelProp
   if (self === null) {
     return (
       <aside className="werewolf-compact-role werewolf-compact-role--spectator" aria-label="观战中">
-        <span className="werewolf-compact-role__icon">👁️</span>
         <span className="werewolf-compact-role__title">观战视角</span>
       </aside>
     );

@@ -55,16 +55,16 @@ export function CheeseThiefSimStage({ view }: Props) {
       stageFit="arena"
       rulesButton={
         <button ref={rulesRef} type="button" className="tabletop-rules-btn" onClick={() => setRulesOpen(true)}>
-          📜 模拟说明
+          模拟说明
         </button>
       }
       actions={
         <div className="sim-toolbar">
-          <button type="button" className="sim-toolbar__btn" disabled={busy} onClick={() => myId && void act({ type: 'sim:assign_wake', playerId: myId })}>🌙 重掷时辰</button>
+          <button type="button" className="sim-toolbar__btn" disabled={busy} onClick={() => myId && void act({ type: 'sim:assign_wake', playerId: myId })}>重掷时辰</button>
           {view.roleCardsEnabled && (
             <>
-              <button type="button" className="sim-toolbar__btn" disabled={busy} onClick={() => myId && void act({ type: 'sim:assign_roles', playerId: myId })}>🎭 重发身份卡</button>
-              <button type="button" className="sim-toolbar__btn" disabled={busy} onClick={() => myId && void act({ type: 'sim:clear_roles', playerId: myId })}>🗑️ 收起身份卡</button>
+              <button type="button" className="sim-toolbar__btn" disabled={busy} onClick={() => myId && void act({ type: 'sim:assign_roles', playerId: myId })}>重发身份卡</button>
+              <button type="button" className="sim-toolbar__btn" disabled={busy} onClick={() => myId && void act({ type: 'sim:clear_roles', playerId: myId })}>收起身份卡</button>
             </>
           )}
         </div>
@@ -75,7 +75,7 @@ export function CheeseThiefSimStage({ view }: Props) {
         {me && (
           <section className="sim-panel">
             <div className="sim-panel__head">
-              <span>🌙</span>
+              
               <h3>我的秘密（仅自己可见）</h3>
             </div>
             <div className="sim-secret-card">
@@ -95,16 +95,16 @@ export function CheeseThiefSimStage({ view }: Props) {
 
         {/* 自由道具 */}
         <section className="sim-panel">
-          <div className="sim-panel__head"><span>🧰</span><h3>自由道具</h3></div>
+          <div className="sim-panel__head"><h3>自由道具</h3></div>
           <div className="sim-board__row sim-tools">
             <div className="sim-tool">
               <button type="button" className="sim-tool__btn" disabled={busy}
-                onClick={() => myId && (webAudio.playDiceShake(), void act({ type: 'sim:roll_dice', playerId: myId }))}>🎲 掷骰</button>
+                onClick={() => myId && (webAudio.playDiceShake(), void act({ type: 'sim:roll_dice', playerId: myId }))}>掷骰</button>
               <span className="sim-tool__value">{dice?.values.length ? dice.values.join(' · ') : '—'}</span>
             </div>
             <div className="sim-tool">
               <button type="button" className="sim-tool__btn sim-tool__btn--bell" disabled={busy}
-                onClick={() => myId && (webAudio.playUnoShout(), void act({ type: 'sim:ring_bell', playerId: myId }))}>🛎️ 按铃</button>
+                onClick={() => myId && (webAudio.playUnoShout(), void act({ type: 'sim:ring_bell', playerId: myId }))}>按铃</button>
               <span className="sim-tool__value">{bell?.rungBy ? `${nameFor(members, bell.rungBy)} 首响 · ${bell.ringCount} 次` : '未按'}</span>
             </div>
             <div className="sim-tool">
@@ -116,10 +116,10 @@ export function CheeseThiefSimStage({ view }: Props) {
                 <button type="button" className="sim-tool__btn" disabled={busy}
                   onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'reset' })}>↺</button>
                 <button type="button" className="sim-tool__btn" disabled={busy}
-                  onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'set', durationSeconds: 60 })}>⏱60s</button>
+                  onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'set', durationSeconds: 60 })}>60s</button>
               </div>
               <span className={`sim-tool__value ${timer?.isExploded ? 'is-exploded' : ''}`}>
-                {timer ? (timer.isExploded ? '💥 到点！' : `${timer.remainingSeconds}s`) : '未启用'}
+                {timer ? (timer.isExploded ? '到点！' : `${timer.remainingSeconds}s`) : '未启用'}
               </span>
             </div>
           </div>
@@ -127,7 +127,7 @@ export function CheeseThiefSimStage({ view }: Props) {
 
         {/* 活动日志 */}
         <section className="sim-panel">
-          <div className="sim-panel__head"><span>📜</span><h3>活动记录</h3></div>
+          <div className="sim-panel__head"><h3>活动记录</h3></div>
           <ul className="sim-logs">
             {logs.map((log, i) => <li key={i} className="sim-logs__item">{log.text}</li>)}
             {logs.length === 0 && <li className="sim-logs__item sim-empty">暂无记录</li>}
@@ -138,7 +138,7 @@ export function CheeseThiefSimStage({ view }: Props) {
       {rulesOpen && (
         <div className="sim-rules" role="dialog" aria-label="模拟模式说明">
           <button type="button" className="sim-rules__close" onClick={() => setRulesOpen(false)}>✕</button>
-          <h4>🛠️ 奶酪大盗 桌面模拟模式</h4>
+          <h4>奶酪大盗 桌面模拟模式</h4>
           <p>系统只负责私密掷苏醒时辰与私密分配身份角色牌，<strong>不偷奶酪、不投票、不记分</strong>。谁偷奶酪、如何指认由玩家自行约定（可参照线下原版规则）。</p>
         </div>
       )}

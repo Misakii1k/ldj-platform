@@ -11,7 +11,7 @@ interface UserProfileModalProps {
 
 const CATEGORIES = [
   ...NOTION_CATEGORIES,
-  { id: 'classic', name: '⭐ 经典彩绘' },
+  { id: 'classic', name: '经典彩绘' },
 ] as const;
 
 export function UserProfileModal({ onClose }: UserProfileModalProps) {

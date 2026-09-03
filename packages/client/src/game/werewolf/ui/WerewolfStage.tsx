@@ -246,7 +246,7 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
       )}
 
       <p className="werewolf-arena__caption" aria-hidden="true">
-        {isNight ? '☾ 暗夜审判桌' : '☼ 白昼公投厅'} · {model.seats.length} 人局
+        {isNight ? '暗夜审判桌' : '白昼公投厅'} · {model.seats.length} 人局
       </p>
 
       {/* 头像点击目标选项弹出浮层 */}

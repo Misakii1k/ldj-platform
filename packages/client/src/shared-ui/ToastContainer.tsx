@@ -17,7 +17,7 @@ export function ToastContainer({ toasts, onClose }: ToastContainerProps) {
     >
       {toasts.map((toast) => {
         const icon =
-          toast.kind === 'error' ? '🚨' : toast.kind === 'success' ? '🎉' : '📢';
+          toast.kind === 'error' ? '!' : toast.kind === 'success' ? '✓' : '•';
 
         return (
           <div

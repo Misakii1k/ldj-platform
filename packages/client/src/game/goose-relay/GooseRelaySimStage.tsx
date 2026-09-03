@@ -36,7 +36,7 @@ export function GooseRelaySimStage({ view }: Props) {
   const players = view.players.map((id) => ({
     id,
     name: nameFor(members, id),
-    status: id === view.headPlayerId ? '🦆 头鹅' : '在线',
+    status: id === view.headPlayerId ? '头鹅' : '在线',
   }));
 
   useEffect(() => {
@@ -66,12 +66,12 @@ export function GooseRelaySimStage({ view }: Props) {
       stageFit="arena"
       rulesButton={
         <button ref={rulesRef} type="button" className="tabletop-rules-btn" onClick={() => setRulesOpen(true)}>
-          📜 模拟说明
+          模拟说明
         </button>
       }
       actions={
         <div className="sim-toolbar">
-          <button type="button" className="sim-toolbar__btn" disabled={busy} onClick={() => myId && void act({ type: 'sim:redeal', playerId: myId })}>🔀 重布置</button>
+          <button type="button" className="sim-toolbar__btn" disabled={busy} onClick={() => myId && void act({ type: 'sim:redeal', playerId: myId })}>重布置</button>
         </div>
       }
     >
@@ -79,18 +79,18 @@ export function GooseRelaySimStage({ view }: Props) {
         {/* 我的案情卡（仅头鹅可见） */}
         {me && isHead && (
           <section className="sim-panel">
-            <div className="sim-panel__head"><span>🦆</span><h3>头鹅 · 我的案情卡（仅自己可见）</h3></div>
+            <div className="sim-panel__head"><h3>头鹅 · 我的案情卡（仅自己可见）</h3></div>
             <div className="sim-case">
               {me.caseCard ? (
                 <>
                   <div className="sim-case__item">
                     <img src={gooseAsset(me.caseCard.murderer)} alt={gooseName(me.caseCard.murderer)} className="sim-case__img" />
-                    <span className="sim-case__role">🕵️ 凶手</span>
+                    <span className="sim-case__role">凶手</span>
                     <span className="sim-case__name">{gooseName(me.caseCard.murderer)}</span>
                   </div>
                   <div className="sim-case__item">
                     <img src={gooseAsset(me.caseCard.victim)} alt={gooseName(me.caseCard.victim)} className="sim-case__img" />
-                    <span className="sim-case__role">🕊️ 受害者</span>
+                    <span className="sim-case__role">受害者</span>
                     <span className="sim-case__name">{gooseName(me.caseCard.victim)}</span>
                   </div>
                 </>
@@ -102,7 +102,7 @@ export function GooseRelaySimStage({ view }: Props) {
         {/* 候选鹅卡（公开） */}
         <section className="sim-panel">
           <div className="sim-panel__head">
-            <span>🃏</span>
+            
             <h3>候选鹅卡 · 头鹅 {nameFor(members, view.headPlayerId)}</h3>
           </div>
           <div className="sim-goose-grid">
@@ -117,16 +117,16 @@ export function GooseRelaySimStage({ view }: Props) {
 
         {/* 自由道具 */}
         <section className="sim-panel">
-          <div className="sim-panel__head"><span>🧰</span><h3>自由道具</h3></div>
+          <div className="sim-panel__head"><h3>自由道具</h3></div>
           <div className="sim-board__row sim-tools">
             <div className="sim-tool">
               <button type="button" className="sim-tool__btn" disabled={busy}
-                onClick={() => myId && (webAudio.playDiceShake(), void act({ type: 'sim:roll_dice', playerId: myId }))}>🎲 掷骰</button>
+                onClick={() => myId && (webAudio.playDiceShake(), void act({ type: 'sim:roll_dice', playerId: myId }))}>掷骰</button>
               <span className="sim-tool__value">{dice?.values.length ? dice.values.join(' · ') : '—'}</span>
             </div>
             <div className="sim-tool">
               <button type="button" className="sim-tool__btn sim-tool__btn--bell" disabled={busy}
-                onClick={() => myId && (webAudio.playUnoShout(), void act({ type: 'sim:ring_bell', playerId: myId }))}>🛎️ 按铃</button>
+                onClick={() => myId && (webAudio.playUnoShout(), void act({ type: 'sim:ring_bell', playerId: myId }))}>按铃</button>
               <span className="sim-tool__value">{bell?.rungBy ? `${nameFor(members, bell.rungBy)} 首响 · ${bell.ringCount} 次` : '未按'}</span>
             </div>
             <div className="sim-tool">
@@ -138,10 +138,10 @@ export function GooseRelaySimStage({ view }: Props) {
                 <button type="button" className="sim-tool__btn" disabled={busy}
                   onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'reset' })}>↺</button>
                 <button type="button" className="sim-tool__btn" disabled={busy}
-                  onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'set', durationSeconds: 60 })}>⏱60s</button>
+                  onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'set', durationSeconds: 60 })}>60s</button>
               </div>
               <span className={`sim-tool__value ${timer?.isExploded ? 'is-exploded' : ''}`}>
-                {timer ? (timer.isExploded ? '💥 到点！' : `${timer.remainingSeconds}s`) : '未启用'}
+                {timer ? (timer.isExploded ? '到点！' : `${timer.remainingSeconds}s`) : '未启用'}
               </span>
             </div>
           </div>
@@ -149,7 +149,7 @@ export function GooseRelaySimStage({ view }: Props) {
 
         {/* 活动日志 */}
         <section className="sim-panel">
-          <div className="sim-panel__head"><span>📜</span><h3>活动记录</h3></div>
+          <div className="sim-panel__head"><h3>活动记录</h3></div>
           <ul className="sim-logs">
             {logs.map((log, i) => <li key={i} className="sim-logs__item">{log.text}</li>)}
             {logs.length === 0 && <li className="sim-logs__item sim-empty">暂无记录</li>}
@@ -160,7 +160,7 @@ export function GooseRelaySimStage({ view }: Props) {
       {rulesOpen && (
         <div className="sim-rules" role="dialog" aria-label="模拟模式说明">
           <button type="button" className="sim-rules__close" onClick={() => setRulesOpen(false)}>✕</button>
-          <h4>🛠️ 以鹅传鹅 桌面模拟模式</h4>
+          <h4>以鹅传鹅 桌面模拟模式</h4>
           <p>系统只负责随机候选鹅卡展示、随机头鹅指派与案情卡私密发放，<strong>不接力、不指认、不投票、不记分</strong>。谁抢头鹅、如何表演传递由玩家自行约定。</p>
         </div>
       )}

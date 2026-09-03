@@ -76,7 +76,7 @@ function DingUnoCardView({
       {/* 短语卡中心文案：直接依托原生 UNO 官方纯白椭圆底版，完美契合 */}
       {isPhrase && (
         <div className="ding-phrase-center">
-          <span className="ding-phrase-icon">🔔</span>
+          <span className="ding-phrase-icon">口令</span>
           <span className="ding-phrase-text">{card.phrase}</span>
         </div>
       )}
@@ -114,7 +114,7 @@ export function BellClashGamePage({ view }: Props) {
     let status = '';
     const handCount = view.handCounts?.[playerId] ?? 0;
     if (view.phase === 'game_over') {
-      status = (view.winners ?? []).includes(playerId) ? '🏆 获胜' : '失败';
+      status = (view.winners ?? []).includes(playerId) ? '获胜' : '失败';
     } else if (playerId === view.currentPlayerId) {
       status = view.bellOpen ? `按铃中 · ${handCount}张` : `出牌中 · ${handCount}张`;
     } else {
@@ -135,7 +135,7 @@ export function BellClashGamePage({ view }: Props) {
   if (view.bellOpen) {
     primary = {
       id: 'ring-bell',
-      label: '🔔 拍铃抢回合！',
+      label: '拍铃抢回合！',
       disabled: false,
       onAction: () => {
         if (myId) void act({ type: 'ring_bell', playerId: myId });
@@ -190,7 +190,7 @@ export function BellClashGamePage({ view }: Props) {
       stageFit="arena"
       rulesButton={(
         <button ref={rulesRef} type="button" className="tabletop-rules-btn" onClick={() => setRulesOpen(true)}>
-          📜 游戏规则
+          游戏规则
         </button>
       )}
       actions={
@@ -211,7 +211,7 @@ export function BellClashGamePage({ view }: Props) {
       }
       drawer={rulesOpen && (
         <GameDrawer kind="rules" title="铃铛对决 · 游戏规则" triggerRef={rulesRef} onClose={() => setRulesOpen(false)}>
-          <h4>🎴 核心机制（UNO 式出牌 + 抢铃）</h4>
+          <h4>核心机制（UNO 式出牌 + 抢铃）</h4>
           <p>1. <strong>UNO 出牌</strong>：打出与弃牌堆顶<strong>同颜色</strong>或<strong>同数字</strong>的牌；打不出则摸一张牌。</p>
           <p>2. <strong>行动短语卡</strong>：牌面印有一句生活短语（如「好耶！」、「等等」）。当场上有玩家在现实对话或行动中触发该内容时，持有同色短语卡的玩家可<strong>立刻拍铃抢夺回合</strong>并打出该牌！</p>
           <p>3. <strong>拍铃抢答</strong>：拍铃成功者接管出牌权；错误拍铃罚摸一张。</p>
@@ -228,7 +228,7 @@ export function BellClashGamePage({ view }: Props) {
             <section className="sg-panel" aria-label="桌面中心台">
               <div className="sg-panel__head">
                 <div className="sg-panel__title-group">
-                  <span>🃏</span>
+                  <span>牌</span>
                   <h3>桌面案台</h3>
                 </div>
                 <span className="sg-badge sg-badge--highlight">抽牌堆剩 {view.drawCount} 张</span>
@@ -279,7 +279,7 @@ export function BellClashGamePage({ view }: Props) {
                 <section className="sg-panel" aria-label="我的手牌">
                   <div className="sg-panel__head">
                     <div className="sg-panel__title-group">
-                      <span>🎴</span>
+                      <span>牌</span>
                       <h3>我的手牌（{(me.hand ?? []).length} 张）</h3>
                     </div>
                     {isMyTurn && <span className="sg-badge sg-badge--warning">轮到你出牌</span>}
@@ -303,7 +303,7 @@ export function BellClashGamePage({ view }: Props) {
 
                   {isMyTurn && (
                     <p className="sg-hint">
-                      💡 提示：点击一张<strong>同色</strong>或<strong>同数字</strong>的 UNO 卡牌后点击下方按钮打出，或摸一张牌。
+                      提示：点击一张<strong>同色</strong>或<strong>同数字</strong>的 UNO 卡牌后点击下方按钮打出，或摸一张牌。
                     </p>
                   )}
                 </section>
@@ -315,9 +315,9 @@ export function BellClashGamePage({ view }: Props) {
         <div className="sg-stage">
           <div className="winner-hero">
             <span className="winner-rays" aria-hidden="true" />
-            <h2 className="winner-title">🎉 手牌全部清空！</h2>
+            <h2 className="winner-title">手牌全部清空！</h2>
             <p className="winner-names">
-              🏆 获胜玩家：{(view.winners ?? []).map((id) => nameFor(members, id)).join('、')}
+              获胜玩家：{(view.winners ?? []).map((id) => nameFor(members, id)).join('、')}
             </p>
           </div>
         </div>

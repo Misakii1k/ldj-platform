@@ -76,7 +76,7 @@ export function createGooseRelaySimState(
       dice: { diceCount: 1, sides: 6, values: [], lastRollBy: null },
       bell: { rungBy: null, ringCount: 0, lastRingAt: 0 },
     },
-    activityLogs: pushSimLog([], `🦆 已随机指派头鹅（${table.headPlayerId}）并布置 9 张候选鹅卡`, 0),
+    activityLogs: pushSimLog([], `已随机指派头鹅（${table.headPlayerId}）并布置 9 张候选鹅卡`, 0),
   };
 }
 
@@ -100,9 +100,9 @@ export function reduceGooseRelaySim(
         candidateCards: table.candidateCards,
         headPlayerId: table.headPlayerId,
         caseCard: table.caseCard,
-        activityLogs: pushSimLog(state.activityLogs, `🔀 ${action.playerId} 重新布置鹅卡与头鹅`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 重新布置鹅卡与头鹅`, now),
       };
-      return { ok: true, nextState: next, events: [{ type: 'sim_redealt' }], effects: [system(`🔀 已重抽候选鹅卡，头鹅为 ${table.headPlayerId}（案情仅头鹅可见）`)] };
+      return { ok: true, nextState: next, events: [{ type: 'sim_redealt' }], effects: [system(`已重抽候选鹅卡，头鹅为 ${table.headPlayerId}（案情仅头鹅可见）`)] };
     }
     case 'sim:operate_timer': {
       if (!state.players.includes(action.playerId)) return deny('玩家不在本局');
@@ -117,7 +117,7 @@ export function reduceGooseRelaySim(
       const next: GooseRelaySimState = {
         ...state,
         props: { ...state.props, timer },
-        activityLogs: pushSimLog(state.activityLogs, `⏱️ ${action.playerId} 操作计时器（${action.op}）`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 操作计时器（${action.op}）`, now),
       };
       return { ok: true, nextState: next, events: [], effects: [] };
     }
@@ -128,13 +128,13 @@ export function reduceGooseRelaySim(
       const next: GooseRelaySimState = {
         ...state,
         props: { ...state.props, timer: nextTimer },
-        activityLogs: exploded ? pushSimLog(state.activityLogs, '💥 计时器到点！', now) : state.activityLogs,
+        activityLogs: exploded ? pushSimLog(state.activityLogs, '到点！', now) : state.activityLogs,
       };
       return {
         ok: true,
         nextState: next,
         events: exploded ? [{ type: 'sim_timer_exploded' }] : [],
-        effects: exploded ? [system('💥 计时器到点！')] : [],
+        effects: exploded ? [system('到点！')] : [],
       };
     }
     case 'sim:roll_dice': {
@@ -145,7 +145,7 @@ export function reduceGooseRelaySim(
       const next: GooseRelaySimState = {
         ...state,
         props: { ...state.props, dice: rolled },
-        activityLogs: pushSimLog(state.activityLogs, `🎲 ${action.playerId} 掷骰：${rolled.values.join('、')}`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 掷骰：${rolled.values.join('、')}`, now),
       };
       return { ok: true, nextState: next, events: [{ type: 'sim_dice_rolled', playerId: action.playerId, values: rolled.values }], effects: [] };
     }
@@ -157,9 +157,9 @@ export function reduceGooseRelaySim(
       const next: GooseRelaySimState = {
         ...state,
         props: { ...state.props, bell: nextBell },
-        activityLogs: pushSimLog(state.activityLogs, `🔔 ${action.playerId} 拍铃${first ? '（首响）' : ''}`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 拍铃${first ? '（首响）' : ''}`, now),
       };
-      return { ok: true, nextState: next, events: [{ type: 'sim_bell_rung', playerId: action.playerId, first }], effects: [system(first ? `🔔 ${action.playerId} 拍下第一声铃！` : `🔔 ${action.playerId} 又拍了一下铃`)] };
+      return { ok: true, nextState: next, events: [{ type: 'sim_bell_rung', playerId: action.playerId, first }], effects: [system(first ? `${action.playerId} 拍下第一声铃！` : `${action.playerId} 又拍了一下铃`)] };
     }
     case 'player_forfeited': {
       const forfeited = new Set(action.playerIds);
@@ -169,7 +169,7 @@ export function reduceGooseRelaySim(
         players: nextPlayers,
         // 头鹅退出则重新指派
         headPlayerId: forfeited.has(state.headPlayerId) && nextPlayers.length > 0 ? nextPlayers[0]! : state.headPlayerId,
-        activityLogs: pushSimLog(state.activityLogs, `🚪 ${action.playerIds.join('、')} 退出对局`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerIds.join('、')} 退出对局`, now),
       };
       return { ok: true, nextState: next, events: [], effects: [] };
     }

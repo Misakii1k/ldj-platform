@@ -1,10 +1,10 @@
 import { useBackground, type BgMode } from '../../shared-ui/BackgroundContext.tsx';
 
 const BACKGROUND_OPTIONS: readonly { id: BgMode; label: string; desc: string; performance: string }[] = [
-  { id: 'party', label: '🎨 温馨派对插画', desc: '默认经典桌面桌游气氛手绘场景', performance: '平衡画质与性能' },
-  { id: 'particles', label: '✨ 霓虹流光与粒子', desc: '扑克微粒浮动与夜幕霓虹光晕', performance: '适合性能较好的设备' },
-  { id: 'video', label: '🌌 深邃极光/视频', desc: '沉浸式流光烟雾与动态视觉氛围', performance: '效果丰富，耗电较高' },
-  { id: 'minimal', label: '📱 极简纯色', desc: '清爽纯色背景，适应各类旧设备', performance: '低耗省电' },
+  { id: 'party', label: '温馨派对插画', desc: '默认经典桌面桌游气氛手绘场景', performance: '平衡画质与性能' },
+  { id: 'particles', label: '霓虹流光与粒子', desc: '扑克微粒浮动与夜幕霓虹光晕', performance: '适合性能较好的设备' },
+  { id: 'video', label: '深邃极光/视频', desc: '沉浸式流光烟雾与动态视觉氛围', performance: '效果丰富，耗电较高' },
+  { id: 'minimal', label: '极简纯色', desc: '清爽纯色背景，适应各类旧设备', performance: '低耗省电' },
 ];
 
 export function BackgroundSettings() {

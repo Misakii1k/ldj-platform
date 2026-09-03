@@ -13,7 +13,7 @@ interface Particle {
   size: number;
 }
 
-const SYMBOLS: string[] = ['♠', '♥', '♣', '♦', '✦', '·', '🕵️'];
+const SYMBOLS: string[] = ['♠', '♥', '♣', '♦', '✦', '·'];
 const COLORS: string[] = [
   'rgba(99, 102, 241, ',   // Indigo
   'rgba(168, 85, 247, ',   // Purple

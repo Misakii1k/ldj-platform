@@ -40,7 +40,6 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <main className="app error-screen" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', textAlign: 'center' }}>
           <div style={{ background: '#fff9ef', border: '3px solid #312d28', borderRadius: '24px', padding: '32px 24px', maxWidth: '440px', boxShadow: '6px 8px 0 #312d28' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>🎲</div>
             <h1 style={{ margin: '0 0 10px', fontSize: '1.4rem', fontWeight: 900, color: '#312d28' }}>
               界面渲染遇到异常
             </h1>

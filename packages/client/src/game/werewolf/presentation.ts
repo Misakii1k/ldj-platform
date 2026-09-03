@@ -367,7 +367,7 @@ function buildActionGroups(view: WerewolfView, members: readonly MemberLike[]): 
         groups.push({
           id: 'witch_save',
           title: '女巫用药 · 解药',
-          hint: victim ? `今夜倒在血泊中的是 ${nameFor(members, victim.playerId)}` : '今夜无人倒在血泊中',
+          hint: victim ? `今夜遇袭的是 ${nameFor(members, victim.playerId)}` : '今夜无人遇袭',
           options: saveOptions,
         });
       }

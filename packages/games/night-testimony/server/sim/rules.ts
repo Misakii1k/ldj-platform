@@ -69,7 +69,7 @@ export function createNightTestimonySimState(
       dice: { diceCount: 1, sides: 6, values: [], lastRollBy: null },
       bell: { rungBy: null, ringCount: 0, lastRingAt: 0 },
     },
-    activityLogs: pushSimLog([], '🕵️ 已随机指派狱警并为囚犯私密分配罪行', 0),
+    activityLogs: pushSimLog([], '已随机指派狱警并为囚犯私密分配罪行', 0),
   };
 }
 
@@ -93,9 +93,9 @@ export function reduceNightTestimonySim(
         wardenId,
         crimes,
         extraCrime,
-        activityLogs: pushSimLog(state.activityLogs, `🔀 ${action.playerId} 重新分配罪行与狱警`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 重新分配罪行与狱警`, now),
       };
-      return { ok: true, nextState: next, events: [], effects: [system('🔀 已重新随机指派狱警并为囚犯私密分配罪行')] };
+      return { ok: true, nextState: next, events: [], effects: [system('已重新随机指派狱警并为囚犯私密分配罪行')] };
     }
     case 'sim:draw_question': {
       if (!state.players.includes(action.playerId)) return deny('玩家不在本局');
@@ -106,7 +106,7 @@ export function reduceNightTestimonySim(
         ...state,
         questionArea: { card, revealedBy: action.playerId },
         usedQuestionIds: [...state.usedQuestionIds, card.id],
-        activityLogs: pushSimLog(state.activityLogs, `📜 ${action.playerId} 抽到审讯卡「${card.text.slice(0, 14)}…」`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 抽到审讯卡「${card.text.slice(0, 14)}…」`, now),
       };
       return { ok: true, nextState: next, events: [{ type: 'sim_question_drawn', cardId: card.id }], effects: [] };
     }
@@ -115,7 +115,7 @@ export function reduceNightTestimonySim(
       const next: NightTestimonySimState = {
         ...state,
         questionArea: null,
-        activityLogs: pushSimLog(state.activityLogs, `🗑️ ${action.playerId} 收起审讯卡`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 收起审讯卡`, now),
       };
       return { ok: true, nextState: next, events: [], effects: [] };
     }
@@ -132,7 +132,7 @@ export function reduceNightTestimonySim(
       const next: NightTestimonySimState = {
         ...state,
         props: { ...state.props, timer },
-        activityLogs: pushSimLog(state.activityLogs, `⏱️ ${action.playerId} 操作计时器（${action.op}）`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 操作计时器（${action.op}）`, now),
       };
       return { ok: true, nextState: next, events: [], effects: [] };
     }
@@ -143,13 +143,13 @@ export function reduceNightTestimonySim(
       const next: NightTestimonySimState = {
         ...state,
         props: { ...state.props, timer: nextTimer },
-        activityLogs: exploded ? pushSimLog(state.activityLogs, '💥 计时器到点！', now) : state.activityLogs,
+        activityLogs: exploded ? pushSimLog(state.activityLogs, '到点！', now) : state.activityLogs,
       };
       return {
         ok: true,
         nextState: next,
         events: exploded ? [{ type: 'sim_timer_exploded' }] : [],
-        effects: exploded ? [system('💥 计时器到点！')] : [],
+        effects: exploded ? [system('到点！')] : [],
       };
     }
     case 'sim:roll_dice': {
@@ -160,7 +160,7 @@ export function reduceNightTestimonySim(
       const next: NightTestimonySimState = {
         ...state,
         props: { ...state.props, dice: rolled },
-        activityLogs: pushSimLog(state.activityLogs, `🎲 ${action.playerId} 掷骰：${rolled.values.join('、')}`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 掷骰：${rolled.values.join('、')}`, now),
       };
       return { ok: true, nextState: next, events: [{ type: 'sim_dice_rolled', playerId: action.playerId, values: rolled.values }], effects: [] };
     }
@@ -172,9 +172,9 @@ export function reduceNightTestimonySim(
       const next: NightTestimonySimState = {
         ...state,
         props: { ...state.props, bell: nextBell },
-        activityLogs: pushSimLog(state.activityLogs, `🔔 ${action.playerId} 拍铃${first ? '（首响）' : ''}`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerId} 拍铃${first ? '（首响）' : ''}`, now),
       };
-      return { ok: true, nextState: next, events: [{ type: 'sim_bell_rung', playerId: action.playerId, first }], effects: [system(first ? `🔔 ${action.playerId} 拍下第一声铃！` : `🔔 ${action.playerId} 又拍了一下铃`)] };
+      return { ok: true, nextState: next, events: [{ type: 'sim_bell_rung', playerId: action.playerId, first }], effects: [system(first ? `${action.playerId} 拍下第一声铃！` : `${action.playerId} 又拍了一下铃`)] };
     }
     case 'player_forfeited': {
       const forfeited = new Set(action.playerIds);
@@ -182,7 +182,7 @@ export function reduceNightTestimonySim(
         ...state,
         players: state.players.filter((p) => !forfeited.has(p)),
         crimes: Object.fromEntries(Object.entries(state.crimes).filter(([p]) => !forfeited.has(p))),
-        activityLogs: pushSimLog(state.activityLogs, `🚪 ${action.playerIds.join('、')} 退出对局`, now),
+        activityLogs: pushSimLog(state.activityLogs, `${action.playerIds.join('、')} 退出对局`, now),
       };
       return { ok: true, nextState: next, events: [], effects: [] };
     }

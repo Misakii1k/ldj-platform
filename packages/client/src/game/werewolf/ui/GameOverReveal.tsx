@@ -45,7 +45,7 @@ export function GameOverReveal({ reveal, seats = [] }: GameOverRevealProps) {
           onClick={() => setClosed(false)}
           title="重新打开终局全员身份复盘遮罩"
         >
-          📜 查看终局全员身份揭晓
+          查看终局全员身份揭晓
         </button>
       </div>
     );
@@ -60,7 +60,7 @@ export function GameOverReveal({ reveal, seats = [] }: GameOverRevealProps) {
           className="werewolf-reopen-reveal-btn"
           onClick={() => setClosed(false)}
         >
-          📜 终局大揭晓（点击查看）
+          终局大揭晓（点击查看）
         </button>
       </div>
 
@@ -82,7 +82,6 @@ export function GameOverReveal({ reveal, seats = [] }: GameOverRevealProps) {
             <div className="werewolf-reveal__header">
               <span className="werewolf-reveal__tag">终局全员身份揭晓</span>
               <h2 className={`werewolf-reveal__headline ${isWolfWin ? 'winner-wolves' : 'winner-village'}`}>
-                {isWolfWin ? '🐺 ' : '🌟 '}
                 {reveal.headline}
               </h2>
             </div>
@@ -90,7 +89,6 @@ export function GameOverReveal({ reveal, seats = [] }: GameOverRevealProps) {
             <div className="werewolf-reveal__grid">
               {reveal.rows.map((row) => {
                 const seat = seats.find((s) => s.name === row.name);
-                const icon = ROLE_ICONS[row.roleLabel] ?? '🎭';
                 const roleCls = ROLE_CLASS[row.roleLabel] ?? '';
                 const isAlive = seat ? seat.alive : true;
 
@@ -107,7 +105,7 @@ export function GameOverReveal({ reveal, seats = [] }: GameOverRevealProps) {
                     <div className="reveal-card__info">
                       <span className="reveal-card__name" title={row.name}>{row.name}</span>
                       <div className="reveal-card__role">
-                        <span className="role-icon" aria-hidden="true">{icon}</span>
+                        <span className="role-icon" aria-hidden="true">{ROLE_ICONS[row.roleLabel] ?? '🎭'}</span>
                         <strong className="role-text">{row.roleLabel}</strong>
                       </div>
                     </div>

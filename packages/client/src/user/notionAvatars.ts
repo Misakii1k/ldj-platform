@@ -8,11 +8,11 @@ export interface NotionAvatarItem {
 
 export const NOTION_CATEGORIES = [
   { id: 'all', name: '全部 (130+)' },
-  { id: 'notion60', name: '✨ 经典 60 款' },
-  { id: 'mystery', name: '🕵️ 智谋推理' },
-  { id: 'cards', name: '🃏 牌桌圣手' },
-  { id: 'party', name: '☕ 聚会日常' },
-  { id: 'fantasy', name: '🤖 奇幻潮酷' },
+  { id: 'notion60', name: '经典 60 款' },
+  { id: 'mystery', name: '智谋推理' },
+  { id: 'cards', name: '牌桌圣手' },
+  { id: 'party', name: '聚会日常' },
+  { id: 'fantasy', name: '奇幻潮酷' },
 ] as const;
 
 // 经典 60+ 款 Notion 专属头像（对应原图 70 个独立人设）

@@ -354,7 +354,7 @@ export function reduceNightTestimonyState(
 
       events.push({ type: 'identity_exposed', playerId: action.playerId, identity: 'warden' });
       events.push({ type: 'guessing_started', availableCrimes });
-      effects.push(system(`🚨 狱警 ${action.playerId} 主动自曝！直接进入终局猜罪环节！`));
+      effects.push(system(`狱警 ${action.playerId} 主动自曝！直接进入终局猜罪环节！`));
       assertNightTestimonyInvariants(next);
       return { ok: true, nextState: next, events, effects };
     } else {
@@ -362,7 +362,7 @@ export function reduceNightTestimonyState(
       const crime = next.crimes[action.playerId]!;
       next.revealedIdentities[action.playerId] = crime;
       events.push({ type: 'identity_exposed', playerId: action.playerId, identity: crime });
-      effects.push(system(`📢 玩家 ${action.playerId} 主动自告身份！公开真实罪行：【${crimeLabel(crime)}】，确认为罪犯（排除狱警嫌疑）！`));
+      effects.push(system(`玩家 ${action.playerId} 主动自告身份！公开真实罪行：【${crimeLabel(crime)}】，确认为罪犯（排除狱警嫌疑）！`));
 
       // 若在提问阶段，检查是否需要推进出题或题目完成
       if (next.phase === 'question') {
@@ -624,8 +624,8 @@ export function reduceNightTestimonyState(
     effects.push(
       system(
         allCorrect
-          ? `🏆 狱警准确猜出了全部囚犯的真实罪行，惊天翻盘独胜！`
-          : `🎉 狱警猜罪失败，囚犯联盟（${inmates.join('、')}）赢得最终胜利！`,
+          ? `狱警准确猜出了全部囚犯的真实罪行，惊天翻盘独胜！`
+          : `狱警猜罪失败，囚犯联盟（${inmates.join('、')}）赢得最终胜利！`,
       ),
     );
 

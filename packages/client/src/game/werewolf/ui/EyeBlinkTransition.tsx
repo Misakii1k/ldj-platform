@@ -27,7 +27,7 @@ export function EyeBlinkTransition({ mood }: EyeBlinkTransitionProps) {
       <div className="wc-eye-blink__lid wc-eye-blink__lid--top" />
       <div className="wc-eye-blink__center-focus">
         <span className="wc-eye-blink__glyph">
-          {mood === 'night' ? '☾' : mood === 'dawn' ? '🌄' : mood === 'day' ? '☼' : '⚖️'}
+          {mood === 'night' ? '夜' : mood === 'dawn' ? '晓' : mood === 'day' ? '昼' : '决'}
         </span>
       </div>
       <div className="wc-eye-blink__lid wc-eye-blink__lid--bottom" />

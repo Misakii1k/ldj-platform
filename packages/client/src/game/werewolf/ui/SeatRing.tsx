@@ -124,7 +124,7 @@ export function SeatChip({
 
       {seat.isSpeaking && (
         <div className="seat-chip__speaking-strip">
-          <span className="seat-chip__badge seat-chip__badge--speaking">发言中 🎙️</span>
+          <span className="seat-chip__badge seat-chip__badge--speaking">发言中</span>
         </div>
       )}
     </li>

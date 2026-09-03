@@ -99,7 +99,7 @@ export function TabletopMenuDrawer({
                     onShowRules();
                   }}
                 >
-                  <span className="tabletop-drawer-item__icon">📖</span>
+                  <span className="tabletop-drawer-item__tag">规则</span>
                   <div className="tabletop-drawer-item__text">
                     <strong>本局规则</strong>
                     <span>查看完整卡牌与规则说明</span>
@@ -112,9 +112,7 @@ export function TabletopMenuDrawer({
                 className="tabletop-drawer-item"
                 onClick={onToggleOrientation}
               >
-                <span className="tabletop-drawer-item__icon">
-                  {orientation === 'landscape' ? '📱' : '📐'}
-                </span>
+                <span className="tabletop-drawer-item__tag">旋转</span>
                 <div className="tabletop-drawer-item__text">
                   <strong>{orientation === 'landscape' ? '切换为竖屏' : '切换为横屏'}</strong>
                   <span>{orientation === 'landscape' ? '适合单手竖持模式' : '适合平放桌面全景宽幅'}</span>
@@ -126,9 +124,7 @@ export function TabletopMenuDrawer({
                 className="tabletop-drawer-item"
                 onClick={onToggleViewMode}
               >
-                <span className="tabletop-drawer-item__icon">
-                  {viewMode === 'table' ? '📱' : '🖥️'}
-                </span>
+                <span className="tabletop-drawer-item__tag">视角</span>
                 <div className="tabletop-drawer-item__text">
                   <strong>{viewMode === 'table' ? '切为手牌模式' : '切为大屏模式'}</strong>
                   <span>{viewMode === 'table' ? '当前：公共大屏视角' : '当前：个人手牌视角'}</span>
@@ -164,7 +160,7 @@ export function TabletopMenuDrawer({
                     onStepOut();
                   }}
                 >
-                  <span className="tabletop-drawer-item__icon">🏠</span>
+                  <span className="tabletop-drawer-item__tag">首页</span>
                   <div className="tabletop-drawer-item__text">
                     <strong>暂离返回首页</strong>
                     <span>房间在后台保持运行，随时可一键返回</span>
@@ -181,7 +177,9 @@ export function TabletopMenuDrawer({
                     onLeaveRoom();
                   }}
                 >
-                  <span className="tabletop-drawer-item__icon">🚪</span>
+                  <span className="tabletop-drawer-item__icon">
+                    <GameIcon name="door_exit" size={20} />
+                  </span>
                   <div className="tabletop-drawer-item__text">
                     <strong>退出当前房间</strong>
                     <span>离开对局并释放席位返回大厅</span>
@@ -198,7 +196,9 @@ export function TabletopMenuDrawer({
                     onDissolveRoom();
                   }}
                 >
-                  <span className="tabletop-drawer-item__icon">💣</span>
+                  <span className="tabletop-drawer-item__icon">
+                    <GameIcon name="bomb" size={20} />
+                  </span>
                   <div className="tabletop-drawer-item__text">
                     <strong style={{ color: '#dc2626' }}>解散房间 / 终止对局</strong>
                     <span>彻底关闭房间并移出所有玩家</span>

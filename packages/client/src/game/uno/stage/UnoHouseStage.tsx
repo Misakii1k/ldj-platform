@@ -307,7 +307,7 @@ export function UnoHouseStage({ view }: Props) {
       <p className="uno-house-center__meta" style={{ zIndex: 5 }}>
         <span>方向：<strong>{directionLabel}</strong></span>
         <span>轮到：<strong>{nameFor(members, view.currentPlayerId)}</strong></span>
-        {turnCountdown.expired ? null : <span style={{ color: '#ea580c' }}>⏱ {turnCountdown.secondsLeft}s</span>}
+        {turnCountdown.expired ? null : <span style={{ color: '#ea580c' }}>{turnCountdown.secondsLeft}s</span>}
       </p>
 
       {error && <p className="game-error uno-house-stage__error" role="alert">{error}</p>}

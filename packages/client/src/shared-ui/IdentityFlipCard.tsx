@@ -236,13 +236,11 @@ export function IdentityFlipCard({
 
               <div className="identity-card-back__action-tip">
                 {isSpectator ? (
-                  <span className="tip-spectator">👁️ 观战视角（仅玩家本人可见）</span>
+                  <span className="tip-spectator">观战视角（仅玩家本人可见）</span>
                 ) : canInteract ? (
-                  <span className="tip-press">
-                    <span className="tip-finger">👆</span> 按住卡牌悄悄查看
-                  </span>
+                  <span className="tip-press">按住卡牌悄悄查看</span>
                 ) : (
-                  <span className="tip-disabled">🔒 身份已锁定</span>
+                  <span className="tip-disabled">身份已锁定</span>
                 )}
                 <span className="identity-card-back__note">其他玩家不可翻动</span>
               </div>

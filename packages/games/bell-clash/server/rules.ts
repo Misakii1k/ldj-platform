@@ -413,7 +413,7 @@ export function reduceBellClashState(
         next.phase = 'game_over';
         next.winners = [action.playerId];
         events.push({ type: 'game_finished', winners: [action.playerId] });
-        effects.push(system(`🎉 玩家 ${action.playerId} 打光手牌，赢得胜利！`));
+        effects.push(system(`玩家 ${action.playerId} 打光手牌，赢得胜利！`));
         assertBellClashInvariants(next);
         return { ok: true, nextState: next, events, effects };
       }
@@ -424,7 +424,7 @@ export function reduceBellClashState(
         next.bellClaimantId = null;
         events.push({ type: 'bell_opened' });
         effects.push(
-          system(`🔔 触发短语「${card.phrase}」！若有人说了/做了牌上内容，可拍铃抢回合！`),
+          system(`触发短语「${card.phrase}」！若有人说了/做了牌上内容，可拍铃抢回合！`),
         );
         effects.push({
           type: 'schedule_timer',
@@ -472,7 +472,7 @@ export function reduceBellClashState(
         next.phase = 'game_over';
         next.winners = winners;
         events.push({ type: 'game_finished', winners });
-        effects.push(system(`🎴 抽牌堆耗尽，手牌最少者获胜：${winners.join('、')}`));
+        effects.push(system(`抽牌堆耗尽，手牌最少者获胜：${winners.join('、')}`));
         assertBellClashInvariants(next);
         return { ok: true, nextState: next, events, effects };
       }
@@ -483,13 +483,13 @@ export function reduceBellClashState(
         next.hands[action.playerId]!.splice(drawnIdx, 1);
         next.discardTop = drawn;
         events.push({ type: 'card_played', playerId: action.playerId, card: drawn });
-        effects.push(system(`✨ 摸到可打出牌，自动打出！`));
+        effects.push(system(`摸到可打出牌，自动打出！`));
 
         if (next.hands[action.playerId]!.length === 0) {
           next.phase = 'game_over';
           next.winners = [action.playerId];
           events.push({ type: 'game_finished', winners: [action.playerId] });
-          effects.push(system(`🎉 玩家 ${action.playerId} 打光手牌获胜！`));
+          effects.push(system(`玩家 ${action.playerId} 打光手牌获胜！`));
           assertBellClashInvariants(next);
           return { ok: true, nextState: next, events, effects };
         }
@@ -555,7 +555,7 @@ export function reduceBellClashState(
           { type: 'turn_passed', playerId: nextPlayerId },
         ];
         const effects: GameEffect[] = [
-          system(`❌ 玩家 ${action.playerId} 错误拍铃（无同色短语卡），罚摸 1 张！`),
+          system(`玩家 ${action.playerId} 错误拍铃（无同色短语卡），罚摸 1 张！`),
           { type: 'cancel_timer', timerId: 'bell_timeout' },
           {
             type: 'schedule_timer',
@@ -572,7 +572,7 @@ export function reduceBellClashState(
       next.bellClaimantId = action.playerId;
       const events: BellClashEvent[] = [{ type: 'bell_rung', claimantId: action.playerId }];
       const effects: GameEffect[] = [
-        system(`🔔 玩家 ${action.playerId} 拍铃抢答！`),
+        system(`玩家 ${action.playerId} 拍铃抢答！`),
       ];
 
       assertBellClashInvariants(next);
@@ -606,13 +606,13 @@ export function reduceBellClashState(
           next.discardTop = playedPhrase;
           next.currentPlayerId = claimantId;
           events.push({ type: 'bell_resolved', claimantId, wonTurn: true });
-          effects.push(system(`✅ 玩家 ${claimantId} 拍铃成功！打出短语卡并接管回合！`));
+          effects.push(system(`玩家 ${claimantId} 拍铃成功！打出短语卡并接管回合！`));
 
           if (hand.length === 0) {
             next.phase = 'game_over';
             next.winners = [claimantId];
             events.push({ type: 'game_finished', winners: [claimantId] });
-            effects.push(system(`🎉 玩家 ${claimantId} 打光手牌获胜！`));
+            effects.push(system(`玩家 ${claimantId} 打光手牌获胜！`));
             assertBellClashInvariants(next);
             return { ok: true, nextState: next, events, effects };
           }
@@ -634,7 +634,7 @@ export function reduceBellClashState(
         drawOne(next, claimantId);
         next.penaltyPulls[claimantId] = (next.penaltyPulls[claimantId] ?? 0) + 1;
         events.push({ type: 'bell_resolved', claimantId, wonTurn: false });
-        effects.push(system(`❌ 玩家 ${claimantId} 错误拍铃（无同色短语卡），罚摸 1 张！`));
+        effects.push(system(`玩家 ${claimantId} 错误拍铃（无同色短语卡），罚摸 1 张！`));
 
         // 轮到原出牌者的下一位
         const currentIdx = next.players.indexOf(next.currentPlayerId);
@@ -687,7 +687,7 @@ export function reduceBellClashState(
         { type: 'turn_passed', playerId: nextPlayerId },
       ];
       const effects: GameEffect[] = [
-        system(`⏰ 玩家 ${action.playerId} 出牌超时，自动摸一张牌并过牌。`),
+        system(`玩家 ${action.playerId} 出牌超时，自动摸一张牌并过牌。`),
         {
           type: 'schedule_timer',
           timerId: 'turn_timeout',
@@ -706,7 +706,7 @@ export function reduceBellClashState(
       next.players = next.players.filter((id) => !forfeiting.has(id));
 
       const effects: GameEffect[] = [
-        system(`🚪 玩家 ${action.playerIds.join('、')} 退出了对局。`),
+        system(`玩家 ${action.playerIds.join('、')} 退出了对局。`),
       ];
 
       if (forfeiting.has(next.currentPlayerId)) {

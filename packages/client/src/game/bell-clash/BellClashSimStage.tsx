@@ -10,7 +10,7 @@ import { webAudio } from '../../shared-ui/WebAudioManager.ts';
 import type { BellClashSimPlayerView, SimCard } from './simTypes.ts';
 
 function cardLabel(card: SimCard): string {
-  return card.kind === 'number' ? `${card.number} ${card.color}` : `🔔 ${card.phrase}`;
+  return card.kind === 'number' ? `${card.number} ${card.color}` : `${card.phrase}`;
 }
 
 function assetPath(card: SimCard | null): string {
@@ -104,15 +104,15 @@ export function BellClashSimStage({ view }: Props) {
       stageFit="arena"
       rulesButton={
         <button ref={rulesRef} type="button" className="tabletop-rules-btn" onClick={() => setRulesOpen(true)}>
-          📜 模拟说明
+          模拟说明
         </button>
       }
       actions={
         <div className="sim-toolbar">
-          <button type="button" className="sim-toolbar__btn" disabled={busy} onClick={() => myId && void act({ type: 'sim:redeal' })}>🔀 重新发牌</button>
-          <button type="button" className="sim-toolbar__btn" disabled={busy} onClick={() => myId && void act({ type: 'sim:draw', playerId: myId })}>🃏 摸一张</button>
-          <button type="button" className="sim-toolbar__btn" disabled={busy} onClick={() => myId && void act({ type: 'sim:deal_all', playerId: myId })}>📤 各发一张</button>
-          <button type="button" className="sim-toolbar__btn" disabled={busy} onClick={() => myId && void act({ type: 'sim:flip_top', playerId: myId })}>🔄 翻一张</button>
+          <button type="button" className="sim-toolbar__btn" disabled={busy} onClick={() => myId && void act({ type: 'sim:redeal' })}>重新发牌</button>
+          <button type="button" className="sim-toolbar__btn" disabled={busy} onClick={() => myId && void act({ type: 'sim:draw', playerId: myId })}>摸一张</button>
+          <button type="button" className="sim-toolbar__btn" disabled={busy} onClick={() => myId && void act({ type: 'sim:deal_all', playerId: myId })}>各发一张</button>
+          <button type="button" className="sim-toolbar__btn" disabled={busy} onClick={() => myId && void act({ type: 'sim:flip_top', playerId: myId })}>翻一张</button>
         </div>
       }
     >
@@ -134,7 +134,10 @@ export function BellClashSimStage({ view }: Props) {
               <img src="/assets/uno/back.png" alt="摸牌堆" className="ding-uno-card__img" />
               <span className="ding-draw-stack__count">{view.drawCount}</span>
             </button>
-            <DingSimCard card={view.discardTop} small />
+            <div className="ding-discard-slot">
+              {view.discardTop ? <DingSimCard card={view.discardTop} /> : <span className="ding-discard-empty">弃牌堆空</span>}
+              <small>牌顶（翻牌/打出）</small>
+            </div>
             <button
               type="button"
               className={`sim-bell-btn ${bell?.rungBy ? 'sim-bell-btn--rung' : ''}`}
@@ -152,7 +155,7 @@ export function BellClashSimStage({ view }: Props) {
         {me && (
           <section className="sim-panel">
             <div className="sim-panel__head">
-              <span>🖐️</span>
+              <span>🃏</span>
               <h3>我的手牌（{me.hand.length} 张 · 仅自己可见）</h3>
               {selectedIndex !== null && (
                 <button type="button" className="sim-toolbar__btn sim-toolbar__btn--primary" onClick={confirmPlay}>
@@ -180,7 +183,7 @@ export function BellClashSimStage({ view }: Props) {
                 disabled={busy}
                 onClick={() => myId && (webAudio.playDiceShake(), void act({ type: 'sim:roll_dice', playerId: myId }))}
               >
-                🎲 掷骰
+                掷骰
               </button>
               <span className="sim-tool__value">{dice?.values.length ? dice.values.join(' · ') : '—'}</span>
               {dice?.lastRollBy && <small>{nameFor(members, dice.lastRollBy)} 掷</small>}
@@ -194,10 +197,10 @@ export function BellClashSimStage({ view }: Props) {
                 <button type="button" className="sim-tool__btn" disabled={busy}
                   onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'reset' })}>↺ 重置</button>
                 <button type="button" className="sim-tool__btn" disabled={busy}
-                  onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'set', durationSeconds: 60 })}>⏱ 60s</button>
+                  onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'set', durationSeconds: 60 })}>60s</button>
               </div>
               <span className={`sim-tool__value ${timer?.isExploded ? 'is-exploded' : ''}`}>
-                {timer ? (timer.isExploded ? '💥 到点！' : `${timer.remainingSeconds}s`) : '未启用'}
+                {timer ? (timer.isExploded ? '到点！' : `${timer.remainingSeconds}s`) : '未启用'}
               </span>
             </div>
           </div>
@@ -218,13 +221,13 @@ export function BellClashSimStage({ view }: Props) {
       {rulesOpen && (
         <div className="sim-rules" role="dialog" aria-label="模拟模式说明">
           <button type="button" className="sim-rules__close" onClick={() => setRulesOpen(false)}>✕</button>
-          <h4>🛠️ 铃铛对决 桌面模拟模式</h4>
+          <h4>铃铛对决 桌面模拟模式</h4>
           <p>系统只负责随机发牌、翻牌与自由道具，<strong>不判胜负、不记分</strong>。出牌/按铃/掷骰/计时等规则由玩家自行约定（可参照线下原版规则）。</p>
           <ul>
-            <li>🔀 重新发牌：按当前人数重洗牌库并每人发 8 张。</li>
-            <li>🃏 摸一张 / 📤 各发一张：从抽牌堆补充手牌。</li>
-            <li>🛎️ 按铃：记录首响与次数，仅作提示。</li>
-            <li>🎲 / ⏱️：骰子与计时器自由使用。</li>
+            <li>重新发牌：按当前人数重洗牌库并每人发 8 张。</li>
+            <li>摸一张 / 各发一张：从抽牌堆补充手牌。</li>
+            <li>按铃：记录首响与次数，仅作提示。</li>
+            <li>骰子与计时器：骰子与计时器自由使用。</li>
           </ul>
         </div>
       )}

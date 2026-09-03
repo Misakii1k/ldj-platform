@@ -31,7 +31,6 @@ export function SettingsSheet({ onClose }: SettingsSheetProps) {
           className={`settings-nav-tab ${activeTab === 'ai' ? 'is-active' : ''}`}
           onClick={() => setActiveTab('ai')}
         >
-          <span className="tab-icon">🤖</span>
           <span>AI 引擎</span>
         </button>
 
@@ -42,7 +41,6 @@ export function SettingsSheet({ onClose }: SettingsSheetProps) {
           className={`settings-nav-tab ${activeTab === 'tts' ? 'is-active' : ''}`}
           onClick={() => setActiveTab('tts')}
         >
-          <span className="tab-icon">🎙️</span>
           <span>语音 TTS</span>
         </button>
 
@@ -54,7 +52,6 @@ export function SettingsSheet({ onClose }: SettingsSheetProps) {
             className={`settings-nav-tab ${activeTab === 'connection' ? 'is-active' : ''}`}
             onClick={() => setActiveTab('connection')}
           >
-            <span className="tab-icon">📡</span>
             <span>连接主机</span>
           </button>
         )}

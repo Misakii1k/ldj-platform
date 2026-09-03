@@ -65,7 +65,7 @@ export function CheeseTabletopArena({
               >
                 <span className="cheese-hour-node__badge">{hour} 点</span>
                 <span className="cheese-hour-node__status">
-                  {isCurrent ? '🌕 醒来' : isPast ? '✓ 已过' : '💤 沉睡'}
+                  {isCurrent ? '醒来' : isPast ? '✓ 已过' : '沉睡'}
                 </span>
               </div>
             );
@@ -79,7 +79,7 @@ export function CheeseTabletopArena({
             onClick={onToggleTts}
             title="切换法官语音主持播报"
           >
-            {ttsEnabled ? '🔊 语音主持开启' : '🔇 语音主持静音'}
+            {ttsEnabled ? '语音主持开启' : '语音主持静音'}
           </button>
         )}
       </div>
@@ -94,7 +94,7 @@ export function CheeseTabletopArena({
                   /* 偷取成功：空盘展示并保持到天亮（不可放回、不可重复偷） */
                   <div className="cheese-model-3d-btn is-stolen" aria-live="polite">
                     <div className="cheese-model-3d">
-                      <span className="cheese-model-emoji" aria-hidden="true">🍽️</span>
+                      <span className="cheese-model-emoji" aria-hidden="true"></span>
                     </div>
                     <div className="cheese-steal-status-badge">
                       <span className="badge-stolen">✓ 奶酪已被悄悄取走</span>
@@ -113,7 +113,7 @@ export function CheeseTabletopArena({
                       <div className="cheese-glow" />
                     </div>
                     <div className="cheese-steal-status-badge">
-                      <span className="badge-ready">✋ 触摸/点击偷走奶酪</span>
+                      <span className="badge-ready">触摸/点击偷走奶酪</span>
                     </div>
                   </button>
                 )}
@@ -126,7 +126,7 @@ export function CheeseTabletopArena({
               <div className="cheese-stolen-stage">
                 <div className="cheese-stolen-crumbs">
                   <span className="crumbs-emoji">🍽️</span>
-                  <span className="crumbs-warning">🚨 奶酪不见了！</span>
+                  <span className="crumbs-warning">奶酪不见了！</span>
                 </div>
                 <div className="cheese-crime-alert">
                   <strong>案发现场：</strong>桌上的大奶酪已被大盗偷吃！请找出真凶！
@@ -146,9 +146,9 @@ export function CheeseTabletopArena({
       {isGameOver && view.reveal && (
         <div className="cheese-table-settlement-card">
           <div className="cheese-settlement-header">
-            <h3>📜 案情水落石出 · 终局真相披露</h3>
+            <h3>案情水落石出 · 终局真相披露</h3>
             <span className="cheese-settlement-tag">
-              {view.thiefCaught ? '⚖️ 大盗被捕 · 好人胜利' : '🧀 大盗得逞 · 盗匪胜利'}
+              {view.thiefCaught ? '大盗被捕 · 好人胜利' : '大盗得逞 · 盗匪胜利'}
             </span>
           </div>
           <div className="cheese-settlement-body">

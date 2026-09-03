@@ -216,7 +216,7 @@ export function DiceCup({
           {canInteract ? (
             isLifted ? (
               <span className="hint-lifted">
-                👀 松开手指自动扣盖防窥{' '}
+                松开手指自动扣盖防窥{' '}
                 {normalizedValues.length === 1
                   ? `（${normalizedValues[0]} 点）`
                   : normalizedValues.length > 1
@@ -224,7 +224,7 @@ export function DiceCup({
                     : ''}
               </span>
             ) : (
-              <span className="hint-press">👆 按住掀开 3D 骰盅查看</span>
+              <span className="hint-press">按住掀开 3D 骰盅查看</span>
             )
           ) : (
             <span className="hint-disabled">{hint || '骰盅已扣紧'}</span>
@@ -237,7 +237,7 @@ export function DiceCup({
             onClick={handleShakeClick}
             disabled={isShaking}
           >
-            {isShaking ? '🎲 摇骰中…' : '🎲 摇晃骰盅'}
+            {isShaking ? '摇骰中…' : '摇晃骰盅'}
           </button>
         )}
       </div>

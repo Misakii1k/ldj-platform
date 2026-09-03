@@ -112,14 +112,14 @@ export function SmartNetworkGuide({ inviteUrl, roomCode }: SmartNetworkGuideProp
           className={`smart-network-tab ${activeTab === 'game' ? 'is-active' : ''}`}
           onClick={() => setActiveTab('game')}
         >
-          📱 1. 扫码进房（免装APP）
+          1. 扫码进房（免装APP）
         </button>
         <button
           type="button"
           className={`smart-network-tab ${activeTab === 'hotspot' ? 'is-active' : ''}`}
           onClick={() => setActiveTab('hotspot')}
         >
-          📶 2. 一键连热点/Wi-Fi
+          2. 一键连热点/Wi-Fi
         </button>
       </div>
 
@@ -217,10 +217,10 @@ export function SmartNetworkGuide({ inviteUrl, roomCode }: SmartNetworkGuideProp
 
         {showApHelp && (
           <div className="smart-network-ap-content">
-            <p><strong>❓ 为什么在商场/酒店/咖啡馆 Wi-Fi 朋友扫码打不开？</strong></p>
+            <p><strong>为什么在商场/酒店/咖啡馆 Wi-Fi 朋友扫码打不开？</strong></p>
             <p>公共 Wi-Fi 通常开启了【AP 隔离保护】，阻止连接同 Wi-Fi 的手机互相通信。</p>
             <div className="smart-network-ap-solution">
-              <p><strong>💡 100% 极速畅玩方案（0 流量消耗）：</strong></p>
+              <p><strong>推荐畅玩方案（0 流量消耗）：</strong></p>
               <ol>
                 <li>房主手机开启【个人热点】；</li>
                 <li>朋友连接房主热点（或扫上方「一键连热点」码）；</li>

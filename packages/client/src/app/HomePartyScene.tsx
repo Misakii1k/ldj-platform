@@ -14,18 +14,18 @@ interface SeatPosition {
 }
 
 const CHARACTER_PROFILES = [
-  { id: 0, reaction: '😆', name: '小雅' },
-  { id: 1, reaction: '👏', name: '阿杰' },
-  { id: 2, reaction: '🃏', name: '晓涵' },
-  { id: 3, reaction: '🎲', name: '浩宇' },
-  { id: 4, reaction: '👋', name: '婷婷' },
-  { id: 5, reaction: '☕', name: '东东' },
-  { id: 6, reaction: '🤔', name: '若曦' },
-  { id: 7, reaction: '👉', name: '小龙' },
-  { id: 8, reaction: '👍', name: '美琪' },
-  { id: 9, reaction: '🤷', name: '志鹏' },
-  { id: 10, reaction: '📖', name: '思琪' },
-  { id: 11, reaction: '🪙', name: '凯文' },
+  { id: 0, name: '小雅' },
+  { id: 1, name: '阿杰' },
+  { id: 2, name: '晓涵' },
+  { id: 3, name: '浩宇' },
+  { id: 4, name: '婷婷' },
+  { id: 5, name: '东东' },
+  { id: 6, name: '若曦' },
+  { id: 7, name: '小龙' },
+  { id: 8, name: '美琪' },
+  { id: 9, name: '志鹏' },
+  { id: 10, name: '思琪' },
+  { id: 11, name: '凯文' },
 ] as const;
 
 // 任意人数（2~12人）对称均分极坐标席位分布
@@ -211,9 +211,9 @@ export function HomePartyScene({ selectedCount }: HomePartySceneProps) {
                 className="home-party-scene__character-img"
                 draggable={false}
               />
-              {/* 悬浮微表情气泡 */}
+              {/* 悬浮气泡 */}
               <span className="home-party-scene__bubble" aria-hidden="true">
-                {profile.reaction}
+                {profile.name}
               </span>
             </div>
           );

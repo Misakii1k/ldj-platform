@@ -19300,7 +19300,7 @@ html[data-motion-level="off"] *::after {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   🧀 奶酪大盗（Cheese Thief）模拟模式与 3D 骰盅系统
+   奶酪大盗（Cheese Thief）模拟模式与 3D 骰盅系统
    ════════════════════════════════════════════════════════════════ */
 
 /* ════════ 3D 拟真木质骰盅 (CheeseDiceCup3D) ════════ */
@@ -19595,7 +19595,7 @@ html[data-motion-level="off"] *::after {
 }
 
 .identity-card-back__emblem::after {
-  content: '🔒';
+  content: '✦';
   font-size: 1.5rem;
 }
 
@@ -20259,7 +20259,7 @@ html[data-motion-level="off"] *::after {
 }
 
 .identity-card-back__emblem::after {
-  content: '🔒';
+  content: '✦';
   font-size: 1.4rem;
 }
 
@@ -20488,7 +20488,7 @@ html[data-motion-level="off"] *::after {
   border-color: rgba(41, 39, 34, 0.28);
 }
 .theme-confidential .identity-card-back__emblem::after {
-  content: '📁';
+  content: '✦';
 }
 .theme-confidential .identity-card-back__badge {
   color: var(--game-ink, #292722);
@@ -20503,7 +20503,7 @@ html[data-motion-level="off"] *::after {
   border-color: rgba(99, 102, 241, 0.35);
 }
 .theme-gothic .identity-card-back__emblem::after {
-  content: '🐺';
+  content: '◆';
 }
 .theme-gothic .identity-card-back__badge {
   color: #c7d2fe;
@@ -20522,7 +20522,7 @@ html[data-motion-level="off"] *::after {
   border-color: rgba(20, 184, 166, 0.4);
 }
 .theme-cyber .identity-card-back__emblem::after {
-  content: '🧬';
+  content: '✦';
 }
 .theme-cyber .identity-card-back__badge {
   color: #99f6e4;
@@ -20541,7 +20541,7 @@ html[data-motion-level="off"] *::after {
   border-color: rgba(161, 161, 170, 0.3);
 }
 .theme-prison .identity-card-back__emblem::after {
-  content: '⛓️';
+  content: '◆';
 }
 .theme-prison .identity-card-back__badge {
   color: #e4e4e7;
@@ -20663,7 +20663,7 @@ html[data-motion-level="off"] *::after {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   ⚙️ 平台设置（SettingsSheet）分类标签与 TTS 语音配置
+   平台设置（SettingsSheet）分类标签与 TTS 语音配置
    ════════════════════════════════════════════════════════════════ */
 
 .settings-nav-tabs {

@@ -57,7 +57,7 @@ export function SpeakingView({ view }: Props) {
                   className="speaker-avatar-box"
                 />
                 <div className="speaker-spotlight-copy">
-                  <span className="speaker-label">{isMyTurn ? '🎯 轮到你了' : '🎙️ 正在发言'}</span>
+                  <span className="speaker-label">{isMyTurn ? '轮到你了' : '正在发言'}</span>
                   <strong className="speaker-name">{isMyTurn ? '我' : nameFor(members, currentSpeakerInfo.playerId) || `玩家 ${currentSpeakerInfo.seat + 1}`}</strong>
                   <span className="speaker-seat">#{currentSpeakerInfo.seat + 1} 号座位</span>
                 </div>
@@ -65,8 +65,8 @@ export function SpeakingView({ view }: Props) {
               </div>
               <div className="speaker-spotlight-tip">
                 {isMyTurn
-                  ? '💡 请用一句话描述你的词条，不要说出词语本体，防止卧底猜出！'
-                  : '💡 仔细听取描述措辞与语气，卧底拿到的词条往往存在细微偏差！'}
+                  ? '请用一句话描述你的词条，不要说出词语本体，防止卧底猜出！'
+                  : '仔细听取描述措辞与语气，卧底拿到的词条往往存在细微偏差！'}
               </div>
             </div>
           )}
@@ -136,10 +136,10 @@ export function SpeakingView({ view }: Props) {
                         {!player.alive
                           ? '已淘汰出局'
                           : isCurrent
-                            ? '🎙️ 正在发言中…'
+                            ? '正在发言中…'
                             : isDone
                               ? '✓ 已完成本轮描述'
-                              : '⏳ 等待发言'}
+                              : '等待发言'}
                       </span>
                     </div>
                     <div className="uc-order-card__tag">

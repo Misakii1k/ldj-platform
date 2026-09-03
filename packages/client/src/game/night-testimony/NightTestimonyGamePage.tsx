@@ -14,50 +14,50 @@ import type { CrimeId, NightTestimonyPlayerView, QuestionCardView } from './type
 
 const CRIME_META: Record<CrimeId, { name: string; icon: string; traits: string }> = {
   // 传统恶性与人身侵财
-  arson: { name: '恶意纵火犯', icon: '🔥', traits: '火源、高温、焦黑灰烬、不动产损毁、夜间' },
-  theft: { name: '入室盗窃犯', icon: '🧤', traits: '撬锁、潜入、手套撬棍、实体财物、无声搜刮' },
-  forgery: { name: '公文伪造犯', icon: '🖋️', traits: '虚假公文、篡改印章、假学历假证书、高超摹仿' },
-  smuggling: { name: '违禁走私犯', icon: '📦', traits: '越境运输、违禁品仓储、集装箱黑市、逃避关税' },
-  fraud: { name: '电信诈骗犯', icon: '🎭', traits: '杀猪盘、商业骗局、冒充公检法、诱导转账' },
-  kidnap: { name: '密室绑架犯', icon: '⛓️', traits: '人身控制、密室关押、勒索赎金、绳索胶带' },
+  arson: { name: '恶意纵火犯', icon: '火', traits: '火源、高温、焦黑灰烬、不动产损毁、夜间' },
+  theft: { name: '入室盗窃犯', icon: '盗', traits: '撬锁、潜入、手套撬棍、实体财物、无声搜刮' },
+  forgery: { name: '公文伪造犯', icon: '印', traits: '虚假公文、篡改印章、假学历假证书、高超摹仿' },
+  smuggling: { name: '违禁走私犯', icon: '私', traits: '越境运输、违禁品仓储、集装箱黑市、逃避关税' },
+  fraud: { name: '电信诈骗犯', icon: '诈', traits: '杀猪盘、商业骗局、冒充公检法、诱导转账' },
+  kidnap: { name: '密室绑架犯', icon: '绑', traits: '人身控制、密室关押、勒索赎金、绳索胶带' },
 
   // 生活微罪与不文明行为
-  littering: { name: '乱扔垃圾犯', icon: '🗑️', traits: '随手丢弃、果皮纸屑、造假分类、弄脏环境' },
-  public_urination: { name: '随地便溺犯', icon: '🚾', traits: '绿化带放水、墙角恶臭、避开监控、毫无公德' },
-  noise_nuisance: { name: '深夜扰民犯', icon: '📢', traits: '半夜电钻、深夜蹦迪、走廊喧哗、破坏睡眠' },
-  graffiti: { name: '乱涂乱画犯', icon: '🎨', traits: '景区涂鸦、油漆小广告、刻字到此一游、破坏公物' },
-  dine_and_dash: { name: '吃霸王餐犯', icon: '🍜', traits: '借口溜走、假装忘带手机、换桌逃单、专挑小店' },
-  line_cutting: { name: '恶意插队犯', icon: '🚶', traits: '硬挤队伍、假装找朋友、强行加塞、公愤焦点' },
-  scalping: { name: '倒卖黄牛犯', icon: '🎫', traits: '抢空门票、天价加价、黑市倒票、扰乱秩序' },
-  public_smoking: { name: '禁烟区吸烟犯', icon: '🚭', traits: '电梯吸烟、楼道吐雾、乱弹烟灰、刺鼻烟味' },
+  littering: { name: '乱扔垃圾犯', icon: '圾', traits: '随手丢弃、果皮纸屑、造假分类、弄脏环境' },
+  public_urination: { name: '随地便溺犯', icon: '溺', traits: '绿化带放水、墙角恶臭、避开监控、毫无公德' },
+  noise_nuisance: { name: '深夜扰民犯', icon: '噪', traits: '半夜电钻、深夜蹦迪、走廊喧哗、破坏睡眠' },
+  graffiti: { name: '乱涂乱画犯', icon: '涂', traits: '景区涂鸦、油漆小广告、刻字到此一游、破坏公物' },
+  dine_and_dash: { name: '吃霸王餐犯', icon: '霸', traits: '借口溜走、假装忘带手机、换桌逃单、专挑小店' },
+  line_cutting: { name: '恶意插队犯', icon: '塞', traits: '硬挤队伍、假装找朋友、强行加塞、公愤焦点' },
+  scalping: { name: '倒卖黄牛犯', icon: '票', traits: '抢空门票、天价加价、黑市倒票、扰乱秩序' },
+  public_smoking: { name: '禁烟区吸烟犯', icon: '烟', traits: '电梯吸烟、楼道吐雾、乱弹烟灰、刺鼻烟味' },
 
   // 职场、网络与数字犯罪
-  hacker: { name: '黑客入侵犯', icon: '💻', traits: '远程攻破、植入木马、篡改数据、窃取源码' },
-  wifi_leeching: { name: '蹭网盗密犯', icon: '📶', traits: '万能钥匙、破解密码、偷吃带宽、偷窥流量' },
-  scalp_bot: { name: '抢购外挂犯', icon: '🤖', traits: '脚本外挂、秒杀显卡、瘫痪服务器、自动化作弊' },
-  spoilers: { name: '恶意剧透犯', icon: '🍿', traits: '首映剧透凶手、弹幕反转炸弹、毁灭观影体验' },
-  water_army: { name: '网络水军犯', icon: '🌊', traits: '刷好评控评、操控舆论热搜、批量僵尸号' },
-  office_theft: { name: '偷吃外卖犯', icon: '🥡', traits: '偷拿前台外卖、冰箱偷喝奶茶、神不知鬼不觉' },
+  hacker: { name: '黑客入侵犯', icon: '客', traits: '远程攻破、植入木马、篡改数据、窃取源码' },
+  wifi_leeching: { name: '蹭网盗密犯', icon: '网', traits: '万能钥匙、破解密码、偷吃带宽、偷窥流量' },
+  scalp_bot: { name: '抢购外挂犯', icon: '挂', traits: '脚本外挂、秒杀显卡、瘫痪服务器、自动化作弊' },
+  spoilers: { name: '恶意剧透犯', icon: '剧', traits: '首映剧透凶手、弹幕反转炸弹、毁灭观影体验' },
+  water_army: { name: '网络水军犯', icon: '军', traits: '刷好评控评、操控舆论热搜、批量僵尸号' },
+  office_theft: { name: '偷吃外卖犯', icon: '食', traits: '偷拿前台外卖、冰箱偷喝奶茶、神不知鬼不觉' },
 
   // 市井侵财与偷盗
-  pickpocket: { name: '公交扒手犯', icon: '👛', traits: '拥挤人群、刀片割袋、顺手牵羊、手法极快' },
-  bike_theft: { name: '偷电瓶车犯', icon: '🛵', traits: '剪断车锁、拔掉电瓶、假装车主、二手倒卖' },
-  counterfeiter: { name: '假币制造犯', icon: '💵', traits: '印刷假钞、特制纸张油墨、市面调包、以假乱真' },
-  blackmail: { name: '敲诈勒索犯', icon: '✉️', traits: '私密黑料、匿名威胁、索要封口费、步步紧逼' },
-  prison_break: { name: '越狱逃犯', icon: '⛓‍💥', traits: '挖地道、翻越高墙、换装潜逃、全城通缉' },
-  poisoning: { name: '投毒暗害犯', icon: '🧪', traits: '无色无味、水杯下毒、伪装意外、化学试剂' },
-  grave_robbery: { name: '盗掘古墓犯', icon: '🏺', traits: '洛阳铲、深夜探穴、炸开地宫、倒卖出土文物' },
+  pickpocket: { name: '公交扒手犯', icon: '扒', traits: '拥挤人群、刀片割袋、顺手牵羊、手法极快' },
+  bike_theft: { name: '偷电瓶车犯', icon: '车', traits: '剪断车锁、拔掉电瓶、假装车主、二手倒卖' },
+  counterfeiter: { name: '假币制造犯', icon: '钞', traits: '印刷假钞、特制纸张油墨、市面调包、以假乱真' },
+  blackmail: { name: '敲诈勒索犯', icon: '索', traits: '私密黑料、匿名威胁、索要封口费、步步紧逼' },
+  prison_break: { name: '越狱逃犯', icon: '狱', traits: '挖地道、翻越高墙、换装潜逃、全城通缉' },
+  poisoning: { name: '投毒暗害犯', icon: '毒', traits: '无色无味、水杯下毒、伪装意外、化学试剂' },
+  grave_robbery: { name: '盗掘古墓犯', icon: '墓', traits: '洛阳铲、深夜探穴、炸开地宫、倒卖出土文物' },
 
   // 跨国犯罪与超级重案
-  transnational_crime: { name: '跨国犯罪头目', icon: '🌐', traits: '跨国黑产、多本伪造护照、洗钱网络、国际红通' },
-  money_laundering: { name: '地下洗钱犯', icon: '🏦', traits: '空壳公司、虚拟货币、海量资金分流、抹去流水' },
-  museum_heist: { name: '名画大盗', icon: '🖼️', traits: '闪避红外激光、调包名画、切割防盗玻璃、价值连城' },
-  arms_trafficking: { name: '军火走私犯', icon: '💣', traits: '秘密军火箱、货轮改装、伪装农机、危险重武器' },
-  espionage: { name: '商业间谍犯', icon: '🕵️', traits: '针孔窃听、窃取芯片源码、高管卧底、高额赏金' },
-  poaching: { name: '盗猎珍兽犯', icon: '🦏', traits: '深山猎夹、偷猎国家保护动物、剥取角牙皮毛' },
-  pyramid_scheme: { name: '传销洗脑犯', icon: '🗣️', traits: '秘密开会、没收手机、拉人头发展下线、精神控制' },
-  sea_pirate: { name: '公海海盗犯', icon: '🏴‍☠️', traits: '快艇劫持货轮、武装扣押船员、索要保护费' },
-  impersonation: { name: '假冒军警犯', icon: '👮', traits: '假制服假警官证、非法设卡检查、招摇撞骗' },
+  transnational_crime: { name: '跨国犯罪头目', icon: '枭', traits: '跨国黑产、多本伪造护照、洗钱网络、国际红通' },
+  money_laundering: { name: '地下洗钱犯', icon: '洗', traits: '空壳公司、虚拟货币、海量资金分流、抹去流水' },
+  museum_heist: { name: '名画大盗', icon: '画', traits: '闪避红外激光、调包名画、切割防盗玻璃、价值连城' },
+  arms_trafficking: { name: '军火走私犯', icon: '火', traits: '秘密军火箱、货轮改装、伪装农机、危险重武器' },
+  espionage: { name: '商业间谍犯', icon: '谍', traits: '针孔窃听、窃取芯片源码、高管卧底、高额赏金' },
+  poaching: { name: '盗猎珍兽犯', icon: '猎', traits: '深山猎夹、偷猎国家保护动物、剥取角牙皮毛' },
+  pyramid_scheme: { name: '传销洗脑犯', icon: '销', traits: '秘密开会、没收手机、拉人头发展下线、精神控制' },
+  sea_pirate: { name: '公海海盗犯', icon: '盗', traits: '快艇劫持货轮、武装扣押船员、索要保护费' },
+  impersonation: { name: '假冒军警犯', icon: '伪', traits: '假制服假警官证、非法设卡检查、招摇撞骗' },
 };
 
 function phaseLabel(phase: NightTestimonyPlayerView['phase']): string {
@@ -114,10 +114,10 @@ export function NightTestimonyGamePage({ view }: Props) {
       status = (view.winners ?? []).includes(playerId) ? '获胜' : '失败';
     } else if (exposed) {
       if (exposed === 'warden') {
-        status = '🚨 已自曝狱警';
+        status = '已自曝狱警';
       } else {
         const meta = CRIME_META[exposed];
-        status = `📢 已自告罪犯: ${meta?.icon ?? ''} ${meta?.name ?? exposed}`;
+        status = `已自告罪犯: ${meta?.icon ?? ''} ${meta?.name ?? exposed}`;
       }
     } else if (view.phase === 'question' && playerId === view.currentQuestionerId) {
       status = `当前出题 · ${yesCount}/3 是`;
@@ -146,7 +146,7 @@ export function NightTestimonyGamePage({ view }: Props) {
     if (hasSelfExposed) {
       primary = {
         id: 'exposed-info',
-        label: '📢 你已自告身份排除嫌疑，不参与本轮提问作答',
+        label: '你已自告身份排除嫌疑，不参与本轮提问作答',
         disabled: true,
         onAction: () => {},
       };
@@ -168,14 +168,14 @@ export function NightTestimonyGamePage({ view }: Props) {
     } else if (isQuestionActive && !me?.hasAnsweredCurrent) {
       primary = {
         id: 'answer-yes',
-        label: '✅ 回答「是」(YES)',
+        label: '回答「是」(YES)',
         disabled: false,
         onAction: () => void act({ type: 'answer_question', playerId: myId, answer: 'yes' }),
       };
       secondary = [
         {
           id: 'answer-no',
-          label: '❌ 回答「否」(NO)',
+          label: '回答「否」(NO)',
           disabled: false,
           onAction: () => void act({ type: 'answer_question', playerId: myId, answer: 'no' }),
         },
@@ -227,10 +227,10 @@ export function NightTestimonyGamePage({ view }: Props) {
       {
         id: 'self-expose',
         label: me?.isWarden
-          ? '🚨 自告身份（狱警自曝进猜罪）'
+          ? '自告身份（狱警自曝进猜罪）'
           : me?.crime
-            ? `📢 自告身份（出示罪名【${CRIME_META[me.crime]?.icon} ${CRIME_META[me.crime]?.name}】）`
-            : '📢 自告身份（揭露自身罪名）',
+            ? `自告身份（出示罪名【${CRIME_META[me.crime]?.name}】）`
+            : '自告身份（揭露自身罪名）',
         disabled: false,
         onAction: () => {
           setExposeConfirmOpen(true);
@@ -273,7 +273,7 @@ export function NightTestimonyGamePage({ view }: Props) {
       theme="mystery"
       rulesButton={(
         <button ref={rulesRef} type="button" className="tabletop-rules-btn" onClick={() => setRulesOpen(true)}>
-          📜 审讯规则
+          审讯规则
         </button>
       )}
       actions={
@@ -286,14 +286,14 @@ export function NightTestimonyGamePage({ view }: Props) {
       }
       drawer={rulesOpen && (
         <GameDrawer kind="rules" title="暗夜证词 · 案卷规则" triggerRef={rulesRef} onClose={() => setRulesOpen(false)}>
-          <h4>⚖️ 核心机制</h4>
+          <h4>核心机制</h4>
           <p>1. <strong>狱警潜伏</strong>：一名狱警伪装成囚犯潜伏其中，可撒谎；其余囚犯各有专属罪行卡，必须如实回答。</p>
           <p>2. <strong>广播提问与全员作答</strong>：顺时针轮流 3 选 1 挑题向全场提问，全员（含出题者与狱警）共同提交「是」或「否」。</p>
           <p>3. <strong>停止提问条件</strong>：任意一人累计回答 <strong>3 个「是」</strong> 或 <strong>全局提满 5 题</strong>后，立即停止询问，进入投票！</p>
           <p>4. <strong>自告/自曝机制</strong>：囚犯自告可公开罪行排除狱警嫌疑；狱警自告则直接进入终局猜罪！</p>
           <p>5. <strong>投票与终局猜罪</strong>：票出囚犯则狱警直胜；票出狱警则狱警需猜中全部囚犯罪行方能独胜，否则囚犯全胜！</p>
           <hr style={{ margin: '12px 0', borderColor: 'var(--game-line, #221e1a)' }} />
-          <h4>🗂️ 罪行档案特征参考</h4>
+          <h4>罪行档案特征参考</h4>
           <ul style={{ paddingLeft: '18px', fontSize: '13px', lineHeight: 1.6 }}>
             {Object.entries(CRIME_META).map(([id, meta]) => (
               <li key={id}>
@@ -317,10 +317,10 @@ export function NightTestimonyGamePage({ view }: Props) {
             >
               <span>
                 {me.isWarden
-                  ? '👮 我的私密身份：潜伏狱警'
+                  ? '我的私密身份：潜伏狱警'
                   : me.crime
-                    ? `📜 我的私密罪行：${CRIME_META[me.crime].name}`
-                    : '🔒 我的私密罪证档案'}
+                    ? `我的私密罪行：${CRIME_META[me.crime].name}`
+                    : '我的私密罪证档案'}
               </span>
               <span>{identityExpandedMobile ? '▲ 收起' : '▼ 点击展开防窥卡'}</span>
             </button>
@@ -336,7 +336,7 @@ export function NightTestimonyGamePage({ view }: Props) {
                 >
                   <div className="sg-panel__head">
                     <div className="sg-panel__title-group">
-                      <span>🔒</span>
+                      
                       <h3>我的私密罪证（按住翻开）</h3>
                     </div>
                     {hasSelfExposed ? (
@@ -372,7 +372,7 @@ export function NightTestimonyGamePage({ view }: Props) {
               <section className="sg-panel testimony-meters-panel" aria-label="全员累计YES监控">
                 <div className="sg-panel__head">
                   <div className="sg-panel__title-group">
-                    <span>📊</span>
+                    
                     <h3>全员「是」(YES) 累计看板</h3>
                   </div>
                   <span className="sg-badge">满 3 次触发投票</span>
@@ -425,7 +425,7 @@ export function NightTestimonyGamePage({ view }: Props) {
                 <section className="sg-panel testimony-picker-panel" aria-label="抽选审讯问题卡">
                   <div className="sg-panel__head">
                     <div className="sg-panel__title-group">
-                      <span>🎴</span>
+                      
                       <h3>轮到你出题 · 抽选 1 张向全员提问</h3>
                     </div>
                     <span className="sg-badge sg-badge--highlight">3 选 1</span>
@@ -471,7 +471,7 @@ export function NightTestimonyGamePage({ view }: Props) {
                 <section className="sg-panel testimony-active-q-panel" aria-label="当前审讯题目">
                   <div className="sg-panel__head">
                     <div className="sg-panel__title-group">
-                      <span>🚨</span>
+                      
                       <h3>第 {view.currentQuestion.questionIndex} 题 · 出题人：{nameFor(members, view.currentQuestion.questionerId)}</h3>
                     </div>
                     <span className="sg-badge">
@@ -480,15 +480,15 @@ export function NightTestimonyGamePage({ view }: Props) {
                   </div>
 
                   <div className="testimony-pending-box">
-                    <div className="testimony-pending-seal">❓</div>
+                    <div className="testimony-pending-seal">待定</div>
                     <div className="testimony-pending-content">
                       <strong className="testimony-pending-text">「{view.currentQuestion.text}」</strong>
                       <span className="testimony-pending-tip">
                         {me?.hasAnsweredCurrent
                           ? `✓ 你已提交回答：【${view.currentQuestion.answers[myId!] === 'yes' ? '是 (YES)' : '否 (NO)'}】`
                           : me?.isWarden
-                            ? '💡 你是潜伏狱警，可以撒谎！'
-                            : '💡 你是囚犯，必须如实回答！'}
+                            ? '你是潜伏狱警，可以撒谎！'
+                            : '你是囚犯，必须如实回答！'}
                       </span>
                     </div>
                   </div>
@@ -514,7 +514,7 @@ export function NightTestimonyGamePage({ view }: Props) {
               <section className="sg-panel testimony-docket-panel" aria-label="案卷公开历史">
                 <div className="sg-panel__head">
                   <div className="sg-panel__title-group">
-                    <span>📜</span>
+                    
                     <h3>案卷全员问答历史（公开）</h3>
                   </div>
                   <span className="sg-badge">
@@ -553,7 +553,7 @@ export function NightTestimonyGamePage({ view }: Props) {
             <section className="sg-panel testimony-vote-panel" aria-label="票选狱警">
               <div className="sg-panel__head">
                 <div className="sg-panel__title-group">
-                  <span>🗳️</span>
+                  
                   <h3>{hasVoted ? '✓ 你的投票已提交' : '全员票选潜伏狱警'}</h3>
                 </div>
                 <span>{hasVoted ? '等待其他玩家完成投票…' : '点选你怀疑的嫌疑人'}</span>
@@ -574,7 +574,7 @@ export function NightTestimonyGamePage({ view }: Props) {
                       aria-pressed={isSelected}
                     >
                       {isSelected ? '✓ ' : ''}{nameFor(members, id)}
-                      {exposed ? `（${exposed === 'warden' ? '🚨 狱警' : `📢 ${CRIME_META[exposed]?.icon ?? ''} ${CRIME_META[exposed]?.name ?? exposed} · 排除狱警`}）` : ''}
+                      {exposed ? `（${exposed === 'warden' ? '狱警' : `${CRIME_META[exposed]?.name ?? exposed} · 排除狱警`}）` : ''}
                     </button>
                   );
                 })}
@@ -587,7 +587,7 @@ export function NightTestimonyGamePage({ view }: Props) {
             <section className="sg-panel testimony-guess-matrix" aria-label="狱警终局猜罪">
               <div className="sg-panel__head">
                 <div className="sg-panel__title-group">
-                  <span>🕵️</span>
+                  
                   <h3>狱警终局翻盘 · 猜出全员罪行</h3>
                 </div>
                 <span className="sg-badge sg-badge--warning">全对单独获胜</span>
@@ -644,15 +644,15 @@ export function NightTestimonyGamePage({ view }: Props) {
                 </h2>
                 <p className="winner-names">
                   {isWardenVictory
-                    ? `🏆 潜伏狱警 ${nameFor(members, reveal.wardenId)} 独享胜利！`
-                    : `🎉 囚犯联盟（${(view.winners ?? []).map((id) => nameFor(members, id)).join('、')}）获胜！`}
+                    ? `潜伏狱警 ${nameFor(members, reveal.wardenId)} 独享胜利！`
+                    : `囚犯联盟（${(view.winners ?? []).map((id) => nameFor(members, id)).join('、')}）获胜！`}
                 </p>
               </div>
 
               <section className="sg-panel testimony-dossier-reveal">
                 <div className="sg-panel__head">
                   <div className="sg-panel__title-group">
-                    <span>🗃️</span>
+                    
                     <h3>本局全员真实案卷与猜测对照</h3>
                   </div>
                   <span className="sg-badge">真相大白</span>
@@ -670,7 +670,7 @@ export function NightTestimonyGamePage({ view }: Props) {
                         <div className="testimony-dossier-card__head">
                           <strong>{nameFor(members, playerId)}</strong>
                           <span className={`sg-tag ${isWarden ? 'sg-tag--warden' : 'sg-tag--prisoner'}`}>
-                            {isWarden ? '👮 狱警' : '🔗 囚犯'}
+                            {isWarden ? '狱警' : '囚犯'}
                           </span>
                         </div>
 
@@ -709,7 +709,7 @@ export function NightTestimonyGamePage({ view }: Props) {
             aria-labelledby="expose-modal-title"
           >
             <div className="nt-expose-modal__header">
-              <span className="nt-expose-modal__icon">{me?.isWarden ? '🚨' : '📢'}</span>
+              
               <div className="nt-expose-modal__title-group">
                 <h3 id="expose-modal-title">{me?.isWarden ? '主动自曝狱警身份' : '主动自告罪犯身份'}</h3>
                 <span className="nt-expose-modal__sub">{me?.isWarden ? '终局决胜大转折' : '公开真实罪名 · 排除嫌疑'}</span>
@@ -736,7 +736,7 @@ export function NightTestimonyGamePage({ view }: Props) {
                 </div>
               )}
               <div className="nt-expose-modal__caution">
-                <span>⚠️</span>
+                
                 <span>每局游戏仅限自告一次，确认后无法撤销！</span>
               </div>
             </div>
@@ -756,7 +756,7 @@ export function NightTestimonyGamePage({ view }: Props) {
                   if (myId) void act({ type: 'self_expose', playerId: myId });
                 }}
               >
-                {me?.isWarden ? '🚨 确认自曝（进猜罪）' : '📢 确认公开罪犯身份'}
+                {me?.isWarden ? '确认自曝（进猜罪）' : '确认公开罪犯身份'}
               </button>
             </div>
           </div>

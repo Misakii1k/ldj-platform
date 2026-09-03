@@ -55,14 +55,14 @@ export function NightTestimonySimStage({ view }: Props) {
       stageFit="arena"
       rulesButton={
         <button ref={rulesRef} type="button" className="tabletop-rules-btn" onClick={() => setRulesOpen(true)}>
-          📜 模拟说明
+          模拟说明
         </button>
       }
       actions={
         <div className="sim-toolbar">
-          <button type="button" className="sim-toolbar__btn" disabled={busy} onClick={() => myId && void act({ type: 'sim:assign_crimes', playerId: myId })}>🔀 重发罪行</button>
-          <button type="button" className="sim-toolbar__btn" disabled={busy} onClick={() => myId && void act({ type: 'sim:draw_question', playerId: myId })}>📜 抽审讯卡</button>
-          <button type="button" className="sim-toolbar__btn" disabled={busy || !view.questionArea} onClick={() => myId && void act({ type: 'sim:clear_question', playerId: myId })}>🗑️ 收起</button>
+          <button type="button" className="sim-toolbar__btn" disabled={busy} onClick={() => myId && void act({ type: 'sim:assign_crimes', playerId: myId })}>重发罪行</button>
+          <button type="button" className="sim-toolbar__btn" disabled={busy} onClick={() => myId && void act({ type: 'sim:draw_question', playerId: myId })}>抽审讯卡</button>
+          <button type="button" className="sim-toolbar__btn" disabled={busy || !view.questionArea} onClick={() => myId && void act({ type: 'sim:clear_question', playerId: myId })}>收起</button>
         </div>
       }
     >
@@ -71,14 +71,14 @@ export function NightTestimonySimStage({ view }: Props) {
         {me && (
           <section className="sim-panel">
             <div className="sim-panel__head">
-              <span>🕵️</span>
+              
               <h3>我的秘密身份（仅自己可见）</h3>
             </div>
             <div className="sim-secret-card">
               {me.isWarden ? (
                 <>
                   <span className="sim-secret-card__label">你是潜伏的狱警</span>
-                  <span className="sim-secret-card__word sim-secret-card__word--warden">🚨 无罪行 · 隐藏身份</span>
+                  <span className="sim-secret-card__word sim-secret-card__word--warden">无罪行 · 隐藏身份</span>
                 </>
               ) : me.crime ? (
                 <>
@@ -98,7 +98,7 @@ export function NightTestimonySimStage({ view }: Props) {
         {/* 问题卡展示区 */}
         <section className="sim-panel">
           <div className="sim-panel__head">
-            <span>📜</span>
+            
             <h3>审讯卡区（已抽 {view.usedQuestionCount} 张）</h3>
           </div>
           {view.questionArea ? (
@@ -135,10 +135,10 @@ export function NightTestimonySimStage({ view }: Props) {
                 <button type="button" className="sim-tool__btn" disabled={busy}
                   onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'reset' })}>↺</button>
                 <button type="button" className="sim-tool__btn" disabled={busy}
-                  onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'set', durationSeconds: 60 })}>⏱60s</button>
+                  onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'set', durationSeconds: 60 })}>60s</button>
               </div>
               <span className={`sim-tool__value ${timer?.isExploded ? 'is-exploded' : ''}`}>
-                {timer ? (timer.isExploded ? '💥 到点！' : `${timer.remainingSeconds}s`) : '未启用'}
+                {timer ? (timer.isExploded ? '到点！' : `${timer.remainingSeconds}s`) : '未启用'}
               </span>
             </div>
           </div>
@@ -157,7 +157,7 @@ export function NightTestimonySimStage({ view }: Props) {
       {rulesOpen && (
         <div className="sim-rules" role="dialog" aria-label="模拟模式说明">
           <button type="button" className="sim-rules__close" onClick={() => setRulesOpen(false)}>✕</button>
-          <h4>🛠️ 暗夜证词 桌面模拟模式</h4>
+          <h4>暗夜证词 桌面模拟模式</h4>
           <p>系统只负责随机罪行私密分配（含狱警标记与公开干扰卡）与问题卡抽取，<strong>不票选、不猜罪、不记分</strong>。狱警是谁、如何审讯投票由玩家自行约定。</p>
         </div>
       )}

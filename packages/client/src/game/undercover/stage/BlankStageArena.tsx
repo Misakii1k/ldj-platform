@@ -339,7 +339,7 @@ function BlankSpeechPanel({ view, act, busy }: { view: BlankPlayerView; act: Act
                   className="speaker-avatar-box"
                 />
                 <div className="speaker-spotlight-copy">
-                  <span className="speaker-label">{isMyTurn ? '🎯 轮到你了' : '🎙️ 正在发言'}</span>
+                  <span className="speaker-label">{isMyTurn ? '轮到你了' : '正在发言'}</span>
                   <strong className="speaker-name">{isMyTurn ? '我' : nameFor(members, speakerInfo.playerId) || `玩家 ${speakerInfo.seat + 1}`}</strong>
                   <span className="speaker-seat">#{speakerInfo.seat + 1} 号座位</span>
                 </div>
@@ -347,8 +347,8 @@ function BlankSpeechPanel({ view, act, busy }: { view: BlankPlayerView; act: Act
               </div>
               <div className="speaker-spotlight-tip">
                 {isMyTurn
-                  ? (me?.isBlank ? '💡 你是白板：参考前人描述，模糊发言，隐藏自身无词特征！' : '💡 请用一句话描述词条，切勿透露本体！')
-                  : '💡 仔细听取描述措辞与语气，白板或卧底往往描述过于空泛！'}
+                  ? (me?.isBlank ? '你是白板：参考前人描述，模糊发言，隐藏自身无词特征！' : '请用一句话描述词条，切勿透露本体！')
+                  : '仔细听取描述措辞与语气，白板或卧底往往描述过于空泛！'}
               </div>
             </div>
           )}
@@ -405,10 +405,10 @@ function BlankSpeechPanel({ view, act, busy }: { view: BlankPlayerView; act: Act
                         {!player.alive
                           ? '已淘汰出局'
                           : isCurrent
-                            ? '🎙️ 正在发言中…'
+                            ? '正在发言中…'
                             : isDone
                               ? '✓ 已完成本轮描述'
-                              : '⏳ 等待发言'}
+                              : '等待发言'}
                       </span>
                     </div>
                     <div className="uc-order-card__tag">

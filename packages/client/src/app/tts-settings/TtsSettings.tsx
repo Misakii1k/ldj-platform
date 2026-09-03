@@ -61,7 +61,7 @@ export function TtsSettings() {
             className={`tts-engine-card ${config.engine === 'system_tts' ? 'is-active' : ''}`}
             onClick={() => handleEngineChange('system_tts')}
           >
-            <div className="engine-icon">📱</div>
+            <div className="engine-icon">系统</div>
             <div className="engine-meta">
               <strong>系统原生 TTS (System TTS)</strong>
               <span>安卓系统底层引擎 · 离线零延迟 · 免配置</span>
@@ -74,7 +74,7 @@ export function TtsSettings() {
             className={`tts-engine-card ${config.engine === 'web_speech' ? 'is-active' : ''}`}
             onClick={() => handleEngineChange('web_speech')}
           >
-            <div className="engine-icon">🌐</div>
+            <div className="engine-icon">Web</div>
             <div className="engine-meta">
               <strong>浏览器 Web Speech API</strong>
               <span>网页标准发音 · 本地发音人切换</span>
@@ -87,7 +87,7 @@ export function TtsSettings() {
             className={`tts-engine-card ${config.engine === 'custom_api' ? 'is-active' : ''}`}
             onClick={() => handleEngineChange('custom_api')}
           >
-            <div className="engine-icon">⚡</div>
+            <div className="engine-icon">API</div>
             <div className="engine-meta">
               <strong>第三方 / OpenAI 兼容 TTS</strong>
               <span>高音质 · 拟真情绪 · 支持自定义端点</span>
@@ -100,7 +100,7 @@ export function TtsSettings() {
       {config.engine === 'system_tts' ? (
         <div className="tts-subpanel">
           <p className="tts-hint" style={{ margin: '0 0 12px', fontSize: '0.84rem', color: '#4b5563' }}>
-            ✨ 已启用系统原生 Text-To-Speech 服务。将直接使用 Android 手机系统内置的语音引擎（如小米小爱、华为、Google 语音服务等）进行法官主持与播报。
+            已启用系统原生 Text-To-Speech 服务。将直接使用 Android 手机系统内置的语音引擎（如小米小爱、华为、Google 语音服务等）进行法官主持与播报。
           </p>
 
           <div className="form-row-sliders">
@@ -272,7 +272,7 @@ export function TtsSettings() {
           onClick={handleTestPlay}
           disabled={isPlayingTest}
         >
-          {isPlayingTest ? '🔊 正在试听中…' : '🔊 试听法官主持语音'}
+          {isPlayingTest ? '正在试听中…' : '试听法官主持语音'}
         </button>
 
         <button type="submit" className="primary-btn tts-save-btn">

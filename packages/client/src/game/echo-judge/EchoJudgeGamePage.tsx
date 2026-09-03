@@ -98,7 +98,7 @@ export function EchoJudgeGamePage({ view }: Props) {
     if (isCurrentSpeaker) {
       primary = {
         id: 'finish-speaking',
-        label: '🎙️ 我已口头发言完毕（交棒下一位）',
+        label: '我已口头发言完毕（交棒下一位）',
         disabled: false,
         onAction: () => {
           void act({ type: 'finish_speaking', playerId: myId });
@@ -122,8 +122,8 @@ export function EchoJudgeGamePage({ view }: Props) {
       id: 'accuse',
       label:
         count > 0
-          ? `🎯 指认 ${selectedAccuseTargets.map((id) => nameFor(members, id)).join('、')} 为伪人（已选 ${count} 人）`
-          : '⚖️ 判定场上全员皆为正常人类（0 伪人）',
+          ? `指认 ${selectedAccuseTargets.map((id) => nameFor(members, id)).join('、')} 为伪人（已选 ${count} 人）`
+          : '判定场上全员皆为正常人类（0 伪人）',
       disabled: false,
       onAction: () => {
         void act({ type: 'accuse', playerId: myId, targetPlayerIds: selectedAccuseTargets });
@@ -162,7 +162,7 @@ export function EchoJudgeGamePage({ view }: Props) {
       stageFit="arena"
       rulesButton={(
         <button ref={rulesRef} type="button" className="tabletop-rules-btn" onClick={() => setRulesOpen(true)}>
-          📜 法庭规则
+          法庭规则
         </button>
       )}
       actions={
@@ -175,7 +175,7 @@ export function EchoJudgeGamePage({ view }: Props) {
       }
       drawer={rulesOpen && (
         <GameDrawer kind="rules" title="伪人测试 · 测谎规则" triggerRef={rulesRef} onClose={() => setRulesOpen(false)}>
-          <h4>⚖️ 核心机制</h4>
+          <h4>核心机制</h4>
           <p>1. <strong>审判长出题与自由选阵营</strong>：每轮轮流由一名玩家担任审判长。出题阶段，其余玩家可<strong>自由选择当【正常人类】或【潜伏伪人】</strong>；选择伪人者由系统派发不重复的绝密触发词。</p>
           <p>2. <strong>法庭辩论</strong>：非审判长玩家按座次依次口头发言回答。伪人必须将绝密触发词自然藏入自己的讲述中；人类可如实回答或故意混淆。</p>
           <p>3. <strong>多选指认</strong>：全部发言完毕后，审判长可<strong>多选指认 0、1 或多名伪人</strong>。</p>
@@ -203,10 +203,10 @@ export function EchoJudgeGamePage({ view }: Props) {
             >
               <span>
                 {me.isJudge
-                  ? '⚖️ 我的身份：主审判官'
+                  ? '我的身份：主审判官'
                   : me.role === 'impostor'
-                    ? `👾 我的身份：潜伏伪人（触发词：「${me.triggerWord}」）`
-                    : '👤 我的身份：正常人类'}
+                    ? `我的身份：潜伏伪人（触发词：「${me.triggerWord}」）`
+                    : '我的身份：正常人类'}
               </span>
               <span>{identityExpandedMobile ? '▲ 收起' : '▼ 点击展开防窥卡'}</span>
             </button>
@@ -220,7 +220,7 @@ export function EchoJudgeGamePage({ view }: Props) {
                 <div className="echo-role-choice-panel" aria-label="自由选择本轮阵营">
                   <div className="sg-panel__head">
                     <div className="sg-panel__title-group">
-                      <span>🎭</span>
+                      
                       <h3>自由选择本轮阵营</h3>
                     </div>
                     <span className="sg-badge sg-badge--highlight">开局可随时切换</span>
@@ -231,7 +231,7 @@ export function EchoJudgeGamePage({ view }: Props) {
                       className={`echo-role-btn ${me.role === 'human' ? 'is-active-human' : ''}`}
                       onClick={() => void act({ type: 'choose_role', playerId: me.playerId, role: 'human' })}
                     >
-                      <span className="echo-role-btn__title">👤 当正常人类</span>
+                      <span className="echo-role-btn__title">当正常人类</span>
                       <span className="echo-role-btn__desc">自由发挥 · 混淆视听</span>
                     </button>
                     <button
@@ -239,7 +239,7 @@ export function EchoJudgeGamePage({ view }: Props) {
                       className={`echo-role-btn ${me.role === 'impostor' ? 'is-active-impostor' : ''}`}
                       onClick={() => void act({ type: 'choose_role', playerId: me.playerId, role: 'impostor' })}
                     >
-                      <span className="echo-role-btn__title">👾 潜伏当伪人</span>
+                      <span className="echo-role-btn__title">潜伏当伪人</span>
                       <span className="echo-role-btn__desc">获取绝密词 · 隐秘藏词</span>
                     </button>
                   </div>
@@ -253,7 +253,7 @@ export function EchoJudgeGamePage({ view }: Props) {
                 >
                   <div className="sg-panel__head">
                     <div className="sg-panel__title-group">
-                      <span>🕵️</span>
+                      
                       <h3>我的绝密身份（按住防窥）</h3>
                     </div>
                     <span className="sg-badge sg-badge--dark">第 {view.round} 轮</span>
@@ -290,7 +290,7 @@ export function EchoJudgeGamePage({ view }: Props) {
               <section className="sg-panel echo-score-panel" aria-label="实时计分榜">
                 <div className="sg-panel__head">
                   <div className="sg-panel__title-group">
-                    <span>📊</span>
+                    
                     <h3>法庭积分榜</h3>
                   </div>
                   <span className="sg-badge">实时</span>
@@ -313,7 +313,7 @@ export function EchoJudgeGamePage({ view }: Props) {
                 <section className="sg-panel echo-picker-panel" aria-label="审判长抽选题卡">
                   <div className="sg-panel__head">
                     <div className="sg-panel__title-group">
-                      <span>🎴</span>
+                      
                       <h3>抽选 1 张作为本轮审问考题</h3>
                     </div>
                     <span className="sg-badge sg-badge--highlight">3 选 1</span>
@@ -359,7 +359,7 @@ export function EchoJudgeGamePage({ view }: Props) {
                 <section className="sg-panel echo-active-topic-panel" aria-label="本轮法庭考题">
                   <div className="sg-panel__head">
                     <div className="sg-panel__title-group">
-                      <span>⚖️</span>
+                      
                       <h3>第 {view.round} 轮法庭审问 · 审判长：{nameFor(members, view.judgeId)}</h3>
                     </div>
                     <span className="sg-badge">考题公开</span>
@@ -376,7 +376,7 @@ export function EchoJudgeGamePage({ view }: Props) {
                       <div className="echo-progress-head">
                         <span>发言进度：{view.answeredCount} / {answerTotal} 人</span>
                         <span className="echo-speaker-tag">
-                          🎙️ 当前发言：<strong>{nameFor(members, view.currentSpeakerId ?? '')}</strong>
+                          当前发言：<strong>{nameFor(members, view.currentSpeakerId ?? '')}</strong>
                         </span>
                       </div>
                       <div className="echo-progress-bar-track">
@@ -392,7 +392,7 @@ export function EchoJudgeGamePage({ view }: Props) {
                 <section className="sg-panel echo-judgment-panel" aria-label="审判长指认">
                   <div className="sg-panel__head">
                     <div className="sg-panel__title-group">
-                      <span>🎯</span>
+                      
                       <h3>全员发言完毕 · 审判长多选指认伪人</h3>
                     </div>
                     <span className="sg-badge sg-badge--warning">
@@ -420,7 +420,7 @@ export function EchoJudgeGamePage({ view }: Props) {
                             onClick={() => me?.isJudge && toggleAccuseTarget(id)}
                             aria-pressed={isSelected}
                           >
-                            {isSelected ? '🎯 已指认 ' : ''}{nameFor(members, id)}
+                            {isSelected ? '已指认 ' : ''}{nameFor(members, id)}
                           </button>
                         );
                       })}
@@ -428,7 +428,7 @@ export function EchoJudgeGamePage({ view }: Props) {
 
                   {view.caughtImpostors && view.caughtImpostors.length > 0 && (
                     <div className="echo-caught-alert">
-                      <span>🚨 抓获的伪人：</span>
+                      <span>抓获的伪人：</span>
                       <strong>{view.caughtImpostors.map((id) => nameFor(members, id)).join('、')}</strong>
                     </div>
                   )}
@@ -443,16 +443,16 @@ export function EchoJudgeGamePage({ view }: Props) {
           <div className="sg-stage echo-over-stage">
             <div className="winner-hero winner-hero--echo">
               <span className="winner-rays" aria-hidden="true" />
-              <h2 className="winner-title">🎉 审判结案 · 胜者诞生！</h2>
+              <h2 className="winner-title">审判结案 · 胜者诞生！</h2>
               <p className="winner-names">
-                🏆 获胜玩家：{(view.winners ?? []).map((id) => nameFor(members, id)).join('、')}
+                获胜玩家：{(view.winners ?? []).map((id) => nameFor(members, id)).join('、')}
               </p>
             </div>
 
             <section className="sg-panel echo-reveal-panel">
               <div className="sg-panel__head">
                 <div className="sg-panel__title-group">
-                  <span>🗂️</span>
+                  
                   <h3>全员真实身份与绝密触发词公开</h3>
                 </div>
                 <span className="sg-badge">真相大白</span>
@@ -470,7 +470,7 @@ export function EchoJudgeGamePage({ view }: Props) {
                       <div className="echo-reveal-head">
                         <strong>{nameFor(members, playerId)}</strong>
                         <span className={`sg-tag ${role === 'impostor' ? 'sg-tag--echo' : 'sg-tag--human'}`}>
-                          {role === 'impostor' ? '👾 伪人' : '👤 人类'}
+                          {role === 'impostor' ? '伪人' : '人类'}
                         </span>
                       </div>
                       <div className="echo-reveal-score">

@@ -64,7 +64,7 @@ export function HomeActiveRoomBanner() {
             进行中房间：<strong>{gameTitle}</strong> · 房间码 <code>{me.roomCode}</code>
           </h2>
           <p className="home-active-room-banner__desc">
-            当前身份：{isHost ? '👑 房主' : '👤 玩家'}（{me.nickname}） · 成员 {room.members.length} 人 · 座位已保留，可随时返回
+            当前身份：{isHost ? '房主' : '玩家'}（{me.nickname}） · 成员 {room.members.length} 人 · 座位已保留，可随时返回
           </p>
         </div>
       </div>

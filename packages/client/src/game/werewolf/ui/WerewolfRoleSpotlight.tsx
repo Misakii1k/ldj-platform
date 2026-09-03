@@ -64,7 +64,7 @@ export function WerewolfRoleSpotlight({ model }: WerewolfRoleSpotlightProps) {
             <div className="werewolf-role-intel werewolf-role-intel--wolf">
               <div className="werewolf-role-intel__header">
                 <GameIcon name="cards_deck" size={16} />
-                <span>狼人阵营夜袭</span>
+                <span>狼人行动</span>
               </div>
               <div className="werewolf-role-intel__teammates">
                 <span className="werewolf-role-intel__label">同伴状态：</span>
@@ -76,12 +76,12 @@ export function WerewolfRoleSpotlight({ model }: WerewolfRoleSpotlightProps) {
                       key={mate.playerId}
                       className={`werewolf-role-intel__tag ${mate.alive ? 'is-alive' : 'is-dead'}`}
                     >
-                      {mate.seatLabel} {mate.name} {mate.targetName ? `(🎯 刀 ${mate.targetName})` : ''}
+                      {mate.seatLabel} {mate.name} {mate.targetName ? `(刀 ${mate.targetName})` : ''}
                     </span>
                   ))
                 )}
               </div>
-              <p className="werewolf-role-intel__tip">在下方选择今夜猎杀的目标，狼人投票最高者将被袭击。</p>
+              <p className="werewolf-role-intel__tip">在下方选择今夜袭击的目标，狼人统一意见后生效。</p>
             </div>
           )}
 
@@ -89,7 +89,7 @@ export function WerewolfRoleSpotlight({ model }: WerewolfRoleSpotlightProps) {
             <div className="werewolf-role-intel werewolf-role-intel--seer">
               <div className="werewolf-role-intel__header">
                 <span className="werewolf-role-intel__icon">🔮</span>
-                <span>水晶球占卜</span>
+                <span>查验身份</span>
               </div>
               <div className="werewolf-role-intel__history">
                 <span className="werewolf-role-intel__label">查验记录：</span>
@@ -106,7 +106,7 @@ export function WerewolfRoleSpotlight({ model }: WerewolfRoleSpotlightProps) {
                   ))
                 )}
               </div>
-              <p className="werewolf-role-intel__tip">选择一位存活玩家查验其阵营归属。</p>
+              <p className="werewolf-role-intel__tip">选择一位存活玩家查验其身份阵营。</p>
             </div>
           )}
 
@@ -114,19 +114,19 @@ export function WerewolfRoleSpotlight({ model }: WerewolfRoleSpotlightProps) {
             <div className="werewolf-role-intel werewolf-role-intel--witch">
               <div className="werewolf-role-intel__header">
                 <span className="werewolf-role-intel__icon">🧪</span>
-                <span>炼金魔药室</span>
+                <span>女巫行动</span>
               </div>
               <div className="werewolf-role-intel__potions">
                 <span className={`potion-badge ${self.witchSaveUsed ? 'is-spent' : 'is-ready'}`}>
-                  🟢 圣光解药：{self.witchSaveUsed ? '已使用' : '就绪'}
+                  🟢 解药：{self.witchSaveUsed ? '已使用' : '就绪'}
                 </span>
                 <span className={`potion-badge ${self.witchPoisonUsed ? 'is-spent' : 'is-ready'}`}>
-                  🟣 剧毒药水：{self.witchPoisonUsed ? '已使用' : '就绪'}
+                  🟣 毒药：{self.witchPoisonUsed ? '已使用' : '就绪'}
                 </span>
               </div>
               {self.nightVictimName && (
                 <div className="werewolf-role-intel__alert">
-                  ⚠️ 今夜倒在血泊中的是：<strong>{self.nightVictimName}</strong>
+                  今夜遇袭出局的是：<strong>{self.nightVictimName}</strong>
                 </div>
               )}
             </div>
@@ -136,7 +136,7 @@ export function WerewolfRoleSpotlight({ model }: WerewolfRoleSpotlightProps) {
             <div className="werewolf-role-intel werewolf-role-intel--guard">
               <div className="werewolf-role-intel__header">
                 <span className="werewolf-role-intel__icon">🛡️</span>
-                <span>圣盾庇护</span>
+                <span>守卫守护</span>
               </div>
               <div className="werewolf-role-intel__guard-status">
                 {self.lastGuardTargetName ? (
@@ -145,7 +145,7 @@ export function WerewolfRoleSpotlight({ model }: WerewolfRoleSpotlightProps) {
                   <span>上一夜未守护任何人</span>
                 )}
               </div>
-              <p className="werewolf-role-intel__tip">选择今夜受圣盾庇护的目标，抵挡狼人爪牙。</p>
+              <p className="werewolf-role-intel__tip">选择今夜守护的目标，防止其被狼人袭击。</p>
             </div>
           )}
 
@@ -153,10 +153,10 @@ export function WerewolfRoleSpotlight({ model }: WerewolfRoleSpotlightProps) {
             <div className="werewolf-role-intel werewolf-role-intel--hunter">
               <div className="werewolf-role-intel__header">
                 <span className="werewolf-role-intel__icon">🏹</span>
-                <span>猎人之怒</span>
+                <span>猎人技能</span>
               </div>
               <p className="werewolf-role-intel__tip">
-                {self.pendingShoot ? '你已倒下，可在出局前开枪带走一人！' : '银弹上膛，随时准备在出局时反击。'}
+                {self.pendingShoot ? '你已出局，可开枪带走场上一名存活玩家！' : '出局时可开枪带走场上一名玩家（被毒死除外）。'}
               </p>
             </div>
           )}
@@ -164,10 +164,9 @@ export function WerewolfRoleSpotlight({ model }: WerewolfRoleSpotlightProps) {
           {self.role === 'villager' && (
             <div className="werewolf-role-intel werewolf-role-intel--villager">
               <div className="werewolf-role-intel__header">
-                <span className="werewolf-role-intel__icon">🌙</span>
-                <span>安睡之夜</span>
+                <span>村民行动</span>
               </div>
-              <p className="werewolf-role-intel__tip">夜色沉沉，万籁俱寂。闭眼静候黎明到来，准备白天的辨析与推理。</p>
+              <p className="werewolf-role-intel__tip">夜间无行动，请闭眼等待天亮参与白天的讨论与投票。</p>
             </div>
           )}
 
@@ -175,10 +174,10 @@ export function WerewolfRoleSpotlight({ model }: WerewolfRoleSpotlightProps) {
             <div className="werewolf-role-intel werewolf-role-intel--idiot">
               <div className="werewolf-role-intel__header">
                 <span className="werewolf-role-intel__icon">🃏</span>
-                <span>愚者之戏</span>
+                <span>白痴技能</span>
               </div>
               <p className="werewolf-role-intel__tip">
-                {self.idiotRevealed ? '你已翻牌免死，虽无法投票但可继续发言洞察全场。' : '装疯卖傻，若在白天被放逐可翻牌免死。'}
+                {self.idiotRevealed ? '你已翻牌免死，虽无法投票但可继续发言参与讨论。' : '若在白天被投票放逐，可翻开身份牌免除出局。'}
               </p>
             </div>
           )}
