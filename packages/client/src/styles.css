@@ -13091,11 +13091,12 @@ html[data-motion-level="off"] *::after {
 }
 
 .moon-header__glyph {
-  color: #d4b06a;
-  font-family: var(--wc-font-title);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: clamp(1.6rem, 3.5vw, 2.4rem);
   line-height: 1;
-  text-shadow: 0 0 14px rgba(197, 160, 89, 0.45);
+  filter: drop-shadow(0 0 10px rgba(197, 160, 89, 0.45));
 }
 
 .moon-header__copy { min-width: 0; }
