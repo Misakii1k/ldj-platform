@@ -218,8 +218,7 @@ function statusLabelOf(view: WerewolfView, playerId: string): string {
   const player = view.players.find((entry) => entry.playerId === playerId);
   if (!player) return '未知';
   if (!player.alive) {
-    const reason = player.exitReason ? EXIT_REASON_LABELS[player.exitReason] : null;
-    return reason ? `已出局 · ${reason}` : '已出局';
+    return '已出局';
   }
   if (player.idiotRevealed) return '存活 · 白痴已翻牌';
   return '存活';
@@ -409,7 +408,7 @@ function buildActionGroups(view: WerewolfView, members: readonly MemberLike[]): 
     return groups;
   }
 
-  if (view.phase === 'day_announcement' && me.alive) {
+  if (view.phase === 'day_announcement' && me) {
     groups.push({
       id: 'confirm_announcement',
       title: '死讯确认',

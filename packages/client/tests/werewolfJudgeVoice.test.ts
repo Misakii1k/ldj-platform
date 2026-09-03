@@ -98,8 +98,148 @@ test('buildWerewolfPresentation 正确暴露 rolesConfig 观色衠配置', () =>
     me: null,
   };
 
-  const model = buildWerewolfPresentation(dummyView, [{playerId: 'p1', nickname: '玧家1'}, {playerId: 'p2', nickname: '玧家2'}]);
+  const model = buildWerewolfPresentation(dummyView, [{playerId: 'p1', nickname: '玩家1'}, {playerId: 'p2', nickname: '玩家2'}]);
   assert.strictEqual(model.rolesConfig.guard, false);
   assert.strictEqual(model.rolesConfig.hunter, true);
   assert.strictEqual(model.rolesConfig.idiot, false);
+});
+
+test('死讯隐蔽：出局玩家统一显示为【已出局】，绝不泄露夜晚遇袭/女巫毒杀等死因', () => {
+  const view: WerewolfView = {
+    day: 1,
+    phase: 'day_announcement',
+    players: [
+      { playerId: 'p1', seat: 0, alive: false, exitReason: 'night_kill', idiotRevealed: false, revealedRole: null },
+      { playerId: 'p2', seat: 1, alive: false, exitReason: 'poisoned', idiotRevealed: false, revealedRole: null },
+      { playerId: 'p3', seat: 2, alive: true, exitReason: null, idiotRevealed: false, revealedRole: null },
+    ],
+    config: {
+      pace: 'standard',
+      witchSelfSave: 'first_night',
+      winCondition: 'numbers',
+      wolfKillScope: 'any',
+      roles: { guard: false, hunter: true, idiot: false },
+    },
+    confirmedRolePlayerIds: [],
+    announcementConfirmedPlayerIds: [],
+    lastNightDeaths: ['p1', 'p2'],
+    speakingOrder: ['p3'],
+    currentSpeakerId: null,
+    lastWordsPlayerId: null,
+    deadlineAt: 10000,
+    votesSubmitted: 0,
+    votesExpected: 1,
+    runoffCandidates: [],
+    lastVoteSummary: null,
+    pendingShooterId: null,
+    winner: null,
+    aborted: false,
+    reveal: null,
+    me: {
+      playerId: 'p3',
+      role: 'villager',
+      alive: true,
+      confirmedRole: true,
+      confirmedAnnouncement: false,
+      lastWordsPending: false,
+      wolfTeammateIds: [],
+      wolfVotes: {},
+      hasNightVoted: false,
+      seerResults: [],
+      seerCheckedThisNight: false,
+      nightVictimId: null,
+      witchSaveUsed: false,
+      witchPoisonUsed: false,
+      witchSaveDecision: null,
+      witchPoisonDecided: false,
+      witchCanSelfSave: false,
+      guardTargetId: null,
+      guardDecided: false,
+      lastGuardTargetId: null,
+      pendingShoot: false,
+      idiotRevealed: false,
+    },
+  };
+
+  const model = buildWerewolfPresentation(view, [
+    { playerId: 'p1', nickname: '玩家1' },
+    { playerId: 'p2', nickname: '玩家2' },
+    { playerId: 'p3', nickname: '玩家3' },
+  ]);
+
+  const p1Seat = model.seats.find((s) => s.playerId === 'p1');
+  const p2Seat = model.seats.find((s) => s.playerId === 'p2');
+  assert.strictEqual(p1Seat?.statusLabel, '已出局');
+  assert.strictEqual(p2Seat?.statusLabel, '已出局');
+  assert.strictEqual(p1Seat?.statusLabel.includes('夜晚遇袭'), false);
+  assert.strictEqual(p2Seat?.statusLabel.includes('女巫毒杀'), false);
+});
+
+test('女巫解药用后无法看刀口：nightVictimId 为 null 时，前端不显示受害者姓名与座位', () => {
+  const view: WerewolfView = {
+    day: 2,
+    phase: 'night',
+    players: [
+      { playerId: 'w1', seat: 0, alive: true, exitReason: null, idiotRevealed: false, revealedRole: null },
+      { playerId: 'v1', seat: 1, alive: true, exitReason: null, idiotRevealed: false, revealedRole: null },
+      { playerId: 'witch', seat: 2, alive: true, exitReason: null, idiotRevealed: false, revealedRole: null },
+    ],
+    config: {
+      pace: 'standard',
+      witchSelfSave: 'first_night',
+      winCondition: 'numbers',
+      wolfKillScope: 'any',
+      roles: { guard: false, hunter: true, idiot: false },
+    },
+    confirmedRolePlayerIds: [],
+    announcementConfirmedPlayerIds: [],
+    lastNightDeaths: [],
+    speakingOrder: [],
+    currentSpeakerId: null,
+    lastWordsPlayerId: null,
+    deadlineAt: 10000,
+    votesSubmitted: 0,
+    votesExpected: 3,
+    runoffCandidates: [],
+    lastVoteSummary: null,
+    pendingShooterId: null,
+    winner: null,
+    aborted: false,
+    reveal: null,
+    me: {
+      playerId: 'witch',
+      role: 'witch',
+      alive: true,
+      confirmedRole: true,
+      confirmedAnnouncement: false,
+      lastWordsPending: false,
+      wolfTeammateIds: [],
+      wolfVotes: {},
+      hasNightVoted: false,
+      seerResults: [],
+      seerCheckedThisNight: false,
+      // 女巫已用解药，服务端给出的 nightVictimId 必为 null
+      nightVictimId: null,
+      witchSaveUsed: true,
+      witchPoisonUsed: false,
+      witchSaveDecision: false,
+      witchPoisonDecided: false,
+      witchCanSelfSave: false,
+      guardTargetId: null,
+      guardDecided: false,
+      lastGuardTargetId: null,
+      pendingShoot: false,
+      idiotRevealed: false,
+    },
+  };
+
+  const model = buildWerewolfPresentation(view, [
+    { playerId: 'w1', nickname: '狼人' },
+    { playerId: 'v1', nickname: '村民' },
+    { playerId: 'witch', nickname: '女巫本人' },
+  ]);
+
+  assert.strictEqual(model.self?.nightVictimName, null);
+  assert.strictEqual(model.self?.nightVictimSeat, null);
+  assert.strictEqual(model.self?.witchSaveUsed, true);
 });

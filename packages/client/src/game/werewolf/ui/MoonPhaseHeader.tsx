@@ -17,6 +17,7 @@ interface MoonPhaseHeaderProps {
   readonly mood: WerewolfMood;
   readonly deadlineAt: number | null;
   readonly spectator: boolean;
+  readonly overrideSeconds?: number | null;
 }
 
 export function MoonPhaseHeader({
@@ -26,9 +27,12 @@ export function MoonPhaseHeader({
   mood,
   deadlineAt,
   spectator,
+  overrideSeconds,
 }: MoonPhaseHeaderProps) {
   const countdown = useCountdown(deadlineAt);
-  const seconds = deadlineAt === null ? null : Math.max(0, countdown.secondsLeft);
+  const seconds = overrideSeconds !== undefined && overrideSeconds !== null
+    ? overrideSeconds
+    : (deadlineAt === null ? null : Math.max(0, countdown.secondsLeft));
 
   return (
     <header className="moon-header" data-mood={mood}>

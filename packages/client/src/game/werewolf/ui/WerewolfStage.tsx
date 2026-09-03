@@ -75,11 +75,13 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
     if (targetMenu && (!selectedLiveSeat || selectedLiveSeat.targetActions.length === 0)) setTargetMenu(null);
   }, [targetMenu, selectedLiveSeat]);
 
-  const { currentNightRole, isNightVoiceRunning } = useJudgeVoice(model);
+  const { currentNightRole, isNightVoiceRunning, roleRemainingSeconds } = useJudgeVoice(model);
 
   const effectiveMood = isNightVoiceRunning ? 'night' : model.mood;
   const effectivePhase = isNightVoiceRunning ? 'night' : model.phase;
-  const effectivePhaseLabel = isNightVoiceRunning ? '夜晚行动' : model.phaseLabel;
+  const effectivePhaseLabel = isNightVoiceRunning
+    ? (currentNightRole ? `${WEREWOLF_ROLE_NAMES[currentNightRole]}行动` : '夜晚行动')
+    : model.phaseLabel;
   const effectiveNarrative = isNightVoiceRunning
     ? (currentNightRole ? `法官正在引导 ${WEREWOLF_ROLE_NAMES[currentNightRole]} 行动` : '夜幕降临，万籁俱寂')
     : model.narrative;
@@ -95,6 +97,33 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
     ? `夜深了，法官正在引导 ${WEREWOLF_ROLE_NAMES[currentNightRole]} 行动...`
     : model.waitingHint;
 
+  // 在夜间全流程播放结束前，全场包括死者本人均保持存活显示，杜绝夜晚提前置灰泄露战况
+  const effectiveSeats = isNightVoiceRunning
+    ? model.seats.map((seat) => {
+        const seatNum = Number(seat.seatLabel.replace(/\D/g, '')) - 1;
+        if (model.nightDeathSeats.includes(seatNum)) {
+          return {
+            ...seat,
+            alive: true,
+            statusLabel: '存活',
+          };
+        }
+        return seat;
+      })
+    : model.seats;
+
+  const selfSeatNum = model.seats.find((s) => s.isSelf)
+    ? Number(model.seats.find((s) => s.isSelf)!.seatLabel.replace(/\D/g, '')) - 1
+    : -1;
+  const isSelfTonightDeath = isNightVoiceRunning && model.nightDeathSeats.includes(selfSeatNum);
+
+  const effectiveSelf = model.self
+    ? {
+        ...model.self,
+        alive: isSelfTonightDeath ? true : model.self.alive,
+      }
+    : null;
+
   const effectiveModel: WerewolfPresentationModel = isNightVoiceRunning
     ? {
         ...model,
@@ -102,6 +131,8 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
         phase: 'night',
         phaseLabel: effectivePhaseLabel,
         narrative: effectiveNarrative,
+        seats: effectiveSeats,
+        self: effectiveSelf,
       }
     : model;
 
@@ -133,10 +164,10 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
   const isDay = effectiveMood === 'day';
   const isDawn = effectiveMood === 'dawn';
 
-  // 竖屏分列席位：左翼自上而下 1~4 号，右翼自上而下 5~8 号（号码不变，仅排列方式）
-  const half = Math.ceil(model.seats.length / 2);
-  const leftSeats = model.seats.slice(0, half);
-  const rightSeats = model.seats.slice(half);
+  // 竖屏分列席位：使用已处理黑夜遮罩的 effectiveModel.seats
+  const half = Math.ceil(effectiveModel.seats.length / 2);
+  const leftSeats = effectiveModel.seats.slice(0, half);
+  const rightSeats = effectiveModel.seats.slice(half);
 
   const centerArena = (
     <div
@@ -160,7 +191,7 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
 
       {!mobileLayout && (
         <SeatRing
-          seats={model.seats}
+          seats={effectiveModel.seats}
           mood={effectiveMood}
           className="werewolf-desktop-seat-ring"
           onSelectTarget={handleSelectTarget}
@@ -188,7 +219,8 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
           phaseLabel={effectiveModel.phaseLabel}
           narrative={effectiveModel.narrative}
           mood={effectiveMood}
-          deadlineAt={effectiveModel.deadlineAt}
+          deadlineAt={isNightVoiceRunning ? null : effectiveModel.deadlineAt}
+          overrideSeconds={isNightVoiceRunning ? roleRemainingSeconds : null}
           spectator={effectiveModel.spectator}
         />
 

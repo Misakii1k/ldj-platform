@@ -124,9 +124,11 @@ test('v2 各阶段超时确定性兜底', () => {
   st5 = apply(st5, actor('s'), { type: 'seer_check', targetPlayerId: 'w1' });
   st5 = apply(st5, actor('x'), { type: 'witch_save', save: false });
   st5 = apply(st5, actor('x'), { type: 'witch_poison', targetPlayerId: null });
+  assert.equal(st5.phase, 'day_announcement');
+  st5 = timeout(st5, 'day_announcement');
   assert.equal(st5.phase, 'hunter_shot');
   st5 = timeout(st5, 'hunter_shot');
-  assert.equal(st5.phase, 'day_announcement');
+  assert.equal(st5.phase, 'discussion');
   assert.equal(st5.players.h?.alive, false);
 });
 

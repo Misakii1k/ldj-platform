@@ -20,7 +20,7 @@ const PLAYER_ACTIONS = new Set<V2Action['type']>([
 ]);
 const SPECIAL_ROLES: readonly V2Role[] = ['seer', 'witch', 'guard', 'hunter', 'idiot'];
 const PACE_MS: Record<V2ConfigPace, Record<V2TimedPhase, number>> = {
-  fast: { role_reveal: 15_000, night: 30_000, hunter_shot: 15_000, day_announcement: 10_000, discussion: 30_000, voting: 20_000, runoff_voting: 20_000, vote_result: 4_000, last_words: 20_000 },
+  fast: { role_reveal: 15_000, night: 45_000, hunter_shot: 15_000, day_announcement: 10_000, discussion: 30_000, voting: 20_000, runoff_voting: 20_000, vote_result: 4_000, last_words: 20_000 },
   standard: { role_reveal: 30_000, night: 60_000, hunter_shot: 30_000, day_announcement: 10_000, discussion: 60_000, voting: 45_000, runoff_voting: 45_000, vote_result: 5_000, last_words: 30_000 },
   relaxed: { role_reveal: 45_000, night: 90_000, hunter_shot: 45_000, day_announcement: 10_000, discussion: 90_000, voting: 60_000, runoff_voting: 60_000, vote_result: 7_000, last_words: 45_000 },
 };
@@ -145,7 +145,7 @@ function resolveHunterShot(state: V2State, ctx: GameContext, firedTargetId: stri
     return;
   }
   if (state.pendingOutcome) { continueAfterPendingOutcome(state, ctx, publicEvents, effects); return; }
-  startDayAnnouncement(state, ctx, publicEvents, effects);
+  startDiscussion(state, ctx, publicEvents, effects);
 }
 
 function resolveNightWithContext(state: V2State, ctx: GameContext, publicEvents: V2Event[], effects: GameEffect[]): void {
@@ -157,8 +157,11 @@ function resolveNightWithContext(state: V2State, ctx: GameContext, publicEvents:
     deaths.push(targetId);
     reasons.set(targetId, 'night_kill');
   }
-  if (state.night.witchPoisonTargetId && !deaths.includes(state.night.witchPoisonTargetId)) {
-    deaths.push(state.night.witchPoisonTargetId);
+  if (state.night.witchPoisonTargetId) {
+    if (!deaths.includes(state.night.witchPoisonTargetId)) {
+      deaths.push(state.night.witchPoisonTargetId);
+    }
+    // 女巫毒杀具备最高优先级与技能压制特性：被毒中必然视为 poisoned，猎人无法开枪
     reasons.set(state.night.witchPoisonTargetId, 'poisoned');
   }
   for (const id of deaths) eliminate(state, id, reasons.get(id)!, publicEvents);
@@ -169,7 +172,9 @@ function resolveNightWithContext(state: V2State, ctx: GameContext, publicEvents:
   const winner = checkWinner(state);
   if (winner) { finishGame(state, winner, false, publicEvents, effects); return; }
   const hunterShooter = hunterShooterOf(state, reasons);
-  if (hunterShooter) { enterHunterShot(state, ctx, hunterShooter, publicEvents, effects); return; }
+  if (hunterShooter) {
+    state.pendingShoot = hunterShooter;
+  }
   startDayAnnouncement(state, ctx, publicEvents, effects);
 }
 
@@ -184,6 +189,15 @@ function startDayAnnouncement(state: V2State, ctx: GameContext, publicEvents: V2
   state.announcementConfirmedPlayerIds = [];
   phaseChanged(state, publicEvents);
   schedulePhase(state, ctx, 'day_announcement', effects);
+}
+
+function finishDayAnnouncement(state: V2State, ctx: GameContext, publicEvents: V2Event[], effects: GameEffect[]): void {
+  cancelCurrentTimer(state, effects);
+  if (state.pendingShoot) {
+    enterHunterShot(state, ctx, state.pendingShoot, publicEvents, effects);
+    return;
+  }
+  startDiscussion(state, ctx, publicEvents, effects);
 }
 
 function computeSpeakingOrder(state: V2State): string[] {
@@ -413,7 +427,7 @@ export function reduceV2(ctx: GameContext, state: V2State, actor: Actor, action:
         resolveNightWithContext(s, ctx, publicEvents, effects);
         break;
       case 'hunter_shot': resolveHunterShot(s, ctx, null, publicEvents, effects); break;
-      case 'day_announcement': startDiscussion(s, ctx, publicEvents, effects); break;
+      case 'day_announcement': finishDayAnnouncement(s, ctx, publicEvents, effects); break;
       case 'discussion': advanceSpeaker(s, ctx, publicEvents, effects); break;
       case 'voting':
       case 'runoff_voting': settleVotes(s, ctx, state.phase === 'voting' ? 'normal' : 'runoff', publicEvents, effects); break;
@@ -443,7 +457,7 @@ export function reduceV2(ctx: GameContext, state: V2State, actor: Actor, action:
       if (allWolvesVoted(s)) s.night.killTargetId ??= selectWolfTarget(s, false);
       tryResolveNight(s, ctx, publicEvents, effects);
     } else if (s.phase === 'day_announcement' && allSubmitted(s, s.announcementConfirmedPlayerIds)) {
-      startDiscussion(s, ctx, publicEvents, effects);
+      finishDayAnnouncement(s, ctx, publicEvents, effects);
     } else if (s.phase === 'discussion') {
       const current = s.speakingOrder[s.currentSpeakerIndex];
       if (!current || !s.players[current]?.alive) advanceSpeaker(s, ctx, publicEvents, effects);
@@ -554,7 +568,7 @@ export function reduceV2(ctx: GameContext, state: V2State, actor: Actor, action:
   if (action.type === 'confirm_announcement') {
     if (state.phase !== 'day_announcement') return noop(state);
     if (!state.announcementConfirmedPlayerIds.includes(actorId)) s.announcementConfirmedPlayerIds.push(actorId);
-    if (allSubmitted(s, s.announcementConfirmedPlayerIds)) startDiscussion(s, ctx, publicEvents, effects);
+    if (allSubmitted(s, s.announcementConfirmedPlayerIds)) finishDayAnnouncement(s, ctx, publicEvents, effects);
     return done();
   }
 
@@ -669,7 +683,7 @@ export function buildV2PlayerView(state: V2State, playerId: string): V2PlayerVie
       hasNightVoted: isAliveWolf && playerId in state.night.wolfVotes,
       seerResults: isAliveSeer ? structuredClone(state.seerHistory) : [],
       seerCheckedThisNight: isAliveSeer && state.night.seerChecked,
-      nightVictimId: isAliveWitch ? state.night.killTargetId : null,
+      nightVictimId: isAliveWitch && !state.witchSaveUsed ? state.night.killTargetId : null,
       witchSaveUsed: isAliveWitch ? state.witchSaveUsed : false,
       witchPoisonUsed: isAliveWitch ? state.witchPoisonUsed : false,
       witchSaveDecision: isAliveWitch ? state.night.witchSaveDecision : null,

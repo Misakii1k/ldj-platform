@@ -136,12 +136,16 @@ test('v2 猎人在夜死触发开枪阶段；毒死不触发；开枪/弃权/超
   st = apply(st, actor('s'), { type: 'seer_check', targetPlayerId: 'w1' });
   st = apply(st, actor('x'), { type: 'witch_save', save: false });
   st = apply(st, actor('x'), { type: 'witch_poison', targetPlayerId: null });
+  // 夜刀猎人 → 先进入天亮公告 day_announcement，公告后触发 hunter_shot
+  assert.equal(st.phase, 'day_announcement');
+  assert.equal(st.pendingShoot, 'h');
+  st = timeout(st, 'day_announcement');
   assert.equal(st.phase, 'hunter_shot');
   assert.equal(st.pendingShoot, 'h');
   deny(st, actor('w1'), { type: 'hunter_shoot', targetPlayerId: 'h' });
   st = apply(st, actor('h'), { type: 'hunter_shoot', targetPlayerId: 'w2' });
   assert.equal(st.players.w2?.alive, false);
-  assert.equal(st.phase, 'day_announcement');
+  assert.equal(st.phase, 'discussion');
 
   // 毒死猎人 → 不触发开枪
   let st2 = startedNight(ids, { roles: { guard: false, hunter: true, idiot: false } });
@@ -153,6 +157,48 @@ test('v2 猎人在夜死触发开枪阶段；毒死不触发；开枪/弃权/超
   assert.equal(st2.phase, 'day_announcement');
   assert.equal(st2.players.h?.exitReason, 'poisoned');
   assert.equal(st2.pendingShoot, null);
+
+  // 刀中同时被毒死 → 女巫毒药优先级压制，猎人技能被封印不可开枪
+  let st3 = startedNight(ids, { roles: { guard: false, hunter: true, idiot: false } });
+  st3 = apply(st3, actor('w1'), { type: 'night_kill', targetPlayerId: 'h' });
+  st3 = apply(st3, actor('w2'), { type: 'night_kill', targetPlayerId: 'h' });
+  st3 = apply(st3, actor('s'), { type: 'seer_check', targetPlayerId: 'w1' });
+  st3 = apply(st3, actor('x'), { type: 'witch_save', save: false });
+  st3 = apply(st3, actor('x'), { type: 'witch_poison', targetPlayerId: 'h' });
+  assert.equal(st3.phase, 'day_announcement');
+  assert.equal(st3.players.h?.exitReason, 'poisoned');
+  assert.equal(st3.pendingShoot, null);
+});
+
+test('v2 女巫使用解药后后续夜晚无法获知死者（nightVictimId 为 null）', () => {
+  const ids = ['w1', 'w2', 's', 'x', 'h', 'v1', 'v2'];
+  let st = startedNight(ids, { roles: { guard: false, hunter: true, idiot: false } });
+  // 首夜女巫使用解药救人
+  st = apply(st, actor('w1'), { type: 'night_kill', targetPlayerId: 'v1' });
+  st = apply(st, actor('w2'), { type: 'night_kill', targetPlayerId: 'v1' });
+  st = apply(st, actor('s'), { type: 'seer_check', targetPlayerId: 'w1' });
+  st = apply(st, actor('x'), { type: 'witch_save', save: true });
+  assert.equal(st.witchSaveUsed, true);
+  // 进入白天并推进到第二夜
+  st = timeout(st, 'day_announcement');
+  st = apply(st, actor('w1'), { type: 'finish_speech' });
+  st = apply(st, actor('w2'), { type: 'finish_speech' });
+  st = apply(st, actor('s'), { type: 'finish_speech' });
+  st = apply(st, actor('x'), { type: 'finish_speech' });
+  st = apply(st, actor('h'), { type: 'finish_speech' });
+  st = apply(st, actor('v1'), { type: 'finish_speech' });
+  st = apply(st, actor('v2'), { type: 'finish_speech' });
+  // 白天无人得票弃权进第二夜
+  st = timeout(st, 'voting');
+  st = timeout(st, 'vote_result');
+  assert.equal(st.phase, 'night');
+  assert.equal(st.day, 2);
+  // 狼人刀 v2
+  st = apply(st, actor('w1'), { type: 'night_kill', targetPlayerId: 'v2' });
+  st = apply(st, actor('w2'), { type: 'night_kill', targetPlayerId: 'v2' });
+  // 女巫视角：nightVictimId 必须为 null，不能再看到死者
+  const witchView = werewolfV2Module.getPlayerView(st, 'x');
+  assert.equal(witchView.me?.nightVictimId, null);
 });
 
 test('v2 夜晚超时确定性兜底取合法候选首位（含狼人）', () => {

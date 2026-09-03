@@ -14,11 +14,15 @@ export type NightActiveRole = 'wolf' | 'witch' | 'seer' | 'guard' | null;
 export interface UseJudgeVoiceResult {
   readonly currentNightRole: NightActiveRole;
   readonly isNightVoiceRunning: boolean;
+  readonly roleRemainingSeconds: number | null;
+  readonly roleTotalSeconds: number | null;
 }
 
 export function useJudgeVoice(model: WerewolfPresentationModel): UseJudgeVoiceResult {
   const [currentNightRole, setCurrentNightRole] = useState<NightActiveRole>(null);
   const [isNightVoiceRunning, setIsNightVoiceRunning] = useState<boolean>(false);
+  const [roleRemainingSeconds, setRoleRemainingSeconds] = useState<number | null>(null);
+  const [roleTotalSeconds, setRoleTotalSeconds] = useState<number | null>(null);
   const modelRef = useRef(model);
   modelRef.current = model;
 
@@ -48,6 +52,8 @@ export function useJudgeVoice(model: WerewolfPresentationModel): UseJudgeVoiceRe
       setIsNightVoiceRunning(true);
       judgeVoice.interrupt();
       setCurrentNightRole(null);
+      setRoleRemainingSeconds(null);
+      setRoleTotalSeconds(null);
 
       const isCurrentRun = () => runIdRef.current === currentRunId;
 
@@ -71,33 +77,57 @@ export function useJudgeVoice(model: WerewolfPresentationModel): UseJudgeVoiceRe
       const waitForRole = (
         role: 'wolf' | 'witch' | 'seer' | 'guard',
         isSelfAct: () => boolean,
-        simulatedMs = 3500,
+        simulatedMs = 6000,
         maxWaitMs = 15000,
       ) =>
         new Promise<void>((resolve) => {
+          const currentSelf = modelRef.current.self;
+          const isSelfThisRole = currentSelf?.role === role && currentSelf.alive;
+          const targetDurationMs = isSelfThisRole ? maxWaitMs : simulatedMs;
           const start = Date.now();
-          const check = () => {
+          const targetEnd = start + targetDurationMs;
+
+          setRoleTotalSeconds(Math.round(targetDurationMs / 1000));
+          setRoleRemainingSeconds(Math.round(targetDurationMs / 1000));
+
+          let finished = false;
+          let feedbackTimer: number | null = null;
+          let interval: number | null = null;
+
+          const cleanup = () => {
+            if (finished) return;
+            finished = true;
+            if (feedbackTimer) window.clearTimeout(feedbackTimer);
+            if (interval) window.clearInterval(interval);
+            setRoleRemainingSeconds(null);
+            setRoleTotalSeconds(null);
+            resolve();
+          };
+
+          interval = window.setInterval(() => {
             if (!isCurrentRun()) {
-              resolve();
+              cleanup();
               return;
             }
-            const currentSelf = modelRef.current.self;
-            const isSelfThisRole = currentSelf?.role === role && currentSelf.alive;
+            const leftMs = Math.max(0, targetEnd - Date.now());
+            setRoleRemainingSeconds(Math.ceil(leftMs / 1000));
 
-            if (isSelfThisRole) {
-              if (isSelfAct() || Date.now() - start >= maxWaitMs) {
-                resolve();
-                return;
+            const s = modelRef.current.self;
+            const selfAliveThisRole = s?.role === role && s.alive;
+            if (selfAliveThisRole) {
+              if (isSelfAct()) {
+                if (!feedbackTimer) {
+                  feedbackTimer = window.setTimeout(cleanup, 800);
+                }
+              } else if (leftMs <= 0) {
+                cleanup();
               }
             } else {
-              if (Date.now() - start >= simulatedMs) {
-                resolve();
-                return;
+              if (leftMs <= 0) {
+                cleanup();
               }
             }
-            window.setTimeout(check, 250);
-          };
-          check();
+          }, 250);
         });
 
       const runNight = async () => {
@@ -125,7 +155,7 @@ export function useJudgeVoice(model: WerewolfPresentationModel): UseJudgeVoiceRe
         }
         if (!isCurrentRun()) return;
 
-        await waitForRole('wolf', () => Boolean(modelRef.current.self?.hasNightVoted), 3500, 15000);
+        await waitForRole('wolf', () => Boolean(modelRef.current.self?.hasNightVoted), 6000, 15000);
         if (!isCurrentRun()) return;
 
         await play('wolf_close');
@@ -133,24 +163,26 @@ export function useJudgeVoice(model: WerewolfPresentationModel): UseJudgeVoiceRe
         await sleep(600);
         if (!isCurrentRun()) return;
 
-        // 3. 女巫环节（全套全新实录音频链）
+        // 3. 女巫环节（全套实录音频链）
         setCurrentNightRole('witch');
         await play('witch_open');
         if (!isCurrentRun()) return;
         await sleep(350);
         if (!isCurrentRun()) return;
 
-        // 全场播报：手势指向死者（不报具体几号，防泄露刀口）
-        await play('witch_death_point');
-        if (!isCurrentRun()) return;
-        await sleep(300);
-        if (!isCurrentRun()) return;
+        const isWitchSaveUsed = Boolean(modelRef.current.self?.witchSaveUsed);
+        if (!isWitchSaveUsed) {
+          // 解药未用时：全场播报手势指向死者（不报具体几号）并提示解药
+          await play('witch_death_point');
+          if (!isCurrentRun()) return;
+          await sleep(300);
+          if (!isCurrentRun()) return;
 
-        // 提示解药
-        await play('witch_cure_prompt');
-        if (!isCurrentRun()) return;
-        await sleep(300);
-        if (!isCurrentRun()) return;
+          await play('witch_cure_prompt');
+          if (!isCurrentRun()) return;
+          await sleep(300);
+          if (!isCurrentRun()) return;
+        }
 
         // 提示毒药
         await play('witch_poison_prompt');
@@ -162,7 +194,7 @@ export function useJudgeVoice(model: WerewolfPresentationModel): UseJudgeVoiceRe
             const s = modelRef.current.self;
             return s ? s.witchSaveDecision !== null || s.witchPoisonDecided : true;
           },
-          3000,
+          6000,
           15000,
         );
         if (!isCurrentRun()) return;
@@ -188,8 +220,8 @@ export function useJudgeVoice(model: WerewolfPresentationModel): UseJudgeVoiceRe
             const results = modelRef.current.self?.seerResults ?? [];
             return results.length > initialSeerCount;
           },
-          3000,
-          15000,
+          6000,
+          12000,
         );
         if (!isCurrentRun()) return;
         await sleep(400);
@@ -212,7 +244,7 @@ export function useJudgeVoice(model: WerewolfPresentationModel): UseJudgeVoiceRe
           await play('guard_open');
           if (!isCurrentRun()) return;
 
-          await waitForRole('guard', () => Boolean(modelRef.current.self?.guardDecided), 3000, 15000);
+          await waitForRole('guard', () => Boolean(modelRef.current.self?.guardDecided), 6000, 12000);
           if (!isCurrentRun()) return;
 
           await play('guard_close');
@@ -235,6 +267,8 @@ export function useJudgeVoice(model: WerewolfPresentationModel): UseJudgeVoiceRe
         }
 
         setCurrentNightRole(null);
+        setRoleRemainingSeconds(null);
+        setRoleTotalSeconds(null);
         isNightRunningRef.current = false;
         setIsNightVoiceRunning(false);
       };
@@ -390,5 +424,5 @@ export function useJudgeVoice(model: WerewolfPresentationModel): UseJudgeVoiceRe
     judgeVoice.stopAll();
   }, []);
 
-  return { currentNightRole, isNightVoiceRunning };
+  return { currentNightRole, isNightVoiceRunning, roleRemainingSeconds, roleTotalSeconds };
 }
