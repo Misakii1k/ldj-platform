@@ -747,6 +747,14 @@ p { margin: 0.5rem 0; }
   font-weight: 900;
   letter-spacing: 0;
   transform: rotate(-6deg);
+  overflow: hidden;
+}
+
+.home-brand__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .home-header__actions {

@@ -64,7 +64,9 @@ export function GameHomePage() {
       <div className="game-home-page__content">
         <header className="home-header home-motion-layer" data-motion-step="0">
           <div className="home-brand" aria-label="聚乐桌">
-            <span className="home-brand__tile" aria-hidden="true">聚</span>
+            <span className="home-brand__tile" aria-hidden="true">
+              <img src="/icon-192.png" alt="" className="home-brand__img" />
+            </span>
             <span className="home-brand__name">聚乐桌</span>
           </div>
           <div className="home-header__actions">
