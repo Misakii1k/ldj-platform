@@ -105,7 +105,7 @@ test('囚徒之夜 模块身份、manifest 与规则集声明一致', () => {
   assert.equal(nightTestimonyModule.manifest.stateSchemaVersion, 1);
 });
 
-test('暗夜证词 玩家退出（系统动作）→ 系统可投递、玩家不可冒充', () => {
+test('囚徒之夜 玩家退出（系统动作）→ 系统可投递、玩家不可冒充', () => {
   const ctx = deterministicContext();
   const state = initial(ctx);
   const forfeit = nightTestimonyModule.reduce(ctx, state, sys, { type: 'player_forfeited', playerIds: ['a', 'b', 'c'] });

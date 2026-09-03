@@ -343,7 +343,7 @@ test.describe('全页面视觉识别与多视口走查', () => {
     await mobPage.context().close();
   });
 
-  test('6b. 以鹅传鹅 / 暗夜证词 / 伪人测试 / 铃铛对决 桌面视觉走查', async ({ browser }) => {
+  test('6b. 以鹅传鹅 / 囚徒之夜 / 伪人测试 / 铃铛对决 桌面视觉走查', async ({ browser }) => {
     type ShotSpec = { file: string; gameId: string; count: number; config: Record<string, unknown>; nickname: string };
     const specs: ShotSpec[] = [
       { file: '20_goose_relay_tabletop.png', gameId: 'goose-relay', count: 5, config: { rulesetId: 'goose_relay_classic_v1', relaySeconds: 30, discussionSeconds: 30, accuseSeconds: 30, voteSeconds: 30 }, nickname: '鹅鹅1号' },
@@ -418,7 +418,7 @@ test.describe('全页面视觉识别与多视口走查', () => {
     await durianPage.context().close();
   });
 
-  test('6c. 桌面模拟模式（奶酪大盗 / 铃铛对决 / 暗夜证词 / 伪人测试 / 鹅传鹅）自由道具走查', async ({ browser }) => {
+  test('6c. 桌面模拟模式（奶酪大盗 / 铃铛对决 / 囚徒之夜 / 伪人测试 / 鹅传鹅）自由道具走查', async ({ browser }) => {
     type SimShotSpec = { file: string; gameId: string; count: number; config: Record<string, unknown>; nickname: string };
     const simSpecs: SimShotSpec[] = [
       { file: '24_sim_cheese_thief.png', gameId: 'cheese-thief', count: 5, config: { rulesetId: 'cheese_thief_sim_v1', roleCards: true }, nickname: '盗鼠模拟' },

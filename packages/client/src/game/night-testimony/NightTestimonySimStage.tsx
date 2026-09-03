@@ -45,7 +45,7 @@ export function NightTestimonySimStage({ view }: Props) {
 
   return (
     <TabletopShell
-      title="暗夜证词 · 桌面模拟"
+      title="囚徒之夜 · 桌面模拟"
       phase="自由道具 · 无判定"
       gameId="night-testimony"
       phaseKey={`sim:${view.usedQuestionCount}`}
@@ -157,7 +157,7 @@ export function NightTestimonySimStage({ view }: Props) {
       {rulesOpen && (
         <div className="sim-rules" role="dialog" aria-label="模拟模式说明">
           <button type="button" className="sim-rules__close" onClick={() => setRulesOpen(false)}>✕</button>
-          <h4>暗夜证词 桌面模拟模式</h4>
+          <h4>囚徒之夜 桌面模拟模式</h4>
           <p>系统只负责随机罪行私密分配（含狱警标记与公开干扰卡）与问题卡抽取，<strong>不票选、不猜罪、不记分</strong>。狱警是谁、如何审讯投票由玩家自行约定。</p>
         </div>
       )}

@@ -324,7 +324,7 @@ export function GamePage() {
     case 'night-testimony': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameErrorCard title="暗夜证词数据格式异常" />;
+        content = <GameErrorCard title="囚徒之夜数据格式异常" />;
         break;
       }
       const v = parsed.view;

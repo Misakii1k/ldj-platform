@@ -5,7 +5,7 @@ export type IdentityCardTheme =
   | 'confidential' // 谁是卧底/以鹅传鹅：机密牛皮纸档案
   | 'gothic'       // 狼人杀：暗夜古堡荆棘月相
   | 'cyber'        // 伪人测试：赛博终端测谎
-  | 'prison'       // 暗夜证词：铁窗案卷
+  | 'prison'       // 囚徒之夜：铁窗案卷
   | 'classic';     // 奶酪大盗/情书/通用：古典奢华金纹
 
 export type IdentityCamp = 'good' | 'evil' | 'neutral' | 'human' | 'echo' | 'special';
@@ -87,7 +87,7 @@ const DEFAULT_THEME_BADGES: Record<IdentityCardTheme, string> = {
   confidential: '机密档案 · 阅后即焚',
   gothic: '狼人杀 · 身份契约',
   cyber: '伪人测试 · 审判档案',
-  prison: '暗夜证词 · 秘密档案',
+  prison: '囚徒之夜 · 秘密档案',
   classic: '私密身份 · 密函亲启',
 };
 

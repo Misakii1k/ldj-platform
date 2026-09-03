@@ -114,7 +114,7 @@ const GAME_CASES: GameCase[] = [
   },
   {
     id: 'night-testimony',
-    label: '暗夜证词',
+    label: '囚徒之夜',
     count: 4,
     config: {
       rulesetId: 'night_testimony_v1',

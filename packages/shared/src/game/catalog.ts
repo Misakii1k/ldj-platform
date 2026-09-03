@@ -605,7 +605,7 @@ export const GAME_CATALOG = [
   },
   {
     id: 'night-testimony',
-    displayName: '暗夜证词',
+    displayName: '囚徒之夜',
     minPlayers: 3,
     maxPlayers: 6,
     availability: 'playable',

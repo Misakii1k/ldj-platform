@@ -12,52 +12,52 @@ import { TabletopShell } from '../tabletop/TabletopShell.tsx';
 import { IdentityFlipCard } from '../../shared-ui/IdentityFlipCard.tsx';
 import type { CrimeId, NightTestimonyPlayerView, QuestionCardView } from './types.ts';
 
-const CRIME_META: Record<CrimeId, { name: string; icon: string; traits: string }> = {
+const CRIME_META: Record<CrimeId, { name: string; traits: string }> = {
   // 传统恶性与人身侵财
-  arson: { name: '恶意纵火犯', icon: '火', traits: '火源、高温、焦黑灰烬、不动产损毁、夜间' },
-  theft: { name: '入室盗窃犯', icon: '盗', traits: '撬锁、潜入、手套撬棍、实体财物、无声搜刮' },
-  forgery: { name: '公文伪造犯', icon: '印', traits: '虚假公文、篡改印章、假学历假证书、高超摹仿' },
-  smuggling: { name: '违禁走私犯', icon: '私', traits: '越境运输、违禁品仓储、集装箱黑市、逃避关税' },
-  fraud: { name: '电信诈骗犯', icon: '诈', traits: '杀猪盘、商业骗局、冒充公检法、诱导转账' },
-  kidnap: { name: '密室绑架犯', icon: '绑', traits: '人身控制、密室关押、勒索赎金、绳索胶带' },
+  arson: { name: '恶意纵火', traits: '火源、高温、焦黑灰烬、不动产损毁、夜间' },
+  theft: { name: '入室盗窃', traits: '撬锁、潜入、手套撬棍、实体财物、无声搜刮' },
+  forgery: { name: '公文伪造', traits: '虚假公文、篡改印章、假学历假证书、高超摹仿' },
+  smuggling: { name: '违禁走私', traits: '越境运输、违禁品仓储、集装箱黑市、逃避关税' },
+  fraud: { name: '电信诈骗', traits: '杀猪盘、商业骗局、冒充公检法、诱导转账' },
+  kidnap: { name: '密室绑架', traits: '人身控制、密室关押、勒索赎金、绳索胶带' },
 
   // 生活微罪与不文明行为
-  littering: { name: '乱扔垃圾犯', icon: '圾', traits: '随手丢弃、果皮纸屑、造假分类、弄脏环境' },
-  public_urination: { name: '随地便溺犯', icon: '溺', traits: '绿化带放水、墙角恶臭、避开监控、毫无公德' },
-  noise_nuisance: { name: '深夜扰民犯', icon: '噪', traits: '半夜电钻、深夜蹦迪、走廊喧哗、破坏睡眠' },
-  graffiti: { name: '乱涂乱画犯', icon: '涂', traits: '景区涂鸦、油漆小广告、刻字到此一游、破坏公物' },
-  dine_and_dash: { name: '吃霸王餐犯', icon: '霸', traits: '借口溜走、假装忘带手机、换桌逃单、专挑小店' },
-  line_cutting: { name: '恶意插队犯', icon: '塞', traits: '硬挤队伍、假装找朋友、强行加塞、公愤焦点' },
-  scalping: { name: '倒卖黄牛犯', icon: '票', traits: '抢空门票、天价加价、黑市倒票、扰乱秩序' },
-  public_smoking: { name: '禁烟区吸烟犯', icon: '烟', traits: '电梯吸烟、楼道吐雾、乱弹烟灰、刺鼻烟味' },
+  littering: { name: '乱扔垃圾', traits: '随手丢弃、果皮纸屑、造假分类、弄脏环境' },
+  public_urination: { name: '随地便溺', traits: '绿化带放水、墙角恶臭、避开监控、毫无公德' },
+  noise_nuisance: { name: '深夜扰民', traits: '半夜电钻、深夜蹦迪、走廊喧哗、破坏睡眠' },
+  graffiti: { name: '乱涂乱画', traits: '景区涂鸦、油漆小广告、刻字到此一游、破坏公物' },
+  dine_and_dash: { name: '吃霸王餐', traits: '借口溜走、假装忘带手机、换桌逃单、专挑小店' },
+  line_cutting: { name: '恶意插队', traits: '硬挤队伍、假装找朋友、强行加塞、公愤焦点' },
+  scalping: { name: '倒卖黄牛', traits: '抢空门票、天价加价、黑市倒票、扰乱秩序' },
+  public_smoking: { name: '禁烟区吸烟', traits: '电梯吸烟、楼道吐雾、乱弹烟灰、刺鼻烟味' },
 
   // 职场、网络与数字犯罪
-  hacker: { name: '黑客入侵犯', icon: '客', traits: '远程攻破、植入木马、篡改数据、窃取源码' },
-  wifi_leeching: { name: '蹭网盗密犯', icon: '网', traits: '万能钥匙、破解密码、偷吃带宽、偷窥流量' },
-  scalp_bot: { name: '抢购外挂犯', icon: '挂', traits: '脚本外挂、秒杀显卡、瘫痪服务器、自动化作弊' },
-  spoilers: { name: '恶意剧透犯', icon: '剧', traits: '首映剧透凶手、弹幕反转炸弹、毁灭观影体验' },
-  water_army: { name: '网络水军犯', icon: '军', traits: '刷好评控评、操控舆论热搜、批量僵尸号' },
-  office_theft: { name: '偷吃外卖犯', icon: '食', traits: '偷拿前台外卖、冰箱偷喝奶茶、神不知鬼不觉' },
+  hacker: { name: '黑客入侵', traits: '远程攻破、植入木马、篡改数据、窃取源码' },
+  wifi_leeching: { name: '蹭网盗密', traits: '万能钥匙、破解密码、偷吃带宽、偷窥流量' },
+  scalp_bot: { name: '抢购外挂', traits: '脚本外挂、秒杀显卡、瘫痪服务器、自动化作弊' },
+  spoilers: { name: '恶意剧透', traits: '首映剧透凶手、弹幕反转炸弹、毁灭观影体验' },
+  water_army: { name: '网络水军', traits: '刷好评控评、操控舆论热搜、批量僵尸号' },
+  office_theft: { name: '偷吃外卖', traits: '偷拿前台外卖、冰箱偷喝奶茶、神不知鬼不觉' },
 
   // 市井侵财与偷盗
-  pickpocket: { name: '公交扒手犯', icon: '扒', traits: '拥挤人群、刀片割袋、顺手牵羊、手法极快' },
-  bike_theft: { name: '偷电瓶车犯', icon: '车', traits: '剪断车锁、拔掉电瓶、假装车主、二手倒卖' },
-  counterfeiter: { name: '假币制造犯', icon: '钞', traits: '印刷假钞、特制纸张油墨、市面调包、以假乱真' },
-  blackmail: { name: '敲诈勒索犯', icon: '索', traits: '私密黑料、匿名威胁、索要封口费、步步紧逼' },
-  prison_break: { name: '越狱逃犯', icon: '狱', traits: '挖地道、翻越高墙、换装潜逃、全城通缉' },
-  poisoning: { name: '投毒暗害犯', icon: '毒', traits: '无色无味、水杯下毒、伪装意外、化学试剂' },
-  grave_robbery: { name: '盗掘古墓犯', icon: '墓', traits: '洛阳铲、深夜探穴、炸开地宫、倒卖出土文物' },
+  pickpocket: { name: '公交扒窃', traits: '拥挤人群、刀片割袋、顺手牵羊、手法极快' },
+  bike_theft: { name: '偷电瓶车', traits: '剪断车锁、拔掉电瓶、假装车主、二手倒卖' },
+  counterfeiter: { name: '制造假币', traits: '印刷假钞、特制纸张油墨、市面调包、以假乱真' },
+  blackmail: { name: '敲诈勒索', traits: '私密黑料、匿名威胁、索要封口费、步步紧逼' },
+  prison_break: { name: '密室越狱', traits: '挖地道、翻越高墙、换装潜逃、全城通缉' },
+  poisoning: { name: '投毒暗害', traits: '无色无味、水杯下毒、伪装意外、化学试剂' },
+  grave_robbery: { name: '盗掘古墓', traits: '洛阳铲、深夜探穴、炸开地宫、倒卖出土文物' },
 
   // 跨国犯罪与超级重案
-  transnational_crime: { name: '跨国犯罪头目', icon: '枭', traits: '跨国黑产、多本伪造护照、洗钱网络、国际红通' },
-  money_laundering: { name: '地下洗钱犯', icon: '洗', traits: '空壳公司、虚拟货币、海量资金分流、抹去流水' },
-  museum_heist: { name: '名画大盗', icon: '画', traits: '闪避红外激光、调包名画、切割防盗玻璃、价值连城' },
-  arms_trafficking: { name: '军火走私犯', icon: '火', traits: '秘密军火箱、货轮改装、伪装农机、危险重武器' },
-  espionage: { name: '商业间谍犯', icon: '谍', traits: '针孔窃听、窃取芯片源码、高管卧底、高额赏金' },
-  poaching: { name: '盗猎珍兽犯', icon: '猎', traits: '深山猎夹、偷猎国家保护动物、剥取角牙皮毛' },
-  pyramid_scheme: { name: '传销洗脑犯', icon: '销', traits: '秘密开会、没收手机、拉人头发展下线、精神控制' },
-  sea_pirate: { name: '公海海盗犯', icon: '盗', traits: '快艇劫持货轮、武装扣押船员、索要保护费' },
-  impersonation: { name: '假冒军警犯', icon: '伪', traits: '假制服假警官证、非法设卡检查、招摇撞骗' },
+  transnational_crime: { name: '跨国犯罪', traits: '跨国黑产、多本伪造护照、洗钱网络、国际红通' },
+  money_laundering: { name: '地下洗钱', traits: '空壳公司、虚拟货币、海量资金分流、抹去流水' },
+  museum_heist: { name: '名画盗窃', traits: '闪避红外激光、调包名画、切割防盗玻璃、价值连城' },
+  arms_trafficking: { name: '军火走私', traits: '秘密军火箱、货轮改装、伪装农机、危险重武器' },
+  espionage: { name: '商业间谍', traits: '针孔窃听、窃取芯片源码、高管卧底、高额赏金' },
+  poaching: { name: '盗猎珍兽', traits: '深山猎夹、偷猎国家保护动物、剥取角牙皮毛' },
+  pyramid_scheme: { name: '传销洗脑', traits: '秘密开会、没收手机、拉人头发展下线、精神控制' },
+  sea_pirate: { name: '公海海盗', traits: '快艇劫持货轮、武装扣押船员、索要保护费' },
+  impersonation: { name: '假冒军警', traits: '假制服假警官证、非法设卡检查、招摇撞骗' },
 };
 
 function phaseLabel(phase: NightTestimonyPlayerView['phase']): string {
@@ -117,7 +117,7 @@ export function NightTestimonyGamePage({ view }: Props) {
         status = '已自曝狱警';
       } else {
         const meta = CRIME_META[exposed];
-        status = `已自告罪犯: ${meta?.icon ?? ''} ${meta?.name ?? exposed}`;
+        status = `已自告: ${meta?.name ?? exposed}`;
       }
     } else if (view.phase === 'question' && playerId === view.currentQuestionerId) {
       status = `当前出题 · ${yesCount}/3 是`;
@@ -264,7 +264,7 @@ export function NightTestimonyGamePage({ view }: Props) {
 
   return (
     <TabletopShell
-      title="暗夜证词"
+      title="囚徒之夜"
       phase={phaseLabel(view.phase)}
       gameId="night-testimony"
       phaseKey={`${view.phase}:${view.currentQuestionerId}:${view.questionIndex}:${view.phase === 'game_over' ? view.winners.join(',') || 'no-winner' : view.guessingInProgress ? 'guessing' : isQuestionActive ? 'answering' : 'picking'}`}
@@ -285,22 +285,13 @@ export function NightTestimonyGamePage({ view }: Props) {
         />
       }
       drawer={rulesOpen && (
-        <GameDrawer kind="rules" title="暗夜证词 · 案卷规则" triggerRef={rulesRef} onClose={() => setRulesOpen(false)}>
+        <GameDrawer kind="rules" title="囚徒之夜 · 案卷规则" triggerRef={rulesRef} onClose={() => setRulesOpen(false)}>
           <h4>核心机制</h4>
           <p>1. <strong>狱警潜伏</strong>：一名狱警伪装成囚犯潜伏其中，可撒谎；其余囚犯各有专属罪行卡，必须如实回答。</p>
           <p>2. <strong>广播提问与全员作答</strong>：顺时针轮流 3 选 1 挑题向全场提问，全员（含出题者与狱警）共同提交「是」或「否」。</p>
           <p>3. <strong>停止提问条件</strong>：任意一人累计回答 <strong>3 个「是」</strong> 或 <strong>全局提满 5 题</strong>后，立即停止询问，进入投票！</p>
           <p>4. <strong>自告/自曝机制</strong>：囚犯自告可公开罪行排除狱警嫌疑；狱警自告则直接进入终局猜罪！</p>
           <p>5. <strong>投票与终局猜罪</strong>：票出囚犯则狱警直胜；票出狱警则狱警需猜中全部囚犯罪行方能独胜，否则囚犯全胜！</p>
-          <hr style={{ margin: '12px 0', borderColor: 'var(--game-line, #221e1a)' }} />
-          <h4>罪行档案特征参考</h4>
-          <ul style={{ paddingLeft: '18px', fontSize: '13px', lineHeight: 1.6 }}>
-            {Object.entries(CRIME_META).map(([id, meta]) => (
-              <li key={id}>
-                <strong>{meta.icon} {meta.name}</strong>：{meta.traits}
-              </li>
-            ))}
-          </ul>
         </GameDrawer>
       )}
     >
@@ -319,8 +310,8 @@ export function NightTestimonyGamePage({ view }: Props) {
                 {me.isWarden
                   ? '我的私密身份：潜伏狱警'
                   : me.crime
-                    ? `我的私密罪行：${CRIME_META[me.crime].name}`
-                    : '我的私密罪证档案'}
+                    ? `我的私密罪名：${CRIME_META[me.crime].name}`
+                    : '我的私密罪证'}
               </span>
               <span>{identityExpandedMobile ? '▲ 收起' : '▼ 点击展开防窥卡'}</span>
             </button>
@@ -349,21 +340,10 @@ export function NightTestimonyGamePage({ view }: Props) {
                   <IdentityFlipCard
                     theme="prison"
                     variant="compact"
-                    roleName={me.isWarden ? '狱警（潜伏卧底）' : me.crime ? `${CRIME_META[me.crime].icon} ${CRIME_META[me.crime].name}` : '囚犯'}
+                    roleName={me.isWarden ? '狱警（潜伏卧底）' : me.crime ? CRIME_META[me.crime].name : '囚犯'}
                     roleSubtitle={me.isWarden ? '卧底潜伏 · 可撒谎误导' : '嫌疑囚犯 · 须如实应答'}
                     roleCamp={me.isWarden ? 'evil' : 'good'}
-                    secretHints={
-                      me.isWarden
-                        ? [
-                            '【绝密】你是潜伏在囚犯中的狱警！',
-                            '面对盘问时可以随意撒谎以隐藏身份。若被票出，准确猜出所有囚犯的罪行即可逆转独胜！',
-                          ]
-                        : [
-                            `【真实罪行】你是「${me.crime ? CRIME_META[me.crime].name : ''}」！`,
-                            `特征线索：${me.crime ? CRIME_META[me.crime].traits : ''}`,
-                            '被提问时，你必须根据自己的真实罪行如实回答 YES 或 NO！',
-                          ]
-                    }
+                    secretHints={[]}
                   />
                 </section>
               )}
@@ -617,7 +597,6 @@ export function NightTestimonyGamePage({ view }: Props) {
                     className={`testimony-crime-btn ${guesses[guessInmate] === crime ? 'is-active' : ''}`}
                     onClick={() => setGuesses((prev) => ({ ...prev, [guessInmate]: crime }))}
                   >
-                    <span className="testimony-crime-btn__icon">{CRIME_META[crime].icon}</span>
                     <span className="testimony-crime-btn__name">{CRIME_META[crime].name}</span>
                   </button>
                 ))}
@@ -677,14 +656,14 @@ export function NightTestimonyGamePage({ view }: Props) {
                         {!isWarden && crime && (
                           <div className="testimony-dossier-card__crime">
                             <span>真实罪行：</span>
-                            <strong>{CRIME_META[crime].icon} {CRIME_META[crime].name}</strong>
+                            <strong>{CRIME_META[crime].name}</strong>
                           </div>
                         )}
 
                         {!isWarden && wardenGuess && (
                           <div className={`testimony-dossier-card__guess ${isGuessCorrect ? 'is-correct' : 'is-wrong'}`}>
                             <span>狱警猜测：</span>
-                            <strong>{CRIME_META[wardenGuess].icon} {CRIME_META[wardenGuess].name}</strong>
+                            <strong>{CRIME_META[wardenGuess].name}</strong>
                             <span>{isGuessCorrect ? '✓ 对' : '✗ 错'}</span>
                           </div>
                         )}
@@ -711,7 +690,7 @@ export function NightTestimonyGamePage({ view }: Props) {
             <div className="nt-expose-modal__header">
               
               <div className="nt-expose-modal__title-group">
-                <h3 id="expose-modal-title">{me?.isWarden ? '主动自曝狱警身份' : '主动自告罪犯身份'}</h3>
+                <h3 id="expose-modal-title">{me?.isWarden ? '主动自曝狱警身份' : '主动自告罪名身份'}</h3>
                 <span className="nt-expose-modal__sub">{me?.isWarden ? '终局决胜大转折' : '公开真实罪名 · 排除嫌疑'}</span>
               </div>
             </div>
@@ -728,10 +707,10 @@ export function NightTestimonyGamePage({ view }: Props) {
               ) : (
                 <div className="nt-expose-modal__desc">
                   <p>
-                    确定要向全场公开你身为罪犯的真实罪名【<strong>{me?.crime ? `${CRIME_META[me.crime]?.icon} ${CRIME_META[me.crime]?.name}` : ''}</strong>】吗？
+                    确定要向全场公开你身为囚犯的真实罪名【<strong>{me?.crime ? CRIME_META[me.crime]?.name : ''}</strong>】吗？
                   </p>
                   <p>
-                    公开后你的罪行将公之于众，全场玩家将<strong>100% 确信你是真实罪犯</strong>并彻底洗清狱警嫌疑，为罪犯阵营排除干扰！
+                    公开后你的罪名将公之于众，全场玩家将<strong>100% 确信你是真实囚犯</strong>并彻底洗清狱警嫌疑，为囚犯阵营排除干扰！
                   </p>
                 </div>
               )}
