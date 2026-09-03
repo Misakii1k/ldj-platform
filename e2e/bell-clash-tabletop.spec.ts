@@ -97,7 +97,7 @@ test.describe('G2-B bell-clash 完整局', () => {
         await page.goto(BASE_URL);
         await page.locator('.tabletop-shell, .room-page, .game-page').waitFor({ timeout: 30_000 });
         const bodyText = await page.evaluate(() => document.body.innerText).catch(() => '');
-        const rendered = bodyText.includes('本局结束') || bodyText.includes('对局已结算') || bodyText.includes('铃铛对决');
+        const rendered = bodyText.includes('本局结束') || bodyText.includes('对局已结算') || bodyText.includes('Ding') || bodyText.includes('铃铛对决');
         expect(rendered, `浏览器应渲染游戏/终局页，实际 body 前 200 字：${bodyText.slice(0, 200)}`).toBe(true);
         await context.close();
       } finally {

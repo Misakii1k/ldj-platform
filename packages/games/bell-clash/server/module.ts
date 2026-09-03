@@ -33,7 +33,7 @@ export const BELL_CLASH_VERSIONED_IDENTITY = {
 
 function parseState(input: unknown): BellClashState {
   if (typeof input !== 'object' || input === null || Array.isArray(input)) {
-    throw new Error('铃铛对决 状态必须是对象');
+    throw new Error('Ding 状态必须是对象');
   }
   const state = structuredClone(input) as BellClashState;
   assertBellClashInvariants(state);

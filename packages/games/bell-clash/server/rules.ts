@@ -287,7 +287,7 @@ export function createBellClashState(
   hands: Record<string, BellClashCard[]>,
   discardTop: BellClashCard | null,
 ): BellClashState {
-  if (players.length < 2 || players.length > 7) throw new Error('铃铛对决需要 2 至 7 名玩家');
+  if (players.length < 2 || players.length > 7) throw new Error('Ding 需要 2 至 7 名玩家');
   if (new Set(players).size !== players.length || players.some((id) => id.length < 1)) {
     throw new Error('玩家列表无效');
   }

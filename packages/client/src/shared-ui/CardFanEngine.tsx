@@ -10,6 +10,8 @@ export interface CardItem {
   disabled?: boolean;
   badge?: string;
   imageUrl?: string;
+  overlay?: React.ReactNode;
+  customContent?: React.ReactNode;
   raw?: unknown;
 }
 
@@ -18,6 +20,7 @@ export interface CardFanEngineProps {
   selectedCardIds?: string[];
   onSelectCards?: (selectedIds: string[]) => void;
   onPlayCard?: (card: CardItem) => void;
+  onHoverCard?: (card: CardItem | null) => void;
   allowMultiSelect?: boolean;
   maxFanAngle?: number; // 整体扇形最大角度度数，默认 40；实际生效值再受样式表 --fan-max-angle-cap 上限约束
   cardWidth?: number;   // 显式覆盖牌宽 (px)；缺省读样式表 --fan-card-w 令牌（随断点变化）
@@ -124,6 +127,7 @@ export function CardFanEngine({
   selectedCardIds = [],
   onSelectCards,
   onPlayCard,
+  onHoverCard,
   allowMultiSelect = false,
   maxFanAngle = 40,
   cardWidth,
@@ -320,13 +324,33 @@ export function CardFanEngine({
                 height: effCardHeight,
               }}
               onClick={() => handleCardClick(card)}
-              onFocus={() => setPeekIdx(idx)}
-              onBlur={() => setPeekIdx((cur) => (cur === idx ? null : cur))}
+              onMouseEnter={() => {
+                setPeekIdx(idx);
+                onHoverCard?.(card);
+              }}
+              onMouseLeave={() => {
+                setPeekIdx((cur) => (cur === idx ? null : cur));
+                onHoverCard?.(null);
+              }}
+              onFocus={() => {
+                setPeekIdx(idx);
+                onHoverCard?.(card);
+              }}
+              onBlur={() => {
+                setPeekIdx((cur) => (cur === idx ? null : cur));
+                onHoverCard?.(null);
+              }}
               aria-disabled={card.disabled || disabled || undefined}
               aria-label={typeof card.label === 'string' ? card.label : undefined}
             >
-              {card.imageUrl ? (
-                <img src={card.imageUrl} alt={typeof card.label === 'string' ? card.label : ''} className="card-fan-image" />
+              {card.customContent ? (
+                card.customContent
+              ) : card.imageUrl ? (
+                <>
+                  <img src={card.imageUrl} alt={typeof card.label === 'string' ? card.label : ''} className="card-fan-image" />
+                  {card.badge && <span className="card-fan-badge">{card.badge}</span>}
+                  {card.overlay}
+                </>
               ) : (
                 <>
                   {card.badge && <span className="card-fan-badge">{card.badge}</span>}

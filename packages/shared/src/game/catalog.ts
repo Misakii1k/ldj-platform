@@ -666,7 +666,7 @@ export const GAME_CATALOG = [
   },
   {
     id: 'bell-clash',
-    displayName: '铃铛对决',
+    displayName: 'Ding',
     minPlayers: 2,
     maxPlayers: 7,
     availability: 'playable',

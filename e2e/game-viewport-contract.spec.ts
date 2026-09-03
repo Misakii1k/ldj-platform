@@ -61,7 +61,7 @@ const DURIAN_ORDER_DECK = ['one', 'two', 'three', 'four'].map((id) => ({
 const GAME_CASES: GameCase[] = [
   {
     id: 'bell-clash',
-    label: '铃铛对决',
+    label: 'Ding',
     count: 3,
     config: { rulesetId: 'bell_clash_v1', handSize: 3, turnSeconds: 60, bellSeconds: 60 },
     readySelector: '.tabletop-shell',

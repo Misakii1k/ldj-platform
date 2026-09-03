@@ -2,7 +2,7 @@
 
 局域网优先、单机可运行的网页桌游平台。聚会时一台电脑或安卓设备（Termux）充当主机，
 其他玩家扫码即玩。生产目录共 11 款游戏：10 款可玩（谁是卧底、狼人杀、斗地主、Durian
-榴莲店长、情书、奶酪大盗、以鹅传鹅、暗夜证词、铃铛对决、伪人测试），UNO 因权利证据
+榴莲店长、情书、奶酪大盗、以鹅传鹅、暗夜证词、Ding（原铃铛对决）、伪人测试），UNO 因权利证据
 未完成暂缓开放。
 
 - **规格基线**：[docs/SPEC.md](docs/SPEC.md)（v1.1 + 实施前补遗；R1 谁是卧底基线，后续平台演进见 task_plan Phase 6）
@@ -76,7 +76,7 @@ npm run dev:server
 | 奶酪大盗：月夜鼠影 | 4–8 | ✅ playable | `cheese_thief_classic_v1` |
 | 以鹅传鹅：鹅鹅密令 | 5–9 | ✅ playable | `goose_relay_classic_v1` |
 | 暗夜证词 | 3–6 | ✅ playable | `night_testimony_v1` |
-| 铃铛对决 | 2–7 | ✅ playable | `bell_clash_v1` |
+| Ding（原铃铛对决） | 2–7 | ✅ playable | `bell_clash_v1` |
 | 伪人测试 | 3–12 | ✅ playable | `echo_judge_v1` |
 | UNO | 2–6 | ⛔ blocked_rights | 权利证据未完成，暂不开放；不得仅凭测试通过解除阻断 |
 

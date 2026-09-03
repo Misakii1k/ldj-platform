@@ -89,9 +89,9 @@ export function buildBellClashSpectatorView(state: BellClashState): BellClashPub
 }
 
 export function parseBellClashSpectatorView(input: unknown): BellClashPublicView {
-  return parseOrThrow<BellClashPublicView>(bellClashPublicViewSchema, input, '铃铛对决 视图');
+  return parseOrThrow<BellClashPublicView>(bellClashPublicViewSchema, input, 'Ding 视图');
 }
 
 export function parseBellClashPlayerView(input: unknown): BellClashPlayerView {
-  return parseOrThrow<BellClashPlayerView>(bellClashPlayerViewSchema, input, '铃铛对决 玩家视图');
+  return parseOrThrow<BellClashPlayerView>(bellClashPlayerViewSchema, input, 'Ding 玩家视图');
 }

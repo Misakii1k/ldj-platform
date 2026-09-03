@@ -336,7 +336,7 @@ export function GamePage() {
     case 'bell-clash': {
       const parsed = parseGameView(game);
       if (!parsed.ok) {
-        content = <GameErrorCard title="铃铛对决数据格式异常" />;
+        content = <GameErrorCard title="Ding数据格式异常" />;
         break;
       }
       const v = parsed.view;
