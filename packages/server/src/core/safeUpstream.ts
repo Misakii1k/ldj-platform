@@ -134,9 +134,9 @@ export async function validateUpstreamUrl(
   return (await resolveUpstream(value, policy)).url;
 }
 
-function requestBody(body: RequestInit['body']): string | Uint8Array | null {
+function requestBody(body: RequestInit['body']): Uint8Array | null {
   if (body === undefined || body === null) return null;
-  if (typeof body === 'string') return body;
+  if (typeof body === 'string') return new TextEncoder().encode(body);
   if (body instanceof Uint8Array) return body;
   if (body instanceof ArrayBuffer) return new Uint8Array(body);
   throw new TypeError('UNSUPPORTED_UPSTREAM_BODY');
@@ -154,9 +154,13 @@ export async function safeFetch(
 
   return new Promise<Response>((resolve, reject) => {
     const abort = () => request.destroy(new DOMException('The operation was aborted', 'AbortError'));
+    const headers = new Headers(init.headers);
+    if (body !== null && headers.get('content-length') === null) {
+      headers.set('content-length', String(body.byteLength));
+    }
     const request = transport.request(resolved.url, {
       method: init.method,
-      headers: Object.fromEntries(new Headers(init.headers)),
+      headers: Object.fromEntries(headers),
       signal: init.signal ?? undefined,
       lookup: (_hostname, options, callback) => {
         if (typeof options === 'object' && options.all) {
