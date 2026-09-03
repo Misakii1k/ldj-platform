@@ -39,15 +39,44 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
     return () => mediaQuery.removeEventListener('change', update);
   }, []);
 
+  const { currentNightRole, isNightVoiceRunning, roleRemainingSeconds } = useJudgeVoice(model);
+
+  const effectiveMood = isNightVoiceRunning ? 'night' : model.mood;
+  const effectivePhase = isNightVoiceRunning ? 'night' : model.phase;
+  const effectivePhaseLabel = isNightVoiceRunning
+    ? (currentNightRole ? `${WEREWOLF_ROLE_NAMES[currentNightRole]}行动` : '夜晚行动')
+    : model.phaseLabel;
+  const effectiveNarrative = isNightVoiceRunning
+    ? (currentNightRole ? `法官正在引导 ${WEREWOLF_ROLE_NAMES[currentNightRole]} 行动` : '夜幕降临，万籁俱寂')
+    : model.narrative;
+
+  const isNightRoleActive = (model.phase === 'night' || isNightVoiceRunning) && currentNightRole !== null;
+  const isMyTurnAtNight = model.phase === 'night' && isNightRoleActive && model.self?.role === currentNightRole;
+  const isActionAllowed = isNightRoleActive ? isMyTurnAtNight : true;
+
+  const displayActionGroups = isNightRoleActive
+    ? (isMyTurnAtNight ? model.actionGroups : [])
+    : model.actionGroups;
+
+  const displayWaitingHint = isNightRoleActive && !isMyTurnAtNight
+    ? `夜深了，法官正在引导 ${WEREWOLF_ROLE_NAMES[currentNightRole]} 行动...`
+    : model.waitingHint;
+
   // 头像点选目标菜单（放逐投票/夜间技能等目标型动作的就地选择）
   const [targetMenu, setTargetMenu] = useState<TargetMenuState | null>(null);
   const handleSelectTarget = useCallback((seat: WerewolfSeatModel, rect: DOMRect) => {
     setTargetMenu((prev) => {
       if (prev?.seat.playerId === seat.playerId) return null;
-      const x = Math.min(Math.max(rect.left + rect.width / 2, 96), window.innerWidth - 96);
-      return { seat, x, y: rect.top, placement: rect.top > 190 ? 'above' : 'below' };
+      const menuWidth = 220;
+      const menuEstimatedHeight = 150;
+      const x = Math.min(Math.max(rect.left + rect.width / 2, menuWidth / 2 + 16), window.innerWidth - menuWidth / 2 - 16);
+      const spaceAbove = rect.top - 60; // 避开顶部 60px header
+      const placement: 'above' | 'below' = spaceAbove >= menuEstimatedHeight ? 'above' : 'below';
+      const y = placement === 'above' ? Math.max(rect.top - 8, 70) : Math.min(rect.bottom + 8, window.innerHeight - 80);
+      return { seat, x, y, placement };
     });
   }, []);
+
   useEffect(() => {
     if (!targetMenu) return;
     const onDocMouseDown = (event: MouseEvent) => {
@@ -66,51 +95,29 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
     };
   }, [targetMenu]);
 
-  // 阶段/天数变化后收起菜单；所选席位动作失效（如目标不可选）时同样收起
+  // 阶段/天数变化后收起菜单
   useEffect(() => {
     setTargetMenu(null);
   }, [model.phase, model.day]);
-  const selectedLiveSeat = targetMenu ? model.seats.find((seat) => seat.playerId === targetMenu.seat.playerId) ?? null : null;
-  useEffect(() => {
-    if (targetMenu && (!selectedLiveSeat || selectedLiveSeat.targetActions.length === 0)) setTargetMenu(null);
-  }, [targetMenu, selectedLiveSeat]);
-
-  const { currentNightRole, isNightVoiceRunning, roleRemainingSeconds } = useJudgeVoice(model);
-
-  const effectiveMood = isNightVoiceRunning ? 'night' : model.mood;
-  const effectivePhase = isNightVoiceRunning ? 'night' : model.phase;
-  const effectivePhaseLabel = isNightVoiceRunning
-    ? (currentNightRole ? `${WEREWOLF_ROLE_NAMES[currentNightRole]}行动` : '夜晚行动')
-    : model.phaseLabel;
-  const effectiveNarrative = isNightVoiceRunning
-    ? (currentNightRole ? `法官正在引导 ${WEREWOLF_ROLE_NAMES[currentNightRole]} 行动` : '夜幕降临，万籁俱寂')
-    : model.narrative;
-
-  const isNightRoleActive = (model.phase === 'night' || isNightVoiceRunning) && currentNightRole !== null;
-  const isMyTurnAtNight = model.phase === 'night' && isNightRoleActive && model.self?.role === currentNightRole;
-
-  const displayActionGroups = isNightRoleActive
-    ? (isMyTurnAtNight ? model.actionGroups : [])
-    : model.actionGroups;
-
-  const displayWaitingHint = isNightRoleActive && !isMyTurnAtNight
-    ? `夜深了，法官正在引导 ${WEREWOLF_ROLE_NAMES[currentNightRole]} 行动...`
-    : model.waitingHint;
 
   // 在夜间全流程播放结束前，全场包括死者本人均保持存活显示，杜绝夜晚提前置灰泄露战况
-  const effectiveSeats = isNightVoiceRunning
-    ? model.seats.map((seat) => {
-        const seatNum = Number(seat.seatLabel.replace(/\D/g, '')) - 1;
-        if (model.nightDeathSeats.includes(seatNum)) {
-          return {
-            ...seat,
-            alive: true,
-            statusLabel: '存活',
-          };
-        }
-        return seat;
-      })
-    : model.seats;
+  const effectiveSeats = model.seats.map((seat) => {
+    const seatNum = Number(seat.seatLabel.replace(/\D/g, '')) - 1;
+    const hideDeath = isNightVoiceRunning && model.nightDeathSeats.includes(seatNum);
+    return {
+      ...seat,
+      alive: hideDeath ? true : seat.alive,
+      statusLabel: hideDeath ? '存活' : seat.statusLabel,
+      targetActions: isActionAllowed ? seat.targetActions : [],
+    };
+  });
+
+  const selectedLiveSeat = targetMenu ? effectiveSeats.find((seat) => seat.playerId === targetMenu.seat.playerId) ?? null : null;
+  useEffect(() => {
+    if (targetMenu && (!selectedLiveSeat || selectedLiveSeat.targetActions.length === 0)) {
+      setTargetMenu(null);
+    }
+  }, [targetMenu, selectedLiveSeat]);
 
   const selfSeatNum = model.seats.find((s) => s.isSelf)
     ? Number(model.seats.find((s) => s.isSelf)!.seatLabel.replace(/\D/g, '')) - 1
@@ -249,35 +256,54 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
         {isNight ? '暗夜审判桌' : '白昼公投厅'} · {model.seats.length} 人局
       </p>
 
-      {/* 头像点击目标选项弹出浮层 */}
-      {targetMenu && selectedLiveSeat && selectedLiveSeat.targetActions.length > 0 && (
-        <div
-          className={`jv-target-menu jv-target-menu--${targetMenu.placement}`}
-          style={{ left: `${targetMenu.x}px`, top: `${targetMenu.y}px` }}
-          role="menu"
-          aria-label={`${selectedLiveSeat.seatLabel} 操作选项`}
-        >
-          <div className="jv-target-menu__header">
-            <span className="jv-target-menu__seat">{selectedLiveSeat.seatLabel}</span>
-            <span className="jv-target-menu__name">{selectedLiveSeat.name}</span>
-          </div>
-          <div className="jv-target-menu__actions">
-            {selectedLiveSeat.targetActions.map((action) => (
+      {/* 头像点击目标选项弹出浮层（通过 createPortal 挂载到 document.body，彻底解决舞台 transform 与 overflow 裁切导致浮层错位或无法显示的问题） */}
+      {targetMenu && selectedLiveSeat && selectedLiveSeat.targetActions.length > 0 && typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className={`jv-target-menu jv-target-menu--${targetMenu.placement}`}
+            style={{
+              left: `${targetMenu.x}px`,
+              top: `${targetMenu.y}px`,
+            }}
+            role="dialog"
+            aria-label={`${selectedLiveSeat.seatLabel} 操作选项`}
+          >
+            <div className="jv-target-menu__header">
+              <span className="jv-target-menu__seat">{selectedLiveSeat.seatLabel}</span>
+              <strong className="jv-target-menu__name">{selectedLiveSeat.name}</strong>
               <button
-                key={action.id}
                 type="button"
-                className="jv-target-menu__btn"
-                onClick={() => {
-                  setTargetMenu(null);
-                  onAct(action.payload);
-                }}
+                className="jv-target-menu__close"
+                onClick={() => setTargetMenu(null)}
+                aria-label="关闭操作选项"
               >
-                {action.label}
+                ✕
               </button>
-            ))}
-          </div>
-        </div>
-      )}
+            </div>
+            <div className="jv-target-menu__actions">
+              {selectedLiveSeat.targetActions.map((action) => (
+                <button
+                  key={action.id}
+                  type="button"
+                  className={`jv-target-menu__btn ${
+                    action.label.includes('袭击') || action.label.includes('毒杀') || action.label.includes('开枪')
+                      ? 'jv-target-menu__btn--danger'
+                      : action.label.includes('救') || action.label.includes('守护')
+                      ? 'jv-target-menu__btn--safe'
+                      : 'jv-target-menu__btn--primary'
+                  }`}
+                  onClick={() => {
+                    setTargetMenu(null);
+                    onAct(action.payload);
+                  }}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 
