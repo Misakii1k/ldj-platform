@@ -39,16 +39,28 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
     return () => mediaQuery.removeEventListener('change', update);
   }, []);
 
-  const { currentNightRole, isNightVoiceRunning, roleRemainingSeconds } = useJudgeVoice(model);
+  const { currentNightRole, isNightVoiceRunning, isDayAnnouncementRunning, roleRemainingSeconds } = useJudgeVoice(model);
 
-  const effectiveMood = isNightVoiceRunning ? 'night' : model.mood;
-  const effectivePhase = isNightVoiceRunning ? 'night' : model.phase;
+  const effectiveMood = isNightVoiceRunning
+    ? 'night'
+    : isDayAnnouncementRunning
+      ? 'dawn'
+      : model.mood;
+  const effectivePhase = isNightVoiceRunning
+    ? 'night'
+    : isDayAnnouncementRunning
+      ? 'day_announcement'
+      : model.phase;
   const effectivePhaseLabel = isNightVoiceRunning
     ? (currentNightRole ? `${WEREWOLF_ROLE_NAMES[currentNightRole]}行动` : '夜晚行动')
-    : model.phaseLabel;
+    : isDayAnnouncementRunning
+      ? '天亮公布'
+      : model.phaseLabel;
   const effectiveNarrative = isNightVoiceRunning
     ? (currentNightRole ? `法官正在引导 ${WEREWOLF_ROLE_NAMES[currentNightRole]} 行动` : '夜幕降临，万籁俱寂')
-    : model.narrative;
+    : isDayAnnouncementRunning
+      ? (model.nightDeathSeats.length === 0 ? '昨夜是平安夜' : `昨夜有 ${model.nightDeathSeats.length} 人遇难`)
+      : model.narrative;
 
   const isNightRoleActive = (model.phase === 'night' || isNightVoiceRunning) && currentNightRole !== null;
   const isMyTurnAtNight = model.phase === 'night' && isNightRoleActive && model.self?.role === currentNightRole;
@@ -56,11 +68,15 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
 
   const displayActionGroups = isNightRoleActive
     ? (isMyTurnAtNight ? model.actionGroups : [])
-    : model.actionGroups;
+    : isDayAnnouncementRunning
+      ? []
+      : model.actionGroups;
 
   const displayWaitingHint = isNightRoleActive && !isMyTurnAtNight
     ? `夜深了，法官正在引导 ${WEREWOLF_ROLE_NAMES[currentNightRole]} 行动...`
-    : model.waitingHint;
+    : isDayAnnouncementRunning
+      ? '天亮了，法官正在公布昨夜战况...'
+      : model.waitingHint;
 
   // 头像点选目标菜单（放逐投票/夜间技能等目标型动作的就地选择）
   const [targetMenu, setTargetMenu] = useState<TargetMenuState | null>(null);
@@ -100,7 +116,7 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
     setTargetMenu(null);
   }, [model.phase, model.day]);
 
-  // 在夜间全流程播放结束前，全场包括死者本人均保持存活显示，杜绝夜晚提前置灰泄露战况
+  // 在夜间全流程播放结束前，全场包括死者本人均保持存活显示，杜绝夜晚提前置灰泄露战况；在夜间及公布战况播报期间，强制屏蔽席位“发言中”标识
   const effectiveSeats = model.seats.map((seat) => {
     const seatNum = Number(seat.seatLabel.replace(/\D/g, '')) - 1;
     const hideDeath = isNightVoiceRunning && model.nightDeathSeats.includes(seatNum);
@@ -108,6 +124,7 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
       ...seat,
       alive: hideDeath ? true : seat.alive,
       statusLabel: hideDeath ? '存活' : seat.statusLabel,
+      isSpeaking: isNightVoiceRunning || isDayAnnouncementRunning ? false : seat.isSpeaking,
       targetActions: isActionAllowed ? seat.targetActions : [],
     };
   });
@@ -131,11 +148,11 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
       }
     : null;
 
-  const effectiveModel: WerewolfPresentationModel = isNightVoiceRunning
+  const effectiveModel: WerewolfPresentationModel = isNightVoiceRunning || isDayAnnouncementRunning
     ? {
         ...model,
-        mood: 'night',
-        phase: 'night',
+        mood: effectiveMood,
+        phase: effectivePhase,
         phaseLabel: effectivePhaseLabel,
         narrative: effectiveNarrative,
         seats: effectiveSeats,

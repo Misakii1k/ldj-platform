@@ -243,3 +243,47 @@ test('女巫解药用后无法看刀口：nightVictimId 为 null 时，前端不
   assert.strictEqual(model.self?.nightVictimSeat, null);
   assert.strictEqual(model.self?.witchSaveUsed, true);
 });
+
+test('非发言阶段（如夜晚或天亮公布）席位绝不亮起 isSpeaking', () => {
+  const nightView: WerewolfView = {
+    day: 2,
+    phase: 'night',
+    players: [
+      { playerId: 'p1', seat: 0, alive: true, exitReason: null, idiotRevealed: false, revealedRole: null },
+      { playerId: 'p2', seat: 1, alive: true, exitReason: null, idiotRevealed: false, revealedRole: null },
+    ],
+    config: {
+      pace: 'standard',
+      witchSelfSave: 'first_night',
+      winCondition: 'numbers',
+      wolfKillScope: 'any',
+      roles: { guard: false, hunter: true, idiot: false },
+    },
+    confirmedRolePlayerIds: [],
+    announcementConfirmedPlayerIds: [],
+    lastNightDeaths: [],
+    speakingOrder: ['p1', 'p2'],
+    // 即使 currentSpeakerId 残留或被设置，由于阶段为 night，席位也决不能判定为 isSpeaking
+    currentSpeakerId: 'p2',
+    lastWordsPlayerId: null,
+    deadlineAt: 10000,
+    votesSubmitted: 0,
+    votesExpected: 2,
+    runoffCandidates: [],
+    lastVoteSummary: null,
+    pendingShooterId: null,
+    winner: null,
+    aborted: false,
+    reveal: null,
+    me: null,
+  };
+
+  const model = buildWerewolfPresentation(nightView, [
+    { playerId: 'p1', nickname: '玩家1' },
+    { playerId: 'p2', nickname: '玩家2' },
+  ]);
+
+  const p2Seat = model.seats.find((s) => s.playerId === 'p2');
+  assert.strictEqual(p2Seat?.isSpeaking, false, '夜晚阶段即使有 currentSpeakerId 也不得判定为发言中');
+});
+

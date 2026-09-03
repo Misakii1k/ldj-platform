@@ -552,7 +552,7 @@ export function buildWerewolfPresentation(
         statusLabel: statusLabelOf(view, player.playerId),
         isSelf: player.playerId === me?.playerId,
         isSpeaking:
-          player.playerId === view.currentSpeakerId
+          (view.phase === 'discussion' && player.playerId === view.currentSpeakerId)
           || (view.phase === 'last_words' && player.playerId === view.lastWordsPlayerId),
         isWolfTeammate: (me?.wolfTeammateIds ?? []).includes(player.playerId),
         idiotRevealed: player.idiotRevealed,

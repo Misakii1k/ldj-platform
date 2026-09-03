@@ -14,6 +14,7 @@ export type NightActiveRole = 'wolf' | 'witch' | 'seer' | 'guard' | null;
 export interface UseJudgeVoiceResult {
   readonly currentNightRole: NightActiveRole;
   readonly isNightVoiceRunning: boolean;
+  readonly isDayAnnouncementRunning: boolean;
   readonly roleRemainingSeconds: number | null;
   readonly roleTotalSeconds: number | null;
 }
@@ -21,6 +22,7 @@ export interface UseJudgeVoiceResult {
 export function useJudgeVoice(model: WerewolfPresentationModel): UseJudgeVoiceResult {
   const [currentNightRole, setCurrentNightRole] = useState<NightActiveRole>(null);
   const [isNightVoiceRunning, setIsNightVoiceRunning] = useState<boolean>(false);
+  const [isDayAnnouncementRunning, setIsDayAnnouncementRunning] = useState<boolean>(false);
   const [roleRemainingSeconds, setRoleRemainingSeconds] = useState<number | null>(null);
   const [roleTotalSeconds, setRoleTotalSeconds] = useState<number | null>(null);
   const modelRef = useRef(model);
@@ -33,6 +35,7 @@ export function useJudgeVoice(model: WerewolfPresentationModel): UseJudgeVoiceRe
   const lastHunterShootAnnouncedRef = useRef<boolean>(false);
   const prevIdiotRevealedSeatsRef = useRef<Set<string>>(new Set());
   const isNightRunningRef = useRef<boolean>(false);
+  const isDayAnnouncingRef = useRef<boolean>(false);
   const runIdRef = useRef(0);
 
   const phase = model.phase;
@@ -45,6 +48,17 @@ export function useJudgeVoice(model: WerewolfPresentationModel): UseJudgeVoiceRe
     const wasNight = prev?.phase === 'night';
     const isNewNight = isNight && (!wasNight || prev?.day !== day);
 
+    // 服务端一旦退出夜晚阶段（进入天亮公布/发言/终局等），立即强制终止旧的夜晚串行任务与夜晚视觉锁
+    if (!isNight && isNightRunningRef.current) {
+      runIdRef.current += 1;
+      isNightRunningRef.current = false;
+      setIsNightVoiceRunning(false);
+      setCurrentNightRole(null);
+      setRoleRemainingSeconds(null);
+      setRoleTotalSeconds(null);
+      judgeVoice.interrupt();
+    }
+
     if (isNewNight) {
       runIdRef.current += 1;
       const currentRunId = runIdRef.current;
@@ -55,7 +69,7 @@ export function useJudgeVoice(model: WerewolfPresentationModel): UseJudgeVoiceRe
       setRoleRemainingSeconds(null);
       setRoleTotalSeconds(null);
 
-      const isCurrentRun = () => runIdRef.current === currentRunId;
+      const isCurrentRun = () => runIdRef.current === currentRunId && modelRef.current.phase === 'night';
 
       const sleep = (ms: number) =>
         new Promise<void>((resolve) => {
@@ -105,7 +119,7 @@ export function useJudgeVoice(model: WerewolfPresentationModel): UseJudgeVoiceRe
           };
 
           interval = window.setInterval(() => {
-            if (!isCurrentRun()) {
+            if (!isCurrentRun() || modelRef.current.phase !== 'night') {
               cleanup();
               return;
             }
@@ -288,13 +302,21 @@ export function useJudgeVoice(model: WerewolfPresentationModel): UseJudgeVoiceRe
     const isPhaseChanged = prev === null || prev.phase !== phase || prev.day !== day;
 
     const playDayAnnouncement = async () => {
-      // 若夜晚流程尚未播完，等待其全部播完以保持时序连贯与画面锁定
-      while (isNightRunningRef.current) {
-        await new Promise((resolve) => setTimeout(resolve, 200));
+      // 确保夜晚流程已终止
+      if (isNightRunningRef.current) {
+        runIdRef.current += 1;
+        isNightRunningRef.current = false;
+        setIsNightVoiceRunning(false);
+        setCurrentNightRole(null);
+        setRoleRemainingSeconds(null);
+        setRoleTotalSeconds(null);
       }
 
       if (lastAnnouncedDayDeathRef.current === day) return;
       lastAnnouncedDayDeathRef.current = day;
+
+      isDayAnnouncingRef.current = true;
+      setIsDayAnnouncementRunning(true);
 
       judgeVoice.interrupt();
       await judgeVoice.playCue('day_start');
@@ -326,11 +348,21 @@ export function useJudgeVoice(model: WerewolfPresentationModel): UseJudgeVoiceRe
           await judgeVoice.playCue('day_last_words');
         }
       }
+
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      isDayAnnouncingRef.current = false;
+      setIsDayAnnouncementRunning(false);
     };
 
-    if (phase === 'day_announcement') {
-      void playDayAnnouncement();
-    } else if (phase === 'discussion') {
+    const handleDiscussion = async () => {
+      // 若尚未播报今日天亮死讯（或正在播报），必须等死讯播报完整结束后再叫号发言
+      if (lastAnnouncedDayDeathRef.current !== day) {
+        await playDayAnnouncement();
+      }
+      while (isDayAnnouncingRef.current) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+
       const activeSpeaker = model.seats.find((s) => s.isSpeaking);
       const speakerId = activeSpeaker?.playerId ?? null;
       if (speakerId && speakerId !== prevSpeakerIdRef.current) {
@@ -344,6 +376,12 @@ export function useJudgeVoice(model: WerewolfPresentationModel): UseJudgeVoiceRe
           void judgeVoice.playCue(cue);
         }
       }
+    };
+
+    if (phase === 'day_announcement') {
+      void playDayAnnouncement();
+    } else if (phase === 'discussion') {
+      void handleDiscussion();
     } else if (phase === 'runoff_voting' && isPhaseChanged) {
       judgeVoice.interrupt();
       void judgeVoice.playCue('vote_tie_pk');
@@ -421,8 +459,16 @@ export function useJudgeVoice(model: WerewolfPresentationModel): UseJudgeVoiceRe
     runIdRef.current += 1;
     isNightRunningRef.current = false;
     setIsNightVoiceRunning(false);
+    setIsDayAnnouncementRunning(false);
+    isDayAnnouncingRef.current = false;
     judgeVoice.stopAll();
   }, []);
 
-  return { currentNightRole, isNightVoiceRunning, roleRemainingSeconds, roleTotalSeconds };
+  return {
+    currentNightRole,
+    isNightVoiceRunning,
+    isDayAnnouncementRunning,
+    roleRemainingSeconds,
+    roleTotalSeconds,
+  };
 }
