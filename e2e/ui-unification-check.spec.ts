@@ -8,7 +8,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { seedRoom } from './helpers/dbClient.ts';
 import { RoomDriver } from './helpers/wsClient.ts';
-import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL } from './helpers/serverEnv.ts';
+import { BASE_URL, DB_PATH, WS_URL, seedBrowserSession } from './helpers/serverEnv.ts';
 
 const REPORT_PATH = path.resolve(process.cwd(), 'screenshots', 'ui-unification-metrics.json');
 /** --gp-line #292722：动作按钮的统一墨色实体边（顶栏描边改由 --gp-chrome-* 主题令牌决定）。 */
@@ -32,10 +32,7 @@ type Metric = {
 async function preparePage(browser, me: Record<string, unknown>, width: number, height: number) {
   const context = await browser.newContext({ viewport: { width, height } });
   const page = await context.newPage();
-  await page.addInitScript(
-    ([key, value]) => localStorage.setItem(key, value),
-    [ME_STORAGE_KEY, JSON.stringify({ seatRole: 'player', ...me })],
-  );
+  await seedBrowserSession(page, me);
   return { context, page };
 }
 

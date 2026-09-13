@@ -12,7 +12,7 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 import { seedRoom } from './helpers/dbClient.ts';
 import { RoomDriver } from './helpers/wsClient.ts';
-import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL } from './helpers/serverEnv.ts';
+import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL, PC_HOST_ENTERED_KEY } from './helpers/serverEnv.ts';
 import {
   AMBIENT_MOTION_SELECTORS,
   ESSENTIAL_FEEDBACK_SELECTORS,
@@ -99,12 +99,14 @@ async function openPage(
   });
   const page = await context.newPage();
   await page.addInitScript(
-    ([meKey, motionKey, meValue, motionValue]) => {
+    ([meKey, motionKey, meValue, motionValue, hostKey]) => {
       if (meValue) localStorage.setItem(meKey as string, meValue as string);
       if (motionValue) localStorage.setItem(motionKey as string, motionValue as string);
       else localStorage.removeItem(motionKey as string);
+      // 跳过电脑主机控制台大屏，直接进入应用本体
+      sessionStorage.setItem(hostKey as string, 'true');
     },
-    [ME_STORAGE_KEY, MOTION_STORAGE_KEY, me ? JSON.stringify({ seatRole: 'player', ...me }) : '', preference],
+    [ME_STORAGE_KEY, MOTION_STORAGE_KEY, me ? JSON.stringify({ seatRole: 'player', ...me }) : '', preference, PC_HOST_ENTERED_KEY],
   );
   return page;
 }

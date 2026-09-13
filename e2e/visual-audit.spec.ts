@@ -9,7 +9,7 @@ import { blankModule } from '../packages/games/undercover/server/blank/module.ts
 import { seedRoom } from './helpers/dbClient.ts';
 import { RoomDriver } from './helpers/wsClient.ts';
 import { seedActiveSession } from './support/sessionSeeder.ts';
-import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL } from './helpers/serverEnv.ts';
+import { BASE_URL, DB_PATH, WS_URL, seedBrowserSession } from './helpers/serverEnv.ts';
 
 const SHOTS_DIR = path.resolve(process.cwd(), 'screenshots');
 
@@ -25,10 +25,7 @@ async function saveScreenshot(page: Page, filename: string) {
 async function preparePlayerPage(browser: Browser, width: number, height: number, me: Record<string, unknown>): Promise<Page> {
   const context = await browser.newContext({ viewport: { width, height } });
   const page = await context.newPage();
-  await page.addInitScript(
-    ([key, value]) => { localStorage.setItem(key, value); },
-    [ME_STORAGE_KEY, JSON.stringify({ seatRole: 'player', ...me })],
-  );
+  await seedBrowserSession(page, me);
   return page;
 }
 

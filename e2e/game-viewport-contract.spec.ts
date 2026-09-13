@@ -23,7 +23,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { seedRoom } from './helpers/dbClient.ts';
 import { RoomDriver } from './helpers/wsClient.ts';
-import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL } from './helpers/serverEnv.ts';
+import { BASE_URL, DB_PATH, WS_URL, seedBrowserSession } from './helpers/serverEnv.ts';
 
 const REPORT_DIR = path.resolve(process.cwd(), 'docs/superpowers/reports/2026-08-15-game-ui-refresh');
 const SHOTS_DIR = path.join(REPORT_DIR, 'baseline');
@@ -378,10 +378,7 @@ async function preparePlayerPage(
 ): Promise<Page> {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
-  await page.addInitScript(
-    ([key, value]) => { localStorage.setItem(key, value); },
-    [ME_STORAGE_KEY, JSON.stringify({ seatRole: 'player', ...me })],
-  );
+  await seedBrowserSession(page, me);
   return page;
 }
 
