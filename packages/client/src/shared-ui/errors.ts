@@ -33,13 +33,34 @@ export interface ClientError {
   currentSeq?: number;
 }
 
-/** 将未知错误对象转为可读文案；优先识别 ServerError 结构 */
+/** 将未知错误对象转为可读文案；优先识别 ServerError 结构，绝不向用户直接暴露原始大写英文代码 */
 export function describeError(err: unknown): string {
   if (err instanceof ServerError) {
-    return err.payload.message ?? ERROR_MESSAGES[err.payload.code as ErrorCode] ?? '未知错误';
+    const code = err.payload.code as ErrorCode;
+    if (ERROR_MESSAGES[code]) {
+      return ERROR_MESSAGES[code];
+    }
+    if (err.payload.message && err.payload.message !== code) {
+      return err.payload.message;
+    }
+    return ERROR_META[code]?.userMessage ?? '未知错误';
   }
   if (err instanceof Error) {
+    const code = err.message as ErrorCode;
+    if (ERROR_MESSAGES[code]) return ERROR_MESSAGES[code];
+    if (ERROR_META[code]) return ERROR_META[code].userMessage;
     return err.message;
+  }
+  if (typeof err === 'object' && err !== null && 'code' in err && typeof (err as { code: unknown }).code === 'string') {
+    const code = (err as { code: string }).code as ErrorCode;
+    if (ERROR_MESSAGES[code]) return ERROR_MESSAGES[code];
+    if (ERROR_META[code]) return ERROR_META[code].userMessage;
+  }
+  if (typeof err === 'string') {
+    const code = err as ErrorCode;
+    if (ERROR_MESSAGES[code]) return ERROR_MESSAGES[code];
+    if (ERROR_META[code]) return ERROR_META[code].userMessage;
+    return err;
   }
   return '未知错误';
 }

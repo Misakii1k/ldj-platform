@@ -18,6 +18,7 @@ interface MoonPhaseHeaderProps {
   readonly deadlineAt: number | null;
   readonly spectator: boolean;
   readonly overrideSeconds?: number | null;
+  readonly roleArtworkUrl?: string | null;
 }
 
 export function MoonPhaseHeader({
@@ -28,6 +29,7 @@ export function MoonPhaseHeader({
   deadlineAt,
   spectator,
   overrideSeconds,
+  roleArtworkUrl,
 }: MoonPhaseHeaderProps) {
   const countdown = useCountdown(deadlineAt);
   const seconds = overrideSeconds !== undefined && overrideSeconds !== null
@@ -37,7 +39,11 @@ export function MoonPhaseHeader({
   return (
     <header className="moon-header" data-mood={mood}>
       <div className="moon-header__dial" aria-hidden="true">
-        <span className="moon-header__glyph">{MOON_GLYPHS[mood]}</span>
+        {roleArtworkUrl ? (
+          <img src={roleArtworkUrl} alt="" className="moon-header__role-art" />
+        ) : (
+          <span className="moon-header__glyph">{MOON_GLYPHS[mood]}</span>
+        )}
       </div>
       <div className="moon-header__copy">
         <span className="moon-header__eyebrow">{dayLabel}</span>

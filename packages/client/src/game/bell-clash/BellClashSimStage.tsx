@@ -75,7 +75,6 @@ export function BellClashSimStage({ view }: Props) {
     return () => clearInterval(interval);
   }, [view.props.timer?.isRunning, view.props.timer?.remainingSeconds, act]);
 
-  const tableCards = [...view.tableCards].slice(-8).reverse();
   const logs = [...view.activityLogs].slice(-6).reverse();
   const dice = view.props.dice;
   const bell = view.props.bell;

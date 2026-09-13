@@ -15,7 +15,7 @@ import {
   MONKEY_SPECIAL_ICONS,
   MONKEY_SPECIAL_NAMES,
 } from '../components/DurianCardGraphic';
-import { BG, BORDER, SHADOW, RADIUS, COLOR, FONT, FRUIT_COLORS, cardPanel, glassPanel, pillTag } from '../lib/theme';
+import { COLOR, FONT, cardPanel, glassPanel, pillTag } from '../lib/theme';
 import { fadeInOut } from '../lib/transitions';
 
 export const MonkeyCardsScene: React.FC = () => {

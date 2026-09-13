@@ -31,9 +31,20 @@ test('v2 观战视角全程遮滤角色，终局 reveal', () => {
   st = apply(st, actor('x'), { type: 'confirm_announcement' });
   st = apply(st, actor('v2'), { type: 'confirm_announcement' });
   st = apply(st, actor('v1'), { type: 'confirm_announcement' });
+  // 首夜死者 v1 发表遗言
+  assert.equal(st.phase, 'last_words');
+  // B10: 局中 exitReason 对观战者遮滤为 null
+  const midSpectator = werewolfV2Module.getSpectatorView(st);
+  assert.equal(midSpectator.players.find((p) => p.playerId === 'v1')?.exitReason, null);
+  st = apply(st, actor('v1'), { type: 'finish_last_words' });
   for (const id of [...st.speakingOrder]) {
     if (!st.players[id]?.alive) continue;
     st = apply(st, actor(id), { type: 'finish_speech' });
+  }
+  if (st.phase === 'free_discussion') {
+    for (const id of Object.keys(st.players).filter((i) => st.players[i]?.alive)) {
+      st = apply(st, actor(id), { type: 'ready_vote' });
+    }
   }
   const votes: Array<[string, string | null]> = [
     ['w1', 'v2'], ['w2', 'v2'], ['s', 'v2'], ['x', 'v2'], ['v2', 'w1'],
@@ -43,6 +54,8 @@ test('v2 观战视角全程遮滤角色，终局 reveal', () => {
   st = apply(st, actor('v2'), { type: 'finish_last_words' });
   assert.equal(st.phase, 'game_over');
   const finalSpectator = werewolfV2Module.getSpectatorView(st);
+  // 终局揭示 exitReason
+  assert.equal(finalSpectator.players.find((p) => p.playerId === 'v1')?.exitReason, 'night_kill');
   assert.equal(finalSpectator.reveal?.roles.w1, 'wolf');
   assert.equal(finalSpectator.reveal?.roles.v2, 'villager');
   assert.ok(finalSpectator.reveal?.voteHistory.length >= 1);
@@ -105,4 +118,26 @@ test('v2 视角 me 信息对请求者一致且 canAct 正确', () => {
   assert.equal(werewolfV2Module.getPlayerView(st, 'x').me?.canAct, true); // 女巫待决策
   const outsider = werewolfV2Module.getPlayerView(st, 'nobody').me;
   assert.equal(outsider, null);
+});
+
+test('v2 视角包含 nightStage 且单调推进：wolf -> witch -> seer -> guard -> done', () => {
+  const ids = ['w1', 'w2', 's', 'x', 'g', 'v1', 'v2', 'v3'];
+  let st = startedNight(ids, { roles: { guard: true, hunter: false, idiot: false } });
+  // 刚入夜，狼人未完成投票
+  assert.equal(werewolfV2Module.getSpectatorView(st).nightStage, 'wolf');
+  // 狼人完成投票
+  st = apply(st, actor('w1'), { type: 'night_kill', targetPlayerId: 'v1' });
+  st = apply(st, actor('w2'), { type: 'night_kill', targetPlayerId: 'v1' });
+  assert.equal(werewolfV2Module.getSpectatorView(st).nightStage, 'witch');
+  // 女巫完成用药
+  st = apply(st, actor('x'), { type: 'witch_save', save: false });
+  st = apply(st, actor('x'), { type: 'witch_poison', targetPlayerId: null });
+  assert.equal(werewolfV2Module.getSpectatorView(st).nightStage, 'seer');
+  // 预言家完成查验
+  st = apply(st, actor('s'), { type: 'seer_check', targetPlayerId: 'w1' });
+  assert.equal(werewolfV2Module.getSpectatorView(st).nightStage, 'guard');
+  // 守卫完成守护
+  st = apply(st, actor('g'), { type: 'guard_guard', targetPlayerId: 'v2' });
+  // 所有人完成，进入天亮公告
+  assert.equal(st.phase, 'day_announcement');
 });

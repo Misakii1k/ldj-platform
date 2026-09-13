@@ -4,6 +4,7 @@ import { describeError } from '../shared-ui/errors.ts';
 import { ConfettiEffect } from '../shared-ui/ConfettiEffect.tsx';
 import { UserAvatar } from '../user/UserAvatar.tsx';
 import { useUserProfile } from '../user/UserProfileContext.tsx';
+import { resolveMemberAvatar } from '../user/avatar.ts';
 import { nameFor } from './useGameAction.ts';
 import type { UndercoverPlayerView, PublicPlayerInfo } from './types.ts';
 
@@ -96,7 +97,7 @@ export function GameOverView({ view }: Props) {
                 return (
                   <li key={player.playerId} className={`role-item ${role ?? 'unknown'} ${!player.alive ? 'dead' : ''}`} style={{ '--stagger-index': index } as CSSProperties}>
                     <UserAvatar
-                      avatar={member?.avatar ?? (isMe ? profile.avatar : 'preset:fox')}
+                      avatar={resolveMemberAvatar(member, { isMe, myAvatar: profile.avatar, seat: player.seat, playerId: player.playerId })}
                       nickname={nameFor(members, player.playerId)}
                       size={36}
                       className="role-avatar"

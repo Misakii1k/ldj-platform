@@ -1,6 +1,6 @@
 import type { GameEffect } from '@ldj/shared';
 import { parseEchoJudgeAction, parseEchoJudgeConfig } from './schemas.ts';
-import { drawThreeTopicCards, TOPIC_DECK, type TopicCard } from './questionDeck.ts';
+import { drawThreeTopicCards, TOPIC_DECK } from './questionDeck.ts';
 import {
   type EchoJudgeAction,
   type EchoJudgeEvent,
@@ -192,7 +192,7 @@ function settleRound(
   // 保持上轮指认战报直到新指认产生
 
   // 新一轮默认初始身份分配（非判官玩家可在出题阶段随时自由切换）
-  const rnd = random ?? { nextInt: (min, max) => min, shuffle: (arr) => [...arr] };
+  const rnd = random ?? { nextInt: (min, _max) => min, shuffle: (arr) => [...arr] };
   const reassigned = assignRoles(state.players, next, rnd);
   state.roles = reassigned.roles;
   state.triggerWords = reassigned.triggerWords;
@@ -217,7 +217,7 @@ export function reduceEchoJudgeState(
   }
 
   const random = ctx.random ?? {
-    nextInt: (min, max) => min,
+    nextInt: (min, _max) => min,
     shuffle: (arr) => [...arr],
   };
 

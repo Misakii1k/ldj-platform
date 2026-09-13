@@ -1,18 +1,20 @@
 import React, { useEffect, useRef, useState, type ReactNode } from 'react';
-import { webAudio } from './WebAudioManager.ts';
 import { GameIcon } from './GameIcon.tsx';
 import { UserAvatar } from '../user/UserAvatar.tsx';
 import { useUserProfile } from '../user/UserProfileContext.tsx';
+import { resolveMemberAvatar } from '../user/avatar.ts';
 import { useConnection } from '../connection/useConnection.ts';
 import { useMotion } from '../motion/MotionContext.tsx';
 import { GameMotionRoot, GamePhaseTransition } from './GameMotion.tsx';
 import { setAppImmersiveMode } from '../native/immersive.ts';
 import { TabletopMenuDrawer } from './TabletopMenuDrawer.tsx';
 import { ConfirmDialog } from './ConfirmDialog.tsx';
+import { useTabletopMenu } from './useTabletopMenu.ts';
 
 export interface PlayerSeat {
   id: string;
   name: string;
+  seat?: number | null;
   avatar?: string;
   avatarUrl?: string;
   isCurrentTurn?: boolean;
@@ -24,6 +26,21 @@ export interface PlayerSeat {
   score?: number;
   badge?: string;
   handCount?: number;
+}
+
+/** 自动感知真实物理设备视口是否处于横屏，告别人工点击伪横屏造成的变形与放大问题 */
+function useIsLandscape(): boolean {
+  const [isLandscape, setIsLandscape] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(orientation: landscape)').matches;
+  });
+  useEffect(() => {
+    const mq = window.matchMedia('(orientation: landscape)');
+    const update = () => setIsLandscape(mq.matches);
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+  return isLandscape;
 }
 
 /** 横屏矮视口（如 844x390 手机横屏）：椭圆座位环在矮毛毡上必然互相侵占，改用顶部座位条。 */
@@ -87,61 +104,14 @@ export function TabletopOvalShell({
   phaseKey,
   onShowRules,
   onLeaveRoom,
-  recommendLandscape,
 }: TabletopOvalShellProps) {
   const { profile } = useUserProfile();
-  const { state, send, clearMe, setViewingHome, me } = useConnection();
-  const [muted, setMuted] = useState(webAudio.isMuted());
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [confirmDialogState, setConfirmDialogState] = useState<'leave' | 'dissolve' | null>(null);
-  const [landscapeTipDismissed, setLandscapeTipDismissed] = useState(false);
-  const [busyAction, setBusyAction] = useState(false);
+  const { state } = useConnection();
   const { level: motionLevel } = useMotion();
   const landscapeShort = useLandscapeShort();
   const members = state.room?.members ?? [];
-  const isHost = me !== null && state.room !== null && state.room.members.some(
-    (m) => m.playerId === me.playerId && m.isHost,
-  );
-
-  // 1. 暂离返回主页（保持后台运行）
-  const handleStepOut = () => {
-    setConfirmDialogState(null);
-    setViewingHome(true);
-  };
-
-  // 2. 彻底退出房间
-  const handleLeaveRoom = async () => {
-    if (busyAction) return;
-    setBusyAction(true);
-    try {
-      if (onLeaveRoom) {
-        onLeaveRoom();
-      } else {
-        await send('leave_room', {});
-      }
-    } catch {
-      // 忽略
-    } finally {
-      clearMe();
-      setBusyAction(false);
-      setConfirmDialogState(null);
-    }
-  };
-
-  // 3. 房主解散房间
-  const handleDissolveRoom = async () => {
-    if (busyAction) return;
-    setBusyAction(true);
-    try {
-      await send('room_command', { command: 'close_room' });
-    } catch {
-      // 忽略
-    } finally {
-      clearMe();
-      setBusyAction(false);
-      setConfirmDialogState(null);
-    }
-  };
+  const menu = useTabletopMenu({ onLeaveRoom });
+  const isHost = menu.isHost;
 
   // 进入对局时自动开启系统状态栏沉浸隐藏，退出时恢复
   useEffect(() => {
@@ -150,12 +120,6 @@ export function TabletopOvalShell({
       void setAppImmersiveMode(false);
     };
   }, []);
-
-  const toggleSound = () => {
-    const next = !muted;
-    webAudio.setMuted(next);
-    setMuted(next);
-  };
 
   const sortedPlayers = [...players];
   const meIndex = sortedPlayers.findIndex((p) => p.id === currentUserId);
@@ -219,7 +183,15 @@ export function TabletopOvalShell({
   const renderSeatChip = (player: (typeof orderedPlayers)[number]) => {
     const isMe = player.id === currentUserId;
     const member = members.find((m) => m.playerId === player.id);
-    const resolvedAvatar = player.avatar || player.avatarUrl || member?.avatar || (isMe ? profile.avatar : 'preset:fox');
+    const resolvedAvatar = resolveMemberAvatar(
+      {
+        avatar: player.avatar || player.avatarUrl || member?.avatar,
+        seat: player.seat ?? member?.seat,
+        playerId: player.id,
+        botKind: member?.botKind,
+      },
+      { isMe, myAvatar: profile.avatar },
+    );
 
     return (
       <div
@@ -260,17 +232,8 @@ export function TabletopOvalShell({
     );
   };
 
-  const [orientation, setOrientation] = useState<'portrait' | 'landscape'>(() => {
-    const preferLandscape = Boolean(recommendLandscape || gameId === 'landlord');
-    try {
-      const saved = localStorage.getItem('ldj_tabletop_orientation');
-      if (saved === 'landscape') return 'landscape';
-      if (saved === 'portrait' && !preferLandscape) return 'portrait';
-    } catch {
-      // 存储被禁用（隐私模式等）时按游戏推荐回退
-    }
-    return preferLandscape ? 'landscape' : 'portrait';
-  });
+  const isLandscape = useIsLandscape();
+  const orientation = isLandscape ? 'landscape' : 'portrait';
 
   const [viewMode, setViewMode] = useState<'player' | 'table'>(() => {
     try {
@@ -291,25 +254,8 @@ export function TabletopOvalShell({
     }
   }, [viewMode]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('ldj_tabletop_orientation', orientation);
-    } catch {
-      // ignore
-    }
-  }, [orientation]);
-
-  /** 竖屏时值得建议横屏的游戏：显式推荐 + 已知宽幅游戏（与默认横屏判断一致） */
-  const suggestLandscape = Boolean(recommendLandscape || gameId === 'bell-clash' || gameId === 'landlord');
-
   const toggleViewMode = () => {
     setViewMode((prev) => (prev === 'player' ? 'table' : 'player'));
-  };
-
-  const toggleOrientation = () => {
-    // 切到竖屏后横幅需要出现（斗地主等强制横屏默认值下，这是横幅唯一的展示时机）；
-    // 是否关闭由用户点 ✕ 决定
-    setOrientation((prev) => (prev === 'portrait' ? 'landscape' : 'portrait'));
   };
 
   return (
@@ -334,23 +280,11 @@ export function TabletopOvalShell({
           <div className="tabletop-header__actions">
             {topRightControls}
 
-            {/* 宽幅推荐小贴士（横幅关闭后的常驻紧凑入口，避免与横幅重复） */}
-            {suggestLandscape && orientation === 'portrait' && landscapeTipDismissed && (
-              <button
-                type="button"
-                className="tabletop-sound-btn tabletop-recommend-chip"
-                onClick={toggleOrientation}
-                title="当前游戏推荐横屏游玩体验更佳"
-              >
-                <span className="tabletop-sound-btn__label tabletop-recommend-chip__label">横屏</span>
-              </button>
-            )}
-
             {/* 极简快捷菜单按钮 */}
             <button
               type="button"
               className="tabletop-sound-btn tabletop-menu-btn"
-              onClick={() => setIsMenuOpen(true)}
+              onClick={menu.openMenu}
               title="展开游戏快捷菜单与设置"
               aria-label="打开快捷菜单"
             >
@@ -366,25 +300,6 @@ export function TabletopOvalShell({
           </div>
         )}
       </header>
-
-      {/* 竖屏横屏建议横幅：推荐横屏的游戏在竖屏下提示一次，可一键切换或关闭 */}
-      {suggestLandscape && orientation === 'portrait' && !landscapeTipDismissed && (
-        <div className="tabletop-landscape-tip" role="status">
-          <span className="tabletop-landscape-tip__text">{title}建议横屏游玩，桌面视野更宽敞</span>
-          <button type="button" className="tabletop-landscape-tip__switch" onClick={toggleOrientation}>
-            切换为横屏
-          </button>
-          <button
-            type="button"
-            className="tabletop-landscape-tip__close"
-            onClick={() => setLandscapeTipDismissed(true)}
-            aria-label="关闭横屏建议"
-            title="关闭横屏建议"
-          >
-            ✕
-          </button>
-        </div>
-      )}
 
       {/* 沉浸式游戏舞台全景区域（无桌子边界限制） */}
       <main className="tabletop-arena-container">
@@ -411,35 +326,33 @@ export function TabletopOvalShell({
 
       {/* 快捷设置与操作抽屉 */}
       <TabletopMenuDrawer
-        isOpen={isMenuOpen}
-        onClose={() => setIsMenuOpen(false)}
+        isOpen={menu.isOpen}
+        onClose={menu.closeMenu}
         gameTitle={title}
-        orientation={orientation}
-        onToggleOrientation={toggleOrientation}
         viewMode={viewMode}
         onToggleViewMode={toggleViewMode}
-        muted={muted}
-        onToggleSound={toggleSound}
+        muted={menu.muted}
+        onToggleSound={menu.toggleSound}
         onShowRules={onShowRules}
-        onStepOut={handleStepOut}
-        onLeaveRoom={() => setConfirmDialogState('leave')}
-        onDissolveRoom={() => setConfirmDialogState('dissolve')}
+        onStepOut={menu.stepOut}
+        onLeaveRoom={menu.requestLeave}
+        onDissolveRoom={menu.requestDissolve}
         isHost={isHost}
         customActions={topRightControls}
       />
 
       {/* 退出与解散确认对话框 */}
-      {confirmDialogState && (
+      {menu.confirmKind && (
         <ConfirmDialog
           title={
-            confirmDialogState === 'dissolve'
+            menu.confirmKind === 'dissolve'
               ? '解散房间'
               : isHost
               ? '房主退出 / 解散选项'
               : '暂离或退出房间'
           }
           message={
-            confirmDialogState === 'dissolve'
+            menu.confirmKind === 'dissolve'
               ? '确定要解散当前房间吗？对局将立即终止，所有玩家将被移出。'
               : isHost
               ? '您是房主。选择「暂离返回主页」可保持房间在后台运行，其他朋友可继续正常游玩；选择「仅退出」将自动转让房主；选择「解散房间」将关闭房间。'
@@ -447,23 +360,23 @@ export function TabletopOvalShell({
           }
           confirmLabel="暂离返回主页"
           secondaryLabel={
-            confirmDialogState === 'dissolve'
+            menu.confirmKind === 'dissolve'
               ? '确认解散'
               : isHost
               ? '解散房间'
               : '彻底退出'
           }
           onSecondary={
-            confirmDialogState === 'dissolve'
-              ? () => void handleDissolveRoom()
+            menu.confirmKind === 'dissolve'
+              ? menu.confirmDissolveRoom
               : isHost
-              ? () => void handleDissolveRoom()
-              : () => void handleLeaveRoom()
+              ? menu.confirmDissolveRoom
+              : menu.confirmLeaveRoom
           }
-          destructive={confirmDialogState === 'dissolve' || isHost}
-          busy={busyAction}
-          onConfirm={confirmDialogState === 'dissolve' ? () => setConfirmDialogState(null) : handleStepOut}
-          onCancel={() => setConfirmDialogState(null)}
+          destructive={menu.confirmKind === 'dissolve' || isHost}
+          busy={menu.busy}
+          onConfirm={menu.confirmKind === 'dissolve' ? menu.cancelConfirm : menu.stepOut}
+          onCancel={menu.cancelConfirm}
         />
       )}
     </GameMotionRoot>

@@ -168,6 +168,15 @@ test('D5 P1a 注册断言：open_kill 解析到 v2 模块、legacy 仍解析到 
     assert.equal(v2Module.identity.viewVersion, 1);
   }
 
+  // moderator 规则集解析测试
+  const directMod = getGameModule('werewolf', 'werewolf_moderator_v1');
+  assert.ok(directMod, 'werewolf_moderator_v1 必须能解析到模块');
+  assert.ok('identity' in directMod, 'werewolf_moderator_v1 必须是版本化模块');
+  if ('identity' in directMod) {
+    assert.equal(directMod.identity.rulesetId, 'werewolf_moderator_v1');
+    assert.equal(directMod.identity.engineContractVersion, 2);
+  }
+
   // 注册表精确解析：legacy 规则集仍落在 legacy 模块
   const directLegacy = getGameModule('werewolf', 'werewolf_legacy_platform_v2');
   assert.ok(directLegacy);

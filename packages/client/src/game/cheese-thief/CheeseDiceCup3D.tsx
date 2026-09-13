@@ -8,6 +8,7 @@ interface CheeseDiceCup3DProps {
   hint?: string;
   peekTargetName?: string;
   onInspectCommit?: () => void;
+  allowShake?: boolean;
   variant?: 'large' | 'compact';
 }
 
@@ -20,6 +21,7 @@ export function CheeseDiceCup3D({
   peekTargetName,
   onInspectCommit,
   variant = 'large',
+  allowShake = false,
 }: CheeseDiceCup3DProps) {
   return (
     <DiceCup
@@ -32,7 +34,7 @@ export function CheeseDiceCup3D({
       onInspectCommit={onInspectCommit}
       variant={variant}
       theme="wood"
-      allowShake={isMe}
+      allowShake={allowShake}
     />
   );
 }

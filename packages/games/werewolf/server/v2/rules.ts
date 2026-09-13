@@ -1,6 +1,16 @@
-/** werewolf_platform_open_kill_v1 — 纯规则 reducer。语义与冻结 legacy 一致（唯一变体 wolfKillScope=any）。 */
-import type { Actor, GameContext, GameEffect, PrivateGameEvent } from '@ldj/shared';
-import type { V2Action, V2Config, V2ConfigPace, V2Event, V2ExitReason, V2NightState, V2PendingOutcome, V2PlayerView, V2PublicView, V2Result, V2Role, V2State, V2Team, V2TimedPhase, V2VoteKind, V2VoteOutcome, V2VoteSummary } from './types.ts';
+/**
+ * werewolf_platform_open_kill_v1 — 纯规则 reducer。
+ * 遵循主流面杀规则，与 legacy 相比有意分叉：
+ * 1. wolfKillScope=any：狼人夜刀可投任意存活玩家（含自己与同伴）；
+ * 2. 守卫可自守（保留不可连续两晚守同一人）；
+ * 3. 同守同救死亡：守中且救中刀口目标依然死亡（night_kill）；
+ * 4. 首夜死者遗言队列：首夜遇害者按座位号依次发表遗言；
+ * 5. 加赛候选人禁投：加赛轮候选人失去投票权且不计入应收票数；
+ * 6. 猎人被放逐统一先展示 vote_result 票型面板，再进入 hunter_shot 开枪；
+ * 7. 局中死因隐藏：出局玩家 exitReason 仅在终局 game_over 时揭示。
+ */
+import { calculateWerewolfDistribution, type Actor, type GameContext, type GameEffect, type PrivateGameEvent } from '@ldj/shared';
+import type { V2Action, V2Config, V2ConfigPace, V2Event, V2ExitReason, V2NightStage, V2NightState, V2PendingOutcome, V2PlayerView, V2PublicView, V2Result, V2Role, V2State, V2Team, V2TimedPhase, V2VoteKind, V2VoteOutcome, V2VoteSummary } from './types.ts';
 import { v2ActionSchema, v2StateSchema } from './schemas.ts';
 
 export type V2ReduceResult = { ok: false; code: string; message: string } | { ok: true; nextState: V2State; publicEvents: V2Event[]; privateEvents: PrivateGameEvent[]; effects: GameEffect[]; resultCandidate: V2Result | null };
@@ -15,19 +25,21 @@ const PLAYER_ACTIONS = new Set<V2Action['type']>([
   'hunter_shoot',
   'confirm_announcement',
   'finish_speech',
+  'ready_vote',
   'day_vote',
   'finish_last_words',
 ]);
 const SPECIAL_ROLES: readonly V2Role[] = ['seer', 'witch', 'guard', 'hunter', 'idiot'];
 const PACE_MS: Record<V2ConfigPace, Record<V2TimedPhase, number>> = {
-  fast: { role_reveal: 15_000, night: 45_000, hunter_shot: 15_000, day_announcement: 10_000, discussion: 30_000, voting: 20_000, runoff_voting: 20_000, vote_result: 4_000, last_words: 20_000 },
-  standard: { role_reveal: 30_000, night: 60_000, hunter_shot: 30_000, day_announcement: 10_000, discussion: 60_000, voting: 45_000, runoff_voting: 45_000, vote_result: 5_000, last_words: 30_000 },
-  relaxed: { role_reveal: 45_000, night: 90_000, hunter_shot: 45_000, day_announcement: 10_000, discussion: 90_000, voting: 60_000, runoff_voting: 60_000, vote_result: 7_000, last_words: 45_000 },
+  fast: { role_reveal: 15_000, night: 45_000, hunter_shot: 15_000, day_announcement: 10_000, discussion: 30_000, free_discussion: 30_000, voting: 20_000, runoff_voting: 20_000, vote_result: 4_000, last_words: 20_000 },
+  standard: { role_reveal: 30_000, night: 60_000, hunter_shot: 30_000, day_announcement: 10_000, discussion: 60_000, free_discussion: 60_000, voting: 45_000, runoff_voting: 45_000, vote_result: 5_000, last_words: 30_000 },
+  relaxed: { role_reveal: 45_000, night: 90_000, hunter_shot: 45_000, day_announcement: 10_000, discussion: 90_000, free_discussion: 90_000, voting: 60_000, runoff_voting: 60_000, vote_result: 7_000, last_words: 45_000 },
 };
 
 const deny = (message: string): V2ReduceResult => ({ ok: false, code: 'ACTION_NOT_ALLOWED', message });
 const noop = (state: V2State): V2ReduceResult => ({ ok: true, nextState: state, publicEvents: [], privateEvents: [], effects: [], resultCandidate: null });
 const okResult = (state: V2State, publicEvents: V2Event[], effects: GameEffect[]): V2ReduceResult => ({ ok: true, nextState: state, publicEvents, privateEvents: [], effects, resultCandidate: state.phase === 'game_over' ? buildV2Result(state) : null });
+const seatNo = (state: V2State, id: string): number => (state.players[id]?.seat ?? 0) + 1;
 const orderedIds = (state: V2State): string[] => Object.entries(state.players).sort(([, a], [, b]) => a.seat - b.seat).map(([id]) => id);
 const aliveIds = (state: V2State): string[] => orderedIds(state).filter((id) => state.players[id]?.alive);
 const aliveRoleIds = (state: V2State, role: V2Role): string[] => aliveIds(state).filter((id) => state.players[id]?.role === role);
@@ -85,7 +97,9 @@ function startNight(state: V2State, ctx: GameContext, day: number, publicEvents:
   state.phase = 'night';
   state.night = emptyNight(state);
   state.lastNightDeaths = []; state.announcementConfirmedPlayerIds = []; state.speakingOrder = []; state.currentSpeakerIndex = 0;
+  state.freeDiscussionReadyPlayerIds = [];
   state.votes = {}; state.runoffCandidates = []; state.pendingOutcome = null; state.lastWordsPlayerId = null;
+  state.lastWordsQueue = null;
   phaseChanged(state, publicEvents);
   schedulePhase(state, ctx, 'night', effects);
   effects.push({ type: 'system_message', text: `第 ${day} 夜开始` });
@@ -106,6 +120,16 @@ const allWolvesVoted = (state: V2State): boolean => { const wolves = aliveRoleId
 const witchFinished = (state: V2State): boolean => aliveRoleIds(state, 'witch').length === 0 || state.night.witchSaveDecision === true || (state.night.witchSaveDecision === false && state.night.witchPoisonDecided);
 const guardFinished = (state: V2State): boolean => aliveRoleIds(state, 'guard').length === 0 || state.night.guardDecided;
 const wolfKillBlocked = (state: V2State): boolean => state.night.guardTargetId !== null && state.night.guardTargetId === state.night.killTargetId;
+
+export function computeNightStage(state: V2State): V2NightStage {
+  if (state.phase !== 'night') return 'done';
+  if (!allWolvesVoted(state)) return 'wolf';
+  if (!witchFinished(state)) return 'witch';
+  if (!state.night.seerChecked) return 'seer';
+  if (!guardFinished(state)) return 'guard';
+  return 'done';
+}
+
 function hunterShooterOf(state: V2State, reasons: ReadonlyMap<string, V2ExitReason>): string | null {
   for (const [id, reason] of reasons) {
     if (reason === 'poisoned' || reason === 'disconnect_timeout') continue;
@@ -145,6 +169,11 @@ function resolveHunterShot(state: V2State, ctx: GameContext, firedTargetId: stri
     return;
   }
   if (state.pendingOutcome) { continueAfterPendingOutcome(state, ctx, publicEvents, effects); return; }
+  if (state.lastWordsQueue && state.lastWordsQueue.length > 0) {
+    const speakerId = state.lastWordsQueue.shift()!;
+    startLastWords(state, ctx, speakerId, publicEvents, effects);
+    return;
+  }
   startDiscussion(state, ctx, publicEvents, effects);
 }
 
@@ -153,7 +182,9 @@ function resolveNightWithContext(state: V2State, ctx: GameContext, publicEvents:
   const targetId = state.night.killTargetId;
   const reasons = new Map<string, V2ExitReason>();
   const deaths: string[] = [];
-  if (targetId && !wolfKillBlocked(state) && state.night.witchSaveDecision !== true) {
+  const guarded = wolfKillBlocked(state);
+  const saved = state.night.witchSaveDecision === true;
+  if (targetId && (guarded === saved)) {
     deaths.push(targetId);
     reasons.set(targetId, 'night_kill');
   }
@@ -168,9 +199,14 @@ function resolveNightWithContext(state: V2State, ctx: GameContext, publicEvents:
   state.lastNightDeaths = deaths;
   state.lastGuardTargetId = state.night.guardTargetId;
   publicEvents.push({ type: 'night_resolved', deaths, day: state.day });
-  effects.push({ type: 'system_message', text: deaths.length === 0 ? '昨晚是平安夜' : `昨晚死亡的玩家：${deaths.map((id) => `${state.players[id]?.seat ?? 0 + 1} 号`).join('、')}` });
+  effects.push({ type: 'system_message', text: deaths.length === 0 ? '昨晚是平安夜' : `昨晚死亡的玩家：${deaths.map((id) => `${seatNo(state, id)} 号`).join('、')}` });
   const winner = checkWinner(state);
   if (winner) { finishGame(state, winner, false, publicEvents, effects); return; }
+  if (state.day === 1 && deaths.length > 0) {
+    state.lastWordsQueue = [...deaths].sort((a, b) => (state.players[a]?.seat ?? 0) - (state.players[b]?.seat ?? 0));
+  } else {
+    state.lastWordsQueue = null;
+  }
   const hunterShooter = hunterShooterOf(state, reasons);
   if (hunterShooter) {
     state.pendingShoot = hunterShooter;
@@ -195,6 +231,11 @@ function finishDayAnnouncement(state: V2State, ctx: GameContext, publicEvents: V
   cancelCurrentTimer(state, effects);
   if (state.pendingShoot) {
     enterHunterShot(state, ctx, state.pendingShoot, publicEvents, effects);
+    return;
+  }
+  if (state.lastWordsQueue && state.lastWordsQueue.length > 0) {
+    const speakerId = state.lastWordsQueue.shift()!;
+    startLastWords(state, ctx, speakerId, publicEvents, effects);
     return;
   }
   startDiscussion(state, ctx, publicEvents, effects);
@@ -222,10 +263,32 @@ function startDiscussion(state: V2State, ctx: GameContext, publicEvents: V2Event
   state.currentSpeakerIndex = 0;
   phaseChanged(state, publicEvents);
   const speakerId = state.speakingOrder[0];
-  if (!speakerId) { startVoting(state, ctx, 'normal', [], publicEvents, effects); return; }
+  if (!speakerId) {
+    if (state.config.freeDiscussion !== false) {
+      startFreeDiscussion(state, ctx, publicEvents, effects);
+    } else {
+      startVoting(state, ctx, 'normal', [], publicEvents, effects);
+    }
+    return;
+  }
   schedulePhase(state, ctx, 'discussion', effects, speakerId);
-  effects.push({ type: 'system_message', text: `请 ${state.players[speakerId]?.seat ?? 0 + 1} 号玩家开始发言` });
+  effects.push({ type: 'system_message', text: `请 ${seatNo(state, speakerId)} 号玩家开始发言` });
 }
+
+function startFreeDiscussion(state: V2State, ctx: GameContext, publicEvents: V2Event[], effects: GameEffect[]): void {
+  cancelCurrentTimer(state, effects);
+  state.phase = 'free_discussion';
+  state.freeDiscussionReadyPlayerIds = [];
+  phaseChanged(state, publicEvents);
+  schedulePhase(state, ctx, 'free_discussion', effects);
+  effects.push({ type: 'system_message', text: '进入自由发言阶段，存活玩家可自由辩论；准备好后可点击「进入投票」' });
+}
+
+const freeDiscussionReadyIds = (state: V2State): string[] => aliveIds(state);
+const allFreeDiscussionReady = (state: V2State): boolean => {
+  const voters = freeDiscussionReadyIds(state);
+  return voters.length > 0 && voters.every((id) => state.freeDiscussionReadyPlayerIds.includes(id));
+};
 
 function advanceSpeaker(state: V2State, ctx: GameContext, publicEvents: V2Event[], effects: GameEffect[]): void {
   cancelCurrentTimer(state, effects);
@@ -234,15 +297,23 @@ function advanceSpeaker(state: V2State, ctx: GameContext, publicEvents: V2Event[
     const nextId = state.speakingOrder[state.currentSpeakerIndex]!;
     if (state.players[nextId]?.alive) {
       schedulePhase(state, ctx, 'discussion', effects, nextId);
-      effects.push({ type: 'system_message', text: `请 ${state.players[nextId]?.seat ?? 0 + 1} 号玩家开始发言` });
+      effects.push({ type: 'system_message', text: `请 ${seatNo(state, nextId)} 号玩家开始发言` });
       return;
     }
     state.currentSpeakerIndex += 1;
   }
-  startVoting(state, ctx, 'normal', [], publicEvents, effects);
+  if (state.config.freeDiscussion !== false) {
+    startFreeDiscussion(state, ctx, publicEvents, effects);
+  } else {
+    startVoting(state, ctx, 'normal', [], publicEvents, effects);
+  }
 }
 
-const votingIds = (state: V2State): string[] => aliveIds(state).filter((id) => !state.players[id]?.idiotRevealed);
+const votingIds = (state: V2State): string[] => {
+  const isRunoff = state.phase === 'runoff_voting';
+  const candidates = isRunoff ? new Set(state.runoffCandidates) : null;
+  return aliveIds(state).filter((id) => !state.players[id]?.idiotRevealed && (!candidates || !candidates.has(id)));
+};
 const allVotesSubmitted = (state: V2State): boolean => { const voters = votingIds(state); return voters.length > 0 && voters.every((id) => id in state.votes); };
 
 function startVoting(state: V2State, ctx: GameContext, kind: V2VoteKind, candidates: string[], publicEvents: V2Event[], effects: GameEffect[]): void {
@@ -252,16 +323,26 @@ function startVoting(state: V2State, ctx: GameContext, kind: V2VoteKind, candida
   state.runoffCandidates = kind === 'runoff' ? candidates : [];
   phaseChanged(state, publicEvents);
   schedulePhase(state, ctx, state.phase, effects);
-  effects.push({ type: 'system_message', text: kind === 'normal' ? '开始放逐投票' : `平票加赛投票：候选人为 ${candidates.map((id) => `${state.players[id]?.seat ?? 0 + 1} 号`).join('、')}` });
+  effects.push({ type: 'system_message', text: kind === 'normal' ? '开始放逐投票' : `平票加赛投票：候选人为 ${candidates.map((id) => `${seatNo(state, id)} 号`).join('、')}` });
 }
 
 function settleVotes(state: V2State, ctx: GameContext, kind: V2VoteKind, publicEvents: V2Event[], effects: GameEffect[]): void {
   cancelCurrentTimer(state, effects);
   const tally: Record<string, number> = {};
   let abstained = 0;
-  for (const targetId of Object.values(state.votes)) {
-    if (targetId === null) abstained += 1;
-    else tally[targetId] = (tally[targetId] ?? 0) + 1;
+  const voters = votingIds(state);
+  for (const voterId of voters) {
+    const targetId = state.votes[voterId];
+    if (!targetId) {
+      abstained += 1;
+    } else {
+      const target = state.players[targetId];
+      if (!target || !target.alive || target.idiotRevealed || (kind === 'runoff' && !state.runoffCandidates.includes(targetId))) {
+        abstained += 1;
+      } else {
+        tally[targetId] = (tally[targetId] ?? 0) + 1;
+      }
+    }
   }
   const entries = Object.entries(tally);
   const max = entries.length === 0 ? 0 : Math.max(...entries.map(([, c]) => c));
@@ -298,10 +379,6 @@ function settleVotes(state: V2State, ctx: GameContext, kind: V2VoteKind, publicE
   if (outcome === 'tie') {
     next = 'runoff';
   } else if (outcome === 'eliminated' && eliminatedId) {
-    if (state.players[eliminatedId]?.role === 'hunter') {
-      enterHunterShot(state, ctx, eliminatedId, publicEvents, effects);
-      return;
-    }
     next = 'last_words';
   } else {
     next = 'next_night';
@@ -319,7 +396,7 @@ function startLastWords(state: V2State, ctx: GameContext, playerId: string, publ
   state.lastWordsPlayerId = playerId;
   phaseChanged(state, publicEvents);
   schedulePhase(state, ctx, 'last_words', effects, playerId);
-  effects.push({ type: 'system_message', text: `请 ${state.players[playerId]?.seat ?? 0 + 1} 号玩家发表遗言` });
+  effects.push({ type: 'system_message', text: `请 ${seatNo(state, playerId)} 号玩家发表遗言` });
 }
 
 function finishLastWords(state: V2State, ctx: GameContext, publicEvents: V2Event[], effects: GameEffect[]): void {
@@ -327,6 +404,16 @@ function finishLastWords(state: V2State, ctx: GameContext, publicEvents: V2Event
   state.lastWordsPlayerId = null;
   const winner = checkWinner(state);
   if (winner) { finishGame(state, winner, false, publicEvents, effects); return; }
+  if (state.lastWordsQueue !== null) {
+    if (state.lastWordsQueue.length > 0) {
+      const nextSpeakerId = state.lastWordsQueue.shift()!;
+      startLastWords(state, ctx, nextSpeakerId, publicEvents, effects);
+      return;
+    }
+    state.lastWordsQueue = null;
+    startDiscussion(state, ctx, publicEvents, effects);
+    return;
+  }
   startNight(state, ctx, state.day + 1, publicEvents, effects);
 }
 
@@ -343,7 +430,12 @@ function continueAfterVoteResult(state: V2State, ctx: GameContext, publicEvents:
     return;
   }
   if (pending.next === 'last_words' && state.lastVoteSummary?.eliminatedPlayerId) {
-    startLastWords(state, ctx, state.lastVoteSummary.eliminatedPlayerId, publicEvents, effects);
+    const eliminatedId = state.lastVoteSummary.eliminatedPlayerId;
+    if (state.players[eliminatedId]?.role === 'hunter') {
+      enterHunterShot(state, ctx, eliminatedId, publicEvents, effects);
+      return;
+    }
+    startLastWords(state, ctx, eliminatedId, publicEvents, effects);
     return;
   }
   const winner = checkWinner(state);
@@ -356,16 +448,28 @@ function continueAfterPendingOutcome(state: V2State, ctx: GameContext, publicEve
 }
 const allSubmitted = (state: V2State, submitted: readonly string[]): boolean => { const set = new Set(submitted); return aliveIds(state).every((id) => set.has(id)); };
 
+export function getWerewolfWolfCount(playerCount: number): number {
+  return calculateWerewolfDistribution({ playerCount }).wolfCount;
+}
+
 export function createV2InitialState(ctx: GameContext, players: string[], config: V2Config): V2State {
   if (players.length < 6 || players.length > 12) throw new Error('狼人杀人数需为 6-12 人');
   if (new Set(players).size !== players.length) throw new Error('玩家列表存在重复');
-  const wolfCount = players.length >= 9 ? 3 : 2;
-  const specials: V2Role[] = ['seer', 'witch'];
-  if (config.roles.guard) specials.push('guard');
-  if (config.roles.hunter) specials.push('hunter');
-  if (config.roles.idiot) specials.push('idiot');
-  if (wolfCount + specials.length > players.length) throw new Error('扩展角色卡数超过玩家人数，请关闭部分扩展角色');
-  const roles: V2Role[] = [...Array<V2Role>(wolfCount).fill('wolf'), ...specials, ...Array<V2Role>(players.length - wolfCount - specials.length).fill('villager')];
+  const dist = calculateWerewolfDistribution({
+    playerCount: players.length,
+    wolfDelta: config.wolfDelta,
+    guard: config.roles.guard,
+    hunter: config.roles.hunter,
+    idiot: config.roles.idiot,
+  });
+  if (!dist.isValid) {
+    throw new Error(dist.error ?? '阵营分配不合法');
+  }
+  const roles: V2Role[] = [
+    ...Array<V2Role>(dist.wolfCount).fill('wolf'),
+    ...dist.specials,
+    ...Array<V2Role>(dist.villagerCount).fill('villager'),
+  ];
   const shuffled = ctx.random.shuffle(roles);
   const playerEntries = Object.fromEntries(players.map((id, seat) => [id, { role: shuffled[seat]!, alive: true, seat, forfeited: false, exitReason: null, idiotRevealed: false }]));
   const state: V2State = {
@@ -381,12 +485,14 @@ export function createV2InitialState(ctx: GameContext, players: string[], config
     lastNightDeaths: [],
     speakingOrder: [],
     currentSpeakerIndex: 0,
+    freeDiscussionReadyPlayerIds: [],
     votes: {},
     runoffCandidates: [],
     lastVoteSummary: null,
     voteHistory: [],
     pendingOutcome: null,
     lastWordsPlayerId: null,
+    lastWordsQueue: null,
     witchSaveUsed: false,
     witchPoisonUsed: false,
     lastGuardTargetId: null,
@@ -429,6 +535,7 @@ export function reduceV2(ctx: GameContext, state: V2State, actor: Actor, action:
       case 'hunter_shot': resolveHunterShot(s, ctx, null, publicEvents, effects); break;
       case 'day_announcement': finishDayAnnouncement(s, ctx, publicEvents, effects); break;
       case 'discussion': advanceSpeaker(s, ctx, publicEvents, effects); break;
+      case 'free_discussion': startVoting(s, ctx, 'normal', [], publicEvents, effects); break;
       case 'voting':
       case 'runoff_voting': settleVotes(s, ctx, state.phase === 'voting' ? 'normal' : 'runoff', publicEvents, effects); break;
       case 'vote_result': continueAfterVoteResult(s, ctx, publicEvents, effects); break;
@@ -544,7 +651,6 @@ export function reduceV2(ctx: GameContext, state: V2State, actor: Actor, action:
     if (state.phase !== 'night' || !self.alive || self.role !== 'guard') return deny('当前不能执行守护');
     if (state.night.guardDecided) return deny('今晚已做出守护决定');
     if (action.targetPlayerId !== null) {
-      if (action.targetPlayerId === actorId) return deny('守卫不能守护自己');
       const target = state.players[action.targetPlayerId];
       if (!target || !target.alive) return deny('守护目标无效');
       if (action.targetPlayerId === state.lastGuardTargetId) return deny('不能连续两晚守护同一人');
@@ -578,10 +684,18 @@ export function reduceV2(ctx: GameContext, state: V2State, actor: Actor, action:
     return done();
   }
 
+  if (action.type === 'ready_vote') {
+    if (state.phase !== 'free_discussion' || !self.alive) return deny('当前不是自由发言时机');
+    if (!state.freeDiscussionReadyPlayerIds.includes(actorId)) s.freeDiscussionReadyPlayerIds.push(actorId);
+    if (allFreeDiscussionReady(s)) startVoting(s, ctx, 'normal', [], publicEvents, effects);
+    return done();
+  }
+
   if (action.type === 'day_vote') {
     const kind = state.phase === 'voting' ? 'normal' : state.phase === 'runoff_voting' ? 'runoff' : null;
     if (!kind || !self.alive) return deny('当前不能投票');
     if (self.idiotRevealed) return deny('翻牌白痴失去投票权');
+    if (kind === 'runoff' && state.runoffCandidates.includes(actorId)) return deny('加赛候选人不能投票');
     if (actorId in state.votes) return deny('本轮选票已经锁定');
     if (action.targetPlayerId !== null) {
       const target = state.players[action.targetPlayerId];
@@ -614,21 +728,27 @@ export function buildV2PublicView(state: V2State): V2PublicView {
     day: state.day,
     players: orderedIds(state).map((id) => {
       const p = state.players[id]!;
-      return { playerId: id, alive: p.alive, seat: p.seat, forfeited: p.forfeited, exitReason: p.exitReason, revealedRole: over ? p.role : null, idiotRevealed: p.idiotRevealed };
+      return { playerId: id, alive: p.alive, seat: p.seat, forfeited: p.forfeited, exitReason: over ? p.exitReason : null, revealedRole: over ? p.role : null, idiotRevealed: p.idiotRevealed };
     }),
     config: { ...state.config, roles: { ...state.config.roles } },
     confirmedRolePlayerIds: [...state.confirmedRolePlayerIds],
     announcementConfirmedPlayerIds: [...state.announcementConfirmedPlayerIds],
+    nightStage: computeNightStage(state),
     lastNightDeaths: [...state.lastNightDeaths],
     speakingOrder: [...state.speakingOrder],
     currentSpeakerId: state.phase === 'discussion' ? state.speakingOrder[state.currentSpeakerIndex] ?? null : null,
+    freeDiscussionReadyPlayerIds: [...state.freeDiscussionReadyPlayerIds],
     lastWordsPlayerId: state.lastWordsPlayerId,
     deadlineAt: state.deadlineAt,
     votesSubmitted: voting ? Object.keys(state.votes).length : 0,
     votesExpected: voting ? votingIds(state).length : 0,
     runoffCandidates: [...state.runoffCandidates],
     lastVoteSummary: state.lastVoteSummary ? structuredClone(state.lastVoteSummary) : null,
-    pendingShooterId: state.phase === 'hunter_shot' ? state.pendingShoot : null,
+    pendingShooterId: state.phase === 'hunter_shot'
+      ? state.pendingShoot
+      : (state.phase === 'vote_result' && state.lastVoteSummary?.eliminatedPlayerId && state.players[state.lastVoteSummary.eliminatedPlayerId]?.role === 'hunter'
+          ? state.lastVoteSummary.eliminatedPlayerId
+          : null),
     winner: state.winner,
     aborted: state.aborted,
     reveal: over ? { roles: Object.fromEntries(Object.entries(state.players).map(([id, p]) => [id, p.role])), voteHistory: structuredClone(state.voteHistory) } : null,
@@ -650,8 +770,9 @@ function playerCanAct(state: V2State, id: string): boolean {
     case 'hunter_shot': return state.pendingShoot === id;
     case 'day_announcement': return !state.announcementConfirmedPlayerIds.includes(id);
     case 'discussion': return player.alive && state.speakingOrder[state.currentSpeakerIndex] === id;
-    case 'voting':
-    case 'runoff_voting': return player.alive && !player.idiotRevealed && !(id in state.votes);
+    case 'free_discussion': return player.alive && !state.freeDiscussionReadyPlayerIds.includes(id);
+    case 'voting': return player.alive && !player.idiotRevealed && !(id in state.votes);
+    case 'runoff_voting': return player.alive && !player.idiotRevealed && !state.runoffCandidates.includes(id) && !(id in state.votes);
     case 'last_words': return state.lastWordsPlayerId === id;
     default: return false;
   }
@@ -676,6 +797,7 @@ export function buildV2PlayerView(state: V2State, playerId: string): V2PlayerVie
       confirmedAnnouncement: state.announcementConfirmedPlayerIds.includes(playerId),
       canAct: playerCanAct(state, playerId),
       hasVoted: playerId in state.votes,
+      hasReadiedVote: state.freeDiscussionReadyPlayerIds.includes(playerId),
       myVote: state.votes[playerId] ?? null,
       lastWordsPending: state.phase === 'last_words' && state.lastWordsPlayerId === playerId,
       wolfTeammateIds: isAliveWolf ? orderedIds(state).filter((id) => id !== playerId && state.players[id]?.role === 'wolf') : [],

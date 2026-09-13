@@ -74,8 +74,9 @@ function parseLanRooms(value: unknown): LanRoom[] {
   });
 }
 
-function roomStatusLabel(status: LanRoom['status']): string {
-  return status === 'LOBBY' ? '大厅筹备中' : '激战进行中';
+function roomStatusLabel(room: Pick<LanRoom, 'status' | 'playerCount'>): string {
+  if (room.playerCount === 0) return '等待玩家';
+  return room.status === 'LOBBY' ? '等待玩家' : '对局中';
 }
 
 export function JoinRoomSheet({ onClose, initialRoomCode = '' }: JoinRoomSheetProps) {
@@ -90,6 +91,7 @@ export function JoinRoomSheet({ onClose, initialRoomCode = '' }: JoinRoomSheetPr
   const [asSpectator, setAsSpectator] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [suggestedName, setSuggestedName] = useState<string | null>(null);
   const [rooms, setRooms] = useState<LanRoom[]>([]);
   const [roomsLoading, setRoomsLoading] = useState(true);
   const [roomsRefreshing, setRoomsRefreshing] = useState(false);
@@ -160,6 +162,14 @@ export function JoinRoomSheet({ onClose, initialRoomCode = '' }: JoinRoomSheetPr
       const message = describeError(err);
       setError(message);
       showToast(message, 'error');
+      if (message.includes('昵称') || (err as { payload?: { code?: string } })?.payload?.code === 'NICKNAME_TAKEN') {
+        const base = normalizedNickname.replace(/\d+$/, '') || '玩家';
+        const candidate = `${base}${Math.floor(Math.random() * 89 + 10)}`;
+        setSuggestedName(candidate);
+        window.requestAnimationFrame(() => nicknameRef.current?.focus());
+      } else {
+        setSuggestedName(null);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -209,7 +219,7 @@ export function JoinRoomSheet({ onClose, initialRoomCode = '' }: JoinRoomSheetPr
                     <div className="lan-room-card__title-row">
                       <h4>{room.gameName}</h4>
                       <span className={`lan-room-card__status lan-room-card__status--${room.status.toLowerCase()}`}>
-                        {roomStatusLabel(room.status)}
+                        {roomStatusLabel(room)}
                       </span>
                     </div>
                     <p>{room.playerCount}/{room.maxPlayers} 位玩家 · {room.spectatorCount} 位观战者{room.requiresPassword ? ' · 需要密码' : ''}</p>
@@ -252,7 +262,7 @@ export function JoinRoomSheet({ onClose, initialRoomCode = '' }: JoinRoomSheetPr
               id="join-nickname"
               value={nickname}
               onChange={(event) => setNickname(event.target.value)}
-              placeholder="例如：大头爸爸"
+              placeholder="输入你的昵称"
               maxLength={16}
               autoComplete="nickname"
               aria-invalid={Boolean(error)}
@@ -275,7 +285,7 @@ export function JoinRoomSheet({ onClose, initialRoomCode = '' }: JoinRoomSheetPr
             aria-invalid={Boolean(roomCode) && !hasValidRoomCode}
             aria-describedby={error ? 'join-room-error' : 'join-room-code-hint'}
           />
-          <small id="join-room-code-hint">选中上方列表即可自动填入，也可手动输入 5 位房间码。</small>
+          <small id="join-room-code-hint">点选上方房间自动填入，或直接输入 5 位房间码。</small>
         </label>
         <label className="room-sheet__field" htmlFor="join-password">
           <span>房间密码 <em>(如有)</em></span>
@@ -284,7 +294,7 @@ export function JoinRoomSheet({ onClose, initialRoomCode = '' }: JoinRoomSheetPr
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            placeholder="受保护的房间需输入密码"
+            placeholder="未设密码可留空"
             maxLength={32}
             autoComplete="current-password"
           />
@@ -300,7 +310,26 @@ export function JoinRoomSheet({ onClose, initialRoomCode = '' }: JoinRoomSheetPr
             <small>不占用对局席位，可实时旁观进程与参与聊天</small>
           </span>
         </label>
-        {error && <p id="join-room-error" className="room-sheet__error" role="alert">{error}</p>}
+        {error && (
+          <div className="room-sheet__error-box" role="alert">
+            <p id="join-room-error" className="room-sheet__error">{error}</p>
+            {suggestedName && (
+              <button
+                type="button"
+                className="room-sheet__quick-rename-btn"
+                onClick={() => {
+                  setNickname(suggestedName);
+                  saveUserNickname(suggestedName);
+                  setSuggestedName(null);
+                  setError(null);
+                  window.requestAnimationFrame(() => nicknameRef.current?.focus());
+                }}
+              >
+                一键改用推荐昵称「{suggestedName}」
+              </button>
+            )}
+          </div>
+        )}
       </form>
     </SheetDialog>
   );

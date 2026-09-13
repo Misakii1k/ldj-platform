@@ -7,6 +7,7 @@ import { useConnection } from '../../connection/useConnection.ts';
 import { nameFor, useGameAction } from '../useGameAction.ts';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
 import { webAudio } from '../../shared-ui/WebAudioManager.ts';
+import { crimeName } from './types.ts';
 import type { NightTestimonySimPlayerView } from './simTypes.ts';
 
 interface Props {
@@ -83,14 +84,14 @@ export function NightTestimonySimStage({ view }: Props) {
               ) : me.crime ? (
                 <>
                   <span className="sim-secret-card__label">你的罪行</span>
-                  <span className="sim-secret-card__word">{me.crime}</span>
+                  <span className="sim-secret-card__word">{crimeName(me.crime)}</span>
                 </>
               ) : (
                 <span className="sim-empty">未分配身份</span>
               )}
             </div>
             {view.extraCrime && (
-              <p className="sim-hint">公开干扰罪行卡：<strong>{view.extraCrime}</strong>（不属于任何囚犯）</p>
+              <p className="sim-hint">公开干扰罪行卡：<strong>{crimeName(view.extraCrime)}</strong>（不属于任何囚犯）</p>
             )}
           </section>
         )}

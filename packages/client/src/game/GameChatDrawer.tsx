@@ -8,14 +8,16 @@ import { useDragPanel } from '../shared-ui/useDragPanel.ts';
 const CHAT_BTN_FALLBACK_SIZE = { width: 94, height: 48 };
 /** 拖拽/贴边时按钮与视口边缘的最小间距 */
 const CHAT_BTN_EDGE_MARGIN = 8;
+const CHAT_BTN_BOTTOM_AVOIDANCE = 84;
 
-/** 贴边吸附：水平方向吸附到最近的左/右边缘，垂直方向仅夹取在视口内。输入相同返回相同结果。 */
+/** 贴边吸附：水平方向吸附到最近的左/右边缘，垂直方向避开顶部及底部关键操作区。 */
 function snapChatBtn(pos: { x: number; y: number }, size: { width: number; height: number }): { x: number; y: number } {
   const centerX = pos.x + size.width / 2;
   const x = centerX < window.innerWidth / 2
     ? CHAT_BTN_EDGE_MARGIN
     : window.innerWidth - size.width - CHAT_BTN_EDGE_MARGIN;
-  const y = Math.max(CHAT_BTN_EDGE_MARGIN, Math.min(window.innerHeight - size.height - CHAT_BTN_EDGE_MARGIN, pos.y));
+  const maxY = window.innerHeight - size.height - CHAT_BTN_BOTTOM_AVOIDANCE;
+  const y = Math.max(CHAT_BTN_EDGE_MARGIN, Math.min(Math.max(CHAT_BTN_EDGE_MARGIN, maxY), pos.y));
   return { x, y };
 }
 
@@ -81,6 +83,8 @@ export function GameChatDrawer() {
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const [snapping, setSnapping] = useState(false);
   const dragMovedRef = useRef(false);
+  const isWerewolf = state.game?.moduleId === 'werewolf';
+
   const [btnPos, setBtnPos] = useState<{ x: number; y: number } | null>(() => {
     try {
       const saved = localStorage.getItem('ldj_chat_btn_pos');
@@ -96,6 +100,13 @@ export function GameChatDrawer() {
     return null;
   });
 
+  // 处于狼人杀等侧翼席位桌面时，清空行内拖拽坐标，确保悬浮聊天按钮规整停靠在右下角安全区，绝不覆盖席位
+  useEffect(() => {
+    if (isWerewolf && btnPos !== null) {
+      setBtnPos(null);
+    }
+  }, [isWerewolf, btnPos]);
+
   const btnDragRef = useRef<{
     startX: number;
     startY: number;
@@ -108,6 +119,10 @@ export function GameChatDrawer() {
 
   useEffect(() => {
     const clampSavedPos = () => {
+      if (isWerewolf) {
+        setBtnPos(null);
+        return;
+      }
       setBtnPos((prev) => {
         if (!prev) return prev;
         const rect = triggerRef.current?.getBoundingClientRect();
@@ -130,7 +145,7 @@ export function GameChatDrawer() {
       window.removeEventListener('resize', clampSavedPos);
       window.removeEventListener('orientationchange', clampSavedPos);
     };
-  }, []);
+  }, [isWerewolf]);
 
   const handleBtnPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     const btn = e.currentTarget;
@@ -167,14 +182,19 @@ export function GameChatDrawer() {
     const handlePointerUp = () => {
       const drag = btnDragRef.current;
       if (drag?.hasDragged) {
-        // 松手自动吸附贴边：水平吸到最近左/右边缘，垂直留在夹取位置并持久化
-        const snapped = snapChatBtn({ x: drag.lastX, y: drag.lastY }, { width: rect.width, height: rect.height });
-        setBtnPos(snapped);
-        setSnapping(true);
-        try {
-          localStorage.setItem('ldj_chat_btn_pos', JSON.stringify(snapped));
-        } catch {
-          // ignore
+        if (isWerewolf) {
+          // 狼人杀桌面松手自动复位到底部右侧安全停靠区
+          setBtnPos(null);
+        } else {
+          // 松手自动吸附贴边：水平吸到最近左/右边缘，垂直留在夹取位置并持久化
+          const snapped = snapChatBtn({ x: drag.lastX, y: drag.lastY }, { width: rect.width, height: rect.height });
+          setBtnPos(snapped);
+          setSnapping(true);
+          try {
+            localStorage.setItem('ldj_chat_btn_pos', JSON.stringify(snapped));
+          } catch {
+            // ignore
+          }
         }
       }
       btnDragRef.current = null;

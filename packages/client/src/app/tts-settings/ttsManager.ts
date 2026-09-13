@@ -43,6 +43,14 @@ function discardActiveAudio(): void {
   }
 }
 
+export function stopPlayback(): void {
+  void stopSystemTts();
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+  discardActiveAudio();
+}
+
 export async function speakText(
   text: string,
   configOverride?: Partial<TtsSettingsConfig>,

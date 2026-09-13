@@ -40,7 +40,7 @@ export function HomeActiveRoomBanner() {
     }
   };
 
-  const statusLabel = isPlaying ? '牌局激战中' : isPostGame ? '牌局结算中' : '房间组队中';
+  const statusLabel = isPlaying ? '对局进行中' : isPostGame ? '对局已结算' : '等待准备中';
 
   return (
     <section className="home-active-room-banner home-motion-layer" data-motion-step="0" aria-label="进行中的对局提醒">

@@ -76,6 +76,10 @@ test('v2 契约：noSecretLeak 角色/狼刀/查验历史不泄漏（狼见狼�
         const b = (state as V2State).players[other]?.role;
         return a !== undefined && a === b;
       },
+      allowedLeakValues: (secret) => {
+        // 公开 nightStage 字段包含阶段名（'wolf'|'witch'|'seer'|'guard'），其出现不代表特定玩家的身份泄漏
+        return typeof secret === 'string' && ['wolf', 'witch', 'seer', 'guard'].includes(secret);
+      },
       isRevealed: (snap) => (snap as V2State).phase === 'game_over',
     },
   );

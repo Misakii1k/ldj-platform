@@ -14,6 +14,7 @@ export type V2Phase =
   | 'hunter_shot'
   | 'day_announcement'
   | 'discussion'
+  | 'free_discussion'
   | 'voting'
   | 'runoff_voting'
   | 'vote_result'
@@ -36,6 +37,8 @@ export interface V2Config {
   winCondition: V2WinCondition;
   wolfKillScope: 'any';
   roles: V2RolePool;
+  freeDiscussion?: boolean;
+  wolfDelta?: number;
 }
 
 export interface V2PlayerState {
@@ -100,12 +103,14 @@ export interface V2State {
   lastNightDeaths: string[];
   speakingOrder: string[];
   currentSpeakerIndex: number;
+  freeDiscussionReadyPlayerIds: string[];
   votes: Record<string, string | null>;
   runoffCandidates: string[];
   lastVoteSummary: V2VoteSummary | null;
   voteHistory: V2VoteRecord[];
   pendingOutcome: V2PendingOutcome | null;
   lastWordsPlayerId: string | null;
+  lastWordsQueue: string[] | null;
   witchSaveUsed: boolean;
   witchPoisonUsed: boolean;
   lastGuardTargetId: string | null;
@@ -127,6 +132,7 @@ export type V2Action =
   | { type: 'hunter_shoot'; targetPlayerId: string | null }
   | { type: 'confirm_announcement' }
   | { type: 'finish_speech' }
+  | { type: 'ready_vote' }
   | { type: 'day_vote'; targetPlayerId: string | null }
   | { type: 'finish_last_words' }
   | { type: 'phase_timeout'; phase: V2TimedPhase; day: number; token: string }
@@ -147,6 +153,8 @@ export interface V2Reveal {
   voteHistory: V2VoteRecord[];
 }
 
+export type V2NightStage = 'wolf' | 'witch' | 'seer' | 'guard' | 'done';
+
 export interface V2PublicView {
   gameId: 'werewolf';
   rulesetId: 'werewolf_platform_open_kill_v1';
@@ -157,9 +165,11 @@ export interface V2PublicView {
   config: V2Config;
   confirmedRolePlayerIds: string[];
   announcementConfirmedPlayerIds: string[];
+  nightStage: V2NightStage;
   lastNightDeaths: string[];
   speakingOrder: string[];
   currentSpeakerId: string | null;
+  freeDiscussionReadyPlayerIds: string[];
   lastWordsPlayerId: string | null;
   deadlineAt: number | null;
   votesSubmitted: number;
@@ -181,6 +191,7 @@ export interface V2MeView {
   confirmedAnnouncement: boolean;
   canAct: boolean;
   hasVoted: boolean;
+  hasReadiedVote: boolean;
   myVote: string | null;
   lastWordsPending: boolean;
   wolfTeammateIds: string[];

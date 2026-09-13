@@ -1,14 +1,13 @@
 import React, { useEffect } from 'react';
-import { GameIcon } from './GameIcon.tsx';
+import { BookOpen, Eye, Volume2, VolumeX, Home, LogOut, Flame } from 'lucide-react';
 
 export interface TabletopMenuDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   gameTitle?: string;
-  orientation: 'portrait' | 'landscape';
-  onToggleOrientation: () => void;
-  viewMode: 'player' | 'table';
-  onToggleViewMode: () => void;
+  /** 仅当游戏同时支持「手牌 / 公共大屏」两种视角时提供；不提供则不显示切换项 */
+  viewMode?: 'player' | 'table';
+  onToggleViewMode?: () => void;
   muted: boolean;
   onToggleSound: () => void;
   onShowRules?: () => void;
@@ -23,8 +22,6 @@ export function TabletopMenuDrawer({
   isOpen,
   onClose,
   gameTitle,
-  orientation,
-  onToggleOrientation,
   viewMode,
   onToggleViewMode,
   muted,
@@ -60,8 +57,10 @@ export function TabletopMenuDrawer({
         <div className="tabletop-drawer-header">
           <div className="tabletop-drawer-title-group">
             <span className="tabletop-drawer-kicker">
-              <span className="home-brand__tile" style={{ width: '18px', height: '18px', fontSize: '0.62rem', borderRadius: '4px', display: 'inline-grid', verticalAlign: '-0.15em', marginRight: '5px' }} aria-hidden="true">聚</span>
-              聚乐桌 · 快捷设置
+              <span className="home-brand__tile" style={{ width: '18px', height: '18px', fontSize: '0.62rem', borderRadius: '4px', display: 'inline-grid', verticalAlign: '-0.15em', marginRight: '5px' }} aria-hidden="true">
+                <img src="/icon-192.png" alt="" className="home-brand__img" />
+              </span>
+              聚乐桌游 · 快捷设置
             </span>
             <h3 className="tabletop-drawer-title">{gameTitle || '对局菜单'}</h3>
           </div>
@@ -99,7 +98,9 @@ export function TabletopMenuDrawer({
                     onShowRules();
                   }}
                 >
-                  <span className="tabletop-drawer-item__tag">规则</span>
+                  <span className="tabletop-drawer-item__icon" aria-hidden="true">
+                    <BookOpen size={20} strokeWidth={2.2} />
+                  </span>
                   <div className="tabletop-drawer-item__text">
                     <strong>本局规则</strong>
                     <span>查看完整卡牌与规则说明</span>
@@ -107,37 +108,29 @@ export function TabletopMenuDrawer({
                 </button>
               )}
 
-              <button
-                type="button"
-                className="tabletop-drawer-item"
-                onClick={onToggleOrientation}
-              >
-                <span className="tabletop-drawer-item__tag">旋转</span>
-                <div className="tabletop-drawer-item__text">
-                  <strong>{orientation === 'landscape' ? '切换为竖屏' : '切换为横屏'}</strong>
-                  <span>{orientation === 'landscape' ? '适合单手竖持模式' : '适合平放桌面全景宽幅'}</span>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                className="tabletop-drawer-item"
-                onClick={onToggleViewMode}
-              >
-                <span className="tabletop-drawer-item__tag">视角</span>
-                <div className="tabletop-drawer-item__text">
-                  <strong>{viewMode === 'table' ? '切为手牌模式' : '切为大屏模式'}</strong>
-                  <span>{viewMode === 'table' ? '当前：公共大屏视角' : '当前：个人手牌视角'}</span>
-                </div>
-              </button>
+              {viewMode !== undefined && onToggleViewMode !== undefined && (
+                <button
+                  type="button"
+                  className="tabletop-drawer-item"
+                  onClick={onToggleViewMode}
+                >
+                  <span className="tabletop-drawer-item__icon" aria-hidden="true">
+                    <Eye size={20} strokeWidth={2.2} />
+                  </span>
+                  <div className="tabletop-drawer-item__text">
+                    <strong>{viewMode === 'table' ? '切为手牌模式' : '切为大屏模式'}</strong>
+                    <span>{viewMode === 'table' ? '当前：公共大屏视角' : '当前：个人手牌视角'}</span>
+                  </div>
+                </button>
+              )}
 
               <button
                 type="button"
                 className="tabletop-drawer-item"
                 onClick={onToggleSound}
               >
-                <span className="tabletop-drawer-item__icon">
-                  <GameIcon name={muted ? 'sound_off' : 'sound_on'} size={20} />
+                <span className="tabletop-drawer-item__icon" aria-hidden="true">
+                  {muted ? <VolumeX size={20} strokeWidth={2.2} /> : <Volume2 size={20} strokeWidth={2.2} />}
                 </span>
                 <div className="tabletop-drawer-item__text">
                   <strong>{muted ? '开启游戏音效' : '游戏音效静音'}</strong>
@@ -160,7 +153,9 @@ export function TabletopMenuDrawer({
                     onStepOut();
                   }}
                 >
-                  <span className="tabletop-drawer-item__tag">首页</span>
+                  <span className="tabletop-drawer-item__icon" aria-hidden="true">
+                    <Home size={20} strokeWidth={2.2} />
+                  </span>
                   <div className="tabletop-drawer-item__text">
                     <strong>暂离返回首页</strong>
                     <span>房间在后台保持运行，随时可一键返回</span>
@@ -177,8 +172,8 @@ export function TabletopMenuDrawer({
                     onLeaveRoom();
                   }}
                 >
-                  <span className="tabletop-drawer-item__icon">
-                    <GameIcon name="door_exit" size={20} />
+                  <span className="tabletop-drawer-item__icon" aria-hidden="true">
+                    <LogOut size={20} strokeWidth={2.2} />
                   </span>
                   <div className="tabletop-drawer-item__text">
                     <strong>退出当前房间</strong>
@@ -196,8 +191,8 @@ export function TabletopMenuDrawer({
                     onDissolveRoom();
                   }}
                 >
-                  <span className="tabletop-drawer-item__icon">
-                    <GameIcon name="bomb" size={20} />
+                  <span className="tabletop-drawer-item__icon" aria-hidden="true">
+                    <Flame size={20} strokeWidth={2.2} />
                   </span>
                   <div className="tabletop-drawer-item__text">
                     <strong style={{ color: '#dc2626' }}>解散房间 / 终止对局</strong>

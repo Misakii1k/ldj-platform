@@ -11,7 +11,7 @@ import { PlayerAvatar, type PlayerInfo } from '../components/PlayerAvatar';
 import { DurianCardGraphic } from '../components/DurianCardGraphic';
 import { FruitIcon, type DurianFruit } from '../components/FruitGraphic';
 import { ShowdownBoard } from '../components/ShowdownBoard';
-import { BG, BORDER, SHADOW, RADIUS, COLOR, FONT, cardPanel, glassPanel, pillTag } from '../lib/theme';
+import { SHADOW, RADIUS, COLOR, FONT, cardPanel, glassPanel, pillTag } from '../lib/theme';
 import { fadeInOut } from '../lib/transitions';
 
 export const DemoGameplayScene: React.FC = () => {

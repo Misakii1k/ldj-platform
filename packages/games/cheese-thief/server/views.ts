@@ -21,6 +21,11 @@ const cheeseThiefRevealSchema = z
   })
   .strict();
 
+const cheeseThiefVoteSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('accuse'), targetPlayerId: pid }).strict(),
+  z.object({ kind: z.literal('abstain') }).strict(),
+]);
+
 const cheeseThiefPublicViewSchema = z
   .object({
     gameId: z.literal('cheese-thief'),
@@ -37,6 +42,8 @@ const cheeseThiefPublicViewSchema = z
     dogFirstVoter: pid.nullable(),
     thiefCaught: z.boolean().nullable(),
     winners: z.array(pid),
+    deadlineAt: z.number().int().nullable(),
+    votes: z.record(pid, cheeseThiefVoteSchema).nullable(),
     reveal: cheeseThiefRevealSchema.nullable(),
   })
   .strict();
@@ -101,6 +108,8 @@ function buildPublicView(state: CheeseThiefState): CheeseThiefPublicView {
     dogFirstVoter: state.dogFirstVoter,
     thiefCaught: state.thiefCaught,
     winners: [...state.winners],
+    deadlineAt: state.deadlineAt,
+    votes: state.phase === 'vote' || state.phase === 'game_over' ? { ...state.votes } : null,
     reveal:
       state.phase === 'game_over'
         ? {

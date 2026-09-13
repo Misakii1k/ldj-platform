@@ -86,10 +86,13 @@ test('v2 女巫不能同时使用解药和毒药；解药毒药各一次', () =>
   deny(st, actor('x'), { type: 'witch_poison', targetPlayerId: 'x' });
 });
 
-test('v2 守卫禁自守、禁连守、可守下狼刀目标', () => {
+test('v2 守卫可自守、禁连守、可守下狼刀目标', () => {
   let st = startedNight(IDS, { roles: { guard: true, hunter: false, idiot: false } });
   assert.equal(st.players.g?.role, 'guard');
-  deny(st, actor('g'), { type: 'guard_guard', targetPlayerId: 'g' });
+  // 允许自守
+  const probe = apply(st, actor('g'), { type: 'guard_guard', targetPlayerId: 'g' });
+  assert.equal(probe.night.guardTargetId, 'g');
+  // 实测守护 w2
   st = apply(st, actor('g'), { type: 'guard_guard', targetPlayerId: 'w2' });
   st = apply(st, actor('w1'), { type: 'night_kill', targetPlayerId: 'w2' });
   st = apply(st, actor('w2'), { type: 'night_kill', targetPlayerId: 'w2' });
@@ -107,6 +110,11 @@ test('v2 守卫禁自守、禁连守、可守下狼刀目标', () => {
     st2 = apply(st2, actor(id), { type: 'confirm_announcement' });
   }
   for (const id of [...st2.speakingOrder]) st2 = apply(st2, actor(id), { type: 'finish_speech' });
+  if (st2.phase === 'free_discussion') {
+    for (const id of Object.keys(st2.players).filter((i) => st2.players[i]?.alive)) {
+      st2 = apply(st2, actor(id), { type: 'ready_vote' });
+    }
+  }
   assert.equal(st2.phase, 'voting');
   for (const id of Object.keys(st2.players).filter((i) => st2.players[i]?.alive)) {
     if (st2.players[id]?.idiotRevealed) continue;
@@ -145,6 +153,8 @@ test('v2 猎人在夜死触发开枪阶段；毒死不触发；开枪/弃权/超
   deny(st, actor('w1'), { type: 'hunter_shoot', targetPlayerId: 'h' });
   st = apply(st, actor('h'), { type: 'hunter_shoot', targetPlayerId: 'w2' });
   assert.equal(st.players.w2?.alive, false);
+  assert.equal(st.phase, 'last_words');
+  st = apply(st, actor('h'), { type: 'finish_last_words' });
   assert.equal(st.phase, 'discussion');
 
   // 毒死猎人 → 不触发开枪
@@ -188,6 +198,7 @@ test('v2 女巫使用解药后后续夜晚无法获知死者（nightVictimId 为
   st = apply(st, actor('h'), { type: 'finish_speech' });
   st = apply(st, actor('v1'), { type: 'finish_speech' });
   st = apply(st, actor('v2'), { type: 'finish_speech' });
+  st = timeout(st, 'free_discussion');
   // 白天无人得票弃权进第二夜
   st = timeout(st, 'voting');
   st = timeout(st, 'vote_result');
@@ -224,4 +235,22 @@ test('v2 非狼/非对应角色夜间动作被拒', () => {
     { type: 'witch_save', save: false },
   );
   assert.equal(beforeTarget.ok, false);
+});
+
+test('v2 同守同救死亡（奶穿）：守卫守护且女巫救人时目标依然死亡', () => {
+  let st = startedNight(IDS, { roles: { guard: true, hunter: false, idiot: false } });
+  // 狼刀 v1
+  st = apply(st, actor('w1'), { type: 'night_kill', targetPlayerId: 'v1' });
+  st = apply(st, actor('w2'), { type: 'night_kill', targetPlayerId: 'v1' });
+  // 预言家验人
+  st = apply(st, actor('s'), { type: 'seer_check', targetPlayerId: 'w1' });
+  // 守卫守护 v1
+  st = apply(st, actor('g'), { type: 'guard_guard', targetPlayerId: 'v1' });
+  // 女巫使用解药救 v1
+  st = apply(st, actor('x'), { type: 'witch_save', save: true });
+  assert.equal(st.phase, 'day_announcement');
+  // 同守同救失效，v1 死亡
+  assert.equal(st.players.v1?.alive, false);
+  assert.equal(st.players.v1?.exitReason, 'night_kill');
+  assert.deepEqual(st.lastNightDeaths, ['v1']);
 });

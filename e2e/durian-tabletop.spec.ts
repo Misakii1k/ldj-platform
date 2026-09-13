@@ -117,12 +117,12 @@ test.describe('Durian 界面视觉、无溢出视口、设备端切换与聊天 
       const roleSwitch = page.locator('.durian-role-switch');
       await expect(roleSwitch).toBeVisible();
 
-      // 默认处于玩家端
-      await expect(page.getByRole('button', { name: '📱 玩家端' })).toHaveClass(/is-active/);
+      // 默认处于玩家端（按钮文案已随全项目 Emoji 精简去掉前缀图标）
+      await expect(page.getByRole('button', { name: '玩家端', exact: true })).toHaveClass(/is-active/);
 
       // 切换到桌面端
-      await page.getByRole('button', { name: '🖥️ 桌面端' }).click();
-      await expect(page.getByRole('button', { name: '🖥️ 桌面端' })).toHaveClass(/is-active/);
+      await page.getByRole('button', { name: '桌面端', exact: true }).click();
+      await expect(page.getByRole('button', { name: '桌面端', exact: true })).toHaveClass(/is-active/);
 
       // 桌面端应展示中央质疑按铃与生效看板、对号错号中央板
       await expect(page.locator('.durian-sim-bell-btn-compact')).toBeVisible();
@@ -135,7 +135,7 @@ test.describe('Durian 界面视觉、无溢出视口、设备端切换与聊天 
       await page.screenshot({ path: tableScreenshotPath, fullPage: false });
 
       // 切换回玩家端
-      await page.getByRole('button', { name: '📱 玩家端' }).click();
+      await page.getByRole('button', { name: '玩家端', exact: true }).click();
       await expect(page.locator('.durian-sim-bell-btn-compact')).not.toBeVisible();
       await expect(page.locator('.durian-player-card-container')).toBeVisible();
 

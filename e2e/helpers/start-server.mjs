@@ -13,7 +13,28 @@ const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
 // 与 serverEnv.ts 的 DATA_DIR 保持同一定义：`e2e/.tmp-data`
 const DATA_DIR = fileURLToPath(new URL('../.tmp-data', import.meta.url));
 
-rmSync(DATA_DIR, { recursive: true, force: true });
+/**
+ * 清空临时数据目录。
+ * Windows 上若上一轮运行留下的服务端进程/杀软仍持有 sqlite 句柄，rmSync 会抛 EPERM；
+ * 此时重试若干次，仍失败则带警告继续启动：每个用例都会 seed 全新随机房间，
+ * 残留旧库不会影响断言，比让整个 E2E 跑不起来更可取。
+ */
+function clearDataDir(dir) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      rmSync(dir, { recursive: true, force: true });
+      return;
+    } catch (err) {
+      if (attempt === 4) {
+        console.warn(`[start-server] 清理 ${dir} 失败（${err.code}），沿用既有数据目录继续启动`);
+        return;
+      }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 250 * (attempt + 1));
+    }
+  }
+}
+
+clearDataDir(DATA_DIR);
 
 const child = spawn(process.execPath, ['packages/server/src/index.ts'], {
   cwd: REPO_ROOT,

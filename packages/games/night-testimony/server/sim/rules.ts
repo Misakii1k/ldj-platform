@@ -15,13 +15,12 @@ import { QUESTION_DECK } from '../questionDeck.ts';
 import { CRIMES, type CrimeId } from '../types.ts';
 import type {
   NightTestimonySimAction,
-  NightTestimonySimConfig,
   NightTestimonySimEvent,
   NightTestimonySimState,
   ResolvedNightTestimonySimConfig,
 } from './types.ts';
 
-export function parseNightTestimonySimConfig(input: unknown): ResolvedNightTestimonySimConfig {
+export function parseNightTestimonySimConfig(_input: unknown): ResolvedNightTestimonySimConfig {
   return { rulesetId: 'night_testimony_sim_v1' };
 }
 

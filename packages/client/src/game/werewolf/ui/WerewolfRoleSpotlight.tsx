@@ -2,6 +2,8 @@ import React from 'react';
 import type { WerewolfPresentationModel } from '../presentation.ts';
 import { GameIcon } from '../../../shared-ui/GameIcon.tsx';
 import { IdentityFlipCard } from '../../../shared-ui/IdentityFlipCard.tsx';
+import { UserAvatar } from '../../../user/UserAvatar.tsx';
+import { useTypewriter } from './useTypewriter.ts';
 
 interface WerewolfRoleSpotlightProps {
   readonly model: WerewolfPresentationModel;
@@ -12,6 +14,7 @@ export function WerewolfRoleSpotlight({ model }: WerewolfRoleSpotlightProps) {
   const isNight = mood === 'night';
   const isDawn = mood === 'dawn';
   const isRoleReveal = phase === 'role_reveal';
+  const { displayedText } = useTypewriter(model.speakerLine, { speed: 30 });
 
   // 身份确认阶段：使用 3D 哥特暗夜翻牌引擎
   if (isRoleReveal && self) {
@@ -71,14 +74,25 @@ export function WerewolfRoleSpotlight({ model }: WerewolfRoleSpotlightProps) {
                 {self.wolfTeammates.length === 0 ? (
                   <span className="werewolf-role-intel__tag">孤狼作战</span>
                 ) : (
-                  self.wolfTeammates.map((mate) => (
-                    <span
-                      key={mate.playerId}
-                      className={`werewolf-role-intel__tag ${mate.alive ? 'is-alive' : 'is-dead'}`}
-                    >
-                      {mate.seatLabel} {mate.name} {mate.targetName ? `(刀 ${mate.targetName})` : ''}
-                    </span>
-                  ))
+                  self.wolfTeammates.map((mate) => {
+                    let statusText = '';
+                    if (!mate.alive) {
+                      statusText = '（已出局）';
+                    } else if (mate.targetName) {
+                      const targetDisplay = mate.targetSeatLabel ? `${mate.targetSeatLabel} ${mate.targetName}` : mate.targetName;
+                      statusText = ` → 拟袭 ${targetDisplay}`;
+                    } else {
+                      statusText = '（思考中）';
+                    }
+                    return (
+                      <span
+                        key={mate.playerId}
+                        className={`werewolf-role-intel__tag ${mate.alive ? 'is-alive' : 'is-dead'}`}
+                      >
+                        {mate.seatLabel} {mate.name}{statusText}
+                      </span>
+                    );
+                  })
                 )}
               </div>
               <p className="werewolf-role-intel__tip">在下方选择今夜袭击的目标，狼人统一意见后生效。</p>
@@ -186,18 +200,134 @@ export function WerewolfRoleSpotlight({ model }: WerewolfRoleSpotlightProps) {
     );
   }
 
+  // 自由发言环节（Free Discussion）
+  if (phase === 'free_discussion') {
+    const readyCount = model.freeDiscussionReadyCount ?? 0;
+    const aliveSeats = seats.filter((s) => s.alive);
+    const aliveCount = aliveSeats.length;
+    const isReady = model.hasReadiedVote ?? false;
+    return (
+      <div className="werewolf-spotlight werewolf-spotlight--free-discussion">
+        <div className="werewolf-spotlight__speaker-halo">
+          <span className="werewolf-spotlight__wave" />
+          <span className="werewolf-spotlight__speaker-tag">自由讨论</span>
+          <strong className="werewolf-spotlight__speaker-name">公屏自由辩论环节</strong>
+        </div>
+        <p className="werewolf-spotlight__speaker-line">
+          {displayedText || (model.speakerLine ?? '所有存活玩家现可在公屏自由发言质询。充分讨论后，请点击下方准备进入放逐公投。')}
+        </p>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '6px', fontSize: '0.78rem', opacity: 0.9 }}>
+          <span>{isReady ? '✅ 你已就绪' : '⏳ 等待你准备'}</span>
+          <span>（全场就绪：<strong>{readyCount}</strong> / {aliveCount} 人）</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 放逐公投与 PK 决选阶段：中央舞台展示专属公投进度卡片
+  if ((phase === 'voting' || phase === 'runoff_voting') && model.voteProgress) {
+    const { submitted, expected, percent, remaining, isVoter, hasVoted, isRunoffCandidate, isRunoff } = model.voteProgress;
+    const isCompleted = remaining === 0;
+
+    let leftFeedback: React.ReactNode;
+    if (isCompleted) {
+      leftFeedback = (
+        <span className="werewolf-spotlight__vote-status-text">
+          <span className="werewolf-spotlight__vote-icon">✨</span> 全员已完成投票，即将揭晓结果…
+        </span>
+      );
+    } else if (!isVoter && isRunoffCandidate) {
+      leftFeedback = (
+        <span className="werewolf-spotlight__vote-status-text">
+          <span className="werewolf-spotlight__vote-icon">⚖️</span> 你是 PK 辩论候选人，等待其他存活玩家投票
+        </span>
+      );
+    } else if (!isVoter) {
+      leftFeedback = (
+        <span className="werewolf-spotlight__vote-status-text">
+          <span className="werewolf-spotlight__vote-icon">👁️</span> 观战中 · 全场公投进行中
+        </span>
+      );
+    } else if (hasVoted) {
+      leftFeedback = (
+        <span className="werewolf-spotlight__vote-status-text">
+          <span className="werewolf-spotlight__voted-badge">✓ 你已完成投票</span>
+          <span className="werewolf-spotlight__vote-hint">等待全场就绪…</span>
+        </span>
+      );
+    } else {
+      leftFeedback = (
+        <span className="werewolf-spotlight__vote-status-text">
+          <span className="werewolf-spotlight__vote-icon">⏳</span> 请点击上方席位头像完成投票
+        </span>
+      );
+    }
+
+    const rightFeedback = isCompleted ? null : (
+      <span className="werewolf-spotlight__vote-remaining">
+        还差 <strong>{remaining}</strong> 票即刻结算
+      </span>
+    );
+
+    return (
+      <div className="werewolf-spotlight werewolf-spotlight--voting">
+        <div className="werewolf-spotlight__vote-header">
+          <div className="werewolf-spotlight__vote-title-wrap">
+            <span className="werewolf-spotlight__pulsing-dot" aria-hidden="true" />
+            <strong className="werewolf-spotlight__vote-title">
+              {isRunoff ? 'PK 决选公投' : '放逐公投进行中'}
+            </strong>
+          </div>
+          <div className="werewolf-spotlight__vote-tally">
+            <span className="werewolf-spotlight__vote-tally-label">已投票</span>
+            <strong className="werewolf-spotlight__vote-tally-num">{submitted}</strong>
+            <span className="werewolf-spotlight__vote-tally-total">/ {expected}</span>
+            <span className="werewolf-spotlight__vote-percent-badge">{percent}%</span>
+          </div>
+        </div>
+
+        <div
+          className="werewolf-spotlight__vote-track"
+          role="progressbar"
+          aria-valuenow={submitted}
+          aria-valuemin={0}
+          aria-valuemax={expected}
+          aria-label={isRunoff ? 'PK 决选公投进度' : '放逐公投进度'}
+        >
+          <div
+            className="werewolf-spotlight__vote-fill"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+
+        <div className="werewolf-spotlight__vote-footer">
+          <div className="werewolf-spotlight__vote-feedback-left">{leftFeedback}</div>
+          {rightFeedback && <div className="werewolf-spotlight__vote-feedback-right">{rightFeedback}</div>}
+        </div>
+      </div>
+    );
+  }
+
   // 默认阶段展示（发言阶段高亮发言人）
   const speakingSeat = seats.find((s) => s.isSpeaking);
   if (speakingSeat) {
     return (
       <div className="werewolf-spotlight werewolf-spotlight--speaking">
         <div className="werewolf-spotlight__speaker-halo">
-          <span className="werewolf-spotlight__wave" />
-          <span className="werewolf-spotlight__speaker-tag">{phase === 'last_words' ? '正在留遗言' : '正在发言'}</span>
-          <strong className="werewolf-spotlight__speaker-name">{speakingSeat.seatLabel} {speakingSeat.name}</strong>
+          <UserAvatar
+            avatar={speakingSeat.avatar}
+            nickname={speakingSeat.name}
+            size={34}
+            className="werewolf-spotlight__speaker-avatar"
+          />
+          <div className="werewolf-spotlight__speaker-meta">
+            <span className="werewolf-spotlight__speaker-tag">{phase === 'last_words' ? '正在留遗言' : '正在发言'}</span>
+            <strong className="werewolf-spotlight__speaker-name">{speakingSeat.seatLabel} {speakingSeat.name}</strong>
+            {speakingSeat.isSelf && <span className="werewolf-spotlight__self-badge">你</span>}
+          </div>
         </div>
         <p className="werewolf-spotlight__speaker-line">
-          {model.speakerLine ?? '正在组织语言…'}
+          {displayedText || (model.speakerLine ?? '正在组织语言…')}
         </p>
       </div>
     );

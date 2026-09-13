@@ -39,6 +39,8 @@ export interface IdentityFlipCardProps {
   confirmButtonText?: string;
   /** 尺寸变体：standard 标准卡牌 / compact 紧凑条形卡 */
   variant?: 'standard' | 'compact';
+  /** 揭示方式：press 按住查看（默认）/ flip 点按一次性翻转 */
+  revealMode?: IdentityRevealMode;
   /** 状态变更监听 */
   onRevealChange?: (revealed: boolean) => void;
   /** 外部附加样式类名 */
@@ -61,6 +63,16 @@ export const INITIAL_IDENTITY_CARD_STATE: IdentityCardState = {
   isPressing: false,
 };
 
+/**
+ * 揭示方式：
+ * - 'press'（默认）：按住查看、松手遮挡，用于反复查看的常驻身份卡；
+ * - 'flip'：点按一次性翻转揭示，用于开局抽卡仪式。
+ * 两者共用同一套卡面与防窥策略（切后台/失焦立即扣回）。
+ */
+export type IdentityRevealMode = 'press' | 'flip';
+
+export const DEFAULT_IDENTITY_REVEAL_MODE: IdentityRevealMode = 'press';
+
 export function reduceIdentityCardState(
   state: IdentityCardState,
   action: IdentityCardAction
@@ -81,6 +93,17 @@ export function reduceIdentityCardState(
 
 export function computeIsRevealed(state: IdentityCardState, isSpectator: boolean): boolean {
   return state.isPressing && !isSpectator;
+}
+
+/** flip 模式的揭示状态：点按切换；不可交互时保持原状；环境防窥强制翻回。 */
+export function reduceFlipRevealed(
+  flipped: boolean,
+  action: 'toggle' | 'hide',
+  allowed: boolean,
+): boolean {
+  if (action === 'hide') return false;
+  if (!allowed) return flipped;
+  return !flipped;
 }
 
 const DEFAULT_THEME_BADGES: Record<IdentityCardTheme, string> = {
@@ -106,13 +129,21 @@ export function IdentityFlipCard({
   onConfirm,
   confirmButtonText = '我已记下，确认就绪',
   variant = 'standard',
+  revealMode = DEFAULT_IDENTITY_REVEAL_MODE,
   onRevealChange,
   className = '',
   children,
 }: IdentityFlipCardProps) {
   const [isPressing, setIsPressing] = useState(false);
+  const [isFlipped, setIsFlipped] = useState(false);
 
-  const isRevealed = isPressing && !isSpectator;
+  const isPressMode = revealMode === 'press';
+  const canReveal = canInteract && !isSpectator;
+  const isRevealed = isSpectator
+    ? false
+    : isPressMode
+      ? isPressing
+      : isFlipped;
 
   // 触发振动与音效反馈
   const triggerFeedback = useCallback(() => {
@@ -135,6 +166,7 @@ export function IdentityFlipCard({
   useEffect(() => {
     const hideAndLock = () => {
       setIsPressing(false);
+      setIsFlipped(false);
     };
 
     const onVisibility = () => {
@@ -155,7 +187,7 @@ export function IdentityFlipCard({
   const [tilt, setTilt] = useState<{ x: number; y: number; glareX: number; glareY: number } | null>(null);
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!canInteract || isSpectator) return;
+    if (!canReveal) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -166,15 +198,15 @@ export function IdentityFlipCard({
     const glareX = (x / rect.width) * 100;
     const glareY = (y / rect.height) * 100;
     setTilt({ x: rotateX, y: rotateY, glareX, glareY });
-  }, [canInteract, isSpectator]);
+  }, [canReveal]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    if (!canInteract || isSpectator) return;
+    if (!canReveal || !isPressMode) return;
     // 忽略小锁按钮本身的 pointer 事件穿透
     e.preventDefault();
     setIsPressing(true);
     triggerFeedback();
-  }, [canInteract, isSpectator, triggerFeedback]);
+  }, [canReveal, isPressMode, triggerFeedback]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (isPressing) {
@@ -190,6 +222,16 @@ export function IdentityFlipCard({
     }
   }, [isPressing]);
 
+  /** flip 模式：点按翻转揭示 / 再点翻回 */
+  const handleClick = useCallback(() => {
+    if (isPressMode || !canReveal) return;
+    setIsFlipped((prev) => {
+      const next = reduceFlipRevealed(prev, 'toggle', true);
+      if (next) triggerFeedback();
+      return next;
+    });
+  }, [canReveal, isPressMode, triggerFeedback]);
+
   const displayBadge = badgeLabel || DEFAULT_THEME_BADGES[theme];
   const hintsArray = Array.isArray(secretHints)
     ? secretHints
@@ -198,6 +240,8 @@ export function IdentityFlipCard({
       : [];
 
   const isCompact = variant === 'compact';
+  const revealLabel = isPressMode ? '按住查看私密身份' : '点击翻开私密身份';
+  const revealedHint = isPressMode ? '松手后自动遮挡' : '再点一下可翻回背面';
 
   return (
     <div
@@ -213,15 +257,22 @@ export function IdentityFlipCard({
     >
       {/* 3D 翻牌主舞台 */}
       <div
-        className={`identity-flip-card ${isRevealed ? 'is-revealed' : ''}`}
+        className={`identity-flip-card ${isPressMode ? '' : 'identity-flip-card--tap'} ${isRevealed ? 'is-revealed' : ''}`}
         onPointerMove={handlePointerMove}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerCancel}
         onPointerCancel={handlePointerCancel}
+        onClick={handleClick}
+        onKeyDown={isPressMode ? undefined : (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            handleClick();
+          }
+        }}
         role="button"
-        tabIndex={canInteract && !isSpectator ? 0 : -1}
-        aria-label={isRevealed ? `当前身份：${roleName}` : '按住查看私密身份'}
+        tabIndex={canReveal ? 0 : -1}
+        aria-label={isRevealed ? `当前身份：${roleName}` : revealLabel}
       >
         <div className="identity-card-inner">
           {/* ════════ 卡牌背面（遮蔽态 · 拟真封印） ════════ */}
@@ -238,7 +289,7 @@ export function IdentityFlipCard({
                 {isSpectator ? (
                   <span className="tip-spectator">观战视角（仅玩家本人可见）</span>
                 ) : canInteract ? (
-                  <span className="tip-press">按住卡牌悄悄查看</span>
+                  <span className="tip-press">{isPressMode ? '按住卡牌悄悄查看' : '点击翻开身份牌'}</span>
                 ) : (
                   <span className="tip-disabled">身份已锁定</span>
                 )}
@@ -293,7 +344,7 @@ export function IdentityFlipCard({
 
             <div className="identity-card-front__footer">
               <span className="identity-card-front__safe-hint">
-                松手后自动遮挡
+                {revealedHint}
               </span>
             </div>
           </div>

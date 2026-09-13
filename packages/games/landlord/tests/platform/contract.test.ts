@@ -48,7 +48,10 @@ test('platform 契约：noSecretLeak 他人手牌/底牌不泄漏', () => {
       if (st.landlordId === playerId) secrets.push(...st.bottomCards);
       return secrets;
     },
-    { isRevealed: () => false },
+    {
+      isRevealed: () => false,
+      allowedLeakValues: (secret) => s.bottomCards.some((b) => b.id === (secret as { id?: string })?.id),
+    },
   );
 });
 

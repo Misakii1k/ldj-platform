@@ -17,7 +17,7 @@ function log(msg: string): void {
   console.log(`[uc3] ${new Date().toISOString().slice(11, 19)} ${msg}`);
 }
 
-function dump(kind: string, ack: Envelope): void {
+function _dump(kind: string, ack: Envelope): void {
   if (ack.type !== 'ack') log(`${kind} 被拒：${JSON.stringify(ack.payload).slice(0, 160)}`);
 }
 

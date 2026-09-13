@@ -77,11 +77,13 @@ export function listOpenRoomSummaries(db: Db): PublicRoomSummary[] {
        LEFT JOIN room_members m ON m.room_id = r.id
        WHERE r.status IN ('LOBBY', 'IN_GAME')
        GROUP BY r.id
+       HAVING (player_count + spectator_count) > 0
        ORDER BY r.updated_at DESC, r.created_at DESC, r.id ASC`,
     )
     .all() as unknown as PublicRoomRow[];
 
   return rows.flatMap((row) => {
+    if (row.player_count <= 0 && row.spectator_count <= 0) return [];
     const gameId = row.game_id ?? DEFAULT_PLAYABLE_GAME_ID;
     const game = getGameCatalogEntry(gameId);
     if (!game) return [];

@@ -1,0 +1,118 @@
+name: Build & Release Android APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-release-apk:
+    name: Build & Release Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run test suite
+        run: npm test
+
+      - name: Build Host server bundle and payload
+        run: npm run build:host-payload
+
+      - name: Build Web assets (includes gen-version)
+        run: npm run build
+
+      - name: Sync Capacitor Android
+        run: npm run sync:apk
+
+      # 签名密钥检查（严格模式）：必须具备完整签名密钥，保证用户能够无缝平滑升级覆盖安装
+      - name: Require Android signing secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          missing=""
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then missing="$missing $name"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::缺少 Android 签名密钥 secrets:$missing"
+            echo "请在仓库 Settings -> Secrets and variables -> Actions 中配置上述密钥。"
+            exit 1
+          fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > packages/client/android/app/release.keystore
+          cat <<EOF > packages/client/android/app/keystore.properties
+          storeFile=release.keystore
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          keyPassword=$ANDROID_KEY_PASSWORD
+          EOF
+
+      - name: Build Android Release APK
+        run: |
+          cd packages/client/android
+          chmod +x ./gradlew
+          ./gradlew assembleRelease
+
+      - name: Package and Hash Release Artifacts
+        run: |
+          APP_VERSION=$(node -p "require('./package.json').version")
+          TARGET_APK="tabletop-${APP_VERSION}-android-release.apk"
+          cp packages/client/android/app/build/outputs/apk/release/app-release.apk "./${TARGET_APK}"
+          sha256sum "${TARGET_APK}" > SHA256SUMS.txt
+          echo "APK generated: ${TARGET_APK}"
+          cat SHA256SUMS.txt
+
+      - name: Upload APK Artifact to Actions Run
+        uses: actions/upload-artifact@v4
+        with:
+          name: tabletop-android-release-apk
+          path: |
+            tabletop-*-android-release.apk
+            SHA256SUMS.txt
+          retention-days: 14
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            tabletop-*-android-release.apk
+            SHA256SUMS.txt
+          generate_release_notes: true
+
+      # 发布后验证线上 Cloudflare Pages 端点
+      - name: Smoke-check live release endpoints
+        run: node scripts/check-release-endpoints.mjs
+        env:
+          TABLETOP_CLOUD_ORIGIN: ${{ vars.TABLETOP_CLOUD_ORIGIN }}

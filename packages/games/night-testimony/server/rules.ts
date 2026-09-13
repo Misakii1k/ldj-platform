@@ -1,6 +1,6 @@
 import type { GameEffect } from '@ldj/shared';
 import { parseNightTestimonyAction, parseNightTestimonyConfig } from './schemas.ts';
-import { drawThreeQuestionCards, QUESTION_DECK, type QuestionCard } from './questionDeck.ts';
+import { drawThreeQuestionCards, QUESTION_DECK } from './questionDeck.ts';
 import { crimeLabel } from './views.ts';
 import {
   CRIMES,
@@ -260,7 +260,7 @@ export function reduceNightTestimonyState(
   }
 
   const random = ctx.random ?? {
-    nextInt: (min, max) => min,
+    nextInt: (min, _max) => min,
     shuffle: (arr) => [...arr],
   };
 

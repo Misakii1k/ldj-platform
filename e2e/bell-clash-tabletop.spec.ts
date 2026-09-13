@@ -95,7 +95,10 @@ test.describe('G2-B bell-clash 完整局', () => {
         );
         await page.setViewportSize({ width: 390, height: 844 });
         await page.goto(BASE_URL);
-        await page.locator('.tabletop-shell, .room-page, .game-page').waitFor({ timeout: 30_000 });
+        // 注意：`.game-page` 也会命中 GamePage 的 Suspense 兜底卡（GameLoadingCard），
+        // 只等它会在懒加载 chunk 未就绪时读到「正在布置游戏桌…」，所以这里等真正的牌桌外壳。
+        await page.locator('.tabletop-shell, .room-page').waitFor({ timeout: 30_000 });
+        await expect(page.getByRole('heading', { name: 'Ding' })).toBeVisible({ timeout: 30_000 });
         const bodyText = await page.evaluate(() => document.body.innerText).catch(() => '');
         const rendered = bodyText.includes('本局结束') || bodyText.includes('对局已结算') || bodyText.includes('Ding') || bodyText.includes('铃铛对决');
         expect(rendered, `浏览器应渲染游戏/终局页，实际 body 前 200 字：${bodyText.slice(0, 200)}`).toBe(true);

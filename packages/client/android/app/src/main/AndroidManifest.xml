@@ -52,4 +52,6 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <!-- mDNS 多播收发需要 MulticastLock（WifiManager.createMulticastLock） -->
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <!-- 应用内安装更新安装包权限 -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 </manifest>

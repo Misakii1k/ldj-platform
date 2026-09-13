@@ -10,6 +10,7 @@ interface GameSetupPanelProps {
   readonly disabled?: boolean;
   /** compact：弹层/创建场景的紧凑布局（收敛开局配置时引入） */
   readonly variant?: 'default' | 'compact';
+  readonly isOptionChoiceDisabled?: (key: string, choiceValue: unknown) => { disabled: boolean; reason?: string };
   readonly onChange: (next: SetupConfig) => void;
 }
 
@@ -17,7 +18,14 @@ interface GameSetupPanelProps {
  * 开局规则面板：所有游戏的玩法模式与选项统一采用「实体桌游点选芯片」与「步进器」呈现，
  * 彻底告别原生原生下拉框/勾选框，交互手感与视觉风格与《谁是卧底》完全一致。
  */
-export function GameSetupPanel({ setup, value, disabled = false, variant = 'default', onChange }: GameSetupPanelProps) {
+export function GameSetupPanel({
+  setup,
+  value,
+  disabled = false,
+  variant = 'default',
+  isOptionChoiceDisabled,
+  onChange,
+}: GameSetupPanelProps) {
   const update = (key: string, next: unknown) => onChange(applySetupValue(setup, value, key, next));
   const compact = variant === 'compact';
   const [activeRulesetModal, setActiveRulesetModal] = useState<GameRulesetSpec | null>(null);
@@ -168,6 +176,8 @@ export function GameSetupPanel({ setup, value, disabled = false, variant = 'defa
             {/* 布尔开关芯片（统一替代原生 checkbox） */}
             {option.kind === 'boolean' && (() => {
               const currentBool = value[option.key] !== undefined ? Boolean(value[option.key]) : Boolean(option.defaultValue);
+              const trueCheck = isOptionChoiceDisabled?.(option.key, true);
+              const falseCheck = isOptionChoiceDisabled?.(option.key, false);
               return (
                 <div className="setup-chips" role="radiogroup" aria-labelledby={fieldId}>
                   <button
@@ -175,7 +185,8 @@ export function GameSetupPanel({ setup, value, disabled = false, variant = 'defa
                     role="radio"
                     aria-checked={currentBool}
                     className={`setup-chip ${currentBool ? 'is-selected' : ''}`}
-                    disabled={disabled}
+                    disabled={disabled || (trueCheck?.disabled ?? false)}
+                    title={trueCheck?.reason}
                     onClick={() => update(option.key, true)}
                   >
                     开启
@@ -186,7 +197,8 @@ export function GameSetupPanel({ setup, value, disabled = false, variant = 'defa
                     role="radio"
                     aria-checked={!currentBool}
                     className={`setup-chip ${!currentBool ? 'is-selected' : ''}`}
-                    disabled={disabled}
+                    disabled={disabled || (falseCheck?.disabled ?? false)}
+                    title={falseCheck?.reason}
                     onClick={() => update(option.key, false)}
                   >
                     关闭

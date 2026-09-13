@@ -2,9 +2,11 @@
  * 狼人杀法官语音：客户端排程与播放管理器。
  * 支持单曲精准播报（playCue 支持 Promise 等待）、事件排队（enqueue）、
  * 以及阶段切换/用户操作时的即时打断（interrupt / stopAll）。
+ *
+ * 打断语义：interrupt/stopAll 会暂停当前音频，并把所有尚未完成的 playCue
+ * Promise 以 false 结算——保证等待协程总能继续推进，不会出现"僵尸 await"
+ * 导致的永久静音与状态锁死。
  */
-import { webAudio } from '../../../shared-ui/WebAudioManager.ts';
-
 export const WEREWOLF_VOICE_BASE = '/werewolf-voice';
 
 /** 队列键 → 音频文件（相对 WEREWOLF_VOICE_BASE；文件名含中文，播放时 encodeURI）。 */
@@ -127,39 +129,53 @@ export function hasCue(key: string): boolean {
   return key in CUE_FILES;
 }
 
-/** 异步加载并播放单个音频，返回 Promise（播放完成时 resolve）。 */
-function playAudioFile(relPath: string): Promise<boolean> {
-  const url = `${WEREWOLF_VOICE_BASE}/${encodeURI(relPath)}`;
-  return new Promise<boolean>((resolve) => {
-    try {
-      const audio = new Audio(url);
-      audio.onended = () => resolve(true);
-      audio.onerror = () => resolve(false);
-      audio.play().catch(() => resolve(false));
-    } catch {
-      resolve(false);
-    }
-  });
+/** 音频元素工厂；测试可注入替身以模拟播放/挂起行为。 */
+export type AudioFactory = (url: string) => HTMLAudioElement;
+
+let audioFactory: AudioFactory = (url) => new Audio(url);
+
+/** 注入 Audio 工厂（测试用）；传 null 恢复默认实现。 */
+export function setAudioFactory(factory: AudioFactory | null): void {
+  audioFactory = factory ?? ((url) => new Audio(url));
 }
+
+/**
+ * 单曲播放看门狗：后台标签页等场景下 onended 可能永不触发，
+ * 超时后强制结算（按最长台词富余取 30s）。
+ */
+const PLAY_WATCHDOG_MS = 30_000;
 
 /** 法官语音队列单例。 */
 class JudgeVoiceQueue {
   #queue: string[] = [];
   #playing = false;
   #currentAudio: HTMLAudioElement | null = null;
+  /** 在途 playCue 的结算器：interrupt 时统一以 false 结算，杜绝协程挂死。 */
+  #waiters = new Set<(value: boolean) => void>();
 
   /**
-   * 停止当前播放并清空排队队列。
-   * 用于白天/夜晚阶段突变、玩家手动跳过或新一轮夜晚到来时重置。
+   * 停止当前播放并清空排队队列，结算所有在途等待。
+   * 用于阶段突变、终局接管或新一轮夜晚到来时重置。
    */
   interrupt(): void {
     this.#queue = [];
-    if (this.#currentAudio) {
-      this.#currentAudio.pause();
-      this.#currentAudio.currentTime = 0;
-      this.#currentAudio = null;
-    }
+    const waiters = [...this.#waiters];
+    this.#waiters.clear();
+    const audio = this.#currentAudio;
+    this.#currentAudio = null;
     this.#playing = false;
+    if (audio) {
+      // 先摘掉事件句柄再 pause，避免与统一结算竞争
+      audio.onended = null;
+      audio.onerror = null;
+      audio.pause();
+      try {
+        audio.currentTime = 0;
+      } catch {
+        // 已释放的音频元素重置进度可能抛错，忽略
+      }
+    }
+    for (const waiter of waiters) waiter(false);
   }
 
   /**
@@ -172,8 +188,8 @@ class JudgeVoiceQueue {
   }
 
   /**
-   * 精确播放单个 CUE 音频，并返回 Promise 直到其播放完成。
-   * 适合串行 step-by-step 的步进器（如夜晚各角色主持词链）。
+   * 精确播放单个 CUE 音频，并返回 Promise 直到其播放完成或被打断。
+   * 打断（interrupt/stopAll）时以 false 结算；适合串行步进器。
    */
   async playCue(key: string): Promise<boolean> {
     const file = CUE_FILES[key];
@@ -181,33 +197,50 @@ class JudgeVoiceQueue {
     const url = `${WEREWOLF_VOICE_BASE}/${encodeURI(file)}`;
 
     return new Promise<boolean>((resolve) => {
+      let settled = false;
+      let watchdog: ReturnType<typeof setTimeout> | null = null;
+      const settle = (value: boolean) => {
+        if (settled) return;
+        settled = true;
+        if (watchdog !== null) clearTimeout(watchdog);
+        this.#waiters.delete(settle);
+        resolve(value);
+      };
+
       try {
         if (this.#currentAudio) {
-          this.#currentAudio.pause();
-          this.#currentAudio.currentTime = 0;
-        }
-        const audio = new Audio(url);
-        this.#currentAudio = audio;
-        audio.onended = () => {
-          if (this.#currentAudio === audio) {
-            this.#currentAudio = null;
+          const prev = this.#currentAudio;
+          this.#currentAudio = null;
+          prev.onended = null;
+          prev.onerror = null;
+          prev.pause();
+          try {
+            prev.currentTime = 0;
+          } catch {
+            // 忽略已释放元素的重置错误
           }
-          resolve(true);
+        }
+        const audio = audioFactory(url);
+        this.#currentAudio = audio;
+        this.#waiters.add(settle);
+        audio.onended = () => {
+          if (this.#currentAudio === audio) this.#currentAudio = null;
+          settle(true);
         };
         audio.onerror = () => {
-          if (this.#currentAudio === audio) {
-            this.#currentAudio = null;
-          }
-          resolve(false);
+          if (this.#currentAudio === audio) this.#currentAudio = null;
+          settle(false);
         };
-        audio.play().catch(() => {
-          if (this.#currentAudio === audio) {
-            this.#currentAudio = null;
-          }
-          resolve(false);
+        watchdog = setTimeout(() => {
+          if (this.#currentAudio === audio) this.#currentAudio = null;
+          settle(false);
+        }, PLAY_WATCHDOG_MS);
+        void audio.play().catch(() => {
+          if (this.#currentAudio === audio) this.#currentAudio = null;
+          settle(false);
         });
       } catch {
-        resolve(false);
+        settle(false);
       }
     });
   }
@@ -234,7 +267,7 @@ class JudgeVoiceQueue {
     const url = `${WEREWOLF_VOICE_BASE}/${encodeURI(file)}`;
 
     try {
-      const audio = new Audio(url);
+      const audio = audioFactory(url);
       this.#currentAudio = audio;
 
       const finish = () => {

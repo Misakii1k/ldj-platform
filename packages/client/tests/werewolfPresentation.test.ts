@@ -167,7 +167,42 @@ test('守卫、女巫、白痴与加赛候选边界保持 reducer 语义', () =>
 
 test('票数只透传服务端进度，投票结果与终局复盘按公开字段展示', () => {
   const voting = buildWerewolfPresentation(view('voting', { votesSubmitted: 2, votesExpected: 5 }), members);
-  assert.deepEqual(voting.voteProgress, { submitted: 2, expected: 5 });
+  assert.deepEqual(voting.voteProgress, {
+    submitted: 2,
+    expected: 5,
+    percent: 40,
+    remaining: 3,
+    isVoter: true,
+    hasVoted: false,
+    isRunoffCandidate: false,
+    isRunoff: false,
+  });
+
+  // 测试已投票状态
+  const votedMe = { ...baseMe, hasVoted: true, myVote: 'w2' };
+  const votingVoted = buildWerewolfPresentation(view('voting', { votesSubmitted: 4, votesExpected: 5, me: votedMe }), members);
+  assert.equal(votingVoted.voteProgress?.hasVoted, true);
+  assert.equal(votingVoted.voteProgress?.submitted, 4);
+  assert.equal(votingVoted.voteProgress?.percent, 80);
+  assert.equal(votingVoted.voteProgress?.remaining, 1);
+
+  // 测试 PK 决选阶段与候选人视角
+  const runoffCandidate = buildWerewolfPresentation(view('runoff_voting', {
+    votesSubmitted: 1,
+    votesExpected: 3,
+    runoffCandidates: ['w1', 's'],
+  }), members);
+  assert.equal(runoffCandidate.voteProgress?.isRunoff, true);
+  assert.equal(runoffCandidate.voteProgress?.isRunoffCandidate, true);
+  assert.equal(runoffCandidate.voteProgress?.isVoter, false);
+  assert.equal(runoffCandidate.voteProgress?.percent, 33);
+  assert.equal(runoffCandidate.voteProgress?.remaining, 2);
+
+  // 测试观战者视角
+  const spectatorVoting = buildWerewolfPresentation(view('voting', { votesSubmitted: 3, votesExpected: 6, me: null }), members);
+  assert.equal(spectatorVoting.voteProgress?.isVoter, false);
+  assert.equal(spectatorVoting.voteProgress?.percent, 50);
+  assert.equal(spectatorVoting.voteProgress?.remaining, 3);
 
   const result = buildWerewolfPresentation(view('vote_result', {
     lastVoteSummary: {
@@ -234,4 +269,65 @@ test('视图解析接受无 me 的观战视角，并拒绝旧 schema、规则矛
     ...view('game_over'),
     reveal: { roles: { w1: 'whiteWolfKing' }, voteHistory: [] },
   }), null);
+});
+
+test('加赛候选人视角不渲染投票动作组且 waitingHint 提示不投票', () => {
+  const model = buildWerewolfPresentation(
+    view('runoff_voting', {
+      runoffCandidates: ['w1', 'w2'],
+      me: { ...baseMe, playerId: 'w1', hasVoted: false },
+    }),
+    members,
+  );
+  assert.equal(model.actionGroups.some((g) => g.id === 'day_vote'), false);
+  assert.equal(model.waitingHint, '你是加赛候选人，本轮不投票');
+});
+
+test('平票 voteLedger headline 修正为进入加赛投票', () => {
+  const model = buildWerewolfPresentation(
+    view('vote_result', {
+      lastVoteSummary: {
+        day: 1,
+        kind: 'normal',
+        outcome: 'tie',
+        tally: { w1: 2, w2: 2 },
+        abstained: 0,
+        eliminatedPlayerId: null,
+      },
+    }),
+    members,
+  );
+  assert.equal(model.voteLedger?.headline, '平票，进入加赛投票');
+});
+
+test('v2 规则下守卫动作候选包含自己', () => {
+  const guardMe: WerewolfMe = {
+    ...baseMe,
+    playerId: 'g',
+    role: 'guard',
+    guardDecided: false,
+    lastGuardTargetId: null,
+  };
+  const model = buildWerewolfPresentation(
+    view('night', {
+      config: { ...view('night').config, rulesetId: 'werewolf_platform_open_kill_v1' },
+      me: guardMe,
+    }),
+    members,
+  );
+  const guardGroup = model.actionGroups.find((g) => g.id === 'guard_guard');
+  assert.ok(guardGroup);
+  assert.ok(guardGroup.options.some((opt) => (opt.payload as { targetPlayerId?: string }).targetPlayerId === 'g'));
+});
+
+test('presentation 模型正确透传 nightStage 和 pendingShooterId', () => {
+  const model = buildWerewolfPresentation(
+    view('night', {
+      nightStage: 'witch',
+      pendingShooterId: 'w1',
+    }),
+    members,
+  );
+  assert.equal(model.nightStage, 'witch');
+  assert.equal(model.pendingShooterId, 'w1');
 });

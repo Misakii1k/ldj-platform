@@ -9,7 +9,12 @@ import {
 } from '@ldj/game-undercover/server';
 import { unoVersionedModule, unoHouseModule } from '@ldj/game-uno/server';
 import { landlordModule, landlordPlatformModule } from '@ldj/game-landlord/server';
-import { werewolfModule, werewolfV2Module } from '@ldj/game-werewolf/server';
+import {
+  werewolfModule as rawWerewolfModule,
+  werewolfV2Module,
+  werewolfModeratorModule,
+  wrapLegacyWithJudgeVoice,
+} from '@ldj/game-werewolf/server';
 import { durianModule } from '@ldj/game-durian/server';
 import { loveLetterModule } from '@ldj/game-loveletter/server';
 import { cheeseThiefModule, cheeseThiefSimModule } from '@ldj/game-cheese-thief/server';
@@ -37,8 +42,10 @@ const MODULES: RegisteredGameModule[] = [
   unoHouseModule,
   landlordPlatformModule,
   landlordModule,
-  werewolfModule,
+  // legacy 狼人杀叠加法官语音夜晚/天亮时限保底（与 v2 模块对齐；冻结的 module.ts 本体不动）
+  wrapLegacyWithJudgeVoice(rawWerewolfModule),
   werewolfV2Module,
+  werewolfModeratorModule,
   durianModule,
   loveLetterModule,
   cheeseThiefModule,

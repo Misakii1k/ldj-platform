@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, Gamepad2, LogIn, Settings } from 'lucide-react';
+import { ArrowRight, Gamepad2, LogIn, Radio, Settings } from 'lucide-react';
 import {
   listGamesForPlayerCount,
   type GameCatalogEntry,
@@ -19,18 +19,23 @@ import { UserProfileBadge } from '../user/UserProfileBadge.tsx';
 import { UserProfileModal } from '../user/UserProfileModal.tsx';
 import { BlurText } from '../shared-ui/motion/BlurText.tsx';
 import { FadeContent } from '../shared-ui/motion/FadeContent.tsx';
+import { triggerSilentStartupCheck, useUpdateState } from './update/useUpdateState.ts';
+import { useAppMode } from './AppModeContext.tsx';
 
 type ActiveSheet = 'create' | 'join' | 'settings' | 'profile' | null;
 
 export function GameHomePage() {
   const { state } = useConnection();
   const { level } = useMotion();
+  const { isPcHost, openHostConsole } = useAppMode();
   const pageRef = useRef<HTMLElement | null>(null);
   const [selectedCount, setSelectedCount] = useState<PlayerCount | null>(null);
   const [selectedGame, setSelectedGame] = useState<GameCatalogEntry | null>(null);
   const [activeSheet, setActiveSheet] = useState<ActiveSheet>(null);
   /** 邀请深链（/join/AB2CD）预填的房间码；null 表示本次加入未指定 */
   const [inviteRoomCode, setInviteRoomCode] = useState<string | null>(null);
+
+  const { hasNewUpdate } = useUpdateState();
 
   // 邀请深链：/join/5位房间码 → 打开加入弹层并预填房间码
   useEffect(() => {
@@ -39,6 +44,14 @@ export function GameHomePage() {
       setInviteRoomCode(match[1]!.toUpperCase());
       setActiveSheet('join');
     }
+  }, []);
+
+  // 冷启动 1.5 秒后在后台静默发起一次更新检查
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void triggerSilentStartupCheck();
+    }, 1500);
+    return () => clearTimeout(timer);
   }, []);
 
   const games = useMemo(() => listGamesForPlayerCount(selectedCount), [selectedCount]);
@@ -63,22 +76,38 @@ export function GameHomePage() {
     <main ref={pageRef} className="game-home-page" data-player-count={selectedCount ?? 'all'} data-motion-level={level}>
       <div className="game-home-page__content">
         <header className="home-header home-motion-layer" data-motion-step="0">
-          <div className="home-brand" aria-label="聚乐桌">
+          <div className="home-brand" aria-label="聚乐桌游">
             <span className="home-brand__tile" aria-hidden="true">
               <img src="/icon-192.png" alt="" className="home-brand__img" />
             </span>
-            <span className="home-brand__name">聚乐桌</span>
+            <span className="home-brand__name">聚乐桌游</span>
           </div>
           <div className="home-header__actions">
+            {isPcHost && (
+              <button
+                type="button"
+                className="home-header__button home-header__host-capsule"
+                onClick={openHostConsole}
+                aria-label="查看主机控制台与扫码大屏"
+                title="查看主机控制台与扫码大屏"
+              >
+                <span className="home-header__host-dot" aria-hidden="true" />
+                <Radio size={16} strokeWidth={2.4} aria-hidden="true" />
+                <span className="home-header__host-text">主机大屏</span>
+              </button>
+            )}
             <UserProfileBadge onClick={() => setActiveSheet('profile')} />
             <button
               type="button"
               className="home-header__button"
               onClick={() => setActiveSheet('settings')}
-              aria-label="打开设置"
+              aria-label={hasNewUpdate ? '打开设置（有可用更新）' : '打开设置'}
               title="设置"
             >
-              <Settings size={18} strokeWidth={2.4} aria-hidden="true" />
+              <span className="home-header__button-icon-wrap">
+                <Settings size={18} strokeWidth={2.4} aria-hidden="true" />
+                {hasNewUpdate && <span className="home-header__badge-dot" aria-hidden="true" />}
+              </span>
               <span>设置</span>
             </button>
           </div>
@@ -88,7 +117,7 @@ export function GameHomePage() {
 
         <section className="home-hero home-motion-layer" data-motion-step="1" aria-labelledby="home-title">
           <div className="home-hero__copy">
-            <p className="home-hero__eyebrow">扫码即玩 · 手机就是专属手牌</p>
+            <p className="home-hero__eyebrow">扫码即玩 · 手机直接作为手牌</p>
             <h1 id="home-title">
               <BlurText text="好友到齐，" animateBy="words" direction="bottom" delay={100} className="inline-block" />
               <span>
@@ -97,7 +126,7 @@ export function GameHomePage() {
             </h1>
             <FadeContent blur delay={600} duration={800}>
               <p className="home-hero__description">
-                无需下载与繁琐注册。连上同一个局域网，与身边的朋友面对面开局畅玩！
+                无需下载或注册。连接同一局域网，就能和身边的朋友一起开局。
               </p>
             </FadeContent>
             <div className="home-hero__actions">
@@ -124,10 +153,10 @@ export function GameHomePage() {
           </div>
           <div>
             <h2>好友已经建好房间？</h2>
-            <p>输入 5 位房间码，一键切入战局。</p>
+            <p>输入 5 位房间码，即可快速加入对局。</p>
           </div>
           <button type="button" onClick={() => setActiveSheet('join')}>
-            加入此桌
+            加入房间
             <ArrowRight size={18} strokeWidth={2.5} aria-hidden="true" />
           </button>
         </section>
@@ -138,11 +167,11 @@ export function GameHomePage() {
               <p className="home-games__eyebrow">游戏目录</p>
               <h2 id="game-list-title">{sectionTitle}</h2>
             </div>
-            <span className="home-games__count">共 {games.length} 款精选</span>
+            <span className="home-games__count">共 {games.length} 款游戏</span>
           </div>
           {playableGames.length === 0 && (
             <p className="home-games__notice" role="status">
-              适合当前人数的可玩游戏正在全力准备中，不妨看看即将登场的特色玩法。
+              暂无适合当前人数的游戏，可以尝试调整上方的人数筛选。
             </p>
           )}
           <div className="game-grid" data-game-count={games.length}>
@@ -157,10 +186,10 @@ export function GameHomePage() {
             <span className="home-connection__dot" aria-hidden="true" />
             <div>
               <strong>{isConnected ? '已在线' : '连接中'}</strong>
-              <span>{isConnected ? '局域网连接顺畅，附近好友可随时加入！' : '正在建立局域网服务器连接…'}</span>
+              <span>{isConnected ? '局域网连接正常，好友可以扫码或输入房间码加入。' : '正在建立局域网服务器连接…'}</span>
             </div>
           </div>
-          <p>局域网桌游平台 · 属于你们的聚会时光</p>
+          <p>局域网桌游平台 · 单机部署与即开即玩</p>
         </footer>
       </div>
 

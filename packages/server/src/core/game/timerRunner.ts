@@ -106,8 +106,10 @@ export class TimerRunner {
       const row = this.#db
         .prepare(
           `SELECT MIN(t.deadline_at) AS next
-           FROM timers t JOIN game_sessions s ON s.id = t.session_id
-           WHERE t.status = 'pending' AND s.status = 'ACTIVE'`,
+           FROM timers t
+           JOIN game_sessions s ON s.id = t.session_id
+           JOIN rooms r ON r.id = s.room_id
+           WHERE t.status = 'pending' AND s.status = 'ACTIVE' AND r.status != 'CLOSED'`,
         )
         .get() as { next: number | null } | undefined;
       delay = row?.next != null ? Math.max(0, row.next - Date.now()) : MAX_ARM_DELAY_MS;
@@ -128,8 +130,10 @@ export class TimerRunner {
         const due = this.#db
           .prepare(
             `SELECT t.session_id, t.timer_id, s.room_id
-             FROM timers t JOIN game_sessions s ON s.id = t.session_id
-             WHERE t.status = 'pending' AND s.status = 'ACTIVE' AND t.deadline_at <= ?
+             FROM timers t
+             JOIN game_sessions s ON s.id = t.session_id
+             JOIN rooms r ON r.id = s.room_id
+             WHERE t.status = 'pending' AND s.status = 'ACTIVE' AND r.status != 'CLOSED' AND t.deadline_at <= ?
              ORDER BY t.deadline_at ASC LIMIT 1`,
           )
           .get(Date.now()) as DueTimerRow | undefined;
@@ -138,7 +142,15 @@ export class TimerRunner {
           roomId: due.room_id,
           handler: (tx) => consumeDueTimer(tx, due.session_id, due.timer_id),
         });
-        if (fired) this.#onOutcome(due.room_id, fired.outcome);
+        if (fired) {
+          this.#onOutcome(due.room_id, fired.outcome);
+        } else {
+          this.#db
+            .prepare(
+              `UPDATE timers SET status = 'cancelled' WHERE session_id = ? AND timer_id = ? AND status = 'pending'`,
+            )
+            .run(due.session_id, due.timer_id);
+        }
       }
     } finally {
       this.#firing = false;

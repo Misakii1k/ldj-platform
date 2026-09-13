@@ -3,6 +3,10 @@
 export type CheeseThiefPhase = 'hour_choice' | 'night' | 'accomplice_select' | 'dawn' | 'vote' | 'game_over';
 export type RoleCard = 'cat' | 'dog' | 'whiteMouse' | 'none';
 
+export type Vote =
+  | { kind: 'accuse'; targetPlayerId: string }
+  | { kind: 'abstain' };
+
 export interface CheeseThiefReveal {
   thiefId: string | null;
   stealHour: number | null;
@@ -27,6 +31,8 @@ export interface CheeseThiefPublicView {
   dogFirstVoter: string | null;
   thiefCaught: boolean | null;
   winners: string[];
+  deadlineAt: number | null;
+  votes: Record<string, Vote> | null;
   reveal: CheeseThiefReveal | null;
 }
 
@@ -51,7 +57,7 @@ export interface CheeseThiefPlayerView extends CheeseThiefPublicView {
 const PUBLIC_KEYS = [
   'gameId', 'rulesetId', 'schemaVersion', 'phase', 'players', 'cheeseStolen', 'mode', 'currentHour',
   'roleCardsEnabled', 'revealedCat', 'revealedDog', 'dogFirstVoter',
-  'thiefCaught', 'winners', 'reveal',
+  'thiefCaught', 'winners', 'deadlineAt', 'votes', 'reveal',
 ] as const;
 const ME_KEYS = [
   'playerId', 'wakeHour', 'hourChoices', 'coWakers', 'cheeseWasMissing',
@@ -125,6 +131,24 @@ function parseReveal(value: unknown): CheeseThiefReveal | null {
   };
 }
 
+function parseVotes(value: unknown): Record<string, Vote> | null {
+  if (value === null) return null;
+  if (!isObject(value)) return null;
+  const result: Record<string, Vote> = {};
+  for (const [k, v] of Object.entries(value)) {
+    if (!isPlayerId(k) || !isObject(v)) return null;
+    if (v.kind === 'accuse') {
+      if (!isPlayerId(v.targetPlayerId)) return null;
+      result[k] = { kind: 'accuse', targetPlayerId: v.targetPlayerId as string };
+    } else if (v.kind === 'abstain') {
+      result[k] = { kind: 'abstain' };
+    } else {
+      return null;
+    }
+  }
+  return result;
+}
+
 function parseBase(view: Record<string, unknown>, withMe: boolean): CheeseThiefPublicView | null {
   if (!hasExactKeys(view, withMe ? [...PUBLIC_KEYS, 'me'] : PUBLIC_KEYS)) return null;
   if (view.gameId !== 'cheese-thief' || view.rulesetId !== 'cheese_thief_classic_v1' || view.schemaVersion !== 1) return null;
@@ -139,6 +163,9 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): CheeseThiefP
   if (view.dogFirstVoter !== null && !isPlayerId(view.dogFirstVoter)) return null;
   if (view.thiefCaught !== null && !isBool(view.thiefCaught)) return null;
   if (!isPlayerIds(view.winners)) return null;
+  if (view.deadlineAt !== null && typeof view.deadlineAt !== 'number') return null;
+  const votes = parseVotes(view.votes);
+  if (votes === null && view.votes !== null) return null;
   const reveal = parseReveal(view.reveal);
   if (reveal === null && view.reveal !== null) return null;
   return {
@@ -156,6 +183,8 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): CheeseThiefP
     dogFirstVoter: view.dogFirstVoter as string | null,
     thiefCaught: view.thiefCaught as boolean | null,
     winners: [...view.winners],
+    deadlineAt: view.deadlineAt as number | null,
+    votes,
     reveal,
   };
 }

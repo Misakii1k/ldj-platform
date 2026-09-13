@@ -45,6 +45,7 @@ public class ImmersiveModePlugin extends Plugin {
                             WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
                         );
                         controller.show(WindowInsetsCompat.Type.statusBars());
+                        controller.setAppearanceLightStatusBars(true);
                     }
                 }
             } else {
@@ -58,6 +59,7 @@ public class ImmersiveModePlugin extends Plugin {
                 } else {
                     decorView.setSystemUiVisibility(
                         View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
                     );
                 }
             }

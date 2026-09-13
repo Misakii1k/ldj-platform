@@ -53,8 +53,8 @@ export interface WsGatewayDeps {
   db: Db;
   executor: RoomCommandExecutor;
   logger: Logger;
-  /** 额外允许的 Origin（开发模式） */
-  allowedOrigins: string[];
+  /** 额外允许的 Origin（开发模式或动态 CDN） */
+  allowedOrigins: string[] | (() => string[]);
   serverVersion: string;
   /** 房主断线自动转让延迟（FR-HOST-005，默认 30 秒；测试可缩短） */
   hostTransferDelayMs?: number;
@@ -115,7 +115,12 @@ export function isOriginAllowed(
   if (origin === undefined) return true;
   try {
     const originUrl = new URL(origin);
-    if (hostHeader !== undefined && originUrl.host === hostHeader) return true;
+    if (hostHeader !== undefined) {
+      const hostWithoutPort = hostHeader.split(':')[0]!;
+      if (originUrl.host === hostHeader || originUrl.hostname === hostWithoutPort || originUrl.hostname === hostHeader) {
+        return true;
+      }
+    }
   } catch {
     return false;
   }
@@ -156,10 +161,13 @@ export class WsGateway {
       server: deps.server,
       maxPayload: MAX_MESSAGE_BYTES,
       verifyClient: (info: { origin?: string; req: http.IncomingMessage }, done) => {
+        const effectiveAllowed = typeof deps.allowedOrigins === 'function'
+          ? deps.allowedOrigins()
+          : deps.allowedOrigins;
         const ok = isOriginAllowed(
           info.origin === '' ? undefined : info.origin,
           info.req.headers.host,
-          deps.allowedOrigins,
+          effectiveAllowed,
         );
         if (!ok) {
           deps.logger.warn('ws_origin_rejected', { origin: info.origin });
@@ -473,7 +481,7 @@ export class WsGateway {
             ? this.#currentRoomSeq(state.roomId)
             : undefined;
         this.#sendError(socket, envelope.requestId, err.code, {
-          message: err.message,
+          message: err.message === err.code ? undefined : err.message,
           ...(currentSeq !== undefined ? { currentSeq } : {}),
         });
       } else {

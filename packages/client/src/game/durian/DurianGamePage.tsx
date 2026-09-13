@@ -6,6 +6,8 @@ import { ActionDock } from '../tabletop/ActionDock.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
 import { webAudio } from '../../shared-ui/WebAudioManager.ts';
+import { ArenaBoard } from '../../shared-ui/ArenaBoard.tsx';
+import { ArenaRail } from '../../shared-ui/ArenaRail.tsx';
 import { FruitIcon, FruitGroup } from './FruitGraphic.tsx';
 import {
   DURIAN_FRUITS,
@@ -664,22 +666,26 @@ export function DurianGamePage({ view }: Props) {
           <>
             {/* 本局行动顺序条（首轮开局清晰展示，当前玩家高亮） */}
             {view.players.length > 1 && (
-              <section className="durian-order-strip" aria-label="本局行动顺序">
-                <span className="durian-order-strip__label">出牌顺序</span>
-                <div className="durian-order-strip__chips">
-                  {view.players.map((playerId, index) => {
+              <ArenaBoard
+                className="durian-focal durian-order-board"
+                tone="paper"
+                headline="出牌顺序"
+                hint="按顺序摸牌出牌，当前行动者高亮"
+              >
+                <ArenaRail
+                  label="本局行动顺序"
+                  className="durian-order-rail"
+                  items={view.players.map((playerId, index) => {
                     const isCurrent = playerId === view.currentPlayerId;
                     const isEliminated = (view.eliminatedPlayers ?? []).includes(playerId);
-                    return (
-                      <span key={playerId} className={`durian-order-chip ${isCurrent ? 'is-current' : ''} ${isEliminated ? 'is-out' : ''}`}>
-                        <b>{index + 1}</b>
-                        <span>{playerId === myId ? '我' : nameFor(members, playerId)}</span>
-                        {isCurrent && <em>行动中</em>}
-                      </span>
-                    );
+                    return {
+                      key: playerId,
+                      label: `${index + 1} · ${playerId === myId ? '我' : nameFor(members, playerId)}`,
+                      state: isEliminated ? 'warning' : isCurrent ? 'active' : 'idle',
+                    };
                   })}
-                </div>
-              </section>
+                />
+              </ArenaBoard>
             )}
 
             <section className="durian-forehead-bar" aria-label="玩家头顶手牌">
@@ -723,11 +729,12 @@ export function DurianGamePage({ view }: Props) {
               })}
             </section>
 
-            <section className="durian-center-board" aria-label="桌面已放置卡牌">
-              <div className="durian-board-headline">
-                <span className="durian-board-title">桌面已放置卡牌 ({(view.tablePlacements ?? []).length} 张)</span>
-                <span className="durian-board-deck-info">牌堆剩余: <strong>{view.deckCount}</strong> 张</span>
-              </div>
+            <ArenaBoard
+              className="durian-focal durian-center-board"
+              tone="accent"
+              headline={<span className="durian-board-title">桌面已放置卡牌（{(view.tablePlacements ?? []).length} 张）</span>}
+              hint={<span className="durian-board-deck-info">牌堆剩余 <strong>{view.deckCount}</strong> 张</span>}
+            >
 
               <div className="durian-placements-wrap">
                 {(view.tablePlacements ?? []).length === 0 ? (
@@ -777,7 +784,7 @@ export function DurianGamePage({ view }: Props) {
                   </div>
                 )}
               </div>
-            </section>
+            </ArenaBoard>
           </>
         )}
 

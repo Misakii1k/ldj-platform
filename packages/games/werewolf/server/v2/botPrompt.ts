@@ -36,10 +36,12 @@ function buildV2BotPromptCore(input: BotDecisionInput<V2PlayerView>): BotPromptC
       const options: BotActionOption<V2Action>[] = [];
       if (me.role === 'wolf' && !me.hasNightVoted) options.push(...targetOptions(view, view.players.filter((p) => p.alive), '刀', (id) => ({ type: 'night_kill', targetPlayerId: id })));
       if (me.role === 'seer' && !me.seerCheckedThisNight) options.push(...targetOptions(view, others, '查验', (id) => ({ type: 'seer_check', targetPlayerId: id })));
-      if (me.role === 'witch' && me.nightVictimId !== null) {
+      if (me.role === 'witch') {
         if (me.witchSaveDecision === null) {
-          options.push({ id: 'save:no', label: '不用解药', action: { type: 'witch_save', save: false } });
-          if (me.nightVictimId !== playerId || me.witchCanSelfSave) options.push({ id: 'save:yes', label: '使用解药', action: { type: 'witch_save', save: true } });
+          if (me.nightVictimId !== null) {
+            options.push({ id: 'save:no', label: '不用解药', action: { type: 'witch_save', save: false } });
+            if (me.nightVictimId !== playerId || me.witchCanSelfSave) options.push({ id: 'save:yes', label: '使用解药', action: { type: 'witch_save', save: true } });
+          }
         } else if (!me.witchPoisonDecided) {
           options.push({ id: 'poison:none', label: '不用毒药', action: { type: 'witch_poison', targetPlayerId: null } });
           if (!me.witchPoisonUsed) options.push(...targetOptions(view, others, '毒', (id) => ({ type: 'witch_poison', targetPlayerId: id })));
@@ -47,7 +49,7 @@ function buildV2BotPromptCore(input: BotDecisionInput<V2PlayerView>): BotPromptC
       }
       if (me.role === 'guard' && !me.guardDecided) {
         options.push({ id: 'guard:none', label: '不守人', action: { type: 'guard_guard', targetPlayerId: null } });
-        options.push(...targetOptions(view, others.filter((p) => p.playerId !== me.lastGuardTargetId), '守护', (id) => ({ type: 'guard_guard', targetPlayerId: id })));
+        options.push(...targetOptions(view, view.players.filter((p) => p.alive && p.playerId !== me.lastGuardTargetId), '守护', (id) => ({ type: 'guard_guard', targetPlayerId: id })));
       }
       return options.length === 0 ? null : { roleBrief: brief, situation, options };
     }
@@ -63,9 +65,14 @@ function buildV2BotPromptCore(input: BotDecisionInput<V2PlayerView>): BotPromptC
       return view.currentSpeakerId === playerId
         ? { roleBrief: brief, situation, options: [{ id: 'speech', label: '结束发言', action: { type: 'finish_speech' } }] }
         : null;
+    case 'free_discussion':
+      return me.alive && !me.hasReadiedVote
+        ? { roleBrief: brief, situation, options: [{ id: 'ready_vote', label: '准备进入投票', action: { type: 'ready_vote' } }] }
+        : null;
     case 'voting':
     case 'runoff_voting': {
       if (!me.alive || me.idiotRevealed || me.hasVoted) return null;
+      if (view.phase === 'runoff_voting' && view.runoffCandidates.includes(playerId)) return null;
       const candidates = view.players.filter((p) => p.alive && p.playerId !== playerId && !p.idiotRevealed && (view.phase !== 'runoff_voting' || view.runoffCandidates.includes(p.playerId)));
       return {
         roleBrief: brief,

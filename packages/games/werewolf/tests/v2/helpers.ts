@@ -100,6 +100,7 @@ export function voteAll(state: V2State, target: string | null, ctx: Ctx = IDENTI
   let st = state;
   for (const id of aliveIds(st)) {
     if (st.players[id]?.idiotRevealed) continue;
+    if (st.phase === 'runoff_voting' && st.runoffCandidates.includes(id)) continue;
     let t = target;
     if (id === target) {
       const others = aliveIds(st).filter((x) => x !== id && x !== target && !st.players[x]?.idiotRevealed);
@@ -110,16 +111,24 @@ export function voteAll(state: V2State, target: string | null, ctx: Ctx = IDENTI
   return st;
 }
 
-/** 白天流程：确认公告 → 依次发言 → 返回投票阶段状态 */
+/** 白天流程：确认公告 → 遗言（若首夜有死者）→ 依次发言 → 返回投票阶段状态 */
 export function skipDiscussion(state: V2State, ctx: Ctx = IDENTITY_CTX): V2State {
   let st = state;
   if (st.phase === 'day_announcement') {
     for (const id of aliveIds(st)) st = apply(st, actor(id), { type: 'confirm_announcement' }, ctx);
   }
+  while (st.phase === 'last_words' && st.lastWordsPlayerId) {
+    st = apply(st, actor(st.lastWordsPlayerId), { type: 'finish_last_words' }, ctx);
+  }
   if (st.phase !== 'discussion') throw new Error(`期望 discussion，实际 ${st.phase}`);
   for (const id of [...st.speakingOrder]) {
     if (!st.players[id]?.alive) continue;
     st = apply(st, actor(id), { type: 'finish_speech' }, ctx);
+  }
+  if (st.phase === 'free_discussion') {
+    for (const id of aliveIds(st)) {
+      st = apply(st, actor(id), { type: 'ready_vote' }, ctx);
+    }
   }
   if (st.phase !== 'voting' && st.phase !== 'runoff_voting') {
     throw new Error(`期望投票阶段，实际 ${st.phase}`);

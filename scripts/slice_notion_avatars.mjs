@@ -45,7 +45,6 @@ function floodFillTransparent(rgba, width, height) {
     // Is grey background (neutral saturation, mid luminance) or near grid lines
     const maxDiff = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b));
     const isGrey = maxDiff <= 20 && r >= 85 && r <= 165;
-    const isGridBlack = r < 40 && g < 40 && b < 40;
     return isGrey;
   }
 

@@ -38,9 +38,9 @@ export interface CheeseThiefConfig {
   rulesetId?: 'cheese_thief_classic_v1';
   /** 对局模式：standard 纯手机标准模式，simulator 桌面中央+手牌双端模拟模式，默认 standard */
   mode?: 'standard' | 'simulator';
-  /** 开场确认骰子与身份时长（秒），默认 10 */
+  /** 开场确认骰子与身份时长（秒），默认 17 */
   roleRevealSeconds?: number;
-  /** 每个夜间时刻的展示时长（秒），默认 10 */
+  /** 每个夜间时刻的展示时长（秒），默认 20 */
   nightHourSeconds?: number;
   /** 天亮讨论时长（秒），默认 120 */
   discussionSeconds?: number;
@@ -48,7 +48,7 @@ export interface CheeseThiefConfig {
   voteSeconds?: number;
   /** 4 人局两骰自选窗口（秒），默认 30 */
   hourChoiceSeconds?: number;
-  /** 大盗选择共犯时长（秒），默认 15 */
+  /** 大盗选择共犯时长（秒），默认 17 */
   accompliceSelectSeconds?: number;
   /** 是否启用可选身份卡（猫/狗/白老鼠），默认 false */
   roleCards?: boolean;
@@ -75,7 +75,7 @@ export const DEFAULT_ACCOMPLICE_RULES: Record<number, AccompliceRule> = {
   4: { count: 0, known: false },
   5: { count: 1, known: true },
   6: { count: 1, known: true },
-  7: { count: 2, known: false },
+  7: { count: 2, known: true },
   8: { count: 2, known: true },
 };
 
@@ -121,6 +121,7 @@ export interface CheeseThiefState {
   /** 大盗是否被投出（未结算前为 null） */
   thiefCaught: boolean | null;
   winners: string[];
+  deadlineAt: number | null;
 }
 
 export type CheeseThiefAction =
@@ -128,12 +129,14 @@ export type CheeseThiefAction =
   | { type: 'choose_hour'; playerId: string; hour: number }
   | { type: 'resolve_hour_choice' } // 系统：4 人局超时，未选择者取首候选
   | { type: 'advance_night'; hour: number }
+  | { type: 'end_night' } // 系统：夜间第 6 时刻结束，进入共犯选择或白天
   | { type: 'steal_cheese'; playerId: string }
   | { type: 'peek_die'; playerId: string; targetPlayerId: string }
   | { type: 'skip_peek'; playerId: string }
   | { type: 'select_accomplice'; playerId: string; accompliceIds: string[] }
   | { type: 'auto_select_accomplice' } // 系统：共犯选择超时，自动选队首 N 人
   | { type: 'end_discussion' }
+  | { type: 'skip_discussion'; playerId?: string } // 桌面端或参局玩家提前结束白天讨论，直接开投
   | { type: 'reveal_cat'; playerId: string; targetPlayerId: string }
   | { type: 'reveal_dog'; playerId: string; firstVoterId: string }
   | { type: 'cast_vote'; playerId: string; targetPlayerId: string }
@@ -192,6 +195,10 @@ export interface CheeseThiefPublicView {
   /** 投票已结算时为布尔；未结算为 null */
   thiefCaught: boolean | null;
   winners: string[];
+  /** 阶段截止时间戳（毫秒）；无倒计时阶段为 null */
+  deadlineAt: number | null;
+  /** 投票期与终局实时公开的投票表；未到投票期为 null */
+  votes: Record<string, Vote> | null;
   /** 仅 game_over 时披露完整真相（复盘） */
   reveal: CheeseThiefReveal | null;
 }

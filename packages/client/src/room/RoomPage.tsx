@@ -13,6 +13,8 @@ import {
   GAME_CATALOG,
   type RoomMemberView,
   type RoomSnapshotView,
+  calculateWerewolfDistribution,
+  canEnableWerewolfSpecial,
 } from '@ldj/shared';
 import { GameSetupPanel } from '../shared-ui/GameSetupPanel.tsx';
 import { ConfirmDialog } from '../shared-ui/ConfirmDialog.tsx';
@@ -23,11 +25,13 @@ import { buildModuleConfig, readRoomGameConfig, type SetupConfig } from '../shar
 import { UserProfileBadge } from '../user/UserProfileBadge.tsx';
 import { UserAvatar } from '../user/UserAvatar.tsx';
 import { useUserProfile } from '../user/UserProfileContext.tsx';
+import { resolveMemberAvatar } from '../user/avatar.ts';
+import { WerewolfCampPreview } from '../game/werewolf/ui/WerewolfCampPreview.tsx';
 
 function statusText(status: string): string {
   switch (status) {
-    case 'LOBBY': return '大厅筹备中';
-    case 'IN_GAME': return '激战进行中';
+    case 'LOBBY': return '等待玩家';
+    case 'IN_GAME': return '对局进行中';
     case 'POST_GAME': return '对局已结算';
     case 'CLOSED': return '房间已解散';
     default: return status;
@@ -284,26 +288,61 @@ export function RoomPage() {
   }
 
   const roomGame = selectedGame;
-  const minimumPlayersToStart = roomGame.minPlayers;
+  const isWerewolfModerator = roomGame.id === 'werewolf' && gameConfig.rulesetId === 'werewolf_moderator_v1';
+  const minimumPlayersToStart = isWerewolfModerator ? 6 : roomGame.minPlayers;
   const maximumPlayers = roomGame.maxPlayers;
   const notReadyCount = onlinePlayers.filter((p) => !p.ready).length;
   // 自己是否还没准备：机器人加入即就绪，最容易出现"人数够了但卡在 1 人未准备"的就是房主本人
   const meNotReady = me !== null && room !== null
     && (room.members.find((m) => m.playerId === me.playerId)?.ready === false);
+
+  const cardPlayerCount = isWerewolfModerator ? Math.max(0, onlinePlayers.length - 1) : onlinePlayers.length;
+  const werewolfDist = roomGame.id === 'werewolf'
+    ? calculateWerewolfDistribution({
+        playerCount: cardPlayerCount,
+        wolfDelta: typeof gameConfig.wolfDelta === 'number' ? gameConfig.wolfDelta : 0,
+        guard: Boolean(gameConfig.guard),
+        hunter: Boolean(gameConfig.hunter),
+        idiot: Boolean(gameConfig.idiot),
+      })
+    : null;
+  const isWerewolfInvalid = werewolfDist !== null && !werewolfDist.isValid;
+
   const canStart =
     (room.status === 'LOBBY' || room.status === 'POST_GAME') &&
     onlinePlayers.length >= minimumPlayersToStart &&
     onlinePlayers.length <= maximumPlayers &&
-    notReadyCount === 0;
+    notReadyCount === 0 &&
+    !isWerewolfInvalid;
+
   const startDisabledReason = !canStart
-    ? meNotReady
-      ? '你还未准备：先点击成员列表中自己（我）的「准备」按钮'
-      : onlinePlayers.length < minimumPlayersToStart
-        ? `需要 ${minimumPlayersToStart}–${maximumPlayers} 名在线玩家（当前 ${onlinePlayers.length}）`
-        : notReadyCount > 0
-          ? `还有 ${notReadyCount} 人未准备`
-          : `需要 ${minimumPlayersToStart}–${maximumPlayers} 名在线玩家`
+    ? isWerewolfInvalid
+      ? (werewolfDist?.error ?? '狼人杀阵营配置不平衡（需平民保底 2 人），请调整配置后再开局')
+      : meNotReady
+        ? '你还未准备：先点击成员列表中自己（我）的「准备」按钮'
+        : onlinePlayers.length < minimumPlayersToStart
+          ? isWerewolfModerator
+            ? `需要 1 名主持人 + 5–12 名抽卡玩家（当前共 ${onlinePlayers.length} 人）`
+            : `需要 ${minimumPlayersToStart}–${maximumPlayers} 名在线玩家（当前 ${onlinePlayers.length}）`
+          : notReadyCount > 0
+            ? `还有 ${notReadyCount} 人未准备`
+            : `需要 ${minimumPlayersToStart}–${maximumPlayers} 名在线玩家`
     : '';
+
+  const isOptionChoiceDisabled = (key: string, choiceValue: unknown): { disabled: boolean; reason?: string } => {
+    if (roomGame.id !== 'werewolf') return { disabled: false };
+    if (choiceValue === true && (key === 'guard' || key === 'hunter' || key === 'idiot')) {
+      const check = canEnableWerewolfSpecial({
+        playerCount: cardPlayerCount,
+        wolfDelta: typeof gameConfig.wolfDelta === 'number' ? gameConfig.wolfDelta : 0,
+        guard: Boolean(gameConfig.guard),
+        hunter: Boolean(gameConfig.hunter),
+        idiot: Boolean(gameConfig.idiot),
+      }, key);
+      return { disabled: !check.allowed, reason: check.reason };
+    }
+    return { disabled: false };
+  };
 
   const botCount = room.members.filter((m) => m.botKind !== null).length;
   // 席位满了就不能再加：服务端也会拒，这里提前禁用避免无效往返
@@ -314,6 +353,7 @@ export function RoomPage() {
     onlinePlayers.length <= maximumPlayers &&
     onlinePlayers.length > 0 &&
     notReadyCount === 0 &&
+    !isWerewolfInvalid &&
     room.members.every((m) => m.connectionStatus === 'CONNECTED');
 
   const sortedMembers = [...room.members].sort((a, b) => {
@@ -367,12 +407,13 @@ export function RoomPage() {
               等待好友<span>入座</span>
             </h1>
             <p className="room-hero__description">
-              本局游戏：{roomGame.displayName} · 适合 {minimumPlayersToStart}–{maximumPlayers} 人。将房间码分享给身边的朋友，准备就绪后即可开启本局对局。
+              本游戏支持 {minimumPlayersToStart}–{maximumPlayers} 人。将房间码分享给身边的朋友，全员准备后即可开始对局。
             </p>
           </div>
 
           <RoomCodeCard
             gameName={roomGame.displayName}
+            gameId={roomGame.id}
             roomCode={room.roomCode}
             inviteUrl={`${resolveShareBase()}/join/${room.roomCode}`}
             online={onlinePlayers.length}
@@ -386,8 +427,19 @@ export function RoomPage() {
           setup={roomGame.setup}
           value={gameConfig}
           disabled={!isHost || busy || !synced || room.status !== 'LOBBY'}
+          isOptionChoiceDisabled={isOptionChoiceDisabled}
           onChange={handleGameConfigChange}
         />
+
+        {roomGame.id === 'werewolf' && (
+          <WerewolfCampPreview
+            playerCount={onlinePlayers.length}
+            gameConfig={gameConfig}
+            isHost={isHost}
+            disabled={!isHost || busy || !synced || room.status !== 'LOBBY'}
+            onChangeConfig={handleGameConfigChange}
+          />
+        )}
 
         <div className="room-content-grid">
           <section className="room-panel room-players-panel members-section">
@@ -403,8 +455,13 @@ export function RoomPage() {
                 const isMe = m.playerId === myPlayerId;
                 return (
                   <li key={m.playerId} className={'member ' + badge.cls}>
-                    <span className="member-seat">{m.seatRole === 'player' ? '#' + (m.seat !== undefined && m.seat !== null ? m.seat + 1 : '?') : '观'}</span>
-                    <UserAvatar avatar={isMe ? profile.avatar : 'preset:fox'} nickname={m.nickname} size={32} style={{ marginRight: '6px' }} />
+                    <span className="member-seat">{m.seatRole === 'player' ? '#' + (m.seat !== undefined && m.seat !== null ? m.seat : '?') : '观'}</span>
+                    <UserAvatar
+                      avatar={resolveMemberAvatar(m, { isMe, myAvatar: profile.avatar })}
+                      nickname={m.nickname}
+                      size={32}
+                      style={{ marginRight: '6px' }}
+                    />
                     <span className="member-name">
                       {m.nickname}
                       {m.isHost && (
@@ -492,7 +549,7 @@ export function RoomPage() {
                 disabled={busy || !synced}
               >
                 <GameIcon name={myMember.ready ? 'star' : 'hourglass'} size={18} />
-                <span>{myMember.ready ? '我已就绪 (点击取消)' : '点击就绪准备'}</span>
+                <span>{myMember.ready ? '已准备（点击取消）' : '点击准备'}</span>
               </button>
             )}
             <button type="button" className="room-console__btn room-console__btn--leave" onClick={handleLeaveRoom} disabled={busy}>
@@ -512,13 +569,13 @@ export function RoomPage() {
               </button>
             )}
             {isHost && (room.status === 'LOBBY' || room.status === 'POST_GAME') && roomGame.botSupport !== 'none' && (
-              <button type="button" className="room-console__btn room-console__btn--secondary" onClick={() => handleAddBot('rule')} disabled={busy || !synced || seatsFull} title={seatsFull ? '席位已满' : '凑人数用，按规则自动参与'}>
+              <button type="button" className="room-console__btn room-console__btn--secondary" onClick={() => handleAddBot('rule')} disabled={busy || !synced || seatsFull} title={seatsFull ? '席位已满' : '按规则执行合法动作'}>
                 <GameIcon name="robot" size={18} />
                 <span>添加机器人</span>
               </button>
             )}
             {isHost && (room.status === 'LOBBY' || room.status === 'POST_GAME') && roomGame.botSupport === 'rule_and_llm' && state.llmAvailable && (
-              <button type="button" className="room-console__btn room-console__btn--secondary" onClick={() => handleAddBot('llm')} disabled={busy || !synced || seatsFull} title={seatsFull ? '席位已满' : '由 AI 大模型智能陪玩，异常时自动退回普通机器人'}>
+              <button type="button" className="room-console__btn room-console__btn--secondary" onClick={() => handleAddBot('llm')} disabled={busy || !synced || seatsFull} title={seatsFull ? '席位已满' : '由大语言模型决策，异常时自动切为规则机器人'}>
                 <GameIcon name="star" size={18} />
                 <span>添加 AI 玩家</span>
               </button>

@@ -64,7 +64,8 @@ export function PrivateRolePanel({ self, synced: _synced }: PrivateRolePanelProp
             <img src={self.artworkUrl} alt="" className="werewolf-compact-role__popover-art" />
             <div>
               <h3 className="identity-card-front__role-name">{self.roleLabel}</h3>
-              <span className="werewolf-compact-role__popover-tag">
+              <span className={`werewolf-compact-role__popover-tag ${isWolf ? 'is-wolf' : 'is-good'}`}>
+                <span className="werewolf-compact-role__popover-tag-dot" aria-hidden="true" />
                 {isWolf ? '狼人阵营' : '好人阵营'}
               </span>
             </div>

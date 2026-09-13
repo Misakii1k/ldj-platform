@@ -57,8 +57,6 @@ export function UserProfileModal({ onClose }: UserProfileModalProps) {
     }
   }, [isProfileModalOpen, onClose, profile]);
 
-  if (!isProfileModalOpen && !onClose) return null;
-
   // 处理文件上传
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -156,10 +154,12 @@ export function UserProfileModal({ onClose }: UserProfileModalProps) {
     handleClose();
   };
 
+  if (!isProfileModalOpen && !onClose) return null;
+
   return (
     <SheetDialog
       title="个人资料设置"
-      description="修改你的游戏昵称与专属桌游头像。"
+      description="修改你的游戏昵称与头像。"
       onClose={handleClose}
       initialFocusRef={firstInputRef}
       footer={
@@ -238,11 +238,11 @@ export function UserProfileModal({ onClose }: UserProfileModalProps) {
                     className="profile-modal__name-input"
                     value={draftName}
                     onChange={(e) => setDraftName(e.target.value)}
-                    placeholder="请输入你的昵称"
+                    placeholder="输入你的昵称"
                     maxLength={16}
                     required
                   />
-                  <span className="profile-modal__hint">展示于房间与对局桌面上（最多16字）</span>
+                  <span className="profile-modal__hint">最多 16 个字符，在房间和对局中向其他玩家展示。</span>
                 </div>
               </div>
 
@@ -253,7 +253,7 @@ export function UserProfileModal({ onClose }: UserProfileModalProps) {
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <GameIcon name="cards_deck" size={14} style={{ marginRight: '6px' }} />
-                  上传自定义图片裁切…
+                  上传本地图片并裁切…
                 </button>
                 <input
                   ref={fileInputRef}
@@ -268,7 +268,7 @@ export function UserProfileModal({ onClose }: UserProfileModalProps) {
             {/* 右栏（横屏时占满右侧，竖屏时位于下方）：分类标签 + 头像网格 */}
             <div className="profile-modal__main">
               <div className="profile-modal__section-header">
-                <span className="profile-modal__label">选择专属桌游头像</span>
+                <span className="profile-modal__label">选择头像</span>
                 <span className="profile-modal__count-badge">{displayAvatars.length} 款可用</span>
               </div>
 

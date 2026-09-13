@@ -22,6 +22,7 @@ import { setAppImmersiveMode } from '../native/immersive.ts';
 const UnoGamePage = lazyWithRetry(() => import('./NewGamePages.tsx').then((module) => ({ default: module.UnoGamePage })), 'uno');
 const LandlordGamePage = lazyWithRetry(() => import('./NewGamePages.tsx').then((module) => ({ default: module.LandlordGamePage })), 'landlord');
 const WerewolfGamePage = lazyWithRetry(() => import('./werewolf/WerewolfGamePage.tsx').then((module) => ({ default: module.WerewolfGamePage })), 'werewolf');
+const WerewolfModeratorPage = lazyWithRetry(() => import('./werewolf/moderator/WerewolfModeratorPage.tsx').then((module) => ({ default: module.WerewolfModeratorPage })), 'werewolf-moderator');
 const UnoHouseStage = lazyWithRetry(() => import('./uno/stage/UnoHouseStage.tsx').then((module) => ({ default: module.UnoHouseStage })), 'uno-house');
 const UndercoverBlankStage = lazyWithRetry(() => import('./undercover/stage/UndercoverBlankStage.tsx').then((module) => ({ default: module.UndercoverBlankStage })), 'undercover');
 const DurianGamePage = lazyWithRetry(() => import('./durian/DurianGamePage.tsx').then((module) => ({ default: module.DurianGamePage })), 'durian');
@@ -258,13 +259,16 @@ export function GamePage() {
       break;
     }
     case 'werewolf': {
-      // 按 viewVersion 判别：v2（open-kill）走严格解析（失败关闭），legacy 透传后仍由 WerewolfGamePage 校验。
+      // 按 viewVersion 判别：v2（open-kill）与 moderator 走严格解析（失败关闭），legacy 透传后仍由 WerewolfGamePage 校验。
       const parsed = parseGameView(game);
       if (!parsed.ok) {
         content = <GameErrorCard title="狼人杀数据格式异常" />;
         break;
       }
-      content = <WerewolfGamePage view={parsed.view} />;
+      const v = parsed.view;
+      content = isRecord(v) && v.rulesetId === 'werewolf_moderator_v1'
+        ? <WerewolfModeratorPage view={v as unknown as import('@ldj/shared').WerewolfModeratorView} />
+        : <WerewolfGamePage view={parsed.view} />;
       break;
     }
     case 'undercover': {

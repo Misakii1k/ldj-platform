@@ -11,6 +11,7 @@ import { GameCountdown, GamePhaseRail, PhaseLead } from '../../GameChrome.tsx';
 import { TabletopOvalShell } from '../../../shared-ui/TabletopOvalShell.tsx';
 import { UserAvatar } from '../../../user/UserAvatar.tsx';
 import { useUserProfile } from '../../../user/UserProfileContext.tsx';
+import { resolveMemberAvatar } from '../../../user/avatar.ts';
 import { buildBlankPhaseKey } from '../motion.ts';
 import type { BlankPlayerView, BlankRole, BlankVoteSummary } from '../types.ts';
 import '../../focused-game-motion.css';
@@ -91,10 +92,11 @@ export function BlankStageArena({ view }: Props) {
 
   const seats = view.players.map((player) => {
     const member = members.find((m) => m.playerId === player.playerId);
+    const isMe = player.playerId === me?.playerId;
     return {
       id: player.playerId,
       name: nameFor(members, player.playerId) || `玩家 ${player.seat + 1}`,
-      avatar: member?.avatar ?? (player.playerId === me?.playerId ? profile.avatar : 'preset:fox'),
+      avatar: resolveMemberAvatar(member, { isMe, myAvatar: profile.avatar, seat: player.seat, playerId: player.playerId }),
       isCurrentTurn: player.playerId === view.currentSpeakerId,
       isSpeaking: view.phase === 'speaking' && player.playerId === view.currentSpeakerId,
       isEliminated: !player.alive,
@@ -333,7 +335,7 @@ function BlankSpeechPanel({ view, act, busy }: { view: BlankPlayerView; act: Act
             <div className={`speaker-spotlight focused-current-actor ${isMyTurn ? 'is-me' : ''}`} aria-live="polite" aria-atomic="true">
               <div className="speaker-spotlight-top">
                 <UserAvatar
-                  avatar={members.find((m) => m.playerId === speakerInfo.playerId)?.avatar ?? (isMyTurn ? profile.avatar : 'preset:fox')}
+                  avatar={resolveMemberAvatar(members.find((m) => m.playerId === speakerInfo.playerId), { isMe: isMyTurn, myAvatar: profile.avatar, seat: speakerInfo.seat, playerId: speakerInfo.playerId })}
                   nickname={isMyTurn ? '我' : nameFor(members, speakerInfo.playerId) || `玩家 ${speakerInfo.seat + 1}`}
                   size={58}
                   className="speaker-avatar-box"
@@ -373,7 +375,7 @@ function BlankSpeechPanel({ view, act, busy }: { view: BlankPlayerView; act: Act
                 const isCurrent = pid === currentSpeaker;
                 const isDone = currentIndex >= 0 && index < currentIndex;
                 const isMe = pid === me?.playerId;
-                const playerAvatar = members.find((m) => m.playerId === pid)?.avatar ?? (isMe ? profile.avatar : 'preset:fox');
+                const playerAvatar = resolveMemberAvatar(members.find((m) => m.playerId === pid), { isMe, myAvatar: profile.avatar, seat: player.seat, playerId: pid });
                 const playerName = isMe ? '我' : nameFor(members, pid) || `玩家 ${player.seat + 1}`;
 
                 return (
@@ -534,7 +536,7 @@ function BlankVotePanel({ view, act, busy }: { view: BlankPlayerView; act: Act; 
                   style={{ '--stagger-index': index } as CSSProperties}
                 >
                   <UserAvatar
-                    avatar={members.find((m) => m.playerId === candidateId)?.avatar ?? (isSelf ? profile.avatar : 'preset:fox')}
+                    avatar={resolveMemberAvatar(members.find((m) => m.playerId === candidateId), { isMe: isSelf, myAvatar: profile.avatar, seat: player.seat, playerId: candidateId })}
                     nickname={isSelf ? '我' : nameFor(members, candidateId) || `玩家 ${player.seat + 1}`}
                     size={46}
                     className="vote-avatar-box"
@@ -609,7 +611,7 @@ function BlankResultPanel({ view }: { view: BlankPlayerView }) {
       {eliminatedPlayer !== null && (
         <div className="eliminated-info">
           <UserAvatar
-            avatar={members.find((m) => m.playerId === eliminatedPlayer.playerId)?.avatar ?? 'preset:fox'}
+            avatar={resolveMemberAvatar(members.find((m) => m.playerId === eliminatedPlayer.playerId), { seat: eliminatedPlayer.seat, playerId: eliminatedPlayer.playerId })}
             nickname={nameFor(members, eliminatedPlayer.playerId) || `#${eliminatedPlayer.seat + 1} 号玩家`}
             size={44}
             className="eliminated-avatar-box"
@@ -781,7 +783,7 @@ function BlankOverPanel({ view }: { view: BlankPlayerView }) {
                 return (
                   <li key={player.playerId} className={`role-item ${!player.alive ? 'dead' : ''}`} style={{ '--stagger-index': index } as CSSProperties}>
                     <UserAvatar
-                      avatar={member?.avatar ?? (isMe ? profile.avatar : 'preset:fox')}
+                      avatar={resolveMemberAvatar(member, { isMe, myAvatar: profile.avatar, seat: player.seat, playerId: player.playerId })}
                       nickname={nameFor(members, player.playerId)}
                       size={36}
                       className="role-avatar"

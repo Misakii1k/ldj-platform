@@ -4,7 +4,7 @@
  * 玩家/桌面需再连接主机；主机模式直接进入主机控制台。
  */
 import { useEffect, useRef, useState } from 'react';
-import { Smartphone, Monitor, Server, Sparkles, Tv, Wifi } from 'lucide-react';
+import { Smartphone, Monitor, Server, Sparkles } from 'lucide-react';
 import { useAppMode } from './AppModeContext.tsx';
 import { ConnectionSettings } from './ConnectionSettings.tsx';
 
@@ -73,9 +73,11 @@ export function AppModeGate() {
     <main className="app-mode-gate">
       <div className="app-mode-gate__content">
         <header className="app-mode-gate__brand">
-          <div className="home-brand" aria-label="聚乐桌">
-            <span className="home-brand__tile" aria-hidden="true">聚</span>
-            <span className="home-brand__name">聚乐桌</span>
+          <div className="home-brand" aria-label="聚乐桌游">
+            <span className="home-brand__tile" aria-hidden="true">
+              <img src="/icon-192.png" alt="" className="home-brand__img" />
+            </span>
+            <span className="home-brand__name">聚乐桌游</span>
           </div>
           <p className="app-mode-gate__eyebrow">扫码即玩 · 手机就是专属手牌</p>
           <h1 className="app-mode-gate__title">选择这台设备的身份</h1>

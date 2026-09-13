@@ -7,6 +7,7 @@ import { GameCountdown, PhaseLead } from './GameChrome.tsx';
 import { nameFor } from './useGameAction.ts';
 import { UserAvatar } from '../user/UserAvatar.tsx';
 import { useUserProfile } from '../user/UserProfileContext.tsx';
+import { resolveMemberAvatar } from '../user/avatar.ts';
 import type { UndercoverPlayerView, PublicPlayerInfo } from './types.ts';
 
 interface Props { view: UndercoverPlayerView; }
@@ -51,7 +52,7 @@ export function SpeakingView({ view }: Props) {
             <div className={`speaker-spotlight ${isMyTurn ? 'is-me' : ''}`} aria-live="polite">
               <div className="speaker-spotlight-top">
                 <UserAvatar
-                  avatar={members.find((m) => m.playerId === currentSpeakerInfo.playerId)?.avatar ?? (isMyTurn ? profile.avatar : 'preset:fox')}
+                  avatar={resolveMemberAvatar(members.find((m) => m.playerId === currentSpeakerInfo.playerId), { isMe: isMyTurn, myAvatar: profile.avatar, seat: currentSpeakerInfo.seat, playerId: currentSpeakerInfo.playerId })}
                   nickname={isMyTurn ? '我' : nameFor(members, currentSpeakerInfo.playerId) || `玩家 ${currentSpeakerInfo.seat + 1}`}
                   size={58}
                   className="speaker-avatar-box"
@@ -104,7 +105,7 @@ export function SpeakingView({ view }: Props) {
                 const isCurrent = pid === currentSpeaker;
                 const isDone = currentIndex >= 0 && idx < currentIndex;
                 const isMe = pid === myId;
-                const playerAvatar = members.find((m) => m.playerId === pid)?.avatar ?? (isMe ? profile.avatar : 'preset:fox');
+                const playerAvatar = resolveMemberAvatar(members.find((m) => m.playerId === pid), { isMe, myAvatar: profile.avatar, seat: player.seat, playerId: pid });
                 const playerName = isMe ? '我' : nameFor(members, pid) || `玩家 ${player.seat + 1}`;
 
                 return (

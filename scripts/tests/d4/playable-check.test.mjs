@@ -81,6 +81,7 @@ test('当前仓库：上架游戏均带完整授权证据 → pass', async () =>
       || ruleset.startsWith('durian/') || ruleset.startsWith('loveletter/')
       || ruleset.startsWith('cheese-thief/') || ruleset.startsWith('goose-relay/')
       || ruleset.startsWith('night-testimony/') || ruleset.startsWith('bell-clash/')
+      || ruleset.startsWith('uno/') || ruleset.startsWith('echo-judge/')
      ,
     );
   }

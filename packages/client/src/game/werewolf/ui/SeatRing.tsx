@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
 import { UserAvatar } from '../../../user/UserAvatar.tsx';
 import type { WerewolfMood, WerewolfSeatModel } from '../presentation.ts';
@@ -9,6 +10,16 @@ interface SeatRingProps {
 
 /** dense 起始人数：≥9 时启用紧凑席位卡（仅控制卡片尺寸，见 styles.css .is-dense）。 */
 const DENSE_MIN_COUNT = 9;
+
+/**
+ * 马蹄席位环的逻辑画布（px）：席位 left/top 百分比全部映射到这块固定画布，
+ * 整环再按宿主（werewolf-arena）可用空间等比缩放——底部面板开合、设备尺寸
+ * 变化时，席位相对几何恒定，只会整桌平滑缩放，不会互相挤压漂移。
+ */
+const RING_CANVAS_W = 924;
+const RING_CANVAS_H = 450;
+/** 大屏放大上限：避免席位卡随画布放大到过大。 */
+const RING_MAX_SCALE = 1.35;
 
 interface HorseshoeSplit {
   readonly top: number;
@@ -34,7 +45,8 @@ function splitHorseshoe(count: number): HorseshoeSplit {
 function horseshoePosition(index: number, count: number): CSSProperties {
   const { top, right, bottom, left } = splitHorseshoe(count);
   if (index < top) {
-    return { left: `${50 + (index - (top - 1) / 2) * 18}%`, top: '8%' };
+    // 顶行 12%：居中锚定下为半张席位卡留出上缘余量，短横屏（arena≈450px 高）也不出界
+    return { left: `${50 + (index - (top - 1) / 2) * 18}%`, top: '12%' };
   }
   if (index < top + right) {
     const span = right > 1 ? 52 / (right - 1) : 0;
@@ -144,8 +156,29 @@ export function SeatRing({
 }) {
   const count = seats.length;
   const dense = count >= DENSE_MIN_COUNT;
+  const ringRef = useRef<HTMLElement | null>(null);
+
+  // 观测宿主（werewolf-arena）可用空间，把固定逻辑画布等比缩放进去：
+  // 底部面板开合只让整桌平滑缩放，席位相对几何恒定。
+  useLayoutEffect(() => {
+    const section = ringRef.current;
+    const host = section?.parentElement;
+    if (!section || !host) return;
+    const apply = () => {
+      const rect = host.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+      const scale = Math.min(rect.width / RING_CANVAS_W, rect.height / RING_CANVAS_H, RING_MAX_SCALE);
+      section.style.setProperty('--ring-scale', scale.toFixed(4));
+    };
+    apply();
+    const observer = new ResizeObserver(apply);
+    observer.observe(host);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section
+      ref={ringRef}
       className={`seat-ring${dense ? ' is-dense' : ''} ${className}`.trim()}
       data-mood={mood}
       aria-label={`审判桌，共 ${count} 个席位`}

@@ -60,6 +60,11 @@ function toDawnBySys(state: CheeseThiefState): CheeseThiefState {
     if (!r.ok) throw new Error(r.message);
     s = r.nextState;
   }
+  if (s.phase === 'night') {
+    const r = reduceCheeseThiefState(s, { type: 'end_night' }, { now: NOW, random: deterministicContext().random });
+    if (!r.ok) throw new Error(r.message);
+    s = r.nextState;
+  }
   if (s.phase === 'accomplice_select') {
     const r = reduceCheeseThiefState(s, { type: 'auto_select_accomplice' }, { now: NOW, random: deterministicContext().random });
     if (!r.ok) throw new Error(r.message);
@@ -134,6 +139,9 @@ test('奶酪大盗 bot：非大盗在共犯选择阶段 → null', () => {
     if (!r.ok) throw new Error(r.message);
     s = r.nextState;
   }
+  const rEnd = reduceCheeseThiefState(s, { type: 'end_night' }, { now: NOW, random: deterministicContext().random });
+  if (!rEnd.ok) throw new Error(rEnd.message);
+  s = rEnd.nextState;
   assert.equal(s.phase, 'accomplice_select');
   for (const id of ['a', 'b', 'd', 'e']) {
     const action = callBot(s, id, `bot-non-thief-${id}`);
@@ -274,6 +282,9 @@ test('奶酪大盗 bot accomplice_select：5 人局大盗选 1 名共犯；reduc
     if (!r.ok) throw new Error(r.message);
     s = r.nextState;
   }
+  const rEnd = reduceCheeseThiefState(s, { type: 'end_night' }, { now: NOW, random: deterministicContext().random });
+  if (!rEnd.ok) throw new Error(rEnd.message);
+  s = rEnd.nextState;
   assert.equal(s.phase, 'accomplice_select', '5 人局相识模式应进入共犯选择');
   assert.equal(s.thiefId, 'c');
 
@@ -308,6 +319,9 @@ test('奶酪大盗 bot accomplice_select：6 人局大盗选 1 名共犯', () =>
     if (!r.ok) throw new Error(r.message);
     s = r.nextState;
   }
+  const rEnd = reduceCheeseThiefState(s, { type: 'end_night' }, { now: NOW, random: deterministicContext().random });
+  if (!rEnd.ok) throw new Error(rEnd.message);
+  s = rEnd.nextState;
   assert.equal(s.phase, 'accomplice_select');
   assert.equal(s.thiefId, 'c');
   const action = callBot(s, 'c', 'bot-accomplice-6');
@@ -316,6 +330,37 @@ test('奶酪大盗 bot accomplice_select：6 人局大盗选 1 名共犯', () =>
     assert.equal(action.accompliceIds.length, 1, '6 人局应选 1 名共犯');
     assert.equal(action.playerId, 'c');
     assert.notEqual(action.accompliceIds[0], 'c', '共犯不能是大盗');
+  }
+});
+
+test('奶酪大盗 bot accomplice_select：7 人局大盗选 2 名共犯且 reducer 接受', () => {
+  const state7 = createCheeseThiefState(
+    ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
+    { rulesetId: 'cheese_thief_classic_v1' },
+    { a: 1, b: 1, c: 2, d: 5, e: 5, f: 6, g: 6 },
+  );
+  let s = state7;
+  for (let hour = 1; hour <= 6; hour += 1) {
+    const r = reduceCheeseThiefState(s, { type: 'advance_night', hour }, { now: NOW, random: deterministicContext().random });
+    if (!r.ok) throw new Error(r.message);
+    s = r.nextState;
+  }
+  const rEnd = reduceCheeseThiefState(s, { type: 'end_night' }, { now: NOW, random: deterministicContext().random });
+  if (!rEnd.ok) throw new Error(rEnd.message);
+  s = rEnd.nextState;
+  assert.equal(s.phase, 'accomplice_select');
+  assert.equal(s.thiefId, 'c');
+  const action = callBot(s, 'c', 'bot-accomplice-7');
+  assert.ok(action, '7 人局大盗 c 在共犯选择阶段应返回动作');
+  if (action && action.type === 'select_accomplice') {
+    assert.equal(action.accompliceIds.length, 2, '7 人局应选 2 名共犯');
+    assert.equal(action.playerId, 'c');
+    assert.ok(!action.accompliceIds.includes('c'), '共犯不能是大盗');
+    const r = reduceCheeseThiefState(s, action, { now: NOW, random: deterministicContext().random });
+    assert.equal(r.ok, true, 'reducer 必须接受 bot 选择的 2 名共犯');
+    if (r.ok) {
+      assert.equal(r.nextState.accomplices.length, 2);
+    }
   }
 });
 
@@ -503,6 +548,11 @@ test('奶酪大盗 bot 冒烟：5 人局系统推进 + bot 投票直达 game_ove
     if (!r.ok) throw new Error(r.message);
     s = r.nextState;
   }
+  if (s.phase === 'night') {
+    const r = reduceCheeseThiefState(s, { type: 'end_night' }, { now: NOW, random: ctx.random });
+    if (!r.ok) throw new Error(r.message);
+    s = r.nextState;
+  }
   // 共犯兜底（5 人局相识模式）
   if (s.phase === 'accomplice_select') {
     const r = reduceCheeseThiefState(s, { type: 'auto_select_accomplice' }, { now: NOW, random: ctx.random });
@@ -581,6 +631,9 @@ test('奶酪大盗 bot 冒烟扩展：bot 参与 peek/共犯/猫狗+系统推进
     if (!r.ok) throw new Error(r.message);
     s = r.nextState;
   }
+  const rEnd2 = reduceCheeseThiefState(s, { type: 'end_night' }, { now: NOW, random: ctx.random });
+  if (!rEnd2.ok) throw new Error(rEnd2.message);
+  s = rEnd2.nextState;
   // 进入共犯选择（5 人局相识）
   assert.equal(s.phase, 'accomplice_select');
   // 大盗 c 让 bot 选共犯

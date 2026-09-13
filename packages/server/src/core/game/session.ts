@@ -529,8 +529,8 @@ export interface StartGameOutcome {
  */
 export function startGame(tx: TxContext, roomId: string, gameConfig: unknown): StartGameOutcome {
   const { db, now } = tx;
-  const room = db.prepare('SELECT status, game_id FROM rooms WHERE id = ?').get(roomId) as
-    | { status: string; game_id: string | null }
+  const room = db.prepare('SELECT status, game_id, host_player_id FROM rooms WHERE id = ?').get(roomId) as
+    | { status: string; game_id: string | null; host_player_id: string }
     | undefined;
   if (!room) throw new CommandError('ROOM_NOT_FOUND');
   if (room.status !== 'LOBBY' && room.status !== 'POST_GAME') {
@@ -555,14 +555,6 @@ export function startGame(tx: TxContext, roomId: string, gameConfig: unknown): S
     throw new CommandError('INTERNAL_ERROR', `规则集模块不可用：${moduleId}/${rulesetId}`);
   }
   const moduleConfig = (resolvedConfig as Record<string, unknown> | null | undefined) ?? {};
-  const roomRow = db.prepare('SELECT config_json FROM rooms WHERE id = ?').get(roomId) as { config_json: string } | undefined;
-  let roomConfigObj: Record<string, unknown> = {};
-  try {
-    roomConfigObj = JSON.parse(roomRow?.config_json ?? '{}');
-  } catch {
-    roomConfigObj = {};
-  }
-
   // 开局重新校验连接状态（§5.9/D-6）：只有在线玩家参与本局
   const allConnectedPlayers = (
     db
@@ -580,6 +572,14 @@ export function startGame(tx: TxContext, roomId: string, gameConfig: unknown): S
       `在线玩家需为 ${module.manifest.minPlayers}–${module.manifest.maxPlayers} 人（当前 ${allConnectedPlayers.length}）`,
     );
   }
+
+  if (rulesetId === 'werewolf_moderator_v1') {
+    const isHostConnected = Boolean(room.host_player_id && allConnectedPlayers.includes(room.host_player_id));
+    const cardPlayersCount = isHostConnected ? allConnectedPlayers.length - 1 : allConnectedPlayers.length;
+    if (cardPlayersCount < 5) {
+      throw new CommandError('ACTION_NOT_ALLOWED', '真人主持模式至少需要 1 名主持人与 5 名参与抽卡玩家（共 6 人）');
+    }
+  }
   // 全员就绪校验：未准备的在线玩家不能开局
   const notReadyCount = (
     db
@@ -595,6 +595,9 @@ export function startGame(tx: TxContext, roomId: string, gameConfig: unknown): S
 
   const rawMergedConfig: Record<string, unknown> = {
     ...moduleConfig,
+    ...(rulesetId === 'werewolf_moderator_v1' && room.host_player_id
+      ? { hostPlayerId: room.host_player_id, moderatorPlayerId: room.host_player_id }
+      : {}),
   };
   const { rulesetId: _platformRuleset, ...restConfig } = rawMergedConfig;
 
@@ -730,12 +733,6 @@ export function autoStartGame(
   const moduleId = room.game_id ?? DEFAULT_GAME_ID;
   const module = requireModule(moduleId);
 
-  let roomConfigObj: Record<string, unknown> = {};
-  try {
-    roomConfigObj = JSON.parse(room.config_json);
-  } catch {
-    roomConfigObj = {};
-  }
   const config = parseRoomGameConfig(db, roomId);
   // 幂等复检：在线玩家数达标且全员就绪，否则放弃
   const players = (

@@ -377,7 +377,7 @@ public class HostService extends Service {
         if (Build.VERSION.SDK_INT >= 26) {
             NotificationChannel channel = new NotificationChannel(
                 CHANNEL_ID, "主机服务", NotificationManager.IMPORTANCE_LOW);
-            channel.setDescription("聚乐桌局域网主机服务运行通知");
+            channel.setDescription("聚乐桌游局域网主机服务运行通知");
             NotificationManager nm = getSystemService(NotificationManager.class);
             if (nm != null) nm.createNotificationChannel(channel);
         }
@@ -387,7 +387,7 @@ public class HostService extends Service {
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26
             ? new Notification.Builder(this, CHANNEL_ID)
             : new Notification.Builder(this);
-        builder.setContentTitle("聚乐桌主机服务运行中")
+        builder.setContentTitle("聚乐桌游主机服务运行中")
             .setContentText("局域网对局服务保持后台运行，其他玩家可正常游玩")
             .setSmallIcon(R.drawable.ic_stat_host)
             .setOngoing(true);

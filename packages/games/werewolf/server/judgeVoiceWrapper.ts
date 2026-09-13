@@ -29,12 +29,18 @@ const NIGHT_CUE_DURATIONS_MS: readonly number[] = [
   1880, // 预言家请闭眼
   3080, // 守卫请睁眼守护谁
   1500, // 守卫请闭眼
+  2000, // 猎人白痴请睁眼确认身份
+  3000, // 确认间隔
+  1500, // 猎人白痴请闭眼
 ];
 /** 每段播完后的间隔：取 2-5s 的中值并固定，保证服务端确定性（客户端实际随机 2-5s）。 */
 const JUDGE_GAP_MS = 3500;
-/** 夜晚最短时限 = 全部语音 + 每段后的间隔（约 70s）。 */
+/** 夜晚最短时限 = 全部语音 + 每段后的间隔（约 85s）。 */
 export const JUDGE_NIGHT_HOLD_MS =
   NIGHT_CUE_DURATIONS_MS.reduce((sum, dur) => sum + dur, 0) + NIGHT_CUE_DURATIONS_MS.length * JUDGE_GAP_MS;
+
+/** 白天公告最短时限（天亮了+导语+最多 12 个报号+遗言提示，约 20s）。 */
+export const JUDGE_DAY_ANNOUNCEMENT_HOLD_MS = 20_000;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -45,13 +51,19 @@ function innerPhase(inner: unknown): string {
 }
 
 /**
- * 进入夜晚的那次提交：把 state.deadlineAt 与夜晚 phase_timeout 定时器
- * 补齐到 max(原时限, now + JUDGE_NIGHT_HOLD_MS)。仅在夜幕降临时执行一次，
- * 夜晚进行中的后续提交不再顺延（保持原有节奏预算语义）。
+ * 通用阶段时长保底：进入特定阶段的那次提交，把 state.deadlineAt 与对应阶段的
+ * phase_timeout 定时器补齐到 max(原时限, now + holdMs)。
  */
-function applyNightHold(prevInner: unknown, nextInner: unknown, ctx: GameContext, effects: readonly GameEffect[]): GameEffect[] {
-  if (innerPhase(prevInner) === 'night' || innerPhase(nextInner) !== 'night') return [];
-  const minDeadline = ctx.now + JUDGE_NIGHT_HOLD_MS;
+function applyPhaseHold(
+  phaseName: string,
+  holdMs: number,
+  prevInner: unknown,
+  nextInner: unknown,
+  ctx: GameContext,
+  effects: readonly GameEffect[],
+): GameEffect[] {
+  if (innerPhase(prevInner) === phaseName || innerPhase(nextInner) !== phaseName) return [];
+  const minDeadline = ctx.now + holdMs;
   if (!isRecord(nextInner) || typeof nextInner.deadlineAt !== 'number' || nextInner.deadlineAt >= minDeadline) return [];
   const patched = minDeadline;
   nextInner.deadlineAt = patched;
@@ -59,7 +71,7 @@ function applyNightHold(prevInner: unknown, nextInner: unknown, ctx: GameContext
   const next = effects.map((effect) => {
     if (patchedEffects || effect.type !== 'schedule_timer') return effect;
     const action = (effect as { action?: unknown }).action;
-    if (!isRecord(action) || action.phase !== 'night') return effect;
+    if (!isRecord(action) || action.phase !== phaseName) return effect;
     patchedEffects = true;
     return { ...effect, deadlineAt: patched };
   });
@@ -77,13 +89,13 @@ export function wrapLegacyWithJudgeVoice<C, S, A, PV, SV, E, R>(
     reduce(ctx, state, actor, action) {
       const probe = inner.reduce(ctx, state, actor, action);
       if (!probe.ok) return probe;
-      const effects = applyNightHold(state, probe.state, ctx, probe.effects);
-      return { ...probe, effects };
+      const effects = applyPhaseHold('night', JUDGE_NIGHT_HOLD_MS, state, probe.state, ctx, probe.effects);
+      return { ...probe, effects: effects.length > 0 ? effects : probe.effects };
     },
   };
 }
 
-/** v2 模块包装：同 legacy，仅拦截 reduce 结果做夜晚时限补齐，其余字段原样透传。 */
+/** v2 模块包装：拦截 reduce 结果做夜晚及天亮公告时限保底，其余字段原样透传。 */
 export function wrapV2WithJudgeVoice<C, S, A, PV, SV, E, R>(
   inner: GameModuleV2<C, S, A, PV, SV, E, R>,
 ): GameModuleV2<C, S, A, PV, SV, E, R> {
@@ -92,7 +104,10 @@ export function wrapV2WithJudgeVoice<C, S, A, PV, SV, E, R>(
     reduce(ctx, state, actor, action) {
       const probe = inner.reduce(ctx, state, actor, action);
       if (!probe.ok) return probe;
-      const effects = applyNightHold(state, probe.nextState, ctx, probe.effects);
+      let effects: readonly GameEffect[] = applyPhaseHold('night', JUDGE_NIGHT_HOLD_MS, state, probe.nextState, ctx, probe.effects);
+      if (effects.length === 0) effects = probe.effects;
+      const dayEffects = applyPhaseHold('day_announcement', JUDGE_DAY_ANNOUNCEMENT_HOLD_MS, state, probe.nextState, ctx, effects);
+      if (dayEffects.length > 0) effects = dayEffects;
       return { ...probe, effects };
     },
   };

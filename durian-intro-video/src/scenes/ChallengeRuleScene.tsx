@@ -10,7 +10,7 @@ import { JungleBackground } from './TitleScene';
 import { BellGraphic } from '../components/BellGraphic';
 import { GorillaManager } from '../components/GorillaManager';
 import { ShowdownBoard } from '../components/ShowdownBoard';
-import { BG, BORDER, SHADOW, RADIUS, COLOR, FONT, FRUIT_COLORS, cardPanel, glassPanel, pillTag } from '../lib/theme';
+import { COLOR, FONT, cardPanel, glassPanel, pillTag } from '../lib/theme';
 import { fadeInOut } from '../lib/transitions';
 
 export const ChallengeRuleScene: React.FC = () => {

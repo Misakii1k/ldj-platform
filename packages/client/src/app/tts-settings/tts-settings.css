@@ -1,0 +1,522 @@
+/* ════════════════════════════════════════════════════════════════
+   TTS 语音设置（TtsSettings）：实体复古纸质桌游统一风格
+   ════════════════════════════════════════════════════════════════ */
+
+.tts-settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: var(--home-ink, #312d28);
+  font-family: inherit;
+}
+
+/* ════ 1. 状态总览卡片 ════ */
+.tts-status-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #fffaf1;
+  border: 2px solid var(--home-ink, #312d28);
+  box-shadow: 3px 4px 0 var(--home-ink, #312d28);
+}
+
+.tts-status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tts-status-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.94rem;
+  font-weight: 900;
+  color: var(--home-ink, #312d28);
+}
+
+.tts-status-title svg {
+  color: var(--home-green, #0c715d);
+}
+
+.tts-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.tts-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--home-ink, #312d28);
+  display: inline-block;
+  flex-shrink: 0;
+  background: #35ad7a;
+}
+
+.tts-status-text {
+  color: #055848;
+  font-weight: 800;
+}
+
+.tts-status-desc {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--home-muted, #6f665d);
+  font-weight: 600;
+}
+
+/* ════ 2. 引擎选择区 ════ */
+.tts-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tts-section-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.92rem;
+  font-weight: 900;
+  color: var(--home-ink, #312d28);
+}
+
+.tts-engine-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 620px) {
+  .tts-engine-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 统一卡片选择器 (.choice-card) */
+.tts-engine-grid .choice-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 2px solid var(--home-ink, #312d28);
+  background: #fff;
+  box-shadow: 2px 3px 0 var(--home-ink, #312d28);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.16s ease;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.tts-engine-grid .choice-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 2px 5px 0 var(--home-ink, #312d28);
+}
+
+.tts-engine-grid .choice-card.is-selected {
+  background: #ecfdf5;
+  border-color: #059669;
+  box-shadow: 0 0 0 2px #10b981, 2px 3px 0 var(--home-ink, #312d28);
+}
+
+.tts-engine-grid .choice-card-header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+}
+
+.tts-engine-grid .choice-card-icon {
+  flex-shrink: 0;
+  color: var(--home-ink, #312d28);
+  transition: color 0.16s ease;
+}
+
+.tts-engine-grid .choice-card.is-selected .choice-card-icon {
+  color: #059669;
+}
+
+.tts-engine-grid .choice-card-title {
+  font-size: 0.88rem;
+  font-weight: 900;
+  color: var(--home-ink, #312d28);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tts-engine-grid .choice-badge {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: #059669;
+  background: #d1fae5;
+  border-radius: 999px;
+  padding: 2px 8px;
+  line-height: 1.2;
+  flex-shrink: 0;
+}
+
+.tts-engine-grid .choice-badge.is-active-badge {
+  background: #bbf7d0;
+  color: #166534;
+}
+
+.tts-engine-grid .choice-card-desc {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.35;
+  color: var(--home-muted, #6f665d);
+}
+
+/* ════ 3. 参数配置子面板 ════ */
+.tts-subpanel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  background: #fffdf8;
+  border: 2px solid var(--home-ink, #312d28);
+  box-shadow: 2px 3px 0 var(--home-ink, #312d28);
+  border-radius: 16px;
+}
+
+/* 提示通知条 */
+.tts-tip-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #fff8eb;
+  border: 1.5px solid #fed7aa;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #9a3412;
+  font-weight: 600;
+}
+
+.tts-tip-banner svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #ea580c;
+}
+
+/* 表单组 */
+.tts-subpanel .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tts-subpanel .form-group label {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: var(--home-ink, #312d28);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tts-input {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 2px solid var(--home-ink, #312d28);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--home-ink, #312d28);
+  background: #fff;
+  box-shadow: 1px 2px 0 var(--home-ink, #312d28);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+  font-family: inherit;
+}
+
+.tts-input:focus {
+  border-color: var(--home-green, #0c715d);
+  background: #fff;
+}
+
+.tts-hint {
+  font-size: 0.74rem;
+  color: var(--home-muted, #6f665d);
+  font-weight: 600;
+}
+
+/* ════ 4. 触觉复古滑块 (Tactile Range Sliders) ════ */
+.form-row-sliders {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 480px) {
+  .form-row-sliders {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+.tts-slider-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.tts-slider-title {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: var(--home-ink, #312d28);
+}
+
+.tts-slider-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #fff5e6;
+  border: 1.5px solid var(--home-ink, #312d28);
+  font-size: 0.76rem;
+  font-weight: 900;
+  color: var(--home-ink, #312d28);
+  font-variant-numeric: tabular-nums;
+  box-shadow: 1px 1px 0 var(--home-ink, #312d28);
+}
+
+.tactile-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: #f3ede2;
+  border: 2px solid var(--home-ink, #312d28);
+  outline: none;
+  margin: 6px 0;
+  cursor: pointer;
+}
+
+.tactile-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--home-yellow, #f8c822);
+  border: 2px solid var(--home-ink, #312d28);
+  box-shadow: 1px 2px 0 var(--home-ink, #312d28);
+  cursor: grab;
+  transition: transform 0.12s ease;
+}
+
+.tactile-range::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.tactile-range::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  background: #eab308;
+}
+
+.tactile-range::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--home-yellow, #f8c822);
+  border: 2px solid var(--home-ink, #312d28);
+  box-shadow: 1px 2px 0 var(--home-ink, #312d28);
+  cursor: grab;
+  transition: transform 0.12s ease;
+}
+
+.tactile-range::-moz-range-thumb:hover {
+  transform: scale(1.15);
+}
+
+.tactile-range::-moz-range-thumb:active {
+  cursor: grabbing;
+  background: #eab308;
+}
+
+/* ════ 5. API 快速预设与输入辅助 ════ */
+.tts-preset-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.tts-preset-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--home-muted, #6f665d);
+}
+
+.tts-preset-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--home-ink, #312d28);
+  background: #fff;
+  box-shadow: 1px 2px 0 var(--home-ink, #312d28);
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--home-ink, #312d28);
+  cursor: pointer;
+  transition: all 0.12s ease;
+  font-family: inherit;
+}
+
+.tts-preset-chip:hover {
+  transform: translateY(-1px);
+  background: #fef08a;
+  box-shadow: 1px 3px 0 var(--home-ink, #312d28);
+}
+
+.tts-key-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.tts-key-input-wrap .tts-input {
+  padding-right: 40px;
+}
+
+.tts-key-toggle-btn {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  color: var(--home-muted, #6f665d);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 0.12s ease;
+}
+
+.tts-key-toggle-btn:hover {
+  color: var(--home-ink, #312d28);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 480px) {
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* ════ 6. 底部操作栏 ════ */
+.tts-actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 4px;
+}
+
+@media (max-width: 480px) {
+  .tts-actions-bar {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  .tts-actions-bar button {
+    width: 100%;
+  }
+}
+
+.tts-test-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 2px solid var(--home-ink, #312d28);
+  background: #fff;
+  box-shadow: 2px 3px 0 var(--home-ink, #312d28);
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--home-ink, #312d28);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.tts-test-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 2px 4px 0 var(--home-ink, #312d28);
+  background: #fef3c7;
+}
+
+.tts-test-btn.is-playing {
+  background: #fef08a;
+  border-color: #b45309;
+  color: #92400e;
+  animation: tts-pulse 1.4s infinite ease-in-out;
+}
+
+@keyframes tts-pulse {
+  0%, 100% {
+    box-shadow: 2px 3px 0 var(--home-ink, #312d28);
+  }
+  50% {
+    box-shadow: 0 0 0 3px #fde047, 2px 4px 0 var(--home-ink, #312d28);
+  }
+}
+
+.tts-save-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border-radius: 999px;
+  border: 2px solid var(--home-ink, #312d28);
+  background: var(--home-yellow, #f8c822);
+  box-shadow: 2px 3px 0 var(--home-ink, #312d28);
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: var(--home-ink, #312d28);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.tts-save-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 2px 4px 0 var(--home-ink, #312d28);
+  background: #fcd34d;
+}
+
+.tts-save-btn:active:not(:disabled),
+.tts-test-btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 1px 1px 0 var(--home-ink, #312d28);
+}

@@ -1,0 +1,5 @@
+/* 斗地主：中心焦点板（叫分 / 自由出牌轮次） */
+.landlord-nexus-board {
+  width: min(100%, 420px);
+  margin: 0 auto;
+}

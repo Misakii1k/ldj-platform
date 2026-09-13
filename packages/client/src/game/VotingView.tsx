@@ -7,6 +7,7 @@ import { GameCountdown, PhaseLead } from './GameChrome.tsx';
 import { nameFor } from './useGameAction.ts';
 import { UserAvatar } from '../user/UserAvatar.tsx';
 import { useUserProfile } from '../user/UserProfileContext.tsx';
+import { resolveMemberAvatar } from '../user/avatar.ts';
 import type { UndercoverPlayerView, PublicPlayerInfo } from './types.ts';
 
 interface Props { view: UndercoverPlayerView; }
@@ -84,13 +85,13 @@ export function VotingView({ view }: Props) {
                   style={{ '--stagger-index': index } as CSSProperties}
                 >
                   <UserAvatar
-                    avatar={members.find((m) => m.playerId === candidateId)?.avatar ?? (isSelf ? profile.avatar : 'preset:fox')}
-                    nickname={isSelf ? '我' : nameFor(members, candidateId) || `玩家 ${player.seat + 1}`}
+                    avatar={resolveMemberAvatar(members.find((m) => m.playerId === candidateId), { isMe: isSelf, myAvatar: profile.avatar, seat: player.seat, playerId: candidateId })}
+                    nickname={isSelf ? '我' : nameFor(members, candidateId) || `${player.seat + 1} 号玩家`}
                     size={46}
                     className="vote-avatar-box"
                   />
                   <span className="vote-seat">#{player.seat + 1}</span>
-                  <span className="vote-name">{isSelf ? '我' : nameFor(members, candidateId) || `玩家 ${player.seat + 1}`}</span>
+                  <span className="vote-name">{isSelf ? '我' : nameFor(members, candidateId) || `${player.seat + 1} 号玩家`}</span>
                   <span className={`vote-tag ${isMyVote ? 'voted-tag' : ''}`}>
                     {isMyVote ? '已投此人' : isSelf ? '不能投自己' : '点击投票'}
                   </span>

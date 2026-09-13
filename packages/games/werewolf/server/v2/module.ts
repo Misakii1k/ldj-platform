@@ -17,10 +17,11 @@ import {
 import { v2ConfigSchema, v2PlayerViewSchema, v2PublicViewSchema } from './schemas.ts';
 import { buildV2BotPrompt } from './botPrompt.ts';
 import { pickV2BotAction } from './bot.ts';
+import { wrapV2WithJudgeVoice } from '../judgeVoiceWrapper.ts';
 
 export const WEREWOLF_V2_IDENTITY = { engineContractVersion: 2, rulesetId: 'werewolf_platform_open_kill_v1', viewVersion: 1 } as const;
 
-export const werewolfV2Module: GameModuleV2<V2Config, V2State, V2Action, V2PlayerView, V2PublicView, V2Event, V2Result> = {
+const rawWerewolfV2Module: GameModuleV2<V2Config, V2State, V2Action, V2PlayerView, V2PublicView, V2Event, V2Result> = {
   manifest: { id: 'werewolf', version: '0.2.0', displayName: '狼人杀', minPlayers: 6, maxPlayers: 12, stateSchemaVersion: 1 },
   identity: WEREWOLF_V2_IDENTITY,
   registeredRulesets: ['werewolf_platform_open_kill_v1'],
@@ -39,3 +40,5 @@ export const werewolfV2Module: GameModuleV2<V2Config, V2State, V2Action, V2Playe
   pickBotAction: pickV2BotAction,
   buildBotPrompt: buildV2BotPrompt,
 };
+
+export const werewolfV2Module = wrapV2WithJudgeVoice(rawWerewolfV2Module);

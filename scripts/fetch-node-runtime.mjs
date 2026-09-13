@@ -36,7 +36,9 @@ async function fetchTo(url, dest) {
     try {
       const s = await stat(dest);
       if (s.size > 0) return;
-    } catch {}
+    } catch {
+      // 文件不存在则继续下载
+    }
   }
   console.log(`下载 ${url}`);
   const res = await fetch(url);

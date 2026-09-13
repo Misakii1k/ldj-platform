@@ -19,7 +19,7 @@ const cheeseThiefConfigSchema = z
     mode: z.enum(['standard', 'simulator']).default('standard'),
     roleRevealSeconds: seconds.default(17),
     nightHourSeconds: seconds.default(20),
-    accompliceSelectSeconds: seconds.default(15),
+    accompliceSelectSeconds: seconds.default(17),
     discussionSeconds: seconds.default(120),
     voteSeconds: seconds.default(30),
     hourChoiceSeconds: seconds.default(30),
@@ -39,6 +39,7 @@ const cheeseThiefActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('choose_hour'), playerId: pid, hour }).strict('动作 字段无效'),
   z.object({ type: z.literal('resolve_hour_choice') }).strict('动作 字段无效'),
   z.object({ type: z.literal('advance_night'), hour }).strict('动作 字段无效'),
+  z.object({ type: z.literal('end_night') }).strict('动作 字段无效'),
   z.object({ type: z.literal('steal_cheese'), playerId: pid }).strict('动作 字段无效'),
   z.object({ type: z.literal('peek_die'), playerId: pid, targetPlayerId: pid }).strict('动作 字段无效'),
   z.object({ type: z.literal('skip_peek'), playerId: pid }).strict('动作 字段无效'),
@@ -51,6 +52,7 @@ const cheeseThiefActionSchema = z.discriminatedUnion('type', [
     .strict('动作 字段无效'),
   z.object({ type: z.literal('auto_select_accomplice') }).strict('动作 字段无效'),
   z.object({ type: z.literal('end_discussion') }).strict('动作 字段无效'),
+  z.object({ type: z.literal('skip_discussion'), playerId: pid.optional() }).strict('动作 字段无效'),
   z
     .object({ type: z.literal('reveal_cat'), playerId: pid, targetPlayerId: pid })
     .strict('动作 字段无效'),

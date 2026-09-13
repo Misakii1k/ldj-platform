@@ -8,6 +8,8 @@ dist/
 data/*.db
 data/*.db-wal
 data/*.db-shm
+# 服务端启动时写入的运行时状态（pid / LAN IP），不入库
+data/boot.json
 
 # UI 调试截图
 /*.png
@@ -63,3 +65,14 @@ d7-shots/
 # APP 内嵌服务器载荷与抓取缓存（构建产物，由 scripts/fetch-node-runtime.mjs 再生）
 /build/
 durian-intro-video/build/
+
+# 模拟器/视觉审计截图（大体积产物，不入库）
+/screenshots/
+
+# 语音素材工作副本（正式资产在 packages/client/public 下）
+/奶酪大盗语音/
+/奶酪大盗语音_完整版/
+/狼人杀语音/
+
+# 临时测量日志
+/measure-log*.txt

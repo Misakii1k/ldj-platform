@@ -32,7 +32,7 @@ export function parseBellClashSimConfig(input: unknown): ResolvedBellClashSimCon
   return { rulesetId: 'bell_clash_sim_v1', handSize };
 }
 
-export interface SimRandom extends RandomSource {}
+export type SimRandom = RandomSource;
 
 const deny = (message: string) => ({ ok: false as const, code: 'ACTION_NOT_ALLOWED', message });
 

@@ -4,6 +4,7 @@ import { Clock, Gamepad2, Home, LogOut, Play, RotateCcw } from 'lucide-react';
 import { useConnection } from '../connection/useConnection.ts';
 import { UserAvatar } from '../user/UserAvatar.tsx';
 import { useUserProfile } from '../user/UserProfileContext.tsx';
+import { resolveMemberAvatar } from '../user/avatar.ts';
 import { nameFor } from './useGameAction.ts';
 
 export function TabletopSettlementDock() {
@@ -131,7 +132,7 @@ export function TabletopSettlementDock() {
           <div className="settlement-dock-players" aria-label="玩家准备进度">
             {playerMembers.map((m) => {
               const isSelf = m.playerId === me?.playerId;
-              const avatar = m.avatar ?? (isSelf ? profile.avatar : 'preset:fox');
+              const avatar = resolveMemberAvatar(m, { isMe: isSelf, myAvatar: profile.avatar });
               const name = isSelf ? '我' : nameFor(members, m.playerId);
               const isReady = Boolean(m.ready);
 

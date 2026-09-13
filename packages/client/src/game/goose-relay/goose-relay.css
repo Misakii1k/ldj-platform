@@ -1,0 +1,51 @@
+/* 以鹅传鹅：焦点式竞技场
+   接力轨升为中央焦点（ArenaRail），卡牌坞与投票板走 ArenaBoard，指认记录只保留一份。 */
+.goose-game-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.goose-focal {
+  width: 100%;
+}
+
+.goose-claim-hero-cta {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #78350f;
+}
+
+.goose-track-rail {
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.goose-accusations-history {
+  padding: 10px 12px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-md);
+  background: color-mix(in srgb, var(--gp-surface) 88%, transparent);
+  box-shadow: var(--gp-shadow-sm);
+}
+
+.goose-accusations-history__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.goose-accusations-history__head h3 {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 900;
+  color: var(--gp-ink);
+}
+
+.goose-accusations-history__head span {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--gp-muted);
+}

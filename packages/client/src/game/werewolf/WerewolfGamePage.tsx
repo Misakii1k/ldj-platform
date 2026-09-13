@@ -2,6 +2,7 @@
  * 狼人杀页：月相审判桌。
  */
 import { useConnection } from '../../connection/useConnection.ts';
+import { useUserProfile } from '../../user/UserProfileContext.tsx';
 import { useGameAction } from '../useGameAction.ts';
 import { buildWerewolfPresentation } from './presentation.ts';
 import { parseWerewolfView } from './types.ts';
@@ -11,6 +12,7 @@ import '../focused-game-motion.css';
 export function WerewolfGamePage({ view: rawView }: { view: unknown }) {
   const view = parseWerewolfView(rawView);
   const { state } = useConnection();
+  const { profile } = useUserProfile();
   const { act, busy, error } = useGameAction();
 
   if (view === null) {
@@ -26,7 +28,7 @@ export function WerewolfGamePage({ view: rawView }: { view: unknown }) {
     );
   }
 
-  const model = buildWerewolfPresentation(view, state.room?.members ?? [], state.chat);
+  const model = buildWerewolfPresentation(view, state.room?.members ?? [], state.chat, profile.avatar);
 
   return (
     <WerewolfStage

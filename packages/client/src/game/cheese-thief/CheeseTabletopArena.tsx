@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
+import { useCountdown } from '../../shared-ui/useCountdown.ts';
 import type { CheeseThiefPlayerView, CheeseThiefPublicView } from './types.ts';
+import { CheeseGameOverReveal } from './CheeseGameOverReveal.tsx';
 
 interface RoomMemberInfo {
   playerId: string;
@@ -12,6 +14,7 @@ interface CheeseTabletopArenaProps {
   myId: string | null;
   members: RoomMemberInfo[];
   onStealCheese?: () => void;
+  onSkipDiscussion?: () => void;
   ttsEnabled?: boolean;
   onToggleTts?: () => void;
 }
@@ -21,6 +24,7 @@ export function CheeseTabletopArena({
   myId: _myId,
   members,
   onStealCheese,
+  onSkipDiscussion,
   ttsEnabled = true,
   onToggleTts,
 }: CheeseTabletopArenaProps) {
@@ -41,6 +45,11 @@ export function CheeseTabletopArena({
   const cheeseGone = view.cheeseStolen || (view.reveal ? Boolean(view.reveal.thiefId) : false);
   const showStolenScene = cheeseGone && (isDawn || isVote || isGameOver);
 
+  const countdown = useCountdown(view.deadlineAt);
+  const mm = Math.floor(countdown.secondsLeft / 60);
+  const ss = countdown.secondsLeft % 60;
+  const timeFormatted = `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+
   const handleSteal = () => {
     if (!isNight || cheeseGone || stealSubmitting) return;
     setStealSubmitting(true);
@@ -50,27 +59,58 @@ export function CheeseTabletopArena({
     submitLatchRef.current = window.setTimeout(() => setStealSubmitting(false), 1200);
   };
 
+  // 计票数据提取
+  const voteCounts: Record<string, number> = {};
+  const voteFrom: Record<string, string[]> = {};
+  const abstainList: string[] = [];
+  if (view.votes) {
+    for (const [voterId, v] of Object.entries(view.votes)) {
+      if (v.kind === 'accuse') {
+        voteCounts[v.targetPlayerId] = (voteCounts[v.targetPlayerId] ?? 0) + 1;
+        if (!voteFrom[v.targetPlayerId]) voteFrom[v.targetPlayerId] = [];
+        voteFrom[v.targetPlayerId]!.push(voterId);
+      } else if (v.kind === 'abstain') {
+        abstainList.push(voterId);
+      }
+    }
+  }
+  const totalVoted = view.votes ? Object.keys(view.votes).length : 0;
+
   return (
     <div className="cheese-tabletop-arena" data-phase={view.phase}>
       {/* 顶部中央时钟与法官状态 */}
       <div className="cheese-arena-header">
-        <div className="cheese-hour-track">
-          {[1, 2, 3, 4, 5, 6].map((hour) => {
-            const isCurrent = isNight && view.currentHour === hour;
-            const isPast = isNight && view.currentHour > hour;
-            return (
-              <div
-                key={hour}
-                className={`cheese-hour-node ${isCurrent ? 'is-current' : ''} ${isPast ? 'is-past' : ''}`}
-              >
-                <span className="cheese-hour-node__badge">{hour} 点</span>
-                <span className="cheese-hour-node__status">
-                  {isCurrent ? '醒来' : isPast ? '✓ 已过' : '沉睡'}
-                </span>
+        {isNight ? (
+          <div className="cheese-hour-track">
+            {[1, 2, 3, 4, 5, 6].map((hour) => {
+              const isCurrent = isNight && view.currentHour === hour;
+              const isPast = isNight && view.currentHour > hour;
+              return (
+                <div
+                  key={hour}
+                  className={`cheese-hour-node ${isCurrent ? 'is-current' : ''} ${isPast ? 'is-past' : ''}`}
+                >
+                  <span className="cheese-hour-node__badge">{hour} 点</span>
+                  <span className="cheese-hour-node__status">
+                    {isCurrent ? '醒来' : isPast ? '✓ 已过' : '沉睡'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="cheese-phase-countdown-bar">
+            <span className="cheese-phase-name-badge">
+              {isDawn ? '☀️ 白天自由讨论' : isVote ? '🗳️ 全体投票指认' : '🏁 终局结算'}
+            </span>
+            {view.deadlineAt && (
+              <div className="cheese-countdown-pill" aria-label="剩余时间">
+                <span className="cheese-countdown-pill__label">倒计时</span>
+                <strong className="cheese-countdown-pill__time">{timeFormatted}</strong>
               </div>
-            );
-          })}
-        </div>
+            )}
+          </div>
+        )}
 
         {onToggleTts && (
           <button
@@ -84,100 +124,143 @@ export function CheeseTabletopArena({
         )}
       </div>
 
-      {/* 中央桌台案发区：大奶酪盘 */}
-      <div className="cheese-center-table">
-        <div className="cheese-wood-platter">
-          <div className={`cheese-cloth ${showStolenScene ? 'is-stolen' : ''}`}>
-            {isNight ? (
-              <div className="cheese-night-stage">
-                {cheeseGone ? (
-                  /* 偷取成功：空盘展示并保持到天亮（不可放回、不可重复偷） */
-                  <div className="cheese-model-3d-btn is-stolen" aria-live="polite">
-                    <div className="cheese-model-3d">
-                      <span className="cheese-model-emoji" aria-hidden="true"></span>
-                    </div>
-                    <div className="cheese-steal-status-badge">
-                      <span className="badge-stolen">✓ 奶酪已被悄悄取走</span>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    className={`cheese-model-3d-btn ${stealSubmitting ? 'is-submitting' : ''}`}
-                    onClick={handleSteal}
-                    disabled={stealSubmitting}
-                    title="【桌面交互】大盗在自己醒来的时刻点击偷走奶酪"
-                  >
-                    <div className="cheese-model-3d">
-                      <span className="cheese-model-emoji" aria-hidden="true">🧀</span>
-                      <div className="cheese-glow" />
-                    </div>
-                    <div className="cheese-steal-status-badge">
-                      <span className="badge-ready">触摸/点击偷走奶酪</span>
-                    </div>
-                  </button>
-                )}
-                <p className="cheese-night-guide">
-                  {view.currentHour === 0 ? '夜幕降临…准备开始报时' : `当前时刻：${view.currentHour} 点`}
-                  <span className="cheese-night-guide__rule">只有大盗在自己醒来的时刻才能取走，其他玩家无法偷走</span>
-                </p>
-              </div>
-            ) : showStolenScene ? (
-              <div className="cheese-stolen-stage">
-                <div className="cheese-stolen-crumbs">
-                  <span className="crumbs-emoji">🍽️</span>
-                  <span className="crumbs-warning">奶酪不见了！</span>
-                </div>
-                <div className="cheese-crime-alert">
-                  <strong>案发现场：</strong>桌上的大奶酪已被大盗偷吃！请找出真凶！
-                </div>
-              </div>
-            ) : (
-              <div className="cheese-safe-stage">
-                <span className="cheese-model-emoji">🧀</span>
-                <p className="cheese-safe-text">奶酪安然无恙（无人偷窃）</p>
-              </div>
-            )}
+      {/* 白天讨论阶段：操作入口与倒计时条 */}
+      {isDawn && (
+        <div className="cheese-dawn-control-banner">
+          <div className="cheese-dawn-info">
+            <h4>白天自由讨论中</h4>
+            <p>讨论时间到将自动进入投票，也可由桌面端提前开启投票。</p>
           </div>
+          {onSkipDiscussion && (
+            <button
+              type="button"
+              className="cheese-skip-discussion-btn"
+              onClick={onSkipDiscussion}
+              title="提前结束讨论，全员手机端将立即弹出投票窗口"
+            >
+              <span className="btn-icon" aria-hidden="true">🗳️</span>
+              <span className="btn-main-text">进入投票环节</span>
+              <span className="btn-sub-text">（全员手机弹出投票窗口）</span>
+            </button>
+          )}
         </div>
-      </div>
+      )}
 
-      {/* 终局真相大揭秘 */}
-      {isGameOver && view.reveal && (
-        <div className="cheese-table-settlement-card">
-          <div className="cheese-settlement-header">
-            <h3>案情水落石出 · 终局真相披露</h3>
-            <span className="cheese-settlement-tag">
-              {view.thiefCaught ? '大盗被捕 · 好人胜利' : '大盗得逞 · 盗匪胜利'}
-            </span>
-          </div>
-          <div className="cheese-settlement-body">
-            <div className="cheese-settlement-row">
-              <strong>真凶大盗：</strong>
-              <span>{nameFor(view.reveal.thiefId)}（在 {view.reveal.stealHour ?? '?'} 点偷走奶酪）</span>
+      {/* 投票环节：桌面端实时计票大屏 */}
+      {isVote && (
+        <div className="cheese-table-vote-board">
+          <div className="cheese-vote-board-header">
+            <div className="cheese-vote-board-title-group">
+              <h3>全员投票指认大盗</h3>
+              <span className="cheese-vote-progress-badge">已投票 {totalVoted} / {view.players.length} 人</span>
             </div>
-            {(view.reveal.accomplices ?? []).length > 0 && (
-              <div className="cheese-settlement-row">
-                <strong>同谋共犯：</strong>
-                <span>{(view.reveal.accomplices ?? []).map((id) => nameFor(id)).join('、')}</span>
+            <p className="cheese-vote-board-hint">玩家在手机端弹出窗口投票，桌面端实时统计并公开票数及投票人</p>
+          </div>
+
+          <div className="cheese-vote-card-grid">
+            {view.players.map((pid) => {
+              const count = voteCounts[pid] ?? 0;
+              const voters = voteFrom[pid] ?? [];
+              return (
+                <div key={pid} className={`cheese-vote-tally-card ${count > 0 ? 'is-voted' : ''}`}>
+                  <div className="cheese-tally-card-head">
+                    <span className="cheese-tally-name">{nameFor(pid)}</span>
+                    <span className={`cheese-tally-badge ${count > 0 ? 'is-active' : ''}`}>
+                      {count} 票
+                    </span>
+                  </div>
+                  <div className="cheese-tally-voters">
+                    {voters.length > 0 ? (
+                      voters.map((vid) => (
+                        <span key={vid} className="cheese-voter-chip" title={`${nameFor(vid)} 投了此玩家`}>
+                          {nameFor(vid)}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="cheese-voter-chip--empty">暂无指认</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {abstainList.length > 0 && (
+            <div className="cheese-abstain-banner">
+              <span className="cheese-abstain-label">弃票玩家 ({abstainList.length})：</span>
+              <div className="cheese-abstain-names">
+                {abstainList.map((aid) => (
+                  <span key={aid} className="cheese-abstain-chip">{nameFor(aid)}</span>
+                ))}
               </div>
-            )}
-            <div className="cheese-settlement-peeks">
-              <strong>独醒目击线索：</strong>
-              {(view.reveal.peeks ?? []).length > 0 ? (
-                <ul>
-                  {(view.reveal.peeks ?? []).map((p, idx) => (
-                    <li key={idx}>
-                      {nameFor(p.viewer)} 偷看了 {nameFor(p.target)} 的骰子（{view.reveal?.wakeHours[p.target]} 点）
-                    </li>
-                  ))}
-                </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 中央桌台案发区：大奶酪盘（夜晚与天亮背景展示） */}
+      {!isVote && (
+        <div className="cheese-center-table">
+          <div className="cheese-wood-platter">
+            <div className={`cheese-cloth ${showStolenScene ? 'is-stolen' : ''}`}>
+              {isNight ? (
+                <div className="cheese-night-stage">
+                  {cheeseGone ? (
+                    /* 偷取成功：空盘展示并保持到天亮（不可放回、不可重复偷） */
+                    <div className="cheese-model-3d-btn is-stolen" aria-live="polite">
+                      <div className="cheese-model-3d">
+                        <span className="cheese-model-emoji" aria-hidden="true"></span>
+                      </div>
+                      <div className="cheese-steal-status-badge">
+                        <span className="badge-stolen">✓ 奶酪已被悄悄取走</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className={`cheese-model-3d-btn ${stealSubmitting ? 'is-submitting' : ''}`}
+                      onClick={handleSteal}
+                      disabled={stealSubmitting}
+                      title="【桌面交互】大盗在自己醒来的时刻点击偷走奶酪"
+                    >
+                      <div className="cheese-model-3d">
+                        <span className="cheese-model-emoji" aria-hidden="true">🧀</span>
+                        <div className="cheese-glow" />
+                      </div>
+                      <div className="cheese-steal-status-badge">
+                        <span className="badge-ready">触摸/点击偷走奶酪</span>
+                      </div>
+                    </button>
+                  )}
+                  <p className="cheese-night-guide">
+                    {view.currentHour === 0 ? '夜幕降临…准备开始报时' : `当前时刻：${view.currentHour} 点`}
+                    <span className="cheese-night-guide__rule">只有大盗在自己醒来的时刻才能取走，其他玩家无法偷走</span>
+                  </p>
+                </div>
+              ) : showStolenScene ? (
+                <div className="cheese-stolen-stage">
+                  <div className="cheese-stolen-crumbs">
+                    <span className="crumbs-emoji">🍽️</span>
+                    <span className="crumbs-warning">奶酪不见了！</span>
+                  </div>
+                  <div className="cheese-crime-alert">
+                    <strong>案发现场：</strong>桌上的大奶酪已被大盗偷吃！请找出真凶！
+                  </div>
+                </div>
               ) : (
-                <span>整夜无村民独醒查看</span>
+                <div className="cheese-safe-stage">
+                  <span className="cheese-model-emoji">🧀</span>
+                  <p className="cheese-safe-text">奶酪安然无恙（无人偷窃）</p>
+                </div>
               )}
             </div>
           </div>
         </div>
+      )}
+
+      {/* 终局真相大揭秘全屏遮罩 */}
+      {isGameOver && (
+        <CheeseGameOverReveal view={view} members={members} myId={_myId} />
       )}
     </div>
   );

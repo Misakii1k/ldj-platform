@@ -14,3 +14,5 @@ export * from './game/rulesetRegistry.ts';
 export * from './game/random.ts';
 export * from './game/preparation.ts';
 export * from './game/rules/index.ts';
+export * from './game/werewolfDistribution.ts';
+export * from './game/werewolfModeratorTypes.ts';

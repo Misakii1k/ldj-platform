@@ -3,10 +3,13 @@
  */
 import http from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
-import { extname, join, normalize, resolve, sep } from 'node:path';
+import { extname, isAbsolute, join, normalize, relative, resolve } from 'node:path';
 import type { PublicRoomSummary } from '../core/snapshot.ts';
 import type { LlmConfig } from '../config.ts';
-import { THINKING_DEPTH_OPTIONS, type ThinkingDepth } from '@ldj/shared';
+import {
+  THINKING_DEPTH_OPTIONS,
+  type ThinkingDepth,
+} from '@ldj/shared';
 import { SettingsError, type LlmSettingsView, type LlmSettingsPatch } from '../core/settings.ts';
 import {
   LlmConnectionTestError,
@@ -21,14 +24,24 @@ import { isOriginAllowed } from './ws.ts';
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
+  '.wav': 'audio/wav',
+  '.mp3': 'audio/mpeg',
+  '.ogg': 'audio/ogg',
   '.webmanifest': 'application/manifest+json',
   '.map': 'application/json',
   '.woff2': 'font/woff2',
+  '.woff': 'font/woff',
+  '.ttf': 'font/ttf',
 };
 
 const PLACEHOLDER_HTML = `<!doctype html>
@@ -61,7 +74,7 @@ export interface HttpDeps {
    * 没设时只放行本机请求 —— 见 isLocalAddress 的注释。
    */
   adminToken?: string | null;
-  allowedOrigins?: string[];
+  allowedOrigins?: string[] | (() => string[]);
   allowPrivateLlmUpstream?: boolean;
   getNetworkStatus?: () => unknown;
 }
@@ -146,12 +159,17 @@ function isThinkingDepth(value: string): value is ThinkingDepth {
   return THINKING_DEPTH_OPTIONS.some((option) => option.value === value);
 }
 
+function getEffectiveAllowedOrigins(deps: HttpDeps): string[] {
+  return typeof deps.allowedOrigins === 'function' ? deps.allowedOrigins() : (deps.allowedOrigins ?? []);
+}
+
 function authorizeSettingsWrite(
   req: http.IncomingMessage,
   deps: HttpDeps,
 ): { status: number; message: string } | null {
   const origin = req.headers.origin;
-  if (!isOriginAllowed(origin === '' ? undefined : origin, req.headers.host, deps.allowedOrigins ?? [])) {
+  const allowed = getEffectiveAllowedOrigins(deps);
+  if (!isOriginAllowed(origin === '' ? undefined : origin, req.headers.host, allowed)) {
     return { status: 403, message: '请求来源不被允许' };
   }
   const token = deps.adminToken ?? null;
@@ -230,7 +248,13 @@ function setSecurityHeaders(res: http.ServerResponse): void {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; img-src 'self' data:; connect-src 'self' ws: wss:",
+    "default-src 'self' blob: data:; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; " +
+      "style-src 'self' 'unsafe-inline' https://fonts.loli.net; " +
+      "font-src 'self' data: https://fonts.loli.net https://fonts.gstatic.com; " +
+      "img-src 'self' data: blob: https:; " +
+      "media-src 'self' data: blob:; " +
+      "connect-src 'self' ws: wss: http: https:;",
   );
   res.setHeader('Referrer-Policy', 'no-referrer');
 }
@@ -240,7 +264,7 @@ function setSecurityHeaders(res: http.ServerResponse): void {
  * 从 APP 内 fetch 局域网主机 IP 属跨源。仅对回环来源（本机 APP/开发服务器）
  * 反射 Origin；局域网其他设备经同源页面访问，无需 CORS；未知来源不放行。
  */
-function applyApiCors(req: http.IncomingMessage, res: http.ServerResponse): void {
+function applyApiCors(req: http.IncomingMessage, res: http.ServerResponse, deps: HttpDeps): void {
   const origin = req.headers.origin;
   if (origin === undefined) return;
   let parsed: URL;
@@ -250,7 +274,10 @@ function applyApiCors(req: http.IncomingMessage, res: http.ServerResponse): void
     return;
   }
   const hostname = parsed.hostname;
-  if (hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname !== '[::1]') return;
+  const isLoopback = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+  const allowed = getEffectiveAllowedOrigins(deps);
+  const isAllowed = isLoopback || isOriginAllowed(origin, req.headers.host, allowed);
+  if (!isAllowed) return;
   res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
@@ -280,10 +307,22 @@ export function createHttpServer(deps: HttpDeps): http.Server {
 
   return http.createServer((req, res) => {
     setSecurityHeaders(res);
-    const url = (req.url ?? '/').split('?')[0]!;
+    let pathname = '/';
+    try {
+      const rawUrl = req.url ?? '/';
+      if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+        pathname = new URL(rawUrl).pathname;
+      } else {
+        const host = req.headers.host ?? '127.0.0.1';
+        pathname = new URL(rawUrl, `http://${host}`).pathname;
+      }
+    } catch {
+      pathname = (req.url ?? '/').split('?')[0]!;
+    }
+    const url = pathname;
 
     if (url.startsWith('/api/')) {
-      applyApiCors(req, res);
+      applyApiCors(req, res, deps);
       if (req.method === 'OPTIONS') {
         res.writeHead(204);
         res.end();
@@ -296,6 +335,7 @@ export function createHttpServer(deps: HttpDeps): http.Server {
       res.end(JSON.stringify({ status: 'ok' }));
       return;
     }
+
     if (url === '/health/ready') {
       const ready = deps.isReady();
       res.writeHead(ready ? 200 : 503, { 'content-type': 'application/json' });
@@ -578,11 +618,11 @@ export function createHttpServer(deps: HttpDeps): http.Server {
       return;
     }
 
-    // 静态托管：防目录穿越
+    // 静态托管：防目录穿越 + 精确静态文件路由 + SPA fallback
     if (staticRoot && existsSync(staticRoot)) {
       let rel: string;
       try {
-        rel = url === '/' ? 'index.html' : decodeURIComponent(url.slice(1));
+        rel = (url === '/' || url === '') ? 'index.html' : decodeURIComponent(url.slice(1));
       } catch {
         // 畸形百分号编码（如 /%zz）会抛 URIError，绝不能让其成为未捕获异常击穿进程
         res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
@@ -590,20 +630,39 @@ export function createHttpServer(deps: HttpDeps): http.Server {
         return;
       }
       const candidate = normalize(join(staticRoot, rel));
-      if (candidate.startsWith(staticRoot + sep) || candidate === join(staticRoot, 'index.html')) {
-        const target =
-          existsSync(candidate) && statSync(candidate).isFile()
-            ? candidate
-            : join(staticRoot, 'index.html'); // SPA fallback
-        if (existsSync(target) && statSync(target).isFile()) {
+      const relFromRoot = relative(staticRoot, candidate);
+      const isInside = !relFromRoot.startsWith('..') && !isAbsolute(relFromRoot);
+      if (isInside) {
+        let target: string | null = null;
+        if (existsSync(candidate) && statSync(candidate).isFile()) {
+          target = candidate;
+        } else {
+          // SPA fallback：当访问的是页面路径（无文件后缀或以 .html 结尾，如 /join/XXXXX、/room/123）时，回退到 index.html
+          // 但若请求的是带具体后缀的静态资源（如 .js / .css / .png / .map 等），文件缺失时绝不能回退成 index.html，
+          // 否则浏览器会因 MIME 类型不匹配（text/html 作为 js 加载）抛语法错误并导致白屏！
+          const ext = extname(candidate);
+          if (!ext || ext.toLowerCase() === '.html') {
+            const indexPath = join(staticRoot, 'index.html');
+            if (existsSync(indexPath) && statSync(indexPath).isFile()) {
+              target = indexPath;
+            }
+          }
+        }
+        if (target && existsSync(target) && statSync(target).isFile()) {
           res.writeHead(200, {
-            'content-type': MIME[extname(target)] ?? 'application/octet-stream',
+            'content-type': MIME[extname(target).toLowerCase()] ?? 'application/octet-stream',
           });
           if (req.method === 'HEAD') {
             res.end();
           } else {
             createReadStream(target).pipe(res);
           }
+          return;
+        }
+        // 带后缀的静态资源（.js / .css / .png / .map 等）未找到时，返回 404
+        if (extname(candidate)) {
+          res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+          res.end('Not Found');
           return;
         }
       }

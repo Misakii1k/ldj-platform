@@ -28,6 +28,9 @@ function toDawn(ctx: GameContext, state: ReturnType<typeof initial>) {
   for (let hour = 1; hour <= 6; hour += 1) {
     s = next(ctx, s, sys, { type: 'advance_night', hour });
   }
+  if (s.phase === 'night') {
+    s = next(ctx, s, sys, { type: 'end_night' });
+  }
   if (s.phase === 'accomplice_select') {
     s = next(ctx, s, sys, { type: 'auto_select_accomplice' });
   }
@@ -86,6 +89,9 @@ test('奶酪大盗 夜间推进到天亮并进入投票、结算', () => {
   let s = began.nextState;
   for (let hour = 1; hour <= 6; hour += 1) {
     s = next(ctx, s, sys, { type: 'advance_night', hour });
+  }
+  if (s.phase === 'night') {
+    s = next(ctx, s, sys, { type: 'end_night' });
   }
   if (s.phase === 'accomplice_select') {
     s = next(ctx, s, sys, { type: 'auto_select_accomplice' });

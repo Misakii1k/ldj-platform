@@ -37,12 +37,12 @@ const idempotent = (state: CheeseThiefState): CheeseThiefReduceResult => ({
 
 const system = (text: string): GameEffect => ({ type: 'system_message', text });
 
-function nightTimer(config: ResolvedCheeseThiefConfig, now: number, hour: number): GameEffect {
+function nightTimer(config: ResolvedCheeseThiefConfig, now: number, targetHour: number): GameEffect {
   return {
     type: 'schedule_timer',
-    timerId: `night-${hour}`,
+    timerId: `night-${targetHour}`,
     deadlineAt: now + config.nightHourSeconds * 1000,
-    action: { type: 'advance_night', hour },
+    action: { type: 'advance_night', hour: targetHour },
   };
 }
 
@@ -165,6 +165,7 @@ export function createCheeseThiefState(
     eliminated: null,
     thiefCaught: null,
     winners: [],
+    deadlineAt: null,
   };
   assertCheeseThiefInvariants(state);
   return state;
@@ -225,6 +226,7 @@ function resolveVote(
   state.eliminated = eliminated;
   state.thiefCaught = thiefCaught;
   state.winners = winners;
+  state.deadlineAt = null;
   events.push({ type: 'vote_resolved', eliminated, thiefCaught, winners });
   events.push({ type: 'game_finished', winners });
   effects.push(
@@ -261,12 +263,13 @@ function endNight(
     if (rule.known) {
       // 相识模式：进入共犯选择阶段，由大盗选择；超时自动选队首 N 人。
       state.phase = 'accomplice_select';
+      state.deadlineAt = ctx.now + state.config.accompliceSelectSeconds * 1000;
       events.push({ type: 'accomplice_select_started' });
       effects.push(system('大盗请选择你的共犯'));
       effects.push({
         type: 'schedule_timer',
         timerId: 'accomplice-select',
-        deadlineAt: ctx.now + state.config.accompliceSelectSeconds * 1000,
+        deadlineAt: state.deadlineAt,
         action: { type: 'auto_select_accomplice' },
       });
       return;
@@ -286,12 +289,13 @@ function enterDawn(
 ): void {
   state.phase = 'dawn';
   state.currentHour = 0;
+  state.deadlineAt = ctx.now + state.config.discussionSeconds * 1000;
   events.push({ type: 'night_finished' }, { type: 'discussion_started' });
   effects.push(system('天亮了，奶酪的踪迹只能靠讨论拼凑……'));
   effects.push({
     type: 'schedule_timer',
     timerId: 'discussion',
-    deadlineAt: ctx.now + state.config.discussionSeconds * 1000,
+    deadlineAt: state.deadlineAt,
     action: { type: 'end_discussion' },
   });
 }
@@ -317,34 +321,40 @@ export function reduceCheeseThiefState(
     return deny(error instanceof Error ? error.message : '动作无效');
   }
 
-  // 开局：4 人局进入两骰自选；否则进入夜间确认阶段（10秒）后推进第 1 时刻。
+  // 开局：4 人局进入两骰自选；否则进入夜间确认阶段（16秒）后推进第 1 时刻。
   if (action.type === 'begin') {
     if (state.phase === 'hour_choice') {
+      const deadlineAt = ctx.now + state.config.hourChoiceSeconds * 1000;
+      const next = structuredClone(state);
+      next.deadlineAt = deadlineAt;
       return {
         ok: true,
-        nextState: state,
+        nextState: next,
         events: [{ type: 'hour_choice_started' }],
         effects: [
           system('每人掷出两枚骰子，请选择你的醒来时刻'),
           {
             type: 'schedule_timer',
             timerId: 'hour-choice',
-            deadlineAt: ctx.now + state.config.hourChoiceSeconds * 1000,
+            deadlineAt,
             action: { type: 'resolve_hour_choice' },
           },
         ],
       };
     }
+    const deadlineAt = ctx.now + state.config.roleRevealSeconds * 1000;
+    const next = structuredClone(state);
+    next.deadlineAt = deadlineAt;
     return {
       ok: true,
-      nextState: state,
+      nextState: next,
       events: [],
       effects: [
         system('夜幕降临，天黑请闭眼，请确认你的骰子与身份……'),
         {
           type: 'schedule_timer',
           timerId: 'night-1',
-          deadlineAt: ctx.now + state.config.roleRevealSeconds * 1000,
+          deadlineAt,
           action: { type: 'advance_night', hour: 1 },
         },
       ],
@@ -394,12 +404,13 @@ export function reduceCheeseThiefState(
       next.phase = 'night';
       next.currentHour = 0;
       next.lastProcessedHour = 0;
+      next.deadlineAt = ctx.now + next.config.roleRevealSeconds * 1000;
       effects.push(
         system('时刻选择完毕，天黑请闭眼，请确认你的骰子与身份……'),
         {
           type: 'schedule_timer',
           timerId: 'night-1',
-          deadlineAt: ctx.now + next.config.roleRevealSeconds * 1000,
+          deadlineAt: next.deadlineAt,
           action: { type: 'advance_night', hour: 1 },
         },
       );
@@ -421,12 +432,13 @@ export function reduceCheeseThiefState(
     next.phase = 'night';
     next.currentHour = 0;
     next.lastProcessedHour = 0;
+    next.deadlineAt = ctx.now + next.config.roleRevealSeconds * 1000;
     effects.push(
       system('时刻选择完毕，天黑请闭眼，请确认你的骰子与身份……'),
       {
         type: 'schedule_timer',
         timerId: 'night-1',
-        deadlineAt: ctx.now + next.config.roleRevealSeconds * 1000,
+        deadlineAt: next.deadlineAt,
         action: { type: 'advance_night', hour: 1 },
       },
     );
@@ -455,10 +467,38 @@ export function reduceCheeseThiefState(
     next.lastProcessedHour = action.hour;
     events.push({ type: 'hour_revealed', hour: action.hour });
     if (action.hour === NIGHT_END_HOUR) {
-      endNight(next, events, effects, ctx);
+      // 第 6 时刻排定专属倒计时，跑满 6 点后触发 end_night 正式结束夜间！
+      const timerEffect = {
+        type: 'schedule_timer' as const,
+        timerId: 'night-end',
+        deadlineAt: ctx.now + state.config.nightHourSeconds * 1000,
+        action: { type: 'end_night' },
+      };
+      next.deadlineAt = timerEffect.deadlineAt;
+      effects.push(timerEffect);
     } else {
-      effects.push(nightTimer(state.config, ctx.now, action.hour + 1));
+      const timerEffect = nightTimer(state.config, ctx.now, action.hour + 1);
+      next.deadlineAt = (timerEffect as { deadlineAt: number }).deadlineAt;
+      effects.push(timerEffect);
     }
+    assertCheeseThiefInvariants(next);
+    return { ok: true, nextState: next, events, effects };
+  }
+
+  // 夜晚 6 点结束：由系统计时器触发，收尾兜底并进入共犯选择或天亮讨论
+  if (action.type === 'end_night') {
+    if (next.phase !== 'night') return idempotent(state);
+    // 第 6 时刻收尾兜底：独醒的大盗没有点击取走时，时刻结束自动取走
+    if (!next.cheeseStolen) {
+      const prevWakers = next.players.filter((id) => next.wakeHours[id] === NIGHT_END_HOUR);
+      if (prevWakers.length === 1) {
+        next.cheeseStolen = true;
+        next.thiefId = prevWakers[0]!;
+        next.stealHour = NIGHT_END_HOUR;
+        events.push({ type: 'cheese_stolen', thiefId: next.thiefId, stealHour: NIGHT_END_HOUR });
+      }
+    }
+    endNight(next, events, effects, ctx);
     assertCheeseThiefInvariants(next);
     return { ok: true, nextState: next, events, effects };
   }
@@ -515,28 +555,29 @@ export function reduceCheeseThiefState(
     return { ok: true, nextState: next, events, effects };
   }
 
-  // 共犯选择超时兜底：自动选队首 N 人（系统动作）
+  // 共犯选择超时兜底：自动随机抽取 N 人（系统动作）
   if (action.type === 'auto_select_accomplice') {
     if (next.phase !== 'accomplice_select') return idempotent(state);
     const rule = accompliceRuleFor(next);
     if (!rule.known) return idempotent(state);
-    next.accomplices = next.players.filter((id) => id !== next.thiefId).slice(0, rule.count);
+    next.accomplices = randomAccomplices(next, rule.count, ctx.random);
     events.push({ type: 'accomplice_selected', accompliceIds: [...next.accomplices] });
     enterDawn(next, events, effects, ctx);
     assertCheeseThiefInvariants(next);
     return { ok: true, nextState: next, events, effects };
   }
 
-  // 天亮讨论结束 → 投票
-  if (action.type === 'end_discussion') {
+  // 天亮讨论结束 / 提前进入投票 → 投票
+  if (action.type === 'end_discussion' || action.type === 'skip_discussion') {
     if (next.phase !== 'dawn') return idempotent(state);
     next.phase = 'vote';
+    next.deadlineAt = ctx.now + state.config.voteSeconds * 1000;
     events.push({ type: 'vote_started' });
     effects.push(system('请投票指认你怀疑的大盗，或选择弃票'));
     effects.push({
       type: 'schedule_timer',
       timerId: 'vote',
-      deadlineAt: ctx.now + state.config.voteSeconds * 1000,
+      deadlineAt: next.deadlineAt,
       action: { type: 'resolve_vote' },
     });
     assertCheeseThiefInvariants(next);

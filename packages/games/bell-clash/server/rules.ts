@@ -2,7 +2,6 @@ import type { GameEffect } from '@ldj/shared';
 import { parseBellClashAction, parseBellClashConfig } from './schemas.ts';
 import {
   COLORS,
-  type BellClashAction,
   type BellClashCard,
   type BellClashEvent,
   type BellClashReduceResult,

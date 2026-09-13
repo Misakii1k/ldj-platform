@@ -20,11 +20,6 @@ export interface GameMotionRootProps extends HTMLAttributes<HTMLDivElement> {
   readonly children: ReactNode;
 }
 
-export interface GameMotionLayerProps extends HTMLAttributes<HTMLDivElement> {
-  readonly interactive?: boolean;
-  readonly children?: ReactNode;
-}
-
 export interface GamePhaseTransitionProps extends HTMLAttributes<HTMLDivElement> {
   readonly phaseKey: GamePhaseKey;
   readonly durationMs?: number;
@@ -93,25 +88,6 @@ export function GameMotionRoot({
         {children}
       </div>
     </GameMotionContext.Provider>
-  );
-}
-
-export function GameMotionLayer({
-  interactive = false,
-  className,
-  children,
-  ...props
-}: GameMotionLayerProps) {
-  const level = useContext(GameMotionContext);
-
-  return (
-    <div
-      {...props}
-      className={joinClassNames('game-motion-layer', interactive && 'is-interactive', className)}
-      data-motion-level={level}
-    >
-      {children}
-    </div>
   );
 }
 

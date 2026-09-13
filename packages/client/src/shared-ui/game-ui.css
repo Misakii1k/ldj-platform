@@ -15,12 +15,12 @@
   --gp-surface: #fffdf7;
   --gp-surface-strong: #fffaf0;
   --gp-ink: #292722;
-  --gp-muted: #716b61;
+  --gp-muted: #575147;
   --gp-line: #292722;
   --gp-green: #08715d;
   --gp-green-dark: #055848;
-  --gp-coral: #ef513d;
-  --gp-coral-dark: #d6382a;
+  --gp-coral: #c23616;
+  --gp-coral-dark: #a12b11;
   --gp-yellow: #f7c84b;
   --gp-purple: #7358a7;
   --gp-danger: #dc2626;
@@ -61,10 +61,126 @@
   --gp-shadow-lg: 0 7px 0 var(--gp-line);
   --gp-shadow-press: 0 1px 0 var(--gp-line);
   --gp-touch: 44px;
+
+  /* 顶栏/外壳描边配方：亮色主题用墨色粗实体边，暗色主题用半透明白细边。
+     两边都只引用这一组令牌，避免暗色主题另写一套字面量。 */
+  --gp-chrome-line: var(--gp-ink);
+  --gp-chrome-width: 2.5px;
+  --gp-chrome-line-inverse: rgba(255, 255, 255, 0.16);
+  --gp-chrome-width-inverse: 1.5px;
   --gp-dock-offset: 92px;
   --gp-chrome-header: 46px;
-  --gp-motion: 140ms;
   --gp-font: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+
+  /* 3.1 动效时间 / 缓动 / 位移 —— 全平台唯一来源。
+     任何 animation / transition 都必须引用这里的令牌，不再写字面量时长。
+     档位缩放只挂在 html[data-motion-level]（见下方 3.2），不散落在各组件。 */
+  --gp-dur-instant: 90ms;
+  --gp-dur-fast: 140ms;
+  --gp-dur-standard: 220ms;
+  --gp-dur-emphasis: 320ms;
+  --gp-dur-phase: 420ms;
+  --gp-dur-slow: 480ms;
+  --gp-dur-ambient: 5.2s;
+
+  --gp-ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --gp-ease-decelerate: cubic-bezier(0.16, 1, 0.3, 1);
+  --gp-ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  --gp-ease-press: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --gp-dist-sm: 4px;
+  --gp-dist-md: 8px;
+  --gp-dist-lg: 12px;
+  --gp-dist-xl: 16px;
+  --gp-scale-press: 0.985;
+  --gp-scale-pop: 1.06;
+  --gp-stagger: 45ms;
+
+  /* 3.2 兼容别名：旧的三套动效命名空间（--gp-motion / --game-motion-* / --home-motion-*）
+     全部指向上面的同一套令牌，不再各自维护数值。 */
+  --gp-motion: var(--gp-dur-fast);
+  --game-motion-fast-duration: var(--gp-dur-fast);
+  --game-motion-standard-duration: var(--gp-dur-standard);
+  --game-motion-phase-duration: var(--gp-dur-phase);
+  --game-motion-ease: var(--gp-ease-standard);
+  --home-motion-duration: var(--gp-dur-slow);
+  --home-motion-distance: var(--gp-dist-lg);
+}
+
+/* 3.3 档位缩放：唯一权威。minimal / off 的全局压制仍在 styles.css 兜底。 */
+html[data-motion-level="reduced"] {
+  --gp-dur-instant: 60ms;
+  --gp-dur-fast: 110ms;
+  --gp-dur-standard: 160ms;
+  --gp-dur-emphasis: 200ms;
+  --gp-dur-phase: 240ms;
+  --gp-dur-slow: 280ms;
+  --gp-dist-lg: 6px;
+}
+
+html[data-motion-level="minimal"] {
+  --gp-dur-instant: 1ms;
+  --gp-dur-fast: 1ms;
+  --gp-dur-standard: 1ms;
+  --gp-dur-emphasis: 1ms;
+  --gp-dur-phase: 1ms;
+  --gp-dur-slow: 1ms;
+  --gp-dist-lg: 0px;
+}
+
+html[data-motion-level="off"] {
+  --gp-dur-instant: 0ms;
+  --gp-dur-fast: 0ms;
+  --gp-dur-standard: 0ms;
+  --gp-dur-emphasis: 0ms;
+  --gp-dur-phase: 0ms;
+  --gp-dur-slow: 0ms;
+  --gp-dist-lg: 0px;
+}
+
+/* 3.4 环境循环动效清单（装饰性无限循环）。
+     reduced 档位下必须停掉这些装饰循环；**必要反馈**（回合光晕 .tabletop-turn-halo、
+     发言波 .tabletop-speech-wave、倒计时脉冲 .game-motion-countdown-pulse、可出牌提示
+     .uno-house-draw-pile.is-my-turn-playable / .ding-uno-card.is-playable /
+     .bell-draw-pile.is-playable、紧迫倒计时 .countdown.urgent / .moon-header__timer.is-urgent、
+     警告 .testimony-meter-card.is-warning）刻意不在清单内，只降时长。
+     选择器经 styles.css 的 animation 声明反查得出；新增装饰循环必须登记到这里。 */
+html[data-motion-level="reduced"] :is(
+  .home-local-badge::before,
+  .auto-start-banner,
+  .auto-start-pulse,
+  .home-connection.is-connected .home-connection__dot,
+  .home-party-scene__character.is-visible,
+  .home-party-scene__garland--one,
+  .home-party-scene__garland--two,
+  .home-party-scene__glow,
+  .home-party-scene__lamp-light,
+  .home-party-scene__person.is-visible,
+  .home-party-scene__plant-wrap,
+  .home-party-scene__spark,
+  .home-hero h1 span,
+  .player-filter__thumb-tooltip,
+  .home-active-room-pulse,
+  .post-game-dock__auto-hint,
+  .sim-tool__value,
+  .tip-press,
+  .badge-ready,
+  .cheese-icon-bounce,
+  .cheese-model-emoji,
+  .ding-bell-stage-text,
+  .echo-rank-score,
+  .host-status-dot,
+  .werewolf-dawn-glow,
+  .werewolf-fog-drift,
+  .werewolf-night-stars,
+  .werewolf-day-sunbeams,
+  .werewolf-actions__waiting-dot,
+  .werewolf-spotlight__img,
+  .winner-rays,
+  .goose-modal-card-item,
+  .bell-floating-bell-btn
+) {
+  animation: none !important;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -564,4 +680,527 @@
   .cheese-steal-silent-btn {
     transition: none !important;
   }
+}
+
+/* ══════════════════════════════════════════════════════════
+   6. 共享工具类
+   ══════════════════════════════════════════════════════════ */
+
+/* 视觉隐藏但保留给读屏软件。唯一实现：全平台都用 .sr-only，
+   不再写内联 clip/1px 样式或页面私有类。 */
+.sr-only,
+.focused-game-sr-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ══════════════════════════════════════════════════════════
+   7. 竞技场组合件（ArenaBoard / ArenaRail / TabletopEventOverlay / SeatTargetPicker）
+   把「面板堆叠」换成「牌桌物件」所需的四个共享件；全部只引用 --gp-* 令牌。
+   ══════════════════════════════════════════════════════════ */
+
+.arena-board {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border: var(--gp-border);
+  border-radius: var(--gp-radius-lg);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  box-shadow: var(--gp-shadow);
+  transition:
+    box-shadow var(--gp-dur-fast) var(--gp-ease-standard),
+    transform var(--gp-dur-fast) var(--gp-ease-standard);
+}
+
+.arena-board--compact {
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.arena-board--accent {
+  background: color-mix(in srgb, var(--gp-yellow) 32%, var(--gp-surface));
+}
+
+.arena-board--dark {
+  border-color: color-mix(in srgb, var(--gp-paper) 26%, transparent);
+  background-color: #171513;
+  background: color-mix(in srgb, var(--gp-ink) 88%, #000);
+  color: var(--gp-paper);
+  box-shadow: 0 6px 0 color-mix(in srgb, var(--gp-paper) 18%, transparent);
+}
+
+.arena-board__head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.arena-board__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.arena-board__hint {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gp-muted);
+}
+
+.arena-board--dark .arena-board__hint {
+  color: color-mix(in srgb, var(--gp-paper) 74%, transparent);
+}
+
+.arena-board__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.arena-board__foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.arena-rail {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.arena-rail--horizontal {
+  flex-direction: row;
+  align-items: stretch;
+  overflow-x: auto;
+}
+
+.arena-rail--vertical {
+  flex-direction: column;
+}
+
+.arena-rail__item {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 56px;
+  padding: 6px 10px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  box-shadow: var(--gp-shadow-sm);
+  font-size: 0.76rem;
+  font-weight: 850;
+  transition:
+    transform var(--gp-dur-fast) var(--gp-ease-standard),
+    box-shadow var(--gp-dur-fast) var(--gp-ease-standard),
+    background var(--gp-dur-fast) var(--gp-ease-standard);
+}
+
+.arena-rail--dense .arena-rail__item {
+  min-width: 44px;
+  padding: 4px 8px;
+}
+
+.arena-rail__item[data-state='active'] {
+  background: var(--gp-yellow);
+  color: var(--gp-ink);
+  transform: translateY(-2px);
+}
+
+.arena-rail__item[data-state='done'] {
+  background: color-mix(in srgb, var(--gp-green) 18%, var(--gp-surface));
+  color: var(--gp-green-dark);
+}
+
+.arena-rail__item[data-state='warning'] {
+  background: color-mix(in srgb, var(--gp-coral) 20%, var(--gp-surface));
+  color: var(--gp-coral-dark);
+}
+
+.arena-board--dark .arena-rail__item {
+  color: var(--gp-ink);
+}
+
+.arena-rail__value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+}
+
+/* 关键瞬间全屏反馈：full 档才有盖印/爆裂，reduced 以下静态出现，off 档只留文字。 */
+.tabletop-event-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9995;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  pointer-events: none;
+}
+
+.tabletop-event-overlay__card {
+  max-width: min(90vw, 460px);
+  padding: 18px 26px;
+  border: var(--gp-border);
+  border-radius: var(--gp-radius-lg);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  box-shadow: var(--gp-shadow-lg), 0 24px 64px rgba(0, 0, 0, 0.32);
+  text-align: center;
+}
+
+.tabletop-event-overlay__label {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.tabletop-event-overlay__sub {
+  margin: 4px 0 0;
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: var(--gp-muted);
+}
+
+.tabletop-event-overlay[data-variant='reveal'] .tabletop-event-overlay__card {
+  background: color-mix(in srgb, var(--gp-purple) 18%, var(--gp-surface));
+}
+
+.tabletop-event-overlay[data-variant='warning'] .tabletop-event-overlay__card {
+  border-color: var(--gp-coral-dark);
+  background: var(--gp-coral);
+  color: #ffffff;
+}
+
+.tabletop-event-overlay[data-variant='warning'] .tabletop-event-overlay__sub {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+html[data-motion-level='full'] .tabletop-event-overlay[data-variant='stamp'] .tabletop-event-overlay__card {
+  animation: tabletop-event-stamp var(--gp-dur-emphasis) var(--gp-ease-press) both;
+}
+
+html[data-motion-level='full'] .tabletop-event-overlay[data-variant='burst'] .tabletop-event-overlay__card {
+  animation: tabletop-event-burst var(--gp-dur-phase) var(--gp-ease-decelerate) both;
+}
+
+html[data-motion-level='full'] .tabletop-event-overlay[data-variant='reveal'] .tabletop-event-overlay__card {
+  animation: tabletop-event-reveal var(--gp-dur-phase) var(--gp-ease-decelerate) both;
+}
+
+html[data-motion-level='reduced'] .tabletop-event-overlay__card,
+html[data-motion-level='minimal'] .tabletop-event-overlay__card {
+  animation: tabletop-event-reveal var(--gp-dur-fast) var(--gp-ease-standard) both;
+}
+
+html[data-motion-level='off'] .tabletop-event-overlay__card {
+  animation: none;
+}
+
+@keyframes tabletop-event-stamp {
+  0% { opacity: 0; transform: scale(1.6) rotate(-6deg); }
+  60% { opacity: 1; transform: scale(0.96) rotate(1deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+@keyframes tabletop-event-burst {
+  0% { opacity: 0; transform: scale(0.7); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes tabletop-event-reveal {
+  0% { opacity: 0; transform: translate3d(0, var(--gp-dist-md), 0); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+.seat-target-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.seat-target-picker__chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 72px;
+  min-height: var(--gp-touch);
+  padding: 6px 12px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-md);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  font-size: 0.84rem;
+  font-weight: 900;
+  box-shadow: var(--gp-shadow-sm);
+  cursor: pointer;
+  transition:
+    transform var(--gp-dur-fast) var(--gp-ease-standard),
+    box-shadow var(--gp-dur-fast) var(--gp-ease-standard),
+    background var(--gp-dur-fast) var(--gp-ease-standard);
+}
+
+.seat-target-picker__chip:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--gp-shadow);
+}
+
+.seat-target-picker__chip:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: var(--gp-shadow-press);
+}
+
+.seat-target-picker__chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.seat-target-picker__chip.is-selected {
+  background: var(--gp-coral);
+  color: #ffffff;
+}
+
+.seat-target-picker__hint {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--gp-muted);
+}
+
+.seat-target-picker__chip.is-selected .seat-target-picker__hint {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arena-board,
+  .arena-rail__item,
+  .seat-target-picker__chip {
+    transition: none !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   8. 小游戏通用件（.sg-*）配方收敛
+   这些类名被 5 款游戏直接使用。此前 .sg-badge / .sg-tag / .sg-btn /
+   .sg-modal-* 在全部 CSS 中**没有任何定义**（只有 .sg-panel__head span 的
+   后代规则碰巧给了它们一点字号），移进 ArenaBoard 页脚后连那点样式也没了。
+   这里补齐为唯一配方，全部引用 --gp-* 令牌。
+   ══════════════════════════════════════════════════════════ */
+
+.sg-panel {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  border: var(--gp-border);
+  border-radius: var(--gp-radius-lg);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  box-shadow: var(--gp-shadow);
+}
+
+.sg-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+  border-bottom: 2px solid color-mix(in srgb, var(--gp-muted) 22%, transparent);
+}
+
+.sg-panel__head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: var(--gp-ink);
+}
+
+.sg-panel__head span {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--gp-muted);
+}
+
+.sg-hint {
+  margin: 0;
+  color: var(--gp-muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.sg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 2px 10px;
+  border: 2px solid var(--gp-line);
+  border-radius: var(--gp-radius-pill);
+  background: var(--gp-yellow);
+  color: var(--gp-ink);
+  font-size: 0.72rem;
+  font-weight: 900;
+  white-space: nowrap;
+  box-shadow: 0 2px 0 var(--gp-line);
+}
+
+.sg-badge--highlight {
+  background: var(--gp-coral);
+  color: #ffffff;
+}
+
+.sg-badge--dark {
+  background: color-mix(in srgb, var(--gp-ink) 88%, #000);
+  color: var(--gp-paper);
+}
+
+.sg-badge--warning {
+  background: var(--gp-warning);
+  color: #ffffff;
+}
+
+.sg-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border: 1.5px solid color-mix(in srgb, var(--gp-line) 72%, transparent);
+  border-radius: var(--gp-radius-pill);
+  background: color-mix(in srgb, var(--gp-muted) 10%, var(--gp-surface));
+  color: var(--gp-muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.sg-tag--good,
+.sg-tag--human,
+.sg-tag--prisoner {
+  background: color-mix(in srgb, var(--gp-green) 16%, var(--gp-surface));
+  color: var(--gp-green-dark);
+}
+
+.sg-tag--echo,
+.sg-tag--warden {
+  background: color-mix(in srgb, var(--gp-coral) 18%, var(--gp-surface));
+  color: var(--gp-coral-dark);
+}
+
+.sg-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-pill);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  font-size: 0.8rem;
+  font-weight: 800;
+  box-shadow: var(--gp-shadow-sm);
+}
+
+.sg-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sg-note-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0 0 0 18px;
+  color: var(--gp-ink);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.sg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--gp-touch);
+  padding: 8px 16px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-md);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  font-size: 0.9rem;
+  font-weight: 900;
+  box-shadow: var(--gp-shadow-sm);
+  cursor: pointer;
+  transition:
+    transform var(--gp-dur-fast) var(--gp-ease-standard),
+    box-shadow var(--gp-dur-fast) var(--gp-ease-standard),
+    background var(--gp-dur-fast) var(--gp-ease-standard);
+}
+
+.sg-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--gp-shadow);
+}
+
+.sg-btn:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: var(--gp-shadow-press);
+}
+
+.sg-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sg-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(26, 22, 18, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.sg-modal-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 520px);
+  max-height: min(88dvh, 720px);
+  overflow: auto;
+  padding: 16px;
+  border: var(--gp-border);
+  border-radius: var(--gp-radius-lg);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  box-shadow: var(--gp-shadow-lg);
 }

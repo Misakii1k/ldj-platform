@@ -98,6 +98,8 @@ test('v2 各阶段超时确定性兜底', () => {
   st3 = apply(st3, actor('x'), { type: 'confirm_announcement' });
   st3 = apply(st3, actor('v1'), { type: 'confirm_announcement' });
   st3 = apply(st3, actor('v2'), { type: 'confirm_announcement' });
+  assert.equal(st3.phase, 'last_words');
+  st3 = apply(st3, actor('w1'), { type: 'finish_last_words' });
   assert.equal(st3.phase, 'discussion');
 
   // discussion 超时 → 下一发言者（最后发言者后进投票）
@@ -117,7 +119,7 @@ test('v2 各阶段超时确定性兜底', () => {
   st4 = timeout(st4, 'voting');
   assert.equal(st4.lastVoteSummary?.outcome, 'no_votes');
 
-  // hunter_shot 超时 → 视为弃权
+  // hunter_shot 超时 → 视为弃权，首夜死者进遗言
   let st5 = startedNight(['w1', 'w2', 's', 'x', 'h', 'v1', 'v2'], { roles: { guard: false, hunter: true, idiot: false } });
   st5 = apply(st5, actor('w1'), { type: 'night_kill', targetPlayerId: 'h' });
   st5 = apply(st5, actor('w2'), { type: 'night_kill', targetPlayerId: 'h' });
@@ -128,6 +130,8 @@ test('v2 各阶段超时确定性兜底', () => {
   st5 = timeout(st5, 'day_announcement');
   assert.equal(st5.phase, 'hunter_shot');
   st5 = timeout(st5, 'hunter_shot');
+  assert.equal(st5.phase, 'last_words');
+  st5 = timeout(st5, 'last_words');
   assert.equal(st5.phase, 'discussion');
   assert.equal(st5.players.h?.alive, false);
 });

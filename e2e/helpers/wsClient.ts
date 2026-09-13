@@ -191,11 +191,14 @@ export class RoomDriver {
   readonly client: WsClient;
   readonly roomCode: string;
   readonly playerId: string;
+  /** 该会话的 resume 凭证（浏览器侧用它写入 localStorage 复现同一身份） */
+  readonly resumeToken: string;
 
-  constructor(client: WsClient, roomCode: string, playerId: string) {
+  constructor(client: WsClient, roomCode: string, playerId: string, resumeToken: string) {
     this.client = client;
     this.roomCode = roomCode;
     this.playerId = playerId;
+    this.resumeToken = resumeToken;
   }
 
   static async resume(
@@ -218,7 +221,7 @@ export class RoomDriver {
         throw new RoomJoinError(ack, 'resume_room');
       }
       await client.waitFor((e) => e.type === 'room_snapshot');
-      return new RoomDriver(client, roomCode, playerId);
+      return new RoomDriver(client, roomCode, playerId, resumeToken);
     });
   }
 
@@ -241,8 +244,9 @@ export class RoomDriver {
         throw new RoomJoinError(ack, 'join_room');
       }
       const playerId = String(ack.payload.playerId);
+      const resumeToken = String(ack.payload.resumeToken);
       if (options.ready) await client.request('room_command', { command: 'ready', ready: true });
-      return new RoomDriver(client, roomCode, playerId);
+      return new RoomDriver(client, roomCode, playerId, resumeToken);
     });
   }
 

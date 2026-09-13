@@ -60,6 +60,7 @@ test('GAME_CATALOG：客户端目录配置可转换为现有模块配置', () =>
   assert.deepEqual(werewolf.setup.rulesets.map((ruleset) => ruleset.id), [
     'werewolf_legacy_platform_v2',
     'werewolf_platform_open_kill_v1',
+    'werewolf_moderator_v1',
   ]);
   assert.equal(werewolf.setup.options.some((option) => option.key === 'wolfKillScope'), false);
 });

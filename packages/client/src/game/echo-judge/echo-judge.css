@@ -1,0 +1,86 @@
+/* 伪人测试：焦点式竞技场（与囚徒之夜同构）
+   中央只留一个焦点板（阵营选择 / 出题 / 考题 / 指认），积分降为 ArenaRail。 */
+.echo-judge-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  /* 预留底部操作栏避让高度，防止卡牌与按钮被 ActionDock 遮挡 */
+  padding-bottom: clamp(90px, 14vh, 130px);
+}
+
+.echo-judge-stage__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.echo-judge-stage__main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.echo-score-panel {
+  display: block;
+}
+
+.echo-score-rail {
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.echo-focal {
+  width: 100%;
+}
+
+/* 宽屏 / 横屏自适应双栏布局：辅区（身份卡+积分榜）与主区（出题/辩论/指认）并列 */
+@media (min-width: 768px), (orientation: landscape) and (min-width: 640px) {
+  .echo-judge-stage {
+    display: grid;
+    grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+    grid-template-areas: "side main";
+    align-items: start;
+    gap: 16px;
+  }
+
+  .echo-identity-toggle-btn {
+    display: none !important;
+  }
+
+  .echo-judge-stage__sidebar {
+    grid-area: side;
+    position: sticky;
+    top: 8px;
+  }
+
+  .echo-judge-stage__main {
+    grid-area: main;
+  }
+
+  .echo-private-panel.is-collapsed-mobile {
+    display: block !important;
+  }
+}
+
+/* 横屏紧凑高度适配（高度低于 520px 的移动设备） */
+@media (orientation: landscape) and (max-height: 520px) {
+  .echo-judge-stage {
+    gap: 8px;
+    padding-bottom: clamp(60px, 15vh, 84px);
+  }
+
+  .echo-private-panel {
+    padding: 8px 12px;
+  }
+
+  .echo-topic-card {
+    padding: 6px 8px;
+  }
+}

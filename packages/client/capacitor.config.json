@@ -1,6 +1,6 @@
 {
   "appId": "com.tabletop.ldj",
-  "appName": "聚乐桌",
+  "appName": "聚乐桌游",
   "webDir": "dist",
   "server": {
     "androidScheme": "http",

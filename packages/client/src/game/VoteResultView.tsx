@@ -5,6 +5,7 @@ import { useCountdown } from '../shared-ui/useCountdown.ts';
 import { PhaseLead, GameCountdown } from './GameChrome.tsx';
 import { nameFor } from './useGameAction.ts';
 import { UserAvatar } from '../user/UserAvatar.tsx';
+import { resolveMemberAvatar } from '../user/avatar.ts';
 import type { UndercoverPlayerView, PublicPlayerInfo, VoteSummary } from './types.ts';
 
 interface Props { view: UndercoverPlayerView; }
@@ -64,7 +65,7 @@ export function VoteResultView({ view }: Props) {
       {eliminatedPlayer !== null && (
         <div className="eliminated-info">
           <UserAvatar
-            avatar={members.find((m) => m.playerId === eliminatedPlayer.playerId)?.avatar ?? 'preset:fox'}
+            avatar={resolveMemberAvatar(members.find((m) => m.playerId === eliminatedPlayer.playerId), { seat: eliminatedPlayer.seat, playerId: eliminatedPlayer.playerId })}
             nickname={nameFor(members, eliminatedPlayer.playerId) || `#${eliminatedPlayer.seat + 1} 号玩家`}
             size={44}
             className="eliminated-avatar-box"

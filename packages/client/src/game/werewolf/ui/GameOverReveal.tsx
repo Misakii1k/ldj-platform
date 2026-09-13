@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { WerewolfPresentationModel } from '../presentation.ts';
 import { UserAvatar } from '../../../user/UserAvatar.tsx';
+import { resolveMemberAvatar } from '../../../user/avatar.ts';
 
 const ROLE_ICONS: Record<string, string> = {
   狼人: '🐺',
@@ -45,7 +46,8 @@ export function GameOverReveal({ reveal, seats = [] }: GameOverRevealProps) {
           onClick={() => setClosed(false)}
           title="重新打开终局全员身份复盘遮罩"
         >
-          查看终局全员身份揭晓
+          <span className="werewolf-reopen-reveal-btn__icon" aria-hidden="true">🏆</span>
+          <span>查看终局全员身份揭晓</span>
         </button>
       </div>
     );
@@ -60,7 +62,8 @@ export function GameOverReveal({ reveal, seats = [] }: GameOverRevealProps) {
           className="werewolf-reopen-reveal-btn"
           onClick={() => setClosed(false)}
         >
-          终局大揭晓（点击查看）
+          <span className="werewolf-reopen-reveal-btn__icon" aria-hidden="true">📜</span>
+          <span>终局大揭晓（点击查看）</span>
         </button>
       </div>
 
@@ -98,7 +101,7 @@ export function GameOverReveal({ reveal, seats = [] }: GameOverRevealProps) {
                     className={`werewolf-reveal-card ${roleCls} ${!isAlive ? 'is-eliminated' : ''}`}
                   >
                     <div className="reveal-card__avatar">
-                      <UserAvatar avatar={seat?.avatar ?? 'preset:fox'} nickname={row.name} size={36} />
+                      <UserAvatar avatar={seat?.avatar ?? resolveMemberAvatar(null, { playerId: row.name })} nickname={row.name} size={36} />
                       {seat && <span className="reveal-card__seat">{seat.seatLabel}</span>}
                     </div>
 

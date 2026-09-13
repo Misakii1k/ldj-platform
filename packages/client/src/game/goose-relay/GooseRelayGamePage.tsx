@@ -17,6 +17,9 @@ import { ActionDock } from '../tabletop/ActionDock.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
 import { getGooseCard } from './cardCatalog.ts';
+import { ArenaBoard } from '../../shared-ui/ArenaBoard.tsx';
+import { ArenaRail } from '../../shared-ui/ArenaRail.tsx';
+import { SeatTargetPicker } from '../../shared-ui/SeatTargetPicker.tsx';
 import type { CharacterId, GooseRelayPlayerView } from './types.ts';
 
 function phaseLabel(phase: GooseRelayPlayerView['phase']): string {
@@ -129,6 +132,7 @@ export function GooseRelayGamePage({ view }: Props) {
       active:
         (view.phase === 'relay' && index === view.currentIndex) ||
         (view.phase === 'accusation' && index === view.currentAccuserIndex),
+      isSpeaking: view.phase === 'relay' && index === view.currentIndex,
     };
   });
 
@@ -448,16 +452,13 @@ export function GooseRelayGamePage({ view }: Props) {
       <div className="sg-stage goose-game-stage">
         {/* 抢头鹅初始阶段展台 */}
         {view.phase === 'claim_head' && (
-          <section className="sg-panel goose-claim-hero-panel" style={{ textAlign: 'center', padding: '24px 20px', maxWidth: '480px', margin: '20px auto' }}>
-            
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 900, margin: '0 0 6px' }}>谁来担当发题头鹅？</h3>
-            <p style={{ fontSize: '0.88rem', opacity: 0.85, margin: 0, lineHeight: 1.6 }}>
-              头鹅将从 9 张特征卡中秘密选定【1 凶手 + 1 受害鸭】，并开启第一棒肢体表演！
-            </p>
-            <div style={{ marginTop: '12px', fontSize: '0.82rem', color: '#b45309', fontWeight: 700 }}>
-              点击下方操作栏「抢当头鹅」，先到先得！
-            </div>
-          </section>
+          <ArenaBoard
+            className="goose-focal goose-claim-hero-panel"
+            tone="accent"
+            headline="谁来担当发题头鹅？"
+            hint="头鹅将从 9 张特征卡中秘密选定【1 凶手 + 1 受害鸭】，并开启第一棒肢体表演"
+            footer={<span className="goose-claim-hero-cta">点击下方操作栏「抢当头鹅」，先到先得</span>}
+          />
         )}
 
         {/* 顶部身份提示栏 */}
@@ -524,18 +525,18 @@ export function GooseRelayGamePage({ view }: Props) {
           </section>
         )}
 
-        {/* 表演传递轨 / 指认进度轨 */}
+        {/* 表演传递轨 / 指认进度轨 → 共享 ArenaRail */}
         {(view.phase === 'relay' || view.phase === 'accusation' || view.phase === 'discussion') && (
-          <section className="sg-panel" aria-label="接力进度轨">
-            <div className="sg-panel__head">
-              <h3>
-                {view.phase === 'accusation' ? '末棒倒序指认轨' : '动作传递接力轨'} ·{' '}
-                {(view.lineOrder ?? []).length} 位玩家
-              </h3>
-              <span>{view.phase === 'accusation' ? '从末位倒序向前指认' : '从头鹅逐棒向后传递'}</span>
-            </div>
-            <ol className="goose-track">
-              {(view.lineOrder ?? []).map((playerId, index) => {
+          <ArenaBoard
+            className="goose-focal goose-track-board"
+            tone="paper"
+            headline={view.phase === 'accusation' ? '末棒倒序指认轨' : '动作传递接力轨'}
+            hint={view.phase === 'accusation' ? '从末位倒序向前指认' : '从头鹅逐棒向后传递'}
+          >
+            <ArenaRail
+              label="接力进度轨"
+              className="goose-track-rail"
+              items={(view.lineOrder ?? []).map((playerId, index) => {
                 const isHead = playerId === view.headPlayerId;
                 const isCurrentRelay = view.phase === 'relay' && index === view.currentIndex;
                 const isCurrentAccuse =
@@ -547,32 +548,48 @@ export function GooseRelayGamePage({ view }: Props) {
                   view.currentAccuserIndex >= 0 &&
                   index > view.currentAccuserIndex;
 
-                return (
-                  <li
-                    key={playerId}
-                    className={`goose-track__chip ${isCurrentRelay || isCurrentAccuse ? 'is-current' : ''} ${doneRelay || doneAccuse ? 'is-done' : ''} ${playerId === myId ? 'is-me' : ''}`}
-                  >
-                    <span className="goose-track__idx">
-                      {isHead ? '头' : doneRelay || doneAccuse ? '✓' : index + 1}
-                    </span>
-                    <span className="goose-track__name">
-                      {playerId === myId ? `${nameFor(members, playerId)} (我)` : nameFor(members, playerId)}
-                    </span>
-                  </li>
-                );
+                return {
+                  key: playerId,
+                  label: `${isHead ? '头 · ' : ''}${playerId === myId ? `${nameFor(members, playerId)} (我)` : nameFor(members, playerId)}`,
+                  value: isHead ? '头鹅' : doneRelay || doneAccuse ? '✓' : index + 1,
+                  state: isCurrentRelay || isCurrentAccuse
+                    ? 'active'
+                    : doneRelay || doneAccuse
+                      ? 'done'
+                      : 'idle',
+                };
               })}
-            </ol>
-          </section>
+            />
+          </ArenaBoard>
         )}
 
-        {/* 主舞台卡牌触发横幅（仅在可见候选卡且非终局时展示） */}
+        {/* 主舞台卡牌坞 → 焦点板（主操作放页脚） */}
         {(view.candidateCards ?? []).length > 0 && view.phase !== 'game_over' && (
-          <section className="sg-panel goose-card-dock-banner">
-            <div className="goose-card-dock-info">
-              <div className="goose-card-dock-title">
+          <ArenaBoard
+            className="goose-focal goose-card-dock-banner"
+            tone="paper"
+            headline={(
+              <span className="goose-card-dock-title">
                 <LayoutGrid size={18} strokeWidth={2.4} aria-hidden="true" />
-                <strong>本局特征鸭卡池（共 9 张）</strong>
-              </div>
+                本局特征鸭卡池（共 9 张）
+              </span>
+            )}
+            hint={
+              !murdererPick && !victimPick
+                ? (isSelectionPhase ? '点击下方按钮打开遮罩选卡' : '点击下方按钮随时查看 9 张特征卡')
+                : undefined
+            }
+            footer={(
+              <button
+                type="button"
+                className={`goose-card-dock-btn ${isSelectionPhase ? 'is-highlight' : ''}`}
+                onClick={() => setCardModalOpen(true)}
+              >
+                {isSelectionPhase ? '打开卡牌遮罩选卡 ➔' : '查看 9 张特征鸭卡'}
+              </button>
+            )}
+          >
+            {(murdererPick || victimPick) && (
               <div className="goose-card-dock-summary">
                 {murdererPick && (
                   <span className="goose-dock-tag goose-dock-tag--m">
@@ -584,36 +601,25 @@ export function GooseRelayGamePage({ view }: Props) {
                     受害：{getGooseCard(victimPick).name}
                   </span>
                 )}
-                {!murdererPick && !victimPick && (
-                  <span className="goose-dock-hint">
-                    {isSelectionPhase ? '点击右侧按钮打开遮罩选卡' : '点击右侧按钮随时查看 9 张特征卡'}
-                  </span>
-                )}
               </div>
-            </div>
-            <button
-              type="button"
-              className={`goose-card-dock-btn ${isSelectionPhase ? 'is-highlight' : ''}`}
-              onClick={() => setCardModalOpen(true)}
-            >
-              {isSelectionPhase ? '打开卡牌遮罩选卡 ➔' : '查看 9 张特征鸭卡'}
-            </button>
-          </section>
+            )}
+          </ArenaBoard>
         )}
 
         {/* 接力阶段非头鹅提示：全凭肢体表演向后传递，暂不看牌 */}
         {(view.candidateCards ?? []).length === 0 && view.phase === 'relay' && !isHeadGoose && (
-          <section className="sg-panel goose-relay-focus-panel">
-            <p className="goose-relay-focus-hint">
-              <strong>动作接力中</strong>：请专注观察前一位玩家的动作表演并向后传递。所有人表演完成后，将公布 9 张特征牌供讨论与指认！
-            </p>
-          </section>
+          <ArenaBoard
+            className="goose-focal"
+            tone="dark"
+            headline="动作接力中"
+            hint="请专注观察前一位玩家的动作表演并向后传递。所有人表演完成后，将公布 9 张特征牌供讨论与指认"
+          />
         )}
 
-        {/* 指认历史记录面板 */}
+        {/* 案情指认记录（次级信息：全阶段共用一份，不再按阶段重复渲染） */}
         {(view.accusations ?? []).length > 0 && view.phase !== 'game_over' && (
-          <section className="sg-panel goose-accusations-history" aria-label="指认记录">
-            <div className="sg-panel__head">
+          <section className="goose-accusations-history" aria-label="指认记录">
+            <div className="goose-accusations-history__head">
               <h3>案情指认记录</h3>
               <span>{view.caseMatched ? '已有人指对！' : '倒序指认推进中'}</span>
             </div>
@@ -633,60 +639,25 @@ export function GooseRelayGamePage({ view }: Props) {
           </section>
         )}
 
-        {/* 投票区：vote 阶段（与指认记录左右双列并排，单屏无需滑动） */}
+        {/* 投票区 → 焦点板 + 席位直选 */}
         {view.phase === 'vote' && (
-          <div className="goose-dual-col">
-            {(view.accusations ?? []).length > 0 && (
-              <section className="sg-panel goose-accusations-history" aria-label="指认记录">
-                <div className="sg-panel__head">
-                  <h3>案情指认记录</h3>
-                  <span>{view.caseMatched ? '已有人指对！' : '倒序指认推进中'}</span>
-                </div>
-                <ul className="goose-history-list">
-                  {(view.accusations ?? []).map((item, idx) => (
-                    <li
-                      key={idx}
-                      className={`goose-history-item ${item.correct ? 'is-correct' : 'is-wrong'}`}
-                    >
-                      <span className="goose-history-name">{nameFor(members, item.playerId)}</span>
-                      <span className="goose-history-result">
-                        {item.correct ? '还原真相（指对）' : '指认错误'}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-            <section className="sg-panel goose-vote-panel" aria-label="揪恶投票区">
-              <div className="sg-panel__head">
-                <h3>揪恶投票</h3>
-                <span>已投 {view.votesCast} / {view.players.length} 人</span>
-              </div>
-              <p className="goose-vote-instruction">
-                谁是故意传递错误动作的恶鹅？请点击头像选择你要投票的目标（不能投自己）：
-              </p>
-              <div className="goose-vote-targets-grid">
-                {view.players
-                  .filter((pid) => pid !== myId)
-                  .map((pid) => {
-                    const isSelected = voteTarget === pid;
-                    return (
-                      <button
-                        key={pid}
-                        type="button"
-                        disabled={hasVoted}
-                        className={`goose-vote-target-btn ${isSelected ? 'is-selected' : ''}`}
-                        onClick={() => setVoteTarget(pid)}
-                      >
-                        <span className="goose-vote-target-avatar">鹅</span>
-                        <strong className="goose-vote-target-name">{nameFor(members, pid)}</strong>
-                        {isSelected && <span className="goose-vote-check">✓ 选定</span>}
-                      </button>
-                    );
-                  })}
-              </div>
-            </section>
-          </div>
+          <ArenaBoard
+            className="goose-focal"
+            tone="accent"
+            headline="揪恶投票"
+            hint="谁是故意传递错误动作的恶鹅？点选你要投票的目标（不能投自己）"
+            footer={<span className="sg-badge">已投 {view.votesCast} / {view.players.length} 人</span>}
+          >
+            <SeatTargetPicker
+              label="投票揪出恶鹅"
+              selectedIds={voteTarget ? [voteTarget] : []}
+              onSelect={(ids) => setVoteTarget(ids[0] ?? null)}
+              disabled={hasVoted}
+              options={view.players
+                .filter((pid) => pid !== myId)
+                .map((pid) => ({ id: pid, name: nameFor(members, pid) }))}
+            />
+          </ArenaBoard>
         )}
 
         {/* 终局揭晓面板（game_over） */}

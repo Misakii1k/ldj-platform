@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
+import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import http from 'node:http';
 import { WebSocket } from 'ws';
 import { PROTOCOL_VERSION } from '@ldj/shared';
 import { createApp, type App } from '../src/app.ts';
@@ -178,5 +182,70 @@ test('WS 非法消息：坏 JSON / schema 不符 → INVALID_MESSAGE；协议版
     socket.close();
   } finally {
     await app.shutdown();
+  }
+});
+
+test('静态托管：支持构建产物目录、SPA fallback、穿透 Host 头与绝对 URL 请求', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ldj-static-test-'));
+  try {
+    writeFileSync(join(dir, 'index.html'), '<!doctype html><title>JoyTable SPA</title><div id="root">App</div>');
+    mkdirSync(join(dir, 'assets'), { recursive: true });
+    writeFileSync(join(dir, 'assets', 'test.js'), 'console.log("hello");');
+
+    const logger = createLogger('error', {}, () => {});
+    const app = createApp(testConfig(), logger, dir);
+    await app.listen();
+
+    try {
+      const base = `http://127.0.0.1:${app.port()}`;
+
+      // 1. 访问根路径 /
+      const rootRes = await fetch(`${base}/`);
+      assert.equal(rootRes.status, 200);
+      assert.match(rootRes.headers.get('content-type') ?? '', /text\/html/);
+      assert.match(await rootRes.text(), /JoyTable SPA/);
+
+      // 2. 访问静态资源 /assets/test.js
+      const jsRes = await fetch(`${base}/assets/test.js`);
+      assert.equal(jsRes.status, 200);
+      assert.match(jsRes.headers.get('content-type') ?? '', /javascript/);
+      assert.match(await jsRes.text(), /console\.log/);
+
+      // 3. 访问 SPA 路由 /join/ABCDE 触发 index.html fallback
+      const spaRes = await fetch(`${base}/join/ABCDE?server=http%3A%2F%2Fbore.pub%3A24975`, {
+        headers: { Host: 'bore.pub:24975' },
+      });
+      assert.equal(spaRes.status, 200);
+      assert.match(spaRes.headers.get('content-type') ?? '', /text\/html/);
+      assert.match(await spaRes.text(), /JoyTable SPA/);
+
+      // 4. 穿透代理常见的绝对 URL 格式请求：GET http://bore.pub:24975/join/ABCDE
+      const rawReq = await new Promise<{ status: number; text: string; csp: string }>((resolvePromise) => {
+        const req = http.request({
+          host: '127.0.0.1',
+          port: app.port(),
+          path: 'http://bore.pub:24975/join/ABCDE',
+          headers: { Host: 'bore.pub:24975' },
+        }, (res) => {
+          let data = '';
+          res.on('data', (c) => { data += c; });
+          res.on('end', () => resolvePromise({
+            status: res.statusCode ?? 0,
+            text: data,
+            csp: res.headers['content-security-policy'] as string ?? '',
+          }));
+        });
+        req.end();
+      });
+      assert.equal(rawReq.status, 200);
+      assert.match(rawReq.text, /JoyTable SPA/);
+      assert.match(rawReq.csp, /https:\/\/fonts\.loli\.net/);
+      assert.match(rawReq.csp, /'unsafe-inline'/);
+      assert.match(rawReq.csp, /ws:/);
+    } finally {
+      await app.shutdown();
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 });

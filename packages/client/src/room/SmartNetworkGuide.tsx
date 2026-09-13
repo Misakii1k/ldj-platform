@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Wifi, Radio, ShieldAlert, CheckCircle2, Copy, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useToast } from '../shared-ui/ToastContext.tsx';
@@ -32,13 +32,32 @@ export function SmartNetworkGuide({ inviteUrl, roomCode }: SmartNetworkGuideProp
   const [hotspotSsid, setHotspotSsid] = useState('桌游主机热点');
   const [hotspotPassword, setHotspotPassword] = useState('');
 
+  // 确保局域网二维码与分享链接优先使用真实局域网 IP（避免 127.0.0.1 导致外机无法访问）
+  const effectiveInviteUrl = useMemo(() => {
+    const targetBase = netData?.qrTarget || (netData?.lan?.[0] ? `http://${netData.lan[0]}:8080` : null);
+    if (!targetBase) return inviteUrl;
+    try {
+      const parsed = new URL(inviteUrl);
+      if (parsed.hostname === '127.0.0.1' || parsed.hostname === 'localhost' || parsed.hostname === '0.0.0.0') {
+        const target = new URL(targetBase);
+        parsed.protocol = target.protocol;
+        parsed.hostname = target.hostname;
+        parsed.port = target.port;
+        return parsed.toString();
+      }
+    } catch {
+      // ignore
+    }
+    return inviteUrl;
+  }, [inviteUrl, netData]);
+
   useEffect(() => {
     let cancelled = false;
     async function fetchStatus() {
       try {
-        const res = await fetch(buildApiUrl('/api/network/status'));
-        if (res.ok && !cancelled) {
-          const data = await res.json() as NetworkStatusData;
+        const netRes = await fetch(buildApiUrl('/api/network/status'));
+        if (netRes.ok && !cancelled) {
+          const data = await netRes.json() as NetworkStatusData;
           setNetData(data);
           if (data.primaryType === 'hotspot') {
             setHotspotSsid('主机热点');
@@ -49,7 +68,7 @@ export function SmartNetworkGuide({ inviteUrl, roomCode }: SmartNetworkGuideProp
       }
     }
     void fetchStatus();
-    const interval = setInterval(() => void fetchStatus(), 6000);
+    const interval = setInterval(() => void fetchStatus(), 5000);
     return () => {
       cancelled = true;
       clearInterval(interval);
@@ -77,12 +96,12 @@ export function SmartNetworkGuide({ inviteUrl, roomCode }: SmartNetworkGuideProp
           {isHotspot ? (
             <>
               <Radio size={14} className="smart-network-badge__icon" />
-              <span>手机热点 0 流量模式</span>
+              <span>手机热点</span>
             </>
           ) : (
             <>
               <Wifi size={14} className="smart-network-badge__icon" />
-              <span>局域网 Wi-Fi 模式</span>
+              <span>局域网 Wi-Fi</span>
             </>
           )}
         </div>
@@ -90,17 +109,17 @@ export function SmartNetworkGuide({ inviteUrl, roomCode }: SmartNetworkGuideProp
         {hasClients ? (
           <div className="smart-network-badge is-success">
             <CheckCircle2 size={13} />
-            <span>局域网已连通 ({netData?.onlineClientCount} 台设备)</span>
+            <span>{netData?.onlineClientCount} 台设备在席</span>
           </div>
         ) : (
           <button
             type="button"
             className="smart-network-badge is-notice"
             onClick={() => setShowApHelp(!showApHelp)}
-            title="查看连接排查指引"
+            title="查看局域网连接排查说明"
           >
             <HelpCircle size={13} />
-            <span>连不上？防隔离排查</span>
+            <span>连接排查</span>
           </button>
         )}
       </div>
@@ -112,23 +131,23 @@ export function SmartNetworkGuide({ inviteUrl, roomCode }: SmartNetworkGuideProp
           className={`smart-network-tab ${activeTab === 'game' ? 'is-active' : ''}`}
           onClick={() => setActiveTab('game')}
         >
-          1. 扫码进房（免装APP）
+          局域网扫码
         </button>
         <button
           type="button"
           className={`smart-network-tab ${activeTab === 'hotspot' ? 'is-active' : ''}`}
           onClick={() => setActiveTab('hotspot')}
         >
-          2. 一键连热点/Wi-Fi
+          连接热点
         </button>
       </div>
 
-      {/* 选项卡内容 1: 进房码 */}
+      {/* 选项卡内容 1: 局域网进房码 */}
       {activeTab === 'game' && (
         <div className="smart-network-card__content">
           <div className="smart-network-qr-wrapper">
             <QRCodeSVG
-              value={inviteUrl}
+              value={effectiveInviteUrl}
               size={136}
               className="smart-network-qr"
               role="img"
@@ -148,14 +167,14 @@ export function SmartNetworkGuide({ inviteUrl, roomCode }: SmartNetworkGuideProp
               </button>
             </div>
             <p className="smart-network-hint">
-              朋友手机连接同一 Wi-Fi 或房主热点后，使用自带<strong>相机 / 浏览器扫一扫</strong>即可直接进房，<strong>无需下载任何 APP</strong>！
+              现场同 Wi-Fi 或热点玩家，使用手机相机或微信扫码即玩。
             </p>
             <button
               type="button"
               className="smart-network-url-btn"
-              onClick={() => void copyText(inviteUrl, '邀请链接')}
+              onClick={() => void copyText(effectiveInviteUrl, '局域网链接')}
             >
-              复制网页链接
+              复制局域网链接
             </button>
           </div>
         </div>
@@ -175,7 +194,7 @@ export function SmartNetworkGuide({ inviteUrl, roomCode }: SmartNetworkGuideProp
           </div>
           <div className="smart-network-info">
             <p className="smart-network-hint" style={{ marginTop: 0 }}>
-              朋友使用系统相机扫此码可<strong>一键直连热点/Wi-Fi</strong>，免去手动输密码：
+              使用系统相机扫描二维码，可以直接连接房主设置的 Wi-Fi 或热点。
             </p>
             <div className="smart-network-form-row">
               <label>热点名：</label>
@@ -183,7 +202,7 @@ export function SmartNetworkGuide({ inviteUrl, roomCode }: SmartNetworkGuideProp
                 type="text"
                 value={hotspotSsid}
                 onChange={(e) => setHotspotSsid(e.target.value)}
-                placeholder="输入你的热点名"
+                placeholder="输入热点名称"
                 className="smart-network-input"
               />
             </div>
@@ -193,7 +212,7 @@ export function SmartNetworkGuide({ inviteUrl, roomCode }: SmartNetworkGuideProp
                 type="text"
                 value={hotspotPassword}
                 onChange={(e) => setHotspotPassword(e.target.value)}
-                placeholder="无密码可留空"
+                placeholder="无密码留空"
                 className="smart-network-input"
               />
             </div>
@@ -210,21 +229,20 @@ export function SmartNetworkGuide({ inviteUrl, roomCode }: SmartNetworkGuideProp
         >
           <div className="smart-network-ap-title">
             <ShieldAlert size={14} color="#d97706" />
-            <span>公共 Wi-Fi 打不开？AP 隔离 100% 解决指南</span>
+            <span>连接问题排查（AP 隔离处理）</span>
           </div>
           {showApHelp ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
 
         {showApHelp && (
           <div className="smart-network-ap-content">
-            <p><strong>为什么在商场/酒店/咖啡馆 Wi-Fi 朋友扫码打不开？</strong></p>
-            <p>公共 Wi-Fi 通常开启了【AP 隔离保护】，阻止连接同 Wi-Fi 的手机互相通信。</p>
+            <p>商场、餐厅或酒店等公共 Wi-Fi 通常开启了 AP 隔离，会限制同一网络下的设备相互访问。</p>
             <div className="smart-network-ap-solution">
-              <p><strong>推荐畅玩方案（0 流量消耗）：</strong></p>
+              <p><strong>建议改用手机热点：</strong></p>
               <ol>
-                <li>房主手机开启【个人热点】；</li>
-                <li>朋友连接房主热点（或扫上方「一键连热点」码）；</li>
-                <li>连接后朋友扫「进房码」，局域网传输 <strong>不耗费房主任何手机流量</strong>！</li>
+                <li>房主手机开启个人热点；</li>
+                <li>其他玩家连接该热点（也可切换到上方“连接热点”直接扫码）；</li>
+                <li>连接后再扫描进房二维码。局域网对局只在本地设备之间传输数据，不消耗手机流量。</li>
               </ol>
             </div>
           </div>

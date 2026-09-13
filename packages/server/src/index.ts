@@ -13,19 +13,51 @@ import { startPerfStats } from './boot/perfStats.ts';
 import { buildEntryUrls } from './boot/lan.ts';
 import { createApp, SERVER_VERSION } from './app.ts';
 
-// APP 内嵌运行时由原生层注入 CLIENT_DIST_DIR；常规部署相对仓库解析。
-// 打包为 CJS 后 import.meta.url 不可用，故仅在未注入时尝试相对解析。
-const clientDist = process.env.CLIENT_DIST_DIR !== undefined
-  ? resolve(process.env.CLIENT_DIST_DIR)
-  : resolveClientDistFromModule();
+// APP 内嵌运行时由原生层注入 CLIENT_DIST_DIR；常规部署自动检测多级候选路径。
+const clientDist = resolveClientDist();
 
-function resolveClientDistFromModule(): string {
-  try {
-    const here = dirname(fileURLToPath(import.meta.url));
-    return resolve(here, '../../client/dist');
-  } catch {
-    return resolve('client/dist');
+function resolveClientDist(): string | undefined {
+  if (process.env.CLIENT_DIST_DIR) {
+    const custom = resolve(process.env.CLIENT_DIST_DIR);
+    if (existsSync(custom)) return custom;
   }
+
+  const candidates: string[] = [];
+
+  try {
+    const here = typeof __dirname !== 'undefined'
+      ? __dirname
+      : dirname(fileURLToPath(import.meta.url));
+    candidates.push(
+      resolve(here, '../../client/dist'),
+      resolve(here, '../client/dist'),
+      resolve(here, '../../packages/client/dist'),
+      resolve(here, '../packages/client/dist'),
+      resolve(here, 'client-dist'),
+      resolve(here, 'client/dist'),
+      resolve(here, '../client-dist'),
+      resolve(here, 'android-assets/apphost/client-dist'),
+    );
+  } catch {
+    // 打包为 CJS 时 import.meta.url 不可用
+  }
+
+  candidates.push(
+    resolve(process.cwd(), 'packages/client/dist'),
+    resolve(process.cwd(), '../client/dist'),
+    resolve(process.cwd(), 'client-dist'),
+    resolve(process.cwd(), 'client/dist'),
+    resolve(process.cwd(), 'build/app-host/android-assets/apphost/client-dist'),
+    resolve('packages/client/dist'),
+  );
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return undefined;
 }
 
 /** 把实际监听端口与入口地址写给宿主（APP 原生层轮询读取；端口冲突自动换端口后以此为准） */
@@ -73,8 +105,13 @@ async function main(): Promise<void> {
 
   // NFR-005/006：仅 PERF_STATS_INTERVAL_MS 设置时向 stdout 输出采样，供压测解析
   startPerfStats();
+  if (clientDist) {
+    logger.info('client_dist_resolved', { clientDist });
+  } else {
+    logger.warn('client_dist_not_found', { message: '未找到前端静态构建产物目录，将回退至占位页' });
+  }
 
-  const app = createApp(config, logger, existsSync(clientDist) ? clientDist : undefined);
+  const app = createApp(config, logger, clientDist);
   await app.listen();
 
   const urls = buildEntryUrls(app.port(), config.publicBaseUrl);

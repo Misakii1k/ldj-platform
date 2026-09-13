@@ -49,6 +49,18 @@ const REGISTRY: Readonly<Record<string, GameViewParser>> = {
     parsePlayerView: (view) => parseWerewolfView(view, 'player'),
     parseSpectatorView: (view) => parseWerewolfView(view, 'spectator'),
   },
+  'werewolf:werewolf_moderator_v1:1': {
+    parsePlayerView: (view) => {
+      if (typeof view !== 'object' || view === null || Array.isArray(view)) return null;
+      const v = view as Record<string, unknown>;
+      return v.rulesetId === 'werewolf_moderator_v1' ? view : null;
+    },
+    parseSpectatorView: (view) => {
+      if (typeof view !== 'object' || view === null || Array.isArray(view)) return null;
+      const v = view as Record<string, unknown>;
+      return v.rulesetId === 'werewolf_moderator_v1' ? view : null;
+    },
+  },
   'landlord:landlord_platform_v1:1': {
     parsePlayerView: (view) => parseLandlordPlatformView(view, 'player'),
     parseSpectatorView: (view) => parseLandlordPlatformView(view, 'spectator'),

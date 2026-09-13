@@ -75,10 +75,40 @@ test('没有发言时不附加空段落', () => {
   assert.doesNotMatch(prompt.situation, /目前大家的发言/);
 });
 
-test('投票阶段同样参考大家的发言来推理', () => {
+test('投票阶段同样参考大家的发言来推理，且选项采用清晰的席位代号', () => {
   const chat = [{ fromPlayerId: 'p1', text: '我觉得 2 号说的跟我不太一样。' }];
   const prompt = buildUndercoverBotPrompt(fakeInput(baseView('voting'), chat));
   assert.ok(prompt);
   assert.match(prompt.situation, /结合大家的发言判断谁拿到了不同的词/);
   assert.match(prompt.situation, /我觉得 2 号说的跟我不太一样。/);
+  // p3 是 3 号玩家，候选项应为 1 号与 2 号玩家，id 使用可直连模型的席位号，action 保留 playerId
+  assert.deepEqual(prompt.options, [
+    {
+      id: '1',
+      label: '投票淘汰 1 号玩家',
+      action: { type: 'cast_vote', targetPlayerId: 'p1' },
+    },
+    {
+      id: '2',
+      label: '投票淘汰 2 号玩家',
+      action: { type: 'cast_vote', targetPlayerId: 'p2' },
+    },
+  ]);
+});
+
+test('加赛投票阶段仅枚举候选人，且代号为席位号', () => {
+  const runoffView = {
+    ...baseView('runoff_voting'),
+    runoffCandidates: ['p2'],
+  };
+  const prompt = buildUndercoverBotPrompt(fakeInput(runoffView, []));
+  assert.ok(prompt);
+  assert.match(prompt.situation, /进入加赛投票，只能投候选人/);
+  assert.deepEqual(prompt.options, [
+    {
+      id: '2',
+      label: '投票淘汰 2 号玩家',
+      action: { type: 'cast_vote', targetPlayerId: 'p2' },
+    },
+  ]);
 });

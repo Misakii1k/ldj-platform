@@ -17,6 +17,7 @@ const steps = [
   { actor: sys, action: { type: 'advance_night', hour: 4 } },
   { actor: sys, action: { type: 'advance_night', hour: 5 } },
   { actor: sys, action: { type: 'advance_night', hour: 6 } },
+  { actor: sys, action: { type: 'end_night' } },
   { actor: sys, action: { type: 'auto_select_accomplice' } },
   { actor: sys, action: { type: 'end_discussion' } },
   { actor: actor('a'), action: { type: 'cast_vote', playerId: 'a', targetPlayerId: 'b' } },

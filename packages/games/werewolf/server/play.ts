@@ -50,6 +50,7 @@ export interface WerewolfPlayView {
   lastWordsPlayerId?: string | null;
   runoffCandidates?: readonly string[];
   lastNightDeaths?: readonly string[];
+  freeDiscussionReadyPlayerIds?: readonly string[];
   players: readonly WerewolfPlayPlayer[];
   config?: {
     wolfKillScope?: 'any' | 'non_wolf';
@@ -67,18 +68,9 @@ export type WerewolfPlayAction =
   | { type: 'hunter_shoot'; targetPlayerId: string | null }
   | { type: 'confirm_announcement' }
   | { type: 'finish_speech' }
+  | { type: 'ready_vote' }
   | { type: 'day_vote'; targetPlayerId: string | null }
   | { type: 'finish_last_words' };
-
-const ROLE_NAMES: Record<WerewolfPlayRole, string> = {
-  wolf: '狼人',
-  villager: '村民',
-  seer: '预言家',
-  witch: '女巫',
-  guard: '守卫',
-  hunter: '猎人',
-  idiot: '白痴',
-};
 
 export function asWerewolfPlayView(view: unknown): WerewolfPlayView | null {
   if (typeof view !== 'object' || view === null) return null;
@@ -186,8 +178,8 @@ export function pickWerewolfPlayAction(input: BotDecisionInput<unknown>): Werewo
         return target ? { type: 'seer_check', targetPlayerId: target } : null;
       }
       if (me.role === 'witch') {
-        if (me.nightVictimId === null || me.nightVictimId === undefined) return null;
         if (me.witchSaveDecision === null) {
+          if (me.nightVictimId === null || me.nightVictimId === undefined) return null;
           const victimIsSelf = me.nightVictimId === playerId;
           const canSave = !me.witchSaveUsed && (!victimIsSelf || Boolean(me.witchCanSelfSave));
           const shouldSave = canSave && (view.day <= 1 || victimIsSelf);
@@ -198,7 +190,7 @@ export function pickWerewolfPlayAction(input: BotDecisionInput<unknown>): Werewo
       if (me.role === 'guard') {
         if (me.guardDecided) return null;
         const blocked = me.lastGuardTargetId;
-        const candidates = aliveOthers(view, playerId)
+        const candidates = (view.config?.wolfKillScope === 'any' ? view.players.filter((p) => p.alive) : aliveOthers(view, playerId))
           .filter((player) => player.playerId !== blocked)
           .map((player) => player.playerId);
         return { type: 'guard_guard', targetPlayerId: choose(candidates, random) };
@@ -217,9 +209,13 @@ export function pickWerewolfPlayAction(input: BotDecisionInput<unknown>): Werewo
     case 'discussion':
       return view.currentSpeakerId === playerId ? { type: 'finish_speech' } : null;
 
+    case 'free_discussion':
+      return me.alive && !(view.freeDiscussionReadyPlayerIds ?? []).includes(playerId) ? { type: 'ready_vote' } : null;
+
     case 'voting':
     case 'runoff_voting': {
       if (!me.alive || me.idiotRevealed || me.hasVoted) return null;
+      if (view.phase === 'runoff_voting' && (view.runoffCandidates ?? []).includes(playerId)) return null;
       return { type: 'day_vote', targetPlayerId: pickVote(view, playerId, me, input) };
     }
 
@@ -231,7 +227,7 @@ export function pickWerewolfPlayAction(input: BotDecisionInput<unknown>): Werewo
   }
 }
 
-export function cannedWerewolfSpeech(view: WerewolfPlayView, playerId: string): string {
+export function cannedWerewolfSpeech(view: WerewolfPlayView, _playerId: string): string {
   const me = view.me;
   if (!me) return '先听大家把话说完。';
   const deaths = (view.lastNightDeaths ?? []).map((id) => seatLabel(view, id)).join('、');

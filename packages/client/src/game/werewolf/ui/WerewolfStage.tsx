@@ -1,9 +1,15 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { GameActionFeedback } from '../../../shared-ui/GameMotion.tsx';
 import { TabletopOvalShell, type TabletopTheme } from '../../../shared-ui/TabletopOvalShell.tsx';
+import { useCompactLayout } from '../../../shared-ui/useCompactLayout.ts';
 import { buildWerewolfPhaseKey } from '../motion.ts';
-import { WEREWOLF_ROLE_NAMES, type WerewolfPresentationModel, type WerewolfSeatModel } from '../presentation.ts';
+import type { WerewolfRole } from '../types.ts';
+import {
+  WEREWOLF_ROLE_ARTWORK,
+  WEREWOLF_ROLE_NAMES,
+  type WerewolfPresentationModel,
+  type WerewolfSeatModel,
+} from '../presentation.ts';
 import { EyeBlinkTransition } from './EyeBlinkTransition.tsx';
 import { GameOverReveal } from './GameOverReveal.tsx';
 import { MoonPhaseHeader } from './MoonPhaseHeader.tsx';
@@ -30,14 +36,7 @@ interface TargetMenuState {
 }
 
 export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfStageProps) {
-  const [mobileLayout, setMobileLayout] = useState(false);
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 767px), (orientation: landscape) and (max-height: 520px)');
-    const update = () => setMobileLayout(mediaQuery.matches);
-    update();
-    mediaQuery.addEventListener('change', update);
-    return () => mediaQuery.removeEventListener('change', update);
-  }, []);
+  const mobileLayout = useCompactLayout();
 
   const { currentNightRole, isNightVoiceRunning, isDayAnnouncementRunning, roleRemainingSeconds } = useJudgeVoice(model);
 
@@ -61,6 +60,16 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
     : isDayAnnouncementRunning
       ? (model.nightDeathSeats.length === 0 ? '昨夜是平安夜' : `昨夜有 ${model.nightDeathSeats.length} 人遇难`)
       : model.narrative;
+
+  // 轮到谁的行动环节，顶部表盘动态切换为该角色的专属立绘
+  const activeNightRoleKey = (currentNightRole as WerewolfRole | null) ?? (model.nightStage && model.nightStage !== 'done' ? (model.nightStage as WerewolfRole) : null);
+  const activeRole: WerewolfRole | null =
+    effectivePhase === 'hunter_shot'
+      ? 'hunter'
+      : effectivePhase === 'night' && activeNightRoleKey
+        ? activeNightRoleKey
+        : null;
+  const activeRoleArtwork = activeRole ? (WEREWOLF_ROLE_ARTWORK[activeRole] ?? null) : null;
 
   const isNightRoleActive = (model.phase === 'night' || isNightVoiceRunning) && currentNightRole !== null;
   const isMyTurnAtNight = model.phase === 'night' && isNightRoleActive && model.self?.role === currentNightRole;
@@ -193,6 +202,12 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
   const leftSeats = effectiveModel.seats.slice(0, half);
   const rightSeats = effectiveModel.seats.slice(half);
 
+  const playerCount = effectiveModel.seats.length;
+  const wolfCount = playerCount >= 11 ? 4 : playerCount >= 9 ? 3 : 2;
+  const specialsCount = 2 + (effectiveModel.rolesConfig.guard ? 1 : 0) + (effectiveModel.rolesConfig.hunter ? 1 : 0) + (effectiveModel.rolesConfig.idiot ? 1 : 0);
+  const villagerCount = Math.max(0, playerCount - wolfCount - specialsCount);
+  const boardSummary = `${playerCount} 人局 · ${wolfCount} 狼 · ${specialsCount} 神 · ${villagerCount} 民`;
+
   const centerArena = (
     <div
       className={`werewolf-arena werewolf-arena--${effectiveMood}`}
@@ -246,6 +261,7 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
           deadlineAt={isNightVoiceRunning ? null : effectiveModel.deadlineAt}
           overrideSeconds={isNightVoiceRunning ? roleRemainingSeconds : null}
           spectator={effectiveModel.spectator}
+          roleArtworkUrl={activeRoleArtwork}
         />
 
         {/* 终局身份大复盘或角色阶段情报大卡片 */}
@@ -270,7 +286,7 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
       )}
 
       <p className="werewolf-arena__caption" aria-hidden="true">
-        {isNight ? '暗夜审判桌' : '白昼公投厅'} · {model.seats.length} 人局
+        {isNight ? '暗夜审判桌' : '白昼公投厅'} · {boardSummary}
       </p>
 
       {/* 头像点击目标选项弹出浮层（通过 createPortal 挂载到 document.body，彻底解决舞台 transform 与 overflow 裁切导致浮层错位或无法显示的问题） */}
@@ -341,7 +357,7 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
   return (
     <TabletopOvalShell
       title="狼人杀"
-      subtitle={`${model.seats.length} 人局`}
+      subtitle={boardSummary}
       gameId="werewolf"
       theme={dynamicTheme}
       hideSeats={true}

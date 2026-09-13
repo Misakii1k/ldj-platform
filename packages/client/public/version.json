@@ -1,0 +1,9 @@
+{
+  "version": "0.4.0",
+  "versionCode": 400,
+  "releaseDate": "2026-09-11",
+  "downloadUrl": "/api/download?tag=v0.4.0",
+  "fileSize": 405600938,
+  "sha256": "37aa2d0435e99f2b1409dcacae90baf6121108c348dcb39ac85072fdb6b3a666",
+  "releaseNotes": "聚乐桌游 v0.4.0 发布：支持谁是卧底、囚徒之夜等多款桌游与局域网极速联机"
+}

@@ -11,7 +11,10 @@ import { webAudio } from '../shared-ui/WebAudioManager.ts';
 import { useCountdown } from '../shared-ui/useCountdown.ts';
 import { UserAvatar } from '../user/UserAvatar.tsx';
 import { useUserProfile } from '../user/UserProfileContext.tsx';
-import { GameActionFeedback, GameCountdownPulse } from '../shared-ui/GameMotion.tsx';
+import { resolveMemberAvatar } from '../user/avatar.ts';
+import { GameActionFeedback } from '../shared-ui/GameMotion.tsx';
+import { ArenaBoard } from '../shared-ui/ArenaBoard.tsx';
+import { TabletopEventOverlay } from '../shared-ui/TabletopEventOverlay.tsx';
 
 type AnyView = Record<string, any>;
 
@@ -431,7 +434,10 @@ function OpponentStation({
       {/* 头像与光圈 */}
       <div className="landlord-opponent-avatar-box">
         <UserAvatar
-          avatar={(members as any[]).find((m) => m.playerId === player.playerId)?.avatar ?? 'preset:fox'}
+          avatar={resolveMemberAvatar(
+            (members as any[]).find((m) => m.playerId === player.playerId),
+            { seat: player.seat, playerId: player.playerId },
+          )}
           nickname={name}
           size={46}
           className="landlord-opponent-avatar"
@@ -559,6 +565,18 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
   useEffect(() => {
     if (view.phase !== 'playing' || !myTurn) setSelectedIds([]);
   }, [myTurn, view.phase]);
+
+  // 叫分结束、地主确定的关键瞬间：用共享全屏反馈盖一次印（仅在地主 id 从无到有时触发）。
+  const [landlordReveal, setLandlordReveal] = useState<{ name: string; isMe: boolean } | null>(null);
+  const prevLandlordIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const current = typeof view.landlordId === 'string' ? view.landlordId : null;
+    const previous = prevLandlordIdRef.current;
+    prevLandlordIdRef.current = current;
+    if (current !== null && previous === null) {
+      setLandlordReveal({ name: nameFor(members, current), isMe: current === me?.playerId });
+    }
+  }, [view.landlordId, members, me?.playerId]);
 
   // 整理手牌：按大王>小王>2>A>K>Q>J>10>9>8>7>6>5>4>3 降序排列
   const sortedHand = useMemo(() => {
@@ -698,11 +716,11 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
 
   const centerArena = (
     <div className="landlord-battlefield">
-      {/* 桌面背景专属水印：大号“斗地主”艺术书法与小幅“聚乐桌”品牌徽章 */}
+      {/* 桌面背景专属水印：大号“斗地主”艺术书法与小幅“聚乐桌游”品牌徽章 */}
       <div className="landlord-table-watermark" aria-hidden="true">
         <div className="landlord-table-watermark__logo">
           <span className="landlord-table-watermark__icon">✦</span>
-          <span>聚乐桌 · 经典棋牌</span>
+          <span>聚乐桌游 · 经典棋牌</span>
         </div>
         <div className="landlord-table-watermark__title">斗地主</div>
         <div className="landlord-table-watermark__badge">CLASSIC LANDLORD</div>
@@ -749,19 +767,24 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
           )}
         </div>
 
-        {/* 中心开阔区：若为自由领出回合，显示柔和指引提示 */}
+        {/* 中心开阔区：叫分/自由出牌轮次的焦点提示 */}
         <div className="landlord-center-nexus">
-          {view.phase === 'bidding' && (
-            <div className="landlord-nexus-pill">
-              <GameIcon name="horn" size={14} style={{ marginRight: '4px' }} />
-              等待 {nameFor(members, view.currentBidderId)} 叫分
-            </div>
-          )}
-          {view.phase === 'playing' && !view.currentTrick && (
-            <div className="landlord-nexus-pill">
-              <GameIcon name="cards_deck" size={14} style={{ marginRight: '4px' }} />
-              自由出牌轮次
-            </div>
+          {(view.phase === 'bidding' || (view.phase === 'playing' && !view.currentTrick)) && (
+            <ArenaBoard
+              className="landlord-nexus-board"
+              tone={view.phase === 'bidding' ? 'accent' : 'paper'}
+              compact
+              headline={
+                view.phase === 'bidding'
+                  ? `等待 ${nameFor(members, view.currentBidderId)} 叫分`
+                  : '自由出牌轮次'
+              }
+              hint={
+                view.phase === 'bidding'
+                  ? '按顺序叫分，最高分者成为地主并公开 3 张底牌'
+                  : '无人接牌，你可以出任意合法牌型'
+              }
+            />
           )}
 {error && (
             <GameActionFeedback
@@ -888,8 +911,9 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
                   className="landlord-btn landlord-btn--primary"
                   disabled={busy || selectedIds.length === 0}
                   onClick={handlePlaySelected}
+                  title={selectedIds.length === 0 ? '请先在下方手牌中点击选择要打出的牌' : undefined}
                 >
-                  {busy ? '提交中…' : selectedIds.length > 0 ? `出牌 ${selectedIds.length}张` : '出牌'}
+                  {busy ? '提交中…' : selectedIds.length > 0 ? `出牌 (${selectedIds.length}张)` : '请先选牌'}
                 </button>
               </div>
             ) : (
@@ -951,23 +975,35 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
       id: p.playerId,
       name: nameFor(members, p.playerId),
       isCurrentTurn: (view.phase === 'bidding' && view.currentBidderId === p.playerId) || (view.phase === 'playing' && view.currentPlayerId === p.playerId),
+      // 手牌数：外壳席位条的手牌徽章，斗地主三人局看对手剩牌是关键信息
+      handCount: typeof p.handCount === 'number' ? p.handCount : undefined,
       badge: p.playerId === view.landlordId ? '地主' : view.landlordId ? '农民' : undefined,
     }));
   }, [view.players, view.phase, view.currentBidderId, view.currentPlayerId, view.landlordId, members]);
 
   return (
-    <TabletopOvalShell
-      title="斗地主"
-      subtitle={landlordSubtitle(view, members)}
-      gameId="landlord"
-      theme="poker"
-      recommendLandscape
-      players={seats}
-      currentUserId={me?.playerId}
-      centerArena={centerArena}
-      bottomBar={bottomBar}
-      phaseKey={`${view.phase}:${view.currentBidderId ?? view.currentPlayerId ?? view.winnerTeam ?? 'idle'}`}
-    />
+    <>
+      <TabletopOvalShell
+        title="斗地主"
+        subtitle={landlordSubtitle(view, members)}
+        gameId="landlord"
+        theme="poker"
+        recommendLandscape
+        players={seats}
+        currentUserId={me?.playerId}
+        centerArena={centerArena}
+        bottomBar={bottomBar}
+        phaseKey={`${view.phase}:${view.currentBidderId ?? view.currentPlayerId ?? view.winnerTeam ?? 'idle'}`}
+      />
+      <TabletopEventOverlay
+        open={landlordReveal !== null}
+        variant={landlordReveal?.isMe ? 'reveal' : 'stamp'}
+        label={landlordReveal?.isMe ? '你成为地主！' : `地主是 ${landlordReveal?.name ?? ''}`}
+        sublabel={landlordReveal?.isMe ? '底牌已归你所有，先手出牌' : '底牌已公开，地主先手出牌'}
+        durationMs={1900}
+        onComplete={() => setLandlordReveal(null)}
+      />
+    </>
   );
 }
 

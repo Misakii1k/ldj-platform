@@ -29,8 +29,13 @@ function toDawn(state: CheeseThiefState): CheeseThiefState {
     if (!r.ok) throw new Error(r.message);
     s = r.nextState;
   }
+  if (s.phase === 'night') {
+    const r = reduceCheeseThiefState(s, { type: 'end_night' }, { now: NOW, random: deterministicContext().random });
+    if (!r.ok) throw new Error(r.message);
+    s = r.nextState;
+  }
   if (s.phase === 'accomplice_select') {
-    const r = reduceCheeseThiefState(s, { type: 'auto_select_accomplice' }, { now: NOW, random: deterministicContext().random });
+    const r = reduceCheeseThiefState(s, { type: 'select_accomplice', playerId: s.thiefId!, accompliceIds: ['a'] }, { now: NOW, random: deterministicContext().random });
     if (!r.ok) throw new Error(r.message);
     s = r.nextState;
   }

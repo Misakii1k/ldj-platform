@@ -231,9 +231,9 @@ export function HomePartyScene({ selectedCount }: HomePartySceneProps) {
       </div>
 
       {/* 漂浮的微光粒子 */}
-      <span className="home-party-scene__spark home-party-scene__spark--one">✦</span>
-      <span className="home-party-scene__spark home-party-scene__spark--two">✦</span>
-      <span className="home-party-scene__spark home-party-scene__spark--three">·</span>
+      <span className="home-party-scene__spark home-party-scene__spark--one" aria-hidden="true">✦</span>
+      <span className="home-party-scene__spark home-party-scene__spark--two" aria-hidden="true">✦</span>
+      <span className="home-party-scene__spark home-party-scene__spark--three" aria-hidden="true">·</span>
     </div>
   );
 }

@@ -18,6 +18,7 @@ const FULL = {
   witchSelfSave: 'first_night',
   winCondition: 'roles',
   roles: { guard: true, hunter: true, idiot: true },
+  wolfDelta: -1,
 };
 const FULL_PLAYERS = ['p0', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'];
 
@@ -79,7 +80,6 @@ test('d4-v 契约套件与视角泄漏门对 v2 打开', () => {
   const state = werewolfV2Module.createInitialState(ctx, [...FULL_PLAYERS], werewolfV2Module.parseConfig(FULL));
   versionedContractAssertions.viewSchemas(werewolfV2Module, state, FULL_PLAYERS);
   versionedContractAssertions.botLegalCandidates(werewolfV2Module, ctx, state, FULL_PLAYERS, 'v2-server-bot');
-  const isWolf = (id: string) => (state as V2State).players[id]?.role === 'wolf';
   versionedContractAssertions.noSecretLeak(
     werewolfV2Module,
     state,
@@ -90,7 +90,11 @@ test('d4-v 契约套件与视角泄漏门对 v2 打开', () => {
       return p ? [p.role] : [];
     },
     {
-      allowedLeakPairs: (owner, other) => isWolf(owner) && isWolf(other),
+      allowedLeakPairs: (owner, other) => {
+        const a = (state as V2State).players[owner]?.role;
+        const b = (state as V2State).players[other]?.role;
+        return a !== undefined && a === b;
+      },
       isRevealed: (snap) => (snap as V2State).phase === 'game_over',
     },
   );

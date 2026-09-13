@@ -3,7 +3,6 @@
  * 私密内容（本人手牌）只进玩家视图的 me.hand；公开/观战视图不含手牌内容。
  */
 import { z } from 'zod';
-import type { BellClashCard } from '../types.ts';
 import type {
   BellClashSimPlayerView,
   BellClashSimPublicView,

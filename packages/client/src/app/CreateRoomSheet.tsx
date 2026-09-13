@@ -75,7 +75,7 @@ export function CreateRoomSheet({ game, onClose }: CreateRoomSheetProps) {
   return (
     <SheetDialog
       title={`创建「${game.displayName}」房间`}
-      description={`本玩法适合 ${game.minPlayers}–${game.maxPlayers} 人体验，房间创建后直接分享 5 位房间码即可让好友加入！`}
+      description={`本游戏支持 ${game.minPlayers}–${game.maxPlayers} 人。创建后将 5 位房间码分享给身边的朋友即可加入。`}
       onClose={onClose}
       initialFocusRef={nicknameRef}
       footer={
@@ -103,7 +103,7 @@ export function CreateRoomSheet({ game, onClose }: CreateRoomSheetProps) {
               id="create-nickname"
               value={nickname}
               onChange={(event) => setNickname(event.target.value)}
-              placeholder="例如：大头爸爸"
+              placeholder="输入你的昵称"
               maxLength={16}
               autoComplete="nickname"
               aria-invalid={Boolean(error)}

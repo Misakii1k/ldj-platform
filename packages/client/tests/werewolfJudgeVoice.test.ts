@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CUE_FILES, hasCue, judgeVoice } from '../src/game/werewolf/ui/judgeVoice.ts';
+import { hasCue, judgeVoice } from '../src/game/werewolf/ui/judgeVoice.ts';
 import { buildWerewolfPresentation } from '../src/game/werewolf/presentation.ts';
 import type { WerewolfView } from '../src/game/werewolf/types.ts';
 
-test('沕官语音映射表夌粘包含 1-12 号及各核心阶殱语音', () => {
+test('法官语音映射表完整包含 1-12 号及各核心阶段语音', () => {
   // 验证 1-12 号座次配套语音均存在
   for (let seat = 1; seat <= 12; seat += 1) {
     assert.strictEqual(hasCue(`day_death_number_${seat}`), true);
@@ -53,7 +53,7 @@ test('沕官语音映射表夌粘包含 1-12 号及各核心阶殱语音', () =>
   assert.strictEqual(hasCue('invalid_key_xyz'), false);
 });
 
-test('JudgeVoiceQueue interrupt 与 stopAll 能立即清橷队列并停止播放', () => {
+test('JudgeVoiceQueue interrupt 与 stopAll 能立即清空队列并停止播放', () => {
   judgeVoice.enqueue('day_peaceful');
   judgeVoice.enqueue('vote_start');
   judgeVoice.interrupt();
@@ -61,7 +61,7 @@ test('JudgeVoiceQueue interrupt 与 stopAll 能立即清橷队列并停止播放
   assert.strictEqual(hasCue('day_peaceful'), true);
 });
 
-test('buildWerewolfPresentation 正确暴露 rolesConfig 观色衠配置', () => {
+test('buildWerewolfPresentation 正确暴露 rolesConfig 角色池配置', () => {
   const dummyView: WerewolfView = {
     gameId: 'werewolf',
     schemaVersion: 4,
@@ -285,5 +285,13 @@ test('非发言阶段（如夜晚或天亮公布）席位绝不亮起 isSpeaking
 
   const p2Seat = model.seats.find((s) => s.playerId === 'p2');
   assert.strictEqual(p2Seat?.isSpeaking, false, '夜晚阶段即使有 currentSpeakerId 也不得判定为发言中');
+});
+
+test('法官语音：加赛平票有对应语音 vote_tie_night，全员弃票不播放再次平票语音', () => {
+  assert.strictEqual(hasCue('vote_tie_night'), true);
+});
+
+test('法官语音：猎人出局开枪语音 hunter_shoot 存在且可用', () => {
+  assert.strictEqual(hasCue('hunter_shoot'), true);
 });
 

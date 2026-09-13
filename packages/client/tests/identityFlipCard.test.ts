@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  DEFAULT_IDENTITY_REVEAL_MODE,
   INITIAL_IDENTITY_CARD_STATE,
   reduceIdentityCardState,
   computeIsRevealed,
+  reduceFlipRevealed,
   type IdentityCardState,
 } from '../src/shared-ui/IdentityFlipCard.tsx';
 
@@ -59,4 +61,20 @@ test('环境防窥：切换后台或失焦时强制扣回', () => {
   const resetState = reduceIdentityCardState(openState, { type: 'emergency_hide' });
   assert.equal(resetState.isPressing, false);
   assert.equal(computeIsRevealed(resetState, false), false);
+});
+
+test('默认揭示方式仍为按住查看', () => {
+  assert.equal(DEFAULT_IDENTITY_REVEAL_MODE, 'press');
+});
+
+test('flip 模式：点按翻转揭示，再点翻回', () => {
+  assert.equal(reduceFlipRevealed(false, 'toggle', true), true);
+  assert.equal(reduceFlipRevealed(true, 'toggle', true), false);
+});
+
+test('flip 模式：不可交互时保持原状，环境防窥强制翻回', () => {
+  assert.equal(reduceFlipRevealed(false, 'toggle', false), false);
+  assert.equal(reduceFlipRevealed(true, 'toggle', false), true);
+  assert.equal(reduceFlipRevealed(true, 'hide', true), false);
+  assert.equal(reduceFlipRevealed(false, 'hide', true), false);
 });

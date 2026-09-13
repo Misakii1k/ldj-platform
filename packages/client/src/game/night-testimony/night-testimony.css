@@ -1,0 +1,51 @@
+/* 囚徒之夜：焦点式竞技场（ArenaBoard / ArenaRail / SeatTargetPicker）
+   由 styles.css 按游戏拆分而来；main.tsx 在 styles.css 之后、game-ui.css 之前按原顺序 import，
+   源顺序与拆分前完全一致（game-ui.css 的归一化层仍需最后加载才能压住 bespoke 样式）。 */
+.testimony-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.testimony-meters-panel {
+  display: block;
+}
+
+.testimony-yes-rail {
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.testimony-focal {
+  width: 100%;
+}
+
+.testimony-docket-panel {
+  padding: 10px 12px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-md);
+  background: color-mix(in srgb, var(--gp-surface) 88%, transparent);
+  box-shadow: var(--gp-shadow-sm);
+}
+
+.testimony-docket-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.testimony-docket-panel__title {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 900;
+  color: var(--gp-ink);
+}
+
+@media (max-width: 480px) {
+  .testimony-docket-panel__head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

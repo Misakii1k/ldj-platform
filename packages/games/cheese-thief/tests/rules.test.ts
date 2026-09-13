@@ -9,6 +9,7 @@ import {
   rollHourChoices,
   rollWakeHours,
 } from '../server/rules.ts';
+import { buildCheeseThiefPlayerView } from '../server/views.ts';
 import type { CheeseThiefState } from '../server/types.ts';
 
 const NOW = 1_700_000_000_000;
@@ -32,14 +33,17 @@ function makeState(players: string[] = ['a', 'b', 'c', 'd', 'e']) {
   );
 }
 
-/** 推进夜间 1→6 并处理共犯选择（相识模式自动选队首 N 人） */
+/** 推进夜间 1→6 并指定大盗挑选共犯 a 进入天亮 */
 function toDawn(state: CheeseThiefState): CheeseThiefState {
   let s = state;
   for (let hour = 1; hour <= 6; hour += 1) {
     s = accepted(s, { type: 'advance_night', hour });
   }
+  if (s.phase === 'night') {
+    s = accepted(s, { type: 'end_night' });
+  }
   if (s.phase === 'accomplice_select') {
-    s = accepted(s, { type: 'auto_select_accomplice' });
+    s = accepted(s, { type: 'select_accomplice', playerId: s.thiefId!, accompliceIds: ['a'] });
   }
   assert.equal(s.phase, 'dawn');
   return s;
@@ -158,6 +162,7 @@ test('5 人局：大盗选择 1 名共犯（相识）；超时自动选队首', 
   for (let hour = 1; hour <= 6; hour += 1) {
     state = accepted(state, { type: 'advance_night', hour });
   }
+  state = accepted(state, { type: 'end_night' });
   assert.equal(state.phase, 'accomplice_select', '5 人局共犯 1 名且相识');
   // 非大盗不能选择
   const denied = reduceCheeseThiefState(
@@ -173,20 +178,64 @@ test('5 人局：大盗选择 1 名共犯（相识）；超时自动选队首', 
   assert.equal(state.accomplicesKnown, true);
 });
 
-test('7 人局：不相识模式随机分配 2 名共犯，无需选择', () => {
+test('7 人局：相识模式大盗可选择 2 名共犯，全员相识且超时随机兜底', () => {
   const state = createCheeseThiefState(
     ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
     { rulesetId: 'cheese_thief_classic_v1' },
-    { a: 1, b: 1, c: 3, d: 5, e: 6, f: 2, g: 4 },
+    { a: 1, b: 1, c: 2, d: 5, e: 6, f: 4, g: 4 },
   );
   let s = state;
   for (let hour = 1; hour <= 6; hour += 1) {
     s = accepted(s, { type: 'advance_night', hour });
   }
-  assert.equal(s.phase, 'dawn', '不相识模式夜间后直接天亮');
-  assert.equal(s.accomplices.length, 2, '7 人局 2 名共犯');
-  assert.equal(s.accomplicesKnown, false);
-  assert.ok(!s.accomplices.includes('c'), '共犯不能是盗贼');
+  s = accepted(s, { type: 'end_night' });
+  assert.equal(s.phase, 'accomplice_select', '7 人局相识模式夜间后进入共犯选择阶段');
+  assert.equal(s.accomplicesKnown, true);
+
+  // 大盗 c 必须选择恰好 2 名共犯
+  const badPick = reduceCheeseThiefState(
+    s,
+    { type: 'select_accomplice', playerId: 'c', accompliceIds: ['d'] },
+    { now: NOW, random },
+  );
+  assert.equal(badPick.ok, false, '选 1 名共犯应被拒绝');
+
+  // 大盗 c 选 d 和 f 为共犯
+  const picked = accepted(s, { type: 'select_accomplice', playerId: 'c', accompliceIds: ['d', 'f'] });
+  assert.equal(picked.phase, 'dawn');
+  assert.equal(picked.accomplices.length, 2);
+  assert.deepEqual(picked.accomplices, ['d', 'f']);
+
+  // 验证全员相识（大盗与共犯互相知晓）
+  const thiefView = buildCheeseThiefPlayerView(picked, 'c');
+  assert.equal(thiefView.me?.isThief, true);
+  assert.deepEqual(thiefView.me?.knownAccomplices, ['d', 'f'], '大盗看到选定的 2 位共犯');
+
+  const accDView = buildCheeseThiefPlayerView(picked, 'd');
+  assert.equal(accDView.me?.isAccomplice, true);
+  assert.deepEqual(accDView.me?.knownAccomplices, ['c', 'f'], '共犯 d 看到大盗 c 与另一共犯 f');
+
+  const accFView = buildCheeseThiefPlayerView(picked, 'f');
+  assert.equal(accFView.me?.isAccomplice, true);
+  assert.deepEqual(accFView.me?.knownAccomplices, ['c', 'd'], '共犯 f 看到大盗 c 与另一共犯 d');
+
+  const villagerView = buildCheeseThiefPlayerView(picked, 'a');
+  assert.equal(villagerView.me?.isAccomplice, false);
+  assert.equal(villagerView.me?.isThief, false);
+  assert.deepEqual(villagerView.me?.knownAccomplices, [], '平民看不到任何共犯或大盗信息');
+
+  // 测试超时自动兜底：随机抽取 2 名
+  const timeoutResult = reduceCheeseThiefState(
+    s,
+    { type: 'auto_select_accomplice' },
+    { now: NOW, random },
+  );
+  assert.equal(timeoutResult.ok, true);
+  if (timeoutResult.ok) {
+    assert.equal(timeoutResult.nextState.phase, 'dawn');
+    assert.equal(timeoutResult.nextState.accomplices.length, 2);
+    assert.ok(!timeoutResult.nextState.accomplices.includes('c'), '自动抽取的共犯不能是大盗');
+  }
 });
 
 test('独醒村民（奶酪已失）可偷看他人骰子；已看/他人不可重复', () => {
@@ -340,6 +389,7 @@ test('4 人局：两骰自选，全员选毕进入夜晚', () => {
   state = accepted(state, { type: 'choose_hour', playerId: 'c', hour: 3 });
   state = accepted(state, { type: 'choose_hour', playerId: 'd', hour: 2 });
   assert.equal(state.phase, 'night', '全员选毕进入夜晚');
+  assert.equal(state.deadlineAt, NOW + state.config.roleRevealSeconds * 1000, '选毕后应正确排定开局准备 deadlineAt');
   assert.deepEqual(
     { a: state.wakeHours['a'], b: state.wakeHours['b'], c: state.wakeHours['c'], d: state.wakeHours['d'] },
     { a: 6, b: 2, c: 3, d: 2 },
@@ -348,6 +398,7 @@ test('4 人局：两骰自选，全员选毕进入夜晚', () => {
   for (let hour = 1; hour <= 6; hour += 1) {
     state = accepted(state, { type: 'advance_night', hour });
   }
+  state = accepted(state, { type: 'end_night' });
   assert.equal(state.thiefId, 'c');
   assert.equal(state.phase, 'dawn', '4 人局无共犯，天亮');
 });
@@ -362,6 +413,7 @@ test('4 人局超时兜底：未选择者取首候选', () => {
   state = accepted(state, { type: 'choose_hour', playerId: 'b', hour: 5 });
   state = accepted(state, { type: 'resolve_hour_choice' });
   assert.equal(state.phase, 'night');
+  assert.equal(state.deadlineAt, NOW + state.config.roleRevealSeconds * 1000, '超时兜底后应正确排定开局准备 deadlineAt');
   assert.equal(state.wakeHours['a'], 1);
   assert.equal(state.wakeHours['b'], 5);
   assert.equal(state.wakeHours['c'], 3);
@@ -399,12 +451,12 @@ test('计时器动作幂等：夜间/讨论/投票已推进后重复触发不改
   assert.equal(dupResolve.ok, true);
 });
 
-test('begin 排定夜间计时器且不修改状态；4 人局排定选择计时器', () => {
+test('begin 排定夜间计时器且设置身份确认倒计时；4 人局排定选择计时器', () => {
   const state = makeState();
   const began = reduceCheeseThiefState(state, { type: 'begin' }, { now: NOW, random });
   assert.equal(began.ok, true);
   if (!began.ok) return;
-  assert.equal(began.nextState, state);
+  assert.equal(began.nextState.deadlineAt, NOW + state.config.roleRevealSeconds * 1000);
   assert.ok(began.effects.some((e) => e.type === 'schedule_timer' && e.timerId === 'night-1'));
 
   const state4 = createCheeseThiefState(
@@ -416,6 +468,7 @@ test('begin 排定夜间计时器且不修改状态；4 人局排定选择计时
   const began4 = reduceCheeseThiefState(state4, { type: 'begin' }, { now: NOW, random });
   assert.equal(began4.ok, true);
   if (!began4.ok) return;
+  assert.equal(began4.nextState.deadlineAt, NOW + state4.config.hourChoiceSeconds * 1000);
   assert.ok(began4.effects.some((e) => e.type === 'schedule_timer' && e.timerId === 'hour-choice'));
 });
 
@@ -433,3 +486,18 @@ test('不变量拒绝破损状态', () => {
   broken3.accomplices = ['a', 'a'];
   assert.throws(() => assertCheeseThiefInvariants(broken3), /共犯不能重复/);
 });
+
+test('skip_discussion：在白天讨论阶段提前结束讨论并进入投票阶段', () => {
+  const state = makeState();
+  const dawn = toDawn(state);
+  assert.equal(dawn.phase, 'dawn');
+  assert.ok(dawn.deadlineAt !== null);
+
+  const skipped = reduceCheeseThiefState(dawn, { type: 'skip_discussion', playerId: 'a' }, { now: NOW, random });
+  assert.equal(skipped.ok, true);
+  if (!skipped.ok) return;
+  assert.equal(skipped.nextState.phase, 'vote');
+  assert.ok(skipped.nextState.deadlineAt !== null);
+  assert.ok(skipped.effects.some((e) => e.type === 'schedule_timer' && e.timerId === 'vote'));
+});
+

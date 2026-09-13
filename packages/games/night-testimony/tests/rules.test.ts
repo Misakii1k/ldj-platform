@@ -8,7 +8,7 @@ import {
   createNightTestimonyState,
   reduceNightTestimonyState,
 } from '../server/rules.ts';
-import type { CrimeId, NightTestimonyState } from '../server/types.ts';
+import type { NightTestimonyState } from '../server/types.ts';
 
 const NOW = 1_700_000_000_000;
 const random = createSeededRandom('night-testimony-rules');

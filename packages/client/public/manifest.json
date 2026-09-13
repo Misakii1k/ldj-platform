@@ -1,6 +1,6 @@
 {
-  "name": "局域网桌游平台",
-  "short_name": "桌游平台",
+  "name": "聚乐桌游 · 局域网联机平台",
+  "short_name": "聚乐桌游",
   "description": "谁是卧底局域网联机",
   "start_url": "/",
   "display": "standalone",

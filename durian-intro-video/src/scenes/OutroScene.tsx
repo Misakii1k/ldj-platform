@@ -9,7 +9,7 @@ import {
 import { JungleBackground } from './TitleScene';
 import { FruitIcon } from '../components/FruitGraphic';
 import { GorillaManager } from '../components/GorillaManager';
-import { BG, BORDER, SHADOW, RADIUS, COLOR, FONT, cardPanel, glassPanel, pillTag } from '../lib/theme';
+import { BG, FONT, cardPanel, pillTag } from '../lib/theme';
 import { fadeInOut } from '../lib/transitions';
 
 export const OutroScene: React.FC = () => {
@@ -136,7 +136,7 @@ export const OutroScene: React.FC = () => {
             opacity: contentFade,
           }}
         >
-          聚乐桌桌游平台 · Durian 榴莲店长
+          聚乐桌游平台 · Durian 榴莲店长
         </div>
       </AbsoluteFill>
     </JungleBackground>

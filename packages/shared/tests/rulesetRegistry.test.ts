@@ -98,7 +98,7 @@ test('buildCatalogRulesetRegistry：校验 GAME_CATALOG 规则集非空且每游
   assert.equal(registry.defaultRulesetId('werewolf'), 'werewolf_legacy_platform_v2');
   assert.deepEqual(
     listRulesetIdsForGame(registry, 'werewolf'),
-    ['werewolf_legacy_platform_v2', 'werewolf_platform_open_kill_v1'],
+    ['werewolf_legacy_platform_v2', 'werewolf_platform_open_kill_v1', 'werewolf_moderator_v1'],
   );
 
   const catalogSource = GAME_CATALOG[0]!;

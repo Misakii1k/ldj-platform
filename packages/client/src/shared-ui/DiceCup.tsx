@@ -224,7 +224,7 @@ export function DiceCup({
                     : ''}
               </span>
             ) : (
-              <span className="hint-press">按住掀开 3D 骰盅查看</span>
+              <span className="hint-press">{hint || '按住掀开 3D 骰盅查看'}</span>
             )
           ) : (
             <span className="hint-disabled">{hint || '骰盅已扣紧'}</span>

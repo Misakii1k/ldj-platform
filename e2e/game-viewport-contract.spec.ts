@@ -45,6 +45,10 @@ interface GameCase {
   count: number;
   config: Record<string, unknown>;
   readySelector: string;
+  /** 房间 game_id（默认与 id 相同；多 ruleset 的用例需要显式区分） */
+  gameId?: string;
+  /** 以第几名种子玩家进入（默认 1 = 非房主；0 = 房主，用于法官控制台这类房主专属视图） */
+  viewerIndex?: number;
   /** 覆盖等待文本（selector 之外的兜底） */
 }
 
@@ -153,6 +157,77 @@ const GAME_CASES: GameCase[] = [
     config: {},
     readySelector: '.tabletop-shell, .werewolf-arena, .werewolf-wing, .seat-ring',
   },
+  {
+    id: 'werewolf-moderator',
+    label: '狼人杀·真人主持（玩家端）',
+    gameId: 'werewolf',
+    count: 7,
+    config: { rulesetId: 'werewolf_moderator_v1' },
+    readySelector: '.tabletop-shell',
+  },
+  {
+    id: 'werewolf-moderator-console',
+    label: '狼人杀·真人主持（法官控制台）',
+    gameId: 'werewolf',
+    count: 7,
+    config: { rulesetId: 'werewolf_moderator_v1' },
+    readySelector: '.mod-console',
+    viewerIndex: 0,
+  },
+  {
+    id: 'undercover-blank',
+    label: '谁是卧底·白板',
+    gameId: 'undercover',
+    count: 4,
+    config: { rulesetId: 'undercover_blank_v1', speechSeconds: 60, voteSeconds: 60 },
+    readySelector: '.tabletop-shell',
+  },
+  // 桌面模拟端（线下辅助形态）：主机侧大屏视图，同样受七档视口合约约束。
+  {
+    id: 'cheese-thief-sim',
+    label: '奶酪大盗·桌面模拟',
+    gameId: 'cheese-thief',
+    count: 5,
+    config: { rulesetId: 'cheese_thief_sim_v1', roleCards: true },
+    readySelector: '.tabletop-shell',
+    viewerIndex: 0,
+  },
+  {
+    id: 'bell-clash-sim',
+    label: 'Ding·桌面模拟',
+    gameId: 'bell-clash',
+    count: 3,
+    config: { rulesetId: 'bell_clash_sim_v1', handSize: 3 },
+    readySelector: '.tabletop-shell',
+    viewerIndex: 0,
+  },
+  {
+    id: 'goose-relay-sim',
+    label: '以鹅传鹅·桌面模拟',
+    gameId: 'goose-relay',
+    count: 5,
+    config: { rulesetId: 'goose_relay_sim_v1', candidateCount: 9 },
+    readySelector: '.tabletop-shell',
+    viewerIndex: 0,
+  },
+  {
+    id: 'night-testimony-sim',
+    label: '囚徒之夜·桌面模拟',
+    gameId: 'night-testimony',
+    count: 4,
+    config: { rulesetId: 'night_testimony_sim_v1' },
+    readySelector: '.tabletop-shell',
+    viewerIndex: 0,
+  },
+  {
+    id: 'echo-judge-sim',
+    label: '伪人测试·桌面模拟',
+    gameId: 'echo-judge',
+    count: 4,
+    config: { rulesetId: 'echo_judge_sim_v1' },
+    readySelector: '.tabletop-shell',
+    viewerIndex: 0,
+  },
 ];
 
 interface ViewportEntry {
@@ -243,7 +318,7 @@ function measureGeometry() {
   }
 
   const primaryActions: string[] = [];
-  const primaries = document.querySelectorAll('.tabletop-action--primary, .card-fan-play-btn');
+  const primaries = document.querySelectorAll('.tabletop-action--primary, .card-fan-play-btn, .mod-seat__action');
   for (const el of primaries) {
     const r = el.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) continue;
@@ -315,7 +390,12 @@ test.describe('G3-B 游戏视口合约（七档常用尺寸）', () => {
     test(`${game.id} ${game.label}：7 档视口无横向溢出`, async ({ browser }) => {
       test.setTimeout(120_000);
 
-      const seeded = seedRoom(DB_PATH, { gameId: game.id, count: game.count, ready: true, config: game.config });
+      const seeded = seedRoom(DB_PATH, {
+        gameId: game.gameId ?? game.id,
+        count: game.count,
+        ready: true,
+        config: game.config,
+      });
       const host = await RoomDriver.resume(WS_URL, seeded.roomCode, seeded.hostId, seeded.hostResumeToken);
       try {
         const readyAck = await host.ready();
@@ -323,7 +403,7 @@ test.describe('G3-B 游戏视口合约（七档常用尺寸）', () => {
         const startAck = await host.startGame(game.config);
         expect(startAck.type, `start_game 应 ack：${JSON.stringify(startAck.payload)}`).toBe('ack');
 
-        const viewer = seeded.players[1] ?? seeded.players[0]!;
+        const viewer = seeded.players[game.viewerIndex ?? 1] ?? seeded.players[0]!;
         const page = await preparePlayerPage(browser, {
           playerId: viewer.playerId,
           resumeToken: viewer.resumeToken,

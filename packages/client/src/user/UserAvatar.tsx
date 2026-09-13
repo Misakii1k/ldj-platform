@@ -105,9 +105,9 @@ export function UserAvatar({
         background: preset.bg,
         border: `2px solid ${preset.borderColor}`,
       }}
-      title={preset.name}
+      title={nickname && nickname !== '玩家' ? nickname : preset.name}
     >
-      <GameIcon name={preset.icon} size={Math.round(size * 0.58)} />
+      <GameIcon name={preset.icon} size={Math.round(size * 0.58)} alt={nickname || preset.name} />
     </div>
   );
 }

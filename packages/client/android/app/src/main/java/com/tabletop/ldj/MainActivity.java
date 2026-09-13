@@ -11,6 +11,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(NsdDiscoveryPlugin.class);
         registerPlugin(ImmersiveModePlugin.class);
         registerPlugin(SystemTtsPlugin.class);
+        registerPlugin(AppUpdatePlugin.class);
         super.onCreate(savedInstanceState);
     }
 

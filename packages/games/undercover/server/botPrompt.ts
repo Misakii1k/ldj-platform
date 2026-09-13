@@ -127,7 +127,7 @@ export function buildUndercoverBotPrompt(
           runoff ? '进入加赛投票，只能投候选人。' : '现在投票淘汰你认为是卧底的人。'
         }结合大家的发言判断谁拿到了不同的词。${chatBlock ? `\n${chatBlock}` : ''}`,
         options: targets.map((p) => ({
-          id: p.playerId,
+          id: String(p.seat + 1),
           label: `投票淘汰 ${p.seat + 1} 号玩家`,
           action: { type: 'cast_vote', targetPlayerId: p.playerId },
         })),

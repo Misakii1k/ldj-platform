@@ -42,6 +42,7 @@ function v2Public(overrides: Record<string, unknown> = {}): Record<string, unkno
     runoffCandidates: [],
     lastVoteSummary: null,
     pendingShooterId: null,
+    nightStage: 'wolf',
     winner: null,
     aborted: false,
     reveal: null,

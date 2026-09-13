@@ -87,14 +87,14 @@ export const GAME_CATALOG = [
     maxPlayers: 12,
     availability: 'playable',
     maturity: 'M4',
-    summary: '每人获得专属词条，用巧妙描述传递信息，找出隐藏在人群中的卧底！',
+    summary: '每人获得一个词条，通过语言描述传递信息，找出拿到不同词条的卧底。',
     tags: ['推理', '轻松', '语言表达'],
     theme: 'berry',
     rulesets: [
       {
         id: 'undercover_classic_v1',
         label: '经典模式（每人都有词条）',
-        description: '平民与卧底各获得一组相似的词条，通过语言描述找出潜伏卧底！',
+        description: '平民与卧底分别获得含义相近的词条，通过轮流发言找出卧底。',
         details: [
           '【平民与卧底】平民拿相同多数词，卧底拿意思相近的专属少数词。',
           '【依次发言】每轮按顺序发言描述自己的词条，不可直接说出关键词。',
@@ -104,7 +104,7 @@ export const GAME_CATALOG = [
       {
         id: 'undercover_blank_v1',
         label: '白板模式（白板玩家无词条）',
-        description: '加入拿到空白档案的白板玩家，全程盲猜伪装，更支持主动猜词反杀！',
+        description: '增加无词条的白板玩家，通过听取发言进行伪装，支持主动猜词获胜。',
         details: [
           '【白板身份】白板玩家看到的词条为空白，必须全凭听别人发言伪装。',
           '【猜词反杀】白板可在对局中随时或出局时主动猜平民词，猜对直接获胜！',
@@ -114,7 +114,7 @@ export const GAME_CATALOG = [
     setup: defaultSetup({
       id: 'undercover_classic_v1',
       label: '经典模式（每人都有词条）',
-      description: '平民与卧底各获得一组相似的词条，通过语言描述找出潜伏卧底！',
+      description: '平民与卧底分别获得含义相近的词条，通过轮流发言找出卧底。',
       details: [
         '【平民与卧底】平民拿相同多数词，卧底拿意思相近的专属少数词。',
         '【依次发言】每轮按顺序发言描述自己的词条，不可直接说出关键词。',
@@ -149,7 +149,7 @@ export const GAME_CATALOG = [
       {
         id: 'undercover_blank_v1',
         label: '白板模式（白板玩家无词条）',
-        description: '加入拿到空白档案的白板玩家，全程盲猜伪装，更支持主动猜词反杀！',
+        description: '增加无词条的白板玩家，通过听取发言进行伪装，支持主动猜词获胜。',
         details: [
           '【白板身份】白板玩家看到的词条为空白，必须全凭听别人发言伪装。',
           '【猜词反杀】白板可在对局中随时或出局时主动猜平民词，猜对直接获胜！',
@@ -166,14 +166,14 @@ export const GAME_CATALOG = [
     maxPlayers: 6,
     availability: 'playable',
     maturity: 'M4',
-    summary: '颜色、数字与功能卡牌的激情碰撞！最后一张牌时刻别忘了高喊 UNO！',
+    summary: '按颜色与数字轮流出牌，配合功能牌改变对局走势。手牌剩最后一张时需喊出 UNO。',
     tags: ['卡牌', '轻松', '快节奏'],
     theme: 'sunset',
     rulesets: [
       {
         id: 'uno_platform_house_v1',
         label: '欢乐房规（可叠牌 · 抓漏报 · 积分赛）',
-        description: '聚会最推荐！支持 +2/+4 连续叠牌甩锅、出到剩 1 张未提前喊有 5 秒抓漏报抢按、多局积分累计决出总冠军。',
+        description: '支持 +2/+4 连续叠牌转嫁罚牌；出到剩 1 张未喊 UNO 时其他玩家可在 5 秒内抓漏报；支持多局累计积分。',
         details: [
           '【罚牌叠加】受到 +2 时可出 +2 叠给下家累积罚牌，接不上者摸走全部罚牌。',
           '【抓漏报】出到剩 1 张未提前喊 UNO，其他玩家可在 5 秒内抢按抓漏报罚摸 2 张。',
@@ -184,7 +184,7 @@ export const GAME_CATALOG = [
       {
         id: 'uno_legacy_platform_v1',
         label: '经典单局（不叠牌 · 抢先出完即胜）',
-        description: '适合快速来一把！单局定胜负，不支持罚牌叠加，不可抓漏报，手牌剩 1 张随时可喊 UNO。',
+        description: '单局定胜负，不支持罚牌叠加与抓漏报，手牌剩 1 张时可随时喊 UNO。',
         details: [
           '【单局决胜】谁先出完手中所有牌直接胜出，无需计算多局累计积分。',
           '【不可叠加】上家出 +2 时必须直接摸 2 张并跳过本轮，不可出 +2 甩锅。',
@@ -196,7 +196,7 @@ export const GAME_CATALOG = [
     setup: defaultSetup({
       id: 'uno_platform_house_v1',
       label: '欢乐房规（可叠牌 · 抓漏报 · 积分赛）',
-      description: '聚会最推荐！支持 +2/+4 连续叠牌甩锅、出到剩 1 张未提前喊有 5 秒抓漏报抢按、多局积分累计决出总冠军。',
+      description: '支持 +2/+4 连续叠牌转嫁罚牌；出到剩 1 张未喊 UNO 时其他玩家可在 5 秒内抓漏报；支持多局累计积分。',
       details: [
         '【罚牌叠加】受到 +2 时可出 +2 叠给下家累积罚牌，接不上者摸走全部罚牌。',
         '【抓漏报】出到剩 1 张未提前喊 UNO，其他玩家可在 5 秒内抢按抓漏报罚摸 2 张。',
@@ -230,7 +230,7 @@ export const GAME_CATALOG = [
       {
         id: 'uno_legacy_platform_v1',
         label: '经典单局（不叠牌 · 抢先出完即胜）',
-        description: '适合快速来一把！单局定胜负，不支持罚牌叠加，不可抓漏报，手牌剩 1 张随时可喊 UNO。',
+        description: '单局定胜负，不支持罚牌叠加与抓漏报，手牌剩 1 张时可随时喊 UNO。',
         details: [
           '【单局决胜】谁先出完手中所有牌直接胜出，无需计算多局累计积分。',
           '【不可叠加】上家出 +2 时必须直接摸 2 张并跳过本轮，不可出 +2 甩锅。',
@@ -249,14 +249,14 @@ export const GAME_CATALOG = [
     maxPlayers: 3,
     availability: 'playable',
     maturity: 'M4',
-    summary: '经典三人欢乐对决，叫分抢庄、妙算牌型与队友默契缺一不可！',
+    summary: '三人卡牌对决。通过叫分抢庄确定地主，地主与两名农民分别组队对抗，先出完手牌的一方获胜。',
     tags: ['卡牌', '策略', '经典'],
     theme: 'mint',
     rulesets: [
       {
         id: 'landlord_platform_v1',
         label: '抢地主模式（叫分抢庄 · 翻倍更刺激）',
-        description: '首位玩家叫地主后可继续抢地主，每次抢庄底分倍数 ×2，支持炸弹、火箭与春天翻倍。',
+        description: '首位玩家叫地主后可以继续抢地主，每次抢庄底分翻倍，支持炸弹、火箭与春天翻倍。',
         details: [
           '【叫地主与抢地主】发牌后依次叫地主与抢地主，每次抢庄倍数翻倍。',
           '【炸弹火箭翻倍】打出炸弹或王炸倍数翻倍，春天与反春同样翻倍。',
@@ -266,7 +266,7 @@ export const GAME_CATALOG = [
       {
         id: 'landlord_legacy_platform_v1',
         label: '经典叫分（1/2/3分直接定庄）',
-        description: '传统经典三人叫分，叫最高分者（或叫 3 分）直接当局地主，无后续抢地主环节。',
+        description: '按 1、2、3 分叫分，叫最高分或叫满 3 分的玩家直接成为地主，不设后续抢庄。',
         details: [
           '【叫分定地主】依次叫 1分、2分 或 3分，叫分最高者直接拿底牌当地主。',
           '【基础计分】按叫分与基础胜负结算，没有多次抢地主翻倍流程。',
@@ -277,7 +277,7 @@ export const GAME_CATALOG = [
     setup: defaultSetup({
       id: 'landlord_platform_v1',
       label: '抢地主模式（叫分抢庄 · 翻倍更刺激）',
-      description: '首位玩家叫地主后可继续抢地主，每次抢庄底分倍数 ×2，支持炸弹、火箭与春天翻倍。',
+      description: '首位玩家叫地主后可以继续抢地主，每次抢庄底分翻倍，支持炸弹、火箭与春天翻倍。',
       details: [
         '【叫地主与抢地主】发牌后依次叫地主与抢地主，每次抢庄倍数翻倍。',
         '【炸弹火箭翻倍】打出炸弹或王炸倍数翻倍，春天与反春同样翻倍。',
@@ -287,7 +287,7 @@ export const GAME_CATALOG = [
       {
         id: 'landlord_legacy_platform_v1',
         label: '经典叫分（1/2/3分直接定庄）',
-        description: '传统经典三人叫分，叫最高分者（或叫 3 分）直接当局地主，无后续抢地主环节。',
+        description: '按 1、2、3 分叫分，叫最高分或叫满 3 分的玩家直接成为地主，不设后续抢庄。',
         details: [
           '【叫分定地主】依次叫 1分、2分 或 3分，叫分最高者直接拿底牌当地主。',
           '【基础计分】按叫分与基础胜负结算，没有多次抢地主翻倍流程。',
@@ -305,39 +305,53 @@ export const GAME_CATALOG = [
     maxPlayers: 12,
     availability: 'playable',
     maturity: 'M4',
-    summary: '暗夜交锋，白天博弈！用逻辑与敏锐洞察在真伪间探寻胜利之光。',
+    summary: '阵营推理桌游。玩家分为好人与狼人两方，好人通过白天发言与投票放逐狼人，狼人利用夜间袭击消灭好人。',
     tags: ['推理', '阵营', '社交'],
     theme: 'violet',
     rulesets: [
       {
         id: 'werewolf_legacy_platform_v2',
         label: '标准屠边（狼人夜间只杀好人）',
-        description: '经典狼人杀规则，狼人夜间只可袭击非狼人阵营玩家；女巫首夜可自救。',
+        description: '狼人夜间只能袭击非狼人玩家；支持预言家、女巫、猎人等角色，女巫首夜可自救。',
         details: [
           '【屠边胜负】狼人杀光所有神职或所有平民获胜；好人放逐所有狼人获胜。',
           '【夜刀限制】狼人夜间只能选择非狼人玩家作为袭击目标。',
           '【角色技能】支持预言家、女巫、猎人、守卫与白痴多种神职组合。',
+          '【阵营分布】推荐模板：6–8人配2狼，9–10人配3狼，11–12人配4狼；支持在安全区间内微调（±1 狼），且平民保底至少 2 人。',
         ],
       },
       {
         id: 'werewolf_platform_open_kill_v1',
         label: '开放夜刀（狼人夜间可刀任何人）',
-        description: '策略进阶规则，狼人夜间可袭击包括狼队友在内的任意存活玩家（支持自刀骗药或深水战术）。',
+        description: '狼人夜间可以袭击包括狼人在内的任意存活玩家，支持自刀策略。',
         details: [
           '【开放夜刀】狼人夜间可将目标选为任意存活玩家（包含狼人自己与队友）。',
           '【战术博弈】支持狼人自刀骗取女巫解药或制造假银水身份。',
+          '【阵营分布】推荐模板：6–8人配2狼，9–10人配3狼，11–12人配4狼；支持在安全区间内微调（±1 狼），且平民保底至少 2 人。',
           '【胜负标准】同标准屠边胜负判定，考验更深层的逻辑与心理战。',
+        ],
+      },
+      {
+        id: 'werewolf_moderator_v1',
+        label: '真人主持（线下发牌与出局控制）',
+        description: '房主作为真人法官主持线下对局，系统负责随机分发抽卡与出局状态实时同步。',
+        details: [
+          '【真人主持】房主担任法官不参与发牌，主持掌控全场身份底牌与出局操作。',
+          '【抽卡动效】普通玩家进入对局体验洗牌与 3D 翻转动效，私密揭示自身底牌。',
+          '【出局同步】法官在席位行一键标记出局（需二次确认），全员看板头像变灰并标明出局状态；误判可随时撤销。',
+          '【胜负亮牌】达成条件后主持人可结束对局，全场公开真实身份底牌进行复盘。',
         ],
       },
     ],
     setup: defaultSetup({
       id: 'werewolf_legacy_platform_v2',
       label: '标准屠边（狼人夜间只杀好人）',
-      description: '经典狼人杀规则，狼人夜间只可袭击非狼人阵营玩家；女巫首夜可自救。',
+      description: '狼人夜间只能袭击非狼人玩家；支持预言家、女巫、猎人等角色，女巫首夜可自救。',
       details: [
         '【屠边胜负】狼人杀光所有神职或所有平民获胜；好人放逐所有狼人获胜。',
         '【夜刀限制】狼人夜间只能选择非狼人玩家作为袭击目标。',
         '【角色技能】支持预言家、女巫、猎人、守卫与白痴多种神职组合。',
+        '【阵营分布】推荐模板：6–8人配2狼，9–10人配3狼，11–12人配4狼；支持在安全区间内微调（±1 狼），且平民保底至少 2 人。',
       ],
     }, [
       { key: 'pace', kind: 'select', label: '对局节奏', defaultValue: 'standard', choices: [{ value: 'fast', label: '快速' }, { value: 'standard', label: '标准' }, { value: 'relaxed', label: '轻松' }] },
@@ -346,15 +360,27 @@ export const GAME_CATALOG = [
       { key: 'guard', kind: 'boolean', label: '守卫加入角色池', defaultValue: false },
       { key: 'hunter', kind: 'boolean', label: '猎人加入角色池', defaultValue: false },
       { key: 'idiot', kind: 'boolean', label: '白痴加入角色池', defaultValue: false },
-    ], { preset: 'classic', pace: 'standard', witchSelfSave: 'first_night', winCondition: 'numbers', guard: false, hunter: false, idiot: false }, [
+    ], { preset: 'classic', pace: 'standard', witchSelfSave: 'first_night', winCondition: 'numbers', guard: false, hunter: false, idiot: false, wolfDelta: 0 }, [
       {
         id: 'werewolf_platform_open_kill_v1',
         label: '开放夜刀（狼人夜间可刀任何人）',
-        description: '策略进阶规则，狼人夜间可袭击包括狼队友在内的任意存活玩家（支持自刀骗药或深水战术）。',
+        description: '狼人夜间可以袭击包括狼人在内的任意存活玩家，支持自刀策略。',
         details: [
           '【开放夜刀】狼人夜间可将目标选为任意存活玩家（包含狼人自己与队友）。',
           '【战术博弈】支持狼人自刀骗取女巫解药或制造假银水身份。',
+          '【阵营分布】推荐模板：6–8人配2狼，9–10人配3狼，11–12人配4狼；支持在安全区间内微调（±1 狼），且平民保底至少 2 人。',
           '【胜负标准】同标准屠边胜负判定，考验更深层的逻辑与心理战。',
+        ],
+      },
+      {
+        id: 'werewolf_moderator_v1',
+        label: '真人主持（线下发牌与出局控制）',
+        description: '房主作为真人法官主持线下对局，系统负责随机分发抽卡与出局状态实时同步。',
+        details: [
+          '【真人主持】房主担任法官不参与发牌，主持掌控全场身份底牌与出局操作。',
+          '【抽卡动效】普通玩家进入对局体验洗牌与 3D 翻转动效，私密揭示自身底牌。',
+          '【出局同步】法官在席位行一键标记出局（需二次确认），全员看板头像变灰并标明出局状态；误判可随时撤销。',
+          '【胜负亮牌】达成条件后主持人可结束对局，全场公开真实身份底牌进行复盘。',
         ],
       },
     ]),
@@ -368,14 +394,14 @@ export const GAME_CATALOG = [
     maxPlayers: 7,
     availability: 'playable',
     maturity: 'M3',
-    summary: '头顶暗牌（只看别人不看自己）、翻牌自选生效、猴子捣乱与按铃质疑超卖！',
+    summary: '头顶暗牌仅他人可见，轮流摸牌累积进货数量。当判断桌面的水果超出所有人头顶总和时，按铃发起质疑。',
     tags: ['推理', '心理', '聚会'],
     theme: 'mint',
     rulesets: [
       {
         id: 'durian_orchard_v1',
         label: '标准规则（翻牌暗牌 · 质疑超卖）',
-        description: '头顶暗牌只看别人不看自己，轮流翻牌决定水果进货，怀疑超卖即按铃质疑！',
+        description: '头顶暗牌仅他人可见，轮流摸牌累积进货数量，怀疑水果超卖时按铃发起质疑。',
         details: [
           '【头顶暗牌】开局每人抽一张牌扣在头顶，自己看不见，其他所有人可见。',
           '【翻牌进货】轮到自己时摸牌选择一侧水果生效，累计桌面上进货总数。',
@@ -387,7 +413,7 @@ export const GAME_CATALOG = [
     setup: defaultSetup({
       id: 'durian_orchard_v1',
       label: '标准规则（翻牌暗牌 · 质疑超卖）',
-      description: '头顶暗牌只看别人不看自己，轮流翻牌决定水果进货，怀疑超卖即按铃质疑！',
+      description: '头顶暗牌仅他人可见，轮流摸牌累积进货数量，怀疑水果超卖时按铃发起质疑。',
       details: [
         '【头顶暗牌】开局每人抽一张牌扣在头顶，自己看不见，其他所有人可见。',
         '【翻牌进货】轮到自己时摸牌选择一侧水果生效，累计桌面上进货总数。',
@@ -425,14 +451,14 @@ export const GAME_CATALOG = [
     maxPlayers: 4,
     availability: 'playable',
     maturity: 'M3',
-    summary: '经典 16 张手牌：揣测心意、淘汰对手，把情书送到公主手中。',
+    summary: '手牌管理与推理桌游。通过摸一出一触发角色技能，淘汰对手或在牌堆耗尽时比拼点数获胜。',
     tags: ['卡牌', '推理', '经典'],
     theme: 'sunset',
     rulesets: [
       {
         id: 'loveletter_classic16_v1',
         label: '经典 16 张（单张手牌 · 逻辑淘汰）',
-        description: '16 张卡牌构成的推理神作：手中恒持 1 张牌，摸 1 出 1 发动角色技能淘汰对手。',
+        description: '玩家手牌始终保留 1 张，轮到自己时摸 1 张打 1 张，依靠角色技能淘汰对手。',
         details: [
           '【摸一出一】回合开始摸一张牌，从手中两张牌里打出一张并执行其效果。',
           '【角色技能】卫兵猜牌淘汰、神父看牌、男爵比点数、侍女免疫、王子弃牌、国王换牌、公主离手即死。',
@@ -443,7 +469,7 @@ export const GAME_CATALOG = [
     setup: defaultSetup({
       id: 'loveletter_classic16_v1',
       label: '经典 16 张（单张手牌 · 逻辑淘汰）',
-      description: '16 张卡牌构成的推理神作：手中恒持 1 张牌，摸 1 出 1 发动角色技能淘汰对手。',
+      description: '玩家手牌始终保留 1 张，轮到自己时摸 1 张打 1 张，依靠角色技能淘汰对手。',
       details: [
         '【摸一出一】回合开始摸一张牌，从手中两张牌里打出一张并执行其效果。',
         '【角色技能】卫兵猜牌淘汰、神父看牌、男爵比点数、侍女免疫、王子弃牌、国王换牌、公主离手即死。',
@@ -472,68 +498,39 @@ export const GAME_CATALOG = [
     maxPlayers: 8,
     availability: 'playable',
     maturity: 'M4',
-    summary: '掷骰决定醒来时刻、独醒偷奶酪、共犯掩护与平票同出局，欢乐聚会推理！',
+    summary: '掷骰确定夜间醒来时刻。独自醒来的玩家成为大盗并拿走奶酪，白天全员讨论并投票指认大盗。',
     tags: ['推理', '阵营', '聚会'],
     theme: 'mint',
     rulesets: [
       {
         id: 'cheese_thief_classic_v1',
         label: '标准规则（骰子时刻 · 独醒偷吃）',
-        description: '投掷骰子暗定醒来时刻，夜间独醒者偷吃奶酪成为大盗，白天全员指认大盗！',
+        description: '通过骰盅暗定苏醒时刻，独醒者拿走奶酪并秘密挑选共犯，白天全员投票抓捕大盗。',
         details: [
           '【骰盅时刻】每人掷 6 面骰扣在骰盅内，点数决定夜间第几时刻醒来。',
           '【独醒与偷看】独自醒来且奶酪在场者拿走奶酪成为怪盗并可偷看他人骰子。',
-          '【共犯掩护】怪盗秘密选定一名共犯共同掩护。',
+          '【共犯掩护】怪盗秘密选定共犯（5-6人局1位，7-8人局2位）共同掩护。',
           '【投票胜负】白天讨论后投票，好人投中大盗则好人胜，否则大盗与共犯胜。',
-        ],
-      },
-      {
-        id: 'cheese_thief_sim_v1',
-        label: '桌面模拟（无判定 · 自由道具）',
-        description: '系统只负责私密掷苏醒时辰与私密分配身份角色牌，不偷奶酪不投票，规则由玩家自由定！',
-        details: [
-          '【时辰私密】每人私密掷 1–6 苏醒时辰，可随时重掷。',
-          '【身份角色牌】可选私密分配猫/狗/白鼠身份卡。',
-          '【无系统判定】不偷奶酪、不投票、不记分，适合按线下原版规则自由玩。',
         ],
       },
     ],
     setup: defaultSetup({
       id: 'cheese_thief_classic_v1',
       label: '标准规则（骰子时刻 · 独醒偷吃）',
-      description: '投掷骰子暗定醒来时刻，夜间独醒者偷吃奶酪成为大盗，白天全员指认大盗！',
+      description: '通过骰盅暗定苏醒时刻，独醒者拿走奶酪并秘密挑选共犯，白天全员投票抓捕大盗。',
       details: [
         '【骰盅时刻】每人掷 6 面骰扣在骰盅内，点数决定夜间第几时刻醒来。',
         '【独醒与偷看】独自醒来且奶酪在场者拿走奶酪成为怪盗并可偷看他人骰子。',
-        '【共犯掩护】怪盗秘密选定一名共犯共同掩护。',
+        '【共犯掩护】怪盗秘密选定共犯（5-6人局1位，7-8人局2位）共同掩护。',
         '【投票胜负】白天讨论后投票，好人投中大盗则好人胜，否则大盗与共犯胜。',
       ],
     }, [
-      {
-        key: 'mode',
-        kind: 'select',
-        label: '对局模式',
-        defaultValue: 'simulator',
-        choices: [
-          { value: 'simulator', label: '玩家端（含 3D 骰盅）' },
-          { value: 'standard', label: '标准模式（系统判定）' },
-        ],
-      },
       { key: 'roleCards', kind: 'boolean', label: '启用身份卡（猫/狗/白老鼠）', defaultValue: false },
+      { key: 'roleRevealSeconds', kind: 'integer', label: '开局准备时长（秒）', defaultValue: 17, min: 10, max: 60, step: 1 },
+      { key: 'accompliceSelectSeconds', kind: 'integer', label: '共犯选择时长（秒）', defaultValue: 17, min: 10, max: 60, step: 1 },
       { key: 'nightHourSeconds', kind: 'integer', label: '每时刻时长（秒）', defaultValue: 20, min: 5, max: 600, step: 1 },
       { key: 'discussionSeconds', kind: 'integer', label: '讨论时长（秒）', defaultValue: 120, min: 1, max: 600, step: 1 },
       { key: 'voteSeconds', kind: 'integer', label: '投票时长（秒）', defaultValue: 30, min: 1, max: 600, step: 1 },
-    ], {}, [
-      {
-        id: 'cheese_thief_sim_v1',
-        label: '桌面模拟（无判定 · 自由道具）',
-        description: '系统只负责私密掷苏醒时辰与私密分配身份角色牌，不偷奶酪不投票，规则由玩家自由定！',
-        details: [
-          '【时辰私密】每人私密掷 1–6 苏醒时辰，可随时重掷。',
-          '【身份角色牌】可选私密分配猫/狗/白鼠身份卡。',
-          '【无系统判定】不偷奶酪、不投票、不记分，适合按线下原版规则自由玩。',
-        ],
-      },
     ]),
     botSupport: 'rule',
     visualTheme: { accent: 'mint', surface: 'board' },
@@ -545,14 +542,14 @@ export const GAME_CATALOG = [
     maxPlayers: 9,
     availability: 'playable',
     maturity: 'M4',
-    summary: '抢当头鹅、选卡指派、动作接力传递、末棒倒序指认、票选揪恶，爆笑动作传递！',
+    summary: '动作传递与阵营推理。头鹅选定案情后由玩家通过肢体动作向后接力传递，最后一棒倒序指认，最终投票找出捣乱的恶鹅。',
     tags: ['传递', '阵营', '聚会'],
     theme: 'sunset',
     rulesets: [
       {
         id: 'goose_relay_classic_v1',
         label: '标准规则（动作接力 · 倒序指认）',
-        description: '头鹅选卡定案，全员不看牌仅靠肢体动作接力传递，潜伏恶鹅故意捣乱！',
+        description: '头鹅选定案情卡，全员仅依靠肢体动作向后接力传递，最终投票找出潜伏捣乱的恶鹅。',
         details: [
           '【头鹅定案】抢到头鹅的玩家从展示卡中选 1 张凶手 + 1 张受害鸭开启表演。',
           '【动作接力】后续玩家依次单向观看前一位的肢体表演并向后模仿传递。',
@@ -563,7 +560,7 @@ export const GAME_CATALOG = [
       {
         id: 'goose_relay_sim_v1',
         label: '桌面模拟（无判定 · 自由道具）',
-        description: '系统只负责随机候选鹅卡展示、随机头鹅指派与案情卡私密发放，不接力不投票，规则由玩家自由定！',
+        description: '系统负责展示候选鹅卡、指派头鹅与私密发放案情卡，不执行自动判定，适合线下自由游玩。',
         details: [
           '【鹅卡布置】随机 9 张候选鹅卡公开展示，随机指派头鹅。',
           '【案情私密】凶手与受害者案情卡仅头鹅可见，可随时重布置。',
@@ -574,7 +571,7 @@ export const GAME_CATALOG = [
     setup: defaultSetup({
       id: 'goose_relay_classic_v1',
       label: '标准规则（动作接力 · 倒序指认）',
-      description: '头鹅选卡定案，全员不看牌仅靠肢体动作接力传递，潜伏恶鹅故意捣乱！',
+      description: '头鹅选定案情卡，全员仅依靠肢体动作向后接力传递，最终投票找出潜伏捣乱的恶鹅。',
       details: [
         '【头鹅定案】抢到头鹅的玩家从展示卡中选 1 张凶手 + 1 张受害鸭开启表演。',
         '【动作接力】后续玩家依次单向观看前一位的肢体表演并向后模仿传递。',
@@ -592,7 +589,7 @@ export const GAME_CATALOG = [
       {
         id: 'goose_relay_sim_v1',
         label: '桌面模拟（无判定 · 自由道具）',
-        description: '系统只负责随机候选鹅卡展示、随机头鹅指派与案情卡私密发放，不接力不投票，规则由玩家自由定！',
+        description: '系统负责展示候选鹅卡、指派头鹅与私密发放案情卡，不执行自动判定，适合线下自由游玩。',
         details: [
           '【鹅卡布置】随机 9 张候选鹅卡公开展示，随机指派头鹅。',
           '【案情私密】凶手与受害者案情卡仅头鹅可见，可随时重布置。',
@@ -610,14 +607,14 @@ export const GAME_CATALOG = [
     maxPlayers: 6,
     availability: 'playable',
     maturity: 'M3',
-    summary: '狱警伪装潜伏、YES/NO 问答轨迹、推理混卡、票选揪警与猜罪，阵营身份推理！',
+    summary: '问答与身份推理桌游。狱警伪装潜伏在囚犯中，通过问答记录推断彼此身份，囚犯尝试找出狱警，狱警尝试猜出囚犯罪行。',
     tags: ['推理', '身份', '聚会'],
     theme: 'violet',
     rulesets: [
       {
         id: 'night_testimony_v1',
         label: '标准规则（狱警潜伏 · 问答推理）',
-        description: '狱警伪装潜伏在囚犯中，囚犯必须如实回答罪行问答，票选狱警或狱警猜罪决胜负！',
+        description: '一名狱警伪装潜伏在囚犯中，通过问答记录推导逻辑矛盾，投票找出狱警或由狱警猜出全员罪行。',
         details: [
           '【狱警潜伏】一名狱警伪装成囚犯，囚犯按各自罪行卡回答，狱警可撒谎。',
           '【问答轨迹】使用 YES/NO 记号标记问答历史，根据逻辑矛盾推理身份。',
@@ -627,7 +624,7 @@ export const GAME_CATALOG = [
       {
         id: 'night_testimony_sim_v1',
         label: '桌面模拟（无判定 · 自由道具）',
-        description: '系统只负责随机罪行私密分配（狱警标记 + 干扰卡）与问题卡抽取，不票选不猜罪，规则由玩家自由定！',
+        description: '系统负责私密分配罪行卡与抽取审讯问题，不执行自动判定，适合线下自由游玩。',
         details: [
           '【罪行分配】每人私密获得一张互异罪行，随机一人为狱警（无罪行），另有公开干扰罪行卡。',
           '【问题卡抽取】40 张审讯题卡随机抽取展示。',
@@ -638,7 +635,7 @@ export const GAME_CATALOG = [
     setup: defaultSetup({
       id: 'night_testimony_v1',
       label: '标准规则（狱警潜伏 · 问答推理）',
-      description: '狱警伪装潜伏在囚犯中，囚犯必须如实回答罪行问答，票选狱警或狱警猜罪决胜负！',
+      description: '一名狱警伪装潜伏在囚犯中，通过问答记录推导逻辑矛盾，投票找出狱警或由狱警猜出全员罪行。',
       details: [
         '【狱警潜伏】一名狱警伪装成囚犯，囚犯按各自罪行卡回答，狱警可撒谎。',
         '【问答轨迹】使用 YES/NO 记号标记问答历史，根据逻辑矛盾推理身份。',
@@ -653,7 +650,7 @@ export const GAME_CATALOG = [
       {
         id: 'night_testimony_sim_v1',
         label: '桌面模拟（无判定 · 自由道具）',
-        description: '系统只负责随机罪行私密分配（狱警标记 + 干扰卡）与问题卡抽取，不票选不猜罪，规则由玩家自由定！',
+        description: '系统负责私密分配罪行卡与抽取审讯问题，不执行自动判定，适合线下自由游玩。',
         details: [
           '【罪行分配】每人私密获得一张互异罪行，随机一人为狱警（无罪行），另有公开干扰罪行卡。',
           '【问题卡抽取】40 张审讯题卡随机抽取展示。',
@@ -671,14 +668,14 @@ export const GAME_CATALOG = [
     maxPlayers: 7,
     availability: 'playable',
     maturity: 'M3',
-    summary: '颜色数字出牌 + 行动短语卡 + 按铃抢回合，先出完手牌者胜，快节奏卡牌反应！',
+    summary: '匹配颜色或数字出牌。诱导其他玩家触发手牌上的短语或动作时可按铃抢夺出牌权，先出完所有手牌者获胜。',
     tags: ['反应', '卡牌', '聚会'],
     theme: 'berry',
     rulesets: [
       {
         id: 'bell_clash_v1',
         label: '标准规则（出牌短语 · 拍铃抢回合）',
-        description: '同色同数字出牌，诱导其他玩家触发手牌上的行动短语，拍铃抢夺出牌权！',
+        description: '出同色或同数字手牌。当其他玩家触发手牌上的行动短语时按铃抢夺出牌权，先出完手牌者获胜。',
         details: [
           '【卡牌出牌】打出同色或同数字手牌，无牌可出摸一张。',
           '【短语拍铃】手牌印有日常口癖或动作短语，有玩家触发即可拍铃抢出牌。',
@@ -688,7 +685,7 @@ export const GAME_CATALOG = [
       {
         id: 'bell_clash_sim_v1',
         label: '桌面模拟（无判定 · 自由道具）',
-        description: '系统只负责随机发牌/翻牌与按铃、骰子、计时器等道具，不判胜负不记分，规则由玩家自由定！',
+        description: '系统提供发牌、翻牌、按铃、骰子与计时器等辅助工具，不执行自动胜负判定，适合线下自由游玩。',
         details: [
           '【随机发牌】每人 8 张主题牌，可重发/摸牌/翻牌。',
           '【自由道具】按铃、骰子、计时器随桌使用。',
@@ -699,7 +696,7 @@ export const GAME_CATALOG = [
     setup: defaultSetup({
       id: 'bell_clash_v1',
       label: '标准规则（出牌短语 · 拍铃抢回合）',
-      description: '同色同数字出牌，诱导其他玩家触发手牌上的行动短语，拍铃抢夺出牌权！',
+      description: '出同色或同数字手牌。当其他玩家触发手牌上的行动短语时按铃抢夺出牌权，先出完手牌者获胜。',
       details: [
         '【卡牌出牌】打出同色或同数字手牌，无牌可出摸一张。',
         '【短语拍铃】手牌印有日常口癖或动作短语，有玩家触发即可拍铃抢出牌。',
@@ -713,7 +710,7 @@ export const GAME_CATALOG = [
       {
         id: 'bell_clash_sim_v1',
         label: '桌面模拟（无判定 · 自由道具）',
-        description: '系统只负责随机发牌/翻牌与按铃、骰子、计时器等道具，不判胜负不记分，规则由玩家自由定！',
+        description: '系统提供发牌、翻牌、按铃、骰子与计时器等辅助工具，不执行自动胜负判定，适合线下自由游玩。',
         details: [
           '【随机发牌】每人 8 张主题牌，可重发/摸牌/翻牌。',
           '【自由道具】按铃、骰子、计时器随桌使用。',
@@ -731,14 +728,14 @@ export const GAME_CATALOG = [
     maxPlayers: 12,
     availability: 'playable',
     maturity: 'M3',
-    summary: '判官出题、伪人藏触发词、依次回答、判官指认，语言伪装与逻辑推理！',
+    summary: '语言伪装与推理桌游。判官轮流出题，伪人须将秘密触发词自然融入回答中，判官通过指认抓出伪人。',
     tags: ['伪装', '推理', '聚会'],
     theme: 'sunset',
     rulesets: [
       {
         id: 'echo_judge_v1',
         label: '标准规则（判官出题 · 伪人藏词）',
-        description: '判官依次向全员出题，伪人必须把秘密触发词自然藏进回答中，判官指认抓伪人！',
+        description: '判官依次向全员提问，伪人须将触发词自然藏入回答中且避免被识破，判官通过指认判定伪人。',
         details: [
           '【判官出题】轮流担任判官并提出开放式问题，其余玩家依次作答。',
           '【伪人藏词】伪人拿到专属触发词，回答时必须自然念出触发词且不被判官识破。',
@@ -748,7 +745,7 @@ export const GAME_CATALOG = [
       {
         id: 'echo_judge_sim_v1',
         label: '桌面模拟（无判定 · 自由道具）',
-        description: '系统只负责随机词条私密分配与题卡抽取，不判伪人不记分，规则由玩家自由定！',
+        description: '系统负责私密分配触发词与抽取题卡，不执行自动判定与计分，适合线下自由游玩。',
         details: [
           '【词条分配】每人私密获得一个触发词，可随时重新分配。',
           '【题卡抽取】36 张主题题卡随机抽取展示。',
@@ -759,7 +756,7 @@ export const GAME_CATALOG = [
     setup: defaultSetup({
       id: 'echo_judge_v1',
       label: '标准规则（判官出题 · 伪人藏词）',
-      description: '判官依次向全员出题，伪人必须把秘密触发词自然藏进回答中，判官指认抓伪人！',
+      description: '判官依次向全员提问，伪人须将触发词自然藏入回答中且避免被识破，判官通过指认判定伪人。',
       details: [
         '【判官出题】轮流担任判官并提出开放式问题，其余玩家依次作答。',
         '【伪人藏词】伪人拿到专属触发词，回答时必须自然念出触发词且不被判官识破。',
@@ -773,7 +770,7 @@ export const GAME_CATALOG = [
       {
         id: 'echo_judge_sim_v1',
         label: '桌面模拟（无判定 · 自由道具）',
-        description: '系统只负责随机词条私密分配与题卡抽取，不判伪人不记分，规则由玩家自由定！',
+        description: '系统负责私密分配触发词与抽取题卡，不执行自动判定与计分，适合线下自由游玩。',
         details: [
           '【词条分配】每人私密获得一个触发词，可随时重新分配。',
           '【题卡抽取】36 张主题题卡随机抽取展示。',

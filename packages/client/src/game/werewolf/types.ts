@@ -4,6 +4,7 @@ export const WEREWOLF_PHASES = [
   'hunter_shot',
   'day_announcement',
   'discussion',
+  'free_discussion',
   'voting',
   'runoff_voting',
   'vote_result',
@@ -32,6 +33,8 @@ export interface WerewolfConfigView {
     hunter: boolean;
     idiot: boolean;
   };
+  freeDiscussion?: boolean;
+  wolfDelta?: number;
 }
 
 export interface WerewolfPlayer {
@@ -90,6 +93,7 @@ export interface WerewolfMe {
   lastGuardTargetId: string | null;
   pendingShoot: boolean;
   idiotRevealed: boolean;
+  hasReadiedVote?: boolean;
 }
 
 export interface WerewolfView {
@@ -104,9 +108,11 @@ export interface WerewolfView {
   config: WerewolfConfigView;
   confirmedRolePlayerIds: string[];
   announcementConfirmedPlayerIds: string[];
+  nightStage?: 'wolf' | 'witch' | 'seer' | 'guard' | 'done';
   lastNightDeaths: string[];
   speakingOrder: string[];
   currentSpeakerId: string | null;
+  freeDiscussionReadyPlayerIds?: string[];
   lastWordsPlayerId: string | null;
   deadlineAt: number | null;
   votesSubmitted: number;
@@ -182,13 +188,13 @@ function parseMe(value: unknown): WerewolfMe | null {
   if (value === null || value === undefined) return null;
   if (!isRecord(value) || !hasOnlyKeys(value, [
     'playerId', 'role', 'alive', 'forfeited', 'confirmedRole', 'confirmedAnnouncement', 'canAct',
-    'hasVoted', 'myVote', 'lastWordsPending', 'wolfTeammateIds', 'wolfVotes', 'hasNightVoted',
+    'hasVoted', 'hasReadiedVote', 'myVote', 'lastWordsPending', 'wolfTeammateIds', 'wolfVotes', 'hasNightVoted',
     'seerResults', 'seerCheckedThisNight', 'nightVictimId', 'witchSaveUsed', 'witchPoisonUsed',
     'witchSaveDecision', 'witchPoisonDecided', 'witchCanSelfSave', 'guardTargetId', 'guardDecided',
     'lastGuardTargetId', 'pendingShoot', 'idiotRevealed',
   ])) return null;
   const {
-    playerId, role, alive, forfeited, confirmedRole, confirmedAnnouncement, canAct, hasVoted, myVote,
+    playerId, role, alive, forfeited, confirmedRole, confirmedAnnouncement, canAct, hasVoted, hasReadiedVote, myVote,
     lastWordsPending, wolfTeammateIds, wolfVotes, hasNightVoted, seerResults, seerCheckedThisNight,
     nightVictimId, witchSaveUsed, witchPoisonUsed, witchSaveDecision, witchPoisonDecided, witchCanSelfSave,
     guardTargetId, guardDecided, lastGuardTargetId, pendingShoot, idiotRevealed,
@@ -198,6 +204,7 @@ function parseMe(value: unknown): WerewolfMe | null {
   if (typeof playerId !== 'string' || !isRole(role) || typeof alive !== 'boolean' || typeof forfeited !== 'boolean') return null;
   if (typeof confirmedRole !== 'boolean' || typeof confirmedAnnouncement !== 'boolean' || typeof canAct !== 'boolean') return null;
   if (typeof hasVoted !== 'boolean' || (myVote !== null && typeof myVote !== 'string') || typeof lastWordsPending !== 'boolean') return null;
+  if (hasReadiedVote !== undefined && typeof hasReadiedVote !== 'boolean') return null;
   if (!teammates || !votes || typeof hasNightVoted !== 'boolean' || !Array.isArray(seerResults)) return null;
   if (!seerResults.every((item) => isRecord(item) && typeof item.night === 'number' && typeof item.playerId === 'string' && isTeam(item.team))) return null;
   if (typeof seerCheckedThisNight !== 'boolean' || (nightVictimId !== null && typeof nightVictimId !== 'string')) return null;
@@ -208,7 +215,8 @@ function parseMe(value: unknown): WerewolfMe | null {
   if (typeof guardDecided !== 'boolean' || (lastGuardTargetId !== null && typeof lastGuardTargetId !== 'string')) return null;
   if (typeof pendingShoot !== 'boolean' || typeof idiotRevealed !== 'boolean') return null;
   return {
-    playerId, role, alive, forfeited, confirmedRole, confirmedAnnouncement, canAct, hasVoted, myVote,
+    playerId, role, alive, forfeited, confirmedRole, confirmedAnnouncement, canAct, hasVoted,
+    ...(hasReadiedVote !== undefined ? { hasReadiedVote } : {}), myVote,
     lastWordsPending, wolfTeammateIds: teammates, wolfVotes: votes, hasNightVoted,
     seerResults: seerResults as WerewolfSeerResult[], seerCheckedThisNight, nightVictimId,
     witchSaveUsed, witchPoisonUsed, witchSaveDecision, witchPoisonDecided, witchCanSelfSave,
@@ -219,13 +227,13 @@ function parseMe(value: unknown): WerewolfMe | null {
 export function parseWerewolfView(value: unknown, role?: 'player' | 'spectator'): WerewolfView | null {
   if (!isRecord(value) || !hasOnlyKeys(value, [
     'gameId', 'rulesetId', 'schemaVersion', 'phase', 'day', 'players', 'config', 'confirmedRolePlayerIds',
-    'announcementConfirmedPlayerIds', 'lastNightDeaths', 'speakingOrder', 'currentSpeakerId',
-    'lastWordsPlayerId', 'deadlineAt', 'votesSubmitted', 'votesExpected', 'runoffCandidates',
+    'announcementConfirmedPlayerIds', 'nightStage', 'lastNightDeaths', 'speakingOrder', 'currentSpeakerId',
+    'freeDiscussionReadyPlayerIds', 'lastWordsPlayerId', 'deadlineAt', 'votesSubmitted', 'votesExpected', 'runoffCandidates',
     'lastVoteSummary', 'pendingShooterId', 'winner', 'aborted', 'reveal', 'me',
   ])) return null;
   const {
     gameId, rulesetId, schemaVersion, phase, day, players, config, confirmedRolePlayerIds, announcementConfirmedPlayerIds,
-    lastNightDeaths, speakingOrder, currentSpeakerId, lastWordsPlayerId, deadlineAt, votesSubmitted,
+    nightStage, lastNightDeaths, speakingOrder, currentSpeakerId, freeDiscussionReadyPlayerIds, lastWordsPlayerId, deadlineAt, votesSubmitted,
     votesExpected, runoffCandidates, lastVoteSummary, pendingShooterId, winner, aborted, reveal, me,
   } = value;
   const parsedPlayers = Array.isArray(players) ? players.map(parsePlayer) : [];
@@ -240,7 +248,7 @@ export function parseWerewolfView(value: unknown, role?: 'player' | 'spectator')
   if (!isV2 && rulesetId !== undefined) return null;
   if (!Array.isArray(players) || parsedPlayers.some((player) => player === null)) return null;
   if (!isRecord(config) || !hasOnlyKeys(config, [
-    'rulesetId', 'preset', 'pace', 'witchSelfSave', 'winCondition', 'wolfKillScope', 'roles',
+    'rulesetId', 'preset', 'pace', 'witchSelfSave', 'winCondition', 'wolfKillScope', 'roles', 'freeDiscussion', 'wolfDelta',
   ]) || (config.preset !== 'classic' && config.preset !== 'advanced')) return null;
   if (config.rulesetId !== 'werewolf_legacy_platform_v2' && config.rulesetId !== 'werewolf_platform_open_kill_v1') return null;
   if (config.pace !== 'fast' && config.pace !== 'standard' && config.pace !== 'relaxed') return null;
@@ -249,6 +257,7 @@ export function parseWerewolfView(value: unknown, role?: 'player' | 'spectator')
   if (config.wolfKillScope !== 'non_wolf' && config.wolfKillScope !== 'any') return null;
   if ((config.rulesetId === 'werewolf_legacy_platform_v2') !== (config.wolfKillScope === 'non_wolf')) return null;
   if (isV2 && config.rulesetId !== 'werewolf_platform_open_kill_v1') return null;
+  if (config.wolfDelta !== undefined && (typeof config.wolfDelta !== 'number' || config.wolfDelta < -1 || config.wolfDelta > 1)) return null;
   if (!isRecord(config.roles) || !hasOnlyKeys(config.roles, ['guard', 'hunter', 'idiot']) || typeof config.roles.guard !== 'boolean' || typeof config.roles.hunter !== 'boolean' || typeof config.roles.idiot !== 'boolean') return null;
   if (!confirmedRoles || !confirmedAnnouncements || !deaths || !speakers || !runoff) return null;
   if (currentSpeakerId !== null && typeof currentSpeakerId !== 'string') return null;
@@ -260,6 +269,7 @@ export function parseWerewolfView(value: unknown, role?: 'player' | 'spectator')
   if (typeof pendingShooterId !== 'string' && pendingShooterId !== null) return null;
   const summary = lastVoteSummary === null ? null : parseVoteSummary(lastVoteSummary);
   if (lastVoteSummary !== null && summary === null) return null;
+  if (nightStage !== undefined && nightStage !== 'wolf' && nightStage !== 'witch' && nightStage !== 'seer' && nightStage !== 'guard' && nightStage !== 'done') return null;
   // 角色判别：player 必须携带本人视角，spectator 不得携带（与 v2 wire 形状一致）。
   if (role === 'player' && (me === undefined || me === null)) return null;
   if (role === 'spectator' && me !== undefined) return null;
@@ -299,8 +309,8 @@ export function parseWerewolfView(value: unknown, role?: 'player' | 'spectator')
         idiot: config.roles.idiot,
       },
     }, confirmedRolePlayerIds: confirmedRoles,
-    announcementConfirmedPlayerIds: confirmedAnnouncements, lastNightDeaths: deaths, speakingOrder: speakers,
-    currentSpeakerId, lastWordsPlayerId, deadlineAt, votesSubmitted, votesExpected, runoffCandidates: runoff,
+    announcementConfirmedPlayerIds: confirmedAnnouncements, ...(nightStage !== undefined ? { nightStage } : {}), lastNightDeaths: deaths, speakingOrder: speakers,
+    currentSpeakerId, ...(freeDiscussionReadyPlayerIds ? { freeDiscussionReadyPlayerIds: asStringArray(freeDiscussionReadyPlayerIds) ?? [] } : {}), lastWordsPlayerId, deadlineAt, votesSubmitted, votesExpected, runoffCandidates: runoff,
     lastVoteSummary: summary, pendingShooterId, winner, aborted, reveal: parsedReveal, me: parsedMe,
   };
 }

@@ -9,6 +9,7 @@ import { TabletopOvalShell, type PlayerSeat } from '../../shared-ui/TabletopOval
 import { CardFanEngine, type CardItem } from '../../shared-ui/CardFanEngine.tsx';
 import { GameIcon } from '../../shared-ui/GameIcon.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
+import { TabletopEventOverlay } from '../../shared-ui/TabletopEventOverlay.tsx';
 import { webAudio } from '../../shared-ui/WebAudioManager.ts';
 import type { BellClashCard, BellClashPlayerView, CardColor } from './types.ts';
 
@@ -114,6 +115,18 @@ export function BellClashGamePage({ view }: Props) {
     }
     prevBellOpenRef.current = view.bellOpen;
   }, [view.bellOpen, view.phase]);
+
+  // 抢铃结果确定（有人抢到出牌权）：全屏反馈盖一次印，避免拍铃瞬间遮挡案台。
+  const [bellClaim, setBellClaim] = useState<{ name: string; isMe: boolean } | null>(null);
+  const prevBellClaimantRef = useRef<string | null>(null);
+  useEffect(() => {
+    const current = typeof view.bellClaimantId === 'string' ? view.bellClaimantId : null;
+    const previous = prevBellClaimantRef.current;
+    prevBellClaimantRef.current = current;
+    if (current !== null && current !== previous) {
+      setBellClaim({ name: nameFor(members, current), isMe: current === myId });
+    }
+  }, [view.bellClaimantId, members, myId]);
 
   // 游戏获胜音效
   const prevPhaseRef = useRef(view.phase);
@@ -457,6 +470,14 @@ export function BellClashGamePage({ view }: Props) {
             <span className="tabletop-sound-btn__label">规则</span>
           </button>
         )}
+      />
+      <TabletopEventOverlay
+        open={bellClaim !== null}
+        variant={bellClaim?.isMe ? 'reveal' : 'burst'}
+        label={bellClaim?.isMe ? '你抢到出牌权！' : `${bellClaim?.name ?? ''} 拍铃抢到出牌权`}
+        sublabel={bellClaim?.isMe ? '立即打出口令短语卡' : '本回合由他接管出牌'}
+        durationMs={1600}
+        onComplete={() => setBellClaim(null)}
       />
       {rulesOpen && (
         <GameDrawer kind="rules" title="Ding · 游戏规则" triggerRef={rulesRef} onClose={() => setRulesOpen(false)}>

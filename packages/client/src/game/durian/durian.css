@@ -1,0 +1,10 @@
+/* Durian：玩家端焦点式竞技场
+   行动顺序降为 ArenaRail，中央出牌看板升为 ArenaBoard 焦点面。 */
+.durian-focal {
+  width: 100%;
+}
+
+.durian-order-rail {
+  justify-content: center;
+  flex-wrap: wrap;
+}

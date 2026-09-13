@@ -10,17 +10,7 @@
   cursor: progress;
 }
 
-.focused-game-sr-live {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
+/* .focused-game-sr-live 的定义已收敛到 shared-ui/game-ui.css 的 .sr-only 别名。 */
 
 .focused-game-feedback {
   min-height: 0;

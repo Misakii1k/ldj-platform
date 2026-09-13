@@ -10,55 +10,11 @@ import { ActionDock } from '../tabletop/ActionDock.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
 import { IdentityFlipCard } from '../../shared-ui/IdentityFlipCard.tsx';
+import { ArenaBoard } from '../../shared-ui/ArenaBoard.tsx';
+import { ArenaRail } from '../../shared-ui/ArenaRail.tsx';
+import { SeatTargetPicker } from '../../shared-ui/SeatTargetPicker.tsx';
+import { CRIME_META } from './types.ts';
 import type { CrimeId, NightTestimonyPlayerView, QuestionCardView } from './types.ts';
-
-const CRIME_META: Record<CrimeId, { name: string; traits: string }> = {
-  // 传统恶性与人身侵财
-  arson: { name: '恶意纵火', traits: '火源、高温、焦黑灰烬、不动产损毁、夜间' },
-  theft: { name: '入室盗窃', traits: '撬锁、潜入、手套撬棍、实体财物、无声搜刮' },
-  forgery: { name: '公文伪造', traits: '虚假公文、篡改印章、假学历假证书、高超摹仿' },
-  smuggling: { name: '违禁走私', traits: '越境运输、违禁品仓储、集装箱黑市、逃避关税' },
-  fraud: { name: '电信诈骗', traits: '杀猪盘、商业骗局、冒充公检法、诱导转账' },
-  kidnap: { name: '密室绑架', traits: '人身控制、密室关押、勒索赎金、绳索胶带' },
-
-  // 生活微罪与不文明行为
-  littering: { name: '乱扔垃圾', traits: '随手丢弃、果皮纸屑、造假分类、弄脏环境' },
-  public_urination: { name: '随地便溺', traits: '绿化带放水、墙角恶臭、避开监控、毫无公德' },
-  noise_nuisance: { name: '深夜扰民', traits: '半夜电钻、深夜蹦迪、走廊喧哗、破坏睡眠' },
-  graffiti: { name: '乱涂乱画', traits: '景区涂鸦、油漆小广告、刻字到此一游、破坏公物' },
-  dine_and_dash: { name: '吃霸王餐', traits: '借口溜走、假装忘带手机、换桌逃单、专挑小店' },
-  line_cutting: { name: '恶意插队', traits: '硬挤队伍、假装找朋友、强行加塞、公愤焦点' },
-  scalping: { name: '倒卖黄牛', traits: '抢空门票、天价加价、黑市倒票、扰乱秩序' },
-  public_smoking: { name: '禁烟区吸烟', traits: '电梯吸烟、楼道吐雾、乱弹烟灰、刺鼻烟味' },
-
-  // 职场、网络与数字犯罪
-  hacker: { name: '黑客入侵', traits: '远程攻破、植入木马、篡改数据、窃取源码' },
-  wifi_leeching: { name: '蹭网盗密', traits: '万能钥匙、破解密码、偷吃带宽、偷窥流量' },
-  scalp_bot: { name: '抢购外挂', traits: '脚本外挂、秒杀显卡、瘫痪服务器、自动化作弊' },
-  spoilers: { name: '恶意剧透', traits: '首映剧透凶手、弹幕反转炸弹、毁灭观影体验' },
-  water_army: { name: '网络水军', traits: '刷好评控评、操控舆论热搜、批量僵尸号' },
-  office_theft: { name: '偷吃外卖', traits: '偷拿前台外卖、冰箱偷喝奶茶、神不知鬼不觉' },
-
-  // 市井侵财与偷盗
-  pickpocket: { name: '公交扒窃', traits: '拥挤人群、刀片割袋、顺手牵羊、手法极快' },
-  bike_theft: { name: '偷电瓶车', traits: '剪断车锁、拔掉电瓶、假装车主、二手倒卖' },
-  counterfeiter: { name: '制造假币', traits: '印刷假钞、特制纸张油墨、市面调包、以假乱真' },
-  blackmail: { name: '敲诈勒索', traits: '私密黑料、匿名威胁、索要封口费、步步紧逼' },
-  prison_break: { name: '密室越狱', traits: '挖地道、翻越高墙、换装潜逃、全城通缉' },
-  poisoning: { name: '投毒暗害', traits: '无色无味、水杯下毒、伪装意外、化学试剂' },
-  grave_robbery: { name: '盗掘古墓', traits: '洛阳铲、深夜探穴、炸开地宫、倒卖出土文物' },
-
-  // 跨国犯罪与超级重案
-  transnational_crime: { name: '跨国犯罪', traits: '跨国黑产、多本伪造护照、洗钱网络、国际红通' },
-  money_laundering: { name: '地下洗钱', traits: '空壳公司、虚拟货币、海量资金分流、抹去流水' },
-  museum_heist: { name: '名画盗窃', traits: '闪避红外激光、调包名画、切割防盗玻璃、价值连城' },
-  arms_trafficking: { name: '军火走私', traits: '秘密军火箱、货轮改装、伪装农机、危险重武器' },
-  espionage: { name: '商业间谍', traits: '针孔窃听、窃取芯片源码、高管卧底、高额赏金' },
-  poaching: { name: '盗猎珍兽', traits: '深山猎夹、偷猎国家保护动物、剥取角牙皮毛' },
-  pyramid_scheme: { name: '传销洗脑', traits: '秘密开会、没收手机、拉人头发展下线、精神控制' },
-  sea_pirate: { name: '公海海盗', traits: '快艇劫持货轮、武装扣押船员、索要保护费' },
-  impersonation: { name: '假冒军警', traits: '假制服假警官证、非法设卡检查、招摇撞骗' },
-};
 
 function phaseLabel(phase: NightTestimonyPlayerView['phase']): string {
   switch (phase) {
@@ -135,6 +91,8 @@ export function NightTestimonyGamePage({ view }: Props) {
       name: nameFor(members, playerId),
       status,
       active: isActive,
+      // 出题人在广播提问时发言，驱动席位发言波纹
+      isSpeaking: view.phase === 'question' && view.currentQuestion === null && playerId === view.currentQuestionerId,
     };
   });
 
@@ -317,10 +275,7 @@ export function NightTestimonyGamePage({ view }: Props) {
             </button>
           )}
 
-          <div className="testimony-dual-col">
-            {/* 左列：私密档案 + 全员 YES 计数面板 */}
-            <div className="testimony-col testimony-col--left">
-              {me && (
+          {me && (
                 <section
                   className={`sg-panel testimony-private ${!identityExpandedMobile ? 'is-collapsed-mobile' : ''}`}
                   aria-label="我的私密身份"
@@ -348,69 +303,36 @@ export function NightTestimonyGamePage({ view }: Props) {
                 </section>
               )}
 
-              {/* 全员「是」计数监视器 */}
-              <section className="sg-panel testimony-meters-panel" aria-label="全员累计YES监控">
-                <div className="sg-panel__head">
-                  <div className="sg-panel__title-group">
-                    
-                    <h3>全员「是」(YES) 累计看板</h3>
-                  </div>
-                  <span className="sg-badge">满 3 次触发投票</span>
-                </div>
-                <div className="testimony-meters-grid">
-                  {view.players.map((id) => {
+              {/* 全员「是」计数 → 共享 ArenaRail（替代面板式计量卡片） */}
+              <section className="testimony-meters-panel" aria-label="全员累计YES监控">
+                <ArenaRail
+                  label="全员累计是票"
+                  className="testimony-yes-rail"
+                  items={view.players.map((id) => {
                     const yesCount = view.playerYesCounts[id] ?? 0;
                     const isSelf = id === myId;
                     const exposed = view.revealedIdentities[id];
                     const isWarning = yesCount === 2;
                     const isMax = yesCount >= 3;
-
-                    return (
-                      <div
-                        key={id}
-                        className={`testimony-meter-card ${isMax ? 'is-max' : isWarning ? 'is-warning' : ''}`}
-                      >
-                        <div className="testimony-meter-head">
-                          <strong>{nameFor(members, id)} {isSelf ? '（我）' : ''}</strong>
-                          {exposed && (
-                            <span className="sg-tag sg-tag--good">
-                              {exposed === 'warden' ? '狱警' : CRIME_META[exposed].name}
-                            </span>
-                          )}
-                          <span className={`testimony-meter-count ${isMax ? 'is-max' : isWarning ? 'is-warning' : ''}`}>
-                            {yesCount} / 3
-                          </span>
-                        </div>
-                        <div className="testimony-chips-display">
-                          {Array.from({ length: 3 }, (_, i) => (
-                            <span
-                              key={i}
-                              className={`testimony-chip-token testimony-chip-token--yes ${i < yesCount ? 'is-active' : 'is-spent'}`}
-                            >
-                              YES
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    );
+                    return {
+                      key: id,
+                      label: `${nameFor(members, id)}${isSelf ? '（我）' : ''}${exposed ? ` · ${exposed === 'warden' ? '狱警' : CRIME_META[exposed].name}` : ''}`,
+                      value: `${yesCount}/3`,
+                      state: isMax ? 'done' : isWarning ? 'warning' : (view.phase === 'question' && id === view.currentQuestionerId ? 'active' : 'idle'),
+                    };
                   })}
-                </div>
+                />
               </section>
-            </div>
 
-            {/* 右列：出题 3 选 1 / 当前广播题目与作答 / 公开案卷历史 */}
-            <div className="testimony-col testimony-col--right">
               {/* 1. 轮到我出题：3 选 1 卡牌选择器 */}
               {isMyTurnToPickCard && me?.pendingCardChoices && (
-                <section className="sg-panel testimony-picker-panel" aria-label="抽选审讯问题卡">
-                  <div className="sg-panel__head">
-                    <div className="sg-panel__title-group">
-                      
-                      <h3>轮到你出题 · 抽选 1 张向全员提问</h3>
-                    </div>
-                    <span className="sg-badge sg-badge--highlight">3 选 1</span>
-                  </div>
-
+                <ArenaBoard
+                  className="testimony-focal"
+                  tone="accent"
+                  headline="轮到你出题"
+                  hint="抽选 1 张问题卡，向全员广播"
+                  footer={<span className="sg-badge sg-badge--highlight">3 选 1</span>}
+                >
                   <div className="testimony-card-choices" role="radiogroup" aria-label="3张候选问题卡">
                     {me.pendingCardChoices.map((card: QuestionCardView) => {
                       const isSelected = selectedCardId === card.id;
@@ -432,33 +354,34 @@ export function NightTestimonyGamePage({ view }: Props) {
                       );
                     })}
                   </div>
-                </section>
+                </ArenaBoard>
               )}
 
               {/* 2. 轮到他人出题等待中 */}
               {view.phase === 'question' && view.currentQuestion === null && !isMyTurnToPickCard && (
-                <div className="testimony-waiting-banner">
-                  <span className="testimony-waiting-icon">⏳</span>
-                  <div>
-                    <strong>等待 {nameFor(members, view.currentQuestionerId)} 挑选第 {view.questionIndex + 1} 题…</strong>
-                    <span>顺时针轮流出题，出题后全员共同提交答案</span>
+                <ArenaBoard
+                  className="testimony-focal"
+                  tone="paper"
+                  headline="等待出题"
+                  hint="顺时针轮流出题，出题后全员共同提交答案"
+                >
+                  <div className="testimony-waiting-banner">
+                    <span className="testimony-waiting-icon">⏳</span>
+                    <div>
+                      <strong>等待 {nameFor(members, view.currentQuestionerId)} 挑选第 {view.questionIndex + 1} 题…</strong>
+                    </div>
                   </div>
-                </div>
+                </ArenaBoard>
               )}
 
               {/* 3. 当前广播题目与全员作答台 */}
               {isQuestionActive && view.currentQuestion && (
-                <section className="sg-panel testimony-active-q-panel" aria-label="当前审讯题目">
-                  <div className="sg-panel__head">
-                    <div className="sg-panel__title-group">
-                      
-                      <h3>第 {view.currentQuestion.questionIndex} 题 · 出题人：{nameFor(members, view.currentQuestion.questionerId)}</h3>
-                    </div>
-                    <span className="sg-badge">
-                      作答进度 {Object.keys(view.currentQuestion.answers).length} / {view.players.length}
-                    </span>
-                  </div>
-
+                <ArenaBoard
+                  className="testimony-focal"
+                  tone="dark"
+                  headline={`第 ${view.currentQuestion.questionIndex} 题 · 出题人：${nameFor(members, view.currentQuestion.questionerId)}`}
+                  hint={`作答进度 ${Object.keys(view.currentQuestion.answers).length} / ${view.players.length}`}
+                >
                   <div className="testimony-pending-box">
                     <div className="testimony-pending-seal">待定</div>
                     <div className="testimony-pending-content">
@@ -487,16 +410,13 @@ export function NightTestimonyGamePage({ view }: Props) {
                       );
                     })}
                   </div>
-                </section>
+                </ArenaBoard>
               )}
 
-              {/* 4. 历史案卷轨迹 */}
-              <section className="sg-panel testimony-docket-panel" aria-label="案卷公开历史">
-                <div className="sg-panel__head">
-                  <div className="sg-panel__title-group">
-                    
-                    <h3>案卷全员问答历史（公开）</h3>
-                  </div>
+              {/* 4. 历史案卷轨迹（次级信息：只保留轻量头部） */}
+              <section className="testimony-docket-panel" aria-label="案卷公开历史">
+                <div className="testimony-docket-panel__head">
+                  <h3 className="testimony-docket-panel__title">案卷全员问答历史（公开）</h3>
                   <span className="sg-badge">
                     已审讯 {view.history.length} / {view.questionLimit} 题
                   </span>
@@ -525,69 +445,55 @@ export function NightTestimonyGamePage({ view }: Props) {
                   </ol>
                 )}
               </section>
-            </div>
-          </div>
 
-          {/* 票选阶段面板 */}
+          {/* 票选阶段：席位直选（替代名字网格） */}
           {view.phase === 'vote' && myId && (
-            <section className="sg-panel testimony-vote-panel" aria-label="票选狱警">
-              <div className="sg-panel__head">
-                <div className="sg-panel__title-group">
-                  
-                  <h3>{hasVoted ? '✓ 你的投票已提交' : '全员票选潜伏狱警'}</h3>
-                </div>
-                <span>{hasVoted ? '等待其他玩家完成投票…' : '点选你怀疑的嫌疑人'}</span>
-              </div>
-              <div className="sg-chip-row">
-                {view.players.filter((id) => id !== myId).map((id) => {
+            <ArenaBoard
+              className="testimony-focal"
+              tone="paper"
+              headline={hasVoted ? '✓ 你的投票已提交' : '全员票选潜伏狱警'}
+              hint={hasVoted ? '等待其他玩家完成投票…' : '点选你怀疑的嫌疑人；已自告的囚犯自动排除'}
+            >
+              <SeatTargetPicker
+                label="选择你怀疑的狱警"
+                selectedIds={voteTarget ? [voteTarget] : []}
+                onSelect={(ids) => setVoteTarget(ids[0] ?? null)}
+                disabled={hasVoted}
+                options={view.players.filter((id) => id !== myId).map((id) => {
                   const exposed = view.revealedIdentities[id];
-                  const isSelected = voteTarget === id;
                   const isExposedCriminal = Boolean(exposed && exposed !== 'warden');
-
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      disabled={hasVoted || isExposedCriminal}
-                      className={`sg-chip sg-chip--btn ${isSelected ? 'sg-chip--selected' : ''} ${isExposedCriminal ? 'is-disabled-exposed' : ''}`}
-                      onClick={() => !hasVoted && !isExposedCriminal && setVoteTarget(id)}
-                      aria-pressed={isSelected}
-                    >
-                      {isSelected ? '✓ ' : ''}{nameFor(members, id)}
-                      {exposed ? `（${exposed === 'warden' ? '狱警' : `${CRIME_META[exposed]?.name ?? exposed} · 排除狱警`}）` : ''}
-                    </button>
-                  );
+                  return {
+                    id,
+                    name: nameFor(members, id),
+                    disabled: isExposedCriminal,
+                    hint: exposed
+                      ? (exposed === 'warden' ? '狱警' : `${CRIME_META[exposed]?.name ?? exposed} · 已排除`)
+                      : undefined,
+                  };
                 })}
-              </div>
-            </section>
+              />
+            </ArenaBoard>
           )}
 
           {/* 狱警终局猜罪大舞台 */}
           {view.guessingInProgress && me?.isWarden && guessInmate && (
-            <section className="sg-panel testimony-guess-matrix" aria-label="狱警终局猜罪">
-              <div className="sg-panel__head">
-                <div className="sg-panel__title-group">
-                  
-                  <h3>狱警终局翻盘 · 猜出全员罪行</h3>
-                </div>
-                <span className="sg-badge sg-badge--warning">全对单独获胜</span>
-              </div>
-              <p className="sg-hint">案台已摆出所有囚犯真实罪行与 1 张干扰罪行卡。为每位囚犯一一匹配指定罪行：</p>
-
-              <div className="testimony-inmate-select-row">
-                {view.players.filter((id) => id !== myId).map((id) => (
-                  <button
-                    key={id}
-                    type="button"
-                    className={`sg-chip sg-chip--btn ${guessInmate === id ? 'sg-chip--selected' : ''}`}
-                    onClick={() => setGuessTarget(id)}
-                    aria-pressed={guessInmate === id}
-                  >
-                    {nameFor(members, id)}
-                    {guesses[id] ? `：${CRIME_META[guesses[id]!].name}` : '（未指定）'}
-                  </button>
-                ))}
-              </div>
+            <ArenaBoard
+              className="testimony-focal"
+              tone="accent"
+              headline="狱警终局翻盘 · 猜出全员罪行"
+              hint="案台已摆出所有囚犯真实罪行与 1 张干扰罪行卡。先点选囚犯，再为他指定罪行："
+              footer={<span className="sg-badge sg-badge--warning">全对单独获胜</span>}
+            >
+              <SeatTargetPicker
+                label="选择要指认的囚犯"
+                selectedIds={guessInmate ? [guessInmate] : []}
+                onSelect={(ids) => setGuessTarget(ids[0] ?? null)}
+                options={view.players.filter((id) => id !== myId).map((id) => ({
+                  id,
+                  name: nameFor(members, id),
+                  hint: guesses[id] ? CRIME_META[guesses[id]!].name : '未指定',
+                }))}
+              />
 
               <div className="testimony-crime-options-grid">
                 {(view.availableGuessCrimes ?? (Object.keys(CRIME_META) as CrimeId[])).map((crime) => (
@@ -601,7 +507,7 @@ export function NightTestimonyGamePage({ view }: Props) {
                   </button>
                 ))}
               </div>
-            </section>
+            </ArenaBoard>
           )}
         </div>
       ) : (

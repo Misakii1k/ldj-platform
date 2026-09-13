@@ -1,0 +1,544 @@
+/* 奶酪大盗：玩家端焦点式竞技场
+   夜间时刻轨 / 偷取 / 查验 / 共犯 / 天亮 / 投票各成一块焦点板，选人走席位直选。 */
+.cheese-player-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cheese-focal {
+  width: 100%;
+}
+
+.cheese-hours-rail {
+  justify-content: center;
+}
+
+.cheese-vote-done-note {
+  margin: 0;
+  color: var(--gp-success);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+/* ========================================================= */
+/* 1. 骰盅区域优化与紧凑化（去除臃肿边框与庞大高度）         */
+/* ========================================================= */
+.cheese-secret-card {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  transition: max-width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cheese-secret-card__body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  transition: all 0.45s ease;
+}
+
+.cheese-secret-card--has-identity .cheese-secret-card__body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cheese-secret-card--dice-only {
+  max-width: 280px;
+}
+
+.cheese-secret-card--dice-only .cheese-secret-card__body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.cheese-dice-cup-container {
+  display: flex;
+  justify-content: center;
+  padding: 0;
+  margin: 0 auto;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+/* 隐藏骰盅摇骰多余按钮，只留纯粹精致 3D 骰盅与极简提示 */
+.cheese-secret-card .shared-cup-shake-btn {
+  display: none !important;
+}
+
+/* 紧凑化骰盅内嵌尺寸 */
+.cheese-secret-card .shared-dice-cup-wrapper {
+  padding: 2px 0;
+}
+
+.cheese-secret-card .shared-dice-cup-wrapper--compact .shared-dice-cup-scene {
+  width: 136px;
+  height: 142px;
+}
+
+.cheese-secret-card .shared-cup-info {
+  margin-top: 2px;
+  gap: 2px;
+}
+
+.cheese-secret-card .shared-cup-hint {
+  font-size: 0.74rem;
+}
+
+/* ========================================================= */
+/* 2. 身份卡定时消失动效（平滑淡出 + 缩放彻底消失）           */
+/* ========================================================= */
+.cheese-identity-card-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  max-width: 280px;
+  max-height: 400px;
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+              max-width 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+              max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+              margin 0.45s ease,
+              padding 0.45s ease;
+}
+
+.cheese-identity-card-container.cheese-identity-card--exiting {
+  opacity: 0;
+  transform: scale(0.72) translateY(-16px);
+  max-width: 0;
+  max-height: 0;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ========================================================= */
+/* 3. 开局准备倒计时（底部通栏展示，到期平滑位移至顶部）     */
+/* ========================================================= */
+.cheese-opening-countdown-bar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  z-index: 95;
+  width: min(92%, 400px);
+  padding: 8px 18px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.94) 0%, rgba(30, 41, 59, 0.94) 100%);
+  border: 1.5px solid rgba(245, 158, 11, 0.7);
+  border-radius: 999px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(245, 158, 11, 0.2);
+  backdrop-filter: blur(12px);
+  box-sizing: border-box;
+  animation: bar-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.2), opacity 0.5s ease;
+}
+
+@keyframes bar-slide-up {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(40px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+.cheese-opening-countdown-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cheese-opening-countdown-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cheese-opening-icon {
+  font-size: 1.1rem;
+}
+
+.cheese-opening-title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #fef08a;
+  letter-spacing: 0.5px;
+}
+
+.cheese-countdown-pill--opening,
+.cheese-countdown-pill--night,
+.cheese-countdown-pill--mini {
+  background: rgba(15, 23, 42, 0.88);
+  border: 1.5px solid #f59e0b;
+  padding: 3px 12px;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.cheese-countdown-pill--opening .cheese-countdown-pill__label,
+.cheese-countdown-pill--night .cheese-countdown-pill__label,
+.cheese-countdown-pill--mini .cheese-countdown-pill__label {
+  color: #fde047;
+  font-weight: 850;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+.cheese-countdown-pill--opening .cheese-countdown-pill__time,
+.cheese-countdown-pill--night .cheese-countdown-pill__time,
+.cheese-countdown-pill--mini .cheese-countdown-pill__time {
+  color: #ffffff;
+  font-weight: 950;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+/* 准备期结束后平滑过渡移动至顶部对应位置 */
+.cheese-opening-countdown-bar.is-moving-to-top {
+  transform: translateX(-50%) translateY(calc(-100vh + 140px)) scale(0.85);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cheese-countdown-pill--night {
+  animation: pill-fade-in 0.5s ease-out;
+}
+
+@keyframes pill-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ========================================================= */
+/* 4. 白天讨论面板：顶部浮层遮罩 + 卷轴式收起到底部           */
+/* ========================================================= */
+.cheese-dawn-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 110;
+  transition: opacity 0.4s ease;
+}
+
+.cheese-dawn-backdrop.is-collapsed {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cheese-dawn-backdrop.is-expanded {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 悬浮在顶部的半透明浮层遮罩（居顶居中） */
+.cheese-dawn-overlay {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(0) scale(1);
+  z-index: 115;
+  width: min(92%, 580px);
+  box-sizing: border-box;
+  transform-origin: top center;
+  transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1),
+              opacity 0.38s ease;
+}
+
+.cheese-dawn-overlay.is-collapsed {
+  transform: translateX(-50%) translateY(calc(100vh - 100px)) scale(0.85, 0.05);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cheese-dawn-overlay.is-expanded {
+  transform: translateX(-50%) translateY(0) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 卷轴式卡片外观 */
+.cheese-dawn-scroll-card {
+  position: relative;
+  background: linear-gradient(180deg, #fefce8 0%, #fef9c3 60%, #fef08a 100%);
+  border: 2px solid #b45309;
+  border-radius: 14px;
+  padding: 16px 20px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), 0 2px 10px rgba(180, 83, 9, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 卷轴握柄装饰杆 */
+.cheese-scroll-rod {
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  height: 8px;
+  background: linear-gradient(90deg, #78350f 0%, #b45309 30%, #f59e0b 50%, #b45309 70%, #78350f 100%);
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.cheese-scroll-rod--top {
+  top: -4px;
+}
+
+.cheese-scroll-rod--bottom {
+  bottom: -4px;
+}
+
+.cheese-dawn-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cheese-dawn-title-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.cheese-dawn-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.cheese-dawn-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #78350f;
+  letter-spacing: 0.02em;
+}
+
+.cheese-dawn-hint {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #92400e;
+  line-height: 1.35;
+}
+
+/* 右上角收起按钮 */
+.cheese-dawn-collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(180, 83, 9, 0.12);
+  border: 1px solid rgba(180, 83, 9, 0.3);
+  color: #78350f;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.cheese-dawn-collapse-btn:hover {
+  background: rgba(180, 83, 9, 0.2);
+  transform: translateY(-1px);
+}
+
+.cheese-dawn-collapse-btn:active {
+  transform: translateY(1px);
+}
+
+.cheese-dawn-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cheese-dawn-footer {
+  display: flex;
+  justify-content: center;
+}
+
+.cheese-dawn-footer .cheese-skip-discussion-btn {
+  width: 100%;
+}
+
+/* 卷轴收起后停留在底部的通栏 */
+.cheese-dawn-bottom-bar {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  z-index: 115;
+  width: min(92%, 480px);
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #d97706;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 12px rgba(245, 158, 11, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1),
+              opacity 0.35s ease;
+}
+
+.cheese-dawn-bottom-bar.is-hidden {
+  transform: translateX(-50%) translateY(60px) scale(0.95);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cheese-dawn-bottom-bar.is-visible {
+  transform: translateX(-50%) translateY(0) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.cheese-dawn-bottom-bar__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cheese-dawn-bottom-bar__icon {
+  font-size: 1.15rem;
+}
+
+.cheese-dawn-bottom-bar__status {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #78350f;
+}
+
+.cheese-countdown-pill--mini {
+  padding: 2px 8px;
+  font-size: 0.8rem;
+  background: rgba(217, 119, 6, 0.2);
+  border: 1px solid rgba(217, 119, 6, 0.4);
+}
+
+.cheese-dawn-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #b45309;
+  border: 1px solid #78350f;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(120, 53, 15, 0.3);
+  transition: all 0.2s ease;
+}
+
+.cheese-dawn-expand-btn:hover {
+  background: #b45309;
+  transform: translateY(-1px);
+}
+
+/* 当底部有操作栏（如猫/狗身份技能）时，将收起的卷轴通栏安全上浮，避免重叠冲突 */
+.tabletop-shell:has(.tabletop-action-dock) .cheese-dawn-bottom-bar {
+  bottom: calc(var(--safe-bottom, 0px) + 84px);
+}
+
+/* ========================================================= */
+/* 5. 4 人局两骰自选时刻面板                                  */
+/* ========================================================= */
+.cheese-hour-choice-dice-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+
+.cheese-hour-choice-die {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100px;
+  height: 100px;
+  padding: 10px;
+  border-radius: 16px;
+  border: 2px solid #f59e0b;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.cheese-hour-choice-die:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.04);
+  border-color: #fbbf24;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.4);
+}
+
+.cheese-hour-choice-die:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+}
+
+.cheese-hour-choice-die.is-selected {
+  border-color: #10b981;
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.9) 0%, rgba(4, 120, 87, 0.8) 100%);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+}
+
+.choice-die-num {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #fbbf24;
+  line-height: 1;
+}
+
+.choice-die-label {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #e2e8f0;
+}
+
+.choice-die-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #a7f3d0;
+}

@@ -1,5 +1,4 @@
 import React from 'react';
-import { GameActionFeedback } from '../../../shared-ui/GameMotion.tsx';
 import type { WerewolfActionGroup } from '../presentation.ts';
 
 interface WerewolfActionPanelProps {
@@ -14,7 +13,7 @@ function isTargetOption(option: { payload: Readonly<Record<string, unknown>> }):
   return typeof option.payload.targetPlayerId === 'string';
 }
 
-export function WerewolfActionPanel({ groups, waitingHint, busy, phaseKey, onAct }: WerewolfActionPanelProps) {
+export function WerewolfActionPanel({ groups, waitingHint, busy, onAct }: WerewolfActionPanelProps) {
   // 目标型动作（投票放逐/查验/毒杀/守护/开枪/夜刀）改为点击席位头像后就地选择；
   // 底栏只保留非目标型选项（弃票、不使用道具、确认、结束发言等）。
   const dockGroups = groups.map((group) => ({

@@ -8,7 +8,7 @@ import {
   useVideoConfig,
 } from 'remotion';
 import { JungleBackground } from './TitleScene';
-import { BG, BORDER, SHADOW, RADIUS, COLOR, FONT, cardPanel, glassPanel, pillTag } from '../lib/theme';
+import { BORDER, RADIUS, COLOR, FONT, cardPanel, glassPanel, pillTag } from '../lib/theme';
 import { fadeInOut } from '../lib/transitions';
 
 export const PenaltySystemScene: React.FC = () => {

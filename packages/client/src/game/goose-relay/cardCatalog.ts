@@ -1,4 +1,4 @@
-/** 80 张桌面鸭子卡片高清图库与中文名称映射表 */
+/** 80 张桌面白鹅卡片高清图库与中文名称映射表 */
 import type { CharacterId } from './types.ts';
 
 export interface GooseCardMeta {
@@ -13,7 +13,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "detective": {
     "id": "goose_001",
     "key": "detective",
-    "name": "侦探鸭",
+    "name": "侦探鹅",
     "theme": "professions",
     "sheetIndex": 1,
     "gridIndex": 1,
@@ -24,7 +24,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "astronaut": {
     "id": "goose_002",
     "key": "astronaut",
-    "name": "宇航员鸭",
+    "name": "宇航员鹅",
     "theme": "professions",
     "sheetIndex": 1,
     "gridIndex": 2,
@@ -35,7 +35,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "pirate": {
     "id": "goose_003",
     "key": "pirate",
-    "name": "海盗鸭",
+    "name": "海盗鹅",
     "theme": "professions",
     "sheetIndex": 1,
     "gridIndex": 3,
@@ -46,7 +46,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "chef": {
     "id": "goose_004",
     "key": "chef",
-    "name": "厨师鸭",
+    "name": "厨师鹅",
     "theme": "professions",
     "sheetIndex": 1,
     "gridIndex": 4,
@@ -57,7 +57,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "doctor": {
     "id": "goose_005",
     "key": "doctor",
-    "name": "医生鸭",
+    "name": "医生鹅",
     "theme": "professions",
     "sheetIndex": 1,
     "gridIndex": 5,
@@ -68,7 +68,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "firefighter": {
     "id": "goose_006",
     "key": "firefighter",
-    "name": "消防员鸭",
+    "name": "消防员鹅",
     "theme": "professions",
     "sheetIndex": 1,
     "gridIndex": 6,
@@ -79,7 +79,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "miner": {
     "id": "goose_007",
     "key": "miner",
-    "name": "矿工鸭",
+    "name": "矿工鹅",
     "theme": "professions",
     "sheetIndex": 1,
     "gridIndex": 7,
@@ -90,7 +90,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "wizard": {
     "id": "goose_008",
     "key": "wizard",
-    "name": "魔法师鸭",
+    "name": "魔法师鹅",
     "theme": "professions",
     "sheetIndex": 1,
     "gridIndex": 8,
@@ -101,7 +101,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "samurai": {
     "id": "goose_009",
     "key": "samurai",
-    "name": "武士鸭",
+    "name": "武士鹅",
     "theme": "professions",
     "sheetIndex": 1,
     "gridIndex": 9,
@@ -112,7 +112,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "king": {
     "id": "goose_010",
     "key": "king",
-    "name": "国王鸭",
+    "name": "国王鹅",
     "theme": "professions",
     "sheetIndex": 1,
     "gridIndex": 10,
@@ -123,7 +123,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "diver": {
     "id": "goose_011",
     "key": "diver",
-    "name": "潜水员鸭",
+    "name": "潜水员鹅",
     "theme": "professions",
     "sheetIndex": 1,
     "gridIndex": 11,
@@ -134,7 +134,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "painter": {
     "id": "goose_012",
     "key": "painter",
-    "name": "画家鸭",
+    "name": "画家鹅",
     "theme": "professions",
     "sheetIndex": 1,
     "gridIndex": 12,
@@ -145,7 +145,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "rockstar": {
     "id": "goose_013",
     "key": "rockstar",
-    "name": "摇滚鸭",
+    "name": "摇滚鹅",
     "theme": "professions",
     "sheetIndex": 1,
     "gridIndex": 13,
@@ -156,7 +156,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "ninja": {
     "id": "goose_014",
     "key": "ninja",
-    "name": "忍者鸭",
+    "name": "忍者鹅",
     "theme": "professions",
     "sheetIndex": 1,
     "gridIndex": 14,
@@ -167,7 +167,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "racer": {
     "id": "goose_015",
     "key": "racer",
-    "name": "赛车手鸭",
+    "name": "赛车手鹅",
     "theme": "professions",
     "sheetIndex": 1,
     "gridIndex": 15,
@@ -178,7 +178,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "ballerina": {
     "id": "goose_016",
     "key": "ballerina",
-    "name": "芭蕾舞鸭",
+    "name": "芭蕾舞鹅",
     "theme": "professions",
     "sheetIndex": 1,
     "gridIndex": 16,
@@ -189,7 +189,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "fried_chicken": {
     "id": "goose_017",
     "key": "fried_chicken",
-    "name": "炸鸡腿鸭",
+    "name": "炸鸡腿鹅",
     "theme": "food_objects",
     "sheetIndex": 2,
     "gridIndex": 1,
@@ -200,7 +200,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "fried_egg": {
     "id": "goose_018",
     "key": "fried_egg",
-    "name": "荷包蛋鸭",
+    "name": "荷包蛋鹅",
     "theme": "food_objects",
     "sheetIndex": 2,
     "gridIndex": 2,
@@ -211,7 +211,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "boba_tea": {
     "id": "goose_019",
     "key": "boba_tea",
-    "name": "珍珠奶茶鸭",
+    "name": "珍珠奶茶鹅",
     "theme": "food_objects",
     "sheetIndex": 2,
     "gridIndex": 3,
@@ -222,7 +222,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "burger": {
     "id": "goose_020",
     "key": "burger",
-    "name": "汉堡鸭",
+    "name": "汉堡鹅",
     "theme": "food_objects",
     "sheetIndex": 2,
     "gridIndex": 4,
@@ -233,7 +233,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "cactus": {
     "id": "goose_021",
     "key": "cactus",
-    "name": "仙人掌鸭",
+    "name": "仙人掌鹅",
     "theme": "food_objects",
     "sheetIndex": 2,
     "gridIndex": 5,
@@ -244,7 +244,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "ice_cream": {
     "id": "goose_022",
     "key": "ice_cream",
-    "name": "冰淇淋鸭",
+    "name": "冰淇淋鹅",
     "theme": "food_objects",
     "sheetIndex": 2,
     "gridIndex": 6,
@@ -255,7 +255,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "toast": {
     "id": "goose_023",
     "key": "toast",
-    "name": "烤吐司鸭",
+    "name": "烤吐司鹅",
     "theme": "food_objects",
     "sheetIndex": 2,
     "gridIndex": 7,
@@ -266,7 +266,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "puddle": {
     "id": "goose_024",
     "key": "puddle",
-    "name": "融化水洼鸭",
+    "name": "融化水洼鹅",
     "theme": "food_objects",
     "sheetIndex": 2,
     "gridIndex": 8,
@@ -277,7 +277,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "watermelon": {
     "id": "goose_025",
     "key": "watermelon",
-    "name": "西瓜鸭",
+    "name": "西瓜鹅",
     "theme": "food_objects",
     "sheetIndex": 2,
     "gridIndex": 9,
@@ -288,7 +288,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "popcorn": {
     "id": "goose_026",
     "key": "popcorn",
-    "name": "爆米花鸭",
+    "name": "爆米花鹅",
     "theme": "food_objects",
     "sheetIndex": 2,
     "gridIndex": 10,
@@ -299,7 +299,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "sushi": {
     "id": "goose_027",
     "key": "sushi",
-    "name": "寿司鸭",
+    "name": "寿司鹅",
     "theme": "food_objects",
     "sheetIndex": 2,
     "gridIndex": 11,
@@ -310,7 +310,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "balloon": {
     "id": "goose_028",
     "key": "balloon",
-    "name": "气球鸭",
+    "name": "气球鹅",
     "theme": "food_objects",
     "sheetIndex": 2,
     "gridIndex": 12,
@@ -321,7 +321,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "chili": {
     "id": "goose_029",
     "key": "chili",
-    "name": "辣椒鸭",
+    "name": "辣椒鹅",
     "theme": "food_objects",
     "sheetIndex": 2,
     "gridIndex": 13,
@@ -332,7 +332,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "coffee": {
     "id": "goose_030",
     "key": "coffee",
-    "name": "咖啡杯鸭",
+    "name": "咖啡杯鹅",
     "theme": "food_objects",
     "sheetIndex": 2,
     "gridIndex": 14,
@@ -343,7 +343,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "durian": {
     "id": "goose_031",
     "key": "durian",
-    "name": "榴莲鸭",
+    "name": "榴莲鹅",
     "theme": "food_objects",
     "sheetIndex": 2,
     "gridIndex": 15,
@@ -354,7 +354,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "potted_plant": {
     "id": "goose_032",
     "key": "potted_plant",
-    "name": "盆栽小树鸭",
+    "name": "盆栽小树鹅",
     "theme": "food_objects",
     "sheetIndex": 2,
     "gridIndex": 16,
@@ -365,7 +365,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "cthulhu": {
     "id": "goose_033",
     "key": "cthulhu",
-    "name": "克苏鲁触手鸭",
+    "name": "克苏鲁触手鹅",
     "theme": "heroes_fantasy",
     "sheetIndex": 3,
     "gridIndex": 1,
@@ -376,7 +376,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "bodybuilder": {
     "id": "goose_034",
     "key": "bodybuilder",
-    "name": "健美肌肉鸭",
+    "name": "健美肌肉鹅",
     "theme": "heroes_fantasy",
     "sheetIndex": 3,
     "gridIndex": 2,
@@ -387,7 +387,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "magic_student": {
     "id": "goose_035",
     "key": "magic_student",
-    "name": "魔法学徒鸭",
+    "name": "魔法学徒鹅",
     "theme": "heroes_fantasy",
     "sheetIndex": 3,
     "gridIndex": 3,
@@ -398,7 +398,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "batman": {
     "id": "goose_036",
     "key": "batman",
-    "name": "蝙蝠侠暗夜鸭",
+    "name": "蝙蝠侠暗夜鹅",
     "theme": "heroes_fantasy",
     "sheetIndex": 3,
     "gridIndex": 4,
@@ -409,7 +409,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "sailor_moon": {
     "id": "goose_037",
     "key": "sailor_moon",
-    "name": "水手月亮鸭",
+    "name": "水手月亮鹅",
     "theme": "heroes_fantasy",
     "sheetIndex": 3,
     "gridIndex": 5,
@@ -420,7 +420,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "wukong": {
     "id": "goose_038",
     "key": "wukong",
-    "name": "齐天大圣鸭",
+    "name": "齐天大圣鹅",
     "theme": "heroes_fantasy",
     "sheetIndex": 3,
     "gridIndex": 6,
@@ -431,7 +431,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "mummy": {
     "id": "goose_039",
     "key": "mummy",
-    "name": "木乃伊鸭",
+    "name": "木乃伊鹅",
     "theme": "heroes_fantasy",
     "sheetIndex": 3,
     "gridIndex": 7,
@@ -442,7 +442,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "dracula": {
     "id": "goose_040",
     "key": "dracula",
-    "name": "吸血鬼伯爵鸭",
+    "name": "吸血鬼伯爵鹅",
     "theme": "heroes_fantasy",
     "sheetIndex": 3,
     "gridIndex": 8,
@@ -453,7 +453,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "angel": {
     "id": "goose_041",
     "key": "angel",
-    "name": "天使光环鸭",
+    "name": "天使光环鹅",
     "theme": "heroes_fantasy",
     "sheetIndex": 3,
     "gridIndex": 9,
@@ -464,7 +464,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "devil": {
     "id": "goose_042",
     "key": "devil",
-    "name": "小恶魔鸭",
+    "name": "小恶魔鹅",
     "theme": "heroes_fantasy",
     "sheetIndex": 3,
     "gridIndex": 10,
@@ -475,7 +475,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "cyborg": {
     "id": "goose_043",
     "key": "cyborg",
-    "name": "赛博机械鸭",
+    "name": "赛博机械鹅",
     "theme": "heroes_fantasy",
     "sheetIndex": 3,
     "gridIndex": 11,
@@ -486,7 +486,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "zombie": {
     "id": "goose_044",
     "key": "zombie",
-    "name": "末日丧尸鸭",
+    "name": "末日丧尸鹅",
     "theme": "heroes_fantasy",
     "sheetIndex": 3,
     "gridIndex": 12,
@@ -497,7 +497,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "mermaid": {
     "id": "goose_045",
     "key": "mermaid",
-    "name": "美人鱼海妖鸭",
+    "name": "美人鱼海妖鹅",
     "theme": "heroes_fantasy",
     "sheetIndex": 3,
     "gridIndex": 13,
@@ -508,7 +508,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "spartan": {
     "id": "goose_046",
     "key": "spartan",
-    "name": "斯巴达勇士鸭",
+    "name": "斯巴达勇士鹅",
     "theme": "heroes_fantasy",
     "sheetIndex": 3,
     "gridIndex": 14,
@@ -519,7 +519,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "god_of_wealth": {
     "id": "goose_047",
     "key": "god_of_wealth",
-    "name": "财神金宝鸭",
+    "name": "财神金宝鹅",
     "theme": "heroes_fantasy",
     "sheetIndex": 3,
     "gridIndex": 15,
@@ -530,7 +530,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "ghost": {
     "id": "goose_048",
     "key": "ghost",
-    "name": "床单幽灵鸭",
+    "name": "床单幽灵鹅",
     "theme": "heroes_fantasy",
     "sheetIndex": 3,
     "gridIndex": 16,
@@ -541,7 +541,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "boxer": {
     "id": "goose_049",
     "key": "boxer",
-    "name": "拳击手鸭",
+    "name": "拳击手鹅",
     "theme": "sports_lifestyle",
     "sheetIndex": 4,
     "gridIndex": 1,
@@ -552,7 +552,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "weightlifter": {
     "id": "goose_050",
     "key": "weightlifter",
-    "name": "举重达人鸭",
+    "name": "举重达人鹅",
     "theme": "sports_lifestyle",
     "sheetIndex": 4,
     "gridIndex": 2,
@@ -563,7 +563,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "skater": {
     "id": "goose_051",
     "key": "skater",
-    "name": "滑板少年鸭",
+    "name": "滑板少年鹅",
     "theme": "sports_lifestyle",
     "sheetIndex": 4,
     "gridIndex": 3,
@@ -574,7 +574,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "fisherman": {
     "id": "goose_052",
     "key": "fisherman",
-    "name": "钓鱼老翁鸭",
+    "name": "钓鱼老翁鹅",
     "theme": "sports_lifestyle",
     "sheetIndex": 4,
     "gridIndex": 4,
@@ -585,7 +585,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "onsen": {
     "id": "goose_053",
     "key": "onsen",
-    "name": "温泉泡汤鸭",
+    "name": "温泉泡汤鹅",
     "theme": "sports_lifestyle",
     "sheetIndex": 4,
     "gridIndex": 5,
@@ -596,7 +596,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "skier": {
     "id": "goose_054",
     "key": "skier",
-    "name": "滑雪高手鸭",
+    "name": "滑雪高手鹅",
     "theme": "sports_lifestyle",
     "sheetIndex": 4,
     "gridIndex": 6,
@@ -607,7 +607,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "yoga": {
     "id": "goose_055",
     "key": "yoga",
-    "name": "瑜伽冥想鸭",
+    "name": "瑜伽冥想鹅",
     "theme": "sports_lifestyle",
     "sheetIndex": 4,
     "gridIndex": 7,
@@ -618,7 +618,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "spy": {
     "id": "goose_056",
     "key": "spy",
-    "name": "特工间谍鸭",
+    "name": "特工间谍鹅",
     "theme": "sports_lifestyle",
     "sheetIndex": 4,
     "gridIndex": 8,
@@ -629,7 +629,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "tennis": {
     "id": "goose_057",
     "key": "tennis",
-    "name": "网球健将鸭",
+    "name": "网球健将鹅",
     "theme": "sports_lifestyle",
     "sheetIndex": 4,
     "gridIndex": 9,
@@ -640,7 +640,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "birthday": {
     "id": "goose_058",
     "key": "birthday",
-    "name": "派对寿星鸭",
+    "name": "派对寿星鹅",
     "theme": "sports_lifestyle",
     "sheetIndex": 4,
     "gridIndex": 10,
@@ -651,7 +651,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "pajama": {
     "id": "goose_059",
     "key": "pajama",
-    "name": "睡衣宅男鸭",
+    "name": "睡衣宅男鹅",
     "theme": "sports_lifestyle",
     "sheetIndex": 4,
     "gridIndex": 11,
@@ -662,7 +662,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "hiker": {
     "id": "goose_060",
     "key": "hiker",
-    "name": "登山驴友鸭",
+    "name": "登山驴友鹅",
     "theme": "sports_lifestyle",
     "sheetIndex": 4,
     "gridIndex": 12,
@@ -673,7 +673,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "soccer": {
     "id": "goose_061",
     "key": "soccer",
-    "name": "足球前锋鸭",
+    "name": "足球前锋鹅",
     "theme": "sports_lifestyle",
     "sheetIndex": 4,
     "gridIndex": 13,
@@ -684,7 +684,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "cyclist": {
     "id": "goose_062",
     "key": "cyclist",
-    "name": "骑行骑士鸭",
+    "name": "骑行骑士鹅",
     "theme": "sports_lifestyle",
     "sheetIndex": 4,
     "gridIndex": 14,
@@ -695,7 +695,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "graffiti": {
     "id": "goose_063",
     "key": "graffiti",
-    "name": "街头涂鸦鸭",
+    "name": "街头涂鸦鹅",
     "theme": "sports_lifestyle",
     "sheetIndex": 4,
     "gridIndex": 15,
@@ -706,7 +706,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "gardener": {
     "id": "goose_064",
     "key": "gardener",
-    "name": "园丁小匠鸭",
+    "name": "园丁小匠鹅",
     "theme": "sports_lifestyle",
     "sheetIndex": 4,
     "gridIndex": 16,
@@ -717,7 +717,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "blue_hood": {
     "id": "goose_065",
     "key": "blue_hood",
-    "name": "小蓝斗篷鸭",
+    "name": "小蓝斗篷鹅",
     "theme": "wacky_fashion",
     "sheetIndex": 5,
     "gridIndex": 1,
@@ -728,7 +728,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "floral_coat": {
     "id": "goose_066",
     "key": "floral_coat",
-    "name": "东北大花袄鸭",
+    "name": "东北大花袄鹅",
     "theme": "wacky_fashion",
     "sheetIndex": 5,
     "gridIndex": 2,
@@ -739,7 +739,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "rapper": {
     "id": "goose_067",
     "key": "rapper",
-    "name": "金链说唱鸭",
+    "name": "金链说唱鹅",
     "theme": "wacky_fashion",
     "sheetIndex": 5,
     "gridIndex": 3,
@@ -750,7 +750,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "box_head": {
     "id": "goose_068",
     "key": "box_head",
-    "name": "纸箱头套鸭",
+    "name": "纸箱头套鹅",
     "theme": "wacky_fashion",
     "sheetIndex": 5,
     "gridIndex": 4,
@@ -761,7 +761,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "dinosaur": {
     "id": "goose_069",
     "key": "dinosaur",
-    "name": "恐龙睡衣鸭",
+    "name": "恐龙睡衣鹅",
     "theme": "wacky_fashion",
     "sheetIndex": 5,
     "gridIndex": 5,
@@ -772,7 +772,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "noble_lady": {
     "id": "goose_070",
     "key": "noble_lady",
-    "name": "羽毛贵妇鸭",
+    "name": "羽毛贵妇鹅",
     "theme": "wacky_fashion",
     "sheetIndex": 5,
     "gridIndex": 6,
@@ -783,7 +783,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "bag_head": {
     "id": "goose_071",
     "key": "bag_head",
-    "name": "纸袋潜行鸭",
+    "name": "纸袋潜行鹅",
     "theme": "wacky_fashion",
     "sheetIndex": 5,
     "gridIndex": 7,
@@ -794,7 +794,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "monocle": {
     "id": "goose_072",
     "key": "monocle",
-    "name": "单片眼镜鸭",
+    "name": "单片眼镜鹅",
     "theme": "wacky_fashion",
     "sheetIndex": 5,
     "gridIndex": 8,
@@ -805,7 +805,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "sumo": {
     "id": "goose_073",
     "key": "sumo",
-    "name": "相扑胖子鸭",
+    "name": "相扑胖子鹅",
     "theme": "wacky_fashion",
     "sheetIndex": 5,
     "gridIndex": 9,
@@ -816,7 +816,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "raincoat": {
     "id": "goose_074",
     "key": "raincoat",
-    "name": "黄雨衣鸭",
+    "name": "黄雨衣鹅",
     "theme": "wacky_fashion",
     "sheetIndex": 5,
     "gridIndex": 10,
@@ -827,7 +827,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "white_beard": {
     "id": "goose_075",
     "key": "white_beard",
-    "name": "圣诞大胡子鸭",
+    "name": "圣诞大胡子鹅",
     "theme": "wacky_fashion",
     "sheetIndex": 5,
     "gridIndex": 11,
@@ -838,7 +838,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "mao_suit": {
     "id": "goose_076",
     "key": "mao_suit",
-    "name": "老干部保温杯鸭",
+    "name": "老干部保温杯鹅",
     "theme": "wacky_fashion",
     "sheetIndex": 5,
     "gridIndex": 12,
@@ -849,7 +849,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "maid": {
     "id": "goose_077",
     "key": "maid",
-    "name": "女仆咖啡鸭",
+    "name": "女仆咖啡鹅",
     "theme": "wacky_fashion",
     "sheetIndex": 5,
     "gridIndex": 13,
@@ -860,7 +860,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "viking": {
     "id": "goose_078",
     "key": "viking",
-    "name": "维京狂战鸭",
+    "name": "维京狂战鹅",
     "theme": "wacky_fashion",
     "sheetIndex": 5,
     "gridIndex": 14,
@@ -871,7 +871,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "bee": {
     "id": "goose_079",
     "key": "bee",
-    "name": "小蜜蜂鸭",
+    "name": "小蜜蜂鹅",
     "theme": "wacky_fashion",
     "sheetIndex": 5,
     "gridIndex": 15,
@@ -882,7 +882,7 @@ export const GOOSE_CARD_MAP: Record<CharacterId, GooseCardMeta> = {
   "gamer_headset": {
     "id": "goose_080",
     "key": "gamer_headset",
-    "name": "猫耳电竞鸭",
+    "name": "猫耳电竞鹅",
     "theme": "wacky_fashion",
     "sheetIndex": 5,
     "gridIndex": 16,

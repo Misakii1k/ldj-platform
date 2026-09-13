@@ -417,7 +417,18 @@ export function LoveLetterGamePage({ view }: Props) {
       )}
       actions={(
         <ActionDock
-          primary={{ id: 'play', label: selectedCard ? `打出「${ROLE_LABELS[selectedCard.role]}」` : '打出所选牌', disabled: canPlayDisabled, onAction: () => void play() }}
+          primary={{
+            id: 'play',
+            label: !selectedCard
+              ? '请先选牌'
+              : (needsTargetChoice && targetId === null)
+              ? `打出「${ROLE_LABELS[selectedCard.role]}」（请选目标）`
+              : (isGuard && needsTargetChoice && guessedRole === null)
+              ? '打出「卫兵」（请猜身份）'
+              : `打出「${ROLE_LABELS[selectedCard.role]}」`,
+            disabled: canPlayDisabled,
+            onAction: () => void play(),
+          }}
           secondary={[{ id: 'clear', label: '重选', disabled: selectedCard === null, onAction: resetSelection }]}
           busy={busy}
           waitingReason={view.phase === 'game_over' ? undefined : myTurn ? '轮到你了，从手牌中选一张打出（悬浮/长按可看技能）' : `${nameFor(members, view.currentPlayerId)} 正在出牌`}
@@ -506,7 +517,7 @@ export function LoveLetterGamePage({ view }: Props) {
                             onMouseEnter={() => setHoveredRole(role)}
                             onMouseLeave={() => setHoveredRole(null)}
                           >
-                            <img src={`/assets/loveletter/${role}.jpg`} alt="" className="ll-role-thumb" />
+                            <img src={`/assets/loveletter/${role}.png`} alt="" className="ll-role-thumb" />
                             <span>{ROLE_LABELS[role]}</span>
                           </button>
                         ))}
@@ -567,7 +578,7 @@ export function LoveLetterGamePage({ view }: Props) {
                       ℹ️
                     </div>
                     <div className="loveletter-card__art">
-                      <img src={`/assets/loveletter/${card.role}.jpg`} alt={ROLE_LABELS[card.role]} className="loveletter-card__img" />
+                      <img src={`/assets/loveletter/${card.role}.png`} alt={ROLE_LABELS[card.role]} className="loveletter-card__img" />
                     </div>
                     <div className="loveletter-card__info">
                       <span className="env-card__seal" aria-hidden="true"><i /></span>
@@ -719,7 +730,7 @@ export function LoveLetterGamePage({ view }: Props) {
                           >
                             <div className="ll-tracker-row__name">
                               <span className="ll-tracker-row__val">{item.meta.value}</span>
-                              <img src={`/assets/loveletter/${item.role}.jpg`} alt="" className="ll-tracker-row__thumb" />
+                              <img src={`/assets/loveletter/${item.role}.png`} alt="" className="ll-tracker-row__thumb" />
                               <div>
                                 <strong>{ROLE_LABELS[item.role]}</strong>
                                 <small>{item.meta.badge}</small>
@@ -821,7 +832,7 @@ export function LoveLetterGamePage({ view }: Props) {
               <div className="ll-ability-detail-modal" onClick={(e) => e.stopPropagation()}>
                 <button type="button" className="ll-ability-detail-close" onClick={() => setDetailRole(null)}>✕</button>
                 <div className="ll-ability-detail-banner">
-                  <img src={`/assets/loveletter/${detailRole}.jpg`} alt="" className="ll-ability-detail-img" />
+                  <img src={`/assets/loveletter/${detailRole}.png`} alt="" className="ll-ability-detail-img" />
                   <div className="ll-ability-detail-meta">
                     <span className="ll-ability-detail-value">{ROLE_ABILITIES[detailRole].value} 点</span>
                     <h3>{ROLE_ABILITIES[detailRole].name}</h3>

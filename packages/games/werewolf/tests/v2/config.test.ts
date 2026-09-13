@@ -33,6 +33,8 @@ test('v2 parseConfig 默认值与合法 open-kill 配置', () => {
     winCondition: 'numbers',
     wolfKillScope: 'any',
     roles: { guard: false, hunter: false, idiot: false },
+    freeDiscussion: true,
+    wolfDelta: 0,
   });
   const explicit = werewolfV2Module.parseConfig({
     rulesetId: 'werewolf_platform_open_kill_v1',
@@ -42,9 +44,13 @@ test('v2 parseConfig 默认值与合法 open-kill 配置', () => {
     winCondition: 'roles',
     wolfKillScope: 'any',
     roles: { guard: true, hunter: true, idiot: true },
+    wolfDelta: 1,
   });
   assert.deepEqual(explicit.roles, { guard: true, hunter: true, idiot: true });
+  assert.equal(explicit.wolfDelta, 1);
   assert.deepEqual(werewolfV2Module.parseConfig({ wolfKillScope: 'any' }).rulesetId, 'werewolf_platform_open_kill_v1');
+  assert.throws(() => werewolfV2Module.parseConfig({ wolfDelta: 2 }));
+  assert.throws(() => werewolfV2Module.parseConfig({ wolfDelta: -2 }));
 });
 
 test('v2 parseConfig 拒绝非 open-kill / 矛盾 / 未知字段', () => {

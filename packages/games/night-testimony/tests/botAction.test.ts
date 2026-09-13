@@ -93,7 +93,7 @@ test('bot 投票阶段：返回合法的 cast_vote 且不投自己', () => {
 
 test('bot 终局猜罪：狱警返回 submit_guesses 且覆盖全部囚犯', () => {
   const ctx = deterministicContext();
-  let state = makeDeterministicState();
+  const state = makeDeterministicState();
   state.phase = 'game_over';
   state.guessingInProgress = true;
   state.wardenRevealed = true;

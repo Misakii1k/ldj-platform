@@ -266,14 +266,44 @@ export function runStartupRecovery(db: Db, logger: Logger): RecoverySummary {
     if (result.changes > 0) {
       logger.info('recovery_members_reset', { count: result.changes });
     }
+
+    // 清理历史无任何活跃或保留成员的僵尸房间
+    const closedStale = db.prepare(
+      `UPDATE rooms
+       SET status = 'CLOSED'
+       WHERE status IN ('LOBBY', 'IN_GAME')
+         AND id NOT IN (
+           SELECT DISTINCT room_id FROM room_members
+           WHERE connection_status IN ('CONNECTED', 'DISCONNECTED_RESERVED')
+         )`,
+    ).run();
+    if (closedStale.changes > 0) {
+      logger.info('recovery_stale_rooms_closed', { count: closedStale.changes });
+    }
+
+    // 级联处理：已关闭房间的活跃会话标记为 ABORTED，挂起计时器标记为 cancelled
+    db.prepare(
+      `UPDATE game_sessions
+       SET status = 'ABORTED', failure = 'room_closed', updated_at = ?
+       WHERE status IN ('PREPARING', 'ACTIVE', 'RECOVERING', 'SUSPENDED')
+         AND room_id IN (SELECT id FROM rooms WHERE status = 'CLOSED')`,
+    ).run(Date.now());
+    db.prepare(
+      `UPDATE timers
+       SET status = 'cancelled'
+       WHERE status = 'pending'
+         AND session_id IN (SELECT id FROM game_sessions WHERE status IN ('ABORTED', 'FINISHED'))`,
+    ).run();
   });
 
-  // 步骤 2：加载所有活动对局（PREPARING/ACTIVE/RECOVERING）
+  // 步骤 2：加载所有活动对局（PREPARING/ACTIVE/RECOVERING，排除已关闭房间）
   const sessions = db
     .prepare(
-      `SELECT *
-       FROM game_sessions
-       WHERE status IN ('PREPARING','ACTIVE','RECOVERING','SUSPENDED')`,
+      `SELECT s.*
+       FROM game_sessions s
+       JOIN rooms r ON r.id = s.room_id
+       WHERE r.status != 'CLOSED'
+         AND s.status IN ('PREPARING','ACTIVE','RECOVERING','SUSPENDED')`,
     )
     .all() as unknown as SessionRow[];
 
@@ -354,9 +384,12 @@ export function runStartupRecovery(db: Db, logger: Logger): RecoverySummary {
     const due = db
       .prepare(
         `SELECT t.session_id, t.timer_id, s.room_id, t.deadline_at, s.module_id, s.ruleset_id
-         FROM timers t JOIN game_sessions s ON s.id = t.session_id
+         FROM timers t
+         JOIN game_sessions s ON s.id = t.session_id
+         JOIN rooms r ON r.id = s.room_id
          WHERE t.status = 'pending'
            AND s.status = 'RECOVERING'
+           AND r.status != 'CLOSED'
            AND t.deadline_at <= ?
          ORDER BY t.deadline_at ASC LIMIT 1`,
       )

@@ -51,9 +51,13 @@ const PLAYER_ACTIONS = new Set<string>([
   'cast_vote',
   'cast_abstention',
   'steal_cheese',
+  'skip_discussion',
 ]);
 
 function playerMatches(actor: Actor, action: CheeseThiefAction): boolean {
+  if (action.type === 'skip_discussion') {
+    return true;
+  }
   return actor.kind === 'player' && 'playerId' in action && actor.playerId === action.playerId;
 }
 
@@ -96,13 +100,19 @@ export const cheeseThiefModule: GameModuleV2<
     return state;
   },
   reduce(_ctx: GameContext, state, actor, action) {
-    // 玩家动作必须与连接身份一致；其余仅允许系统投递。
+    // 玩家动作必须与连接身份一致（提前结束讨论允许桌面大屏观战者发起）；其余仅允许系统投递。
     if (PLAYER_ACTIONS.has(action.type)) {
-      if (actor.kind !== 'player') {
-        return { ok: false, code: 'ACTION_NOT_ALLOWED', message: '该动作只允许玩家发起' };
-      }
-      if (!playerMatches(actor, action)) {
-        return { ok: false, code: 'ACTION_NOT_ALLOWED', message: '动作玩家与连接身份不一致' };
+      if (action.type === 'skip_discussion') {
+        if (actor.kind !== 'player') {
+          return { ok: false, code: 'ACTION_NOT_ALLOWED', message: '该动作只允许玩家发起' };
+        }
+      } else {
+        if (actor.kind !== 'player') {
+          return { ok: false, code: 'ACTION_NOT_ALLOWED', message: '该动作只允许玩家发起' };
+        }
+        if (!playerMatches(actor, action)) {
+          return { ok: false, code: 'ACTION_NOT_ALLOWED', message: '动作玩家与连接身份不一致' };
+        }
       }
     } else if (actor.kind !== 'system') {
       return { ok: false, code: 'ACTION_NOT_ALLOWED', message: '该动作只允许系统发起' };

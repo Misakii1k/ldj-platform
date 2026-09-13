@@ -1,4 +1,4 @@
-# 聚乐桌 Android APP：内嵌服务器主机模式
+# 聚乐桌游 Android APP：内嵌服务器主机模式
 
 > 分支 `feature/embedded-host-app`。一个 APK 三种身份：**玩家 / 桌面 / 主机**。
 > 主机模式以内嵌 Node 24 服务器作局域网主机，模拟器（API 35 x86_64）端到端全链路已验证。

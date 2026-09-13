@@ -44,13 +44,23 @@ export function GameCard({ game, onCreate }: GameCardProps) {
 
   return (
     <article className={`game-card game-card--${game.theme} ${isFeatured ? 'game-card--featured' : ''}`}>
-      <span
-        className={`game-card__ticket game-card__ticket--${game.maturity.toLowerCase()}`}
-        title={`成熟度 ${game.maturity}`}
-        aria-label={`成熟度 ${game.maturity}`}
-      >
-        {game.maturity}
-      </span>
+      {isFeatured ? (
+        <span
+          className="game-card__ticket game-card__ticket--m4"
+          title="热门推荐"
+          aria-label="热门推荐"
+        >
+          热门
+        </span>
+      ) : game.availability === 'playable' ? (
+        <span
+          className={`game-card__ticket game-card__ticket--${game.maturity.toLowerCase()}`}
+          title="精选桌游"
+          aria-label="精选桌游"
+        >
+          精选
+        </span>
+      ) : null}
       <div className="game-card__meta">
         <span className={`game-card__availability ${isPlayable ? 'is-live' : ''}`}>
           {availabilityLabel(game)}

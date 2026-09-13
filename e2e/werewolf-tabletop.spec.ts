@@ -119,6 +119,11 @@ test.describe('D5 P1a 狼人杀 12 人审判桌（v2 引擎）', () => {
       const phaseText = (await page.locator('.moon-header h1').textContent())?.trim() ?? '';
       expect(['身份确认', '夜晚行动']).toContain(phaseText);
 
+      await page.screenshot({
+        path: 'C:/Users/87850/.gemini/antigravity/brain/786d7f94-b943-4023-b1ef-27107647f92a/scratch/werewolf-12p-in-game.png',
+        fullPage: false,
+      });
+
       // —— 几何：席位中心两两距离 > 席位宽度（dense 公式保证），且全部位于环形内 ——
       const geometry = await page.evaluate(() => {
         const ring = document.querySelector('.seat-ring');
@@ -173,6 +178,155 @@ test.describe('D5 P1a 狼人杀 12 人审判桌（v2 引擎）', () => {
           expect(text, `席位不应出现身份 ${role}`).not.toContain(role);
         }
       }
+
+      await page.context().close();
+    } finally {
+      host.client.close();
+    }
+  });
+
+  test('狼人杀大厅：实时阵营分布卡片与梯度预览（12 人 4 狼验证）', async ({ browser }) => {
+    const seeded = seedRoom(DB_PATH, {
+      gameId: 'werewolf',
+      count: 12,
+      ready: false,
+      config: WEREWOLF_CONFIG,
+    });
+    const browserPlayer = seeded.players[0]!;
+    const page = await prepareBrowser(browser, {
+      playerId: browserPlayer.playerId,
+      resumeToken: browserPlayer.resumeToken,
+      roomCode: seeded.roomCode,
+      nickname: '房主',
+    });
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(BASE_URL);
+
+    // 大厅规则面板下方：狼人杀实时阵营分布卡片可见
+    const preview = page.locator('.werewolf-camp-preview');
+    await expect(preview).toBeVisible({ timeout: 15_000 });
+    await expect(preview).toContainText('当前 12 人局阵营分布');
+    await expect(preview).toContainText('梯度：6–8人配2狼 · 9–10人配3狼 · 11–12人配4狼');
+
+    // 狼人阵营卡片：4 人
+    const wolfCard = page.locator('.werewolf-camp-card--wolf');
+    await expect(wolfCard).toBeVisible();
+    await expect(wolfCard).toContainText('4 人');
+
+    // 神职阵营卡片与平民阵营卡片
+    const godCard = page.locator('.werewolf-camp-card--god');
+    await expect(godCard).toBeVisible();
+    const villagerCard = page.locator('.werewolf-camp-card--villager');
+    await expect(villagerCard).toBeVisible();
+
+    // 截图保存为 artifact 证据
+    await preview.scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: 'C:/Users/87850/.gemini/antigravity/brain/786d7f94-b943-4023-b1ef-27107647f92a/scratch/werewolf-camp-preview.png',
+      fullPage: false,
+    });
+
+    await page.context().close();
+  });
+
+  test('7 人局竖屏移动端：紧凑席位 + 聊天按钮避让席位 + 公投进度卡片紧凑排版（390×844 竖屏）', async ({ browser }) => {
+    const seeded = seedRoom(DB_PATH, {
+      gameId: 'werewolf',
+      count: 7,
+      ready: true,
+      config: WEREWOLF_CONFIG,
+    });
+    const host = await RoomDriver.resume(WS_URL, seeded.roomCode, seeded.hostId, seeded.hostResumeToken);
+    try {
+      const readyAck = await host.ready();
+      expect(readyAck.type).toBe('ack');
+      const startAck = await host.startGame(WEREWOLF_CONFIG);
+      expect(startAck.type).toBe('ack');
+
+      const browserPlayer = seeded.players[0]!;
+      const page = await prepareBrowser(browser, {
+        playerId: browserPlayer.playerId,
+        resumeToken: browserPlayer.resumeToken,
+        roomCode: seeded.roomCode,
+        nickname: '麦田捕手',
+      });
+      // 竖屏 iPhone 12/13/14 尺寸
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(BASE_URL);
+
+      // 等待移动端舞台与左右翼席位渲染
+      await expect(page.locator('.werewolf-arena').first()).toBeVisible({ timeout: 20_000 });
+      await expect(page.locator('.werewolf-wing--left .seat-chip')).toHaveCount(4);
+      await expect(page.locator('.werewolf-wing--right .seat-chip')).toHaveCount(3);
+
+      // 验证席位卡片高度紧凑性（<= 64px）且无重叠、无溢出
+      const seatMetrics = await page.evaluate(() => {
+        const chips = Array.from(document.querySelectorAll('.seat-chip')).map((el) => {
+          const r = el.getBoundingClientRect();
+          return { height: r.height, top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+        });
+        const chat = document.querySelector('.game-chat-trigger')?.getBoundingClientRect();
+        const maxChipHeight = Math.max(...chips.map((c) => c.height));
+        // 验证聊天按钮绝不与任何席位重合（无碰撞）
+        let collidesWithAnySeat = false;
+        if (chat) {
+          collidesWithAnySeat = chips.some((sr) =>
+            !(chat.right <= sr.left || chat.left >= sr.right || chat.bottom <= sr.top || chat.top >= sr.bottom)
+          );
+        }
+        return { maxChipHeight, collidesWithAnySeat };
+      });
+      expect(seatMetrics.maxChipHeight).toBeLessThanOrEqual(68);
+      expect(seatMetrics.collidesWithAnySeat).toBe(false);
+
+      // 验证在公投进度卡片渲染下的排版结构：标题与计票垂直分行居中、无文本折行溢出
+      await page.evaluate(() => {
+        // 动态注入 voting 阶段公投卡片以验证端到端 CSS 排版
+        const stack = document.querySelector('.werewolf-arena__center-stack');
+        if (stack) {
+          const dummy = document.createElement('div');
+          dummy.className = 'werewolf-spotlight werewolf-spotlight--voting';
+          dummy.innerHTML = `
+            <div class="werewolf-spotlight__vote-header">
+              <div class="werewolf-spotlight__vote-title-wrap">
+                <span class="werewolf-spotlight__pulsing-dot"></span>
+                <strong class="werewolf-spotlight__vote-title">放逐公投进行中</strong>
+              </div>
+              <div class="werewolf-spotlight__vote-tally">
+                <span class="werewolf-spotlight__vote-tally-label">已投票</span>
+                <strong class="werewolf-spotlight__vote-tally-num">6</strong>
+                <span class="werewolf-spotlight__vote-tally-total">/ 7</span>
+                <span class="werewolf-spotlight__vote-percent-badge">86%</span>
+              </div>
+            </div>
+            <div class="werewolf-spotlight__vote-track"><div class="werewolf-spotlight__vote-fill" style="width:86%"></div></div>
+            <div class="werewolf-spotlight__vote-footer">
+              <div class="werewolf-spotlight__vote-feedback-left"><span class="werewolf-spotlight__vote-status-text">⏳ 请点击上方席位头像完成投票</span></div>
+              <div class="werewolf-spotlight__vote-feedback-right"><span class="werewolf-spotlight__vote-remaining">还差 <strong>1</strong> 票即刻结算</span></div>
+            </div>
+          `;
+          stack.appendChild(dummy);
+        }
+      });
+
+      // 验证公投标题与计票各占一行，标题高度无换行
+      const voteLayout = await page.evaluate(() => {
+        const title = document.querySelector('.werewolf-spotlight__vote-title') as HTMLElement | null;
+        const tally = document.querySelector('.werewolf-spotlight__vote-tally') as HTMLElement | null;
+        const header = document.querySelector('.werewolf-spotlight__vote-header') as HTMLElement | null;
+        return {
+          titleHeight: title?.offsetHeight ?? 0,
+          tallyHeight: tally?.offsetHeight ?? 0,
+          headerDirection: header ? window.getComputedStyle(header).flexDirection : '',
+        };
+      });
+      expect(voteLayout.headerDirection).toBe('column');
+      expect(voteLayout.titleHeight).toBeLessThanOrEqual(24);
+      expect(voteLayout.tallyHeight).toBeLessThanOrEqual(24);
+
+      // 截图保存为证据
+      const screenshotPath = 'C:/Users/87850/.gemini/antigravity/brain/cb997e70-02c1-4e9b-9b1f-d86a3ad769a7/scratch/werewolf-7p-portrait-verified.png';
+      await page.screenshot({ path: screenshotPath, fullPage: false });
 
       await page.context().close();
     } finally {

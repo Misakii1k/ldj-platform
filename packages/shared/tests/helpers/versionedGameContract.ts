@@ -18,6 +18,8 @@ export interface ReplayStep {
 export interface NoSecretLeakOptions {
   /** (owner, other) 返回 true 时允许 owner 的秘密出现在 other 的视角（如同阵营共词） */
   allowedLeakPairs?: (owner: string, other: string) => boolean;
+  /** (secret, owner, other) 返回 true 时允许该特定值出现在 other / 观战视角（如公开阶段名碰巧与角色名重合） */
+  allowedLeakValues?: (secret: unknown, owner: string, other: string | 'spectator') => boolean;
   /** 终局揭示判定：为 true 时允许秘密出现在观战视角（如终局 reveal） */
   isRevealed?: (state: unknown) => boolean;
 }
@@ -202,11 +204,12 @@ export const versionedContractAssertions: VersionedContractAssertions = {
         for (const other of playerIds) {
           if (other === owner) continue;
           if (allowedLeakPairs(owner, other)) continue;
+          if (options.allowedLeakValues?.(secret, owner, other)) continue;
           if (containsValue(views.get(other), secret)) {
             throw new Error(`${owner} 的秘密泄漏到 ${other} 的视角`);
           }
         }
-        if (!isRevealed(state) && containsValue(spectator, secret)) {
+        if (!isRevealed(state) && !options.allowedLeakValues?.(secret, owner, 'spectator') && containsValue(spectator, secret)) {
           throw new Error(`${owner} 的秘密泄漏到观战视角`);
         }
       }

@@ -22,6 +22,7 @@ import {
   overlayWerewolfBotPrompt,
   pickWerewolfPlayAction,
 } from '@ldj/game-werewolf/server';
+import { cannedUndercoverSpeech, type UndercoverPlayerView } from '@ldj/game-undercover/server';
 import type { Logger } from '../../boot/logger.ts';
 import type { Db } from '../../persistence/db.ts';
 import type { RoomCommandExecutor, TxContext } from '../executor.ts';
@@ -215,6 +216,17 @@ function isSpeechTurnAction(action: unknown): boolean {
   return type === 'finish_speech' || type === 'finish_last_words';
 }
 
+function isUndercoverPlayerView(view: unknown): view is UndercoverPlayerView {
+  return (
+    typeof view === 'object' &&
+    view !== null &&
+    'speakingOrder' in view &&
+    'round' in view &&
+    'players' in view &&
+    Array.isArray((view as { players?: unknown }).players)
+  );
+}
+
 function speechForAction(
   moduleId: string,
   input: BotDecisionInput<unknown>,
@@ -222,9 +234,19 @@ function speechForAction(
   llmSpeech: string | null,
 ): string | null {
   if (!isSpeechTurnAction(action)) return null;
-  const view = moduleId === 'werewolf' ? asWerewolfPlayView(input.view) : null;
-  const fallback = view ? cannedWerewolfSpeech(view, input.playerId) : '先听大家发言。';
-  return sanitizeBotSpeech(llmSpeech, fallback);
+  if (moduleId === 'werewolf') {
+    const view = asWerewolfPlayView(input.view);
+    const fallback = view ? cannedWerewolfSpeech(view, input.playerId) : '先听大家把话说完。';
+    return sanitizeBotSpeech(llmSpeech, fallback);
+  }
+  if (moduleId === 'undercover') {
+    const view = isUndercoverPlayerView(input.view) ? input.view : null;
+    const fallback = view
+      ? cannedUndercoverSpeech(view, input.playerId)
+      : '日常比较常见的东西，先听听大家的发言。';
+    return sanitizeBotSpeech(llmSpeech, fallback);
+  }
+  return sanitizeBotSpeech(llmSpeech, '先听大家发言。');
 }
 
 /**
@@ -352,6 +374,16 @@ export class BotRunner {
       if (planned.speech) {
         const posted = await commitBotSpeech(roomId, planned, peek, this.#deps);
         if (!posted) continue;
+
+        // 发言流式打字与阅读时间窗口：若思考延时大于 0，为公屏发言留出前端打字机流式展示与阅读时间，再提交结束发言动作
+        if (delay > 0) {
+          const speechReadingDelay = Math.min(5000, Math.max(1800, planned.speech.length * 70));
+          await new Promise<void>((resolvePromise) => {
+            const timer = setTimeout(resolvePromise, speechReadingDelay);
+            timer.unref?.();
+          });
+          if (this.#stopped) return;
+        }
       }
 
       let result: { roomSeq: number; outcome: GameActionOutcome } | null;

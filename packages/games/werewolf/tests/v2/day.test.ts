@@ -25,9 +25,14 @@ function dayAfterNight(config: Record<string, unknown> = {}) {
 test('v2 公告确认→发言顺序→投票→结果→遗言→终局（numbers 狼胜）', () => {
   let st = dayAfterNight();
   for (const id of aliveIds(st)) st = apply(st, actor(id), { type: 'confirm_announcement' });
+  assert.equal(st.phase, 'last_words');
+  assert.equal(st.lastWordsPlayerId, 'v1');
+  st = apply(st, actor('v1'), { type: 'finish_last_words' });
   assert.equal(st.phase, 'discussion');
   const order = [...st.speakingOrder];
   for (const id of order) st = apply(st, actor(id), { type: 'finish_speech' });
+  assert.equal(st.phase, 'free_discussion');
+  for (const id of aliveIds(st)) st = apply(st, actor(id), { type: 'ready_vote' });
   assert.equal(st.phase, 'voting');
   const votes: Array<[string, string | null]> = [
     ['w1', 'v2'], ['w2', 'v2'], ['s', 'v2'], ['x', 'v2'], ['v2', 'w1'],
@@ -51,7 +56,11 @@ test('v2 公告确认→发言顺序→投票→结果→遗言→终局（numbe
 test('v2 平票进入加赛；加赛平票进入下一夜', () => {
   let st = dayAfterNight();
   for (const id of aliveIds(st)) st = apply(st, actor(id), { type: 'confirm_announcement' });
+  st = apply(st, actor('v1'), { type: 'finish_last_words' });
   for (const id of [...st.speakingOrder]) st = apply(st, actor(id), { type: 'finish_speech' });
+  assert.equal(st.phase, 'free_discussion');
+  for (const id of aliveIds(st)) st = apply(st, actor(id), { type: 'ready_vote' });
+  assert.equal(st.phase, 'voting');
   const normal: Array<[string, string | null]> = [
     ['w1', 'v2'], ['w2', 's'], ['s', 'v2'], ['x', 's'], ['v2', 'w1'],
   ];
@@ -59,8 +68,12 @@ test('v2 平票进入加赛；加赛平票进入下一夜', () => {
   assert.equal(st.lastVoteSummary?.outcome, 'tie');
   st = timeout(st, 'vote_result');
   assert.equal(st.phase, 'runoff_voting');
+  // B9: 加赛候选人 v2, s 不参与投票，投票被拒
+  deny(st, actor('v2'), { type: 'day_vote', targetPlayerId: 's' });
+  deny(st, actor('s'), { type: 'day_vote', targetPlayerId: null });
+  // 仅非候选人 w1, w2, x 投票
   const runoff: Array<[string, string | null]> = [
-    ['w1', 'v2'], ['w2', 'v2'], ['x', 's'], ['v2', 's'], ['s', null],
+    ['w1', 'v2'], ['w2', 's'], ['x', null],
   ];
   for (const [from, target] of runoff) st = apply(st, actor(from), { type: 'day_vote', targetPlayerId: target });
   assert.equal(st.lastVoteSummary?.outcome, 'runoff_tie');
@@ -105,6 +118,9 @@ test('v2 猎人放逐开枪：开枪无遗言直进下一夜，弃权走遗言',
   st = apply(st, actor('x'), { type: 'witch_poison', targetPlayerId: null });
   st = skipDiscussion(st);
   st = voteAll(st, 'h');
+  assert.equal(st.phase, 'vote_result');
+  assert.equal(st.lastVoteSummary?.eliminatedPlayerId, 'h');
+  st = timeout(st, 'vote_result');
   assert.equal(st.phase, 'hunter_shot');
   assert.equal(st.players.h?.alive, false);
   assert.equal(st.players.h?.exitReason, 'voted_out');
@@ -120,6 +136,9 @@ test('v2 猎人放逐开枪：开枪无遗言直进下一夜，弃权走遗言',
   st2 = apply(st2, actor('x'), { type: 'witch_poison', targetPlayerId: null });
   st2 = skipDiscussion(st2);
   st2 = voteAll(st2, 'h');
+  assert.equal(st2.phase, 'vote_result');
+  st2 = timeout(st2, 'vote_result');
+  assert.equal(st2.phase, 'hunter_shot');
   st2 = apply(st2, actor('h'), { type: 'hunter_shoot', targetPlayerId: null });
   assert.equal(st2.phase, 'last_words');
   assert.equal(st2.lastWordsPlayerId, 'h');
@@ -136,9 +155,9 @@ test('v2 roles 胜负：神职全灭即狼胜（numbers 下继续）', () => {
     st = apply(st, actor('s'), { type: 'seer_check', targetPlayerId: 'w1' });
     st = apply(st, actor('x'), { type: 'witch_save', save: false });
     st = apply(st, actor('x'), { type: 'witch_poison', targetPlayerId: null });
+    st = skipDiscussion(st);
     st.players.s!.alive = false;
     st.players.x!.alive = false;
-    st = skipDiscussion(st);
     // 与 legacy 参考场景一致：放逐狼人 w1，留下 1 狼 vs 3 好人
     // （numbers 按人数继续；roles 因神职全灭判狼胜）。
     st = voteAll(st, 'w1');

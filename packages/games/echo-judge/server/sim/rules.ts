@@ -15,13 +15,12 @@ import { TOPIC_DECK, type TopicCard } from '../questionDeck.ts';
 import { TRIGGER_WORDS } from '../rules.ts';
 import type {
   EchoJudgeSimAction,
-  EchoJudgeSimConfig,
   EchoJudgeSimEvent,
   EchoJudgeSimState,
   ResolvedEchoJudgeSimConfig,
 } from './types.ts';
 
-export function parseEchoJudgeSimConfig(input: unknown): ResolvedEchoJudgeSimConfig {
+export function parseEchoJudgeSimConfig(_input: unknown): ResolvedEchoJudgeSimConfig {
   return { rulesetId: 'echo_judge_sim_v1' };
 }
 

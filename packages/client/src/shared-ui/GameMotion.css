@@ -1,51 +1,7 @@
+/* 动效时长/缓动令牌的唯一来源是 game-ui.css 的 :root + html[data-motion-level]，
+   本文件不再自行声明 --game-motion-*，避免与令牌层出现两套数值。 */
 .game-motion-root {
-  --game-motion-fast-duration: 160ms;
-  --game-motion-standard-duration: 320ms;
-  --game-motion-phase-duration: 420ms;
-  --game-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
   isolation: isolate;
-}
-
-.game-motion-root[data-motion-level='reduced'],
-.game-motion-layer[data-motion-level='reduced'],
-.game-motion-phase-transition[data-motion-level='reduced'],
-.game-motion-action-feedback[data-motion-level='reduced'],
-.game-motion-countdown-pulse[data-motion-level='reduced'] {
-  --game-motion-fast-duration: 120ms;
-  --game-motion-standard-duration: 220ms;
-  --game-motion-phase-duration: 280ms;
-}
-
-.game-motion-root[data-motion-level='minimal'],
-.game-motion-layer[data-motion-level='minimal'],
-.game-motion-phase-transition[data-motion-level='minimal'],
-.game-motion-action-feedback[data-motion-level='minimal'],
-.game-motion-countdown-pulse[data-motion-level='minimal'] {
-  --game-motion-fast-duration: 1ms;
-  --game-motion-standard-duration: 1ms;
-  --game-motion-phase-duration: 1ms;
-}
-
-.game-motion-root[data-motion-level='off'],
-.game-motion-layer[data-motion-level='off'],
-.game-motion-phase-transition[data-motion-level='off'],
-.game-motion-action-feedback[data-motion-level='off'],
-.game-motion-countdown-pulse[data-motion-level='off'] {
-  --game-motion-fast-duration: 0ms;
-  --game-motion-standard-duration: 0ms;
-  --game-motion-phase-duration: 0ms;
-}
-
-.game-motion-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 20;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.game-motion-layer.is-interactive {
-  pointer-events: auto;
 }
 
 .game-motion-phase-transition {
@@ -158,15 +114,13 @@
   }
 }
 
+/* OS 动效偏好的兜底（data-motion-level 尚未注入时也生效）。
+   时长令牌本身由 game-ui.css 的 html[data-motion-level] 统一缩放。 */
 @media (prefers-reduced-motion: reduce) {
   .game-motion-root,
-  .game-motion-layer,
   .game-motion-phase-transition,
   .game-motion-action-feedback,
   .game-motion-countdown-pulse {
-    --game-motion-fast-duration: 1ms;
-    --game-motion-standard-duration: 1ms;
-    --game-motion-phase-duration: 1ms;
     animation-duration: 1ms !important;
     transition-duration: 1ms !important;
   }

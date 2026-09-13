@@ -15,12 +15,18 @@ export function TabletopShell({ title, phase, phaseKey, gameId, spectator, playe
     }
   }
 
+  // 席位字段原样透传：外壳的发言波纹 / 手牌徽章 / 得分 / 角色标签此前因只传 status 而永远不显示。
   const seats: PlayerSeat[] = (players ?? []).map((p) => ({
     id: p.id,
     name: p.name,
-    isCurrentTurn: p.active,
+    isCurrentTurn: p.isCurrentTurn ?? p.active,
+    isSpeaking: p.isSpeaking,
     isEliminated: p.eliminated,
-    badge: p.status,
+    handCount: p.handCount,
+    score: p.score,
+    roleTag: p.roleTag,
+    badge: p.badge ?? p.status,
+    avatarUrl: p.avatarUrl,
   }));
 
   return (

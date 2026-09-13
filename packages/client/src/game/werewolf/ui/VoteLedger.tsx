@@ -11,9 +11,28 @@ export function VoteLedger({ progress, ledger }: VoteLedgerProps) {
   return (
     <section className="vote-ledger" aria-label="投票信息">
       {progress && (
-        <p className="vote-ledger__progress">
-          已投票 <strong>{progress.submitted}</strong> / {progress.expected}
-        </p>
+        <div className="vote-ledger__progress-box">
+          <div className="vote-ledger__progress-header">
+            <span className="vote-ledger__progress-label">🗳️ 投票进度</span>
+            <span className="vote-ledger__progress-tally">
+              <strong>{progress.submitted}</strong> / {progress.expected}
+              <span className="vote-ledger__progress-percent">({progress.percent}%)</span>
+            </span>
+          </div>
+          <div
+            className="vote-ledger__progress-track"
+            role="progressbar"
+            aria-valuenow={progress.submitted}
+            aria-valuemin={0}
+            aria-valuemax={progress.expected}
+            aria-label="公投进度"
+          >
+            <div
+              className="vote-ledger__progress-fill"
+              style={{ width: `${progress.percent}%` }}
+            />
+          </div>
+        </div>
       )}
       {ledger && (
         <>

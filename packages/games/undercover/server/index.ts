@@ -8,7 +8,7 @@ export {
   assertUndercoverInvariants,
   undercoverVersionedModule,
 } from './versionedModule.ts';
-export { pickUndercoverBotAction } from './bot.ts';
+export { pickUndercoverBotAction, cannedUndercoverSpeech } from './bot.ts';
 export { WORD_BANK, WORD_BANK_VERSION, type WordPair } from './words.ts';
 export * from './state.ts';
 export {

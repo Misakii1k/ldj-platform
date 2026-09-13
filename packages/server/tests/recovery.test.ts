@@ -374,6 +374,10 @@ for (const schemaVersion of [1, 2, 3] as const) {
          VALUES (?, ?, 'IN_GAME', 'werewolf', 0, ?, ?)`,
       ).run(roomId, `WWV${schemaVersion}0`, now, now);
       db.prepare(
+        `INSERT INTO room_members (room_id, player_id, nickname, seat_role, connection_status, resume_token_hash, joined_at)
+         VALUES (?, 'p1', 'Player 1', 'player', 'CONNECTED', 'dummy-hash', ?)`,
+      ).run(roomId, now);
+      db.prepare(
         `INSERT INTO game_sessions
            (id, room_id, module_id, module_version, state_schema_version, status,
             snapshot_json, seed, rng_state_json, ruleset_id, created_at, updated_at)

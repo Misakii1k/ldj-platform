@@ -95,7 +95,7 @@ async function injectHumanAction(
     const decision = module.pickBotAction({ view, playerId: humanId, random } as BotDecisionInput<unknown>);
     if (!decision) return false;
     action = typeof decision === 'object' && 'action' in decision ? (decision as { action: unknown }).action : decision;
-  } catch (err) {
+  } catch {
     return false;
   }
   if (action === null || action === undefined) {

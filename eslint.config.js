@@ -13,6 +13,16 @@ export default tseslint.config(
       'packages/client/vite.config.ts',
       // Capacitor 安卓工程：Java/Gradle 与拷贝进去的 web 构建产物，不参与 JS lint
       'packages/client/android/**',
+      // 构建产物 / 本地工具目录 / 视觉审计截图，不参与 lint
+      'build/**',
+      'durian-intro-video/build/**',
+      'dsh-routing-suite/**',
+      'screenshots/**',
+      'd7-shots/**',
+      'research/**',
+      'compliance/**',
+      'test-results/**',
+      'playwright-report/**',
     ],
   },
   js.configs.recommended,
@@ -52,6 +62,21 @@ export default tseslint.config(
         Buffer: 'readonly',
         URL: 'readonly',
         fetch: 'readonly',
+        AbortController: 'readonly',
+        AbortSignal: 'readonly',
+      },
+    },
+  },
+  {
+    // 视觉审计脚本：含 Playwright page.evaluate 内运行的浏览器端代码
+    files: ['scripts/audit-*.mjs', 'scripts/capture-visual-audit.mjs'],
+    languageOptions: {
+      globals: {
+        window: 'readonly',
+        document: 'readonly',
+        localStorage: 'readonly',
+        Node: 'readonly',
+        getComputedStyle: 'readonly',
       },
     },
   },

@@ -96,3 +96,37 @@ test('v2 完整机器人局在有界步数内收束为唯一正式结果', () =>
   assert.equal(werewolfV2Module.getSpectatorView(final).reveal !== null, true);
   assert.equal(werewolfV2Module.getSpectatorView(final).winner, final.winner);
 });
+
+test('v2 女巫解药已用（nightVictimId 为 null）时：毒药候选正常生成且 pickBotAction 决策不卡死', () => {
+  const state = startedNight(IDS);
+  const witch = byRole(state, 'witch')[0]!;
+  // 模拟解药已用且当前夜晚无刀口可见（nightVictimId 为 null）
+  const baseView = werewolfV2Module.getPlayerView(state, witch);
+  const view = {
+    ...baseView,
+    me: {
+      ...baseView.me!,
+      nightVictimId: null,
+      witchSaveUsed: true,
+      witchSaveDecision: false,
+      witchPoisonDecided: false,
+      witchPoisonUsed: false,
+    },
+  };
+
+  const action = werewolfV2Module.pickBotAction?.({
+    view,
+    playerId: witch,
+    random: createSeededRandom('v2-bot-witch-poison'),
+  });
+  assert.ok(action, '女巫应当能产出动作');
+  assert.equal((action as { type?: string }).type, 'witch_poison');
+
+  const prompt = werewolfV2Module.buildBotPrompt?.({
+    view,
+    playerId: witch,
+    random: createSeededRandom('v2-prompt-witch-poison'),
+  });
+  assert.ok(prompt, '女巫应当有 prompt');
+  assert.ok(prompt.options.some((opt) => (opt.action as { type?: string }).type === 'witch_poison'));
+});
