@@ -642,7 +642,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-@media (max-width: 360px) {
+@media (max-width: 380px) {
   .room-code {
     font-size: 1.25rem;
   }
@@ -2221,7 +2221,7 @@ p { margin: 0.5rem 0; }
   transition: opacity 520ms ease, filter 520ms ease;
 }
 
-@media (orientation: portrait), (max-width: 860px) {
+@media (orientation: portrait), (max-width: 768px) {
   .home-hero {
     flex-direction: column;
     align-items: flex-start;
@@ -2261,7 +2261,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-@media (orientation: landscape) and (min-width: 861px) {
+@media (orientation: landscape) and (min-width: 768px) {
   .home-hero {
     position: relative;
     display: flex;
@@ -2286,7 +2286,7 @@ p { margin: 0.5rem 0; }
 }
 
 /* 横屏与矮屏适配：防止下方内容卡片遮挡围桌人物与桌底 */
-@media (orientation: landscape) and (max-height: 820px) {
+@media (orientation: landscape) and (max-height: 620px) {
   .home-hero {
     min-height: clamp(320px, 60vh, 440px);
     padding-top: clamp(20px, 4vh, 44px);
@@ -2299,7 +2299,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-@media (orientation: landscape) and (max-height: 560px) {
+@media (orientation: landscape) and (max-height: 520px) {
   .home-hero {
     min-height: clamp(230px, 70vh, 320px);
     padding-top: 12px;
@@ -2699,7 +2699,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-@media (max-width: 639px) {
+@media (max-width: 640px) {
   .home-party-scene {
     position: relative;
     top: auto;
@@ -3352,7 +3352,7 @@ p { margin: 0.5rem 0; }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 768px) {
   .room-page {
     grid-template-columns: minmax(0, 1fr);
     padding-right: 14px;
@@ -3390,7 +3390,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-@media (max-width: 420px) {
+@media (max-width: 480px) {
   .room-page {
     gap: 14px;
     padding-right: 10px;
@@ -4341,7 +4341,7 @@ p { margin: 0.5rem 0; }
   overflow: hidden;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .durian-tabletop-arena {
     grid-template-columns: 126px minmax(0, 1fr) 126px;
     gap: 8px;
@@ -6628,7 +6628,7 @@ p { margin: 0.5rem 0; }
   min-width: 0;
 }
 
-@media (max-width: 680px) {
+@media (max-width: 768px) {
   .bell-dual-col {
     grid-template-columns: 1fr;
     gap: 10px;
@@ -7987,7 +7987,7 @@ p { margin: 0.5rem 0; }
   box-sizing: border-box;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .goose-modal-cards-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -8429,7 +8429,7 @@ p { margin: 0.5rem 0; }
 @keyframes tally-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes role-card-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
 
-@media (max-width: 430px) {
+@media (max-width: 480px) {
   .phase-lead { padding: 13px 12px; }
   .phase-lead p { font-size: .76rem; }
   .game-countdown { flex-basis: 66px; width: 66px; height: 66px; }
@@ -8449,7 +8449,7 @@ p { margin: 0.5rem 0; }
   .game-phase .tally-item { grid-template-columns: 66px minmax(40px,1fr) 42px; }
 }
 
-@media (max-width: 340px) {
+@media (max-width: 380px) {
   .uc-order__track { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .game-phase .role-item { grid-template-columns: 36px 28px minmax(0,1fr); }
   .game-phase .role-badge { grid-column: 3; justify-self: start; }
@@ -8519,7 +8519,7 @@ p { margin: 0.5rem 0; }
 @keyframes chat-drawer-in { from { opacity: 0; transform: translateY(24px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes message-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-@media (max-width: 430px) {
+@media (max-width: 480px) {
   .game-chat-trigger { right: 13px; bottom: calc(var(--safe-bottom) + 12px); min-width: 84px; min-height: 44px; padding: 6px 11px; }
   .game-chat-layer { padding: 8px 7px max(7px,var(--safe-bottom)); }
   .game-chat-drawer { max-height: 86dvh; border-radius: 17px; box-shadow: 5px 5px 0 var(--game-line); }
@@ -9261,13 +9261,13 @@ p { margin: 0.5rem 0; }
   padding-left: 18px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .room-code-card {
     transform: none;
   }
 }
 
-@media (max-width: 420px) {
+@media (max-width: 480px) {
   .room-code-card__invite {
     flex-direction: column;
     align-items: stretch;
@@ -9382,7 +9382,7 @@ p { margin: 0.5rem 0; }
 .room-console__ready-track { width: 150px; height: 10px; overflow: hidden; border: 2px solid var(--home-ink); border-radius: 999px; background: var(--home-paper); }
 .room-console__ready-track span { display: block; height: 100%; background: var(--home-green, #0c715d); transition: width .35s ease; }
 
-@media (max-width: 620px) {
+@media (max-width: 640px) {
   .room-console__ready { display: none; }
 }
 
@@ -9445,7 +9445,7 @@ p { margin: 0.5rem 0; }
   text-align: center;
 }
 
-@media (min-width: 1600px) {
+@media (min-width: 1280px) {
   .room-page.game-home-page {
     padding-right: clamp(42px, 4vw, 76px);
     padding-left: clamp(42px, 4vw, 76px);
@@ -9471,7 +9471,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1024px) {
   .room-page > .room-layout {
     width: min(100%, 860px);
   }
@@ -9481,7 +9481,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .room-page.game-home-page {
     display: block;
   }
@@ -9532,7 +9532,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 640px) {
   .room-layout .room-header {
     display: flex;
     flex-wrap: wrap;
@@ -9575,7 +9575,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-@media (max-width: 350px) {
+@media (max-width: 380px) {
   .room-page.game-home-page {
     padding-right: 8px;
     padding-left: 8px;
@@ -9755,7 +9755,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-@media (max-width: 430px) {
+@media (max-width: 480px) {
   .game-page:has(.game-action-dock) ~ .game-chat-trigger {
     bottom: calc(var(--safe-bottom) + var(--gp-dock-offset, 92px));
   }
@@ -10435,7 +10435,7 @@ p { margin: 0.5rem 0; }
   box-shadow: 0 0 0 4px var(--party-yellow), 5px 8px 0 var(--party-ink);
 }
 
-@media (max-width: 760px) {
+@media (max-width: 768px) {
   .new-game-header h1 {
     font-size: clamp(2.1rem, 15vw, 3.45rem);
   }
@@ -10674,7 +10674,7 @@ p { margin: 0.5rem 0; }
   outline-offset: 2px;
 }
 
-@media (min-width: 641px) and (max-width: 1024px) {
+@media (min-width: 640px) and (max-width: 1024px) {
   .new-game-page--landlord .current-combo {
     min-height: 188px;
     box-sizing: border-box;
@@ -10691,7 +10691,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 768px) {
   .new-game-header {
     align-items: flex-start;
   }
@@ -10732,7 +10732,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-@media (max-width: 430px) {
+@media (max-width: 480px) {
   .new-game-header {
     flex-wrap: wrap;
   }
@@ -10852,7 +10852,7 @@ p { margin: 0.5rem 0; }
 }
 
 /* 平板/桌面的大�?*/
-@media (min-width: 641px) {
+@media (min-width: 640px) {
   .card-face-static {
     width: 62px;
     height: 89px;
@@ -10868,7 +10868,7 @@ p { margin: 0.5rem 0; }
 }
 
 /* 超大�?*/
-@media (min-width: 1025px) {
+@media (min-width: 1024px) {
   .card-face-static {
     width: 70px;
     height: 100px;
@@ -11414,7 +11414,7 @@ p { margin: 0.5rem 0; }
   background: #fff4d6;
 }
 
-@media (max-width: 639px) {
+@media (max-width: 640px) {
   .room-sheet:has(.settings-layout) {
     width: 100%;
     max-height: 92dvh;
@@ -11782,7 +11782,7 @@ p { margin: 0.5rem 0; }
   font-size: 0;
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 1024px) {
   .home-hero {
     padding-top: 66px;
   }
@@ -11792,7 +11792,7 @@ p { margin: 0.5rem 0; }
   }
 }
 
-@media (max-width: 639px) {
+@media (max-width: 640px) {
   .home-header__actions {
     gap: 6px;
   }
@@ -12361,7 +12361,7 @@ html[data-motion-level="off"] *::after {
   to { rotate: 0.8deg; translate: 0 -2px; }
 }
 
-@media (max-width: 639px) {
+@media (max-width: 640px) {
   .home-header__button {
     width: 44px;
     min-width: 44px;
@@ -13080,7 +13080,7 @@ html[data-motion-level="off"] *::after {
   .tabletop-action-dock { padding: 6px; gap: 6px; }
 }
 
-@media (min-width: 760px) {
+@media (min-width: 768px) {
   .tabletop-shell { max-width: 1120px; margin: auto; padding-inline: 28px; }
   .tabletop-drawer-backdrop { justify-items: end; }
   .tabletop-drawer { width: min(440px, 92vw); height: 100dvh; max-height: none; border-radius: 24px 0 0 24px; }
@@ -15152,7 +15152,7 @@ html[data-motion-level="off"] *::after {
 .werewolf-wing { display: none; }
 
 /* 移动�?竖屏（左右分列席位翼，中轴紧凑舞台，文字完整不遮挡） */
-@media (max-width: 767px), (orientation: landscape) and (max-height: 520px) {
+@media (max-width: 768px), (orientation: landscape) and (max-height: 520px) {
   .werewolf-stage { padding-inline: 4px; }
   .werewolf-arena {
     position: static !important;
@@ -16330,7 +16330,7 @@ html[data-motion-level="off"] *::after {
 .uno-house-scores__rank { color: var(--color-primary); font-weight: 900; }
 
 
-@media (max-width: 620px) {
+@media (max-width: 640px) {
   .uno-house-stage { padding-inline: 10px; }
   .uno-house-player { min-width: 44%; }
   .uno-house-hand .uno-card { width: 17vw; }
@@ -17859,7 +17859,7 @@ html[data-motion-level="off"] *::after {
 }
 
 /* ════ 竖屏与手机窄屏极致响应适配 ════ */
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .landlord-battlefield {
     padding: 0 6px;
     gap: 4px;
@@ -18420,7 +18420,7 @@ html[data-motion-level="off"] *::after {
 }
 
 /* —�?481�?67px：大屏手�?/ 小平板（竖屏�?—�?*/
-@media (min-width: 481px) and (max-width: 767px) {
+@media (min-width: 480px) and (max-width: 768px) {
   .tabletop-shell {
     --tabletop-avatar: 52px;
     --tabletop-felt-radius: 140px;
@@ -18448,7 +18448,7 @@ html[data-motion-level="off"] *::after {
 }
 
 /* —�?768�?023px：平�?—�?*/
-@media (min-width: 768px) and (max-width: 1023px) {
+@media (min-width: 768px) and (max-width: 1024px) {
   .tabletop-shell {
     --tabletop-avatar: 64px;
     --tabletop-felt-radius: 180px;
@@ -18477,7 +18477,7 @@ html[data-motion-level="off"] *::after {
 }
 
 /* —�?�?600px：大�?—�?*/
-@media (min-width: 1600px) {
+@media (min-width: 1280px) {
   .tabletop-shell {
     --tabletop-avatar: 80px;
     --tabletop-felt-radius: 280px;
@@ -19961,7 +19961,7 @@ html[data-motion-level="off"] *::after {
   box-sizing: border-box;
 }
 
-@media (max-width: 440px) {
+@media (max-width: 480px) {
   .werewolf-reveal__grid {
     grid-template-columns: 1fr;
     max-height: calc(84vh - 200px);
@@ -20178,7 +20178,7 @@ html[data-motion-level="off"] *::after {
   gap: 12px;
 }
 
-@media (max-width: 680px) {
+@media (max-width: 768px) {
   .cheese-secret-card {
     padding: 0;
     gap: 6px;
@@ -23132,7 +23132,7 @@ html[data-motion-level="off"] *::after {
 }
 
 /* 横屏：各游戏使用 landscape 版本 16:9 图；狼人杀保持 CSS 渐变（按主题） */
-@media (min-width: 900px) and (orientation: landscape) {
+@media (min-width: 1024px) and (orientation: landscape) {
   .tabletop-shell[data-game-id="undercover"]::before, .tabletop-shell--landscape[data-game-id="undercover"]::before { background-image: url("/assets/backgrounds/bg_undercover_landscape.jpg"); }
   .tabletop-shell[data-game-id="uno"]::before, .tabletop-shell--landscape[data-game-id="uno"]::before { background-image: url("/assets/backgrounds/bg_uno_landscape.jpg"); }
   .tabletop-shell[data-game-id="landlord"]::before, .tabletop-shell--landscape[data-game-id="landlord"]::before { background-image: url("/assets/backgrounds/bg_landlord_landscape.jpg"); }
@@ -23274,7 +23274,7 @@ html[data-motion-level='off'] .tabletop-shell *::after {
 }
 
 /* 窄竖屏与矮横屏手机（横屏手机宽度恒 ≥844px，需独立触发）都接入刘海侧向安全区 */
-@media (max-width: 720px), (orientation: landscape) and (max-height: 520px) {
+@media (max-width: 768px), (orientation: landscape) and (max-height: 520px) {
   .tabletop-shell.game-motion-root {
     --tabletop-center-pad: 10px;
   }
@@ -23362,7 +23362,7 @@ html[data-motion-level='off'] .tabletop-shell *::after {
   font-weight: 900;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   :root {
     --gp-dock-offset: 72px;
   }
@@ -23930,7 +23930,7 @@ html[data-motion-level="minimal"] .durian-sim-card-flip {
 /* ==========================================================================
    移动端竖屏（Portrait / max-width: 600px）情书流式适配
    ========================================================================== */
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .loveletter-immersive-board {
     padding: 8px 10px 4px;
     border-radius: 14px;
@@ -26124,7 +26124,7 @@ body.is-immersive .tabletop-arena-container {
   display: none;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .tabletop-shell:has(.tabletop-seats-bar) .landlord-opponent {
     display: none;
   }
@@ -26250,7 +26250,7 @@ body.is-immersive .tabletop-arena-container {
   margin-top: 4px !important;
 }
 
-@media (min-width: 600px) {
+@media (min-width: 640px) {
   .room-console__actions {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
     gap: 12px !important;

@@ -127,7 +127,7 @@
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 640px) {
   .focused-game-feedback {
     width: calc(100% - 1rem);
     font-size: 0.74rem;

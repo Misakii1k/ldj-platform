@@ -13,8 +13,7 @@ import { join } from 'node:path';
  *   方向 orientation、动效偏好 prefers-reduced-motion、指针 hover/pointer
  *
  * 历史遗留断点（350/360/420/430/440/520/560/600/620/680/720/760/860/900/980/1023/1025/1600…）
- * 仍存在于既有代码中，列入下面的 LEGACY_ALLOWLIST 冻结现状：**新增禁止使用**，
- * 触碰对应区块时顺手迁移到规范集合。
+ * 已全部迁移到规范集合，LEGACY_ALLOWLIST 现为空，**禁止再新增任何非规范断点**。
  */
 const SRC_DIR = fileURLToPath(new URL('../src', import.meta.url));
 
@@ -30,43 +29,8 @@ const ALLOWED_FEATURES = new Set([
   'pointer',
 ]);
 
-/** 既有非规范断点（冻结，不得新增）。 */
-const LEGACY_ALLOWLIST = new Set([
-  '(max-width: 340px)',
-  '(max-width: 350px)',
-  '(max-width: 360px)',
-  '(max-width: 420px)',
-  '(max-width: 430px)',
-  '(max-width: 440px)',
-  '(max-width: 520px)',
-  '(max-width: 600px)',
-  '(max-width: 620px)',
-  '(max-width: 639px)',
-  '(max-width: 680px)',
-  '(max-width: 720px)',
-  '(max-width: 720px), (orientation: landscape) and (max-height: 520px)',
-  '(max-width: 760px)',
-  '(max-width: 767px)',
-  '(max-width: 767px), (orientation: landscape) and (max-height: 520px)',
-  '(max-width: 900px)',
-  '(max-width: 980px)',
-  '(max-width: 1023px)',
-  '(min-width: 481px) and (max-width: 767px)',
-  '(min-width: 600px)',
-  '(min-width: 641px)',
-  '(min-width: 641px) and (max-width: 1024px)',
-  '(min-width: 720px)',
-  '(min-width: 760px)',
-  '(min-width: 768px) and (max-width: 1023px)',
-  '(min-width: 900px) and (orientation: landscape)',
-  '(min-width: 1025px)',
-  '(min-width: 1080px)',
-  '(min-width: 1600px)',
-  '(orientation: landscape) and (max-height: 560px)',
-  '(orientation: landscape) and (max-height: 820px)',
-  '(orientation: landscape) and (min-width: 861px)',
-  '(orientation: portrait), (max-width: 860px)',
-]);
+/** 既有非规范断点已于 2026-09 全部迁移到规范集合；此清单应保持为空，禁止再加入条目。 */
+const LEGACY_ALLOWLIST = new Set<string>([]);
 
 function collectCssFiles(dir: string): string[] {
   const out: string[] = [];
@@ -137,10 +101,8 @@ test('断点契约：不得新增非规范断点（既有遗留已冻结）', ()
   );
 });
 
-test('断点契约：遗留清单不得包含已消失的断点（防止清单腐化）', () => {
-  const present = new Set(collectMediaQueries().map((query) => query.condition));
-  const stale = [...LEGACY_ALLOWLIST].filter((condition) => !present.has(condition)).sort();
-  assert.deepEqual(stale, [], `这些遗留断点已不存在，请从 LEGACY_ALLOWLIST 删除：${stale.join(', ')}`);
+test('断点契约：遗留清单必须保持为空（禁止重新引入豁免）', () => {
+  assert.equal(LEGACY_ALLOWLIST.size, 0, '不得向 LEGACY_ALLOWLIST 新增条目，请直接使用规范断点');
 });
 
 test('断点契约：规范集合本身必须是可用的（自检）', () => {
