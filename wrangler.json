@@ -1,0 +1,9 @@
+{
+  "": "node_modules/wrangler/config-schema.json",
+  "name": "tabletop",
+  "pages_build_output_dir": "packages/client/dist",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ]
+}

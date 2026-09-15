@@ -17,7 +17,7 @@ interface CreateRoomSheetProps {
 }
 
 export function CreateRoomSheet({ game, onClose }: CreateRoomSheetProps) {
-  const { send, setMe, state } = useConnection();
+  const { send, setMe, state, reset } = useConnection();
   const { profile, setNickname: saveUserNickname, openProfileModal } = useUserProfile();
   const { showToast } = useToast();
   const nicknameRef = useRef<HTMLInputElement | null>(null);
@@ -35,11 +35,18 @@ export function CreateRoomSheet({ game, onClose }: CreateRoomSheetProps) {
   const hasConfig = game.setup.options.length > 0 || game.setup.rulesets.length > 1;
 
   const connectionReady = state.connState !== 'connecting' && state.connState !== 'reconnecting';
+  const isConnecting = state.connState === 'connecting';
+  const isReconnecting = state.connState === 'reconnecting';
+
+  const isPasswordValid = password.length === 0 || (password.length >= 4 && password.length <= 32);
+  const isPasswordInvalid = password.length > 0 && password.length < 4;
+
   const canSubmit =
     !submitting &&
     connectionReady &&
     nickname.trim().length >= 1 &&
-    nickname.trim().length <= 16;
+    nickname.trim().length <= 16 &&
+    isPasswordValid;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -79,13 +86,44 @@ export function CreateRoomSheet({ game, onClose }: CreateRoomSheetProps) {
       onClose={onClose}
       initialFocusRef={nicknameRef}
       footer={
-        <button type="submit" form="create-room-form" className="room-sheet__submit" disabled={!canSubmit}>
-          {submitting ? '正在创建…' : '创建并进入房间'}
+        <button
+          type="submit"
+          form="create-room-form"
+          className="room-sheet__submit"
+          disabled={!canSubmit}
+          title={!connectionReady ? '正在与局域网主机建立连接，请稍候…' : isPasswordInvalid ? '房间密码需至少 4 位（留空则公开）' : undefined}
+        >
+          {submitting
+            ? '正在创建…'
+            : isConnecting
+            ? '正在连接主机…'
+            : isReconnecting
+            ? '正在重连主机…'
+            : '创建并进入房间'}
           <span aria-hidden="true">→</span>
         </button>
       }
     >
       <form id="create-room-form" className="room-sheet__form" onSubmit={handleSubmit}>
+        {!connectionReady && (
+          <div className="room-sheet__conn-hint" role="status">
+            <span className="room-sheet__conn-hint-dot" aria-hidden="true" />
+            <span style={{ flex: 1 }}>
+              {isConnecting ? '正在建立局域网主机连接，就绪后即可创建…' : '与主机连接中断，正在自动重连中…'}
+            </span>
+            {isReconnecting && (
+              <button
+                type="button"
+                className="room-sheet__quick-rename-btn"
+                style={{ padding: '3px 8px', fontSize: '0.75rem', height: 'auto', minHeight: 24 }}
+                onClick={() => reset()}
+              >
+                重试
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="room-sheet__profile-row">
           <button
             type="button"
@@ -113,16 +151,24 @@ export function CreateRoomSheet({ game, onClose }: CreateRoomSheetProps) {
           </label>
         </div>
         <label className="room-sheet__field" htmlFor="create-password">
-          <span>房间密码 <em>(可选)</em></span>
+          <span>房间密码 <em>(可选，需 4–32 位)</em></span>
           <input
             id="create-password"
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             placeholder="留空则允许公开加入"
+            minLength={4}
             maxLength={32}
             autoComplete="new-password"
+            aria-invalid={isPasswordInvalid}
+            aria-describedby={isPasswordInvalid ? 'create-password-error' : undefined}
           />
+          {isPasswordInvalid && (
+            <small id="create-password-error" className="room-sheet__field-error" role="alert">
+              房间密码需至少 4 位（留空则允许公开加入）
+            </small>
+          )}
         </label>
         {hasConfig && (
           <GameSetupPanel setup={game.setup} value={setupConfig} variant="compact" onChange={setSetupConfig} />

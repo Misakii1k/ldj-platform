@@ -120,11 +120,27 @@ export function isOriginAllowed(
       if (originUrl.host === hostHeader || originUrl.hostname === hostWithoutPort || originUrl.hostname === hostHeader) {
         return true;
       }
+      // 本机回环地址（localhost / 127.0.0.1 / [::1]）互通放行
+      const isLoopback = (h: string) => h === 'localhost' || h === '127.0.0.1' || h === '::1' || h === '[::1]';
+      if (isLoopback(originUrl.hostname) && isLoopback(hostWithoutPort)) {
+        return true;
+      }
+    }
+    if (allowedOrigins.includes(origin)) return true;
+    for (const allowed of allowedOrigins) {
+      try {
+        const allowedUrl = new URL(allowed);
+        if (allowedUrl.protocol === originUrl.protocol && allowedUrl.hostname === originUrl.hostname) {
+          if (!allowedUrl.port || allowedUrl.port === originUrl.port) return true;
+        }
+      } catch {
+        // 忽略非 URL 规则
+      }
     }
   } catch {
     return false;
   }
-  return allowedOrigins.includes(origin);
+  return false;
 }
 
 export class WsGateway {

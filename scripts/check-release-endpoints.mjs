@@ -41,7 +41,11 @@ async function checkVersionJson() {
   try {
     const res = await get('/version.json', { cache: 'no-store' });
     if (!res.ok) return record('version.json', false, `HTTP ${res.status}`);
-    const manifest = await res.json();
+    const text = await res.text();
+    if (text.trim().startsWith('<')) {
+      return record('version.json', false, `返回了 HTML 页面（非 JSON，当前端点可能为占位页或未部署）：${text.slice(0, 80).replace(/\s+/g, ' ')}`);
+    }
+    const manifest = JSON.parse(text);
     if (typeof manifest.version !== 'string' || !manifest.version) {
       return record('version.json', false, '缺少 version 字段');
     }
@@ -76,7 +80,11 @@ async function checkReleases() {
       );
     }
     if (!res.ok) return record('/api/releases', false, `HTTP ${res.status}`);
-    const release = await res.json();
+    const text = await res.text();
+    if (text.trim().startsWith('<')) {
+      return record('/api/releases', false, `返回了 HTML 页面（非 JSON，当前端点可能为占位页或未部署）：${text.slice(0, 80).replace(/\s+/g, ' ')}`);
+    }
+    const release = JSON.parse(text);
     if (typeof release.tag_name !== 'string') {
       return record('/api/releases', false, '响应缺少 tag_name');
     }
@@ -138,6 +146,11 @@ if (failed.length > 0) {
   console.log('未通过项：');
   for (const entry of failed) {
     console.log(`  - ${entry.name}: ${entry.detail}`);
+  }
+  if (ORIGIN === 'https://tabletop.pages.dev' && !process.env.TABLETOP_CLOUD_ORIGIN) {
+    console.log('\n💡 提示：当前检测使用的是默认源 https://tabletop.pages.dev（当前该域名返回 HTML 占位页）。');
+    console.log('   若您已将本项目的 packages/client 与 functions 部署到您的 Cloudflare Pages，');
+    console.log('   请通过 TABLETOP_CLOUD_ORIGIN=https://<your-project>.pages.dev node scripts/check-release-endpoints.mjs 指定实际源。');
   }
   process.exitCode = 1;
 }

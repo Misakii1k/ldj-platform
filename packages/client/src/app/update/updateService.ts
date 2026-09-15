@@ -2,8 +2,17 @@ import { registerPlugin } from '@capacitor/core';
 import { isNativeApp } from '../nativePlatform.ts';
 import type { AvailableUpdate, DownloadProgress } from './updateTypes.ts';
 
-export const LOCAL_APP_VERSION = '0.4.0';
-export const LOCAL_APP_VERSION_CODE = 400;
+const envVersion = (import.meta as { env?: Record<string, string> }).env?.VITE_APP_VERSION?.trim();
+export const LOCAL_APP_VERSION = envVersion || '0.4.0';
+
+export function computeVersionCode(version: string): number {
+  const clean = (version || '').replace(/^v/i, '').split('-')[0] ?? '0';
+  const parts = clean.split('.').map((p) => Number.parseInt(p, 10) || 0);
+  const [major = 0, minor = 0, patch = 0] = parts;
+  return major * 10000 + minor * 100 + patch;
+}
+
+export const LOCAL_APP_VERSION_CODE = computeVersionCode(LOCAL_APP_VERSION);
 export const DEFAULT_CLOUD_ORIGIN = 'https://tabletop.pages.dev';
 
 export interface AppUpdatePlugin {
@@ -59,6 +68,23 @@ export function resolveDownloadUrl(rawUrl?: string): string {
   return `${origin}${normalizedPath}`;
 }
 
+/** 安全解析 JSON 响应，若非 JSON 或格式损坏返回 null */
+async function safeParseJson<T>(res: Response): Promise<T | null> {
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('json') && !contentType.includes('text/plain') && contentType !== '') {
+    return null;
+  }
+  try {
+    const text = await res.text();
+    if (!text || text.trim().startsWith('<')) {
+      return null;
+    }
+    return JSON.parse(text) as T;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * 检查 Cloudflare 边缘托管的极速版本元数据（约 50~150ms 响应）。
  */
@@ -74,7 +100,7 @@ export async function checkFastCloudVersion(): Promise<AvailableUpdate | null> {
       signal: controller.signal,
     });
     if (!res.ok) return null;
-    const json = (await res.json()) as {
+    const json = await safeParseJson<{
       version?: string;
       versionCode?: number;
       releaseDate?: string;
@@ -82,7 +108,7 @@ export async function checkFastCloudVersion(): Promise<AvailableUpdate | null> {
       fileSize?: number;
       sha256?: string;
       releaseNotes?: string;
-    };
+    }>(res);
     if (!json || typeof json.version !== 'string') return null;
 
     const remoteVersion = json.version.trim().replace(/^v/i, '');
@@ -126,12 +152,12 @@ export async function checkGithubRelease(): Promise<AvailableUpdate | null> {
       signal: controller.signal,
     });
     if (!res.ok) return null;
-    const release = (await res.json()) as {
+    const release = await safeParseJson<{
       tag_name?: string;
       body?: string;
       published_at?: string;
       assets?: Array<{ name?: string; browser_download_url?: string; size?: number }>;
-    };
+    }>(res);
     if (!release || !release.tag_name) return null;
 
     const remoteVersion = release.tag_name.trim().replace(/^v/i, '');

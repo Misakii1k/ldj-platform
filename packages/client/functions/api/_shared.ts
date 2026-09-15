@@ -97,13 +97,16 @@ export function pickApkAsset(assets: GithubAsset[] | undefined): GithubAsset | n
   ) ?? null;
 }
 
-export function githubHeaders(token: string, accept: string): Record<string, string> {
-  return {
-    Authorization: `Bearer ${token}`,
+export function githubHeaders(token: string | undefined, accept: string): Record<string, string> {
+  const headers: Record<string, string> = {
     Accept: accept,
     'User-Agent': 'Tabletop-LDJ-Cloudflare-Proxy',
     'X-GitHub-Api-Version': '2022-11-28',
   };
+  if (token && token.trim()) {
+    headers.Authorization = `Bearer ${token.trim()}`;
+  }
+  return headers;
 }
 
 export async function fetchWithTimeout(

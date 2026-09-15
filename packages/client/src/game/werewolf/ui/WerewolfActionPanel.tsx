@@ -23,12 +23,13 @@ export function WerewolfActionPanel({ groups, waitingHint, busy, onAct }: Werewo
   const hasAnyDockOption = dockGroups.some((group) => group.options.length > 0);
 
   if (groups.length === 0 || !hasAnyDockOption) {
-    if (!waitingHint && groups.length === 0) return null;
     const targetOnly = groups.length > 0 && groups.every((group) => group.options.length > 0 && group.options.every(isTargetOption));
+    const text = targetOnly ? '点击席位头像，选择你的目标' : (waitingHint?.trim() ? waitingHint.trim() : null);
+    if (!text && groups.length === 0) return null;
     return (
       <section className="werewolf-actions werewolf-actions--waiting" aria-live="polite" aria-label="可执行操作">
         <span className="werewolf-actions__waiting-dot" />
-        <span className="werewolf-actions__waiting-text">{targetOnly ? '点击席位头像，选择你的目标' : waitingHint}</span>
+        <span className="werewolf-actions__waiting-text">{text}</span>
       </section>
     );
   }

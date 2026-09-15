@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-09T11:44:08.480Z",
+  "generatedAt": "2026-09-14T02:49:37.586Z",
   "strictTouch": false,
   "games": [
     {
@@ -186,7 +186,7 @@
           "offenders": [],
           "smallTargets": [],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 530x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 638x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -292,7 +292,7 @@
           "offenders": [],
           "smallTargets": [],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 638x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -398,7 +398,7 @@
           "offenders": [],
           "smallTargets": [],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"抢当头鹅\" 530x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"抢当头鹅\" 638x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -599,7 +599,7 @@
           "offenders": [],
           "smallTargets": [],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"请先选牌\" 260x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"请先选牌\" 638x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -690,7 +690,7 @@
           "offenders": [],
           "smallTargets": [
             "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 268x41",
-            "button.tabletop-action \"自告身份（出示罪名【传销洗脑】）\" 268x41"
+            "button.tabletop-action \"自告身份（狱警自曝进猜罪）\" 268x41"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 268x41 首屏可见"
@@ -706,7 +706,7 @@
           "offenders": [],
           "smallTargets": [],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 260x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 638x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []

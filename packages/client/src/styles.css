@@ -1725,6 +1725,37 @@ p { margin: 0.5rem 0; }
   font-weight: 700;
 }
 
+.room-sheet__conn-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 13px;
+  border-radius: 12px;
+  border: 1.5px solid #d4a329;
+  background: rgba(253, 230, 138, 0.32);
+  color: #714b0e;
+  font-size: 0.82rem;
+  font-weight: 700;
+  animation: fade-in 200ms ease;
+}
+
+.room-sheet__conn-hint-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #d97706;
+  animation: pulse 1.8s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.room-sheet__field-error {
+  margin-top: 4px;
+  color: var(--color-danger, #b91c1c);
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: block;
+}
+
 /* 建房表单：狼人杀扩展角色�?/ 节奏选择 */
 .room-sheet__roles {
   display: grid;
@@ -2334,13 +2365,13 @@ p { margin: 0.5rem 0; }
   animation: scene-glow-breathe 7s ease-in-out infinite;
 }
 
-/* 核心实木桌景大画�?*/
+/* 核心实木桌景大画幅 */
 .home-party-scene__table-wrap {
   position: absolute;
-  top: 50%;
+  top: 52%;
   left: 50%;
   transform: translate(-50%, -48%);
-  width: 76%;
+  width: 68%;
   z-index: 3;
   pointer-events: none;
 }
@@ -2553,11 +2584,11 @@ p { margin: 0.5rem 0; }
 }
 
 .home-party-scene--lively .home-party-scene__table-wrap {
-  transform: translate(-50%, -48%) scale(1.02);
+  transform: translate(-50%, -48%) scale(1.01);
 }
 
 .home-party-scene--full .home-party-scene__table-wrap {
-  transform: translate(-50%, -48%) scale(1.06);
+  transform: translate(-50%, -48%) scale(1.04);
 }
 
 .home-party-scene--lively .home-party-scene__spark,
@@ -12166,7 +12197,7 @@ html,
 }
 
 .home-party-scene__people-layer {
-  translate: calc(var(--motion-x, 0) * 12px * var(--home-motion-parallax)) calc(var(--motion-y, 0) * 8px * var(--home-motion-parallax));
+  translate: calc(var(--motion-x, 0) * 8px * var(--home-motion-parallax)) calc(var(--motion-y, 0) * 5px * var(--home-motion-parallax));
 }
 
 .home-party-scene__lamp-wrap {
@@ -13086,16 +13117,34 @@ html[data-motion-level="off"] *::after {
   .tabletop-drawer { width: min(440px, 92vw); height: 100dvh; max-height: none; border-radius: 24px 0 0 24px; }
 }
 
-/* Werewolf · 暗夜与白昼审判庭。所有规则状态来自服务端视角，此处负责全沉浸式环境与动态主题渲染�?*/
+/* Werewolf · 暗夜与白昼审判庭。所有规则状态来自服务端视角，此处负责全沉浸式环境与动态主题渲染 */
 .werewolf-arena {
   position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding: 12px 16px 8px;
   gap: 8px;
   overflow: hidden;
+  box-sizing: border-box;
+}
+
+.werewolf-arena > .moon-header {
+  max-width: 680px;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.werewolf-arena__board {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .werewolf-arena__center-stack {
@@ -13106,12 +13155,12 @@ html[data-motion-level="off"] *::after {
   align-items: center;
   gap: 8px;
   max-width: 560px;
-  max-height: 72%;
+  max-height: 82%;
   width: 86%;
 }
 
 /* ==========================================================================
-   Wolfcha 沉浸式电影级暗夜/白昼眨眼转场（Eye-Blink Cinematic Transition�?   ========================================================================== */
+   Wolfcha 沉浸式电影级暗夜/白昼眨眼转场（Eye-Blink Cinematic Transition?   ========================================================================== */
 .wc-eye-blink {
   position: fixed;
   inset: 0;
@@ -14760,27 +14809,115 @@ html[data-motion-level="off"] *::after {
   color: #f87171;
 }
 
+.werewolf-compact-role__camp-pill {
+  font-size: 0.58rem;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  line-height: 1.15;
+}
+
+.werewolf-compact-role__camp-pill.is-wolf {
+  background: rgba(220, 38, 38, 0.25);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+}
+
+.werewolf-compact-role__camp-pill.is-good {
+  background: rgba(14, 165, 233, 0.25);
+  color: #bae6fd;
+  border: 1px solid rgba(56, 189, 248, 0.5);
+}
+
+.werewolf-compact-role__name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .werewolf-compact-role__name {
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   color: var(--wc-paper, #f0e6d2);
   font-family: var(--wc-font-title);
-  font-weight: 800;
+  font-weight: 900;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .tabletop-theme-tribunal-day .werewolf-compact-role__name {
   color: #1f1a14;
 }
 
+.werewolf-compact-role__skill-snippet {
+  font-size: 0.72rem;
+  color: var(--wc-text-dim, rgba(240, 230, 210, 0.8));
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+  line-height: 1.2;
+}
+
+.tabletop-theme-tribunal-day .werewolf-compact-role__skill-snippet {
+  color: #5c4b38;
+}
+
+.werewolf-bottom-dock__row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+}
+
+.werewolf-bottom-chat-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 84px;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 2px solid var(--home-ink, #221e1a);
+  border-radius: 12px;
+  color: #ffffff;
+  background: var(--game-coral, #ef4d39);
+  box-shadow: 2.5px 2.5px 0 var(--home-ink, #221e1a);
+  font-size: 0.85rem;
+  font-weight: 900;
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+  user-select: none;
+}
+
+.werewolf-bottom-chat-btn:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 3.5px 3.5px 0 var(--home-ink, #221e1a);
+  filter: brightness(1.08);
+}
+
+.werewolf-bottom-chat-btn:active:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--home-ink, #221e1a);
+}
+
 .werewolf-compact-role__toggle-btn {
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 0.68rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.72rem;
   font-weight: 800;
   background: #2b2118;
   border: 1px solid #c5a059;
   color: #fef08a;
   cursor: pointer;
-  margin-left: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .werewolf-compact-role__toggle-btn:hover {
@@ -15151,133 +15288,241 @@ html[data-motion-level="off"] *::after {
 }
 .werewolf-wing { display: none; }
 
-/* 移动�?竖屏（左右分列席位翼，中轴紧凑舞台，文字完整不遮挡） */
+/* 移动端/竖屏（左右分列席位翼，中轴紧凑舞台，文字完整不遮挡） */
 @media (max-width: 768px), (orientation: landscape) and (max-height: 520px) {
   .werewolf-stage { padding-inline: 4px; }
   .werewolf-arena {
     position: static !important;
     display: flex !important;
-    flex-direction: row !important;
-    align-items: flex-start !important;
-    justify-content: space-between !important;
-    gap: 6px !important;
-    height: auto !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    height: 100% !important;
+    min-height: 0 !important;
     width: 100% !important;
-    max-width: 580px !important;
+    max-width: 680px !important;
     margin: 0 auto !important;
-    padding: 4px 6px 10px !important;
+    padding: 6px 8px 10px !important;
     box-sizing: border-box !important;
   }
   
   .werewolf-desktop-seat-ring { display: none !important; }
   .werewolf-arena__caption { display: none !important; }
 
-  /* 移动端三列分流：左翼席位 | 中央舞台 | 右翼席位 */
-  .werewolf-wing {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 4px !important;
-    width: clamp(80px, 25vw, 108px) !important;
-    flex-shrink: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    list-style: none !important;
-  }
-
-  .werewolf-arena__center-stack {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    gap: 6px !important;
-    flex: 1 1 auto !important;
-    max-width: clamp(140px, 48vw, 220px) !important;
-    min-width: 0 !important;
-    width: 100% !important;
-    margin: 0 auto !important;
-  }
-
-  /* 紧凑中央发言/计时器卡片 */
+  /* 顶部全局天象看板：横向贯穿全宽，表盘精致饱满，倒计时清晰醒目 */
   .moon-header {
     width: 100% !important;
     max-width: 100% !important;
-    min-height: auto !important;
+    min-height: 56px !important;
     margin: 0 !important;
-    padding: 6px 5px !important;
-    border-radius: 10px !important;
+    padding: 6px 12px !important;
+    border-radius: 12px !important;
     box-sizing: border-box !important;
-    display: flex !important;
-    flex-direction: column !important;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
     align-items: center !important;
-    text-align: center !important;
-    gap: 2px !important;
+    text-align: left !important;
+    gap: 10px !important;
+    flex-shrink: 0 !important;
   }
 
   .moon-header__dial {
-    width: 26px !important;
-    height: 26px !important;
-    min-width: 26px !important;
-    font-size: 1.05rem !important;
-    margin: 0 auto 1px !important;
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    font-size: 1.35rem !important;
+    margin: 0 !important;
   }
 
   .moon-header__copy {
+    min-width: 0 !important;
     width: 100% !important;
-    text-align: center !important;
+    text-align: left !important;
     margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1px !important;
   }
 
   .moon-header__eyebrow {
-    font-size: 0.64rem !important;
+    font-size: 0.68rem !important;
+    font-weight: 700 !important;
     margin: 0 !important;
     line-height: 1.15 !important;
+    color: var(--wc-gold, #c5a059) !important;
+  }
+
+  .tabletop-theme-tribunal-day .moon-header__eyebrow {
+    color: #a16207 !important;
   }
 
   .moon-header__copy h1 {
-    font-size: 0.88rem !important;
-    margin: 1px 0 !important;
-    line-height: 1.15 !important;
+    font-size: 1.05rem !important;
+    font-weight: 800 !important;
+    margin: 0 !important;
+    line-height: 1.2 !important;
+    color: var(--wc-paper, #f0e6d2) !important;
+  }
+
+  .tabletop-theme-tribunal-day .moon-header__copy h1 {
+    color: #1f1a14 !important;
   }
 
   .moon-header__copy p {
-    font-size: 0.68rem !important;
-    margin: 1px 0 0 !important;
-    line-height: 1.2 !important;
+    font-size: 0.74rem !important;
+    margin: 0 !important;
+    line-height: 1.25 !important;
+    color: var(--wc-text-dim, rgba(240, 230, 210, 0.75)) !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
+
+  .tabletop-theme-tribunal-day .moon-header__copy p {
+    color: #4b3d2b !important;
   }
 
   .moon-header__side {
     position: static !important;
     display: flex !important;
     align-items: center !important;
-    justify-content: center !important;
-    margin-top: 2px !important;
+    justify-content: flex-end !important;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
   }
 
   .moon-header__timer {
-    min-width: 34px !important;
-    min-height: 24px !important;
-    padding: 1px 5px !important;
-    border-radius: 6px !important;
-    font-size: 0.78rem !important;
+    min-width: 36px !important;
+    min-height: 28px !important;
+    padding: 2px 8px !important;
+    border-radius: 8px !important;
+    font-size: 0.8rem !important;
   }
 
   .moon-header__timer strong {
-    font-size: 0.88rem !important;
+    font-size: 1.12rem !important;
+    font-weight: 900 !important;
+  }
+
+  /* 核心对局桌：左翼席位 | 中央舞台 | 右翼席位，整体垂直居中对齐 */
+  .werewolf-arena__board {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    width: 100% !important;
+    position: relative !important;
+  }
+
+  /* 移动端席位翼：紧凑自然间距，垂直居中排布，杜绝过大空隙 */
+  .werewolf-wing {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    width: clamp(82px, 22.5vw, 94px) !important;
+    flex-shrink: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+    height: auto !important;
+    max-height: 100% !important;
+    gap: 8px !important;
+  }
+
+  .werewolf-wing--left {
+    gap: 8px !important;
+  }
+
+  .werewolf-wing--right {
+    gap: 12px !important;
+  }
+
+  /* 中轴舞台：占据主流宽度，垂直居中排布 */
+  .werewolf-arena__center-stack {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    width: auto !important;
+    height: 100% !important;
+    margin: 0 auto !important;
   }
 
   .werewolf-spotlight {
     flex-direction: column !important;
     align-items: center !important;
     text-align: center !important;
-    padding: 7px 6px !important;
-    gap: 5px !important;
+    padding: 8px 10px !important;
+    gap: 6px !important;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
 
-  .werewolf-spotlight__avatar-frame {
+  /* 3D 身份翻牌卡：彻底摆脱细竖条，宽度充分扩展，恢复 1:1.35 黄金纸牌比例 */
+  .werewolf-spotlight--reveal-3d {
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: 250px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .werewolf-spotlight--reveal-3d .identity-flip-container {
+    width: 100% !important;
+    max-width: 240px !important;
+  }
+
+  .werewolf-spotlight--reveal-3d .identity-flip-card {
+    min-height: 250px !important;
+    height: clamp(250px, 38dvh, 310px) !important;
+  }
+
+  .werewolf-spotlight--reveal-3d .identity-card-inner {
+    min-height: 250px !important;
+    height: 100% !important;
+  }
+
+  .werewolf-spotlight--reveal-3d .identity-card-back__border {
+    margin: 8px !important;
+    padding: 12px 10px !important;
+    gap: 12px !important;
+  }
+
+  .werewolf-spotlight--reveal-3d .identity-card-back__emblem {
     width: 44px !important;
     height: 44px !important;
+  }
+
+  .werewolf-spotlight--reveal-3d .identity-card-back__badge {
+    font-size: 0.92rem !important;
+    letter-spacing: 1px !important;
+  }
+
+  .werewolf-spotlight--reveal-3d .identity-card-front__artwork-wrap {
+    width: 58px !important;
+    height: 58px !important;
+  }
+
+  .werewolf-spotlight--reveal-3d .identity-card-front__role-name {
+    font-size: 1.25rem !important;
+    margin: 4px 0 2px !important;
+  }
+
+  .werewolf-spotlight__avatar-frame {
+    width: 52px !important;
+    height: 52px !important;
   }
 
   .werewolf-spotlight__content {
@@ -15445,7 +15690,7 @@ html[data-motion-level="off"] *::after {
     line-height: 1.2 !important;
   }
 
-  /* 席位卡片紧凑排布与完整文字呈现，绝不截断 */
+  /* 席位卡片排布与舒适间距、头像放大、完整文字呈现 */
   .seat-chip {
     position: relative !important;
     inset: auto !important;
@@ -15454,16 +15699,16 @@ html[data-motion-level="off"] *::after {
     transform: none !important;
     translate: none !important;
     width: 100% !important;
-    min-height: 0 !important;
+    min-height: 56px !important;
     height: auto !important;
-    padding: 3px 5px !important;
+    padding: 7px 8px !important;
     box-sizing: border-box !important;
     overflow: visible !important;
-    border-radius: 8px !important;
+    border-radius: 10px !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: space-between !important;
-    gap: 1px !important;
+    gap: 2px !important;
   }
 
   .seat-chip__head {
@@ -15471,39 +15716,39 @@ html[data-motion-level="off"] *::after {
     align-items: center !important;
     justify-content: space-between !important;
     width: 100% !important;
-    gap: 2px !important;
+    gap: 4px !important;
   }
 
   .seat-chip__head-left {
     display: flex !important;
     align-items: center !important;
-    gap: 3px !important;
+    gap: 5px !important;
   }
 
   .seat-chip__head-badges {
     display: flex !important;
     align-items: center !important;
-    gap: 2px !important;
+    gap: 3px !important;
   }
 
   .seat-chip__avatar {
-    width: 18px !important;
-    height: 18px !important;
-    min-width: 18px !important;
-    min-height: 18px !important;
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    min-height: 24px !important;
   }
 
   .seat-chip__seat {
-    font-size: 0.68rem !important;
+    font-size: 0.74rem !important;
     font-weight: 800 !important;
     line-height: 1 !important;
   }
 
   .seat-chip__name {
-    font-size: 0.74rem !important;
+    font-size: 0.8rem !important;
     font-weight: 800 !important;
-    line-height: 1.15 !important;
-    margin: 0 !important;
+    line-height: 1.2 !important;
+    margin: 1px 0 0 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
@@ -15512,40 +15757,40 @@ html[data-motion-level="off"] *::after {
   .seat-chip__status-line {
     display: flex !important;
     flex-direction: column !important;
-    gap: 1px !important;
-    margin-top: 1px !important;
+    gap: 2px !important;
+    margin-top: 2px !important;
   }
 
   .seat-chip__status {
-    font-size: 0.62rem !important;
+    font-size: 0.68rem !important;
     font-weight: 700 !important;
-    line-height: 1.15 !important;
+    line-height: 1.2 !important;
     white-space: normal !important;
     word-break: break-all !important;
   }
 
   .seat-chip__role {
-    font-size: 0.62rem !important;
+    font-size: 0.68rem !important;
     font-weight: 800 !important;
     color: var(--wc-gold, #c5a059) !important;
   }
 
   .seat-chip__speaking-strip {
-    margin-top: 1px !important;
+    margin-top: 2px !important;
   }
 
   .seat-chip__badge--speaking {
     display: inline-block !important;
-    padding: 1px 4px !important;
-    font-size: 0.54rem !important;
+    padding: 1px 5px !important;
+    font-size: 0.58rem !important;
     font-weight: 900 !important;
     border-radius: 999px !important;
   }
 
   .seat-chip__badge--self {
     display: inline-block !important;
-    padding: 0 3px !important;
-    font-size: 0.54rem !important;
+    padding: 1px 5px !important;
+    font-size: 0.58rem !important;
     font-weight: 800 !important;
     border-radius: 999px !important;
     border: 1px solid #f59e0b !important;
@@ -15555,8 +15800,8 @@ html[data-motion-level="off"] *::after {
 
   .seat-chip__badge--ally {
     display: inline-block !important;
-    padding: 0 3px !important;
-    font-size: 0.54rem !important;
+    padding: 1px 5px !important;
+    font-size: 0.58rem !important;
     font-weight: 800 !important;
     border-radius: 999px !important;
     border: 1px solid rgba(220, 38, 38, 0.7) !important;
@@ -15568,11 +15813,24 @@ html[data-motion-level="off"] *::after {
   .private-role-panel { order: 2; }
   .werewolf-actions__options { grid-template-columns: 1fr; }
 
+  /* 狼人杀底栏重构：解除右侧保留边距，通栏铺展利用右侧空间 */
+  .game-session-root:has(.werewolf-arena) .tabletop-bottom-bar {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    padding-bottom: calc(var(--safe-bottom) + 8px) !important;
+  }
+
+  .game-session-root:has(.werewolf-arena) .tabletop-bottom-bar > * {
+    max-width: 680px !important;
+  }
+
   .werewolf-bottom-dock {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    min-height: 0;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    width: 100% !important;
+    min-height: 0 !important;
   }
 
   .werewolf-bottom-dock__main {
@@ -15581,18 +15839,77 @@ html[data-motion-level="off"] *::after {
     align-items: stretch;
   }
 
+  .werewolf-actions--waiting {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 8px 14px !important;
+    border-radius: 10px !important;
+  }
+
+  .werewolf-bottom-dock__row {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .werewolf-compact-role {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  .werewolf-compact-role__main {
+    padding: 6px 12px 6px 8px !important;
+    gap: 10px !important;
+  }
+
+  .werewolf-compact-role__thumb-box {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .werewolf-compact-role__info {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  .werewolf-compact-role__name-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    overflow: hidden !important;
+  }
+
+  .werewolf-compact-role__name {
+    font-size: 0.95rem !important;
+    white-space: nowrap !important;
+  }
+
+  .werewolf-bottom-chat-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    min-width: 78px !important;
+    height: auto !important;
+    padding: 0 12px !important;
+    border-radius: 10px !important;
+    flex-shrink: 0 !important;
+  }
+
   .tabletop-shell .seat-chip:active,
   .seat-chip:active {
     transform: scale(0.97) !important;
   }
 
-  /* 竖屏移动端：针对狼人杀桌面，严禁悬浮聊天按钮通过行内样式遮盖左翼/右翼席位 */
-  .game-session-root:has(.werewolf-arena) .game-chat-trigger:not(.is-dragging) {
-    right: 8px !important;
-    bottom: calc(var(--safe-bottom) + 12px) !important;
-    left: auto !important;
-    top: auto !important;
-    z-index: 60 !important;
+  /* 针对狼人杀底栏已内置常驻聊天胶囊，隐藏重复的独立悬浮聊天球 */
+  .game-session-root:has(.werewolf-arena) .game-chat-trigger {
+    display: none !important;
   }
 }
 
@@ -26248,12 +26565,27 @@ body.is-immersive .tabletop-arena-container {
   border-top: 2px dashed rgba(49, 45, 40, 0.48) !important;
   padding-top: 16px !important;
   margin-top: 4px !important;
+  align-items: stretch !important;
+}
+
+@media (min-width: 480px) {
+  .room-console__actions {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
 }
 
 @media (min-width: 640px) {
   .room-console__actions {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
-    gap: 12px !important;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+    gap: 10px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .room-console__actions {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+    gap: 10px !important;
   }
 }
 
@@ -26261,19 +26593,37 @@ body.is-immersive .tabletop-arena-container {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 8px !important;
+  gap: 6px !important;
   width: 100% !important;
+  height: 48px !important;
   min-height: 48px !important;
-  padding: 10px 18px !important;
+  max-height: 48px !important;
+  padding: 0 10px !important;
   border-radius: 14px !important;
-  font-size: 0.95rem !important;
+  font-size: 0.9rem !important;
   font-weight: 900 !important;
+  line-height: 1 !important;
   border: 2.5px solid var(--home-ink, #221e1a) !important;
   box-shadow: 3px 3px 0 var(--home-ink, #221e1a) !important;
   cursor: pointer !important;
   transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease !important;
   box-sizing: border-box !important;
   text-decoration: none !important;
+  white-space: nowrap !important;
+  user-select: none !important;
+}
+
+.room-console__btn span {
+  display: inline-block !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.2 !important;
+}
+
+.room-console__btn svg,
+.room-console__btn .game-icon {
+  flex-shrink: 0 !important;
 }
 
 .room-console__btn:hover:not(:disabled) {

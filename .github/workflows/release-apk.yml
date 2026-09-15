@@ -41,8 +41,14 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Lint
+        run: npm run lint
+
       - name: Run test suite
         run: npm test
+
+      - name: D1 compliance check
+        run: npm run compliance:d1
 
       - name: Build Host server bundle and payload
         run: npm run build:host-payload

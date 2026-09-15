@@ -74,5 +74,6 @@ durian-intro-video/build/
 /奶酪大盗语音_完整版/
 /狼人杀语音/
 
-# 临时测量日志
+# 临时测量日志与预览网页
 /measure-log*.txt
+docs/design-preview.html

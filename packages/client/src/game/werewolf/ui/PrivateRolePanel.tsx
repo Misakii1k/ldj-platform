@@ -18,9 +18,10 @@ export function PrivateRolePanel({ self, synced: _synced }: PrivateRolePanelProp
   }
 
   const isWolf = self.role === 'wolf';
+  const roleDetail = WEREWOLF_ROLE_DETAILS[self.role];
 
   return (
-    <aside className={`werewolf-compact-role is-revealed`} aria-label="身份牌">
+    <aside className="werewolf-compact-role is-revealed" aria-label="身份牌">
       <div className="werewolf-compact-role__main" onClick={() => setShowDetail(!showDetail)}>
         <div className="werewolf-compact-role__thumb-box">
           <img
@@ -36,12 +37,24 @@ export function PrivateRolePanel({ self, synced: _synced }: PrivateRolePanelProp
             <span className={`werewolf-compact-role__status-pill ${self.alive ? 'is-alive' : 'is-out'}`}>
               {self.alive ? '存活' : '已出局'}
             </span>
+            <span className={`werewolf-compact-role__camp-pill ${isWolf ? 'is-wolf' : 'is-good'}`}>
+              {isWolf ? '狼人阵营' : '好人阵营'}
+            </span>
           </div>
 
           <div className="werewolf-compact-role__name-row">
             <strong className="werewolf-compact-role__name">
               {self.roleLabel}
             </strong>
+            {self.roleHint ? (
+              <span className="werewolf-compact-role__skill-snippet" title={self.roleHint}>
+                {self.roleHint}
+              </span>
+            ) : roleDetail?.skill ? (
+              <span className="werewolf-compact-role__skill-snippet" title={roleDetail.skill}>
+                {roleDetail.skill}
+              </span>
+            ) : null}
           </div>
         </div>
 

@@ -28,8 +28,6 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
   if (!parsedTag.ok) return invalidTagResponse();
 
   const token = env?.GITHUB_TOKEN;
-  if (!token) return tokenMissingResponse();
-
   const repo = getGithubRepo(env);
 
   try {
@@ -38,6 +36,9 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
     });
 
     if (!releaseRes.ok) {
+      if ((releaseRes.status === 401 || releaseRes.status === 404) && !token) {
+        return tokenMissingResponse();
+      }
       return upstreamFailureResponse(releaseRes.status);
     }
 

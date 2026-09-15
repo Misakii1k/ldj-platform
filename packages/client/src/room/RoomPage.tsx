@@ -547,9 +547,10 @@ export function RoomPage() {
                 className={`room-console__btn room-console__btn--ready ${myMember.ready ? 'is-ready' : 'is-not-ready'}`}
                 onClick={() => handleToggleReady(myMember.ready)}
                 disabled={busy || !synced}
+                title={myMember.ready ? '已准备，点击取消准备' : '点击完成准备'}
               >
                 <GameIcon name={myMember.ready ? 'star' : 'hourglass'} size={18} />
-                <span>{myMember.ready ? '已准备（点击取消）' : '点击准备'}</span>
+                <span>{myMember.ready ? '已准备 (取消)' : '点击准备'}</span>
               </button>
             )}
             <button type="button" className="room-console__btn room-console__btn--leave" onClick={handleLeaveRoom} disabled={busy}>
@@ -583,7 +584,7 @@ export function RoomPage() {
             {isHost && (room.status === 'LOBBY' || room.status === 'POST_GAME') && roomGame.botSupport !== 'none' && botCount > 0 && (
               <button type="button" className="room-console__btn room-console__btn--secondary" onClick={() => handleRemoveBot()} disabled={busy || !synced} title="移除最后加入的机器人">
                 <GameIcon name="uno_skip" size={18} />
-                <span>移除机器人（{botCount}）</span>
+                <span>移除机器人 ({botCount})</span>
               </button>
             )}
             {isHost && room.status === 'IN_GAME' && (

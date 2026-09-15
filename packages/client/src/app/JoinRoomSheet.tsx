@@ -80,7 +80,7 @@ function roomStatusLabel(room: Pick<LanRoom, 'status' | 'playerCount'>): string 
 }
 
 export function JoinRoomSheet({ onClose, initialRoomCode = '' }: JoinRoomSheetProps) {
-  const { send, setMe, state } = useConnection();
+  const { send, setMe, state, reset } = useConnection();
   const { profile, setNickname: saveUserNickname, openProfileModal } = useUserProfile();
   const { showToast } = useToast();
   const nicknameRef = useRef<HTMLInputElement | null>(null);
@@ -121,14 +121,23 @@ export function JoinRoomSheet({ onClose, initialRoomCode = '' }: JoinRoomSheetPr
   }, [refreshRooms]);
 
   const connectionReady = state.connState !== 'connecting' && state.connState !== 'reconnecting';
+  const isConnecting = state.connState === 'connecting';
+  const isReconnecting = state.connState === 'reconnecting';
+
   const normalizedRoomCode = roomCode.trim().toUpperCase();
   const hasValidRoomCode = ROOM_CODE_PATTERN.test(normalizedRoomCode);
+  const isRoomCodeInvalid = roomCode.trim().length > 0 && !hasValidRoomCode;
+
+  const isPasswordValid = password.length === 0 || (password.length >= 4 && password.length <= 32);
+  const isPasswordInvalid = password.length > 0 && password.length < 4;
+
   const canSubmit =
     !submitting &&
     connectionReady &&
     nickname.trim().length >= 1 &&
     nickname.trim().length <= 16 &&
-    hasValidRoomCode;
+    hasValidRoomCode &&
+    isPasswordValid;
 
   function selectRoom(room: LanRoom) {
     setRoomCode(room.roomCode);
@@ -182,8 +191,20 @@ export function JoinRoomSheet({ onClose, initialRoomCode = '' }: JoinRoomSheetPr
       onClose={onClose}
       initialFocusRef={roomCode ? nicknameRef : roomCodeRef}
       footer={
-        <button type="submit" form="join-room-form" className="room-sheet__submit" disabled={!canSubmit}>
-          {submitting ? '正在加入…' : '确认加入房间'}
+        <button
+          type="submit"
+          form="join-room-form"
+          className="room-sheet__submit"
+          disabled={!canSubmit}
+          title={!connectionReady ? '正在与局域网主机建立连接，请稍候…' : isRoomCodeInvalid ? '请输入正确的 5 位房间码' : isPasswordInvalid ? '密码需至少 4 位（无密码留空）' : undefined}
+        >
+          {submitting
+            ? '正在加入…'
+            : isConnecting
+            ? '正在连接主机…'
+            : isReconnecting
+            ? '正在重连主机…'
+            : '确认加入房间'}
           <span aria-hidden="true">→</span>
         </button>
       }
@@ -245,6 +266,25 @@ export function JoinRoomSheet({ onClose, initialRoomCode = '' }: JoinRoomSheetPr
       </section>
 
       <form id="join-room-form" className="room-sheet__form" onSubmit={handleSubmit}>
+        {!connectionReady && (
+          <div className="room-sheet__conn-hint" role="status">
+            <span className="room-sheet__conn-hint-dot" aria-hidden="true" />
+            <span style={{ flex: 1 }}>
+              {isConnecting ? '正在建立局域网主机连接，就绪后即可加入…' : '与主机连接中断，正在自动重连中…'}
+            </span>
+            {isReconnecting && (
+              <button
+                type="button"
+                className="room-sheet__quick-rename-btn"
+                style={{ padding: '3px 8px', fontSize: '0.75rem', height: 'auto', minHeight: 24 }}
+                onClick={() => reset()}
+              >
+                重试
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="room-sheet__profile-row">
           <button
             type="button"
@@ -282,22 +322,36 @@ export function JoinRoomSheet({ onClose, initialRoomCode = '' }: JoinRoomSheetPr
             maxLength={5}
             autoComplete="off"
             inputMode="text"
-            aria-invalid={Boolean(roomCode) && !hasValidRoomCode}
-            aria-describedby={error ? 'join-room-error' : 'join-room-code-hint'}
+            aria-invalid={isRoomCodeInvalid}
+            aria-describedby={isRoomCodeInvalid ? 'join-room-code-error' : error ? 'join-room-error' : 'join-room-code-hint'}
           />
-          <small id="join-room-code-hint">点选上方房间自动填入，或直接输入 5 位房间码。</small>
+          {isRoomCodeInvalid ? (
+            <small id="join-room-code-error" className="room-sheet__field-error" role="alert">
+              房间码需为 5 位字母或数字（不包含 0、1、I、O）
+            </small>
+          ) : (
+            <small id="join-room-code-hint">点选上方房间自动填入，或直接输入 5 位房间码。</small>
+          )}
         </label>
         <label className="room-sheet__field" htmlFor="join-password">
-          <span>房间密码 <em>(如有)</em></span>
+          <span>房间密码 <em>(如有，需 4–32 位)</em></span>
           <input
             id="join-password"
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             placeholder="未设密码可留空"
+            minLength={4}
             maxLength={32}
             autoComplete="current-password"
+            aria-invalid={isPasswordInvalid}
+            aria-describedby={isPasswordInvalid ? 'join-password-error' : undefined}
           />
+          {isPasswordInvalid && (
+            <small id="join-password-error" className="room-sheet__field-error" role="alert">
+              密码需至少 4 位（未设密码请留空）
+            </small>
+          )}
         </label>
         <label className="room-sheet__checkbox">
           <input

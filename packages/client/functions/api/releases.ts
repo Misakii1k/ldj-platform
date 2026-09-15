@@ -39,8 +39,6 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
   if (!parsedTag.ok) return invalidTagResponse();
 
   const token = env?.GITHUB_TOKEN;
-  if (!token) return tokenMissingResponse();
-
   const repo = getGithubRepo(env);
   const cors = corsHeaders(request);
   const cacheHeaders = {
@@ -54,6 +52,9 @@ export const onRequestGet = async (context: { request: Request; env: Env }) => {
     });
 
     if (!res.ok) {
+      if ((res.status === 401 || res.status === 404) && !token) {
+        return tokenMissingResponse();
+      }
       return upstreamFailureResponse(res.status);
     }
 

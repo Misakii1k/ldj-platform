@@ -59,6 +59,18 @@ export function GameChatDrawer() {
   const unreadCount = open ? 0 : state.chat.filter((message) => message.cursor > lastSeenCursor).length;
   const synced = state.connState === 'synced';
 
+  // 广播未读计数，供内嵌聊天入口同步状态
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('ldj:chat-unread', { detail: { unreadCount } }));
+  }, [unreadCount]);
+
+  // 监听外部打开聊天抽屉事件（如狼人杀底栏常驻聊天胶囊）
+  useEffect(() => {
+    const handleOpen = () => setOpen(true);
+    window.addEventListener('ldj:open-chat', handleOpen);
+    return () => window.removeEventListener('ldj:open-chat', handleOpen);
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     const latestCursor = state.chat[state.chat.length - 1]?.cursor ?? lastSeenCursor;

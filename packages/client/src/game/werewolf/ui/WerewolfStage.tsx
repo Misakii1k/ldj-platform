@@ -38,6 +38,26 @@ interface TargetMenuState {
 export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfStageProps) {
   const mobileLayout = useCompactLayout();
 
+  const [unreadChat, setUnreadChat] = useState(0);
+
+  useEffect(() => {
+    const handleUnread = (e: Event) => {
+      const customEvent = e as CustomEvent<{ unreadCount: number }>;
+      setUnreadChat(customEvent.detail?.unreadCount ?? 0);
+    };
+    window.addEventListener('ldj:chat-unread', handleUnread);
+    return () => window.removeEventListener('ldj:chat-unread', handleUnread);
+  }, []);
+
+  const handleOpenChat = useCallback(() => {
+    const trigger = document.querySelector<HTMLButtonElement>('.game-chat-trigger');
+    if (trigger) {
+      trigger.click();
+    } else {
+      window.dispatchEvent(new CustomEvent('ldj:open-chat'));
+    }
+  }, []);
+
   const { currentNightRole, isNightVoiceRunning, isDayAnnouncementRunning, roleRemainingSeconds } = useJudgeVoice(model);
 
   const effectiveMood = isNightVoiceRunning
@@ -228,62 +248,65 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
         {isDawn && <div className="werewolf-dawn-glow" />}
       </div>
 
-      {!mobileLayout && (
-        <SeatRing
-          seats={effectiveModel.seats}
-          mood={effectiveMood}
-          className="werewolf-desktop-seat-ring"
-          onSelectTarget={handleSelectTarget}
-          selectedPlayerId={targetMenu?.seat.playerId ?? null}
-        />
-      )}
+      {/* 顶部天象看板：作为全场阶段/倒计时置顶状态栏（移动端全宽横贯，桌面端通栏居中） */}
+      <MoonPhaseHeader
+        dayLabel={effectiveModel.dayLabel}
+        phaseLabel={effectiveModel.phaseLabel}
+        narrative={effectiveModel.narrative}
+        mood={effectiveMood}
+        deadlineAt={isNightVoiceRunning ? null : effectiveModel.deadlineAt}
+        overrideSeconds={isNightVoiceRunning ? roleRemainingSeconds : null}
+        spectator={effectiveModel.spectator}
+        roleArtworkUrl={activeRoleArtwork}
+      />
 
-      {mobileLayout && (
-        <ol className="werewolf-wing werewolf-wing--left" aria-label="左侧席位">
-          {leftSeats.map((seat) => (
-            <SeatChip
-              key={seat.playerId}
-              seat={seat}
-              onSelectTarget={handleSelectTarget}
-              isTargetSelected={targetMenu?.seat.playerId === seat.playerId}
-            />
-          ))}
-        </ol>
-      )}
+      {/* 舞台核心对局桌：桌面呈现马蹄环绕，移动端呈现左右分列与中央聚焦 */}
+      <div className="werewolf-arena__board">
+        {!mobileLayout && (
+          <SeatRing
+            seats={effectiveModel.seats}
+            mood={effectiveMood}
+            className="werewolf-desktop-seat-ring"
+            onSelectTarget={handleSelectTarget}
+            selectedPlayerId={targetMenu?.seat.playerId ?? null}
+          />
+        )}
 
-      {/* 中央发言/天象舞台（桌面居中，移动端在左右翼之间） */}
-      <div className="werewolf-arena__center-stack">
-        <MoonPhaseHeader
-          dayLabel={effectiveModel.dayLabel}
-          phaseLabel={effectiveModel.phaseLabel}
-          narrative={effectiveModel.narrative}
-          mood={effectiveMood}
-          deadlineAt={isNightVoiceRunning ? null : effectiveModel.deadlineAt}
-          overrideSeconds={isNightVoiceRunning ? roleRemainingSeconds : null}
-          spectator={effectiveModel.spectator}
-          roleArtworkUrl={activeRoleArtwork}
-        />
+        {mobileLayout && (
+          <ol className="werewolf-wing werewolf-wing--left" aria-label="左侧席位">
+            {leftSeats.map((seat) => (
+              <SeatChip
+                key={seat.playerId}
+                seat={seat}
+                onSelectTarget={handleSelectTarget}
+                isTargetSelected={targetMenu?.seat.playerId === seat.playerId}
+              />
+            ))}
+          </ol>
+        )}
 
-        {/* 终局身份大复盘或角色阶段情报大卡片 */}
-        {effectiveModel.reveal !== null ? (
-          <GameOverReveal reveal={effectiveModel.reveal} seats={effectiveModel.seats} />
-        ) : (
-          <WerewolfRoleSpotlight model={effectiveModel} />
+        {/* 中央发言/翻牌/复盘舞台 */}
+        <div className="werewolf-arena__center-stack">
+          {effectiveModel.reveal !== null ? (
+            <GameOverReveal reveal={effectiveModel.reveal} seats={effectiveModel.seats} />
+          ) : (
+            <WerewolfRoleSpotlight model={effectiveModel} />
+          )}
+        </div>
+
+        {mobileLayout && (
+          <ol className="werewolf-wing werewolf-wing--right" aria-label="右侧席位">
+            {rightSeats.map((seat) => (
+              <SeatChip
+                key={seat.playerId}
+                seat={seat}
+                onSelectTarget={handleSelectTarget}
+                isTargetSelected={targetMenu?.seat.playerId === seat.playerId}
+              />
+            ))}
+          </ol>
         )}
       </div>
-
-      {mobileLayout && (
-        <ol className="werewolf-wing werewolf-wing--right" aria-label="右侧席位">
-          {rightSeats.map((seat) => (
-            <SeatChip
-              key={seat.playerId}
-              seat={seat}
-              onSelectTarget={handleSelectTarget}
-              isTargetSelected={targetMenu?.seat.playerId === seat.playerId}
-            />
-          ))}
-        </ol>
-      )}
 
       <p className="werewolf-arena__caption" aria-hidden="true">
         {isNight ? '暗夜审判桌' : '白昼公投厅'} · {boardSummary}
@@ -350,7 +373,24 @@ export function WerewolfStage({ model, synced, busy, error, onAct }: WerewolfSta
         phaseKey={phaseKey}
         onAct={onAct}
       />
-      <PrivateRolePanel self={effectiveModel.self} synced={synced} />
+      <div className="werewolf-bottom-dock__row">
+        <PrivateRolePanel self={effectiveModel.self} synced={synced} />
+        <button
+          type="button"
+          className="werewolf-bottom-chat-btn"
+          onClick={handleOpenChat}
+          aria-label={unreadChat > 0 ? `打开对局聊天，${unreadChat} 条未读消息` : '打开对局聊天'}
+          title="打开对局聊天"
+        >
+          <span className="chat-trigger-icon" aria-hidden="true"><i /><i /><i /></span>
+          <span>聊天</span>
+          {unreadChat > 0 && (
+            <strong className="chat-unread-badge">
+              {unreadChat > 99 ? '99+' : unreadChat}
+            </strong>
+          )}
+        </button>
+      </div>
     </div>
   );
 
