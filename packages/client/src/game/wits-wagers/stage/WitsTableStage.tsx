@@ -10,6 +10,7 @@ import type {
 } from '../types.ts';
 import { WitsAnswerCard } from './WitsAnswerCard.tsx';
 import { WitsBankTray } from './WitsBankTray.tsx';
+import { WitsCountdown } from './WitsCountdown.tsx';
 import { WitsChip } from './WitsChip.tsx';
 
 export interface WitsTableStageProps {
@@ -32,6 +33,10 @@ export interface WitsTableStageProps {
   readonly onSelectTarget?: (targetId: TargetId) => void;
   readonly interactive?: boolean;
   readonly bankActive?: boolean;
+  /** 服务端截止时刻，交给舞台上的倒计时 */
+  readonly deadlineAt?: number | null;
+  /** 倒计时的阶段标识，变化时重新测满格时长 */
+  readonly phaseKey?: string;
   readonly stageRef?: React.RefObject<HTMLDivElement | null>;
   readonly children?: ReactNode;
 }
@@ -57,6 +62,8 @@ export function WitsTableStage({
   onSelectTarget,
   interactive = false,
   bankActive = false,
+  deadlineAt = null,
+  phaseKey = '',
   stageRef,
   children,
 }: WitsTableStageProps) {
@@ -97,6 +104,13 @@ export function WitsTableStage({
     <div className="ww-stage" ref={stageRef}>
       <div className="ww-stage__rail">
         <WitsBankTray active={bankActive} />
+
+        {/* 只有需要玩家行动的阶段才催时间；排牌与结算是纯展示 */}
+        <WitsCountdown
+          deadlineAt={deadlineAt}
+          phaseKey={phaseKey}
+          active={phase === 'answering' || phase === 'betting'}
+        />
 
         {question && (
           <div className="ww-question-card">

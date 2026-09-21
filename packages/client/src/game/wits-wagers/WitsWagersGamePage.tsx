@@ -38,15 +38,6 @@ const PHASE_LABELS: Record<string, string> = {
   game_over: '对局结束',
 };
 
-const PHASE_SUBTEXTS: Record<string, string> = {
-  created: '所有人就座后即可开始',
-  answering: '写下你的估数，全员交牌后立即翻面',
-  arranging: '答案牌正在归位翻开',
-  betting: '把两枚筹码押到你看好的槽位',
-  settlement: '银行正在收付本轮筹码',
-  game_over: '七轮已经打完',
-};
-
 export function WitsWagersGamePage({
   view,
   onSubmitGuess: propsSubmitGuess,
@@ -95,23 +86,6 @@ export function WitsWagersGamePage({
     syncedBetKeyRef.current = key;
     setBetDraft(createInitialDraft(me.acceptedBets));
   }, [me, view.roundToken]);
-
-  // 计算倒计时剩余秒数
-  const [remainingSec, setRemainingSec] = useState<number | null>(null);
-  useEffect(() => {
-    if (view.deadlineAt === null) {
-      setRemainingSec(null);
-      return;
-    }
-    const update = () => {
-      const now = Date.now();
-      const sec = Math.max(0, Math.ceil((view.deadlineAt! - now) / 1000));
-      setRemainingSec(sec);
-    };
-    update();
-    const interval = setInterval(update, 1000);
-    return () => clearInterval(interval);
-  }, [view.deadlineAt]);
 
   const handleSelectTarget = (targetId: TargetId) => {
     if (view.phase !== 'betting' || !me || !me.canBet) return;
@@ -170,11 +144,6 @@ export function WitsWagersGamePage({
   const activePlayerCount = activePlayers.length;
   const submittedCount = activePlayers.filter((p) => p.hasSubmitted).length;
 
-  const timerText =
-    remainingSec === null
-      ? null
-      : `${String(Math.floor(remainingSec / 60)).padStart(2, '0')}:${String(remainingSec % 60).padStart(2, '0')}`;
-
   const centerArena = (
     <div
       className="ww-game"
@@ -208,6 +177,8 @@ export function WitsWagersGamePage({
         onSelectTarget={handleSelectTarget}
         interactive={view.phase === 'betting' && Boolean(me?.canBet)}
         bankActive={stage.bankActive}
+        deadlineAt={view.deadlineAt}
+        phaseKey={`${view.roundToken}:${view.phase}:${view.phaseEpoch}`}
         stageRef={stage.stageRef}
       />
 
@@ -267,11 +238,6 @@ export function WitsWagersGamePage({
         currentUserId={me?.playerId ?? undefined}
         centerArena={centerArena}
         phaseBannerText={PHASE_LABELS[view.phase] ?? view.phase}
-        phaseBannerSubtext={
-          timerText
-            ? `${PHASE_SUBTEXTS[view.phase] ?? ''} · 剩余 ${timerText}`
-            : PHASE_SUBTEXTS[view.phase]
-        }
         onShowRules={() => setRulesOpen(true)}
         topRightControls={(
           <WitsMenuControls

@@ -43,3 +43,12 @@ export function playFlipCue(): void {
     // 同上
   }
 }
+
+/** 倒计时滴答：只在最后几秒每秒一次。 */
+export function playTickCue(): void {
+  try {
+    webAudio.playTick();
+  } catch {
+    // 同上
+  }
+}
