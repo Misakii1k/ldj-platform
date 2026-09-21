@@ -1,0 +1,1242 @@
+/**
+ * 一智千金 Wits & Wagers 视觉样式
+ * 遵循 03-visual-contract.md 与 AGENTS.md：
+ * - 颜色一律直接引用平台 --game-* 令牌，布局使用局部 --ww-*
+ * - 正文文字与背景对比度达标 (>= 4.5:1)，主按钮使用 --game-dark (#115665) + 白字 (8.26:1)
+ * - 仅允许项目规范响应式断点 (380/480/640/768/1024/1280px 宽，520/620px 高)
+ */
+
+.ww-game {
+  --ww-gap-sm: 8px;
+  --ww-gap-md: 12px;
+  --ww-gap-lg: 16px;
+  --ww-radius: 12px;
+  --ww-header-height: 56px;
+  --ww-font-scale: 1;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--ww-gap-md);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  color: var(--game-ink, #292722);
+  font-family: inherit;
+  font-size: calc(1rem * var(--ww-font-scale));
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* 紧凑模式：压缩留白，小屏一屏放下更多槽位 */
+.ww-game[data-ww-density='compact'] {
+  --ww-gap-sm: 4px;
+  --ww-gap-md: 8px;
+  --ww-gap-lg: 10px;
+}
+
+/* 顶部导航与状态栏 */
+.ww-header {
+  height: var(--ww-header-height);
+  padding: 0 var(--ww-gap-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--game-surface, #fffdf7);
+  border-bottom: 2px solid var(--game-line, #292722);
+  flex-shrink: 0;
+}
+
+.ww-header__title-group {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ww-gap-sm);
+}
+
+.ww-header__title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--game-ink, #292722);
+  margin: 0;
+}
+
+.ww-header__round {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--game-muted, #575147);
+}
+
+.ww-header__status {
+  display: flex;
+  align-items: center;
+  gap: var(--ww-gap-md);
+}
+
+.ww-badge {
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  border: 1.5px solid var(--game-line, #292722);
+}
+
+.ww-badge--phase {
+  background-color: var(--game-soft, #d5edf2);
+  color: var(--game-dark, #115665);
+}
+
+.ww-badge--timer {
+  background-color: var(--game-paper, #fff4df);
+  color: var(--game-ink, #292722);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 主内容可滚动区域 */
+.ww-main {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--ww-gap-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ww-gap-md);
+  max-width: 1024px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 题目卡片 */
+.ww-question-card {
+  background-color: var(--game-surface, #fffdf7);
+  border: 2px solid var(--game-line, #292722);
+  border-radius: var(--ww-radius);
+  padding: var(--ww-gap-lg);
+  box-shadow: 0 2px 4px rgba(41, 39, 34, 0.08);
+}
+
+.ww-question-card__prompt {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0 0 var(--ww-gap-sm) 0;
+  color: var(--game-ink, #292722);
+}
+
+.ww-question-card__unit {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--game-muted, #575147);
+}
+
+/* 作答面板 V1 */
+.ww-guess-panel {
+  background-color: var(--game-surface, #fffdf7);
+  border: 2px solid var(--game-line, #292722);
+  border-radius: var(--ww-radius);
+  padding: var(--ww-gap-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ww-gap-md);
+}
+
+.ww-guess-panel__label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--game-ink, #292722);
+}
+
+.ww-guess-panel__input-row {
+  display: flex;
+  gap: var(--ww-gap-sm);
+  align-items: center;
+}
+
+.ww-input {
+  flex: 1;
+  height: 48px;
+  padding: 0 var(--ww-gap-md);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--game-ink, #292722);
+  background-color: var(--game-paper, #fff4df);
+  border: 2px solid var(--game-line, #292722);
+  border-radius: 8px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.ww-input:focus {
+  border-color: var(--game-dark, #115665);
+  box-shadow: 0 0 0 2px var(--game-soft, #d5edf2);
+}
+
+.ww-guess-panel__hint {
+  font-size: 0.875rem;
+  color: var(--game-muted, #575147);
+}
+
+.ww-guess-panel__submitted-alert {
+  padding: var(--ww-gap-sm) var(--ww-gap-md);
+  background-color: var(--game-soft, #d5edf2);
+  border: 1.5px solid var(--game-dark, #115665);
+  border-radius: 8px;
+  color: var(--game-dark, #115665);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+/* 按钮通用体系 */
+.ww-btn {
+  height: 48px;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.1s ease, filter 0.1s ease;
+  user-select: none;
+  text-decoration: none;
+  border: 2px solid var(--game-line, #292722);
+  box-sizing: border-box;
+}
+
+.ww-btn:active {
+  transform: scale(0.98);
+}
+
+.ww-btn--primary {
+  background-color: var(--game-dark, #115665);
+  color: #ffffff;
+  border-color: #0b3741;
+}
+
+.ww-btn--primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.ww-btn--secondary {
+  background-color: var(--game-surface, #fffdf7);
+  color: var(--game-ink, #292722);
+}
+
+.ww-btn--danger {
+  background-color: var(--game-coral, #c23616);
+  color: #ffffff;
+  border-color: #8c240d;
+}
+
+.ww-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+
+/* 底部投注编辑器 V2 */
+.ww-bet-editor {
+  background-color: var(--game-surface, #fffdf7);
+  border: 2px solid var(--game-line, #292722);
+  border-radius: var(--ww-radius);
+  padding: var(--ww-gap-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ww-gap-sm);
+  box-shadow: 0 -2px 6px rgba(41, 39, 34, 0.06);
+}
+
+.ww-bet-editor__balances {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--game-paper, #fff4df);
+}
+
+.ww-bet-editor__chip-tabs {
+  display: flex;
+  gap: var(--ww-gap-sm);
+}
+
+.ww-chip-tab {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  border: 2px solid var(--game-line, #292722);
+  background-color: var(--game-paper, #fff4df);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+}
+
+.ww-chip-tab--active {
+  border-color: var(--game-dark, #115665);
+  background-color: var(--game-soft, #d5edf2);
+}
+
+.ww-bet-editor__stake-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ww-gap-sm);
+  justify-content: space-between;
+}
+
+.ww-bet-editor__actions {
+  display: flex;
+  gap: var(--ww-gap-sm);
+  align-items: center;
+}
+
+.ww-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ww-stepper__btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  border: 1.5px solid var(--game-line, #292722);
+  background-color: var(--game-surface, #fffdf7);
+  font-size: 1.125rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ww-stepper__val {
+  min-width: 40px;
+  text-align: center;
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+/* 结算与终局面板 V3 */
+.ww-result-panel {
+  background-color: var(--game-surface, #fffdf7);
+  border: 2px solid var(--game-line, #292722);
+  border-radius: var(--ww-radius);
+  padding: var(--ww-gap-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ww-gap-md);
+}
+
+.ww-result-panel__correct-box {
+  background-color: var(--game-paper, #fff4df);
+  border: 2px solid var(--game-line, #292722);
+  border-radius: 8px;
+  padding: var(--ww-gap-md);
+  text-align: center;
+}
+
+.ww-result-panel__ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  text-align: left;
+}
+
+.ww-result-panel__ledger-table th,
+.ww-result-panel__ledger-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--game-paper, #fff4df);
+}
+
+.ww-result-panel__ledger-table th {
+  color: var(--game-muted, #575147);
+  font-weight: 700;
+}
+
+.ww-diff-pos {
+  color: #1b7a43;
+  font-weight: 800;
+}
+
+.ww-diff-neg {
+  color: var(--game-coral, #c23616);
+  font-weight: 800;
+}
+
+/* 响应式断点控制 */
+@media (max-height: 520px) {
+  .ww-header {
+    height: 44px;
+    padding: 0 var(--ww-gap-sm);
+  }
+  .ww-main {
+    padding: var(--ww-gap-sm);
+    gap: var(--ww-gap-sm);
+  }
+}
+
+/* ===================================================================
+ * P1 牌桌外壳接入：横幅、阶段容器、结算面板与抽屉
+ * 时长/缓动一律引用 --gp-* 令牌，随全局动效档位自动降级。
+ * =================================================================== */
+
+.ww-spectator-banner {
+  padding: var(--ww-gap-sm) var(--ww-gap-lg);
+  background-color: var(--game-yellow, #f7c84b);
+  color: var(--game-ink, #292722);
+  font-weight: 800;
+  border-radius: var(--ww-radius);
+  text-align: center;
+}
+
+.ww-error-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--ww-gap-sm);
+  padding: var(--ww-gap-sm) var(--ww-gap-lg);
+  background-color: var(--game-coral, #c23616);
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: var(--ww-radius);
+}
+
+.ww-error-banner button {
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+.ww-phase-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ww-gap-md);
+  min-width: 0;
+}
+
+.ww-phase-block__lead {
+  text-align: center;
+  font-weight: 800;
+  color: var(--game-dark, #115665);
+}
+
+.ww-board-empty,
+.ww-result-panel__waiting {
+  text-align: center;
+  padding: var(--ww-gap-lg);
+  color: var(--game-muted, #575147);
+}
+
+/* 作答卡与下注编辑器的细节样式（替代原内联 style） */
+.ww-guess-panel__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ww-gap-sm);
+}
+
+.ww-guess-panel__error {
+  font-size: 0.875rem;
+}
+
+.ww-bet-editor__placeholder {
+  color: var(--game-muted, #575147);
+  font-size: 0.875rem;
+}
+
+.ww-bet-editor__stake-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--ww-gap-sm);
+  flex-wrap: wrap;
+}
+
+.ww-bet-editor__actions {
+  justify-content: space-between;
+}
+
+.ww-bet-editor__estimate {
+  font-size: 0.875rem;
+  color: var(--game-muted, #575147);
+}
+
+.ww-btn--compact {
+  height: 36px;
+  padding: 0 10px;
+  font-size: 0.8125rem;
+}
+
+/* 结算与终局面板 */
+.ww-result-panel__final-head {
+  text-align: center;
+}
+
+.ww-result-panel__final-head h2 {
+  margin: 0 0 var(--ww-gap-sm) 0;
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.ww-result-panel__champion {
+  font-size: 1.125rem;
+  color: var(--game-dark, #115665);
+  font-weight: 700;
+}
+
+.ww-result-panel__actions {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--ww-gap-lg);
+}
+
+.ww-result-panel__round-tag {
+  font-size: 0.9375rem;
+  color: var(--game-muted, #575147);
+  font-weight: 700;
+}
+
+.ww-result-panel__answer {
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 6px 0;
+  color: var(--game-ink, #292722);
+}
+
+.ww-result-panel__winning {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.ww-result-panel__winning span {
+  color: var(--game-dark, #115665);
+}
+
+.ww-result-panel__note {
+  font-size: 0.875rem;
+  margin-top: 6px;
+  color: var(--game-muted, #575147);
+}
+
+.ww-result-panel__my-ledger {
+  padding: var(--ww-gap-md);
+  background-color: var(--game-paper, #fff4df);
+  border-radius: 8px;
+  border: 1.5px solid var(--game-line, #292722);
+}
+
+.ww-result-panel__my-ledger-title,
+.ww-result-panel__table-title {
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.ww-result-panel__table-title {
+  font-size: 0.9375rem;
+}
+
+.ww-result-panel__my-ledger-row {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--ww-gap-sm);
+  font-size: 0.9375rem;
+}
+
+.ww-result-row--winner {
+  background-color: var(--game-soft, #d5edf2);
+}
+
+.ww-result-row--winner,
+.ww-result-row--me {
+  font-weight: 800;
+}
+
+/* 历史回顾抽屉 */
+.ww-history__empty {
+  color: var(--game-muted, #575147);
+}
+
+.ww-history__round {
+  padding: var(--ww-gap-md) 0;
+  border-bottom: 1px solid var(--game-line, #292722);
+}
+
+.ww-history__round:last-child {
+  border-bottom: none;
+}
+
+.ww-history__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--ww-gap-sm);
+  flex-wrap: wrap;
+}
+
+.ww-history__round-no {
+  font-weight: 800;
+}
+
+.ww-history__answer {
+  font-weight: 700;
+  color: var(--game-dark, #115665);
+}
+
+.ww-history__prompt {
+  margin: 6px 0;
+  font-weight: 600;
+}
+
+.ww-history__winner,
+.ww-history__note,
+.ww-history__source {
+  margin: 4px 0;
+  font-size: 0.875rem;
+  color: var(--game-muted, #575147);
+}
+
+.ww-history__table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--ww-gap-sm);
+  font-size: 0.875rem;
+}
+
+.ww-history__table th,
+.ww-history__table td {
+  padding: 4px 6px;
+  text-align: left;
+  border-bottom: 1px solid var(--game-soft, #d5edf2);
+}
+
+.ww-history__row--me {
+  font-weight: 800;
+}
+
+.ww-history__delta {
+  color: var(--game-muted, #575147);
+  font-weight: 400;
+}
+
+/* 设置抽屉 */
+.wits-settings__section {
+  padding-bottom: var(--ww-gap-lg, 16px);
+  margin-bottom: var(--ww-gap-md, 12px);
+  border-bottom: 1px solid var(--game-soft, #d5edf2);
+}
+
+.wits-settings__section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.wits-settings__section-title {
+  margin: 0 0 var(--ww-gap-sm, 8px) 0;
+  font-size: 0.9375rem;
+  font-weight: 800;
+}
+
+.wits-settings__hint {
+  margin: 0 0 var(--ww-gap-sm, 8px) 0;
+  font-size: 0.8125rem;
+  color: var(--game-muted, #575147);
+}
+
+.wits-settings__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ww-gap-md, 12px);
+  padding: 6px 0;
+}
+
+.wits-settings__row--stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.wits-settings__label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wits-settings__label strong {
+  font-size: 0.875rem;
+}
+
+.wits-settings__label span {
+  font-size: 0.75rem;
+  color: var(--game-muted, #575147);
+}
+
+.wits-settings__row--stack input[type='range'] {
+  width: 100%;
+  accent-color: var(--game-dark, #115665);
+}
+
+.wits-settings__toggle {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--game-line, #292722);
+  background-color: var(--game-surface, #fffdf7);
+  color: var(--game-ink, #292722);
+  font-weight: 700;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.wits-settings__toggle[aria-pressed='true'] {
+  background-color: var(--game-dark, #115665);
+  border-color: var(--game-dark, #115665);
+  color: #ffffff;
+}
+
+.wits-settings__options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--ww-gap-sm, 8px);
+}
+
+.wits-settings__option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1.5px solid var(--game-line, #292722);
+  background-color: var(--game-surface, #fffdf7);
+  color: var(--game-ink, #292722);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--gp-dur-fast, 140ms) var(--gp-ease-standard, ease);
+}
+
+.wits-settings__option strong {
+  font-size: 0.875rem;
+}
+
+.wits-settings__option small {
+  font-size: 0.75rem;
+  color: var(--game-muted, #575147);
+}
+
+.wits-settings__option[aria-pressed='true'] {
+  background-color: var(--game-soft, #d5edf2);
+  box-shadow: inset 0 0 0 2px var(--game-dark, #115665);
+}
+
+@media (min-width: 480px) {
+  .wits-settings__options {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ===================================================================
+ * P2 3D 毡面牌桌舞台
+ * 透视只作用在 .ww-felt：飞行层与手部层必须留在这棵子树之外，
+ * 否则 position:fixed 会被祖先 transform 变成相对定位。
+ * =================================================================== */
+
+.ww-game[data-ww-theme="felt-green"] {
+  --ww-felt-a: #157a5c;
+  --ww-felt-b: #08362a;
+  --ww-rail: #6b4a2a;
+  --ww-rail-edge: #3d2915;
+}
+
+.ww-game[data-ww-theme="walnut"] {
+  --ww-felt-a: #8a5a33;
+  --ww-felt-b: #43260f;
+  --ww-rail: #5d3c1f;
+  --ww-rail-edge: #321d0c;
+}
+
+.ww-game[data-ww-theme="midnight"] {
+  --ww-felt-a: #1d3a63;
+  --ww-felt-b: #0a1730;
+  --ww-rail: #2f3b52;
+  --ww-rail-edge: #16202f;
+}
+
+.ww-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ww-gap-sm);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* 桌沿：银行托盘与题目卡并排 */
+.ww-stage__rail {
+  display: flex;
+  align-items: stretch;
+  gap: var(--ww-gap-sm);
+  min-width: 0;
+}
+
+.ww-stage__rail .ww-question-card {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: var(--ww-gap-sm) var(--ww-gap-md);
+}
+
+.ww-stage__rail .ww-question-card__prompt {
+  font-size: calc(1.0625rem * var(--ww-font-scale));
+  margin-bottom: 2px;
+}
+
+.ww-stage__rail .ww-question-card__unit {
+  font-size: calc(0.8125rem * var(--ww-font-scale));
+}
+
+/* 银行托盘 */
+.ww-bank {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 62px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 2px solid var(--ww-rail-edge, #3d2915);
+  background: linear-gradient(180deg, var(--ww-rail, #6b4a2a), var(--ww-rail-edge, #3d2915));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.ww-bank__tray {
+  position: relative;
+  width: 34px;
+  height: 22px;
+}
+
+.ww-bank__layer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid #0b3741;
+  background: linear-gradient(180deg, #f7c84b, #c9992a);
+  bottom: calc(var(--ww-layer) * 3px);
+}
+
+.ww-bank__label {
+  font-size: calc(0.6875rem * var(--ww-font-scale));
+  font-weight: 800;
+  color: #ffe9b8;
+  letter-spacing: 0.04em;
+}
+
+.ww-bank.is-active .ww-bank__layer {
+  border-color: #ffffff;
+}
+
+/* 毡面：唯一的 3D 容器 */
+.ww-felt {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--ww-gap-md) var(--ww-gap-sm);
+  border-radius: 18px;
+  border: 3px solid var(--ww-rail-edge, #3d2915);
+  background:
+    repeating-linear-gradient(35deg, rgba(255, 255, 255, 0.035) 0 2px, transparent 2px 7px),
+    radial-gradient(circle at 50% 30%, var(--ww-felt-a, #157a5c) 0%, var(--ww-felt-b, #08362a) 100%);
+  box-shadow:
+    0 6px 0 var(--ww-rail-edge, #3d2915),
+    inset 0 0 44px rgba(0, 0, 0, 0.42);
+  perspective: 900px;
+  perspective-origin: 50% 12%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ww-felt__surface {
+  position: absolute;
+  inset: 8px;
+  border-radius: 12px;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+
+.ww-felt__hint {
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 700;
+  text-align: center;
+  margin: 0;
+}
+
+/* 版图：牌向后仰，形成俯视桌面的空间感 */
+.ww-board {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: var(--ww-gap-sm);
+  min-width: min-content;
+  padding: 2px var(--ww-gap-sm) 6px;
+  transform-style: preserve-3d;
+  transform: rotateX(16deg);
+}
+
+.ww-board__slot {
+  transform-style: preserve-3d;
+  flex: 0 0 auto;
+}
+
+.ww-facedown-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ww-gap-sm);
+  min-width: min-content;
+  padding: 2px var(--ww-gap-sm);
+  transform-style: preserve-3d;
+  transform: rotateX(16deg);
+}
+
+.ww-facedown-row__slot {
+  flex: 0 0 auto;
+  transform-style: preserve-3d;
+}
+
+.ww-facedown-row__placeholder {
+  width: var(--ww-card-w, 84px);
+  height: var(--ww-card-h, 118px);
+  border-radius: 8px;
+  border: 2px dashed rgba(255, 255, 255, 0.28);
+  background: rgba(0, 0, 0, 0.16);
+}
+
+/* 实体答案牌 */
+.ww-answer-card {
+  --ww-card-w: 84px;
+  --ww-card-h: 118px;
+
+  position: relative;
+  width: var(--ww-card-w);
+  min-height: var(--ww-card-h);
+  transform-style: preserve-3d;
+  transition:
+    transform var(--gp-dur-standard, 240ms) var(--gp-ease-decelerate, ease-out),
+    filter var(--gp-dur-fast, 140ms) var(--gp-ease-standard, ease);
+  /* 接触阴影：让牌看起来落在毡面上而不是浮空 */
+  filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.42));
+}
+
+.ww-answer-card[role="button"] {
+  cursor: pointer;
+}
+
+.ww-answer-card[role="button"]:hover,
+.ww-answer-card[role="button"]:focus-visible {
+  transform: translateY(-6px) translateZ(14px);
+  filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.48));
+  outline: none;
+}
+
+.ww-answer-card__inner {
+  position: relative;
+  width: 100%;
+  height: var(--ww-card-h);
+  transform-style: preserve-3d;
+  transition: transform var(--gp-dur-emphasis, 320ms) var(--gp-ease-decelerate, ease-out);
+}
+
+.ww-answer-card.is-face-down .ww-answer-card__inner {
+  transform: rotateY(180deg);
+}
+
+.ww-answer-card__face,
+.ww-answer-card__back {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+}
+
+.ww-answer-card__back {
+  transform: rotateY(180deg);
+}
+
+.ww-answer-card__face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+  padding: 6px 4px;
+  box-sizing: border-box;
+  background: linear-gradient(175deg, #fffdf7 0%, #f4ead6 100%);
+  border: 2px solid var(--game-line, #292722);
+  color: var(--game-ink, #292722);
+  text-align: center;
+}
+
+.ww-answer-card--smaller .ww-answer-card__face {
+  background: linear-gradient(175deg, #e8593a 0%, #b62f11 100%);
+  border-color: #8c240d;
+  color: #ffffff;
+}
+
+.ww-answer-card--winner .ww-answer-card__face {
+  background: linear-gradient(175deg, #ffdd7d 0%, #f0b420 100%);
+  border-color: var(--game-ink, #292722);
+  color: var(--game-ink, #292722);
+  box-shadow: inset 0 0 0 2px #ffffff;
+}
+
+.ww-answer-card--selected .ww-answer-card__face {
+  border-color: var(--game-dark, #115665);
+  border-width: 3px;
+  box-shadow: inset 0 0 0 2px var(--game-soft, #d5edf2);
+}
+
+.ww-answer-card__slot {
+  font-size: calc(0.625rem * var(--ww-font-scale));
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--game-muted, #575147);
+  text-transform: uppercase;
+}
+
+.ww-answer-card--smaller .ww-answer-card__slot {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.ww-answer-card__value {
+  font-size: calc(1.0625rem * var(--ww-font-scale));
+  font-weight: 800;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+}
+
+.ww-answer-card__odds {
+  font-size: calc(0.6875rem * var(--ww-font-scale));
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 5px;
+  border: 1px solid currentColor;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.ww-answer-card--smaller .ww-answer-card__odds {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.ww-answer-card__authors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+  max-width: 100%;
+}
+
+.ww-answer-card__author.is-timeout {
+  opacity: 0.55;
+  filter: grayscale(0.8);
+}
+
+/* 押在牌上的筹码：叠在牌面下沿，略微抬起 */
+.ww-answer-card__chips {
+  position: absolute;
+  left: 50%;
+  bottom: -14px;
+  display: flex;
+  gap: 2px;
+  transform: translateX(-50%) translateZ(18px);
+  pointer-events: none;
+}
+
+.ww-chip {
+  display: inline-flex;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+}
+
+.ww-chip--pending {
+  opacity: 0.6;
+}
+
+/* 手机竖屏：舞台优先，牌略缩以放下更多槽位 */
+@media (max-width: 480px) {
+  .ww-answer-card {
+    --ww-card-w: 74px;
+    --ww-card-h: 104px;
+  }
+  .ww-board,
+  .ww-facedown-row {
+    justify-content: flex-start;
+    transform: rotateX(12deg);
+  }
+  .ww-felt {
+    justify-content: flex-start;
+  }
+  .ww-stage__rail {
+    flex-wrap: wrap;
+  }
+}
+
+/* 横屏矮视口：压平透视，给牌让出垂直空间 */
+@media (orientation: landscape) and (max-height: 520px) {
+  .ww-answer-card {
+    --ww-card-w: 70px;
+    --ww-card-h: 96px;
+  }
+  .ww-board,
+  .ww-facedown-row {
+    transform: rotateX(8deg);
+  }
+  .ww-felt {
+    padding: var(--ww-gap-sm);
+  }
+}
+
+/* 降级：低动效档位下取消过渡与悬浮位移 */
+html[data-motion-level="minimal"] .ww-answer-card,
+html[data-motion-level="off"] .ww-answer-card,
+html[data-motion-level="minimal"] .ww-answer-card__inner,
+html[data-motion-level="off"] .ww-answer-card__inner {
+  transition: none;
+}
+
+html[data-motion-level="minimal"] .ww-answer-card[role="button"]:hover,
+html[data-motion-level="off"] .ww-answer-card[role="button"]:hover {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ww-answer-card,
+  .ww-answer-card__inner {
+    transition: none;
+  }
+  .ww-answer-card[role="button"]:hover {
+    transform: none;
+  }
+}
+
+/* ===================================================================
+ * P4-P6 演出层：手、飞行幽灵、积分滚动
+ * 这两层刻意挂在牌桌外壳之外（无 transform 祖先），
+ * 否则 position:fixed 会相对祖先定位，实测屏幕坐标失效。
+ * =================================================================== */
+
+.ww-hand {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+  width: 120px;
+  height: 150px;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.42));
+  transition:
+    left var(--gp-dur-emphasis, 320ms) var(--gp-ease-decelerate, ease-out),
+    top var(--gp-dur-emphasis, 320ms) var(--gp-ease-decelerate, ease-out),
+    opacity var(--gp-dur-fast, 140ms) var(--gp-ease-standard, ease);
+  /* 默认从屏幕下方入画 */
+  left: 50%;
+  top: 88%;
+  transform: translate(-50%, -12%);
+}
+
+.ww-hand[data-pose="idle"] {
+  opacity: 0.85;
+}
+
+/* 握笔：笔尖小幅书写运动 */
+.ww-hand[data-pose="write"] .ww-hand__pen {
+  transform-origin: 66px 58px;
+  animation: ww-hand-write 900ms var(--gp-ease-standard, ease-in-out) infinite;
+}
+
+@keyframes ww-hand-write {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(-3px, 2px) rotate(-2deg);
+  }
+  50% {
+    transform: translate(2px, -1px) rotate(1.5deg);
+  }
+  75% {
+    transform: translate(-1px, 2px) rotate(-1deg);
+  }
+}
+
+.ww-hand[data-pose="push"] {
+  transition-duration: var(--gp-dur-phase, 420ms);
+}
+
+.ww-flight-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ww-flight-layer__ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.ww-score-ticker {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+/* 低动效档位：不入画、不飞行，只留结果。
+   握笔循环动画在本文件内自行按档位关闭，不登记进 game-ui.css 的全局清单——
+   那份清单要求选择器出现在 styles.css，而本类只存在于这个游戏的私有样式表。 */
+html[data-motion-level="minimal"] .ww-hand,
+html[data-motion-level="off"] .ww-hand,
+html[data-motion-level="minimal"] .ww-flight-layer,
+html[data-motion-level="off"] .ww-flight-layer {
+  display: none;
+}
+
+html[data-motion-level="reduced"] .ww-hand {
+  display: none;
+}
+
+html[data-motion-level="reduced"] .ww-hand[data-pose="write"] .ww-hand__pen {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ww-hand,
+  .ww-flight-layer {
+    display: none;
+  }
+  .ww-hand[data-pose="write"] .ww-hand__pen {
+    animation: none;
+  }
+}
