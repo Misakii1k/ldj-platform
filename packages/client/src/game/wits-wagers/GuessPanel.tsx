@@ -9,7 +9,6 @@ export interface GuessPanelProps {
   onSubmit: (value: number) => void;
   submitting?: boolean;
   /** 输入获得/失去焦点时通知舞台，驱动握笔动作 */
-  onWritingChange?: (writing: boolean) => void;
 }
 
 export function GuessPanel({
@@ -18,7 +17,6 @@ export function GuessPanel({
   canGuess,
   onSubmit,
   submitting = false,
-  onWritingChange,
 }: GuessPanelProps) {
   const [valStr, setValStr] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -76,8 +74,6 @@ export function GuessPanel({
             placeholder="输入正整数，例如 100"
             disabled={!canGuess || submitting}
             autoComplete="off"
-            onFocus={() => onWritingChange?.(true)}
-            onBlur={() => onWritingChange?.(false)}
           />
           <button
             type="submit"

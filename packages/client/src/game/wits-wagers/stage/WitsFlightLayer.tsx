@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { flyGhost } from './flip.ts';
 import { WitsChip } from './WitsChip.tsx';
+import { WitsAnswerCard } from './WitsAnswerCard.tsx';
 import type { FlightSpec } from './useWitsWagersStage.ts';
 
 export interface WitsFlightLayerProps {
@@ -50,11 +51,21 @@ export function WitsFlightLayer({ flights }: WitsFlightLayerProps) {
             else nodesRef.current.delete(flight.id);
           }}
         >
-          <WitsChip
-            chipId={flight.chipId ?? 'A'}
-            extraStake={flight.extraStake ?? 0}
-            size={Math.round(flight.from.width) || 36}
-          />
+          {flight.kind === 'card' ? (
+            // 交牌演出：飞的是一张背面朝上的答案牌，DOM 里不含任何数值
+            <div
+              className="ww-flight-layer__card"
+              style={{ width: flight.from.width || 64, height: flight.from.height || 44 }}
+            >
+              <WitsAnswerCard target={null} faceUp={false} />
+            </div>
+          ) : (
+            <WitsChip
+              chipId={flight.chipId ?? 'A'}
+              extraStake={flight.extraStake ?? 0}
+              size={Math.round(flight.from.width) || 36}
+            />
+          )}
         </div>
       ))}
     </div>

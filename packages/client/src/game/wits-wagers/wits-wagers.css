@@ -1140,57 +1140,10 @@ html[data-motion-level="off"] .ww-answer-card[role="button"]:hover {
 }
 
 /* ===================================================================
- * P4-P6 演出层：手、飞行幽灵、积分滚动
- * 这两层刻意挂在牌桌外壳之外（无 transform 祖先），
+ * 演出层：飞行幽灵、积分滚动
+ * 这一层刻意挂在牌桌外壳之外（无 transform 祖先），
  * 否则 position:fixed 会相对祖先定位，实测屏幕坐标失效。
  * =================================================================== */
-
-.ww-hand {
-  position: fixed;
-  z-index: 60;
-  pointer-events: none;
-  width: 120px;
-  height: 150px;
-  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.42));
-  transition:
-    left var(--gp-dur-emphasis, 320ms) var(--gp-ease-decelerate, ease-out),
-    top var(--gp-dur-emphasis, 320ms) var(--gp-ease-decelerate, ease-out),
-    opacity var(--gp-dur-fast, 140ms) var(--gp-ease-standard, ease);
-  /* 默认从屏幕下方入画 */
-  left: 50%;
-  top: 88%;
-  transform: translate(-50%, -12%);
-}
-
-.ww-hand[data-pose="idle"] {
-  opacity: 0.85;
-}
-
-/* 握笔：笔尖小幅书写运动 */
-.ww-hand[data-pose="write"] .ww-hand__pen {
-  transform-origin: 66px 58px;
-  animation: ww-hand-write 900ms var(--gp-ease-standard, ease-in-out) infinite;
-}
-
-@keyframes ww-hand-write {
-  0%,
-  100% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-  25% {
-    transform: translate(-3px, 2px) rotate(-2deg);
-  }
-  50% {
-    transform: translate(2px, -1px) rotate(1.5deg);
-  }
-  75% {
-    transform: translate(-1px, 2px) rotate(-1deg);
-  }
-}
-
-.ww-hand[data-pose="push"] {
-  transition-duration: var(--gp-dur-phase, 420ms);
-}
 
 .ww-flight-layer {
   position: fixed;
@@ -1208,35 +1161,25 @@ html[data-motion-level="off"] .ww-answer-card[role="button"]:hover {
   will-change: transform;
 }
 
+.ww-flight-layer__card {
+  /* 交牌演出的幽灵牌：跟着飞行层缩放，不接事件 */
+  pointer-events: none;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.42));
+}
+
 .ww-score-ticker {
   font-variant-numeric: tabular-nums;
   font-weight: 800;
 }
 
-/* 低动效档位：不入画、不飞行，只留结果。
-   握笔循环动画在本文件内自行按档位关闭，不登记进 game-ui.css 的全局清单——
-   那份清单要求选择器出现在 styles.css，而本类只存在于这个游戏的私有样式表。 */
-html[data-motion-level="minimal"] .ww-hand,
-html[data-motion-level="off"] .ww-hand,
+/* 低动效档位：不飞行，只留结果。 */
 html[data-motion-level="minimal"] .ww-flight-layer,
 html[data-motion-level="off"] .ww-flight-layer {
   display: none;
 }
 
-html[data-motion-level="reduced"] .ww-hand {
-  display: none;
-}
-
-html[data-motion-level="reduced"] .ww-hand[data-pose="write"] .ww-hand__pen {
-  animation: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .ww-hand,
   .ww-flight-layer {
     display: none;
-  }
-  .ww-hand[data-pose="write"] .ww-hand__pen {
-    animation: none;
   }
 }

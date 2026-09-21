@@ -5,7 +5,6 @@ import { deriveStageEvents, stageEventKey, type ChipMove, type StageEvent } from
 import { createStageMemory } from './stageMemory.ts';
 import { fitToDeadline, legDuration, measure, measureAnchor, wait, type Rect } from './flip.ts';
 import { playCueFor, playFlipCue } from './audioCues.ts';
-import type { WitsHandPose } from './WitsHand.tsx';
 
 export interface FlightSpec {
   readonly id: string;
@@ -22,8 +21,6 @@ export interface FlightSpec {
 export interface StageState {
   /** 已翻开的槽位；不在其中的牌保持背面 */
   readonly revealedTargets: ReadonlySet<TargetId>;
-  readonly handPose: WitsHandPose;
-  readonly handPos: { x: number; y: number } | null;
   readonly flights: readonly FlightSpec[];
   /** 正在演出：用于压住"正在结算"之类的提示，不阻塞交互 */
   readonly isPlaying: boolean;
@@ -38,8 +35,6 @@ export interface StageState {
 
 export interface WitsStageApi extends StageState {
   readonly stageRef: React.RefObject<HTMLDivElement | null>;
-  /** 本地输入焦点驱动的握笔动作（不涉及服务端状态） */
-  readonly setWriting: (writing: boolean) => void;
 }
 
 const FLIP_STEP_MS = 220;
@@ -74,8 +69,6 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
 
   const [state, setState] = useState<StageState>(() => ({
     revealedTargets: allRevealed(view),
-    handPose: 'hidden',
-    handPos: null,
     flights: [],
     isPlaying: false,
     bankActive: false,
@@ -90,8 +83,6 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
   const applyFinalState = useCallback((v: WitsWagersPlayerView) => {
     setState({
       revealedTargets: allRevealed(v),
-      handPose: 'hidden',
-      handPos: null,
       flights: [],
       isPlaying: false,
       bankActive: false,
@@ -125,8 +116,11 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
     return measure(document.querySelector(`[data-player-id="${CSS.escape(playerId)}"]`));
   }, []);
 
-  /** 我的手入画位置：屏幕下方中央偏右，贴着底部拇指区。 */
-  const handHome = useCallback((): { x: number; y: number } => {
+  /**
+   * 我这一侧的入画/出画位置：屏幕下方中央，贴着底部拇指区。
+   * 找不到底部托盘锚点时用它兜底，钞票从我面前飞出、也飞回我面前。
+   */
+  const myHome = useCallback((): { x: number; y: number } => {
     if (typeof window === 'undefined') return { x: 0, y: 0 };
     return { x: window.innerWidth * 0.5, y: window.innerHeight * 0.82 };
   }, []);
@@ -136,7 +130,7 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
       if (!animated || moves.length === 0) return;
 
       const tray = outerRect('tray');
-      const home = handHome();
+      const home = myHome();
 
       for (const move of moves) {
         if (signal.aborted) return;
@@ -155,14 +149,6 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
 
         const toRect = move.type === 'pickUp' ? (tray ?? fromRect) : targetRect;
 
-        // 手先伸到起点，再把筹码送到终点
-        patch({
-          handPose: move.type === 'pickUp' ? 'grab' : 'place',
-          handPos: { x: fromRect.x + fromRect.width / 2, y: fromRect.y + fromRect.height / 2 },
-        });
-        await wait(120, signal);
-        if (signal.aborted) return;
-
         patch({
           flights: [
             {
@@ -178,16 +164,13 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
               delayMs: 0,
             },
           ],
-          handPos: { x: toRect.x + toRect.width / 2, y: toRect.y + toRect.height / 2 },
         });
 
         await wait(CHIP_FLIGHT_MS, signal);
         patch({ flights: [] });
       }
-
-      patch({ handPose: 'hidden', handPos: null });
     },
-    [animated, anchorRect, outerRect, handHome, patch],
+    [animated, anchorRect, outerRect, myHome, patch],
   );
 
   const runBoardReveal = useCallback(
@@ -244,7 +227,7 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
       setState((current) => ({ ...current, displayScores: beforeScores }));
 
       const bank = anchorRect('bank');
-      const home = handHome();
+      const home = myHome();
 
       // 第一步：银行收回输掉的附加注
       const losers = ledger.filter((entry) => entry.loss > 0);
@@ -327,26 +310,40 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
         bankActive: false,
       }));
     },
-    [animated, anchorRect, seatRect, handHome, patch],
+    [animated, anchorRect, seatRect, myHome, patch],
   );
 
+  /** 我的估数被接受：一张背面牌从我面前（底部托盘）飞到毡面上。 */
   const runGuessAccepted = useCallback(
     async (signal: AbortSignal) => {
       if (!animated) return;
-      const home = handHome();
-      // 手把背面牌推上桌：起点在手边，终点是毡面中央
       const felt = anchorRect('felt');
-      patch({ handPose: 'push', handPos: { x: home.x, y: home.y } });
-      await wait(140, signal);
-      if (felt) {
-        patch({
-          handPos: { x: felt.x + felt.width / 2, y: felt.y + felt.height * 0.7 },
-        });
-      }
-      await wait(260, signal);
-      patch({ handPose: 'hidden', handPos: null });
+      if (!felt) return;
+      const home = myHome();
+      const from = outerRect('tray') ?? { x: home.x - 32, y: home.y - 22, width: 64, height: 44 };
+      const to = {
+        x: felt.x + felt.width / 2 - 32,
+        y: felt.y + felt.height * 0.62,
+        width: 64,
+        height: 44,
+      };
+      patch({
+        flights: [
+          {
+            id: 'guess-card',
+            kind: 'card',
+            from,
+            to,
+            arc: 48,
+            durationMs: 420,
+            delayMs: 0,
+          },
+        ],
+      });
+      await wait(460, signal);
+      patch({ flights: [] });
     },
-    [animated, anchorRect, handHome, patch],
+    [animated, anchorRect, outerRect, myHome, patch],
   );
 
   // 主循环：view 变化 → 差分 → 串行播放
@@ -422,8 +419,6 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
             // 清桌：收手、撤筹码、把牌收回背面，等新一轮的翻牌演出重新摊开
             setState({
               revealedTargets: new Set(),
-              handPose: 'hidden',
-              handPos: null,
               flights: [],
               isPlaying: true,
               bankActive: false,
@@ -472,8 +467,6 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
         // 这也兜住了"换轮清桌后本轮没有翻牌演出"导致桌面空着的情况。
         patch({
           isPlaying: false,
-          handPose: 'hidden',
-          handPos: null,
           flights: [],
           revealedTargets: allRevealed(view),
           displayScores: {},
@@ -499,25 +492,5 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
     };
   }, []);
 
-  const setWriting = useCallback(
-    (writing: boolean) => {
-      if (!animated) return;
-      setState((current) => {
-        if (current.isPlaying) return current;
-        if (writing) {
-          const home =
-            typeof window === 'undefined'
-              ? { x: 0, y: 0 }
-              : { x: window.innerWidth * 0.5, y: window.innerHeight * 0.74 };
-          return { ...current, handPose: 'write', handPos: home };
-        }
-        return current.handPose === 'write'
-          ? { ...current, handPose: 'hidden', handPos: null }
-          : current;
-      });
-    },
-    [animated],
-  );
-
-  return { ...state, stageRef, setWriting };
+  return { ...state, stageRef };
 }

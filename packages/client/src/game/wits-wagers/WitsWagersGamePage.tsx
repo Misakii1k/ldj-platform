@@ -6,7 +6,6 @@ import type { WitsWagersPlayerView, ChipId, TargetId, BetPairView } from './type
 import { targetLabel } from './types.ts';
 import { GuessPanel } from './GuessPanel.tsx';
 import { WitsTableStage } from './stage/WitsTableStage.tsx';
-import { WitsHand } from './stage/WitsHand.tsx';
 import { WitsFlightLayer } from './stage/WitsFlightLayer.tsx';
 import { useWitsWagersStage } from './stage/useWitsWagersStage.ts';
 import { BetEditor } from './BetEditor.tsx';
@@ -219,7 +218,6 @@ export function WitsWagersGamePage({
           canGuess={Boolean(me?.canGuess)}
           onSubmit={(val) => onSubmitGuess?.(val)}
           submitting={isSubmitting}
-          onWritingChange={stage.setWriting}
         />
       )}
 
@@ -286,9 +284,8 @@ export function WitsWagersGamePage({
         )}
       />
 
-      {/* 手与飞行层必须挂在牌桌外壳之外：外壳内有 3D 变换祖先，
+      {/* 飞行层必须挂在牌桌外壳之外：外壳内有 3D 变换祖先，
           position:fixed 会退化为相对定位，实测的屏幕坐标会全部失效。 */}
-      <WitsHand pose={stage.handPose} x={stage.handPos?.x} y={stage.handPos?.y} />
       <WitsFlightLayer flights={stage.flights} />
 
       {pendingSave && (
