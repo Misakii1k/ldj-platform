@@ -1,4 +1,6 @@
 import type { ChipId, BetPairView, BoardTargetView } from './types.ts';
+import { targetLabel } from './types.ts';
+import { RollingNumber } from '../../shared-ui/RollingNumber.tsx';
 import {
   calculateReserved,
   calculateAvailable,
@@ -51,10 +53,10 @@ export function BetEditor({
       {/* 余额与预留展示 */}
       <div className="ww-bet-editor__balances">
         <div>
-          积分余额: <strong>{score}</strong>
+          积分余额: <RollingNumber as="strong" value={score} />
         </div>
         <div>
-          已预留附加分: <strong>{reserved}</strong>
+          已预留附加分: <RollingNumber as="strong" value={reserved} />
         </div>
         <div>
           可用积分: <strong>{available}</strong>
@@ -68,11 +70,7 @@ export function BetEditor({
           const chip = draft[cid === 'A' ? 0 : 1];
           const isActive = cid === activeChipId;
           const target = board.find((t) => t.id === chip.targetId);
-          const targetText = target
-            ? target.id === 'smaller'
-              ? '全部猜高'
-              : `${target.value}`
-            : '未放置';
+          const targetText = target ? targetLabel(target) : '未放置';
 
           return (
             <button
@@ -105,7 +103,7 @@ export function BetEditor({
             <span>
               已选目标：
               <strong>
-                {targetObj?.id === 'smaller' ? '全部猜高' : targetObj?.value?.toLocaleString()}
+                {targetLabel(targetObj)}
               </strong>{' '}
               (净赢 ×{targetObj?.odds})
             </span>

@@ -17,23 +17,78 @@ export type WitsWagersPhase =
   | 'game_over';
 
 export type ChipId = 'A' | 'B';
-export type TargetId = 'smaller' | `g:${number}`;
+export type TargetId = 'lower' | 'higher' | `g:${number}`;
 export type Slot = 'L3' | 'L2' | 'L1' | 'C' | 'R1' | 'R2' | 'R3';
-export type GuessOrigin = 'submitted' | 'timeout';
+export type EdgeSlot = 'LOWER' | 'HIGHER';
+export type GuessOrigin = 'submitted';
 
 /** G0 P7：猜测与答案的闭区间。 */
 export const MIN_GUESS = 1;
 export const MAX_GUESS = 999_999_999_999;
 
-/** 01 §3 查表中出现的全部净赢倍率，含特殊槽的 6。 */
+/** 01 §3 查表中出现的全部净赢倍率，含两个边缘槽的 6。 */
 const ALLOWED_ODDS = new Set([2, 3, 4, 5, 6]);
+
+/** 「更低」「更高」两个边缘槽的固定净赢倍率。 */
+export const EDGE_ODDS = 6;
 
 const PHASES: readonly WitsWagersPhase[] = [
   'created', 'answering', 'arranging', 'betting', 'settlement', 'game_over',
 ];
-const SLOTS: readonly (Slot | 'SMALLER')[] = ['L3', 'L2', 'L1', 'C', 'R1', 'R2', 'R3', 'SMALLER'];
+const SLOTS: readonly (Slot | EdgeSlot)[] = ['L3', 'L2', 'L1', 'C', 'R1', 'R2', 'R3', 'LOWER', 'HIGHER'];
+
+/** 边缘槽 id 与其槽位名的固定对应关系。 */
+const EDGE_SLOT_BY_ID: Readonly<Record<'lower' | 'higher', EdgeSlot>> = {
+  lower: 'LOWER',
+  higher: 'HIGHER',
+};
 
 export const TOTAL_ROUNDS = 7;
+
+/**
+ * 一分等于多少元。
+ *
+ * 服务端的 score 永远是"分"（官方规则里的最小计分单位），桌面上摆的是钞票。
+ * 官方计分筹码最小面值就是 100，所以 1 分 = ¥100 —— 只是换了张皮，
+ * 账本公式、存档与服务端校验一律不动。
+ */
+export const YUAN_PER_POINT = 100;
+
+/** 桌上流通的钞票面值，降序（拆张按贪心，从大到小）。 */
+export const NOTE_DENOMINATIONS = [1000, 500, 200, 100] as const;
+export type NoteDenomination = (typeof NOTE_DENOMINATIONS)[number];
+
+/** 把服务端的积分格式化成桌面上的金额文案。 */
+export function formatMoney(points: number): string {
+  return `¥${(points * YUAN_PER_POINT).toLocaleString('zh-CN')}`;
+}
+
+/**
+ * 把积分拆成具体的几张钞票，用于钞票堆与飞行演出。
+ *
+ * 贪心即可：以 100 为单位看就是 {1,2,5,10}，这是规范币制（canonical），
+ * 贪心结果必然是张数最少的解。
+ */
+export function breakdownNotes(points: number): NoteDenomination[] {
+  if (!Number.isFinite(points) || points <= 0) return [];
+  let remaining = Math.floor(points) * YUAN_PER_POINT;
+  const notes: NoteDenomination[] = [];
+  for (const denom of NOTE_DENOMINATIONS) {
+    while (remaining >= denom) {
+      notes.push(denom);
+      remaining -= denom;
+    }
+  }
+  return notes;
+}
+
+/** 槽位在界面上的名字：两个边缘槽用中文，数值槽用千分位数字。 */
+export function targetLabel(target: Pick<BoardTargetView, 'id' | 'value'> | null | undefined): string {
+  if (!target) return '未知槽位';
+  if (target.id === 'lower') return '更低';
+  if (target.id === 'higher') return '更高';
+  return target.value?.toLocaleString('zh-CN') ?? '未知槽位';
+}
 
 export interface QuestionBrief {
   prompt: string;
@@ -56,10 +111,9 @@ export interface GuessView {
 export interface BoardTargetView {
   id: TargetId;
   value: number | null;
-  slot: Slot | 'SMALLER';
+  slot: Slot | EdgeSlot;
   odds: number;
   authors: string[];
-  timeoutAuthors: string[];
 }
 
 export interface PlayerSummaryView {
@@ -99,7 +153,8 @@ export interface RoundResultView {
   question: RevealedQuestionView;
   board: BoardTargetView[];
   bets: Record<string, BetPairView>;
-  winningTargetId: TargetId;
+  /** 获胜槽位；等距时两项，本轮无人作答作废时为空 */
+  winningTargetIds: TargetId[];
   awardedAuthors: string[];
   ledger: PlayerRoundLedgerView[];
 }
@@ -164,7 +219,7 @@ const ME_KEYS = [
 ] as const;
 
 const QUESTION_KEYS = ['prompt', 'unit'] as const;
-const BOARD_KEYS = ['id', 'value', 'slot', 'odds', 'authors', 'timeoutAuthors'] as const;
+const BOARD_KEYS = ['id', 'value', 'slot', 'odds', 'authors'] as const;
 const PLAYER_KEYS = ['playerId', 'score', 'winningGuesses', 'hasSubmitted', 'forfeited'] as const;
 const CHIP_KEYS = ['chipId', 'targetId', 'extraStake'] as const;
 const GUESS_KEYS = ['value', 'origin'] as const;
@@ -173,7 +228,7 @@ const REVEALED_QUESTION_KEYS = [
   'id', 'prompt', 'unit', 'answer', 'sourceUrl', 'sourceNote', 'asOf', 'explanation', 'reviewed',
 ] as const;
 const ROUND_RESULT_KEYS = [
-  'round', 'question', 'board', 'bets', 'winningTargetId', 'awardedAuthors', 'ledger',
+  'round', 'question', 'board', 'bets', 'winningTargetIds', 'awardedAuthors', 'ledger',
 ] as const;
 const FINAL_RANKING_KEYS = ['playerId', 'score', 'winningGuesses', 'rank'] as const;
 const FINAL_RESULT_KEYS = ['rankings', 'winners', 'roundsPlayed'] as const;
@@ -206,9 +261,9 @@ function isPlayerIds(value: unknown): value is string[] {
   return Array.isArray(value) && value.every(isPlayerId);
 }
 
-/** 目标 ID 只接受 smaller 或 g:<正整数>；拒绝前导零、小数、负号与大小写变体。 */
+/** 目标 ID 只接受 lower、higher 或 g:<正整数>；拒绝前导零、小数、负号与大小写变体。 */
 function isTargetId(value: unknown): value is TargetId {
-  if (value === 'smaller') return true;
+  if (value === 'lower' || value === 'higher') return true;
   if (typeof value !== 'string' || !value.startsWith('g:')) return false;
   const digits = value.slice(2);
   if (!/^[1-9][0-9]*$/.test(digits)) return false;
@@ -232,7 +287,8 @@ function parseQuestion(value: unknown): QuestionBrief | null {
 function parseGuess(value: unknown): GuessView | null {
   if (!isObject(value) || !hasExactKeys(value, GUESS_KEYS)) return null;
   if (!isGuessValue(value.value)) return null;
-  if (value.origin !== 'submitted' && value.origin !== 'timeout') return null;
+  // 超时补答已废除，origin 只剩 submitted
+  if (value.origin !== 'submitted') return null;
   return { value: value.value, origin: value.origin };
 }
 
@@ -261,27 +317,25 @@ function parseBetPair(value: unknown): BetPairView | null {
 function parseBoardTarget(value: unknown): BoardTargetView | null {
   if (!isObject(value) || !hasExactKeys(value, BOARD_KEYS)) return null;
   if (!isTargetId(value.id)) return null;
-  if (typeof value.slot !== 'string' || !SLOTS.includes(value.slot as Slot | 'SMALLER')) return null;
+  if (typeof value.slot !== 'string' || !SLOTS.includes(value.slot as Slot | EdgeSlot)) return null;
   if (typeof value.odds !== 'number' || !ALLOWED_ODDS.has(value.odds)) return null;
-  if (!isPlayerIds(value.authors) || !isPlayerIds(value.timeoutAuthors)) return null;
-  // 02 §7：timeoutAuthors 是 authors 的子集；超出即为账本口径错误。
-  const authors = new Set(value.authors);
-  if (!value.timeoutAuthors.every((id) => authors.has(id))) return null;
-  // 特殊槽无数值，普通槽必须有合法猜测值。
-  if (value.id === 'smaller') {
-    if (value.value !== null || value.slot !== 'SMALLER') return null;
+  if (!isPlayerIds(value.authors)) return null;
+  // 边缘槽无数值也无作者，普通槽必须有合法猜测值。
+  if (value.id === 'lower' || value.id === 'higher') {
+    if (value.value !== null || value.slot !== EDGE_SLOT_BY_ID[value.id]) return null;
+    if (value.authors.length !== 0) return null;
+    if (value.odds !== EDGE_ODDS) return null;
   } else {
     if (!isGuessValue(value.value)) return null;
-    if (value.slot === 'SMALLER') return null;
+    if (value.slot === 'LOWER' || value.slot === 'HIGHER') return null;
     if (`g:${value.value}` !== value.id) return null;
   }
   return {
     id: value.id,
     value: value.value as number | null,
-    slot: value.slot as Slot | 'SMALLER',
+    slot: value.slot as Slot | EdgeSlot,
     odds: value.odds,
     authors: [...value.authors],
-    timeoutAuthors: [...value.timeoutAuthors],
   };
 }
 
@@ -368,7 +422,10 @@ export function parseRoundResult(value: unknown): RoundResultView | null {
     bets[key] = pair;
   }
 
-  if (!isTargetId(value.winningTargetId)) return null;
+  if (!Array.isArray(value.winningTargetIds)) return null;
+  // 最多两个（等距双胜）；作废轮为空数组
+  if (value.winningTargetIds.length > 2) return null;
+  if (!value.winningTargetIds.every(isTargetId)) return null;
   if (!isPlayerIds(value.awardedAuthors)) return null;
 
   if (!Array.isArray(value.ledger)) return null;
@@ -384,7 +441,7 @@ export function parseRoundResult(value: unknown): RoundResultView | null {
     question,
     board,
     bets,
-    winningTargetId: value.winningTargetId,
+    winningTargetIds: [...(value.winningTargetIds as TargetId[])],
     awardedAuthors: [...value.awardedAuthors],
     ledger,
   };

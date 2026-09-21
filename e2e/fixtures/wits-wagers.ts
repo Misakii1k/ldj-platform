@@ -75,10 +75,11 @@ export const mockV2BettingPayload = {
       { playerId: 'p3', score: 3, winningGuesses: 0, hasSubmitted: true, forfeited: false },
     ],
     board: [
-      { id: 'smaller', value: null, slot: 'SMALLER', odds: 6, authors: [], timeoutAuthors: [] },
-      { id: 'g:5000', value: 5000, slot: 'L1', odds: 3, authors: ['p2'], timeoutAuthors: [] },
-      { id: 'g:6000', value: 6000, slot: 'C', odds: 2, authors: ['p1'], timeoutAuthors: [] },
-      { id: 'g:7000', value: 7000, slot: 'R1', odds: 3, authors: ['p3'], timeoutAuthors: [] },
+      { id: 'lower', value: null, slot: 'LOWER', odds: 6, authors: [] },
+      { id: 'g:5000', value: 5000, slot: 'L1', odds: 3, authors: ['p2'] },
+      { id: 'g:6000', value: 6000, slot: 'C', odds: 2, authors: ['p1'] },
+      { id: 'g:7000', value: 7000, slot: 'R1', odds: 3, authors: ['p3'] },
+      { id: 'higher', value: null, slot: 'HIGHER', odds: 6, authors: [] },
     ],
     publicBets: {
       p1: [
@@ -87,7 +88,7 @@ export const mockV2BettingPayload = {
       ],
       p2: [
         { chipId: 'A', targetId: 'g:5000', extraStake: 0 },
-        { chipId: 'B', targetId: 'smaller', extraStake: 0 },
+        { chipId: 'B', targetId: 'lower', extraStake: 0 },
       ],
       p3: [
         { chipId: 'A', targetId: null, extraStake: 0 },
@@ -142,10 +143,11 @@ export const mockV3SettlementPayload = {
       { playerId: 'p3', score: 3, winningGuesses: 0, hasSubmitted: true, forfeited: false },
     ],
     board: [
-      { id: 'smaller', value: null, slot: 'SMALLER', odds: 6, authors: [], timeoutAuthors: [] },
-      { id: 'g:5000', value: 5000, slot: 'L1', odds: 3, authors: ['p2'], timeoutAuthors: [] },
-      { id: 'g:6000', value: 6000, slot: 'C', odds: 2, authors: ['p1'], timeoutAuthors: [] },
-      { id: 'g:7000', value: 7000, slot: 'R1', odds: 3, authors: ['p3'], timeoutAuthors: [] },
+      { id: 'lower', value: null, slot: 'LOWER', odds: 6, authors: [] },
+      { id: 'g:5000', value: 5000, slot: 'L1', odds: 3, authors: ['p2'] },
+      { id: 'g:6000', value: 6000, slot: 'C', odds: 2, authors: ['p1'] },
+      { id: 'g:7000', value: 7000, slot: 'R1', odds: 3, authors: ['p3'] },
+      { id: 'higher', value: null, slot: 'HIGHER', odds: 6, authors: [] },
     ],
     publicBets: {
       p1: [
@@ -167,10 +169,11 @@ export const mockV3SettlementPayload = {
         reviewed: true,
       },
       board: [
-        { id: 'smaller', value: null, slot: 'SMALLER', odds: 6, authors: [], timeoutAuthors: [] },
-        { id: 'g:5000', value: 5000, slot: 'L1', odds: 3, authors: ['p2'], timeoutAuthors: [] },
-        { id: 'g:6000', value: 6000, slot: 'C', odds: 2, authors: ['p1'], timeoutAuthors: [] },
-        { id: 'g:7000', value: 7000, slot: 'R1', odds: 3, authors: ['p3'], timeoutAuthors: [] },
+        { id: 'lower', value: null, slot: 'LOWER', odds: 6, authors: [] },
+        { id: 'g:5000', value: 5000, slot: 'L1', odds: 3, authors: ['p2'] },
+        { id: 'g:6000', value: 6000, slot: 'C', odds: 2, authors: ['p1'] },
+        { id: 'g:7000', value: 7000, slot: 'R1', odds: 3, authors: ['p3'] },
+        { id: 'higher', value: null, slot: 'HIGHER', odds: 6, authors: [] },
       ],
       bets: {
         p1: [
@@ -178,7 +181,7 @@ export const mockV3SettlementPayload = {
           { chipId: 'B', targetId: null, extraStake: 0 },
         ],
       },
-      winningTargetId: 'g:6000',
+      winningTargetIds: ['g:6000'],
       awardedAuthors: ['p1'],
       ledger: [
         {

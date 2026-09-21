@@ -122,7 +122,7 @@ test.describe('一智千金 T08 真实对局与私密性 E2E 验证', () => {
 
       // 8. 验证浏览器端自动接收到新状态并显示版图
       await expect(page.locator('.ww-board')).toBeVisible({ timeout: 15_000 });
-      await expect(page.locator('.ww-target-card')).toHaveCount(4); // smaller + 3 values
+      await expect(page.locator('.ww-target-card')).toHaveCount(5); // lower + 3 values + higher
     } finally {
       p2.client.close();
       p3.client.close();

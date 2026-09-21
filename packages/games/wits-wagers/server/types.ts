@@ -1,7 +1,7 @@
-import type { TargetId, Slot, ChipId, GuessOrigin, ChipBet, BetPair, BoardTarget } from './board.ts';
+import type { TargetId, Slot, EdgeSlot, ChipId, GuessOrigin, ChipBet, BetPair, BoardTarget } from './board.ts';
 import type { PlayerRoundLedger, PlayerRanking } from './scoring.ts';
 
-export type { TargetId, Slot, ChipId, GuessOrigin, ChipBet, BetPair, BoardTarget };
+export type { TargetId, Slot, EdgeSlot, ChipId, GuessOrigin, ChipBet, BetPair, BoardTarget };
 export type { PlayerRoundLedger, PlayerRanking };
 
 export type WitsWagersPhase =
@@ -34,7 +34,7 @@ export interface RoundResult {
   question: Question;
   board: BoardTarget[];
   bets: Record<string, BetPair>;
-  winningTargetId: TargetId;
+  winningTargetIds: TargetId[];
   awardedAuthors: string[];
   ledger: PlayerRoundLedger[];
 }
@@ -68,6 +68,10 @@ export interface WitsWagersState {
   config: WitsWagersResolvedConfig;
   phase: WitsWagersPhase;
   round: number; // 0..7
+  /** 本轮使用的题目在 questionPlan 中的下标；作废重抽时 +1 而 round 不变 */
+  questionIndex: number;
+  /** 因全员未作答而作废重抽的次数（统计用） */
+  voidedRounds: number;
   phaseEpoch: number;
   roundToken: string;
   deadlineAt: number | null;
@@ -75,7 +79,7 @@ export interface WitsWagersState {
   forfeitedIds: string[];
   scores: Record<string, number>;
   winningGuesses: Record<string, number>;
-  questionPlan: Question[]; // 7道题
+  questionPlan: Question[]; // 7 道正式题 + 备用题
   bankVersion?: string;
   guesses: Record<string, Guess | null>;
   guessRevisions: Record<string, number>;
@@ -95,6 +99,7 @@ export type WitsWagersAction =
 
 export type WitsWagersPublicEvent =
   | { type: 'round_started'; round: number; question: { prompt: string; unit: string } }
+  | { type: 'round_voided'; round: number; reason: 'no_answers' }
   | { type: 'guess_submitted'; playerId: string }
   | { type: 'board_revealed'; board: BoardTarget[] }
   | { type: 'bets_changed'; bets: Record<string, BetPair> }

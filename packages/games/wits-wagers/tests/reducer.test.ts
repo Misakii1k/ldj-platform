@@ -129,7 +129,7 @@ test('reducer: submit_guess 正常提交与全员答齐提前推进', () => {
   state = p3Res.nextState;
 
   assert.equal(state.phase, 'arranging');
-  assert.equal(state.board.length, 4); // smaller + g:100 + g:200 + g:300
+  assert.equal(state.board.length, 5); // lower + g:100 + g:200 + g:300 + higher
 
   // 必须产生 cancel 旧 timer 和 schedule 新 timer 的 effects
   assert.equal(p3Res.effects.length, 2);
@@ -142,7 +142,7 @@ test('reducer: submit_guess 正常提交与全员答齐提前推进', () => {
   assertInvariants(state);
 });
 
-test('reducer: answering 超时未提交者自动补 1 (G0 P1)', () => {
+test('reducer: answering 超时未提交者不补答、不上版图 (G0 P1 2026-09-22 修订)', () => {
   const ctx = createMockCtx(1000);
   let state = createInitialState(ctx, ['p1', 'p2', 'p3'], {});
   const beginRes = reduce(ctx, state, { kind: 'system', source: 'admin' }, { type: 'begin' });
@@ -182,15 +182,97 @@ test('reducer: answering 超时未提交者自动补 1 (G0 P1)', () => {
   state = timeoutRes.nextState;
 
   assert.equal(state.phase, 'arranging');
-  assert.equal(state.guesses['p1']?.origin, 'submitted');
-  assert.equal(state.guesses['p2']?.value, 1);
-  assert.equal(state.guesses['p2']?.origin, 'timeout');
-  assert.equal(state.guesses['p3']?.value, 1);
-  assert.equal(state.guesses['p3']?.origin, 'timeout');
+  assert.equal(state.guesses['p1']?.value, 500);
+  // 超时者保持 null，绝不再被补 1
+  assert.equal(state.guesses['p2'], null);
+  assert.equal(state.guesses['p3'], null);
 
-  const target1 = state.board.find((t) => t.id === 'g:1');
-  assert.ok(target1);
-  assert.deepEqual(target1.timeoutAuthors, ['p2', 'p3']);
+  // 版图只有 p1 的答案 + 两个边缘槽，不存在凭空出现的 g:1
+  assert.equal(state.board.length, 3);
+  assert.equal(state.board.find((t) => t.id === 'g:1'), undefined);
+  const t500 = state.board.find((t) => t.id === 'g:500');
+  assert.ok(t500);
+  assert.deepEqual(t500.authors, ['p1']);
+
+  assertInvariants(state);
+});
+
+test('reducer: 全员超时未作答时本轮作废、换备用题重打且轮次号不变', () => {
+  const ctx = createMockCtx(1000);
+  let state = createInitialState(ctx, ['p1', 'p2', 'p3'], {});
+  const beginRes = reduce(ctx, state, { kind: 'system', source: 'admin' }, { type: 'begin' });
+  assert.ok(beginRes.ok);
+  state = beginRes.nextState;
+
+  const firstToken = state.roundToken;
+  const firstQuestionIndex = state.questionIndex;
+  ctx.now = state.deadlineAt!;
+
+  const voidRes = reduce(
+    ctx,
+    state,
+    { kind: 'system', source: 'timer' },
+    {
+      type: 'phase_timeout',
+      roundToken: state.roundToken,
+      phaseEpoch: state.phaseEpoch,
+      phase: 'answering',
+    },
+  );
+  assert.ok(voidRes.ok);
+  state = voidRes.nextState;
+
+  // 回到作答阶段，轮次号不变，但换了题、换了 roundToken
+  assert.equal(state.phase, 'answering');
+  assert.equal(state.round, 1, '作废轮不占正式轮名额');
+  assert.equal(state.questionIndex, firstQuestionIndex + 1, '必须换一道没人看过的题');
+  assert.equal(state.voidedRounds, 1);
+  assert.notEqual(state.roundToken, firstToken, '换 roundToken 让上一轮在途动作失效');
+  assert.deepEqual(state.board, []);
+  assert.equal(state.deadlineAt, ctx.now + state.config.answerSeconds * 1000);
+
+  const voided = voidRes.publicEvents.find((e) => e.type === 'round_voided');
+  assert.ok(voided, '必须广播 round_voided 让客户端提示换题');
+  assert.ok(voidRes.publicEvents.some((e) => e.type === 'round_started'));
+
+  assertInvariants(state);
+});
+
+test('reducer: 备用题用尽后全员超时直接结算本轮、无人得分', () => {
+  const ctx = createMockCtx(1000);
+  let state = createInitialState(ctx, ['p1', 'p2', 'p3'], {});
+  const beginRes = reduce(ctx, state, { kind: 'system', source: 'admin' }, { type: 'begin' });
+  assert.ok(beginRes.ok);
+  state = beginRes.nextState;
+
+  // 人为把题目下标推到计划末尾：再作废就没有备用题了
+  state = { ...state, questionIndex: state.questionPlan.length - 1 };
+  ctx.now = state.deadlineAt!;
+
+  const res = reduce(
+    ctx,
+    state,
+    { kind: 'system', source: 'timer' },
+    {
+      type: 'phase_timeout',
+      roundToken: state.roundToken,
+      phaseEpoch: state.phaseEpoch,
+      phase: 'answering',
+    },
+  );
+  assert.ok(res.ok);
+  state = res.nextState;
+
+  assert.equal(state.phase, 'settlement');
+  const last = state.history[state.history.length - 1];
+  assert.ok(last);
+  assert.deepEqual(last.winningTargetIds, [], '没有任何答案，无人获胜');
+  assert.deepEqual(last.awardedAuthors, []);
+  for (const entry of last.ledger) {
+    assert.equal(entry.scoreAfter, entry.scoreBefore, '作废轮不改变任何人的余额');
+    assert.equal(entry.winProfit, 0);
+    assert.equal(entry.authorBonus, 0);
+  }
 
   assertInvariants(state);
 });
@@ -280,7 +362,7 @@ test('reducer: set_bets 校验、资金不足拒绝 (X01) 与非法目标拒绝 
       expectedRevision: 0,
       chips: [
         { chipId: 'A', targetId: 'g:100', extraStake: 0 },
-        { chipId: 'B', targetId: 'smaller', extraStake: 0 },
+        { chipId: 'B', targetId: 'lower', extraStake: 0 },
       ],
     },
   );

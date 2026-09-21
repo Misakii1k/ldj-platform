@@ -2,6 +2,7 @@ import type { RefObject } from 'react';
 import { GameDrawer } from '../../tabletop/GameDrawer.tsx';
 import { nameFor, type MemberLike } from '../../useGameAction.ts';
 import type { RoundResultView } from '../types.ts';
+import { targetLabel } from '../types.ts';
 
 export interface WitsHistoryDrawerProps {
   readonly history: readonly RoundResultView[];
@@ -37,9 +38,14 @@ export function WitsHistoryDrawer({
       {rounds.length === 0 && <p className="ww-history__empty">还没有已结算的轮次。</p>}
 
       {rounds.map((round) => {
-        const winning = round.board.find((t) => t.id === round.winningTargetId);
+        // 等距双胜时两个槽都算赢，本轮无人作答作废时一个都没有
+        const winningTargets = round.winningTargetIds
+          .map((id) => round.board.find((t) => t.id === id))
+          .filter((t): t is NonNullable<typeof t> => Boolean(t));
         const winningLabel =
-          winning?.id === 'smaller' ? '全部猜高' : (winning?.value?.toLocaleString() ?? '—');
+          winningTargets.length === 0
+            ? '本轮作废'
+            : winningTargets.map((t) => targetLabel(t)).join(' 与 ');
 
         return (
           <section key={round.round} className="ww-history__round">
@@ -54,7 +60,9 @@ export function WitsHistoryDrawer({
 
             <p className="ww-history__winner">
               获胜槽位：<strong>{winningLabel}</strong>
-              {winning ? `（净赢 ×${winning.odds}）` : ''}
+              {winningTargets.length > 0
+                ? `（净赢 ${winningTargets.map((t) => `×${t.odds}`).join(' / ')}）`
+                : ''}
               {round.awardedAuthors.length > 0 && (
                 <>
                   ，作者奖励：{round.awardedAuthors.map((id) => nameFor(members, id)).join('、')}

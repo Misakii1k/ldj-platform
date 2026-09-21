@@ -38,6 +38,10 @@ function parseState(input: unknown): WitsWagersState {
     state.config.arrangingSeconds ??= DEFAULT_RESOLVED_CONFIG.arrangingSeconds;
     state.config.settlementSeconds ??= DEFAULT_RESOLVED_CONFIG.settlementSeconds;
   }
+  // questionIndex / voidedRounds 是"作废重抽"一起加进来的字段。
+  // 旧存档里题目下标恒等于 round-1（那时不存在作废），据此回填。
+  state.questionIndex ??= Math.max(0, (state.round ?? 1) - 1);
+  state.voidedRounds ??= 0;
   assertInvariants(state);
   return state;
 }

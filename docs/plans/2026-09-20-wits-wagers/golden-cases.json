@@ -1,0 +1,1321 @@
+{
+  "schemaVersion": 1,
+  "rulesetId": "wits_wagers_platform_v1",
+  "approvalStatus": "core-user-baseline; 2026-09-22 判定规则修订（绝对差值最近 + lower/higher 边缘槽 + 超时不补答）",
+  "notes": [
+    "Board guess order identifies players p1,p2,... in seat order.",
+    "Settlement cases are isolated player ledgers; round cases cross-check board, authors and score together.",
+    "Bets must contain A then B. winner odds is net profit, not returned principal.",
+    "2026-09-22 修订：胜者为与正确答案绝对差值最小的槽位，同距离时两侧并列获胜；答案高于全部猜测则 higher 胜，低于全部则 lower 胜；两个边缘槽赔率恒为 6。",
+    "2026-09-22 修订：超时未作答者本轮不上版图，不可能成为作者，也不占槽位。",
+    "R02 and ranking tie policy require G0 approval; never treat this fixture as user approval."
+  ],
+  "boardCases": [
+    {
+      "id": "B01",
+      "guesses": [
+        100,
+        100,
+        100
+      ],
+      "expectedValues": [
+        100
+      ],
+      "expectedSlots": [
+        "C"
+      ],
+      "expectedOdds": [
+        2
+      ],
+      "expectedEdgeOdds": 6
+    },
+    {
+      "id": "B02",
+      "guesses": [
+        200,
+        100,
+        100
+      ],
+      "expectedValues": [
+        100,
+        200
+      ],
+      "expectedSlots": [
+        "L1",
+        "R1"
+      ],
+      "expectedOdds": [
+        3,
+        3
+      ],
+      "expectedEdgeOdds": 6
+    },
+    {
+      "id": "B03",
+      "guesses": [
+        300,
+        100,
+        200
+      ],
+      "expectedValues": [
+        100,
+        200,
+        300
+      ],
+      "expectedSlots": [
+        "L1",
+        "C",
+        "R1"
+      ],
+      "expectedOdds": [
+        3,
+        2,
+        3
+      ],
+      "expectedEdgeOdds": 6
+    },
+    {
+      "id": "B04",
+      "guesses": [
+        20,
+        10,
+        18,
+        16
+      ],
+      "expectedValues": [
+        10,
+        16,
+        18,
+        20
+      ],
+      "expectedSlots": [
+        "L2",
+        "L1",
+        "R1",
+        "R2"
+      ],
+      "expectedOdds": [
+        4,
+        3,
+        3,
+        4
+      ],
+      "expectedEdgeOdds": 6
+    },
+    {
+      "id": "B05",
+      "guesses": [
+        50,
+        10,
+        40,
+        20,
+        30
+      ],
+      "expectedValues": [
+        10,
+        20,
+        30,
+        40,
+        50
+      ],
+      "expectedSlots": [
+        "L2",
+        "L1",
+        "C",
+        "R1",
+        "R2"
+      ],
+      "expectedOdds": [
+        4,
+        3,
+        2,
+        3,
+        4
+      ],
+      "expectedEdgeOdds": 6
+    },
+    {
+      "id": "B06",
+      "guesses": [
+        60,
+        10,
+        50,
+        20,
+        40,
+        30
+      ],
+      "expectedValues": [
+        10,
+        20,
+        30,
+        40,
+        50,
+        60
+      ],
+      "expectedSlots": [
+        "L3",
+        "L2",
+        "L1",
+        "R1",
+        "R2",
+        "R3"
+      ],
+      "expectedOdds": [
+        5,
+        4,
+        3,
+        3,
+        4,
+        5
+      ],
+      "expectedEdgeOdds": 6
+    },
+    {
+      "id": "B07",
+      "guesses": [
+        70,
+        10,
+        60,
+        20,
+        50,
+        30,
+        40
+      ],
+      "expectedValues": [
+        10,
+        20,
+        30,
+        40,
+        50,
+        60,
+        70
+      ],
+      "expectedSlots": [
+        "L3",
+        "L2",
+        "L1",
+        "C",
+        "R1",
+        "R2",
+        "R3"
+      ],
+      "expectedOdds": [
+        5,
+        4,
+        3,
+        2,
+        3,
+        4,
+        5
+      ],
+      "expectedEdgeOdds": 6
+    },
+    {
+      "id": "B08",
+      "guesses": [
+        300,
+        100,
+        300,
+        200,
+        200,
+        400,
+        400
+      ],
+      "expectedValues": [
+        100,
+        200,
+        300,
+        400
+      ],
+      "expectedSlots": [
+        "L2",
+        "L1",
+        "R1",
+        "R2"
+      ],
+      "expectedOdds": [
+        4,
+        3,
+        3,
+        4
+      ],
+      "expectedEdgeOdds": 6
+    }
+  ],
+  "winnerCases": [
+    {
+      "id": "W01",
+      "note": "范围内取绝对差值最近：1991 离 1992 更近（旧规则会错判 1989）",
+      "guesses": [
+        1989,
+        1992,
+        1995
+      ],
+      "correctAnswer": 1991,
+      "expectedWinners": [
+        "g:1992"
+      ]
+    },
+    {
+      "id": "W02",
+      "note": "精确命中",
+      "guesses": [
+        10,
+        16,
+        18,
+        20
+      ],
+      "correctAnswer": 18,
+      "expectedWinners": [
+        "g:18"
+      ]
+    },
+    {
+      "id": "W03",
+      "note": "低于全部猜测 → lower",
+      "guesses": [
+        100,
+        200,
+        300
+      ],
+      "correctAnswer": 50,
+      "expectedWinners": [
+        "lower"
+      ]
+    },
+    {
+      "id": "W04",
+      "note": "高于全部猜测 → higher",
+      "guesses": [
+        100,
+        200,
+        300
+      ],
+      "correctAnswer": 900,
+      "expectedWinners": [
+        "higher"
+      ]
+    },
+    {
+      "id": "W05",
+      "note": "大数范围内最近",
+      "guesses": [
+        2900000000,
+        3200000000,
+        1500000000
+      ],
+      "correctAnswer": 3000000000,
+      "expectedWinners": [
+        "g:2900000000"
+      ]
+    },
+    {
+      "id": "W06",
+      "note": "单一猜测且精确命中",
+      "guesses": [
+        1
+      ],
+      "correctAnswer": 1,
+      "expectedWinners": [
+        "g:1"
+      ]
+    },
+    {
+      "id": "W07",
+      "note": "低于全部猜测 → lower",
+      "guesses": [
+        2,
+        3
+      ],
+      "correctAnswer": 1,
+      "expectedWinners": [
+        "lower"
+      ]
+    },
+    {
+      "id": "W08",
+      "note": "上界精确命中",
+      "guesses": [
+        999999999998,
+        999999999999
+      ],
+      "correctAnswer": 999999999999,
+      "expectedWinners": [
+        "g:999999999999"
+      ]
+    },
+    {
+      "id": "W09",
+      "note": "同距离 → 两侧并列获胜，按升序返回",
+      "guesses": [
+        10,
+        20
+      ],
+      "correctAnswer": 15,
+      "expectedWinners": [
+        "g:10",
+        "g:20"
+      ]
+    },
+    {
+      "id": "W10",
+      "note": "同距离（三值版图中间偏右）",
+      "guesses": [
+        100,
+        200,
+        300
+      ],
+      "correctAnswer": 250,
+      "expectedWinners": [
+        "g:200",
+        "g:300"
+      ]
+    },
+    {
+      "id": "W11",
+      "note": "更高的猜测反而更近时它获胜（旧规则会错判 g:20）",
+      "guesses": [
+        10,
+        20,
+        30
+      ],
+      "correctAnswer": 26,
+      "expectedWinners": [
+        "g:30"
+      ]
+    },
+    {
+      "id": "W12",
+      "note": "单一猜测且答案更高 → higher",
+      "guesses": [
+        5
+      ],
+      "correctAnswer": 100,
+      "expectedWinners": [
+        "higher"
+      ]
+    },
+    {
+      "id": "W13",
+      "note": "单一猜测且答案更低 → lower",
+      "guesses": [
+        5
+      ],
+      "correctAnswer": 1,
+      "expectedWinners": [
+        "lower"
+      ]
+    }
+  ],
+  "settlementCases": [
+    {
+      "id": "S01",
+      "scoreBefore": 0,
+      "eligibleAuthor": false,
+      "bets": [
+        {
+          "chipId": "A",
+          "targetId": "g:300",
+          "extraStake": 0
+        },
+        {
+          "chipId": "B",
+          "targetId": "g:300",
+          "extraStake": 0
+        }
+      ],
+      "expected": {
+        "reserved": 0,
+        "availableBefore": 0,
+        "winProfit": 6,
+        "loss": 0,
+        "authorBonus": 0,
+        "scoreAfter": 6
+      },
+      "winning": {
+        "g:300": 3
+      }
+    },
+    {
+      "id": "S02",
+      "scoreBefore": 0,
+      "eligibleAuthor": true,
+      "bets": [
+        {
+          "chipId": "A",
+          "targetId": "g:300",
+          "extraStake": 0
+        },
+        {
+          "chipId": "B",
+          "targetId": "g:300",
+          "extraStake": 0
+        }
+      ],
+      "expected": {
+        "reserved": 0,
+        "availableBefore": 0,
+        "winProfit": 6,
+        "loss": 0,
+        "authorBonus": 3,
+        "scoreAfter": 9
+      },
+      "winning": {
+        "g:300": 3
+      }
+    },
+    {
+      "id": "S03",
+      "scoreBefore": 10,
+      "eligibleAuthor": false,
+      "bets": [
+        {
+          "chipId": "A",
+          "targetId": "g:300",
+          "extraStake": 4
+        },
+        {
+          "chipId": "B",
+          "targetId": "g:200",
+          "extraStake": 2
+        }
+      ],
+      "expected": {
+        "reserved": 6,
+        "availableBefore": 4,
+        "winProfit": 15,
+        "loss": 2,
+        "authorBonus": 0,
+        "scoreAfter": 23
+      },
+      "winning": {
+        "g:300": 3
+      }
+    },
+    {
+      "id": "S04",
+      "scoreBefore": 10,
+      "eligibleAuthor": true,
+      "bets": [
+        {
+          "chipId": "A",
+          "targetId": "g:300",
+          "extraStake": 4
+        },
+        {
+          "chipId": "B",
+          "targetId": "g:200",
+          "extraStake": 2
+        }
+      ],
+      "expected": {
+        "reserved": 6,
+        "availableBefore": 4,
+        "winProfit": 15,
+        "loss": 2,
+        "authorBonus": 3,
+        "scoreAfter": 26
+      },
+      "winning": {
+        "g:300": 3
+      }
+    },
+    {
+      "id": "S05",
+      "scoreBefore": 5,
+      "eligibleAuthor": false,
+      "bets": [
+        {
+          "chipId": "A",
+          "targetId": "g:300",
+          "extraStake": 5
+        },
+        {
+          "chipId": "B",
+          "targetId": null,
+          "extraStake": 0
+        }
+      ],
+      "expected": {
+        "reserved": 5,
+        "availableBefore": 0,
+        "winProfit": 18,
+        "loss": 0,
+        "authorBonus": 0,
+        "scoreAfter": 23
+      },
+      "winning": {
+        "g:300": 3
+      }
+    },
+    {
+      "id": "S06",
+      "scoreBefore": 10,
+      "eligibleAuthor": false,
+      "bets": [
+        {
+          "chipId": "A",
+          "targetId": "g:100",
+          "extraStake": 4
+        },
+        {
+          "chipId": "B",
+          "targetId": "g:200",
+          "extraStake": 6
+        }
+      ],
+      "expected": {
+        "reserved": 10,
+        "availableBefore": 0,
+        "winProfit": 0,
+        "loss": 10,
+        "authorBonus": 0,
+        "scoreAfter": 0
+      },
+      "winning": {
+        "g:300": 4
+      }
+    },
+    {
+      "id": "S07",
+      "scoreBefore": 10,
+      "eligibleAuthor": true,
+      "bets": [
+        {
+          "chipId": "A",
+          "targetId": "g:100",
+          "extraStake": 4
+        },
+        {
+          "chipId": "B",
+          "targetId": "g:200",
+          "extraStake": 6
+        }
+      ],
+      "expected": {
+        "reserved": 10,
+        "availableBefore": 0,
+        "winProfit": 0,
+        "loss": 10,
+        "authorBonus": 3,
+        "scoreAfter": 3
+      },
+      "winning": {
+        "g:300": 4
+      }
+    },
+    {
+      "id": "S08",
+      "scoreBefore": 0,
+      "eligibleAuthor": true,
+      "bets": [
+        {
+          "chipId": "A",
+          "targetId": null,
+          "extraStake": 0
+        },
+        {
+          "chipId": "B",
+          "targetId": null,
+          "extraStake": 0
+        }
+      ],
+      "expected": {
+        "reserved": 0,
+        "availableBefore": 0,
+        "winProfit": 0,
+        "loss": 0,
+        "authorBonus": 3,
+        "scoreAfter": 3
+      },
+      "winning": {
+        "g:300": 2
+      }
+    },
+    {
+      "id": "S09",
+      "scoreBefore": 7,
+      "eligibleAuthor": false,
+      "bets": [
+        {
+          "chipId": "A",
+          "targetId": null,
+          "extraStake": 0
+        },
+        {
+          "chipId": "B",
+          "targetId": null,
+          "extraStake": 0
+        }
+      ],
+      "expected": {
+        "reserved": 0,
+        "availableBefore": 7,
+        "winProfit": 0,
+        "loss": 0,
+        "authorBonus": 0,
+        "scoreAfter": 7
+      },
+      "winning": {
+        "g:300": 2
+      }
+    },
+    {
+      "id": "S10",
+      "scoreBefore": 10,
+      "eligibleAuthor": false,
+      "bets": [
+        {
+          "chipId": "A",
+          "targetId": "g:300",
+          "extraStake": 4
+        },
+        {
+          "chipId": "B",
+          "targetId": "g:300",
+          "extraStake": 6
+        }
+      ],
+      "expected": {
+        "reserved": 10,
+        "availableBefore": 0,
+        "winProfit": 36,
+        "loss": 0,
+        "authorBonus": 0,
+        "scoreAfter": 46
+      },
+      "winning": {
+        "g:300": 3
+      }
+    },
+    {
+      "id": "S11",
+      "scoreBefore": 6,
+      "eligibleAuthor": false,
+      "bets": [
+        {
+          "chipId": "A",
+          "targetId": "lower",
+          "extraStake": 5
+        },
+        {
+          "chipId": "B",
+          "targetId": "g:200",
+          "extraStake": 1
+        }
+      ],
+      "expected": {
+        "reserved": 6,
+        "availableBefore": 0,
+        "winProfit": 36,
+        "loss": 1,
+        "authorBonus": 0,
+        "scoreAfter": 41
+      },
+      "winning": {
+        "lower": 6
+      }
+    },
+    {
+      "id": "S12",
+      "scoreBefore": 0,
+      "eligibleAuthor": false,
+      "bets": [
+        {
+          "chipId": "A",
+          "targetId": "lower",
+          "extraStake": 0
+        },
+        {
+          "chipId": "B",
+          "targetId": "lower",
+          "extraStake": 0
+        }
+      ],
+      "expected": {
+        "reserved": 0,
+        "availableBefore": 0,
+        "winProfit": 12,
+        "loss": 0,
+        "authorBonus": 0,
+        "scoreAfter": 12
+      },
+      "winning": {
+        "lower": 6
+      }
+    },
+    {
+      "id": "S13",
+      "note": "同距双胜：两枚筹码分别押在两个获胜槽，各按自己的赔率赔付",
+      "scoreBefore": 5,
+      "winning": {
+        "g:10": 3,
+        "g:20": 2
+      },
+      "eligibleAuthor": false,
+      "bets": [
+        {
+          "chipId": "A",
+          "targetId": "g:10",
+          "extraStake": 2
+        },
+        {
+          "chipId": "B",
+          "targetId": "g:20",
+          "extraStake": 1
+        }
+      ],
+      "expected": {
+        "reserved": 3,
+        "availableBefore": 2,
+        "winProfit": 13,
+        "loss": 0,
+        "authorBonus": 0,
+        "scoreAfter": 18
+      }
+    },
+    {
+      "id": "S14",
+      "note": "同距双胜且是其中一侧的作者：作者奖仍只给一次 +3",
+      "scoreBefore": 0,
+      "winning": {
+        "g:10": 3,
+        "g:20": 2
+      },
+      "eligibleAuthor": true,
+      "bets": [
+        {
+          "chipId": "A",
+          "targetId": "g:20",
+          "extraStake": 0
+        },
+        {
+          "chipId": "B",
+          "targetId": null,
+          "extraStake": 0
+        }
+      ],
+      "expected": {
+        "reserved": 0,
+        "availableBefore": 0,
+        "winProfit": 2,
+        "loss": 0,
+        "authorBonus": 3,
+        "scoreAfter": 5
+      }
+    }
+  ],
+  "roundCases": [
+    {
+      "id": "R01",
+      "correctAnswer": 3000000000,
+      "players": [
+        {
+          "playerId": "p1",
+          "guess": 2900000000,
+          "origin": "submitted",
+          "scoreBefore": 0,
+          "bets": [
+            {
+              "chipId": "A",
+              "targetId": "g:2900000000",
+              "extraStake": 0
+            },
+            {
+              "chipId": "B",
+              "targetId": "g:3200000000",
+              "extraStake": 0
+            }
+          ]
+        },
+        {
+          "playerId": "p2",
+          "guess": 3200000000,
+          "origin": "submitted",
+          "scoreBefore": 0,
+          "bets": [
+            {
+              "chipId": "A",
+              "targetId": "g:1500000000",
+              "extraStake": 0
+            },
+            {
+              "chipId": "B",
+              "targetId": "g:1500000000",
+              "extraStake": 0
+            }
+          ]
+        },
+        {
+          "playerId": "p3",
+          "guess": 2900000000,
+          "origin": "submitted",
+          "scoreBefore": 0,
+          "bets": [
+            {
+              "chipId": "A",
+              "targetId": "g:2900000000",
+              "extraStake": 0
+            },
+            {
+              "chipId": "B",
+              "targetId": "g:2900000000",
+              "extraStake": 0
+            }
+          ]
+        },
+        {
+          "playerId": "p4",
+          "guess": 1500000000,
+          "origin": "submitted",
+          "scoreBefore": 0,
+          "bets": [
+            {
+              "chipId": "A",
+              "targetId": "g:3200000000",
+              "extraStake": 0
+            },
+            {
+              "chipId": "B",
+              "targetId": "g:3200000000",
+              "extraStake": 0
+            }
+          ]
+        }
+      ],
+      "expectedAwardedAuthors": [
+        "p1",
+        "p3"
+      ],
+      "expectedScores": {
+        "p1": 5,
+        "p2": 0,
+        "p3": 7,
+        "p4": 0
+      },
+      "expectedWinningGuessIncrements": {
+        "p1": 1,
+        "p2": 0,
+        "p3": 1,
+        "p4": 0
+      },
+      "expectedWinners": [
+        "g:2900000000"
+      ],
+      "note": "范围内最近（答案 3.0e9 离 2.9e9 最近）"
+    },
+    {
+      "id": "R02",
+      "requiresApproval": "P1",
+      "correctAnswer": 1,
+      "players": [
+        {
+          "playerId": "p1",
+          "guess": null,
+          "scoreBefore": 0,
+          "bets": [
+            {
+              "chipId": "A",
+              "targetId": null,
+              "extraStake": 0
+            },
+            {
+              "chipId": "B",
+              "targetId": null,
+              "extraStake": 0
+            }
+          ]
+        },
+        {
+          "playerId": "p2",
+          "guess": 1,
+          "origin": "submitted",
+          "scoreBefore": 0,
+          "bets": [
+            {
+              "chipId": "A",
+              "targetId": "g:1",
+              "extraStake": 0
+            },
+            {
+              "chipId": "B",
+              "targetId": "g:1",
+              "extraStake": 0
+            }
+          ]
+        },
+        {
+          "playerId": "p3",
+          "guess": 2,
+          "origin": "submitted",
+          "scoreBefore": 0,
+          "bets": [
+            {
+              "chipId": "A",
+              "targetId": null,
+              "extraStake": 0
+            },
+            {
+              "chipId": "B",
+              "targetId": null,
+              "extraStake": 0
+            }
+          ]
+        }
+      ],
+      "expectedAwardedAuthors": [
+        "p2"
+      ],
+      "expectedScores": {
+        "p1": 0,
+        "p2": 9,
+        "p3": 0
+      },
+      "expectedWinningGuessIncrements": {
+        "p1": 0,
+        "p2": 1,
+        "p3": 0
+      },
+      "note": "超时未作答者不上版图：p1 超时，版图只由 p2=1 与 p3=2 构成",
+      "expectedWinners": [
+        "g:1"
+      ]
+    },
+    {
+      "id": "R03",
+      "correctAnswer": 50,
+      "players": [
+        {
+          "playerId": "p1",
+          "guess": 100,
+          "origin": "submitted",
+          "scoreBefore": 6,
+          "bets": [
+            {
+              "chipId": "A",
+              "targetId": "lower",
+              "extraStake": 5
+            },
+            {
+              "chipId": "B",
+              "targetId": "g:200",
+              "extraStake": 1
+            }
+          ]
+        },
+        {
+          "playerId": "p2",
+          "guess": 200,
+          "origin": "submitted",
+          "scoreBefore": 0,
+          "bets": [
+            {
+              "chipId": "A",
+              "targetId": "lower",
+              "extraStake": 0
+            },
+            {
+              "chipId": "B",
+              "targetId": "lower",
+              "extraStake": 0
+            }
+          ]
+        },
+        {
+          "playerId": "p3",
+          "guess": 300,
+          "origin": "submitted",
+          "scoreBefore": 3,
+          "bets": [
+            {
+              "chipId": "A",
+              "targetId": "g:100",
+              "extraStake": 3
+            },
+            {
+              "chipId": "B",
+              "targetId": null,
+              "extraStake": 0
+            }
+          ]
+        }
+      ],
+      "expectedAwardedAuthors": [],
+      "expectedScores": {
+        "p1": 41,
+        "p2": 12,
+        "p3": 0
+      },
+      "expectedWinningGuessIncrements": {
+        "p1": 0,
+        "p2": 0,
+        "p3": 0
+      },
+      "expectedWinners": [
+        "lower"
+      ],
+      "note": "低于全部猜测 → lower 获胜，无作者奖"
+    },
+    {
+      "id": "R04",
+      "note": "同距双胜：答案 15 离 10 与 20 等距，两侧作者各 +3，押任一侧都按该侧赔率赔付",
+      "correctAnswer": 15,
+      "players": [
+        {
+          "playerId": "p1",
+          "guess": 10,
+          "origin": "submitted",
+          "scoreBefore": 0,
+          "bets": [
+            {
+              "chipId": "A",
+              "targetId": "g:10",
+              "extraStake": 0
+            },
+            {
+              "chipId": "B",
+              "targetId": "g:40",
+              "extraStake": 0
+            }
+          ]
+        },
+        {
+          "playerId": "p2",
+          "guess": 20,
+          "origin": "submitted",
+          "scoreBefore": 0,
+          "bets": [
+            {
+              "chipId": "A",
+              "targetId": "g:20",
+              "extraStake": 0
+            },
+            {
+              "chipId": "B",
+              "targetId": "g:10",
+              "extraStake": 0
+            }
+          ]
+        },
+        {
+          "playerId": "p3",
+          "guess": 40,
+          "origin": "submitted",
+          "scoreBefore": 4,
+          "bets": [
+            {
+              "chipId": "A",
+              "targetId": "g:40",
+              "extraStake": 4
+            },
+            {
+              "chipId": "B",
+              "targetId": null,
+              "extraStake": 0
+            }
+          ]
+        }
+      ],
+      "expectedWinners": [
+        "g:10",
+        "g:20"
+      ],
+      "expectedAwardedAuthors": [
+        "p1",
+        "p2"
+      ],
+      "expectedScores": {
+        "p1": 6,
+        "p2": 8,
+        "p3": 0
+      },
+      "expectedWinningGuessIncrements": {
+        "p1": 1,
+        "p2": 1,
+        "p3": 0
+      }
+    }
+  ],
+  "rankingCases": [
+    {
+      "id": "K01",
+      "players": [
+        {
+          "playerId": "p1",
+          "score": 20,
+          "winningGuesses": 1
+        },
+        {
+          "playerId": "p2",
+          "score": 20,
+          "winningGuesses": 2
+        },
+        {
+          "playerId": "p3",
+          "score": 19,
+          "winningGuesses": 7
+        }
+      ],
+      "expectedOrder": [
+        "p2",
+        "p1",
+        "p3"
+      ],
+      "expectedRanks": [
+        1,
+        2,
+        3
+      ],
+      "expectedWinners": [
+        "p2"
+      ]
+    },
+    {
+      "id": "K02",
+      "requiresApproval": "P4",
+      "players": [
+        {
+          "playerId": "p1",
+          "score": 20,
+          "winningGuesses": 2
+        },
+        {
+          "playerId": "p2",
+          "score": 20,
+          "winningGuesses": 2
+        },
+        {
+          "playerId": "p3",
+          "score": 19,
+          "winningGuesses": 7
+        }
+      ],
+      "expectedOrder": [
+        "p1",
+        "p2",
+        "p3"
+      ],
+      "expectedRanks": [
+        1,
+        1,
+        3
+      ],
+      "expectedWinners": [
+        "p1",
+        "p2"
+      ]
+    },
+    {
+      "id": "K03",
+      "requiresApproval": "P4",
+      "players": [
+        {
+          "playerId": "p1",
+          "score": 0,
+          "winningGuesses": 0
+        },
+        {
+          "playerId": "p2",
+          "score": 0,
+          "winningGuesses": 0
+        },
+        {
+          "playerId": "p3",
+          "score": 0,
+          "winningGuesses": 0
+        }
+      ],
+      "expectedOrder": [
+        "p1",
+        "p2",
+        "p3"
+      ],
+      "expectedRanks": [
+        1,
+        1,
+        1
+      ],
+      "expectedWinners": [
+        "p1",
+        "p2",
+        "p3"
+      ]
+    }
+  ],
+  "fullGameCases": [
+    {
+      "id": "F01",
+      "description": "3 players all manually guess 100; answer=100 each round; A stakes full existing balance, B adds 0; both on g:100. Seven distinct question IDs, same numeric answer permitted.",
+      "players": [
+        "p1",
+        "p2",
+        "p3"
+      ],
+      "correctAnswer": 100,
+      "expectedScoreAfterEachRound": [
+        7,
+        28,
+        91,
+        280,
+        847,
+        2548,
+        7651
+      ],
+      "expectedWinningGuesses": 7,
+      "expectedResultCount": 1,
+      "expectedPendingTimers": 0
+    }
+  ],
+  "rejectionCases": [
+    {
+      "id": "X01",
+      "scenario": "Both A and B extras sum to scoreBefore+1",
+      "expected": "reject entire action; neither bet nor score/revision changes"
+    },
+    {
+      "id": "X02",
+      "scenario": "Bet on empty C when 4 unique guesses",
+      "expected": "reject; not a target in board"
+    },
+    {
+      "id": "X03",
+      "scenario": "Missing B / duplicate A / third chip / null target plus positive extra",
+      "expected": "strict shape rejection; no partial application"
+    },
+    {
+      "id": "X04",
+      "scenario": "Finite decimal/zero/negative/out-of-range guess; negative/decimal extra",
+      "expected": "reject; UI also rejects exponent/string units"
+    },
+    {
+      "id": "X05",
+      "scenario": "Player sends begin/phase_timeout/player_forfeited",
+      "expected": "actor rejection regardless of valid action shape"
+    },
+    {
+      "id": "X06",
+      "scenario": "Submission at deadlineAt exactly",
+      "expected": "reject; timeout allowed at equality"
+    },
+    {
+      "id": "X07",
+      "scenario": "Old roundToken or own stale expectedRevision",
+      "expected": "reject without changing another players state"
+    },
+    {
+      "id": "X08",
+      "scenario": "Old envelope.expectedSeq due to another player action",
+      "expected": "WS STALE_CLIENT_STATE; resync; retain draft; user must confirm again"
+    },
+    {
+      "id": "X09",
+      "scenario": "Same room/actor/requestId resent after accepted action",
+      "expected": "existing receipt ACK; no new state/reward/revision event"
+    },
+    {
+      "id": "X10",
+      "scenario": "Client sends score/odds/correctAnswer/customQuestions unknown fields",
+      "expected": "strict schema rejection; never trust client scoring"
+    }
+  ]
+}

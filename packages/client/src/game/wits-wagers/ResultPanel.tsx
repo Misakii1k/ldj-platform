@@ -1,5 +1,7 @@
 import { nameFor, type MemberLike } from '../useGameAction.ts';
+import { RollingNumber } from '../../shared-ui/RollingNumber.tsx';
 import type { RoundResultView, FinalResultView } from './types.ts';
+import { targetLabel } from './types.ts';
 
 export interface ResultPanelProps {
   revealed: RoundResultView | null;
@@ -79,7 +81,10 @@ export function ResultPanel({
   // 单轮结算展示
   const q = revealed.question;
   const myLedger = revealed.ledger.find((l) => l.playerId === myPlayerId);
-  const winningTarget = revealed.board.find((t) => t.id === revealed.winningTargetId);
+  // 等距时两个槽并列获胜；作废轮一个都没有
+  const winningTargets = revealed.winningTargetIds
+    .map((id) => revealed.board.find((t) => t.id === id))
+    .filter((t): t is NonNullable<typeof t> => Boolean(t));
 
   return (
     <div className="ww-result-panel">
@@ -92,8 +97,11 @@ export function ResultPanel({
         <div className="ww-result-panel__winning">
           获胜槽位：
           <span>
-            {winningTarget?.id === 'smaller' ? '全部猜高' : winningTarget?.value?.toLocaleString()}{' '}
-            (净赢 ×{winningTarget?.odds})
+            {winningTargets.length === 0
+              ? '本轮无人作答，作废'
+              : winningTargets
+                  .map((t) => `${targetLabel(t)} (净赢 ×${t.odds})`)
+                  .join('　与　')}
           </span>
         </div>
         <div className="ww-result-panel__note">
@@ -124,7 +132,7 @@ export function ResultPanel({
               </span>
             </span>
             <span>
-              结算后积分：<strong>{myLedger.scoreAfter}</strong>
+              结算后积分：<RollingNumber as="strong" value={myLedger.scoreAfter} />
             </span>
           </div>
         </div>
@@ -156,7 +164,7 @@ export function ResultPanel({
                 <td className={l.loss > 0 ? 'ww-diff-neg' : undefined}>-{l.loss}</td>
                 <td className={l.authorBonus > 0 ? 'ww-diff-pos' : undefined}>+{l.authorBonus}</td>
                 <td>
-                  <strong>{l.scoreAfter}</strong>
+                  <RollingNumber as="strong" value={l.scoreAfter} />
                 </td>
               </tr>
             ))}

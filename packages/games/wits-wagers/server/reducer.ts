@@ -1,7 +1,7 @@
 import type { Actor, GameContext, GameEffect, VersionedReduceResult } from '@ldj/shared';
-import { buildBoard, pickWinningTarget } from './board.ts';
+import { buildBoard, pickWinningTargets } from './board.ts';
 import { settleRound, computeRankings } from './scoring.ts';
-import { defaultBetPair, generateRoundToken } from './state.ts';
+import { defaultBetPair, generateRoundToken, TOTAL_ROUNDS } from './state.ts';
 import { MIN_GUESS, MAX_GUESS } from './schemas.ts';
 import type {
   WitsWagersState,
@@ -11,7 +11,49 @@ import type {
   RoundResult,
   Guess,
   BetPair,
+  BoardTarget,
 } from './types.ts';
+
+/**
+ * 用本轮真实提交的作答构建版图。
+ *
+ * 超时未答者不再被补 1：那样会在版图最低位凭空多出一个槽位，既抢走判定，
+ * 又让"离答案最近"的真实作答判负（用户实测到的那个问题）。没作答的人本轮
+ * 桌上就是没有牌，但仍可正常下注。
+ *
+ * 返回 null 表示一张牌都没有——调用方需要作废本轮。
+ */
+function buildBoardFromGuesses(
+  players: readonly string[],
+  forfeitedIds: readonly string[],
+  guesses: Readonly<Record<string, Guess | null>>,
+): BoardTarget[] | null {
+  const submitted = players
+    .filter((pid) => !forfeitedIds.includes(pid))
+    .map((pid) => ({ playerId: pid, guess: guesses[pid] }))
+    .filter((entry): entry is { playerId: string; guess: Guess } => !!entry.guess);
+
+  if (submitted.length === 0) return null;
+
+  return buildBoard(
+    submitted.map((entry) => ({ playerId: entry.playerId, value: entry.guess.value })),
+  );
+}
+
+/** 每人一份空作答与空下注，用于开局与换轮。 */
+function freshRoundRecords(players: readonly string[]) {
+  const guesses: Record<string, null> = {};
+  const guessRevisions: Record<string, number> = {};
+  const bets: Record<string, BetPair> = {};
+  const betRevisions: Record<string, number> = {};
+  for (const pid of players) {
+    guesses[pid] = null;
+    guessRevisions[pid] = 0;
+    bets[pid] = defaultBetPair();
+    betRevisions[pid] = 0;
+  }
+  return { guesses, guessRevisions, bets, betRevisions };
+}
 
 export function reduce(
   ctx: GameContext,
@@ -33,17 +75,7 @@ export function reduce(
       const roundToken = generateRoundToken(round, ctx.now, ctx.random);
       const deadlineAt = ctx.now + state.config.answerSeconds * 1000;
 
-      const guesses: Record<string, null> = {};
-      const guessRevisions: Record<string, number> = {};
-      const bets: Record<string, BetPair> = {};
-      const betRevisions: Record<string, number> = {};
-
-      for (const pid of state.players) {
-        guesses[pid] = null;
-        guessRevisions[pid] = 0;
-        bets[pid] = defaultBetPair();
-        betRevisions[pid] = 0;
-      }
+      const { guesses, guessRevisions, bets, betRevisions } = freshRoundRecords(state.players);
 
       const currentQuestion = state.questionPlan[0];
       if (!currentQuestion) {
@@ -80,6 +112,7 @@ export function reduce(
         ...state,
         phase: 'answering',
         round,
+        questionIndex: 0,
         phaseEpoch,
         roundToken,
         deadlineAt,
@@ -154,17 +187,8 @@ export function reduce(
         const arrangingEpoch = state.phaseEpoch + 1;
         const arrangingDeadline = ctx.now + state.config.arrangingSeconds * 1000;
 
-        // 构建版图
-        const board = buildBoard(
-          state.players.map((p) => {
-            const g = nextGuesses[p];
-            return {
-              playerId: p,
-              value: g?.value ?? 1,
-              origin: g?.origin ?? 'timeout',
-            };
-          }),
-        );
+        // 全员已交，必然至少有一张牌
+        const board = buildBoardFromGuesses(state.players, state.forfeitedIds, nextGuesses)!;
 
         const scheduleArrangingEffect: GameEffect = {
           type: 'schedule_timer',
@@ -308,27 +332,119 @@ export function reduce(
       }
 
       if (state.phase === 'answering') {
-        // G0 P1: 超时自动补 1，标记为 timeout
-        const nextGuesses: Record<string, Guess | null> = { ...state.guesses };
-        for (const pid of state.players) {
-          if (nextGuesses[pid] === null) {
-            nextGuesses[pid] = { value: 1, origin: 'timeout' };
+        // G0 P1（2026-09-22 修订）：超时不再补 1。
+        // 未作答者本轮不上版图；一个人都没作答则本轮作废、换题重打。
+        const board = buildBoardFromGuesses(state.players, state.forfeitedIds, state.guesses);
+
+        if (board === null) {
+          const nextQuestionIndex = state.questionIndex + 1;
+          const backupQuestion = state.questionPlan[nextQuestionIndex];
+          const nextEpoch = state.phaseEpoch + 1;
+
+          if (backupQuestion) {
+            // 作废重打：轮次号不变（不占正式轮名额），但必须换一道没人看过的题，
+            // 并换新 roundToken 让上一轮的在途动作全部失效。
+            const nextRoundToken = generateRoundToken(state.round, ctx.now, ctx.random);
+            const deadlineAt = ctx.now + state.config.answerSeconds * 1000;
+            const { guesses, guessRevisions, bets, betRevisions } = freshRoundRecords(state.players);
+
+            return {
+              ok: true,
+              nextState: {
+                ...state,
+                phase: 'answering',
+                questionIndex: nextQuestionIndex,
+                voidedRounds: state.voidedRounds + 1,
+                phaseEpoch: nextEpoch,
+                roundToken: nextRoundToken,
+                deadlineAt,
+                guesses,
+                guessRevisions,
+                bets,
+                betRevisions,
+                board: [],
+              },
+              publicEvents: [
+                { type: 'round_voided', round: state.round, reason: 'no_answers' },
+                {
+                  type: 'round_started',
+                  round: state.round,
+                  question: { prompt: backupQuestion.prompt, unit: backupQuestion.unit },
+                },
+              ],
+              privateEvents: [],
+              effects: [
+                {
+                  type: 'schedule_timer',
+                  timerId: `ww:${nextRoundToken}:${nextEpoch}`,
+                  deadlineAt,
+                  action: {
+                    type: 'phase_timeout',
+                    roundToken: nextRoundToken,
+                    phaseEpoch: nextEpoch,
+                    phase: 'answering',
+                  },
+                },
+              ],
+              resultCandidate: null,
+            };
           }
+
+          // 备用题用尽：不能无限重抽，本轮按无人得分直接结算收场。
+          const question = state.questionPlan[state.questionIndex];
+          if (!question) {
+            return { ok: false, code: 'MISSING_QUESTION', message: `缺失第 ${state.round} 题` };
+          }
+          const emptySettlement = settleRound({
+            board: [],
+            winningTargetIds: [],
+            players: state.players.map((pid) => ({
+              playerId: pid,
+              scoreBefore: state.scores[pid] ?? 0,
+              bets: state.bets[pid] ?? defaultBetPair(),
+            })),
+          });
+          const roundResult: RoundResult = {
+            round: state.round,
+            question,
+            board: [],
+            bets: { ...state.bets },
+            winningTargetIds: [],
+            awardedAuthors: [],
+            ledger: emptySettlement.ledger,
+          };
+          const settlementDeadline = ctx.now + state.config.settlementSeconds * 1000;
+
+          return {
+            ok: true,
+            nextState: {
+              ...state,
+              phase: 'settlement',
+              phaseEpoch: nextEpoch,
+              deadlineAt: settlementDeadline,
+              history: [...state.history, roundResult],
+            },
+            publicEvents: [{ type: 'round_settled', result: roundResult }],
+            privateEvents: [],
+            effects: [
+              {
+                type: 'schedule_timer',
+                timerId: `ww:${state.roundToken}:${nextEpoch}`,
+                deadlineAt: settlementDeadline,
+                action: {
+                  type: 'phase_timeout',
+                  roundToken: state.roundToken,
+                  phaseEpoch: nextEpoch,
+                  phase: 'settlement',
+                },
+              },
+            ],
+            resultCandidate: null,
+          };
         }
 
         const nextEpoch = state.phaseEpoch + 1;
         const arrangingDeadline = ctx.now + state.config.arrangingSeconds * 1000;
-
-        const board = buildBoard(
-          state.players.map((p) => {
-            const g = nextGuesses[p]!;
-            return {
-              playerId: p,
-              value: g.value,
-              origin: g.origin,
-            };
-          }),
-        );
 
         const effects: GameEffect[] = [
           {
@@ -353,7 +469,6 @@ export function reduce(
           phase: 'arranging',
           phaseEpoch: nextEpoch,
           deadlineAt: arrangingDeadline,
-          guesses: nextGuesses,
           board,
         };
 
@@ -405,21 +520,19 @@ export function reduce(
 
       if (state.phase === 'betting') {
         // 结算当前轮
-        const questionIndex = state.round - 1;
-        const question = state.questionPlan[questionIndex];
+        const question = state.questionPlan[state.questionIndex];
         if (!question) {
           return { ok: false, code: 'MISSING_QUESTION', message: `缺失第 ${state.round} 题` };
         }
 
-        const winningTargetId = pickWinningTarget(state.board, question.answer);
+        const winningTargetIds = pickWinningTargets(state.board, question.answer);
         const roundSettlement = settleRound({
           board: state.board,
-          winningTargetId,
+          winningTargetIds,
           players: state.players.map((pid) => ({
             playerId: pid,
             scoreBefore: state.scores[pid] ?? 0,
             bets: state.bets[pid] ?? defaultBetPair(),
-            guess: state.guesses[pid] ?? { value: 1, origin: 'timeout' },
           })),
         });
 
@@ -437,7 +550,7 @@ export function reduce(
           question,
           board: state.board,
           bets: { ...state.bets },
-          winningTargetId,
+          winningTargetIds,
           awardedAuthors: roundSettlement.awardedAuthors,
           ledger: roundSettlement.ledger,
         };
@@ -486,29 +599,20 @@ export function reduce(
       }
 
       if (state.phase === 'settlement') {
-        if (state.round < 7) {
+        if (state.round < TOTAL_ROUNDS) {
           // 进入下一轮 answering
           const nextRound = state.round + 1;
+          const nextQuestionIndex = state.questionIndex + 1;
           const nextEpoch = state.phaseEpoch + 1;
           const nextRoundToken = generateRoundToken(nextRound, ctx.now, ctx.random);
           const deadlineAt = ctx.now + state.config.answerSeconds * 1000;
 
-          const nextQuestion = state.questionPlan[nextRound - 1];
+          const nextQuestion = state.questionPlan[nextQuestionIndex];
           if (!nextQuestion) {
             return { ok: false, code: 'MISSING_QUESTION', message: `缺失第 ${nextRound} 题` };
           }
 
-          const guesses: Record<string, null> = {};
-          const guessRevisions: Record<string, number> = {};
-          const bets: Record<string, BetPair> = {};
-          const betRevisions: Record<string, number> = {};
-
-          for (const pid of state.players) {
-            guesses[pid] = null;
-            guessRevisions[pid] = 0;
-            bets[pid] = defaultBetPair();
-            betRevisions[pid] = 0;
-          }
+          const { guesses, guessRevisions, bets, betRevisions } = freshRoundRecords(state.players);
 
           const timerId = `ww:${nextRoundToken}:${nextEpoch}`;
           const effects: GameEffect[] = [
@@ -540,6 +644,7 @@ export function reduce(
             ...state,
             phase: 'answering',
             round: nextRound,
+            questionIndex: nextQuestionIndex,
             phaseEpoch: nextEpoch,
             roundToken: nextRoundToken,
             deadlineAt,
@@ -572,7 +677,7 @@ export function reduce(
         const finalResult: FinalResult = {
           rankings,
           winners,
-          roundsPlayed: 7,
+          roundsPlayed: TOTAL_ROUNDS,
         };
 
         const nextEpoch = state.phaseEpoch + 1;
@@ -627,8 +732,14 @@ export function reduce(
       if (state.phase === 'answering') {
         const remainingActive = state.players.filter((p) => !nextForfeitedIds.includes(p));
         const allSubmitted = remainingActive.every((p) => state.guesses[p] !== null);
+        const board =
+          allSubmitted && remainingActive.length > 0
+            ? buildBoardFromGuesses(state.players, nextForfeitedIds, state.guesses)
+            : null;
 
-        if (allSubmitted && remainingActive.length > 0) {
+        // board 为 null 说明活跃玩家一个都没作答（例如作答者刚好全退席），
+        // 此时不提前翻牌，交给作答超时那条路去走作废流程。
+        if (board !== null) {
           const cancelTimerEffect: GameEffect = {
             type: 'cancel_timer',
             timerId: `ww:${state.roundToken}:${state.phaseEpoch}`,
@@ -636,17 +747,6 @@ export function reduce(
 
           const arrangingEpoch = state.phaseEpoch + 1;
           const arrangingDeadline = ctx.now + state.config.arrangingSeconds * 1000;
-
-          const board = buildBoard(
-            state.players.map((p) => {
-              const g = state.guesses[p];
-              return {
-                playerId: p,
-                value: g?.value ?? 1,
-                origin: g?.origin ?? 'timeout',
-              };
-            }),
-          );
 
           const scheduleArrangingEffect: GameEffect = {
             type: 'schedule_timer',

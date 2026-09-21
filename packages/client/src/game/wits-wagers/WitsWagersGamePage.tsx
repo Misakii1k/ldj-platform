@@ -3,6 +3,7 @@ import { useConnection } from '../../connection/useConnection.ts';
 import { TabletopOvalShell } from '../../shared-ui/TabletopOvalShell.tsx';
 import { ConfirmDialog } from '../../shared-ui/ConfirmDialog.tsx';
 import type { WitsWagersPlayerView, ChipId, TargetId, BetPairView } from './types.ts';
+import { targetLabel } from './types.ts';
 import { GuessPanel } from './GuessPanel.tsx';
 import { WitsTableStage } from './stage/WitsTableStage.tsx';
 import { WitsHand } from './stage/WitsHand.tsx';
@@ -75,6 +76,8 @@ export function WitsWagersGamePage({
   const [rulesOpen, setRulesOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const settingsRef = useRef<HTMLButtonElement>(null);
+  // 规则由牌桌菜单抽屉自带的「本局规则」触发，顶栏不再重复放按钮；
+  // 这个 ref 没有绑定元素，GameDrawer 关闭时只是不做焦点还原。
   const rulesRef = useRef<HTMLButtonElement>(null);
   const historyRef = useRef<HTMLButtonElement>(null);
 
@@ -143,8 +146,7 @@ export function WitsWagersGamePage({
       .filter((chip) => chip.targetId !== null)
       .map((chip) => {
         const target = view.board.find((t) => t.id === chip.targetId);
-        const label =
-          target?.id === 'smaller' ? '全部猜高' : (target?.value?.toLocaleString() ?? '未知槽位');
+        const label = targetLabel(target);
         const stake = chip.extraStake > 0 ? `，附加 ${chip.extraStake} 分` : '';
         return `筹码 ${chip.chipId} → ${label}（净赢 ×${target?.odds ?? '?'}）${stake}`;
       });
@@ -199,7 +201,7 @@ export function WitsWagersGamePage({
         members={members}
         faceDownCount={activePlayerCount}
         submittedCount={submittedCount}
-        winningTargetId={view.revealed?.winningTargetId ?? null}
+        winningTargetIds={view.revealed?.winningTargetIds ?? []}
         revealedTargets={stage.revealedTargets}
         myDraft={view.phase === 'betting' ? betDraft : (me?.acceptedBets ?? null)}
         myAcceptedBets={me?.acceptedBets ?? null}
@@ -276,10 +278,8 @@ export function WitsWagersGamePage({
         topRightControls={(
           <WitsMenuControls
             settingsRef={settingsRef}
-            rulesRef={rulesRef}
             historyRef={historyRef}
             onOpenSettings={() => setSettingsOpen(true)}
-            onOpenRules={() => setRulesOpen(true)}
             onOpenHistory={() => setHistoryOpen(true)}
             historyCount={view.history.length}
           />

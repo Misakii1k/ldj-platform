@@ -26,8 +26,8 @@ export type StageEvent =
   | { kind: 'myBetsAccepted'; round: number; revision: number; moves: ChipMove[] }
   /** 他人下注变化：筹码无手飞入 */
   | { kind: 'publicBetsChanged'; playerIds: string[] }
-  /** 正确答案揭晓：高亮获胜槽位 */
-  | { kind: 'winningRevealed'; round: number; winningTargetId: TargetId }
+  /** 正确答案揭晓：高亮获胜槽位（等距双胜时两个，作废轮为空） */
+  | { kind: 'winningRevealed'; round: number; winningTargetIds: TargetId[] }
   /** 银行收付：先收后派，按账本逐笔 */
   | { kind: 'settlementLedger'; round: number; ledger: PlayerRoundLedgerView[] }
   /** 终局 */
@@ -179,7 +179,7 @@ export function deriveStageEvents(
     events.push({
       kind: 'winningRevealed',
       round: nextRevealed.round,
-      winningTargetId: nextRevealed.winningTargetId,
+      winningTargetIds: nextRevealed.winningTargetIds,
     });
     events.push({
       kind: 'settlementLedger',

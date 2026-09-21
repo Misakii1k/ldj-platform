@@ -2,6 +2,7 @@ import { UserAvatar } from '../../../user/UserAvatar.tsx';
 import { resolveMemberAvatar } from '../../../user/avatar.ts';
 import { nameFor, type MemberLike } from '../../useGameAction.ts';
 import type { BoardTargetView } from '../types.ts';
+import { targetLabel } from '../types.ts';
 
 export interface WitsAnswerCardProps {
   /** 已揭晓的槽位；传 null 表示这是一张尚未翻开的背面牌 */
@@ -34,7 +35,7 @@ export function WitsAnswerCard({
   revealIndex = 0,
   children,
 }: WitsAnswerCardProps) {
-  const isSmaller = target?.id === 'smaller';
+  const isEdge = target?.id === 'lower' || target?.id === 'higher';
 
   const classes = [
     'ww-answer-card',
@@ -42,7 +43,7 @@ export function WitsAnswerCard({
     // 只挂在真正代表版图槽位的牌上，背面牌不算。
     target ? 'ww-target-card' : '',
     faceUp ? 'is-face-up' : 'is-face-down',
-    isSmaller ? 'ww-answer-card--smaller' : '',
+    isEdge ? `ww-answer-card--edge ww-answer-card--${target!.id}` : '',
     isWinner ? 'ww-answer-card--winner' : '',
     isSelected ? 'ww-answer-card--selected' : '',
   ]
@@ -70,8 +71,8 @@ export function WitsAnswerCard({
       onKeyDown={handleKeyDown}
       aria-label={
         faceUp && target
-          ? isSmaller
-            ? `全部猜高，净赢 ${target.odds} 倍`
+          ? isEdge
+            ? `${target.id === 'lower' ? '答案低于全部估数' : '答案高于全部估数'}，净赢 ${target.odds} 倍`
             : `估数 ${target.value?.toLocaleString()}，净赢 ${target.odds} 倍`
           : '未翻开的答案牌'
       }
@@ -108,11 +109,11 @@ export function WitsAnswerCard({
           {faceUp && target && (
             <>
               <div className="ww-answer-card__slot">
-                {isSmaller ? '特殊槽位' : `槽位 ${target.slot}`}
+                {isEdge ? '边缘槽位' : `槽位 ${target.slot}`}
               </div>
 
               <div className="ww-answer-card__value">
-                {isSmaller ? '全部猜高' : target.value?.toLocaleString()}
+                {targetLabel(target)}
               </div>
 
               <div className="ww-answer-card__odds">净赢 ×{target.odds}</div>
@@ -120,17 +121,12 @@ export function WitsAnswerCard({
               {target.authors.length > 0 && (
                 <div className="ww-answer-card__authors">
                   {target.authors.map((author) => {
-                    const isTimeout = target.timeoutAuthors.includes(author);
                     const member = members.find((m) => m.playerId === author);
                     return (
                       <span
                         key={author}
-                        className={`ww-answer-card__author ${isTimeout ? 'is-timeout' : ''}`}
-                        title={
-                          isTimeout
-                            ? `${nameFor(members, author)}（系统超时补答）`
-                            : nameFor(members, author)
-                        }
+                        className="ww-answer-card__author"
+                        title={nameFor(members, author)}
                       >
                         <UserAvatar
                           avatar={resolveMemberAvatar({ avatar: member?.avatar, playerId: author })}

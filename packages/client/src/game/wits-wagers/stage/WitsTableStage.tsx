@@ -21,7 +21,8 @@ export interface WitsTableStageProps {
   readonly faceDownCount?: number;
   /** 已交牌的人数，用于作答阶段的桌面进度 */
   readonly submittedCount?: number;
-  readonly winningTargetId?: TargetId | null;
+  /** 获胜槽位；等距双胜时两个都要高亮 */
+  readonly winningTargetIds?: readonly TargetId[];
   /** 演出编排给出的已翻开槽位；未列入的牌保持背面 */
   readonly revealedTargets?: ReadonlySet<TargetId>;
   /** 我的下注草稿，未保存时以半透明预览呈现 */
@@ -48,7 +49,7 @@ export function WitsTableStage({
   members = [],
   faceDownCount = 0,
   submittedCount = 0,
-  winningTargetId = null,
+  winningTargetIds = [],
   revealedTargets,
   myDraft = null,
   myAcceptedBets = null,
@@ -124,7 +125,7 @@ export function WitsTableStage({
                     members={members}
                     faceUp={faceUp}
                     revealIndex={index}
-                    isWinner={winningTargetId === target.id}
+                    isWinner={winningTargetIds.includes(target.id)}
                     isSelected={activeChip?.targetId === target.id}
                     interactive={interactive}
                     onActivate={() => onSelectTarget?.(target.id)}

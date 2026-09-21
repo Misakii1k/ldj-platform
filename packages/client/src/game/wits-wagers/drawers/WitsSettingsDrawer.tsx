@@ -1,7 +1,5 @@
 import type { RefObject } from 'react';
-import { useState } from 'react';
 import { GameDrawer } from '../../tabletop/GameDrawer.tsx';
-import { webAudio } from '../../../shared-ui/WebAudioManager.ts';
 import { useMotion } from '../../../motion/MotionContext.tsx';
 import type { MotionPreference } from '../../../motion/motionPolicy.ts';
 import {
@@ -38,13 +36,6 @@ export function WitsSettingsDrawer({
   onClose,
 }: WitsSettingsDrawerProps) {
   const motion = useMotion();
-  const [muted, setMuted] = useState(() => webAudio.isMuted());
-
-  const toggleMuted = () => {
-    const next = !muted;
-    setMuted(next);
-    webAudio.setMuted(next);
-  };
 
   return (
     <GameDrawer
@@ -55,26 +46,14 @@ export function WitsSettingsDrawer({
       className="wits-settings-drawer"
     >
       <section className="wits-settings__section">
-        <h3 className="wits-settings__section-title">音效</h3>
-
-        <div className="wits-settings__row">
-          <div className="wits-settings__label">
-            <strong>音效开关</strong>
-            <span>{muted ? '当前已静音' : '发牌、翻牌、收付都会有提示音'}</span>
-          </div>
-          <button
-            type="button"
-            className="wits-settings__toggle"
-            onClick={toggleMuted}
-            aria-pressed={!muted}
-          >
-            {muted ? '开启' : '静音'}
-          </button>
-        </div>
+        <h3 className="wits-settings__section-title">音量</h3>
+        <p className="wits-settings__hint">
+          静音开关在牌桌菜单里（右上角「菜单」→ 游戏音效），这里只调音量大小。
+        </p>
 
         <div className="wits-settings__row wits-settings__row--stack">
           <label className="wits-settings__label" htmlFor="wits-volume">
-            <strong>音量</strong>
+            <strong>音效音量</strong>
             <span>{Math.round(settings.soundVolume * 100)}%</span>
           </label>
           <input
@@ -84,7 +63,6 @@ export function WitsSettingsDrawer({
             max={1}
             step={0.05}
             value={settings.soundVolume}
-            disabled={muted}
             onChange={(e) => onChange({ soundVolume: Number(e.target.value) })}
           />
         </div>

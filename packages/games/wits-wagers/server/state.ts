@@ -15,6 +15,15 @@ export const DEFAULT_RESOLVED_CONFIG: WitsWagersResolvedConfig = {
   settlementSeconds: 11,
 };
 
+/** 正式轮数 */
+export const TOTAL_ROUNDS = 7;
+/**
+ * 题目计划长度：7 道正式题 + 2 道备用题。
+ * 备用题用于"全员未作答"时作废本轮换题重打——那一轮不占正式轮名额，
+ * 但必须换一道新题，否则重打时大家已经看过题面。
+ */
+export const QUESTION_PLAN_SIZE = TOTAL_ROUNDS + 2;
+
 export const SAMPLE_TEST_QUESTIONS: Question[] = [
   {
     id: 'ww-test-01',
@@ -147,14 +156,15 @@ export function createState(options: CreateStateOptions): WitsWagersState {
     settlementSeconds: config?.settlementSeconds ?? DEFAULT_RESOLVED_CONFIG.settlementSeconds,
   };
 
-  const pool = questions && questions.length >= 7 ? questions : SAMPLE_TEST_QUESTIONS;
-  if (pool.length < 7) {
-    throw new Error(`题库数量不足 7 题（当前: ${pool.length}）`);
+  const pool = questions && questions.length >= TOTAL_ROUNDS ? questions : SAMPLE_TEST_QUESTIONS;
+  if (pool.length < TOTAL_ROUNDS) {
+    throw new Error(`题库数量不足 ${TOTAL_ROUNDS} 题（当前: ${pool.length}）`);
   }
 
-  // 从题库中按确定性随机洗牌抽取前 7 题
+  // 从题库中按确定性随机洗牌抽取题目计划：
+  // 7 道正式题 + 备用题（全员未作答时本轮作废，从备用题续上，不占 7 轮名额）
   const shuffled = ctx.random.shuffle(pool);
-  const questionPlan = shuffled.slice(0, 7);
+  const questionPlan = shuffled.slice(0, Math.min(QUESTION_PLAN_SIZE, shuffled.length));
 
   const scores: Record<string, number> = {};
   const winningGuesses: Record<string, number> = {};
@@ -178,6 +188,8 @@ export function createState(options: CreateStateOptions): WitsWagersState {
     config: resolvedConfig,
     phase: 'created',
     round: 0,
+    questionIndex: 0,
+    voidedRounds: 0,
     phaseEpoch: 0,
     roundToken: '',
     deadlineAt: null,
