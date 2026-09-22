@@ -1503,3 +1503,48 @@ html[data-motion-level='off'] .ll-opponent[data-shielding='true'] {
     --stage-felt-tilt: 4deg;
   }
 }
+
+/* U11 补搬：记牌器开关按钮（原先因带伪类选择器被迁移脚本跳过）。 */
+
+.ll-tracker-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 2px solid var(--home-ink, #312d28);
+  background: #fffaf1;
+  color: var(--home-ink, #312d28);
+  font-size: 0.78rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, background 200ms ease, color 200ms ease, border-color 200ms ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  box-shadow: 2px 2.5px 0 var(--home-ink, #312d28);
+}
+
+.ll-tracker-toggle-btn:hover:not(:disabled) {
+  background: #ffeac2;
+  transform: translateY(-1px);
+  box-shadow: 2px 3.5px 0 var(--home-ink, #312d28);
+}
+
+.ll-tracker-toggle-btn:active:not(:disabled) {
+  transform: translate(1px, 2px);
+  box-shadow: 1px 1px 0 var(--home-ink, #312d28);
+}
+
+.ll-tracker-toggle-btn,
+  .tabletop-orient-btn,
+  .game-leave__button {
+    height: 32px !important;
+    min-width: 32px !important;
+    padding: 0 8px !important;
+    font-size: 0.72rem !important;
+    border-radius: 10px !important;
+    box-shadow: 2px 2.5px 0 var(--home-ink, #312d28) !important;
+  }

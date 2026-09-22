@@ -8,7 +8,6 @@ import {
   type GooseRelayEvent,
   type GooseRelayReduceResult,
   type GooseRelayState,
-  type ResolvedGooseRelayConfig,
 } from './types.ts';
 
 /** 掷骰/抽卡随机源（与 GameContext.random 的 nextInt 同形，便于测试注入） */

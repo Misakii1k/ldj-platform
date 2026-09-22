@@ -1,12 +1,18 @@
 # 交接状态：其余游戏前端提升
 
-更新时间：2026-09-22（U01 完成）。工作区 `D:\项目`，分支 `feat/wits-wagers-tabletop-stage`，基线 HEAD `f16a70d`。
+更新时间：2026-09-23（U00–U11 全部完成）。工作区 `D:\项目`，分支 `feat/wits-wagers-tabletop-stage`，计划起点 `f16a70d`。
 
 ## 当前结论
 
-G0 五项决策已全部由用户点选确认。**U00 基线、U01 shared-ui 上提均已完成。** 原先的并行会话阻塞已解除（该会话已停止运行），但它在工作区留下了一批未完成改动，见「工作区现状」。
+**12 张任务卡（U00–U11）全部完成。** 9 款游戏均已接入 shared-ui 演出层，
+styles.css 由 27,021 行瘦身到 22,466 行（−16.9%）。
 
-下一张卡是 U02（night-testimony stage）。P1 三款视觉契约已在 `contracts/`，开工前请用户先审一遍。
+最终验收见 `reports/U11-final.md`：typecheck 排除并行会话孤儿文件后 0 错误、
+lint 133（低于基线 134）、单测 1534/1558（24 失败全为并行会话半成品，本计划零新增）、
+视口合约 18/20 与动效合约 25/27（失败项均为 werewolf 与 wits-wagers-sim 存量）。
+
+**仍需你做的**：9 款关键画面样张尚未经你审核；P1 三款的视觉契约（`contracts/`）
+你也还没看过。契约里写明「基线由用户审核，禁止失败后自动接受新截图」。
 
 ## 工作区现状（非本计划引入）
 
@@ -47,16 +53,16 @@ git worktree add /tmp/ldj-probe f16a70d
 |---|---|---|
 | U00 | 基线：全量门 + 9 款样张 | **已完成**（`reports/U00-baseline.md`）。其中榴莲/狼人杀的 e2e 选择器修正已在工作区生效 |
 | U01 | shared-ui 上提（StageCountdownRing / useStageMachine / FlightLayer / flip / stageMemory / felt-3d） | **已完成**（`reports/U01-shared-ui-stage.md`）。一智千金已切换，46/46 单测通过，视口与动效合约零回归 |
-| U02 | night-testimony stage（平面 + 夜间暗角） | 契约已写（`contracts/night-testimony.md`），待实现 |
-| U03 | echo-judge stage（平面 + 判定暗角） | 契约已写（`contracts/echo-judge.md`），待实现 |
-| U04 | bell-clash stage（3D）+ CSS 迁出 | 契约已写（`contracts/bell-clash.md`），待实现 |
-| U05 | goose-relay stage（3D） | 未开始 |
-| U06 | undercover classic 收编（平面） | 未开始 |
-| U07 | uno stage（3D）+ legacy 删除 | 未开始 |
-| U08 | loveletter 拆分 + stage（3D） | 未开始 |
-| U09 | cheese-thief stage 接入（平面） | 未开始 |
-| U10 | landlord 抽出 + stage（3D） | 未开始 |
-| U11 | styles.css 瘦身核对 + 最终验收 | 未开始 |
+| U02 | night-testimony stage（平面 + 夜间暗角） | **已完成**（`7effa96`） |
+| U03 | echo-judge stage（平面 + 判定暗角） | **已完成**（`26ba29b`） |
+| U04 | bell-clash stage（3D）+ CSS 迁出 | **已完成**（`3454591`） |
+| U05 | goose-relay stage（3D） | **已完成**（`0f8136c`） |
+| U06 | undercover classic 收编（平面） | **已完成**（`18ef0ce`） |
+| U07 | uno stage（3D）+ legacy 抽出（见 U11 报告 §5） | **已完成**（`1a928a2`） |
+| U08 | loveletter 拆分 + stage（3D） | **已完成**（`49a2b6a`） |
+| U09 | cheese-thief stage 接入（平面） | **已完成**（`868efbe`） |
+| U10 | landlord 抽出 + stage（3D） | **已完成**（`4c8898f`） |
+| U11 | styles.css 瘦身核对 + 最终验收 | **已完成**（`reports/U11-final.md`） |
 
 ## U02–U04 开工前必须先解决的前置
 
@@ -103,9 +109,9 @@ git worktree add /tmp/ldj-probe f16a70d
 
 ## 未完成（不能宣称已验证）
 
-- U02–U11 共 10 张卡的实现与验收。
-- P1 三款的视觉契约已写，但尚未经用户审核。
-- 9 款关键画面样张尚未产出，更未经用户审核。
+- ~~U02–U11 共 10 张卡的实现与验收。~~ 已完成。
+- P1 三款的视觉契约已写，但**尚未经用户审核**。
+- 9 款关键画面样张**尚未经用户审核**（视口合约门每次跑会覆写 baseline/ 下的 390×844 与 1280×800）。
 
 ## 红线（每张卡都适用）
 

@@ -14292,43 +14292,14 @@ html[data-motion-level="off"] *::after {
 .tabletop-sound-btn,
 .tabletop-rules-btn,
 .cheese-tts-icon-btn,
-.ll-tracker-toggle-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  height: 32px;
-  padding: 0 10px;
-  border-radius: 10px;
-  border: 2px solid var(--home-ink, #312d28);
-  background: #fffaf1;
-  color: var(--home-ink, #312d28);
-  font-size: 0.78rem;
-  font-weight: 900;
-  cursor: pointer;
-  transition: transform 120ms ease, box-shadow 120ms ease, background 200ms ease, color 200ms ease, border-color 200ms ease;
-  white-space: nowrap;
-  flex-shrink: 0;
-  box-sizing: border-box;
-  box-shadow: 2px 2.5px 0 var(--home-ink, #312d28);
-}
 
 .tabletop-sound-btn:hover:not(:disabled),
 .tabletop-rules-btn:hover:not(:disabled),
 .cheese-tts-icon-btn:hover:not(:disabled),
-.ll-tracker-toggle-btn:hover:not(:disabled) {
-  background: #ffeac2;
-  transform: translateY(-1px);
-  box-shadow: 2px 3.5px 0 var(--home-ink, #312d28);
-}
 
 .tabletop-sound-btn:active:not(:disabled),
 .tabletop-rules-btn:active:not(:disabled),
 .cheese-tts-icon-btn:active:not(:disabled),
-.ll-tracker-toggle-btn:active:not(:disabled) {
-  transform: translate(1px, 2px);
-  box-shadow: 1px 1px 0 var(--home-ink, #312d28);
-}
 
 /* ========================================================= */
 /* 暗夜 / 深色背景主题自适应高对比顶栏规范                      */
@@ -15419,17 +15390,7 @@ html[data-motion-level="off"] *::after {
   .tabletop-sound-btn,
   .tabletop-rules-btn,
   .cheese-tts-icon-btn,
-  .ll-tracker-toggle-btn,
-  .tabletop-orient-btn,
-  .game-leave__button {
-    height: 32px !important;
-    min-width: 32px !important;
-    padding: 0 8px !important;
-    font-size: 0.72rem !important;
-    border-radius: 10px !important;
-    box-shadow: 2px 2.5px 0 var(--home-ink, #312d28) !important;
-  }
-  .tabletop-sound-btn__label,
+    .tabletop-sound-btn__label,
   .tabletop-rules-btn .durian-btn-text,
   .tabletop-rules-btn .cheese-btn-text {
     display: none;

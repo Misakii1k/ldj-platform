@@ -8,7 +8,30 @@ import {
 } from '../src/motion/ambientMotion.ts';
 
 const GAME_UI_CSS = readFileSync(new URL('../src/shared-ui/game-ui.css', import.meta.url), 'utf8');
-const STYLES_CSS = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
+/**
+ * 样式已按游戏拆表（U02–U10），装饰循环的选择器可能落在任何一张表里。
+ * 这里把全局表与各游戏表拼起来一起查，断言强度不变：清单里的每条选择器
+ * 都必须在某张真实样式表中存在。
+ */
+const GAME_CSS_FILES = [
+  '../src/styles.css',
+  '../src/game/night-testimony/night-testimony.css',
+  '../src/game/echo-judge/echo-judge.css',
+  '../src/game/bell-clash/bell-clash.css',
+  '../src/game/undercover/undercover.css',
+  '../src/game/uno/uno.css',
+  '../src/game/loveletter/loveletter.css',
+  '../src/game/goose-relay/goose-relay.css',
+  '../src/game/cheese-thief/cheese-thief.css',
+  '../src/game/durian/durian.css',
+  '../src/game/landlord/landlord.css',
+  '../src/game/wits-wagers/wits-wagers.css',
+  '../src/game/werewolf/werewolf.css',
+] as const;
+
+const STYLES_CSS = GAME_CSS_FILES.map((rel) =>
+  readFileSync(new URL(rel, import.meta.url), 'utf8'),
+).join(String.fromCharCode(10));
 
 /** 从 game-ui.css 的 reduced 门控块里抽出 :is(...) 中的选择器清单。 */
 function extractReducedGateSelectors(css: string): string[] {

@@ -167,8 +167,6 @@ html[data-motion-level="reduced"] :is(
   .badge-ready,
   .cheese-icon-bounce,
   .cheese-model-emoji,
-  .ding-bell-stage-text,
-  .echo-rank-score,
   .host-status-dot,
   .werewolf-dawn-glow,
   .werewolf-fog-drift,
@@ -178,7 +176,7 @@ html[data-motion-level="reduced"] :is(
   .werewolf-spotlight__img,
   .winner-rays,
   .goose-modal-card-item,
-  .bell-floating-bell-btn
+  .bc-bell-btn
 ) {
   animation: none !important;
 }

@@ -36,8 +36,6 @@ export const AMBIENT_MOTION_SELECTORS = [
   '.badge-ready',
   '.cheese-icon-bounce',
   '.cheese-model-emoji',
-  '.ding-bell-stage-text',
-  '.echo-rank-score',
   '.host-status-dot',
   '.werewolf-dawn-glow',
   '.werewolf-fog-drift',
@@ -47,7 +45,7 @@ export const AMBIENT_MOTION_SELECTORS = [
   '.werewolf-spotlight__img',
   '.winner-rays',
   '.goose-modal-card-item',
-  '.bell-floating-bell-btn',
+  '.bc-bell-btn',
 ] as const;
 
 /** reduced 档位下仍必须保留动效的必要反馈（只降时长，不关闭）。 */
