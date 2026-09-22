@@ -3,6 +3,9 @@
  * 只消费严格解析后的情书视角（loveletter/types.ts parseLoveLetterView）。
  * 手牌只属于本人：观战视角不含手牌，页面仅在 me 存在时渲染手牌区。
  * 视觉：信笺宫廷主题——信封手牌、蜡封徽章、移除堆、好感红心进度、实时记牌器与卡牌技能悬浮。
+ *
+ * U08 演出层（stage/）：书信桌 3D 毡面、出牌时信封飞向中央、淘汰翻手牌、
+ * 侍女庇护盾牌亮起。这款**没有服务端 timer**（纯回合制），故不上倒计时环。
  */
 import { useEffect, useRef, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
@@ -11,117 +14,12 @@ import { ActionDock } from '../tabletop/ActionDock.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
 import { webAudio } from '../../shared-ui/WebAudioManager.ts';
+import { FlightLayer } from '../../shared-ui/stage/FlightLayer.tsx';
+import { useLoveLetterStage } from './stage/useLoveLetterStage.tsx';
 import { LOVELETTER_ROLES, type LoveLetterPlayerView, type LoveLetterRole, type LoveLetterCard } from './types.ts';
 
-export const ROLE_LABELS: Record<LoveLetterRole, string> = {
-  guard: '守卫', priest: '牧师', baron: '男爵', handmaid: '侍女',
-  prince: '王子', king: '国王', countess: '伯爵夫人', princess: '公主',
-};
+import { ROLE_LABELS, ROLE_ABILITIES, NEEDS_TARGET } from './roleMeta.ts';
 
-export interface RoleAbilityMeta {
-  role: LoveLetterRole;
-  name: string;
-  value: number;
-  totalCount: number;
-  icon: string;
-  badge: string;
-  summary: string;
-  description: string;
-  tips: string;
-}
-
-export const ROLE_ABILITIES: Record<LoveLetterRole, RoleAbilityMeta> = {
-  guard: {
-    role: 'guard',
-    name: '守卫 (Guard)',
-    value: 1,
-    totalCount: 5,
-    icon: '🛡️',
-    badge: '猜牌淘汰',
-    summary: '指定一名其他玩家并猜测其手牌（不能猜守卫），猜中淘汰！',
-    description: '指定一名未被侍女庇护的其他玩家，猜测对方持有的角色牌（不可猜守卫）。若猜测正确，该玩家立即被淘汰出局！',
-    tips: '牌库中数量最多（共 5 张），是试探与击杀的主力牌。',
-  },
-  priest: {
-    role: 'priest',
-    name: '牧师 (Priest)',
-    value: 2,
-    totalCount: 2,
-    icon: '📜',
-    badge: '秘密查验',
-    summary: '秘密查验一名其他玩家的手牌（仅你可见）。',
-    description: '指定一名未被侍女庇护的其他玩家，秘密查看其当前手牌。查验结果记录在你的专属记录本中。',
-    tips: '掌握绝对情报，下回合配合守卫指名必杀或男爵绝杀。',
-  },
-  baron: {
-    role: 'baron',
-    name: '男爵 (Baron)',
-    value: 3,
-    totalCount: 2,
-    icon: '⚔️',
-    badge: '暗中比点',
-    summary: '与一名玩家秘密比对手牌点数，较小者淘汰。',
-    description: '指定一名未被侍女庇护的其他玩家，私下比对各自手牌点数。点数较小者立即被淘汰出局；点数相同则平安无事。',
-    tips: '手持高点数牌（如王子、国王、伯爵夫人）时主动发起决斗。',
-  },
-  handmaid: {
-    role: 'handmaid',
-    name: '侍女 (Handmaid)',
-    value: 4,
-    totalCount: 2,
-    icon: '✨',
-    badge: '免受影响',
-    summary: '直到你的下个回合开始前，免疫所有卡牌效果。',
-    description: '打出后获得神圣庇护，直到你的下一个回合开始前，任何其他玩家打出的卡牌效果均无法以你为目标。',
-    tips: '当局势危险或被多人盯上时打出保命，安全渡过轮次。',
-  },
-  prince: {
-    role: 'prince',
-    name: '王子 (Prince)',
-    value: 5,
-    totalCount: 2,
-    icon: '👑',
-    badge: '强迫弃牌',
-    summary: '指定任意一名玩家（可自选），迫使其弃牌并重摸。',
-    description: '指定任意一名未被侍女庇护的玩家（可以选择自己），迫使其弃掉当前手牌并重新摸一张（若弃掉公主则该玩家直接出局）。',
-    tips: '破除对手关键手牌；当自己被查验暴露时对自己使用洗白手牌。',
-  },
-  king: {
-    role: 'king',
-    name: '国王 (King)',
-    value: 6,
-    totalCount: 1,
-    icon: '⚜️',
-    badge: '强制换牌',
-    summary: '指定一名其他玩家，与对方强制交换各自的手牌。',
-    description: '指定一名未被侍女庇护的其他玩家，与对方强制交换各自的手牌。',
-    tips: '获知对方持有公主或高点数牌时，强行掠夺换牌。',
-  },
-  countess: {
-    role: 'countess',
-    name: '伯爵夫人 (Countess)',
-    value: 7,
-    totalCount: 1,
-    icon: '💎',
-    badge: '皇室羁绊',
-    summary: '手中同时有王子或国王时，必须打出伯爵夫人。',
-    description: '无指定效果。但若你的另一张手牌是王子 (5) 或国王 (6)，你必须打出伯爵夫人，不可打出王子或国王。',
-    tips: '打出伯爵夫人往往让对手怀疑你手握王子或国王，可作为虚晃一枪的心理战。',
-  },
-  princess: {
-    role: 'princess',
-    name: '公主 (Princess)',
-    value: 8,
-    totalCount: 1,
-    icon: '💖',
-    badge: '离手即死',
-    summary: '点数最高 (8)！若打出或被迫弃掉，立即淘汰出局。',
-    description: '全场点数最高（8 点）。牌库耗尽比拼点数时持有公主必胜。但无论因任何原因打出或被弃掉，立即淘汰！',
-    tips: '必须死守在手中，小心被王子迫使弃牌。',
-  },
-};
-
-const NEEDS_TARGET: readonly LoveLetterRole[] = ['guard', 'priest', 'baron', 'prince', 'king'];
 
 /** 战报条目：一次出牌 / 淘汰 / 庇护 / 查验的可读描述 */
 interface LLFeedItem {
@@ -178,6 +76,9 @@ export function LoveLetterGamePage({ view }: Props) {
   const [hoveredRole, setHoveredRole] = useState<LoveLetterRole | null>(null);
   const [detailRole, setDetailRole] = useState<LoveLetterRole | null>(null);
   const [activeTrackerTab, setActiveTrackerTab] = useState<'tracker' | 'history'>('tracker');
+
+  // 出牌 / 淘汰 / 庇护的演出由服务端差分驱动，避免与权威状态脱节
+  const stage = useLoveLetterStage(view);
   const prevViewRef = useRef<LoveLetterPlayerView | null>(null);
   const feedIdRef = useRef(0);
   const timersRef = useRef<number[]>([]);
@@ -445,7 +346,10 @@ export function LoveLetterGamePage({ view }: Props) {
       {error && <p className="game-error" role="alert" aria-live="assertive" aria-atomic="true">{error}</p>}
 
       {view.phase !== 'game_over' ? (
-        <div className={`sg-stage loveletter-immersive-board ${needsTargetChoice ? 'is-selecting-target' : ''}`}>
+        <div
+          className={`sg-stage loveletter-immersive-board ll-board stage-felt-3d ${needsTargetChoice ? 'is-selecting-target' : ''}`}
+          ref={stage.stageRef}
+        >
           <div className="loveletter-opponents">
             {view.players.filter((p) => p.playerId !== myId).map((player) => {
               const isTargetable = targetOptions.includes(player.playerId);
@@ -459,6 +363,10 @@ export function LoveLetterGamePage({ view }: Props) {
                 <div
                   key={player.playerId}
                   className={`ll-opponent ${isOut ? 'is-out' : ''} ${isProtected ? 'is-protected' : ''} ${isTargetable ? 'is-targetable' : ''} ${isSelected ? 'is-selected' : ''}`}
+                  // 飞行层按 data-player-id 定位对手手边，作为出牌与淘汰演出的起终点
+                  data-player-id={player.playerId}
+                  data-eliminating={stage.eliminatingIds.includes(player.playerId) ? 'true' : undefined}
+                  data-shielding={stage.shieldingIds.includes(player.playerId) ? 'true' : undefined}
                   onClick={() => {
                     if (isTargetable) setTargetId(player.playerId);
                   }}
@@ -529,8 +437,8 @@ export function LoveLetterGamePage({ view }: Props) {
             })}
           </div>
 
-          <div className="loveletter-center-area">
-            <div className="ll-deck-zone">
+          <div className="loveletter-center-area stage-felt-3d__plane" data-stage-anchor="discard">
+            <div className="ll-deck-zone" data-stage-anchor="deck">
               <div className="ll-deck-stack" aria-label={`牌库剩余 ${view.deckCount} 张`}>
                 <div className="ll-card-back shadow" />
                 <div className="ll-card-back top" />
@@ -553,7 +461,7 @@ export function LoveLetterGamePage({ view }: Props) {
 
           {me && (
             <div className={`loveletter-my-area ${isPrince && needsTargetChoice ? 'can-target-self' : ''}`}>
-              <div className="loveletter-my-hand">
+              <div className="loveletter-my-hand" data-stage-anchor="hand">
                 {(me.hand ?? []).map((card) => (
                   <button
                     key={card.id}
@@ -869,6 +777,9 @@ export function LoveLetterGamePage({ view }: Props) {
           </div>
         </div>
       )}
+      {/* 飞行层必须挂在毡面之外：毡面是 perspective 容器，
+          一旦有 transform 祖先，position:fixed 会退化为相对定位。 */}
+      <FlightLayer flights={stage.flights} simplified={stage.simplifiedFlights} />
     </TabletopShell>
   );
 }
