@@ -1,6 +1,6 @@
 import type { PlayerSeat } from '../../shared-ui/TabletopOvalShell.tsx';
 import { nameFor, type MemberLike } from '../useGameAction.ts';
-import type { WitsWagersPlayerView } from './types.ts';
+import { formatMoney, type WitsWagersPlayerView } from './types.ts';
 
 /**
  * 把服务端的 players 投影为牌桌座位。
@@ -25,7 +25,7 @@ export function buildSeats(
       const ledger = view.revealed?.ledger.find((l) => l.playerId === player.playerId);
       if (ledger) {
         const delta = ledger.scoreAfter - ledger.scoreBefore;
-        badge = delta === 0 ? '持平' : delta > 0 ? `+${delta}` : `${delta}`;
+        badge = delta === 0 ? '持平' : `${delta > 0 ? '+' : '-'}${formatMoney(Math.abs(delta))}`;
       }
     } else if (view.phase === 'betting') {
       const bets = view.publicBets[player.playerId];
@@ -38,7 +38,7 @@ export function buildSeats(
       name: nameFor(members, player.playerId),
       avatar: member?.avatar,
       // 结算演出期间显示正在推进中的分数，让派彩与数字变化是同一件事
-      score: displayScores?.[player.playerId] ?? player.score,
+      score: formatMoney(displayScores?.[player.playerId] ?? player.score),
       isEliminated: player.forfeited,
       isCurrentTurn: view.phase === 'answering' && !player.hasSubmitted && !player.forfeited,
       badge,

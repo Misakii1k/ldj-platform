@@ -252,7 +252,7 @@ export function WitsWagersGamePage({
 
       {/* 飞行层必须挂在牌桌外壳之外：外壳内有 3D 变换祖先，
           position:fixed 会退化为相对定位，实测的屏幕坐标会全部失效。 */}
-      <WitsFlightLayer flights={stage.flights} />
+      <WitsFlightLayer flights={stage.flights} simplified={stage.simplifiedFlights} />
 
       {pendingSave && (
         <ConfirmDialog

@@ -1,6 +1,6 @@
 import type { ChipId, BetPairView, BoardTargetView } from './types.ts';
-import { targetLabel } from './types.ts';
-import { RollingNumber } from '../../shared-ui/RollingNumber.tsx';
+import { targetLabel, formatMoney } from './types.ts';
+import { WitsNoteStack } from './stage/WitsNoteStack.tsx';
 import {
   calculateReserved,
   calculateAvailable,
@@ -53,18 +53,17 @@ export function BetEditor({
       {/* 余额与预留展示 */}
       <div className="ww-bet-editor__balances">
         <div>
-          积分余额: <RollingNumber as="strong" value={score} />
+          我的钱: <strong>{formatMoney(score)}</strong>
         </div>
         <div>
-          已预留附加分: <RollingNumber as="strong" value={reserved} />
+          已押出: <strong>{formatMoney(reserved)}</strong>
         </div>
         <div>
-          可用积分: <strong>{available}</strong>
+          还能押: <strong>{formatMoney(available)}</strong>
         </div>
       </div>
 
-      {/* 筹码切换标签 */}
-      {/* 筹码托盘：也是手拿取/放回筹码的动画锚点 */}
+      {/* 钞票托盘：也是钞票飞出/飞回的动画锚点 */}
       <div className="ww-bet-editor__chip-tabs" data-ww-anchor="tray">
         {(['A', 'B'] as const).map((cid) => {
           const chip = draft[cid === 'A' ? 0 : 1];
@@ -79,13 +78,16 @@ export function BetEditor({
               className={`ww-chip-tab ${isActive ? 'ww-chip-tab--active' : ''}`}
               onClick={() => onSelectActiveChip(cid)}
             >
+              <span className="ww-chip-tab__notes" aria-hidden="true">
+                <WitsNoteStack badge={cid} extraStake={chip.extraStake} noteWidth={44} />
+              </span>
               <span>
                 <strong>筹码 {cid}</strong>
                 {isActive && ' (当前配置)'}
               </span>
               <span>
                 {targetText}
-                {chip.extraStake > 0 && ` (+${chip.extraStake})`}
+                {chip.extraStake > 0 && ` (+${formatMoney(chip.extraStake)})`}
               </span>
             </button>
           );

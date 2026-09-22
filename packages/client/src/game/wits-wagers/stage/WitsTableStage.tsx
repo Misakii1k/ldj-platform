@@ -11,7 +11,7 @@ import type {
 import { WitsAnswerCard } from './WitsAnswerCard.tsx';
 import { WitsBankTray } from './WitsBankTray.tsx';
 import { WitsCountdown } from './WitsCountdown.tsx';
-import { WitsChip } from './WitsChip.tsx';
+import { WitsNoteStack } from './WitsNoteStack.tsx';
 
 export interface WitsTableStageProps {
   readonly phase: WitsWagersPhase;
@@ -72,7 +72,8 @@ export function WitsTableStage({
   // 作答阶段：桌上只摆背面牌，数量反映已交牌人数，绝不暴露任何数值
   const faceDownCards = Array.from({ length: Math.max(0, faceDownCount) }, (_, index) => index);
 
-  const chipsFor = (targetId: TargetId) => {
+  /** 押在某个槽位上的钞票：基础筹码是一张带角标的 100 元钞，附加注按面值拆张。 */
+  const notesFor = (targetId: TargetId) => {
     const nodes: ReactNode[] = [];
     const draftPair = myDraft ?? myAcceptedBets;
     if (!draftPair) return nodes;
@@ -87,12 +88,12 @@ export function WitsTableStage({
         accepted.targetId !== chip.targetId ||
         accepted.extraStake !== chip.extraStake;
       nodes.push(
-        <WitsChip
+        <WitsNoteStack
           key={chipId}
-          chipId={chipId}
+          badge={chipId}
           extraStake={chip.extraStake}
           pending={isPending}
-          size={36}
+          noteWidth={40}
         />,
       );
     });
@@ -144,7 +145,7 @@ export function WitsTableStage({
                     interactive={interactive}
                     onActivate={() => onSelectTarget?.(target.id)}
                   >
-                    {chipsFor(target.id)}
+                    {notesFor(target.id)}
                   </WitsAnswerCard>
                 </div>
               );

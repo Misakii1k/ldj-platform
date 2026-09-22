@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMotion } from '../../../motion/MotionContext.tsx';
-import type { PlayerRoundLedgerView, TargetId, WitsWagersPlayerView } from '../types.ts';
+import { breakdownNotes, type NoteDenomination, type PlayerRoundLedgerView, type TargetId, type WitsWagersPlayerView } from '../types.ts';
 import { deriveStageEvents, stageEventKey, type ChipMove, type StageEvent } from './deriveStageEvents.ts';
 import { createStageMemory } from './stageMemory.ts';
 import { fitToDeadline, legDuration, measure, measureAnchor, wait, type Rect } from './flip.ts';
@@ -8,14 +8,20 @@ import { playCueFor, playFlipCue } from './audioCues.ts';
 
 export interface FlightSpec {
   readonly id: string;
-  readonly kind: 'chip' | 'card';
-  readonly chipId?: 'A' | 'B';
-  readonly extraStake?: number;
+  /** note = 一叠钞票；card = 一张背面朝上的答案牌（交牌演出） */
+  readonly kind: 'note' | 'card';
+  /** 这一笔要飞的钞票面值，按 breakdownNotes 拆好 */
+  readonly notes?: readonly NoteDenomination[];
+  /** 首张钞票的角标：标明这是永久筹码 A 还是 B */
+  readonly badge?: 'A' | 'B' | null;
+  readonly noteWidth?: number;
   readonly from: Rect;
   readonly to: Rect;
   readonly arc: number;
   readonly durationMs: number;
   readonly delayMs: number;
+  /** 整叠错峰飞完的预算：张数越多间隔越小 */
+  readonly budgetMs?: number;
 }
 
 export interface StageState {
@@ -35,12 +41,23 @@ export interface StageState {
 
 export interface WitsStageApi extends StageState {
   readonly stageRef: React.RefObject<HTMLDivElement | null>;
+  /** 精简飞行：reduced 档只做淡入淡出，不翻不飘不做景深 */
+  readonly simplifiedFlights: boolean;
 }
 
 const FLIP_STEP_MS = 220;
-const CHIP_FLIGHT_MS = 380;
+/** 单张钞票的飞行时长基准；性格各自再乘一个倍率 */
+const NOTE_FLIGHT_MS = 640;
 /** 单笔收付的节拍上限：飞行时间 + 落袋后的短暂停顿 */
-const MAX_LEG_MS = 560;
+const MAX_LEG_MS = 900;
+/** 桌面上的钞票尺寸 */
+const NOTE_W_TABLE = 44;
+const NOTE_W_HAND = 56;
+
+/** 基础筹码（免费的那一枚）在桌上就是一张带角标的 100 元钞。 */
+function notesForBet(extraStake: number): NoteDenomination[] {
+  return [100, ...breakdownNotes(extraStake)];
+}
 
 function allRevealed(view: WitsWagersPlayerView): Set<TargetId> {
   return new Set(view.board.map((t) => t.id));
@@ -125,12 +142,18 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
     return { x: window.innerWidth * 0.5, y: window.innerHeight * 0.82 };
   }, []);
 
+/**
+ * 我的下注被服务端接受：钞票在托盘与槽位之间飞。
+ *
+ * 加注/减注只飞差额那几张——整叠重飞会让"我只多押了一张"看起来像重新下注。
+ */
   const runChipMoves = useCallback(
     async (moves: readonly ChipMove[], signal: AbortSignal) => {
       if (!animated || moves.length === 0) return;
 
       const tray = outerRect('tray');
       const home = myHome();
+      const handRect = tray ?? { x: home.x - 28, y: home.y - 15, width: 56, height: 30 };
 
       for (const move of moves) {
         if (signal.aborted) return;
@@ -140,33 +163,65 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
         const targetRect = anchorRect(`target:${targetId}`);
         if (!targetRect) continue;
 
-        const fromRect =
-          move.type === 'place'
-            ? (tray ?? { x: home.x, y: home.y, width: 36, height: 36 })
-            : move.type === 'move'
-              ? (anchorRect(`target:${move.from}`) ?? targetRect)
-              : targetRect;
+        let from: Rect;
+        let to: Rect;
+        let notes: NoteDenomination[];
+        let badge: 'A' | 'B' | null = move.chipId;
 
-        const toRect = move.type === 'pickUp' ? (tray ?? fromRect) : targetRect;
+        switch (move.type) {
+          case 'place':
+            from = handRect;
+            to = targetRect;
+            notes = notesForBet(move.extraStake);
+            break;
+          case 'pickUp':
+            // 拿回：连基础筹码一起收回手边
+            from = targetRect;
+            to = handRect;
+            notes = [100];
+            break;
+          case 'move':
+            from = anchorRect(`target:${move.from}`) ?? targetRect;
+            to = targetRect;
+            notes = notesForBet(move.extraStake);
+            break;
+          case 'restake': {
+            // 只飞差额：加注从手边补进去，减注从槽位退回来
+            const delta = move.to - move.from;
+            notes = breakdownNotes(Math.abs(delta));
+            if (notes.length === 0) continue;
+            badge = null;
+            if (delta > 0) {
+              from = handRect;
+              to = targetRect;
+            } else {
+              from = targetRect;
+              to = handRect;
+            }
+            break;
+          }
+        }
 
+        const budget = NOTE_FLIGHT_MS + notes.length * 60;
         patch({
           flights: [
             {
               id: `${move.type}:${move.chipId}:${targetId}`,
-              kind: 'chip',
-              chipId: move.chipId,
-              extraStake:
-                move.type === 'pickUp' ? 0 : move.type === 'restake' ? move.to : move.extraStake,
-              from: fromRect,
-              to: toRect,
-              arc: 26,
-              durationMs: CHIP_FLIGHT_MS,
+              kind: 'note',
+              notes,
+              badge,
+              noteWidth: NOTE_W_HAND,
+              from,
+              to,
+              arc: 64,
+              durationMs: NOTE_FLIGHT_MS,
               delayMs: 0,
+              budgetMs: budget,
             },
           ],
         });
 
-        await wait(CHIP_FLIGHT_MS, signal);
+        await wait(budget + 120, signal);
         patch({ flights: [] });
       }
     },
@@ -242,21 +297,24 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
         const seat = seatRect(entry.playerId);
         const from =
           entry.playerId === myPlayerId
-            ? { x: home.x, y: home.y, width: 32, height: 32 }
+            ? { x: home.x - 28, y: home.y - 15, width: 56, height: 30 }
             : (seat ?? bank);
-        if (from && bank) {
+        // 只收附加注：永久筹码不会被银行拿走
+        const notes = breakdownNotes(entry.loss);
+        if (from && bank && notes.length > 0) {
           patch({
             flights: [
               {
                 id: `loss:${entry.playerId}`,
-                kind: 'chip',
-                chipId: 'B',
-                extraStake: entry.loss,
+                kind: 'note',
+                notes,
+                noteWidth: NOTE_W_TABLE,
                 from,
                 to: bank,
-                arc: 30,
-                durationMs: Math.min(CHIP_FLIGHT_MS, perLeg),
+                arc: 72,
+                durationMs: Math.min(NOTE_FLIGHT_MS, perLeg),
                 delayMs: 0,
+                budgetMs: perLeg,
               },
             ],
           });
@@ -268,24 +326,26 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
       for (const entry of winners) {
         if (signal.aborted) break;
         const seat = seatRect(entry.playerId);
-        // 我的收款朝屏幕下方（我的手边），他人的朝各自座位
+        // 我的收款朝屏幕下方（我的托盘），他人的朝各自座位
         const to =
           entry.playerId === myPlayerId
-            ? { x: home.x, y: home.y, width: 32, height: 32 }
+            ? { x: home.x - 28, y: home.y - 15, width: 56, height: 30 }
             : (seat ?? bank);
-        if (bank && to) {
+        const notes = breakdownNotes(entry.winProfit + entry.authorBonus);
+        if (bank && to && notes.length > 0) {
           patch({
             flights: [
               {
                 id: `win:${entry.playerId}`,
-                kind: 'chip',
-                chipId: 'A',
-                extraStake: entry.winProfit + entry.authorBonus,
+                kind: 'note',
+                notes,
+                noteWidth: entry.playerId === myPlayerId ? NOTE_W_HAND : NOTE_W_TABLE,
                 from: bank,
                 to,
-                arc: 34,
-                durationMs: Math.min(CHIP_FLIGHT_MS, perLeg),
+                arc: 88,
+                durationMs: Math.min(NOTE_FLIGHT_MS, perLeg),
                 delayMs: 0,
+                budgetMs: perLeg,
               },
             ],
           });
@@ -492,5 +552,5 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
     };
   }, []);
 
-  return { ...state, stageRef };
+  return { ...state, stageRef, simplifiedFlights: level !== 'full' };
 }
