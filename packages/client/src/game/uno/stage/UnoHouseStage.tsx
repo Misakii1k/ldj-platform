@@ -7,6 +7,9 @@ import { useConnection } from '../../../connection/useConnection.ts';
 import { useCountdown } from '../../../shared-ui/useCountdown.ts';
 import { TabletopOvalShell, type PlayerSeat } from '../../../shared-ui/TabletopOvalShell.tsx';
 import { CardFanEngine, type CardItem } from '../../../shared-ui/CardFanEngine.tsx';
+import { StageCountdownRing } from '../../../shared-ui/stage/StageCountdownRing.tsx';
+import { FlightLayer } from '../../../shared-ui/stage/FlightLayer.tsx';
+import { useUnoHouseStage } from './useUnoHouseStage.tsx';
 import { GameIcon } from '../../../shared-ui/GameIcon.tsx';
 import { UserAvatar } from '../../../user/UserAvatar.tsx';
 import { webAudio } from '../../../shared-ui/WebAudioManager.ts';
@@ -50,6 +53,9 @@ export function UnoHouseStage({ view }: Props) {
   const phase = view.phase;
   const turnCountdown = useCountdown(view.clockInfo?.turnDeadlineAt);
   const windowCountdown = useCountdown(view.clockInfo?.windowDeadlineAt);
+
+  // 出牌 / 摸牌 / 换色的演出由服务端差分驱动，避免与权威状态脱节
+  const stage = useUnoHouseStage(view);
 
   const caps = new Set(me?.capabilities ?? []);
   const inWindow = me?.activeWindow !== null && me?.activeWindow !== undefined;
@@ -195,7 +201,14 @@ export function UnoHouseStage({ view }: Props) {
 
   // 中央舞台牌桌
   const centerArena = (
-    <div className="uno-tabletop-arena">
+    <div className="uno-tabletop-arena uno-arena stage-felt-3d" ref={stage.stageRef}>
+      {/* 抓漏报窗口与回合两类计时时长差很多，用 phaseKey 区分避免满格测量错乱 */}
+      <StageCountdownRing
+        deadlineAt={view.clockInfo?.windowDeadlineAt ?? view.clockInfo?.turnDeadlineAt ?? null}
+        phaseKey={`${view.clockInfo?.windowDeadlineAt ? 'window' : 'turn'}:${view.currentPlayerId}:${view.round}`}
+        active={view.phase === 'round_playing'}
+        className="uno-countdown"
+      />
       {/* 顺时针 / 逆时针流光旋转方向环 */}
       <div className={`uno-direction-compass ${isCW ? 'is-cw' : 'is-ccw'}`} aria-hidden="true" />
 
@@ -266,11 +279,12 @@ export function UnoHouseStage({ view }: Props) {
       )}
 
       {/* 牌堆与弃牌堆 */}
-      <div className="uno-deck-pile-wrap" style={{ position: 'relative', zIndex: 5 }}>
+      <div className="uno-deck-pile-wrap stage-felt-3d__plane" style={{ position: 'relative', zIndex: 5 }}>
         {/* 摸牌堆 */}
         <button
           type="button"
           className={`uno-house-draw-pile ${caps.has('canDraw') ? 'is-my-turn-playable' : ''}`}
+          data-stage-anchor="draw"
           disabled={!caps.has('canDraw') || busy}
           onClick={() => {
             webAudio.playDealCards();
@@ -285,7 +299,11 @@ export function UnoHouseStage({ view }: Props) {
         </button>
 
         {/* 弃牌堆顶牌 */}
-        <div className={`uno-house-discard color-${view.currentColor}`}>
+        <div
+          className={`uno-house-discard color-${view.currentColor}`}
+          data-stage-anchor="discard"
+          data-sweep={stage.sweepColor ?? undefined}
+        >
           <div className={`uno-discard-halo uno-discard-halo--${view.currentColor}`} />
           {view.topDiscard ? (
             <img
@@ -426,6 +444,7 @@ export function UnoHouseStage({ view }: Props) {
 
       {/* 3D 扇形手牌渲染 */}
       {!isSpectator && me && (
+        <div className="uno-fan-anchor" data-stage-anchor="hand">
         <CardFanEngine
           cards={fanCards}
           selectedCardIds={selectedCardIds}
@@ -433,6 +452,7 @@ export function UnoHouseStage({ view }: Props) {
           hidePlayButton
           disabled={busy || phase !== 'round_playing'}
         />
+        </div>
       )}
 
       {isSpectator && (
@@ -453,10 +473,17 @@ export function UnoHouseStage({ view }: Props) {
         theme="sunset"
         players={seats}
         currentUserId={me?.playerId}
+        // 对手改由毡面上的环形站位呈现（.uno-opponent-station 自带 data-player-id，
+        // 飞行层仍能定位），席位条会与之重复
+        hideSeats
         centerArena={centerArena}
         bottomBar={bottomBar}
         onShowRules={() => setShowRules(true)}
       />
+
+      {/* 飞行层必须挂在牌桌外壳之外：毡面是 perspective 容器，
+          一旦有 transform 祖先，position:fixed 会退化为相对定位。 */}
+      <FlightLayer flights={stage.flights} simplified={stage.simplifiedFlights} />
 
       {/* 四色大轮盘选色弹窗 */}
       {wildCardId !== null && (

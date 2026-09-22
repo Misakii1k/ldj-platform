@@ -16,7 +16,7 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 import { seedRoom } from './helpers/dbClient.ts';
 import { RoomDriver, WsClient } from './helpers/wsClient.ts';
-import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL } from './helpers/serverEnv.ts';
+import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL, skipPcHostConsole } from './helpers/serverEnv.ts';
 
 interface BrowserMe {
   playerId: string;
@@ -28,6 +28,9 @@ interface BrowserMe {
 async function prepareBrowser(browser: Browser, me: BrowserMe): Promise<Page> {
   const context = await browser.newContext();
   const page = await context.newPage();
+  // 每个浏览器玩家都要跳过 PC 主机控制台，否则停在大屏入口页进不了对局。
+  // 放在工厂里统一处理，避免各用例各自调用时漏掉。
+  await skipPcHostConsole(page);
   await page.addInitScript(
     ([key, value]) => { localStorage.setItem(key, value); },
     [ME_STORAGE_KEY, JSON.stringify({ ...me, seatRole: 'player' })],
@@ -131,14 +134,17 @@ test.describe('D4-U-UI uno_platform_house_v1', () => {
       // —— 渲染证据 ——
       await expect(page.getByText('UNO 房规模式').first()).toBeVisible({ timeout: 20_000 });
       await expect(page.getByText(/对局中|局/).first()).toBeVisible();
-      await expect(page.locator('.tabletop-seat--chip')).toHaveCount(2);
+      // 席位条已由环形站位取代（hideSeats）：对手数 = 总人数 - 自己
+      await expect(page.locator('.tabletop-seats-bar')).toHaveCount(0);
+      await expect(page.locator('.uno-opponent-station')).toHaveCount(1);
       await expect(page.locator('.uno-house-discard')).toBeVisible();
       await expect(page.locator('.uno-house-center__meta')).toBeVisible();
       await expect(page.locator('.card-fan-item')).toHaveCount(7);
       await expect(page.getByText('玩家2').first()).toBeVisible();
 
       // —— 私有性证据 ——
-      await expect(page.locator('.tabletop-hand-badge')).toHaveCount(2);
+      // 对手只暴露张数徽章，手牌实体仅本人可见
+      await expect(page.locator('.uno-opponent-cards-tag')).toHaveCount(1);
       await expect(page.locator('.card-fan-item')).toHaveCount(7);
 
       // —— 驱动对局：浏览器真实操作抽牌/出牌，产生真实 game_action ——
@@ -157,15 +163,18 @@ test.describe('D4-U-UI uno_platform_house_v1', () => {
           // 浏览器回合：先抽牌
           const drawBtn = page.locator('.uno-floating-controls').getByRole('button', { name: '摸牌' });
           await drawBtn.waitFor({ state: 'visible', timeout: 15_000 });
+          // 以摸牌前的真实手牌数为基准：循环可能在后续轮次才进入本分支，
+          // 此时手牌已不是开局的 7 张，硬编码 7→8 会误判。
+          const handBefore = (view.players ?? []).find((p) => p.playerId === browserId)?.handCount ?? 7;
           await drawBtn.click();
 
-          // 服务端状态证据：浏览器玩家手牌 7 → 8
+          // 服务端状态证据：浏览器玩家手牌 +1
           await host.waitGameState(
             (v) => (v.players as HouseFrameView['players'] ?? []).some(
-              (p) => p.playerId === browserId && p.handCount === 8,
+              (p) => p.playerId === browserId && p.handCount === handBefore + 1,
             ),
           );
-          await expect(page.locator('.card-fan-item')).toHaveCount(8);
+          await expect(page.locator('.card-fan-item')).toHaveCount(handBefore + 1);
 
           // 出牌：优先出任意可出牌（万能需选色）；摸后仍无可出则结束回合等下一轮
           await page.waitForTimeout(500);
@@ -176,24 +185,34 @@ test.describe('D4-U-UI uno_platform_house_v1', () => {
             await expect(first).toBeEnabled({ timeout: 5_000 });
             const cls = (await first.getAttribute('class')) ?? '';
             const isWild = cls.includes('card-fan-item--wild') || cls.includes('color-wild');
+            // 扇形手牌有持续动画，Playwright 的稳定性检查等不到静止，
+            // 故用 dispatchEvent 直接派发点击（React 合成事件仍能收到）。
             await first.dispatchEvent('click');
-            const playBtn = page.locator('.card-fan-play-btn');
+            // UNO 舞台传了 hidePlayButton，出牌走浮动控制条的「出牌」按钮，
+            // 而不是 CardFanEngine 自带的 .card-fan-play-btn（在 UNO 中永不渲染）。
+            const playBtn = page.locator('.uno-floating-controls')
+              .getByRole('button', { name: '出牌' });
             await playBtn.waitFor({ state: 'visible', timeout: 5_000 });
             await playBtn.click();
+            // 手上剩 2 张时会先弹预喊确认框，这里选择静默出牌以保持原有断言语义
+            const silentBtn = page.locator('.uno-precall-btn--silent');
+            if (await silentBtn.isVisible().catch(() => false)) {
+              await silentBtn.click();
+            }
             if (isWild) {
               const redBtn = page.locator('.uno-color-wheel-grid button.color-red');
               await redBtn.waitFor({ state: 'visible', timeout: 5_000 });
               await redBtn.click();
             }
-            // 服务端状态证据：手牌 8 → 7 且弃牌堆 +1（出牌被真实模块受理）
+            // 服务端状态证据：手牌回到摸牌前张数且弃牌堆 +1（出牌被真实模块受理）
             await host.waitGameState(
               (v) =>
                 (v.players as HouseFrameView['players'] ?? []).some(
-                  (p) => p.playerId === browserId && p.handCount === 7,
+                  (p) => p.playerId === browserId && p.handCount === handBefore,
                 )
                 && Number(v.discardCount) === prevDiscardCount + 1,
             );
-            await expect(page.locator('.card-fan-item')).toHaveCount(7);
+            await expect(page.locator('.card-fan-item')).toHaveCount(handBefore);
             browserActed = true;
           } else {
             await page.getByRole('button', { name: '过牌结束' }).click();
@@ -259,11 +278,12 @@ test.describe('D4-U-UI uno_platform_house_v1', () => {
       await page.goto(BASE_URL);
 
       await expect(page.getByText('UNO 房规模式').first()).toBeVisible({ timeout: 20_000 });
-      await expect(page.locator('.tabletop-seat--chip')).toHaveCount(4);
+      await expect(page.locator('.tabletop-seats-bar')).toHaveCount(0);
+      await expect(page.locator('.uno-opponent-station')).toHaveCount(3);
       await expect(page.locator('.uno-house-discard')).toBeVisible();
       await expect(page.locator('.card-fan-item')).toHaveCount(7);
       // 私有性：手牌卡按钮只属于本人（7 个），其他玩家行只显示张数
-      await expect(page.locator('.tabletop-hand-badge')).toHaveCount(4);
+      await expect(page.locator('.uno-opponent-cards-tag')).toHaveCount(3);
 
       // 几何：窄视口无根页面水平溢出
       const overflow = await page.evaluate(() => ({

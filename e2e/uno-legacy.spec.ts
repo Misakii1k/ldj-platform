@@ -10,7 +10,7 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 import { seedRoom } from './helpers/dbClient.ts';
 import { RoomDriver } from './helpers/wsClient.ts';
-import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL } from './helpers/serverEnv.ts';
+import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL, skipPcHostConsole } from './helpers/serverEnv.ts';
 
 interface BrowserMe {
   playerId: string;
@@ -55,6 +55,7 @@ test.describe('Legacy UNO UI Verification', () => {
 
       // 1. 宽视口 1280×800
       await page.setViewportSize({ width: 1280, height: 800 });
+      await skipPcHostConsole(page);
       await page.goto(BASE_URL);
 
       await expect(page.getByText('UNO').first()).toBeVisible({ timeout: 20_000 });
@@ -105,6 +106,7 @@ test.describe('Legacy UNO UI Verification', () => {
         roomCode: seeded.roomCode,
         nickname: '玩家2',
       });
+      await skipPcHostConsole(page);
       await page.goto(BASE_URL);
 
       // 等待对局开始

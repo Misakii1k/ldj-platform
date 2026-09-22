@@ -10,6 +10,7 @@ import './game/night-testimony/night-testimony.css';
 import './game/echo-judge/echo-judge.css';
 import './game/bell-clash/bell-clash.css';
 import './game/undercover/undercover.css';
+import './game/uno/uno.css';
 import './game/goose-relay/goose-relay.css';
 import './game/cheese-thief/cheese-thief.css';
 import './game/durian/durian.css';

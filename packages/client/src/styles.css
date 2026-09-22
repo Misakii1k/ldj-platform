@@ -5919,24 +5919,6 @@ p { margin: 0.5rem 0; }
 }
 
 /* ════════ Ding 高辨识度纯正 UNO 风格口令卡与检视浮条 ════════ */
-.uno-floating-status-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  color: #f8fafc;
-  font-size: 0.82rem;
-  font-weight: 600;
-  padding: 6px 16px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-}
-.uno-floating-status-chip strong {
-  color: #ffd166;
-}
 
 /* 卡牌检视提示条（悬停或点选时大字号居中提示，告别手牌字小难以阅读） */
 
@@ -8111,24 +8093,6 @@ p { margin: 0.5rem 0; }
   gap: 8px;
   align-items: flex-end;
 }
-.uno-card {
-  width: 82px;
-  min-width: 82px;
-  height: 122px;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-.uno-card strong,
-.uno-card span {
-  font-size: 22px;
-}
-.uno-card small {
-  font-size: 10px;
-  margin-top: 8px;
-}
 .color-red {
   background: #dc2626;
 }
@@ -8218,11 +8182,6 @@ p { margin: 0.5rem 0; }
   .landlord-table {
     border-radius: 20px;
     padding: 12px;
-  }
-  .uno-card {
-    width: 68px;
-    min-width: 68px;
-    height: 104px;
   }
 
   .new-game-header h1 {
@@ -8547,43 +8506,10 @@ p { margin: 0.5rem 0; }
     linear-gradient(180deg, #fffaf0, #ffe2bd);
 }
 
-.uno-discard {
-  position: relative;
-  margin: 22px auto;
-  transform: none;
-}
 
-.uno-discard::after {
-  content: "当前弃牌";
-  position: absolute;
-  right: -30px;
-  bottom: -18px;
-  padding: 5px 9px;
-  border: 2px solid var(--party-ink);
-  border-radius: 999px;
-  background: var(--party-yellow);
-  color: var(--party-ink);
-  font-size: .72rem;
-  font-weight: 950;
-  box-shadow: 3px 4px 0 var(--party-ink);
-}
 
-.uno-hand {
-  justify-content: center;
-  padding: 24px 8px 12px;
-}
 
-.uno-card {
-  border: 3px solid #fffaf0;
-  outline: 3px solid var(--party-ink);
-  border-radius: 20px;
-  box-shadow: 6px 8px 0 rgba(49,45,40,.28);
-  font-weight: 950;
-}
 
-.uno-hand .uno-card:not(:disabled):hover {
-  transform: translateY(-10px) rotate(-2deg);
-}
 
 /* Landlord: match homepage party table instead of dark green block */
 .new-game-page--landlord {
@@ -8847,81 +8773,15 @@ p { margin: 0.5rem 0; }
   scrollbar-width: thin;
 }
 
-.uno-player-chip {
-  position: relative;
-  min-height: 72px;
-  padding: 12px 12px 12px 48px;
-  justify-content: center;
-}
 
-.uno-player-chip__seat {
-  position: absolute;
-  left: 11px;
-  top: 50%;
-  display: grid !important;
-  width: 27px;
-  height: 27px;
-  place-items: center;
-  border: 2px solid currentColor;
-  border-radius: 50%;
-  transform: translateY(-50%);
-  font-size: .78rem !important;
-  font-weight: 950;
-}
 
-.uno-player-chip.self {
-  background: #e9f6ff;
-}
 
-.uno-player-chip.uno-called {
-  border-color: #bb231d;
-  box-shadow: 4px 5px 0 #bb231d;
-}
 
-.uno-player-chip.uno-called > span:last-child {
-  color: #9f1f1a;
-}
 
-.uno-center-stage {
-  display: grid;
-  grid-template-columns: minmax(180px, 1fr) auto;
-  width: min(100%, 560px);
-  min-height: 174px;
-  margin: 18px auto 24px;
-  padding: 18px 28px;
-  align-items: center;
-  gap: 24px;
-  border: 3px solid var(--party-ink);
-  border-radius: 28px;
-  background: rgba(255, 250, 240, .82);
-  box-shadow: inset 0 0 0 5px rgba(255,255,255,.5), 7px 9px 0 rgba(49,45,40,.14);
-}
 
-.uno-discard-copy {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 7px;
-}
 
-.uno-discard-copy > span {
-  color: #8b4437;
-  font-size: .76rem;
-  font-weight: 950;
-  letter-spacing: .12em;
-}
 
-.uno-discard-copy strong {
-  color: var(--party-ink);
-  font-size: clamp(1.25rem, 3vw, 1.8rem);
-  line-height: 1.15;
-}
 
-.uno-discard-copy small {
-  color: #5c544b;
-  font-size: .86rem;
-  font-weight: 850;
-}
 
 .new-game-page--uno .uno-discard {
   margin: 0;
@@ -9000,23 +8860,8 @@ p { margin: 0.5rem 0; }
     gap: 8px;
   }
 
-  .uno-player-chip {
-    min-height: 64px;
-    padding: 9px 8px 9px 39px;
-  }
 
-  .uno-player-chip__seat {
-    left: 8px;
-    width: 23px;
-    height: 23px;
-  }
 
-  .uno-center-stage {
-    grid-template-columns: minmax(0, 1fr) auto;
-    min-height: 148px;
-    padding: 14px 18px;
-    gap: 14px;
-  }
 
   .new-game-page--uno .uno-discard {
     width: 68px;
@@ -9039,13 +8884,7 @@ p { margin: 0.5rem 0; }
     width: 100%;
   }
 
-  .uno-discard-copy strong {
-    font-size: 1.08rem;
-  }
 
-  .uno-discard-copy small {
-    font-size: .76rem;
-  }
 }
 
 /* Landlord bidding panel: keep tablet anti-jump height while preserving readable copy on the green table. */
@@ -14176,152 +14015,25 @@ html[data-motion-level="off"] *::after {
 }
 
 /* —�?uno_platform_house_v1 主舞台（D4-U-UI�?—�?*/
-.uno-house-stage {
-  display: grid;
-  gap: 18px;
-  width: min(100%, 980px);
-  margin: 0 auto;
-  padding: 24px 16px 40px;
-}
 
-.uno-house-stage__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
 
-.uno-house-stage__kicker {
-  color: var(--color-primary);
-  font-size: .72rem;
-  font-weight: 900;
-  letter-spacing: .14em;
-}
 
-.uno-house-stage__copy h1 {
-  margin: 2px 0 0;
-  font-size: clamp(1.4rem, 4vw, 2rem);
-}
 
-.uno-house-stage__copy p {
-  margin: 2px 0 0;
-  color: var(--color-text-muted);
-}
 
-.uno-house-stage__error { margin: 0; }
 
-.uno-house-banner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px 14px;
-  padding: 12px 16px;
-  border-radius: 14px;
-  font-size: .92rem;
-}
 
-.uno-house-banner--penalty { color: var(--color-danger); border: 1px solid rgba(220,38,38,.4); background: rgba(220,38,38,.08); }
-.uno-house-banner--race { color: var(--color-warning); border: 1px solid rgba(245,158,11,.4); background: rgba(245,158,11,.08); }
-.uno-house-banner--over { color: var(--color-success); border: 1px solid rgba(22,163,74,.4); background: rgba(22,163,74,.08); }
 
-.uno-house-players {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
 
-.uno-house-player {
-  display: grid;
-  gap: 2px;
-  min-width: 120px;
-  padding: 10px 14px;
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  background: var(--color-surface);
-}
 
-.uno-house-player.is-current { border-color: var(--color-primary); box-shadow: 0 0 0 2px rgba(79,70,229,.14); }
-.uno-house-player.is-self { background: rgba(79,70,229,.08); }
-.uno-house-player.is-uno-called .uno-house-player__seat { color: var(--color-warning); }
 
-.uno-house-player__seat { font-size: .68rem; font-weight: 900; color: var(--color-primary); letter-spacing: .1em; }
-.uno-house-player strong { font-size: .94rem; }
-.uno-house-player span { color: var(--color-text-muted); font-size: .8rem; }
-.uno-house-player small { color: var(--color-text-muted); font-size: .7rem; }
 
-.uno-house-center {
-  display: grid;
-  place-items: center;
-  gap: 12px;
-  padding: 24px 16px;
-  border: 1px solid var(--color-border);
-  border-radius: 20px;
-  background: var(--color-surface);
-}
 
-.uno-house-discard {
-  display: grid;
-  place-items: center;
-  gap: 4px;
-  width: clamp(120px, 20vw, 170px);
-  aspect-ratio: 5 / 7;
-  border-radius: 14px;
-  font-weight: 900;
-  box-shadow: 0 10px 24px rgba(0,0,0,.16);
-}
 
-.uno-house-discard strong { font-size: clamp(1.2rem, 4vw, 1.9rem); }
-.uno-house-discard small { font-size: .72rem; }
 
-.uno-house-center__meta {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 4px 16px;
-  margin: 0;
-  color: var(--color-text-muted);
-}
 
-.uno-house-hand {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-}
 
-.uno-deck-pile-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(20px, 4vw, 48px);
-  margin: 12px 0 8px;
-}
 
-.uno-house-draw-pile {
-  position: relative;
-  width: clamp(76px, 12vw, 98px);
-  aspect-ratio: 2 / 3;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  border-radius: 12px;
-  /* 真实 3D 多层实体纸牌叠放厚度立体效果 */
-  box-shadow:
-    0 1px 0 #ffffff,
-    0 2px 0 #18181b,
-    0 3px 0 #ffffff,
-    0 4px 0 #18181b,
-    0 5px 0 #ffffff,
-    0 6px 0 #18181b,
-    0 16px 32px rgba(0, 0, 0, 0.45);
-  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease;
-  touch-action: manipulation;
-}
 
-.uno-house-draw-pile.is-my-turn-playable {
-  animation: unoDrawPilePulse 2s ease-in-out infinite;
-}
 
 @keyframes unoDrawPilePulse {
   0%, 100% {
@@ -14333,127 +14045,16 @@ html[data-motion-level="off"] *::after {
   }
 }
 
-.uno-house-draw-pile:not(:disabled):hover {
-  transform: translateY(-8px) scale(1.05);
-  box-shadow:
-    0 1px 0 #ffffff,
-    0 2px 0 #18181b,
-    0 3px 0 #ffffff,
-    0 4px 0 #18181b,
-    0 5px 0 #ffffff,
-    0 6px 0 #18181b,
-    0 22px 42px rgba(0, 0, 0, 0.6);
-}
 
-.uno-house-draw-pile:disabled {
-  cursor: not-allowed;
-  opacity: 0.88;
-}
 
-.uno-house-card-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-  border-radius: 12px;
-  pointer-events: none;
-}
 
-.uno-house-pile-badge {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: #ef4444;
-  color: #ffffff;
-  font-size: 0.78rem;
-  font-weight: 900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #ffffff;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.5);
-}
 
-.uno-house-discard {
-  position: relative;
-  width: clamp(76px, 12vw, 98px);
-  aspect-ratio: 2 / 3;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  padding: 0;
-}
 
-.uno-house-discard-color-badge {
-  position: absolute;
-  bottom: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 2px 10px;
-  border-radius: 999px;
-  background: rgba(18, 24, 27, 0.92);
-  color: #ffd93d;
-  font-size: 0.72rem;
-  font-weight: 800;
-  border: 1.5px solid rgba(255,255,255,0.3);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-  white-space: nowrap;
-}
 
-.uno-house-hand .uno-card {
-  display: grid;
-  place-items: center;
-  gap: 3px;
-  width: clamp(64px, 11vw, 96px);
-  aspect-ratio: 5 / 7;
-  padding: 6px;
-  border-radius: 12px;
-  font-weight: 900;
-  color: #1f2937;
-}
 
-.uno-house-hand .uno-card.uno-card--illustrated {
-  width: clamp(72px, 11vw, 98px);
-  aspect-ratio: 2 / 3;
-  height: auto;
-  padding: 0;
-  border: none;
-  background: transparent;
-  border-radius: 12px;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.4);
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, filter 0.2s ease;
-  overflow: visible;
-  position: relative;
-}
 
-.uno-house-hand .uno-card.uno-card--illustrated:not(:disabled):hover {
-  transform: translateY(-12px) scale(1.08);
-  box-shadow: 0 16px 32px rgba(0,0,0,0.6), 0 0 16px rgba(255,217,61,0.5);
-  z-index: 10;
-}
 
-.uno-house-hand .uno-card.uno-card--illustrated:disabled {
-  opacity: 0.55;
-  filter: grayscale(0.4) brightness(0.8);
-  cursor: not-allowed;
-}
 
-.uno-card__asset-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-  border-radius: 12px;
-  pointer-events: none;
-}
 
 /* 扇形手牌引擎中的图片卡 */
 .card-fan-item.card-fan-item--has-image {
@@ -14525,46 +14126,11 @@ html[data-motion-level="off"] *::after {
 }
 
 /* UNO 中心舞台布局 */
-.uno-tabletop-arena {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
 
 /* 顺时针 / 逆时针流光旋转方向环 */
-.uno-direction-compass {
-  position: absolute;
-  width: clamp(220px, 34vw, 320px);
-  height: clamp(220px, 34vw, 320px);
-  border-radius: 50%;
-  pointer-events: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.85;
-}
 
-.uno-direction-compass::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 3px dashed rgba(234, 88, 12, 0.35);
-  box-shadow: 0 0 24px rgba(249, 115, 22, 0.18), inset 0 0 24px rgba(249, 115, 22, 0.12);
-}
 
-.uno-direction-compass.is-cw::before {
-  animation: unoSpinCW 16s linear infinite;
-}
 
-.uno-direction-compass.is-ccw::before {
-  animation: unoSpinCCW 16s linear infinite;
-}
 
 @keyframes unoSpinCW {
   from { transform: rotate(0deg); }
@@ -14577,177 +14143,25 @@ html[data-motion-level="off"] *::after {
 }
 
 /* 牌堆与弃牌堆光圈 */
-.uno-discard-halo {
-  position: absolute;
-  inset: -12px;
-  border-radius: 20px;
-  pointer-events: none;
-  transition: all 0.35s ease;
-  z-index: 0;
-}
 
-.uno-discard-halo--red {
-  background: radial-gradient(circle, rgba(239, 68, 68, 0.45) 0%, transparent 75%);
-  box-shadow: 0 0 28px rgba(239, 68, 68, 0.5);
-}
 
-.uno-discard-halo--yellow {
-  background: radial-gradient(circle, rgba(234, 179, 8, 0.45) 0%, transparent 75%);
-  box-shadow: 0 0 28px rgba(234, 179, 8, 0.5);
-}
 
-.uno-discard-halo--green {
-  background: radial-gradient(circle, rgba(34, 197, 94, 0.45) 0%, transparent 75%);
-  box-shadow: 0 0 28px rgba(34, 197, 94, 0.5);
-}
 
-.uno-discard-halo--blue {
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.45) 0%, transparent 75%);
-  box-shadow: 0 0 28px rgba(59, 130, 246, 0.5);
-}
 
 /* 四色大轮盘质感选色器 */
-.uno-color-wheel-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(8px);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: unoFadeIn 0.2s ease-out;
-}
 
-.uno-color-wheel-dialog {
-  background: #ffffff;
-  padding: 24px;
-  border-radius: 28px;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,0,0,0.06);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
-  max-width: 340px;
-  width: 90%;
-  animation: unoPopIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
 
-.uno-color-wheel-dialog h3 {
-  margin: 0;
-  font-size: 1.15rem;
-  font-weight: 900;
-  color: #1f2937;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 
-.uno-color-wheel-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  width: 100%;
-}
 
-.uno-color-wheel-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 16px 12px;
-  border-radius: 18px;
-  border: none;
-  color: #ffffff;
-  font-weight: 900;
-  font-size: 1.05rem;
-  cursor: pointer;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.15), inset 0 2px 4px rgba(255,255,255,0.4);
-  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease;
-}
 
-.uno-color-wheel-btn:hover {
-  transform: translateY(-4px) scale(1.04);
-  box-shadow: 0 12px 24px rgba(0,0,0,0.25), inset 0 2px 4px rgba(255,255,255,0.5);
-}
 
-.uno-color-wheel-btn.color-red {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-}
-.uno-color-wheel-btn.color-yellow {
-  background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
-  color: #78350f;
-}
-.uno-color-wheel-btn.color-green {
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-}
-.uno-color-wheel-btn.color-blue {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-}
 
-.uno-color-wheel-cancel {
-  padding: 8px 24px;
-  border-radius: 999px;
-  border: 1.5px solid #e5e7eb;
-  background: #f9fafb;
-  color: #6b7280;
-  font-weight: 700;
-  font-size: 0.88rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
 
-.uno-color-wheel-cancel:hover {
-  background: #f3f4f6;
-  color: #1f2937;
-}
 
 /* UNO 喊牌金色暴击全屏印章动效 */
-.uno-shout-overlay {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1200;
-  animation: unoFadeOut 1.8s ease-in forwards;
-}
 
-.uno-shout-stamp {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 24px 48px;
-  border-radius: 36px;
-  background: radial-gradient(ellipse at center, #fef08a 0%, #f59e0b 60%, #b45309 100%);
-  border: 8px solid #ffffff;
-  box-shadow: 0 20px 80px rgba(245, 158, 11, 0.8), 0 0 0 8px #f59e0b;
-  animation: unoStampBurst 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-  transform-origin: center center;
-}
 
-.uno-shout-stamp__title {
-  font-family: 'Impact', 'Arial Black', sans-serif;
-  font-size: clamp(3rem, 10vw, 5.5rem);
-  font-style: italic;
-  font-weight: 900;
-  color: #dc2626;
-  text-shadow: 0 4px 0 #ffffff, 0 8px 16px rgba(0,0,0,0.4);
-  line-height: 1;
-  margin: 0;
-  letter-spacing: 0.05em;
-}
 
-.uno-shout-stamp__sub {
-  font-size: 1.1rem;
-  font-weight: 900;
-  color: #78350f;
-  margin-top: 6px;
-  letter-spacing: 0.08em;
-}
 
 @keyframes unoStampBurst {
   0% {
@@ -14784,135 +14198,30 @@ html[data-motion-level="off"] *::after {
 }
 
 /* 底部操作浮条与罚牌条 */
-.uno-floating-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  width: fit-content;
-  max-width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-  padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(10px);
-  border-radius: 999px;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.12);
-  border: 1px solid rgba(234, 88, 12, 0.2);
-  margin-bottom: 6px;
-}
 
-.uno-floating-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 999px;
-  font-size: 0.86rem;
-  font-weight: 800;
-  cursor: pointer;
-  border: 1.5px solid transparent;
-  transition: all 0.15s ease;
-}
 
-.uno-floating-btn.btn-primary {
-  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-  color: #ffffff;
-  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.35);
-}
 
-.uno-floating-btn.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.5);
-}
 
-.uno-floating-btn.btn-danger {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: #ffffff;
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.35);
-}
 
-.uno-floating-btn.btn-danger:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.5);
-}
 
-.uno-floating-btn.btn-outline {
-  background: #ffffff;
-  border-color: #d1d5db;
-  color: #374151;
-}
 
-.uno-floating-btn.btn-outline:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
-}
 
-.uno-house-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-}
 
-.uno-house-actions button.is-accent { border-color: var(--color-primary); color: #fff; background: var(--color-primary); }
-.uno-house-actions__hint { margin: 0; color: var(--color-text-muted); }
 
-.uno-house-color-picker { max-width: 320px; margin: 0 auto; }
 
 .uno-house-spectator-note,
 .blank-spectator-note { color: var(--color-text-muted); text-align: center; }
 
-.uno-house-scores {
-  padding: 18px;
-  border: 1px solid var(--color-border);
-  border-radius: 18px;
-  background: var(--color-surface);
-}
 
-.uno-house-scores h2 { margin: 0 0 12px; font-size: 1.05rem; }
 
-.uno-house-scores__table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: .86rem;
-}
 
-.uno-house-scores__table th,
-.uno-house-scores__table td {
-  padding: 7px 10px;
-  border-bottom: 1px solid var(--color-border);
-  text-align: right;
-}
 
-.uno-house-scores__table th:first-child,
-.uno-house-scores__table td:first-child { text-align: left; }
 
-.uno-house-scores__ranking {
-  display: grid;
-  gap: 8px;
-  margin: 14px 0 0;
-  padding: 0;
-  list-style: none;
-}
 
-.uno-house-scores__ranking li {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(0,0,0,.04);
-}
 
-.uno-house-scores__rank { color: var(--color-primary); font-weight: 900; }
 
 
 @media (max-width: 640px) {
-  .uno-house-stage { padding-inline: 10px; }
-  .uno-house-player { min-width: 44%; }
-  .uno-house-hand .uno-card { width: 17vw; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -24686,18 +23995,6 @@ body.is-immersive .tabletop-arena-container {
 }
 
 /* UNO 竖屏对手环形牌桌席位 */
-.uno-opponents-ring {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  max-width: 480px;
-  margin: 0 auto 10px;
-  flex-wrap: wrap;
-  z-index: 10;
-  position: relative;
-}
 
 .tabletop-shell:has(.tabletop-seats-bar) .uno-opponents-ring {
   display: none;
@@ -24709,93 +24006,15 @@ body.is-immersive .tabletop-arena-container {
   }
 }
 
-.uno-opponent-station {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 10px 4px 6px;
-  border-radius: 20px;
-  background: rgba(30, 24, 18, 0.8);
-  border: 1.5px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
-  transition: all 0.2s ease;
-  min-width: 90px;
-}
 
-.uno-opponent-station.is-active-turn {
-  border-color: #ffd43b;
-  background: rgba(50, 36, 16, 0.92);
-  box-shadow: 0 0 16px rgba(255, 212, 59, 0.6);
-  transform: scale(1.04);
-}
 
-.uno-opponent-station.is-uno-shout {
-  border-color: #f43f5e;
-  animation: unoPulseShout 1s infinite alternate;
-}
 
-.uno-opponent-avatar-box {
-  position: relative;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-}
 
-.uno-opponent-turn-halo {
-  position: absolute;
-  inset: -3px;
-  border-radius: 50%;
-  border: 2px solid #ffd43b;
-  animation: turnPulse 1.5s infinite;
-}
 
-.uno-opponent-uno-badge {
-  position: absolute;
-  bottom: -4px;
-  right: -6px;
-  background: #e11d48;
-  color: #ffffff;
-  font-size: 0.6rem;
-  font-weight: 900;
-  padding: 1px 4px;
-  border-radius: 6px;
-  border: 1px solid #ffffff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-}
 
-.uno-opponent-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  text-align: left;
-  gap: 1px;
-}
 
-.uno-opponent-name {
-  font-size: 0.74rem;
-  font-weight: 700;
-  color: #ffffff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 76px;
-}
 
-.uno-opponent-cards-tag {
-  font-size: 0.72rem;
-  color: #facc15;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-}
 
-.uno-opponent-score {
-  font-size: 0.65rem;
-  color: #94a3b8;
-  font-weight: 600;
-}
 
 @keyframes drawerFadeIn {
   from { opacity: 0; }
