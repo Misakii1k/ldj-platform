@@ -118,6 +118,11 @@ export interface NightTestimonyState {
   crimesAllGuessed: boolean | null;
   /** 胜者列表 */
   winners: string[];
+  /**
+   * 当前阶段的截止时刻（与 schedule_timer 的 deadlineAt 同值）。
+   * 客户端据此渲染倒计时进度环；无计时阶段（选卡、终局）为 null。
+   */
+  deadlineAt: number | null;
 }
 
 export type NightTestimonyAction =
@@ -195,6 +200,8 @@ export interface NightTestimonyPublicView {
   wardenRevealed: boolean | null;
   guessingInProgress: boolean;
   winners: string[];
+  /** 当前阶段截止时刻；无计时阶段为 null */
+  deadlineAt: number | null;
   reveal: NightTestimonyReveal | null;
 }
 

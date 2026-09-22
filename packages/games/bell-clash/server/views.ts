@@ -31,6 +31,10 @@ const bellClashPublicViewSchema = z
     bellClaimantId: pid.nullable(),
     drawCount: z.number().int().nonnegative(),
     winners: z.array(pid),
+    /** 当前计时截止时刻；终局为 null */
+    deadlineAt: z.number().nullable(),
+    /** 截止时刻的类别：回合 or 抢铃窗口。客户端据此换进度环的 phaseKey */
+    deadlineKind: z.enum(['turn', 'bell']).nullable(),
   })
   .strict();
 
@@ -66,6 +70,9 @@ function buildPublicView(state: BellClashState): BellClashPublicView {
     bellClaimantId: state.bellClaimantId,
     drawCount: state.drawPile.length,
     winners: [...state.winners],
+    // 老存档没有这两个字段，兜底为 null
+    deadlineAt: state.deadlineAt ?? null,
+    deadlineKind: state.deadlineKind ?? null,
   };
 }
 

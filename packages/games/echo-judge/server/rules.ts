@@ -36,6 +36,33 @@ const idempotent = (state: EchoJudgeState): EchoJudgeReduceResult => ({
 
 const system = (text: string): GameEffect => ({ type: 'system_message', text });
 
+/**
+ * 发言超时。顺便把截止时刻写进 state：客户端的倒计时环需要它，
+ * 而 effect 里的 deadlineAt 只有运行时看得见，视图拿不到。两处必须同值。
+ */
+function scheduleAnswerTimeout(state: EchoJudgeState, speakerId: string, now: number): GameEffect {
+  const deadlineAt = now + state.config.answerSeconds * 1000;
+  state.deadlineAt = deadlineAt;
+  return {
+    type: 'schedule_timer',
+    timerId: `answer-${state.round}-${speakerId}`,
+    deadlineAt,
+    action: { type: 'finish_speaking', playerId: speakerId },
+  };
+}
+
+/** 审判超时。同样顺便写 state.deadlineAt。 */
+function scheduleJudgmentTimeout(state: EchoJudgeState, now: number): GameEffect {
+  const deadlineAt = now + state.config.judgmentSeconds * 1000;
+  state.deadlineAt = deadlineAt;
+  return {
+    type: 'schedule_timer',
+    timerId: `judgment-${state.round}`,
+    deadlineAt,
+    action: { type: 'resolve_round', playerId: state.judgeId },
+  };
+}
+
 /** 开局/每轮初始化分配身份：除判官外默认初始化（可选伪人/人类），并为伪人派发触发词 */
 export function assignRoles(
   players: readonly string[],
@@ -101,6 +128,7 @@ export function createEchoJudgeState(
     escapedImpostors: [],
     scores: Object.fromEntries(players.map((id) => [id, 0])),
     winners: [],
+    deadlineAt: null,
   };
   assertEchoJudgeInvariants(state);
   return state;
@@ -176,6 +204,8 @@ function settleRound(
   if (next === null) {
     state.phase = 'game_over';
     state.currentSpeakerId = null;
+    // 终局不再计时：客户端倒计时环据此隐藏
+    state.deadlineAt = null;
     const maxScore = Math.max(...Object.values(state.scores));
     state.winners = state.players.filter((id) => state.scores[id] === maxScore);
     events.push({ type: 'game_finished', winners: [...state.winners] });
@@ -186,6 +216,8 @@ function settleRound(
   state.round += 1;
   state.judgeId = next;
   state.phase = 'judge_setup';
+  // 出题阶段不催审判长，倒计时环隐藏
+  state.deadlineAt = null;
   state.question = '';
   state.topicCardId = null;
   state.answers = {};
@@ -300,12 +332,7 @@ export function reduceEchoJudgeState(
           next.accusations = [];
           events.push({ type: 'judgment_started' });
           effects.push(system('发言者退出，所有剩余玩家已作答，审判长请指认伪人'));
-          effects.push({
-            type: 'schedule_timer',
-            timerId: `judgment-${next.round}`,
-            deadlineAt: ctx.now + state.config.judgmentSeconds * 1000,
-            action: { type: 'resolve_round', playerId: next.judgeId },
-          });
+          effects.push(scheduleJudgmentTimeout(next, ctx.now));
         } else {
           next.currentSpeakerId = next.answerOrder[answered] ?? null;
           if (next.currentSpeakerId) {
@@ -368,12 +395,7 @@ export function reduceEchoJudgeState(
     events.push({ type: 'topic_card_picked', judgeId: next.judgeId, cardId: card.id, text: card.text });
     if (firstSpeaker) {
       events.push({ type: 'speaker_advanced', speakerId: firstSpeaker });
-      effects.push({
-        type: 'schedule_timer',
-        timerId: `answer-${next.round}-${firstSpeaker}`,
-        deadlineAt: ctx.now + state.config.answerSeconds * 1000,
-        action: { type: 'finish_speaking', playerId: firstSpeaker },
-      });
+      effects.push(scheduleAnswerTimeout(next, firstSpeaker, ctx.now));
     }
     effects.push(system(`审判长已出题：「${card.text}」，请 ${firstSpeaker} 开始口头发言`));
     assertEchoJudgeInvariants(next);
@@ -398,12 +420,7 @@ export function reduceEchoJudgeState(
     events.push({ type: 'topic_card_picked', judgeId: next.judgeId, cardId: '', text: action.question });
     if (firstSpeaker) {
       events.push({ type: 'speaker_advanced', speakerId: firstSpeaker });
-      effects.push({
-        type: 'schedule_timer',
-        timerId: `answer-${next.round}-${firstSpeaker}`,
-        deadlineAt: ctx.now + state.config.answerSeconds * 1000,
-        action: { type: 'finish_speaking', playerId: firstSpeaker },
-      });
+      effects.push(scheduleAnswerTimeout(next, firstSpeaker, ctx.now));
     }
     effects.push(system(`审判长已出题：「${action.question}」，请 ${firstSpeaker} 开始口头发言`));
     assertEchoJudgeInvariants(next);
@@ -428,22 +445,12 @@ export function reduceEchoJudgeState(
       next.accusations = [];
       events.push({ type: 'judgment_started' });
       effects.push(system('全部发言完毕，审判长请指认潜伏的伪人（可多选）'));
-      effects.push({
-        type: 'schedule_timer',
-        timerId: `judgment-${next.round}`,
-        deadlineAt: ctx.now + state.config.judgmentSeconds * 1000,
-        action: { type: 'resolve_round', playerId: next.judgeId },
-      });
+      effects.push(scheduleJudgmentTimeout(next, ctx.now));
     } else {
       const nextSpeaker = next.answerOrder[answeredCount]!;
       next.currentSpeakerId = nextSpeaker;
       events.push({ type: 'speaker_advanced', speakerId: nextSpeaker });
-      effects.push({
-        type: 'schedule_timer',
-        timerId: `answer-${next.round}-${nextSpeaker}`,
-        deadlineAt: ctx.now + state.config.answerSeconds * 1000,
-        action: { type: 'finish_speaking', playerId: nextSpeaker },
-      });
+      effects.push(scheduleAnswerTimeout(next, nextSpeaker, ctx.now));
     }
     assertEchoJudgeInvariants(next);
     return { ok: true, nextState: next, events, effects };
@@ -467,22 +474,12 @@ export function reduceEchoJudgeState(
       next.accusations = [];
       events.push({ type: 'judgment_started' });
       effects.push(system('全部回答完毕，审判长请指认伪人'));
-      effects.push({
-        type: 'schedule_timer',
-        timerId: `judgment-${next.round}`,
-        deadlineAt: ctx.now + state.config.judgmentSeconds * 1000,
-        action: { type: 'resolve_round', playerId: next.judgeId },
-      });
+      effects.push(scheduleJudgmentTimeout(next, ctx.now));
     } else {
       const nextSpeaker = next.answerOrder[answeredCount]!;
       next.currentSpeakerId = nextSpeaker;
       events.push({ type: 'speaker_advanced', speakerId: nextSpeaker });
-      effects.push({
-        type: 'schedule_timer',
-        timerId: `answer-${next.round}-${nextSpeaker}`,
-        deadlineAt: ctx.now + state.config.answerSeconds * 1000,
-        action: { type: 'finish_speaking', playerId: nextSpeaker },
-      });
+      effects.push(scheduleAnswerTimeout(next, nextSpeaker, ctx.now));
     }
     assertEchoJudgeInvariants(next);
     return { ok: true, nextState: next, events, effects };

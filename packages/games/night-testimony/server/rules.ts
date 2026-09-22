@@ -32,22 +32,31 @@ const idempotent = (state: NightTestimonyState): NightTestimonyReduceResult => (
 
 const system = (text: string): GameEffect => ({ type: 'system_message', text });
 
-/** 提问阶段超时（出题者未选卡/有人未作答时自动推进） */
+/**
+ * 提问阶段超时（出题者未选卡/有人未作答时自动推进）。
+ *
+ * 顺便把截止时刻写进 state：客户端的倒计时环需要它，而 effect 里的
+ * deadlineAt 只有运行时看得见，视图拿不到。两处必须同值。
+ */
 function scheduleQuestionTimeout(state: NightTestimonyState, now: number): GameEffect {
+  const deadlineAt = now + state.config.questionSeconds * 1000;
+  state.deadlineAt = deadlineAt;
   return {
     type: 'schedule_timer',
     timerId: 'nt-question-timeout',
-    deadlineAt: now + state.config.questionSeconds * 1000,
+    deadlineAt,
     action: { type: 'question_timeout' },
   };
 }
 
-/** 投票阶段超时（到点按现有票结算） */
+/** 投票阶段超时（到点按现有票结算）。同样顺便写 state.deadlineAt。 */
 function scheduleVoteTimeout(state: NightTestimonyState, now: number): GameEffect {
+  const deadlineAt = now + state.config.voteSeconds * 1000;
+  state.deadlineAt = deadlineAt;
   return {
     type: 'schedule_timer',
     timerId: 'nt-vote-timeout',
-    deadlineAt: now + state.config.voteSeconds * 1000,
+    deadlineAt,
     action: { type: 'vote_timeout' },
   };
 }
@@ -79,6 +88,8 @@ function settleVotes(
   if (!isWarden) {
     // 票出的是囚犯（狱警未被投出）-> 狱警直接独胜！
     next.phase = 'game_over';
+    // 终局不再计时：客户端倒计时环据此隐藏
+    next.deadlineAt = null;
     next.guessingInProgress = false;
     next.winners = [next.wardenId];
     events.push({ type: 'game_finished', winners: [next.wardenId] });
@@ -86,6 +97,8 @@ function settleVotes(
   } else {
     // 票出的是狱警 -> 触发狱警终局猜罪！
     next.phase = 'game_over';
+    // 终局不再计时：客户端倒计时环据此隐藏
+    next.deadlineAt = null;
     next.guessingInProgress = true;
     const set = new Set<CrimeId>(Object.values(next.crimes));
     if (next.extraCrime) set.add(next.extraCrime);
@@ -242,6 +255,7 @@ export function createNightTestimonyState(
     wardenGuesses: null,
     crimesAllGuessed: null,
     winners: [],
+    deadlineAt: null,
   };
   assertNightTestimonyInvariants(state);
   return state;
@@ -309,6 +323,8 @@ export function reduceNightTestimonyState(
     }
     if (next.players.length < 3 || forfeited.includes(next.wardenId)) {
       next.phase = 'game_over';
+      // 终局不再计时：客户端倒计时环据此隐藏
+      next.deadlineAt = null;
       next.guessingInProgress = false;
       next.winners = [...next.players];
       events.push({ type: 'game_finished', winners: [...next.players] });
@@ -344,6 +360,8 @@ export function reduceNightTestimonyState(
       next.wardenRevealed = true;
       next.accusedId = next.wardenId;
       next.phase = 'game_over';
+      // 终局不再计时：客户端倒计时环据此隐藏
+      next.deadlineAt = null;
       next.guessingInProgress = true;
       next.currentQuestion = null;
       next.pendingCardChoices = null;
@@ -571,6 +589,8 @@ export function reduceNightTestimonyState(
       next.accusedId = accused;
       next.wardenRevealed = true;
       next.phase = 'game_over';
+      // 终局不再计时：客户端倒计时环据此隐藏
+      next.deadlineAt = null;
       next.guessingInProgress = true;
       const set = new Set<CrimeId>(Object.values(next.crimes));
       if (next.extraCrime) set.add(next.extraCrime);
@@ -617,6 +637,8 @@ export function reduceNightTestimonyState(
     next.crimesAllGuessed = allCorrect;
     next.guessingInProgress = false;
     next.phase = 'game_over';
+    // 终局不再计时：客户端倒计时环据此隐藏
+    next.deadlineAt = null;
     next.winners = allCorrect ? [next.wardenId] : inmates;
 
     events.push({ type: 'guesses_resolved', allCorrect });
@@ -680,6 +702,8 @@ export function reduceNightTestimonyState(
     if (next.phase !== 'vote') return idempotent(state);
     if (Object.keys(next.votes).length === 0) {
       next.phase = 'game_over';
+      // 终局不再计时：客户端倒计时环据此隐藏
+      next.deadlineAt = null;
       next.guessingInProgress = false;
       next.winners = [next.wardenId];
       events.push({ type: 'game_finished', winners: [next.wardenId] });

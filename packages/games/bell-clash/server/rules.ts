@@ -248,6 +248,38 @@ const idempotent = (state: BellClashState): BellClashReduceResult => ({
 const system = (text: string): GameEffect => ({ type: 'system_message', text });
 
 /**
+ * 回合超时。顺便把截止时刻与类别写进 state：客户端的倒计时环需要它们，
+ * 而 effect 里的 deadlineAt 只有运行时看得见，视图拿不到。两处必须同值。
+ */
+function scheduleTurnTimeout(state: BellClashState, playerId: string, now: number): GameEffect {
+  const deadlineAt = now + state.config.turnSeconds * 1000;
+  state.deadlineAt = deadlineAt;
+  state.deadlineKind = 'turn';
+  return {
+    type: 'schedule_timer',
+    timerId: 'turn_timeout',
+    deadlineAt,
+    action: { type: 'turn_timeout', playerId },
+  };
+}
+
+/**
+ * 抢铃窗口超时。窗口通常只有几秒，是本游戏最需要可见倒计时的地方。
+ * deadlineKind 标为 'bell'，客户端据此换 phaseKey 重测满格。
+ */
+function scheduleBellTimeout(state: BellClashState, now: number): GameEffect {
+  const deadlineAt = now + state.config.bellSeconds * 1000;
+  state.deadlineAt = deadlineAt;
+  state.deadlineKind = 'bell';
+  return {
+    type: 'schedule_timer',
+    timerId: 'bell_timeout',
+    deadlineAt,
+    action: { type: 'resolve_bell', claimantId: '' },
+  };
+}
+
+/**
  * 构建原创牌库：4色×(6张数字卡 + 从大词库随机抽选18张聚会高频短语卡) = 96张牌（短语卡占比 75%）。
  * 支持传入 PRNG 随机抽选，保证开局多局不重样；无参调用时确定性取各色前 18 张。
  */
@@ -307,6 +339,8 @@ export function createBellClashState(
     bellClaimantId: null,
     penaltyPulls: {},
     winners: [],
+    deadlineAt: null,
+    deadlineKind: null,
   };
   assertBellClashInvariants(state);
   return state;
@@ -375,12 +409,7 @@ export function reduceBellClashState(
         nextState: state,
         events: [],
         effects: [
-          {
-            type: 'schedule_timer',
-            timerId: 'turn_timeout',
-            deadlineAt: now + state.config.turnSeconds * 1000,
-            action: { type: 'turn_timeout', playerId: state.currentPlayerId },
-          },
+          scheduleTurnTimeout(state, state.currentPlayerId, now),
         ],
       };
     }
@@ -410,6 +439,9 @@ export function reduceBellClashState(
       // 获胜判定：手牌打光即赢
       if (next.hands[action.playerId]!.length === 0) {
         next.phase = 'game_over';
+        // 终局不再计时：客户端倒计时环据此隐藏
+        next.deadlineAt = null;
+        next.deadlineKind = null;
         next.winners = [action.playerId];
         events.push({ type: 'game_finished', winners: [action.playerId] });
         effects.push(system(`玩家 ${action.playerId} 打光手牌，赢得胜利！`));
@@ -425,12 +457,7 @@ export function reduceBellClashState(
         effects.push(
           system(`触发短语「${card.phrase}」！若有人说了/做了牌上内容，可拍铃抢回合！`),
         );
-        effects.push({
-          type: 'schedule_timer',
-          timerId: 'bell_timeout',
-          deadlineAt: now + next.config.bellSeconds * 1000,
-          action: { type: 'resolve_bell', claimantId: '' },
-        });
+        effects.push(scheduleBellTimeout(next, now));
         assertBellClashInvariants(next);
         return { ok: true, nextState: next, events, effects };
       }
@@ -441,12 +468,7 @@ export function reduceBellClashState(
       next.currentPlayerId = nextPlayerId;
       events.push({ type: 'turn_passed', playerId: nextPlayerId });
 
-      effects.push({
-        type: 'schedule_timer',
-        timerId: 'turn_timeout',
-        deadlineAt: now + next.config.turnSeconds * 1000,
-        action: { type: 'turn_timeout', playerId: nextPlayerId },
-      });
+      effects.push(scheduleTurnTimeout(next, nextPlayerId, now));
 
       assertBellClashInvariants(next);
       return { ok: true, nextState: next, events, effects };
@@ -469,6 +491,9 @@ export function reduceBellClashState(
         const minCount = Math.min(...next.players.map((p) => next.hands[p]!.length));
         const winners = next.players.filter((p) => next.hands[p]!.length === minCount);
         next.phase = 'game_over';
+        // 终局不再计时：客户端倒计时环据此隐藏
+        next.deadlineAt = null;
+        next.deadlineKind = null;
         next.winners = winners;
         events.push({ type: 'game_finished', winners });
         effects.push(system(`抽牌堆耗尽，手牌最少者获胜：${winners.join('、')}`));
@@ -486,6 +511,9 @@ export function reduceBellClashState(
 
         if (next.hands[action.playerId]!.length === 0) {
           next.phase = 'game_over';
+          // 终局不再计时：客户端倒计时环据此隐藏
+          next.deadlineAt = null;
+          next.deadlineKind = null;
           next.winners = [action.playerId];
           events.push({ type: 'game_finished', winners: [action.playerId] });
           effects.push(system(`玩家 ${action.playerId} 打光手牌获胜！`));
@@ -497,12 +525,7 @@ export function reduceBellClashState(
           next.bellOpen = true;
           next.bellClaimantId = null;
           events.push({ type: 'bell_opened' });
-          effects.push({
-            type: 'schedule_timer',
-            timerId: 'bell_timeout',
-            deadlineAt: now + next.config.bellSeconds * 1000,
-            action: { type: 'resolve_bell', claimantId: '' },
-          });
+          effects.push(scheduleBellTimeout(next, now));
           assertBellClashInvariants(next);
           return { ok: true, nextState: next, events, effects };
         }
@@ -514,12 +537,7 @@ export function reduceBellClashState(
       next.currentPlayerId = nextPlayerId;
       events.push({ type: 'turn_passed', playerId: nextPlayerId });
 
-      effects.push({
-        type: 'schedule_timer',
-        timerId: 'turn_timeout',
-        deadlineAt: now + next.config.turnSeconds * 1000,
-        action: { type: 'turn_timeout', playerId: nextPlayerId },
-      });
+      effects.push(scheduleTurnTimeout(next, nextPlayerId, now));
 
       assertBellClashInvariants(next);
       return { ok: true, nextState: next, events, effects };
@@ -556,12 +574,7 @@ export function reduceBellClashState(
         const effects: GameEffect[] = [
           system(`玩家 ${action.playerId} 错误拍铃（无同色短语卡），罚摸 1 张！`),
           { type: 'cancel_timer', timerId: 'bell_timeout' },
-          {
-            type: 'schedule_timer',
-            timerId: 'turn_timeout',
-            deadlineAt: now + next.config.turnSeconds * 1000,
-            action: { type: 'turn_timeout', playerId: nextPlayerId },
-          },
+          scheduleTurnTimeout(next, nextPlayerId, now),
         ];
 
         assertBellClashInvariants(next);
@@ -609,6 +622,9 @@ export function reduceBellClashState(
 
           if (hand.length === 0) {
             next.phase = 'game_over';
+            // 终局不再计时：客户端倒计时环据此隐藏
+            next.deadlineAt = null;
+            next.deadlineKind = null;
             next.winners = [claimantId];
             events.push({ type: 'game_finished', winners: [claimantId] });
             effects.push(system(`玩家 ${claimantId} 打光手牌获胜！`));
@@ -619,12 +635,7 @@ export function reduceBellClashState(
           // 拍铃成功：关闭按铃窗口，回合归该玩家
           next.bellOpen = false;
           next.bellClaimantId = null;
-          effects.push({
-            type: 'schedule_timer',
-            timerId: 'turn_timeout',
-            deadlineAt: now + next.config.turnSeconds * 1000,
-            action: { type: 'turn_timeout', playerId: claimantId },
-          });
+          effects.push(scheduleTurnTimeout(next, claimantId, now));
           assertBellClashInvariants(next);
           return { ok: true, nextState: next, events, effects };
         }
@@ -641,12 +652,7 @@ export function reduceBellClashState(
         next.currentPlayerId = nextPlayerId;
         events.push({ type: 'turn_passed', playerId: nextPlayerId });
 
-        effects.push({
-          type: 'schedule_timer',
-          timerId: 'turn_timeout',
-          deadlineAt: now + next.config.turnSeconds * 1000,
-          action: { type: 'turn_timeout', playerId: nextPlayerId },
-        });
+        effects.push(scheduleTurnTimeout(next, nextPlayerId, now));
 
         assertBellClashInvariants(next);
         return { ok: true, nextState: next, events, effects };
@@ -658,12 +664,7 @@ export function reduceBellClashState(
       next.currentPlayerId = nextPlayerId;
       events.push({ type: 'turn_passed', playerId: nextPlayerId });
 
-      effects.push({
-        type: 'schedule_timer',
-        timerId: 'turn_timeout',
-        deadlineAt: now + next.config.turnSeconds * 1000,
-        action: { type: 'turn_timeout', playerId: nextPlayerId },
-      });
+      effects.push(scheduleTurnTimeout(next, nextPlayerId, now));
 
       assertBellClashInvariants(next);
       return { ok: true, nextState: next, events, effects };
@@ -687,12 +688,7 @@ export function reduceBellClashState(
       ];
       const effects: GameEffect[] = [
         system(`玩家 ${action.playerId} 出牌超时，自动摸一张牌并过牌。`),
-        {
-          type: 'schedule_timer',
-          timerId: 'turn_timeout',
-          deadlineAt: now + next.config.turnSeconds * 1000,
-          action: { type: 'turn_timeout', playerId: nextPlayerId },
-        },
+        scheduleTurnTimeout(next, nextPlayerId, now),
       ];
 
       assertBellClashInvariants(next);
@@ -714,6 +710,9 @@ export function reduceBellClashState(
 
       if (next.players.length <= 1) {
         next.phase = 'game_over';
+        // 终局不再计时：客户端倒计时环据此隐藏
+        next.deadlineAt = null;
+        next.deadlineKind = null;
         next.winners = next.players.length === 1 ? [next.players[0]!] : [];
         const events: BellClashEvent[] = [{ type: 'game_finished', winners: next.winners }];
         assertBellClashInvariants(next);

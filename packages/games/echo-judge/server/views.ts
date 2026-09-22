@@ -53,6 +53,8 @@ const echoJudgePublicViewSchema = z
     escapedImpostors: z.array(pid).nullable(),
     scores: z.record(pid, z.number().int()),
     winners: z.array(pid),
+    /** 当前阶段截止时刻；出题阶段与终局为 null */
+    deadlineAt: z.number().nullable(),
     reveal: echoJudgeRevealSchema.nullable(),
   })
   .strict();
@@ -109,6 +111,8 @@ function buildPublicView(state: EchoJudgeState): EchoJudgePublicView {
     escapedImpostors: showJudgmentResults ? [...(state.escapedImpostors ?? [])] : null,
     scores: { ...(state.scores ?? {}) },
     winners: [...(state.winners ?? [])],
+    // 出题阶段与终局不计时；老存档没有这个字段，兜底为 null
+    deadlineAt: state.deadlineAt ?? null,
     reveal:
       state.phase === 'game_over'
         ? {

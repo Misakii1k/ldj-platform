@@ -149,6 +149,8 @@ export interface NightTestimonyPublicView {
   wardenRevealed: boolean | null;
   guessingInProgress: boolean;
   winners: string[];
+  /** 当前阶段截止时刻；无计时阶段（选卡、终局）为 null */
+  deadlineAt: number | null;
   reveal: NightTestimonyReveal | null;
 }
 
@@ -168,7 +170,7 @@ const PUBLIC_KEYS = [
   'gameId', 'rulesetId', 'schemaVersion', 'phase', 'players', 'currentQuestionerId',
   'questionIndex', 'questionLimit', 'maxYesPerPlayer', 'history', 'playerYesCounts',
   'currentQuestion', 'revealedIdentities', 'extraCrime', 'availableGuessCrimes', 'votedPlayerIds',
-  'accusedId', 'wardenRevealed', 'guessingInProgress', 'winners', 'reveal',
+  'accusedId', 'wardenRevealed', 'guessingInProgress', 'winners', 'deadlineAt', 'reveal',
 ] as const;
 const ME_KEYS = ['playerId', 'isWarden', 'crime', 'myYesCount', 'hasAnsweredCurrent', 'hasVoted', 'pendingCardChoices'] as const;
 
@@ -326,6 +328,7 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): NightTestimo
   if (!isPlayerIds(view.votedPlayerIds) || !isBool(view.guessingInProgress) || !isPlayerIds(view.winners)) return null;
   const reveal = parseReveal(view.reveal);
   if (reveal === null && view.reveal !== null) return null;
+  if (view.deadlineAt !== null && typeof view.deadlineAt !== 'number') return null;
 
   return {
     gameId: 'night-testimony',
@@ -348,6 +351,7 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): NightTestimo
     wardenRevealed: view.wardenRevealed as boolean | null,
     guessingInProgress: view.guessingInProgress as boolean,
     winners: [...view.winners],
+    deadlineAt: view.deadlineAt as number | null,
     reveal,
   };
 }

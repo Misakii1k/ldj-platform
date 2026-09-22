@@ -42,6 +42,8 @@ export interface EchoJudgePublicView {
   escapedImpostors: string[] | null;
   scores: Record<string, number>;
   winners: string[];
+  /** 当前阶段截止时刻；出题阶段与终局为 null */
+  deadlineAt: number | null;
   reveal: EchoJudgeReveal | null;
 }
 
@@ -61,7 +63,7 @@ const PUBLIC_KEYS = [
   'gameId', 'rulesetId', 'schemaVersion', 'phase', 'players', 'round',
   'judgeId', 'question', 'topicCardId', 'currentSpeakerId', 'allAnswered', 'answeredCount',
   'accusations', 'caughtImpostors', 'escapedImpostors',
-  'scores', 'winners', 'reveal',
+  'scores', 'winners', 'deadlineAt', 'reveal',
 ] as const;
 const ME_KEYS = ['playerId', 'isJudge', 'role', 'triggerWord', 'pendingTopicChoices', 'myTurn', 'isCurrentSpeaker'] as const;
 
@@ -166,6 +168,7 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): EchoJudgePub
   if (scores === null || !isPlayerIds(view.winners)) return null;
   const reveal = parseReveal(view.reveal);
   if (reveal === null && view.reveal !== null) return null;
+  if (view.deadlineAt !== null && typeof view.deadlineAt !== 'number') return null;
   return {
     gameId: 'echo-judge',
     rulesetId: 'echo_judge_v1',
@@ -184,6 +187,7 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): EchoJudgePub
     escapedImpostors: view.escapedImpostors as string[] | null,
     scores,
     winners: [...view.winners],
+    deadlineAt: view.deadlineAt as number | null,
     reveal,
   };
 }

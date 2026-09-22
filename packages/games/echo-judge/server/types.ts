@@ -78,6 +78,11 @@ export interface EchoJudgeState {
   /** 累计分数 */
   scores: Record<string, number>;
   winners: string[];
+  /**
+   * 当前阶段的截止时刻（与 schedule_timer 的 deadlineAt 同值）。
+   * 客户端据此渲染倒计时进度环；出题阶段与终局为 null。
+   */
+  deadlineAt: number | null;
 }
 
 export type EchoJudgeAction =
@@ -142,6 +147,8 @@ export interface EchoJudgePublicView {
   escapedImpostors: string[] | null;
   scores: Record<string, number>;
   winners: string[];
+  /** 当前阶段截止时刻；出题阶段与终局为 null */
+  deadlineAt: number | null;
   reveal: EchoJudgeReveal | null;
 }
 

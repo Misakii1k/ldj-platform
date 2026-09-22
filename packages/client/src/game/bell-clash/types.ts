@@ -31,6 +31,10 @@ export interface BellClashPublicView {
   bellClaimantId: string | null;
   drawCount: number;
   winners: string[];
+  /** 当前计时截止时刻；终局为 null */
+  deadlineAt: number | null;
+  /** 截止时刻的类别：回合 or 抢铃窗口。两类时长差很多，倒计时环据此换 phaseKey */
+  deadlineKind: 'turn' | 'bell' | null;
 }
 
 export interface BellClashPlayerView extends BellClashPublicView {
@@ -43,6 +47,7 @@ export interface BellClashPlayerView extends BellClashPublicView {
 const PUBLIC_KEYS = [
   'gameId', 'rulesetId', 'schemaVersion', 'phase', 'players', 'handCounts',
   'currentPlayerId', 'discardTop', 'bellOpen', 'bellClaimantId', 'drawCount', 'winners',
+  'deadlineAt', 'deadlineKind',
 ] as const;
 const ME_KEYS = ['playerId', 'hand'] as const;
 
@@ -114,6 +119,8 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): BellClashPub
   if (!isBool(view.bellOpen)) return null;
   if (view.bellClaimantId !== null && !isPlayerId(view.bellClaimantId)) return null;
   if (!isNonNegativeInteger(view.drawCount) || !isPlayerIds(view.winners)) return null;
+  if (view.deadlineAt !== null && typeof view.deadlineAt !== 'number') return null;
+  if (view.deadlineKind !== null && view.deadlineKind !== 'turn' && view.deadlineKind !== 'bell') return null;
   return {
     gameId: 'bell-clash',
     rulesetId: 'bell_clash_v1',
@@ -127,6 +134,8 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): BellClashPub
     bellClaimantId: view.bellClaimantId as string | null,
     drawCount: view.drawCount as number,
     winners: [...view.winners],
+    deadlineAt: view.deadlineAt as number | null,
+    deadlineKind: view.deadlineKind as 'turn' | 'bell' | null,
   };
 }
 

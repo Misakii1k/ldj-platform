@@ -66,6 +66,17 @@ export interface BellClashState {
   /** 错误拍铃罚摸数 */
   penaltyPulls: Record<string, number>;
   winners: string[];
+  /**
+   * 当前计时的截止时刻（与 schedule_timer 的 deadlineAt 同值）。
+   * 客户端据此渲染倒计时进度环；终局为 null。
+   */
+  deadlineAt: number | null;
+  /**
+   * 这个截止时刻属于哪类计时：回合还是抢铃窗口。
+   * 客户端用它做倒计时环的 phaseKey——两类计时时长差很多，
+   * 混用同一个 key 会让进度环的满格测量错乱。
+   */
+  deadlineKind: 'turn' | 'bell' | null;
 }
 
 export type BellClashAction =
@@ -109,6 +120,10 @@ export interface BellClashPublicView {
   /** 抽牌堆剩余 */
   drawCount: number;
   winners: string[];
+  /** 当前计时截止时刻；终局为 null */
+  deadlineAt: number | null;
+  /** 截止时刻类别：回合 or 抢铃窗口 */
+  deadlineKind: 'turn' | 'bell' | null;
 }
 
 export interface BellClashPlayerView extends BellClashPublicView {

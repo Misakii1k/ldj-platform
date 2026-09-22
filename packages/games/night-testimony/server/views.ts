@@ -112,6 +112,8 @@ const nightTestimonyPublicViewSchema = z
     wardenRevealed: z.boolean().nullable(),
     guessingInProgress: z.boolean(),
     winners: z.array(pid),
+    /** 当前阶段截止时刻；无计时阶段（选卡、终局）为 null */
+    deadlineAt: z.number().nullable(),
     reveal: nightTestimonyRevealSchema.nullable(),
   })
   .strict();
@@ -192,6 +194,8 @@ function buildPublicView(state: NightTestimonyState): NightTestimonyPublicView {
     wardenRevealed: state.wardenRevealed ?? null,
     guessingInProgress: Boolean(state.guessingInProgress),
     winners: [...(state.winners ?? [])],
+    // 选卡阶段与终局不计时；老存档没有这个字段，兜底为 null
+    deadlineAt: state.deadlineAt ?? null,
     reveal:
       state.phase === 'game_over'
         ? {
