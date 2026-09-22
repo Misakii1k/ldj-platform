@@ -5825,98 +5825,20 @@ p { margin: 0.5rem 0; }
 /* ══════════════════════════════════════════════════════════════════════
    囚徒之夜（狱审档案 / 3选1审讯 / 实体标记）
    ══════════════════════════════════════════════════════════════════════ */
-.testimony-token-rack {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 10px;
-  width: 100%;
-}
 
-.testimony-token-slot {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px 12px;
-  border: 2px solid var(--game-line, #221e1a);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.6);
-  box-shadow: 0 2px 0 var(--game-line, #221e1a);
-}
 
-.testimony-token-slot--yes {
-  border-color: #059669;
-  background: rgba(16, 185, 129, 0.08);
-}
 
-.testimony-token-slot--no {
-  border-color: #dc2626;
-  background: rgba(239, 68, 68, 0.08);
-}
 
-.testimony-token-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.78rem;
-  font-weight: 800;
-  color: var(--game-ink, #221e1a);
-}
 
-.testimony-token-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
 
-.testimony-token-dot.is-yes {
-  background: #10b981;
-  box-shadow: 0 0 6px #10b981;
-}
 
-.testimony-token-dot.is-no {
-  background: #ef4444;
-  box-shadow: 0 0 6px #ef4444;
-}
 
-.testimony-token-count {
-  margin-left: auto;
-  font-size: 0.75rem;
-  font-weight: 900;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--game-line, #221e1a);
-  color: #fff;
-}
 
-.testimony-chip-token--yes.is-active {
-  background: #10b981;
-  color: #fff;
-}
 
-.testimony-chip-token--yes.is-spent {
-  background: #e5e7eb;
-  color: #9ca3af;
-  border-color: #d1d5db;
-  box-shadow: none;
-  opacity: 0.65;
-}
 
-.testimony-chip-token--no.is-active {
-  background: #ef4444;
-  color: #fff;
-}
 
-.testimony-chip-token--no.is-spent {
-  background: #e5e7eb;
-  color: #9ca3af;
-  border-color: #d1d5db;
-  box-shadow: none;
-  opacity: 0.65;
-}
 
 /* 3 选 1 题目卡选择器 */
-.testimony-card-choices,
 .echo-card-choices {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -5925,7 +5847,6 @@ p { margin: 0.5rem 0; }
   margin-bottom: 8px;
 }
 
-.testimony-topic-card,
 .echo-topic-card {
   display: flex;
   flex-direction: column;
@@ -5940,17 +5861,11 @@ p { margin: 0.5rem 0; }
   transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
 }
 
-.testimony-topic-card:hover,
 .echo-topic-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 0 var(--game-line, #221e1a);
 }
 
-.testimony-topic-card.is-selected {
-  border-color: #7c3aed;
-  background: #f5f3ff;
-  box-shadow: 0 3px 0 #7c3aed;
-}
 
 .echo-topic-card.is-selected {
   border-color: #f59e0b;
@@ -6008,7 +5923,6 @@ p { margin: 0.5rem 0; }
   color: #475569;
 }
 
-.testimony-topic-card__header,
 .echo-topic-card__header {
   display: flex;
   align-items: center;
@@ -6016,7 +5930,6 @@ p { margin: 0.5rem 0; }
   gap: 6px;
 }
 
-.testimony-topic-card__tag,
 .echo-topic-card__tag {
   font-size: 0.68rem;
   font-weight: 800;
@@ -6027,14 +5940,12 @@ p { margin: 0.5rem 0; }
   color: #713f12;
 }
 
-.testimony-topic-card__check,
 .echo-topic-card__check {
   font-size: 0.72rem;
   font-weight: 900;
   color: #7c3aed;
 }
 
-.testimony-topic-card__text,
 .echo-topic-card__text {
   margin: 0;
   font-size: 0.8rem;
@@ -6043,73 +5954,15 @@ p { margin: 0.5rem 0; }
   color: var(--game-ink, #221e1a);
 }
 
-.testimony-target-picker {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding-top: 6px;
-  border-top: 2px dashed rgba(0, 0, 0, 0.12);
-}
 
-.testimony-target-label {
-  font-size: 0.76rem;
-  font-weight: 800;
-  color: var(--game-ink, #221e1a);
-}
 
 /* 审讯待答封签 */
-.testimony-pending-box {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  width: 100%;
-  padding: 10px 12px;
-  border: 2.5px solid var(--game-line, #221e1a);
-  border-radius: 12px;
-  background: linear-gradient(135deg, #4c1d95 0%, #2e1065 100%);
-  color: #ffffff;
-  box-shadow: 0 4px 0 var(--game-line, #221e1a);
-}
 
-.testimony-pending-seal {
-  display: grid;
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-  place-items: center;
-  border: 2px solid #ffffff;
-  border-radius: 50%;
-  background: #f59e0b;
-  font-size: 1.1rem;
-  font-weight: 900;
-}
 
-.testimony-pending-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
 
-.testimony-pending-author {
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: #fcd34d;
-}
 
-.testimony-pending-text {
-  font-size: 0.9rem;
-  font-weight: 900;
-  line-height: 1.25;
-}
 
-.testimony-pending-tip {
-  font-size: 0.68rem;
-  font-weight: 700;
-  opacity: 0.85;
-}
 
-.testimony-waiting-banner,
 .echo-waiting-banner {
   display: flex;
   align-items: center;
@@ -6122,258 +5975,49 @@ p { margin: 0.5rem 0; }
   font-size: 0.82rem;
 }
 
-.testimony-waiting-icon,
 .echo-waiting-icon {
   font-size: 1.2rem;
 }
 
 /* 案卷轨迹列表 */
-.testimony-track-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  max-height: clamp(80px, 15vh, 130px);
-  overflow-y: auto;
-  scrollbar-width: thin;
-}
 
-.testimony-track-item {
-  display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) auto;
-  gap: 6px;
-  align-items: center;
-  padding: 5px 8px;
-  border: 1.5px solid var(--game-line, #221e1a);
-  border-radius: 8px;
-  background: #fffaf0;
-  box-shadow: 0 1.5px 0 var(--game-line, #221e1a);
-}
 
-.testimony-track-num {
-  display: grid;
-  width: 24px;
-  height: 24px;
-  place-items: center;
-  border: 1.5px solid var(--game-line, #221e1a);
-  border-radius: 50%;
-  background: #ffffff;
-  font-size: 0.7rem;
-  font-weight: 900;
-}
 
-.testimony-track-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
 
-.testimony-track-names {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.78rem;
-  font-weight: 800;
-}
 
-.testimony-name-ask {
-  color: #7c3aed;
-}
 
-.testimony-arrow {
-  color: #9ca3af;
-  font-size: 0.7rem;
-}
 
-.testimony-name-ans {
-  color: #2563eb;
-}
 
-.testimony-track-q {
-  margin: 0;
-  font-size: 0.75rem;
-  color: var(--game-ink, #221e1a);
-  font-weight: 600;
-  line-height: 1.25;
-}
 
-.testimony-track-stamp {
-  padding: 3px 8px;
-  border: 2px solid var(--game-line, #221e1a);
-  border-radius: 6px;
-  font-size: 0.7rem;
-  font-weight: 900;
-  box-shadow: 0 2px 0 var(--game-line, #221e1a);
-}
 
-.testimony-track-stamp--yes {
-  background: #10b981;
-  color: #ffffff;
-}
 
-.testimony-track-stamp--no {
-  background: #ef4444;
-  color: #ffffff;
-}
 
 /* 额外罪行卡展示 */
-.testimony-crime-card-highlight {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px;
-  border: 2.5px solid var(--game-line, #221e1a);
-  border-radius: 12px;
-  background: #fffbeb;
-  box-shadow: 0 3px 0 var(--game-line, #221e1a);
-}
 
-.testimony-crime-badge {
-  font-size: 1rem;
-  font-weight: 900;
-  color: #92400e;
-}
 
-.testimony-crime-desc {
-  margin: 0;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #78350f;
-  line-height: 1.35;
-}
 
-.testimony-crime-options-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 8px;
-}
 
-.testimony-crime-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 10px;
-  border: 2px solid var(--game-line, #221e1a);
-  border-radius: 10px;
-  background: #ffffff;
-  box-shadow: 0 2px 0 var(--game-line, #221e1a);
-  cursor: pointer;
-  font-weight: 800;
-  font-size: 0.78rem;
-}
 
-.testimony-crime-btn.is-active {
-  background: #fde047;
-  border-color: #ca8a04;
-  box-shadow: 0 3px 0 #ca8a04;
-}
 
-.testimony-crime-btn__icon {
-  font-size: 1.1rem;
-}
 
-.testimony-meter-card.is-warning {
-  border-color: #f59e0b;
-  background: #fffbeb;
-  animation: testimonyWarnPulse 2s infinite ease-in-out;
-}
 
-.testimony-meter-card.is-max {
-  border-color: #ef4444;
-  background: #fef2f2;
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
-}
 
-@keyframes testimonyWarnPulse {
-  0%, 100% {
-    box-shadow: 0 2px 0 #f59e0b, 0 0 0 rgba(245, 158, 11, 0);
-  }
-  50% {
-    box-shadow: 0 2px 0 #f59e0b, 0 0 10px rgba(245, 158, 11, 0.4);
-  }
-}
 
-.testimony-meter-count.is-warning {
-  background: #d97706;
-}
 
-.testimony-meter-count.is-max {
-  background: #dc2626;
-}
 
 /* 当前广播题目全员作答指示灯 */
-.testimony-q-answers-status {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 6px;
-  margin-top: 8px;
-}
 
-.testimony-q-player-chip {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 10px;
-  border: 2px solid var(--game-line, #221e1a);
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 2px 0 var(--game-line, #221e1a);
-  font-size: 0.74rem;
-}
 
-.testimony-chip-name {
-  font-weight: 800;
-}
 
-.testimony-chip-mark {
-  font-weight: 900;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 0.68rem;
-  color: #6b7280;
-}
 
-.testimony-chip-mark.is-yes {
-  background: #10b981;
-  color: #ffffff;
-}
 
-.testimony-chip-mark.is-no {
-  background: #ef4444;
-  color: #ffffff;
-}
 
 /* 历史案卷全员作答列表 */
-.testimony-answers-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 4px;
-}
 
-.testimony-ans-pill {
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.68rem;
-  font-weight: 800;
-  border: 1px solid var(--game-line, #221e1a);
-}
 
-.testimony-ans-pill.is-yes {
-  background: #d1fae5;
-  color: #065f46;
-}
 
-.testimony-ans-pill.is-no {
-  background: #fee2e2;
-  color: #991b1b;
-}
 
 /* 终局案卷揭示卡片 */
-.testimony-dossier-grid,
 .echo-reveal-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -6381,7 +6025,6 @@ p { margin: 0.5rem 0; }
   margin-top: 10px;
 }
 
-.testimony-dossier-card,
 .echo-reveal-card {
   display: flex;
   flex-direction: column;
@@ -6393,12 +6036,7 @@ p { margin: 0.5rem 0; }
   box-shadow: 0 3px 0 var(--game-line, #221e1a);
 }
 
-.testimony-dossier-card.is-warden {
-  border-color: #7c3aed;
-  background: #f5f3ff;
-}
 
-.testimony-dossier-card__head,
 .echo-reveal-card__head {
   display: flex;
   justify-content: space-between;
@@ -6407,27 +6045,9 @@ p { margin: 0.5rem 0; }
   font-weight: 800;
 }
 
-.testimony-dossier-card__crime {
-  font-size: 0.76rem;
-  font-weight: 700;
-}
 
-.testimony-dossier-card__guess {
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 3px 6px;
-  border-radius: 6px;
-}
 
-.testimony-dossier-card__guess.is-correct {
-  background: rgba(16, 185, 129, 0.15);
-  color: #065f46;
-}
 
-.testimony-dossier-card__guess.is-wrong {
-  background: rgba(239, 68, 68, 0.15);
-  color: #991b1b;
-}
 
 .echo-score-chip.is-judge {
   border-color: #f59e0b;
@@ -6590,27 +6210,6 @@ p { margin: 0.5rem 0; }
 
 
 /* —�?暗夜证词（狱审档案） —�?*/
-.testimony-token { gap: 4px; letter-spacing: .04em; }
-.testimony-token i { display: inline-grid; width: 20px; height: 20px; place-items: center; border: 2px solid var(--game-line); border-radius: 50%; color: #b7ad9d; background: #efe8db; font-size: .58rem; font-style: normal; font-weight: 900; }
-.testimony-token--yes i.is-left { color: #fff; background: var(--game-green); }
-.testimony-token--no i.is-left { color: #fff; background: var(--game-coral); }
-.testimony-pending { display: flex; gap: 14px; align-items: center; width: 100%; flex-shrink: 0; padding: 18px 20px; border: 3.5px solid var(--game-line); border-radius: 18px; color: #fff; background: var(--game-purple); box-shadow: 0 6px 0 var(--game-line); }
-.testimony-pending__seal { display: grid; width: 46px; height: 46px; flex-shrink: 0; place-items: center; border: 3px solid #fff; border-radius: 50%; background: var(--game-yellow); color: var(--game-ink); font-size: 1.4rem; font-weight: 900; }
-.testimony-pending__label { display: block; font-size: .7rem; font-weight: 800; opacity: .85; }
-.testimony-pending__text { display: block; margin: 2px 0; font-size: 1.05rem; font-weight: 900; }
-.testimony-pending__hint { display: block; font-size: .7rem; font-weight: 700; opacity: .8; }
-.testimony-track { display: flex; margin: 0; padding: 0; flex-direction: column; gap: 8px; list-style: none; }
-.testimony-track li { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 9px; align-items: center; min-height: 44px; padding: 7px 11px; border: 2.5px solid var(--game-line); border-radius: 12px; background: #fffaf0; box-shadow: 0 3px 0 var(--game-line); }
-.testimony-track__idx { display: grid; width: 24px; height: 24px; place-items: center; border: 2px solid var(--game-line); border-radius: 50%; background: #fff; font-size: .7rem; font-weight: 900; }
-.testimony-track__body { display: flex; min-width: 0; flex-direction: column; line-height: 1.25; }
-.testimony-track__body strong { overflow: hidden; font-size: .84rem; text-overflow: ellipsis; white-space: nowrap; }
-.testimony-track__body span { overflow: hidden; color: var(--game-muted); font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
-.testimony-track__mark { padding: 3px 9px; border: 2px solid var(--game-line); border-radius: 8px; font-size: .68rem; font-weight: 900; box-shadow: 0 2px 0 var(--game-line); }
-.testimony-track__mark--yes { color: #fff; background: var(--game-green); }
-.testimony-track__mark--no { color: #fff; background: var(--game-coral); }
-.testimony-crime-row { display: flex; justify-content: center; }
-.testimony-crime { padding: 12px 26px; border: 3px solid var(--game-line); border-radius: 12px; color: var(--game-ink); background: var(--game-yellow); box-shadow: 0 5px 0 var(--game-line); font-size: 1.06rem; font-weight: 900; transform: none; }
-.testimony-crime-picks { margin-top: 4px; }
 
 /* —�?奶酪大盗（月夜） —�?*/
 .cheese-hour__dice { display: flex; gap: 14px; justify-content: center; }
@@ -7360,136 +6959,23 @@ p { margin: 0.5rem 0; }
 }
 
 /* ════════ 囚徒之夜 自告身份游戏内模态弹窗 ════════ */
-.nt-expose-modal {
-  width: min(92vw, 460px);
-  padding: 0;
-  background: #1e1e24;
-  color: #f3f4f6;
-  border: 3px solid var(--game-line, #374151);
-  border-radius: 20px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75), 0 0 24px rgba(220, 38, 38, 0.3);
-  overflow: hidden;
-  animation: modal-scale-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
-  box-sizing: border-box;
-}
 
-.nt-expose-modal__header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px 20px;
-  background: linear-gradient(135deg, #27272a 0%, #18181b 100%);
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-}
 
-.nt-expose-modal__icon {
-  font-size: 2rem;
-  line-height: 1;
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
-}
 
-.nt-expose-modal__title-group h3 {
-  margin: 0;
-  font-size: 1.15rem;
-  font-weight: 900;
-  color: #ffffff;
-}
 
-.nt-expose-modal__sub {
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: #a1a1aa;
-}
 
-.nt-expose-modal__body {
-  padding: 18px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
 
-.nt-expose-modal__desc {
-  font-size: 0.88rem;
-  line-height: 1.55;
-  color: #d4d4d8;
-}
 
-.nt-expose-modal__desc p {
-  margin: 0 0 8px;
-}
 
-.nt-expose-modal__desc p:last-child {
-  margin-bottom: 0;
-}
 
-.nt-expose-modal__desc strong {
-  color: #facc15;
-  font-weight: 900;
-}
 
-.nt-expose-modal__caution {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: rgba(234, 179, 8, 0.15);
-  border: 1px solid rgba(234, 179, 8, 0.35);
-  border-radius: 10px;
-  font-size: 0.78rem;
-  font-weight: 800;
-  color: #fde047;
-}
 
-.nt-expose-modal__actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 14px 20px;
-  background: #18181b;
-  border-top: 2px solid rgba(255, 255, 255, 0.08);
-}
 
-.nt-expose-btn {
-  height: 40px;
-  padding: 0 18px;
-  border-radius: 10px;
-  font-size: 0.88rem;
-  font-weight: 900;
-  cursor: pointer;
-  border: none;
-  transition: transform 0.14s ease, filter 0.14s ease;
-}
 
-.nt-expose-btn:hover {
-  transform: translateY(-2px);
-}
 
-.nt-expose-btn:active {
-  transform: translateY(1px);
-}
 
-.nt-expose-btn--cancel {
-  background: #3f3f46;
-  color: #e4e4e7;
-}
 
-.nt-expose-btn--confirm {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  color: #ffffff;
-  box-shadow: 0 0 14px rgba(37, 99, 235, 0.5);
-}
 
-.nt-expose-btn--danger {
-  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
-  color: #ffffff;
-  box-shadow: 0 0 14px rgba(239, 68, 68, 0.5);
-}
 
 /* —�?大厅全员就绪自动开局：固定浮条（替代易被忽略的页面底部横幅） —�?*/
 .autostart-banner { position: fixed; left: 50%; bottom: calc(var(--safe-bottom) + 22px); z-index: 60; display: inline-flex; gap: 10px; align-items: center; padding: 12px 22px; border: 3px solid var(--home-ink, #29241f); border-radius: 999px; color: #fff; background: var(--home-green, #0c715d); box-shadow: 0 6px 0 var(--home-ink, #29241f), 0 18px 40px rgba(0, 0, 0, .3); font-weight: 900; transform: translateX(-50%); animation: autostart-pop .28s cubic-bezier(.2, .8, .2, 1) both; }
@@ -7942,21 +7428,14 @@ p { margin: 0.5rem 0; }
 }
 
 /* 暗夜证词：左私密档案 + 右提问/问答 双列单屏 */
-.testimony-stage,
 .echo-judge-stage {
   width: 100%;
   max-width: 920px;
   margin: 0 auto;
 }
 
-.testimony-private .identity-flip-container--compact,
-.testimony-private .identity-flip-card,
-.testimony-private .identity-card-inner {
-  min-height: clamp(158px, 30dvh, 188px) !important;
-}
 
 /* 移动端身份折叠触发器 */
-.testimony-identity-toggle-btn,
 .echo-identity-toggle-btn {
   display: none;
   width: 100%;
@@ -7974,12 +7453,9 @@ p { margin: 0.5rem 0; }
 }
 
 @media (max-width: 768px) {
-  .testimony-identity-toggle-btn,
   .echo-identity-toggle-btn {
     display: flex;
   }
-
-  .testimony-private.is-collapsed-mobile,
   .echo-private-panel.is-collapsed-mobile {
     display: none;
   }

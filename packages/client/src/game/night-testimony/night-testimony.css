@@ -1,51 +1,729 @@
-/* 囚徒之夜：焦点式竞技场（ArenaBoard / ArenaRail / SeatTargetPicker）
-   由 styles.css 按游戏拆分而来；main.tsx 在 styles.css 之后、game-ui.css 之前按原顺序 import，
-   源顺序与拆分前完全一致（game-ui.css 的归一化层仍需最后加载才能压住 bespoke 样式）。 */
-.testimony-stage {
+/**
+ * 囚徒之夜 · 审讯室长桌
+ *
+ * 契约见 docs/plans/2026-09-22-game-ui-uplift/contracts/night-testimony.md
+ * - 浅色纸感底；只在投票与猜罪阶段加局部暗角（审讯灯只照桌中央）
+ * - 平面：不启用 .stage-felt-3d，只用 FLIP 与平面飞行层
+ * - accent 取 catalog 的 violet（#7960a5，对比度 3.83），只作描边 / 图钉 / ≥24px 大字，
+ *   纸底正文一律 ink / muted
+ * - 布局量用局部 --nt-*，颜色一律平台令牌
+ *
+ * main.tsx 在 styles.css 之后、game-ui.css 之前按原顺序 import。
+ */
+
+.nt-game {
+  --nt-gap: 10px;
+  --nt-note-w: 168px;
+  --nt-radius: var(--gp-radius-md);
+
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--nt-gap);
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
 }
 
-.testimony-meters-panel {
-  display: block;
+/* ── 顶部横栏：身份卡 / 倒计时环 / 全员 YES 计数 ───────────────── */
+
+.nt-rail {
+  display: flex;
+  align-items: stretch;
+  gap: var(--nt-gap);
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
-.testimony-yes-rail {
+.nt-private {
+  flex: 0 1 220px;
+  min-width: 0;
+  padding: 8px;
+}
+
+.nt-countdown {
+  align-self: center;
+}
+
+.nt-yes-rail {
+  flex: 1 1 240px;
+  min-width: 0;
   justify-content: center;
   flex-wrap: wrap;
 }
 
-.testimony-focal {
-  width: 100%;
-}
-
-.testimony-docket-panel {
-  padding: 10px 12px;
-  border: var(--gp-border-sm);
-  border-radius: var(--gp-radius-md);
-  background: color-mix(in srgb, var(--gp-surface) 88%, transparent);
-  box-shadow: var(--gp-shadow-sm);
-}
-
-.testimony-docket-panel__head {
-  display: flex;
+/* 移动端身份折叠横条：窄屏才出现 */
+.nt-identity-toggle {
+  display: none;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 8px;
+  width: 100%;
+  min-height: var(--gp-touch);
+  padding: 8px 12px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  font-weight: 800;
+  font-size: 0.82rem;
+  cursor: pointer;
 }
 
-.testimony-docket-panel__title {
+@media (max-width: 640px) {
+  .nt-identity-toggle {
+    display: flex;
+  }
+  .nt-private.is-collapsed-mobile {
+    display: none;
+  }
+  .nt-private {
+    flex-basis: 100%;
+  }
+}
+
+/* ── 证词板 ────────────────────────────────────────────────── */
+
+.nt-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.nt-board {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-gap);
+  min-height: 0;
+  flex: 1 1 auto;
+  padding: 12px;
+  /* 软木板：纸底 + accent 描边，钉便签的那块板 */
+  border: 3px solid var(--game-accent, var(--gp-ink));
+  border-radius: var(--gp-radius-lg);
+  background: var(--gp-paper);
+  box-shadow: var(--gp-shadow);
+}
+
+.nt-board__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.nt-board__title {
+  /* accent 在纸底只允许 ≥24px 大字 */
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: var(--game-dark, var(--gp-ink));
+}
+
+.nt-board__badge {
+  padding: 3px 10px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-pill);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* 已归档的便签：横向排开，钉在板上 */
+.nt-board__pins {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.nt-board__pins:empty {
+  display: none;
+}
+
+.nt-board__focus {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-gap);
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+/* ── 便签 ──────────────────────────────────────────────────── */
+
+.nt-note {
+  position: relative;
+  flex: 0 0 var(--nt-note-w);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 10px 8px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-surface);
+  box-shadow: var(--gp-shadow-sm);
+  /* 钉上板的便签略微歪一点，像真的被人按上去的 */
+  transform: rotate(-0.6deg);
+}
+
+.nt-note:nth-child(even) {
+  transform: rotate(0.8deg);
+}
+
+/* 焦点态：当前题摊在板中央，比归档便签大一号且不歪 */
+.nt-note[data-focus='true'] {
+  flex: 1 1 auto;
+  transform: none;
+  padding: 18px 14px 12px;
+  box-shadow: var(--gp-shadow);
+}
+
+/* 图钉本体：便签顶部正中那一枚 */
+.nt-note__tack {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border: 2px solid var(--gp-ink);
+  border-radius: 50%;
+  background: var(--game-accent, var(--gp-purple));
+}
+
+.nt-note__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.nt-note__num {
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: var(--gp-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 待定印章：当前题还没归档 */
+.nt-note__seal {
+  padding: 2px 8px;
+  border: 2px solid var(--game-coral);
+  border-radius: var(--gp-radius-sm);
+  color: var(--game-coral);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  transform: rotate(-6deg);
+}
+
+/* YES 图钉计数：几个人说了「是」一眼可数，不用读数字 */
+.nt-note__pins {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.nt-note__pin {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid var(--gp-line);
+  border-radius: 50%;
+  background: var(--gp-surface);
+}
+
+.nt-note__pin[data-on='true'] {
+  background: var(--game-coral);
+}
+
+.nt-note__text {
   margin: 0;
   font-size: 0.86rem;
-  font-weight: 900;
+  font-weight: 700;
+  line-height: 1.4;
   color: var(--gp-ink);
 }
 
-@media (max-width: 480px) {
-  .testimony-docket-panel__head {
-    flex-direction: column;
-    align-items: flex-start;
+.nt-note[data-focus='true'] .nt-note__text {
+  font-size: 1.0625rem;
+}
+
+.nt-note__role-tip {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--gp-muted);
+}
+
+.nt-note__answers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.nt-note__ans {
+  padding: 1px 6px;
+  border: 1.5px solid var(--gp-line);
+  border-radius: var(--gp-radius-pill);
+  background: var(--gp-surface);
+  color: var(--gp-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.nt-note__ans[data-yes='true'] {
+  background: var(--game-coral);
+  border-color: var(--game-coral);
+  /* white / coral = 5.48 ✅ 正文 */
+  color: #ffffff;
+}
+
+/* 图钉敲入：便签刚归档时那一下。只动 transform。 */
+.nt-note[data-pinning='true'] .nt-note__tack {
+  animation: nt-tack-in var(--gp-dur-emphasis) var(--gp-ease-press);
+}
+
+@keyframes nt-tack-in {
+  0% {
+    transform: translateY(-10px) scale(1.5);
   }
+  70% {
+    transform: translateY(1px) scale(0.92);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+html[data-motion-level='minimal'] .nt-note[data-pinning='true'] .nt-note__tack,
+html[data-motion-level='off'] .nt-note[data-pinning='true'] .nt-note__tack {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nt-note[data-pinning='true'] .nt-note__tack {
+    animation: none;
+  }
+}
+
+/* ── 焦点区各形态 ──────────────────────────────────────────── */
+
+.nt-focus {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.nt-focus__title {
+  /* ≥24px 才允许用 accent 派生的深色 */
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--game-dark, var(--gp-ink));
+}
+
+.nt-focus__hint {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--gp-muted);
+}
+
+.nt-focus__waiting {
+  margin: auto;
+  padding: 24px 12px;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--gp-muted);
+}
+
+/* 候选题卡 */
+.nt-card-choices {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.nt-topic-card {
+  flex: 1 1 150px;
+  min-width: 0;
+  min-height: var(--gp-touch);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--gp-dur-fast) var(--gp-ease-standard),
+    box-shadow var(--gp-dur-fast) ease,
+    border-color var(--gp-dur-fast) ease;
+}
+
+.nt-topic-card[data-selected='true'] {
+  border-color: var(--game-accent, var(--gp-purple));
+  box-shadow: var(--gp-shadow-sm);
+  transform: translateY(-2px);
+}
+
+.nt-topic-card__tag {
+  align-self: flex-start;
+  padding: 1px 7px;
+  border: 1.5px solid var(--gp-line);
+  border-radius: var(--gp-radius-pill);
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--gp-muted);
+}
+
+.nt-topic-card__text {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* 作答进度指示灯 */
+.nt-progress {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.nt-progress__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-pill);
+  background: var(--gp-surface);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.nt-progress__chip[data-answered='true'] {
+  border-color: var(--game-dark, var(--gp-green-dark));
+}
+
+.nt-progress__name {
+  color: var(--gp-ink);
+}
+
+.nt-progress__mark {
+  color: var(--gp-muted);
+}
+
+.nt-progress__mark[data-answer='yes'],
+.nt-progress__mark[data-answer='no'] {
+  color: var(--gp-ink);
+}
+
+/* 罪行选择网格 */
+.nt-crime-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 6px;
+}
+
+.nt-crime-btn {
+  min-height: var(--gp-touch);
+  padding: 6px 8px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.nt-crime-btn[data-active='true'] {
+  /* 选中用黄底 + ink 字（9.46），与主 CTA 的高亮语言一致 */
+  background: var(--gp-yellow);
+  border-color: var(--gp-ink);
+}
+
+/* ── 暗角 ──────────────────────────────────────────────────── */
+
+/*
+ * 审讯灯：投票与猜罪阶段压下四角，板面保持纸白。
+ * 只是叠在上面的一层渐变，不改变其下任何文字的底色，所以不影响对比度。
+ */
+.nt-vignette {
+  position: absolute;
+  inset: -12px;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  border-radius: var(--gp-radius-lg);
+  background: radial-gradient(
+    ellipse at 50% 45%,
+    transparent 38%,
+    rgba(18, 16, 12, 0.34) 78%,
+    rgba(18, 16, 12, 0.52) 100%
+  );
+  transition: opacity var(--gp-dur-phase) var(--gp-ease-standard);
+}
+
+.nt-stage[data-vignette='true'] .nt-vignette {
+  opacity: 1;
+}
+
+/* 暗角是阶段信息而不是装饰，reduced 档保留；只有无动画档去掉过渡 */
+html[data-motion-level='minimal'] .nt-vignette,
+html[data-motion-level='off'] .nt-vignette {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nt-vignette {
+    transition: none;
+  }
+}
+
+/* ── 飞行中的选票 ──────────────────────────────────────────── */
+
+.nt-vote-token {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--gp-ink);
+  border-radius: 50%;
+  background: var(--gp-yellow);
+  box-shadow: 0 2px 0 var(--gp-ink);
+}
+
+/* ── 窄屏 ──────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .nt-game {
+    --nt-note-w: 140px;
+  }
+  .nt-board {
+    padding: 10px 8px;
+  }
+  .nt-board__title {
+    font-size: 1.25rem;
+  }
+  .nt-focus__title {
+    font-size: 1.25rem;
+  }
+  .nt-crime-grid {
+    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  }
+}
+
+/* 横屏矮视口：压缩纵向留白，把便签轨收窄 */
+@media (orientation: landscape) and (max-height: 520px) {
+  .nt-game {
+    --nt-gap: 6px;
+    --nt-note-w: 132px;
+  }
+  .nt-board {
+    padding: 8px;
+  }
+  .nt-board__title,
+  .nt-focus__title {
+    font-size: 1.125rem;
+  }
+}
+
+/* ── 终局复盘（沿用原有类名，未在本轮重做） ─────────────────── */
+
+.testimony-over-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.testimony-dossier-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 8px;
+}
+
+.testimony-dossier-card {
+  padding: 10px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-surface);
+  box-shadow: var(--gp-shadow-sm);
+}
+
+.testimony-dossier-card.is-warden {
+  border-color: var(--game-coral);
+}
+
+.testimony-dossier-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+}
+
+.testimony-dossier-card__crime,
+.testimony-dossier-card__guess {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--gp-muted);
+}
+
+.testimony-dossier-card__crime strong,
+.testimony-dossier-card__guess strong {
+  color: var(--gp-ink);
+}
+
+.testimony-dossier-card__guess.is-correct {
+  color: var(--game-dark, var(--gp-green-dark));
+}
+
+.testimony-dossier-card__guess.is-wrong {
+  color: var(--game-coral);
+}
+
+/* ════════ 囚徒之夜 自告身份游戏内模态弹窗 ════════ */
+.nt-expose-modal {
+  width: min(92vw, 460px);
+  padding: 0;
+  background: #1e1e24;
+  color: #f3f4f6;
+  border: 3px solid var(--game-line, #374151);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75), 0 0 24px rgba(220, 38, 38, 0.3);
+  overflow: hidden;
+  animation: modal-scale-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  box-sizing: border-box;
+}
+
+.nt-expose-modal__header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #27272a 0%, #18181b 100%);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.nt-expose-modal__icon {
+  font-size: 2rem;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nt-expose-modal__title-group h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.nt-expose-modal__sub {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #a1a1aa;
+}
+
+.nt-expose-modal__body {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.nt-expose-modal__desc {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: #d4d4d8;
+}
+
+.nt-expose-modal__desc p {
+  margin: 0 0 8px;
+}
+
+.nt-expose-modal__desc p:last-child {
+  margin-bottom: 0;
+}
+
+.nt-expose-modal__desc strong {
+  color: #facc15;
+  font-weight: 900;
+}
+
+.nt-expose-modal__caution {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(234, 179, 8, 0.15);
+  border: 1px solid rgba(234, 179, 8, 0.35);
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #fde047;
+}
+
+.nt-expose-modal__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  background: #18181b;
+  border-top: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+.nt-expose-btn {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 900;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.14s ease, filter 0.14s ease;
+}
+
+.nt-expose-btn:hover {
+  transform: translateY(-2px);
+}
+
+.nt-expose-btn:active {
+  transform: translateY(1px);
+}
+
+.nt-expose-btn--cancel {
+  background: #3f3f46;
+  color: #e4e4e7;
+}
+
+.nt-expose-btn--confirm {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(37, 99, 235, 0.5);
+}
+
+.nt-expose-btn--danger {
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.5);
 }
