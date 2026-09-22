@@ -1,5 +1,1019 @@
+/**
+ * 斗地主 · 3D 透视毡面牌桌
+ *
+ * U10 由 styles.css 整体迁出。迁入部分内容未改，只是从全局表挪到本游戏表；
+ * 文件末尾是本轮新增的毡面配色、倒计时环、底牌揭晓与飞行牌。
+ */
+
 /* 斗地主：中心焦点板（叫分 / 自由出牌轮次） */
 .landlord-nexus-board {
   width: min(100%, 420px);
   margin: 0 auto;
+}
+
+.landlord-hand button {
+  transition: .15s;
+}
+
+.landlord-hand small {
+  display: block;
+  font-size: 9px;
+}
+
+.landlord-table.phase-bidding .current-combo {
+  border-color: rgba(251, 191, 36, .45);
+  background: rgba(251, 191, 36, .10);
+}
+
+.landlord-panel {
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 18px;
+  padding: 16px;
+  background: rgba(0,0,0,.16);
+}
+
+.landlord-bid-actions {
+  min-height: 52px;
+}
+
+.landlord-hand {
+  justify-content: center;
+  padding-top: 34px;
+  padding-bottom: 14px;
+  scrollbar-width: thin;
+}
+
+.landlord-hand button {
+  position: relative;
+  min-width: 62px;
+  height: 104px;
+  margin-left: -14px;
+  border: 1px solid rgba(15,23,42,.16);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fff, #f8fafc);
+  color: #111827;
+  box-shadow: 0 12px 22px rgba(0,0,0,.28);
+  font-family: Georgia, 'Times New Roman', serif;
+  cursor: default;
+}
+
+.landlord-hand button:first-child {
+  margin-left: 0;
+}
+
+.landlord-hand button strong {
+  display: block;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.landlord-hand button small {
+  display: block;
+  font-size: 18px;
+  margin-top: 6px;
+}
+
+.landlord-hand.can-select button {
+  cursor: pointer;
+}
+
+.landlord-hand.readonly button {
+  opacity: .96;
+}
+
+.landlord-hand button:disabled {
+  pointer-events: none;
+}
+
+.landlord-hand button.selected {
+  transform: translateY(-24px);
+  box-shadow: 0 0 0 3px #fbbf24, 0 18px 30px rgba(0,0,0,.34);
+}
+
+  .landlord-hand { justify-content: flex-start; }
+
+  .landlord-hand button { min-width: 52px; height: 88px; margin-left: -18px; }
+
+  .landlord-hand button strong { font-size: 19px; }
+
+  .landlord-hand button small { font-size: 14px; }
+
+.landlord-battlefield {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  padding: 0 16px;
+  position: relative;
+  gap: 8px;
+}
+
+.landlord-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  z-index: 50;
+  margin-top: -2px;
+}
+
+.landlord-bottom-cards-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(255, 209, 102, 0.4);
+  border-radius: 16px;
+  padding: 6px 18px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.landlord-bottom-cards-label {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #ffd166;
+  letter-spacing: 0.5px;
+}
+
+.landlord-bottom-cards-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.landlord-bottom-cards-row .playing-card,
+.landlord-bottom-cards-row .card-face-static,
+.landlord-bottom-cards-row svg {
+  width: 44px;
+  height: 62px;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+
+.landlord-multiplier-badge {
+  background: #fffdfa;
+  border: 2.5px solid var(--game-line, #2d261e);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 0.8rem;
+  color: #1f2937;
+  box-shadow: 0 3px 0 var(--game-line, #2d261e);
+  white-space: nowrap;
+}
+
+.landlord-multiplier-badge strong {
+  color: #b45309;
+  font-size: 0.95rem;
+}
+
+.landlord-battlefield {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  padding: 0 16px;
+  position: relative;
+  gap: 8px;
+}
+
+.landlord-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  z-index: 50;
+  margin-top: -8px;
+  margin-bottom: 2px;
+}
+
+.landlord-bottom-cards-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border: 2px solid #f59e0b;
+  border-radius: 14px;
+  padding: 3px 14px;
+  box-shadow: 0 3px 14px rgba(217, 119, 6, 0.16);
+}
+
+.landlord-bottom-cards-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #b45309;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.landlord-bottom-cards-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+}
+
+.landlord-bottom-cards-row .playing-card,
+.landlord-bottom-cards-row .card-face-static,
+.landlord-bottom-cards-row svg {
+  width: 38px;
+  height: 54px;
+  border-radius: 6px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+}
+
+.landlord-table-watermark {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+  opacity: 0.15;
+}
+
+.landlord-table-watermark__logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.86rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #b45309;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.landlord-table-watermark__title {
+  font-size: clamp(3.2rem, 9.5vw, 6rem);
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  color: #92400e;
+  line-height: 1;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  text-shadow: 0 2px 8px rgba(245, 158, 11, 0.28);
+}
+
+.landlord-table-watermark__badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: #78350f;
+  border-top: 1.5px solid rgba(120, 53, 15, 0.45);
+  border-bottom: 1.5px solid rgba(120, 53, 15, 0.45);
+  padding: 2px 14px;
+  margin-top: 5px;
+}
+
+.landlord-countdown-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 900;
+  font-size: 0.85rem;
+  color: #d97706;
+  background: #fef3c7;
+  padding: 3px 8px;
+  border-radius: 12px;
+  border: 1px solid #fde68a;
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.18);
+  animation: pulse 1.2s infinite;
+}
+
+.landlord-countdown-badge {
+  color: #b45309 !important;
+  border-color: #f59e0b !important;
+  background: #fffbeb !important;
+  font-weight: 900 !important;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25) !important;
+  animation: pulse 1.5s infinite;
+}
+
+.landlord-mid-arena {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto minmax(120px, 1fr);
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  padding: 0 16px;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.landlord-station-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  z-index: 60;
+  max-width: 100%;
+}
+
+.landlord-station-group--left {
+  justify-self: start;
+  align-items: center;
+}
+
+.landlord-station-group--right {
+  justify-self: end;
+  align-items: center;
+}
+
+.landlord-opponent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  padding: 8px 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  border: 2px solid rgba(217, 119, 6, 0.22);
+  box-shadow: 0 4px 18px rgba(180, 140, 90, 0.18);
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  min-width: 86px;
+  flex-shrink: 0;
+}
+
+.landlord-opponent.is-turn {
+  border-color: #f59e0b;
+  box-shadow: 0 0 22px rgba(245, 158, 11, 0.45);
+  background: rgba(254, 243, 199, 0.9);
+  transform: translateY(-2px);
+}
+
+.landlord-bubble {
+  position: absolute;
+  top: -26px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 80;
+  padding: 3px 10px;
+  border: 2px solid var(--game-line, #2d261e);
+  border-radius: 999px;
+  background: #fffdfa;
+  box-shadow: 0 2px 0 var(--game-line, #2d261e);
+  white-space: nowrap;
+}
+
+.landlord-bubble--left { left: 60%; }
+
+.landlord-bubble--right { left: 40%; }
+
+.landlord-opponent-avatar-box {
+  position: relative;
+  width: 50px;
+  height: 50px;
+}
+
+.landlord-opponent-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #f59e0b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #92400e;
+  box-shadow: 0 3px 10px rgba(180, 120, 40, 0.25);
+}
+
+.landlord-opponent-hand-count {
+  position: absolute;
+  bottom: -4px;
+  right: -6px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 1px 6px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+  white-space: nowrap;
+}
+
+.landlord-opponent-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.landlord-opponent-name {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #1f2937;
+  max-width: 88px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.landlord-role-badge {
+  font-size: 0.68rem;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: #e9ecef;
+  color: #212529;
+  border: 1.5px solid #adb5bd;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.landlord-role-badge.is-landlord {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  border-color: #92400e;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
+}
+
+.landlord-role-badge.is-farmer {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff;
+  border-color: #0c4a6e;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+}
+
+.landlord-drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  min-height: 80px;
+  transition: all 0.2s ease;
+}
+
+.landlord-drop-zone.is-played {
+  animation: dropPop 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.landlord-drop-combo-header {
+  margin-bottom: 4px;
+}
+
+.landlord-drop-combo-tag {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1.5px solid #f59e0b;
+  color: #92400e;
+  font-weight: 800;
+  font-size: 0.76rem;
+  padding: 2px 9px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+  white-space: nowrap;
+}
+
+.landlord-drop-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.landlord-drop-cards .playing-card,
+.landlord-drop-cards .card-face-static,
+.landlord-drop-cards svg {
+  width: 50px;
+  height: 72px;
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+.landlord-drop-badge {
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  white-space: nowrap;
+  border: 2.5px solid var(--game-line, #2d261e);
+  box-shadow: 0 3px 0 var(--game-line, #2d261e);
+  background: #fffdfa;
+  color: var(--game-ink);
+}
+
+.landlord-drop-badge--bid {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-color: #f59e0b;
+  color: #92400e;
+  font-size: 0.9rem;
+}
+
+.landlord-drop-badge--thinking {
+  background: #f1f3f5;
+  border-color: #adb5bd;
+  color: #212529;
+}
+
+.landlord-center-nexus {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.landlord-self-drop-wrapper,
+.landlord-self-drop-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 80px;
+  z-index: 70;
+}
+
+.landlord-self-drop-wrapper .landlord-drop-cards .playing-card,
+.landlord-self-drop-wrapper .landlord-drop-cards svg,
+.landlord-self-drop-bar .landlord-drop-cards .playing-card,
+.landlord-self-drop-bar .landlord-drop-cards svg {
+  width: 54px;
+  height: 78px;
+}
+
+.landlord-self-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  position: relative;
+  margin-bottom: 4px;
+}
+
+.landlord-self-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  background: #fffdfa;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 2.5px solid var(--game-line);
+  box-shadow: 0 3px 0 var(--game-line);
+  box-sizing: border-box;
+}
+
+.landlord-self-name {
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: var(--game-ink);
+  white-space: nowrap;
+}
+
+.landlord-action-dock {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 40px;
+  z-index: 200;
+}
+
+.landlord-bid-row,
+.landlord-play-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.landlord-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 触控目标下限 44px（UI 一致性门断言），36px 不达标；圆角由 game-ui 统一层提供 */
+  min-height: 44px;
+  padding: 4px 14px;
+  font-weight: 900;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border: 2.5px solid var(--game-line);
+  background: #ffffff;
+  color: var(--game-ink);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  box-shadow: 0 3px 0 var(--game-line);
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.landlord-btn:hover:not(:disabled) {
+  transform: translate3d(0, -2px, 0);
+  box-shadow: 0 6px 0 var(--game-line);
+}
+
+.landlord-btn:active:not(:disabled) {
+  transform: translate3d(0, 3px, 0);
+  box-shadow: 0 1px 0 var(--game-line);
+}
+
+.landlord-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.landlord-btn--primary {
+  background: var(--game-yellow, #ffd43b);
+  border-color: var(--game-line);
+  color: var(--game-ink);
+  box-shadow: 0 4px 0 var(--game-line);
+}
+
+.landlord-btn--primary:hover:not(:disabled) {
+  box-shadow: 0 6px 0 var(--game-line);
+}
+
+.landlord-btn--bid {
+  background: #ff922b;
+  border-color: var(--game-line);
+  color: #ffffff;
+  box-shadow: 0 4px 0 var(--game-line);
+}
+
+.landlord-btn--pass {
+  background: #fff3bf;
+  border-color: var(--game-line);
+  color: var(--game-ink);
+}
+
+.landlord-btn--reset {
+  background: #ffe3e3;
+  border-color: var(--game-line);
+  color: #c92a2a;
+}
+
+.landlord-wait-tag,
+.landlord-game-over-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 2.5px solid var(--game-line, #2d261e);
+  box-shadow: 0 3px 0 var(--game-line, #2d261e);
+  background: #fffdfa;
+  color: var(--game-ink, #292722);
+  font-size: 0.85rem;
+  font-weight: 900;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.landlord-game-over-tag {
+  background: var(--game-yellow, #ffd43b);
+}
+
+.landlord-hand-container {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding-top: 24px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.landlord-hand-container::-webkit-scrollbar {
+  display: none;
+}
+
+.landlord-hand-rack {
+  display: inline-flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 4px 20px 6px;
+  min-height: 110px;
+}
+
+.landlord-hand-card {
+  position: relative;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin-left: calc(-1 * var(--landlord-card-overlap, 34px));
+  cursor: pointer;
+  transform-origin: bottom center;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.15s ease;
+  user-select: none;
+  /* 覆盖 .card-fan-item 的 position:absolute，斗地主手牌靠负 margin 相对流展开 */
+}
+
+.landlord-hand-card.card-fan-item {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.landlord-hand-card:first-child {
+  margin-left: 0;
+}
+
+.landlord-hand-card .playing-card,
+.landlord-hand-card svg {
+  width: 64px;
+  height: 92px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  display: block;
+  pointer-events: none;
+}
+
+.landlord-hand-card:hover {
+  transform: translateY(-8px);
+  z-index: 150 !important;
+}
+
+.landlord-hand-card.is-selected .playing-card,
+.landlord-hand-card.is-selected svg {
+  filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.95)) drop-shadow(0 8px 16px rgba(0, 0, 0, 0.35));
+}
+
+  .landlord-battlefield {
+    padding: 0 6px;
+    gap: 4px;
+  }
+
+  .landlord-top-bar {
+    gap: 6px;
+    margin-top: 0;
+  }
+
+  .landlord-bottom-cards-panel {
+    padding: 3px 10px;
+  }
+
+  .landlord-bottom-cards-label {
+    font-size: 0.68rem;
+  }
+
+  .landlord-bottom-cards-row .playing-card,
+  .landlord-bottom-cards-row .card-face-static,
+  .landlord-bottom-cards-row svg {
+    width: 34px;
+    height: 48px;
+  }
+
+  .landlord-multiplier-badge {
+    padding: 3px 8px;
+    font-size: 0.72rem;
+  }
+
+  .landlord-mid-arena {
+    padding: 0 4px;
+    gap: 4px;
+    grid-template-columns: minmax(68px, 1fr) auto minmax(68px, 1fr);
+    align-items: center;
+  }
+
+  .landlord-station-group {
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .landlord-station-group--left {
+    justify-self: start;
+    align-items: flex-start;
+  }
+
+  .landlord-station-group--right {
+    justify-self: end;
+    align-items: flex-end;
+  }
+
+  .landlord-opponent {
+    padding: 4px 6px;
+    min-width: 64px;
+    border-radius: 12px;
+  }
+
+  .landlord-opponent-avatar-box {
+    width: 38px;
+    height: 38px;
+  }
+
+  .landlord-opponent-avatar {
+    font-size: 0.92rem;
+  }
+
+  .landlord-opponent-hand-count {
+    font-size: 0.62rem;
+    padding: 1px 4px;
+    right: -4px;
+    bottom: -3px;
+  }
+
+  .landlord-opponent-name {
+    font-size: 0.7rem;
+    max-width: 60px;
+  }
+
+  .landlord-role-badge {
+    font-size: 0.58rem;
+    padding: 1px 4px;
+  }
+
+  .landlord-bubble {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    top: -24px;
+  }
+
+  .landlord-drop-zone {
+    min-width: 80px;
+    min-height: 60px;
+  }
+
+  .landlord-drop-cards .playing-card,
+  .landlord-drop-cards svg {
+    width: 40px;
+    height: 58px;
+  }
+
+  .landlord-self-drop-wrapper,
+  .landlord-self-drop-bar {
+    min-height: 64px;
+  }
+
+  .landlord-self-drop-wrapper .landlord-drop-cards .playing-card,
+  .landlord-self-drop-wrapper .landlord-drop-cards svg,
+  .landlord-self-drop-bar .landlord-drop-cards .playing-card,
+  .landlord-self-drop-bar .landlord-drop-cards svg {
+    width: 44px;
+    height: 64px;
+  }
+
+  .landlord-self-bar {
+    gap: 6px;
+  }
+
+  .landlord-self-badge {
+    padding: 2px 8px;
+  }
+
+  .landlord-self-name {
+    font-size: 0.75rem;
+  }
+
+  .landlord-wait-tag,
+  .landlord-game-over-tag {
+    min-height: 32px;
+    padding: 3px 10px;
+    font-size: 0.78rem;
+    border-radius: 999px;
+  }
+
+  .landlord-hand-rack {
+    padding: 2px 8px 4px;
+    min-height: 88px;
+  }
+
+  .landlord-hand-card {
+    margin-left: calc(-1 * var(--landlord-card-overlap, 40px));
+  }
+
+  .landlord-hand-card .playing-card,
+  .landlord-hand-card svg {
+    width: 54px;
+    height: 78px;
+  }
+
+  .landlord-hand-card.is-selected {
+    transform: translateY(-18px);
+  }
+
+.landlord-hand-container {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.landlord-hand-rack {
+  max-width: none;
+}
+
+.landlord-hand-card:disabled {
+  cursor: default;
+}
+
+.landlord-inline-countdown {
+  min-width: 30px;
+  min-height: 30px;
+  margin-left: 4px;
+  font-size: .76rem;
+  font-weight: 900;
+}
+
+  .landlord-hand-container {
+    padding-inline: 0;
+  }
+
+/* ═══════════════════════════════════════════════════════════════════
+ * U10 新增：3D 毡面、倒计时环、底牌揭晓、飞行牌
+ * ═══════════════════════════════════════════════════════════════════ */
+
+.ld-arena {
+  /* 牌桌绿绒。斗地主的 catalog theme 是 poker，配色沿用平台绿 */
+  --stage-felt-a: var(--game-accent, var(--gp-green));
+  --stage-felt-b: var(--game-dark, var(--gp-green-dark));
+  --stage-felt-rail: var(--gp-ink);
+  /* 牌面密集，倾角小一点 */
+  --stage-felt-tilt: 10deg;
+
+  position: relative;
+}
+
+/* 倒计时环浮在毡面右上角 */
+.ld-countdown {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 6;
+  --stage-countdown-size: 2.75rem;
+  --stage-countdown-font: 1.125rem;
+  color: #ffffff;
+}
+
+.ld-countdown .stage-countdown__track {
+  stroke: rgba(255, 255, 255, 0.28);
+}
+
+.ld-countdown .stage-countdown__bar {
+  stroke: var(--gp-yellow);
+}
+
+/* 底牌揭晓：地主确定那一刻，三张底牌翻开并外圈亮一下。
+   这是「谁是地主、底牌是什么」的关键信息，reduced 档保留。 */
+.landlord-bottom-cards-panel[data-revealing='true'] {
+  animation: ld-bottom-reveal var(--gp-dur-slow) var(--gp-ease-standard);
+}
+
+@keyframes ld-bottom-reveal {
+  0%, 100% { box-shadow: none; }
+  40% { box-shadow: 0 0 0 4px var(--gp-yellow); }
+}
+
+html[data-motion-level='minimal'] .landlord-bottom-cards-panel[data-revealing='true'],
+html[data-motion-level='off'] .landlord-bottom-cards-panel[data-revealing='true'] {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landlord-bottom-cards-panel[data-revealing='true'] {
+    animation: none;
+  }
+}
+
+/* 飞行中的牌 */
+.ld-flight-card {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 2.5px solid var(--gp-ink);
+  border-radius: 6px;
+  background: var(--gp-surface);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+@media (max-width: 480px) {
+  .ld-arena {
+    --stage-felt-tilt: 7deg;
+  }
+  .ld-countdown {
+    --stage-countdown-size: 2.25rem;
+    --stage-countdown-font: 1rem;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .ld-arena {
+    --stage-felt-tilt: 5deg;
+  }
 }

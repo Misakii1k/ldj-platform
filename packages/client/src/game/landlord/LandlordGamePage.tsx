@@ -1,18 +1,29 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- 三个新游戏的服务端视图结构不同，此组件按 moduleId 消费运行时视图。 */
+/**
+ * 斗地主（landlord_platform_v1）页面。
+ *
+ * U10 从 NewGamePages.tsx 整体迁入 —— 抽走 UNO legacy（U07）之后那个文件
+ * 只剩斗地主，留着一个「新游戏们」的杂物文件没有意义，直接改名归位。
+ *
+ * 演出层见同目录 stage/：3D 毡面牌桌、出牌飞到中央、炸弹/王炸全屏事件。
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any -- 服务端视图未做类型收窄，按运行时视图消费。 */
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { useConnection } from '../connection/useConnection.ts';
-import { PlayingCard, CardBack } from './PlayingCard.tsx';
-import { nameFor, useGameAction, type MemberLike } from './useGameAction.ts';
-import { TabletopOvalShell } from '../shared-ui/TabletopOvalShell.tsx';
-import { GameIcon } from '../shared-ui/GameIcon.tsx';
-import { webAudio } from '../shared-ui/WebAudioManager.ts';
-import { useCountdown } from '../shared-ui/useCountdown.ts';
-import { UserAvatar } from '../user/UserAvatar.tsx';
-import { useUserProfile } from '../user/UserProfileContext.tsx';
-import { resolveMemberAvatar } from '../user/avatar.ts';
-import { GameActionFeedback } from '../shared-ui/GameMotion.tsx';
-import { ArenaBoard } from '../shared-ui/ArenaBoard.tsx';
-import { TabletopEventOverlay } from '../shared-ui/TabletopEventOverlay.tsx';
+import { useConnection } from '../../connection/useConnection.ts';
+import { PlayingCard, CardBack } from '../PlayingCard.tsx';
+import { nameFor, useGameAction, type MemberLike } from '../useGameAction.ts';
+import { TabletopOvalShell } from '../../shared-ui/TabletopOvalShell.tsx';
+import { GameIcon } from '../../shared-ui/GameIcon.tsx';
+import { webAudio } from '../../shared-ui/WebAudioManager.ts';
+import { useCountdown } from '../../shared-ui/useCountdown.ts';
+import { UserAvatar } from '../../user/UserAvatar.tsx';
+import { useUserProfile } from '../../user/UserProfileContext.tsx';
+import { resolveMemberAvatar } from '../../user/avatar.ts';
+import { GameActionFeedback } from '../../shared-ui/GameMotion.tsx';
+import { ArenaBoard } from '../../shared-ui/ArenaBoard.tsx';
+import { TabletopEventOverlay } from '../../shared-ui/TabletopEventOverlay.tsx';
+import { StageCountdownRing } from '../../shared-ui/stage/StageCountdownRing.tsx';
+import { FlightLayer } from '../../shared-ui/stage/FlightLayer.tsx';
+import { useLandlordStage } from './stage/useLandlordStage.tsx';
 
 type AnyView = Record<string, any>;
 
@@ -262,6 +273,7 @@ function PlayerActionDrop({
 }
 
 export function LandlordGamePage({ view }: { view: AnyView }) {
+  // 出牌 / 底牌翻开 / 炸弹的演出由服务端差分驱动，避免与权威状态脱节
   const { profile } = useUserProfile();
   const { state } = useConnection();
   const members = state.room?.members ?? [];
@@ -272,6 +284,9 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
   const me = view.me;
   const myTurn = Boolean(me) && view.currentPlayerId === me?.playerId;
   const myBid = Boolean(me) && view.currentBidderId === me?.playerId;
+
+  // 出牌 / 底牌翻开 / 炸弹的演出由服务端差分驱动，避免与权威状态脱节
+  const stage = useLandlordStage(view as unknown as import('./types.ts').LandlordPlatformPlayerView);
 
   const hasDeadline = typeof view.deadlineAt === 'number' && Number.isFinite(view.deadlineAt);
   const countdown = useCountdown(hasDeadline ? view.deadlineAt : null);
@@ -432,7 +447,14 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
   };
 
   const centerArena = (
-    <div className="landlord-battlefield">
+    <div className="landlord-battlefield ld-arena stage-felt-3d" ref={stage.stageRef}>
+      {/* 出牌与叫分共用一套计时，用 phase 区分满格测量 */}
+      <StageCountdownRing
+        deadlineAt={view.deadlineAt ?? null}
+        phaseKey={`${view.phase}:${view.currentPlayerId ?? view.currentBidderId ?? 'idle'}`}
+        active={view.phase !== 'game_over'}
+        className="ld-countdown"
+      />
       {/* 桌面背景专属水印：大号“斗地主”艺术书法与小幅“聚乐桌游”品牌徽章 */}
       <div className="landlord-table-watermark" aria-hidden="true">
         <div className="landlord-table-watermark__logo">
@@ -445,7 +467,10 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
 
       {/* 顶部：地主底牌与倍率 */}
       <div className="landlord-top-bar">
-        <div className="landlord-bottom-cards-panel bottom-cards">
+        <div
+          className="landlord-bottom-cards-panel bottom-cards"
+          data-revealing={stage.revealingBottom ? 'true' : undefined}
+        >
           <span className="landlord-bottom-cards-label">
             <GameIcon name="crown" size={13} style={{ marginRight: '4px' }} />
             {view.landlordId ? '地主底牌' : '地主底牌 · 叫分后公开'}
@@ -485,7 +510,7 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
         </div>
 
         {/* 中心开阔区：叫分/自由出牌轮次的焦点提示 */}
-        <div className="landlord-center-nexus">
+        <div className="landlord-center-nexus stage-felt-3d__plane" data-stage-anchor="trick">
           {(view.phase === 'bidding' || (view.phase === 'playing' && !view.currentTrick)) && (
             <ArenaBoard
               className="landlord-nexus-board"
@@ -650,7 +675,7 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
 
       {/* 手牌横向展开牌架（支持点击切换 / 按住横向拖动区间多选） */}
       {me && (
-        <div className="landlord-hand-container card-fan-container" ref={handContainerRef}>
+        <div className="landlord-hand-container card-fan-container" data-stage-anchor="hand" ref={handContainerRef}>
           <div
             className="landlord-hand-rack"
             role="region"
@@ -720,6 +745,20 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
         durationMs={1900}
         onComplete={() => setLandlordReveal(null)}
       />
+
+      {/* 炸弹 / 王炸：倍数翻番的全屏事件 */}
+      <TabletopEventOverlay
+        open={stage.bombBanner !== null}
+        variant="burst"
+        label={stage.bombBanner?.label ?? ''}
+        sublabel={stage.bombBanner ? `倍率 ×${stage.bombBanner.multiplier}` : ''}
+        durationMs={1400}
+        onComplete={stage.dismissBomb}
+      />
+
+      {/* 飞行层必须挂在牌桌外壳之外：毡面是 perspective 容器，
+          一旦有 transform 祖先，position:fixed 会退化为相对定位。 */}
+      <FlightLayer flights={stage.flights} simplified={stage.simplifiedFlights} />
     </>
   );
 }

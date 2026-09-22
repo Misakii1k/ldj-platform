@@ -15,7 +15,7 @@ import { nameFor } from './useGameAction.ts';
 import { setAppImmersiveMode } from '../native/immersive.ts';
 
 const UnoGamePage = lazyWithRetry(() => import('./uno/UnoLegacyGamePage.tsx').then((module) => ({ default: module.UnoGamePage })), 'uno');
-const LandlordGamePage = lazyWithRetry(() => import('./NewGamePages.tsx').then((module) => ({ default: module.LandlordGamePage })), 'landlord');
+const LandlordGamePage = lazyWithRetry(() => import('./landlord/LandlordGamePage.tsx').then((module) => ({ default: module.LandlordGamePage })), 'landlord');
 const WerewolfGamePage = lazyWithRetry(() => import('./werewolf/WerewolfGamePage.tsx').then((module) => ({ default: module.WerewolfGamePage })), 'werewolf');
 const WerewolfModeratorPage = lazyWithRetry(() => import('./werewolf/moderator/WerewolfModeratorPage.tsx').then((module) => ({ default: module.WerewolfModeratorPage })), 'werewolf-moderator');
 const UnoHouseStage = lazyWithRetry(() => import('./uno/stage/UnoHouseStage.tsx').then((module) => ({ default: module.UnoHouseStage })), 'uno-house');
