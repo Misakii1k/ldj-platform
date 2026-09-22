@@ -7,13 +7,8 @@ import { lazyWithRetry } from '../shared-ui/lazyWithRetry.ts';
 import { useConnection } from '../connection/useConnection.ts';
 import { asPlayerView } from './types.ts';
 import { parseGameView } from './viewRegistry.ts';
-import { GamePhaseRail } from './GameChrome.tsx';
 import { GameChatDrawer } from './GameChatDrawer.tsx';
-import { WordRevealView } from './WordRevealView.tsx';
-import { SpeakingView } from './SpeakingView.tsx';
-import { VotingView } from './VotingView.tsx';
-import { VoteResultView } from './VoteResultView.tsx';
-import { GameOverView } from './GameOverView.tsx';
+import { UndercoverTableStage } from './undercover/stage/classic/UndercoverTableStage.tsx';
 import { TabletopOvalShell } from '../shared-ui/TabletopOvalShell.tsx';
 import { TabletopSettlementDock } from './TabletopSettlementDock.tsx';
 import { nameFor } from './useGameAction.ts';
@@ -174,27 +169,6 @@ function UndercoverGamePage({ game }: { game: ActiveGame }) {
       : undefined,
   }));
 
-  let phaseView;
-  switch (view.phase) {
-    case 'word_reveal':
-      phaseView = <WordRevealView view={view} />;
-      break;
-    case 'speaking':
-      phaseView = <SpeakingView view={view} />;
-      break;
-    case 'voting':
-    case 'runoff_voting':
-      phaseView = <VotingView view={view} />;
-      break;
-    case 'vote_result':
-      phaseView = <VoteResultView view={view} />;
-      break;
-    case 'game_over':
-      phaseView = <GameOverView view={view} />;
-      break;
-    default:
-      phaseView = <div className="game-loading-card">未知阶段</div>;
-  }
   return (
     <TabletopOvalShell
       title="谁是卧底"
@@ -206,12 +180,7 @@ function UndercoverGamePage({ game }: { game: ActiveGame }) {
       currentUserId={view.me?.playerId}
       phaseKey={`${view.phase}:${view.round}:${view.currentSpeakerId ?? 'idle'}`}
       phaseBannerText={view.phase === 'speaking' && view.currentSpeakerId === view.me?.playerId ? '轮到你发言' : undefined}
-      centerArena={
-        <div className="uc-stage" data-uc-phase={view.phase}>
-          {view.phase !== 'game_over' && <GamePhaseRail phase={view.phase} />}
-          {phaseView}
-        </div>
-      }
+      centerArena={<UndercoverTableStage view={view} />}
     />
   );
 }

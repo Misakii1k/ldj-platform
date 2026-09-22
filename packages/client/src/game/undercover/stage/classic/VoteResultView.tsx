@@ -1,12 +1,12 @@
 /** 投票结果：结论印章、出局档案与公开票型。 */
 import type { CSSProperties } from 'react';
-import { useConnection } from '../connection/useConnection.ts';
-import { useCountdown } from '../shared-ui/useCountdown.ts';
-import { PhaseLead, GameCountdown } from './GameChrome.tsx';
-import { nameFor } from './useGameAction.ts';
-import { UserAvatar } from '../user/UserAvatar.tsx';
-import { resolveMemberAvatar } from '../user/avatar.ts';
-import type { UndercoverPlayerView, PublicPlayerInfo, VoteSummary } from './types.ts';
+import { useConnection } from '../../../../connection/useConnection.ts';
+import { useCountdown } from '../../../../shared-ui/useCountdown.ts';
+import { PhaseLead, GameCountdown } from '../../../GameChrome.tsx';
+import { nameFor } from '../../../useGameAction.ts';
+import { UserAvatar } from '../../../../user/UserAvatar.tsx';
+import { resolveMemberAvatar } from '../../../../user/avatar.ts';
+import type { UndercoverPlayerView, PublicPlayerInfo, VoteSummary } from '../../../types.ts';
 
 interface Props { view: UndercoverPlayerView; }
 

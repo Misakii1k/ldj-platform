@@ -1,12 +1,12 @@
 import { useState, type CSSProperties } from 'react';
-import { useConnection } from '../connection/useConnection.ts';
-import { describeError } from '../shared-ui/errors.ts';
-import { ConfettiEffect } from '../shared-ui/ConfettiEffect.tsx';
-import { UserAvatar } from '../user/UserAvatar.tsx';
-import { useUserProfile } from '../user/UserProfileContext.tsx';
-import { resolveMemberAvatar } from '../user/avatar.ts';
-import { nameFor } from './useGameAction.ts';
-import type { UndercoverPlayerView, PublicPlayerInfo } from './types.ts';
+import { useConnection } from '../../../../connection/useConnection.ts';
+import { describeError } from '../../../../shared-ui/errors.ts';
+import { ConfettiEffect } from '../../../../shared-ui/ConfettiEffect.tsx';
+import { UserAvatar } from '../../../../user/UserAvatar.tsx';
+import { useUserProfile } from '../../../../user/UserProfileContext.tsx';
+import { resolveMemberAvatar } from '../../../../user/avatar.ts';
+import { nameFor } from '../../../useGameAction.ts';
+import type { UndercoverPlayerView, PublicPlayerInfo } from '../../../types.ts';
 
 interface Props { view: UndercoverPlayerView; }
 function roleLabel(role: 'civilian' | 'undercover'): string { return role === 'undercover' ? '卧底' : '平民'; }

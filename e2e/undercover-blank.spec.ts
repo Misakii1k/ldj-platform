@@ -16,7 +16,7 @@ import { blankModule } from '../packages/games/undercover/server/blank/module.ts
 import { seedRoom } from './helpers/dbClient.ts';
 import { RoomDriver } from './helpers/wsClient.ts';
 import { seedActiveSession, type SeededSession } from './support/sessionSeeder.ts';
-import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL } from './helpers/serverEnv.ts';
+import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL, skipPcHostConsole } from './helpers/serverEnv.ts';
 
 const BLANK_CONFIG = { speechSeconds: 30, voteSeconds: 30 } as const;
 
@@ -144,6 +144,7 @@ test.describe('D4-B-UI undercover_blank_v1', () => {
       nickname: '平民甲',
     });
     await page.setViewportSize({ width: 1280, height: 800 });
+    await skipPcHostConsole(page);
     await page.goto(BASE_URL);
 
     // 词条默认隐藏：占位文案可见，真实词不可见
@@ -177,6 +178,7 @@ test.describe('D4-B-UI undercover_blank_v1', () => {
       nickname: '白板',
     });
     await page.setViewportSize({ width: 1280, height: 800 });
+    await skipPcHostConsole(page);
     await page.goto(BASE_URL);
 
     const { host, civilians } = await makeCivilians(target);
@@ -250,6 +252,7 @@ test.describe('D4-B-UI undercover_blank_v1', () => {
       nickname: '白板',
     });
     await page.setViewportSize({ width: 1280, height: 800 });
+    await skipPcHostConsole(page);
     await page.goto(BASE_URL);
 
     const { host, civilians } = await makeCivilians(target);

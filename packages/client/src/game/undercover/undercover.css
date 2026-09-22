@@ -1,0 +1,393 @@
+/**
+ * 谁是卧底 · 经典模式舞台
+ *
+ * U06 收编：原先五个阶段视图散在 game/ 根目录、样式混在 styles.css，
+ * 现在视图收进 undercover/stage/classic/，样式整体迁到这里。
+ * 迁入部分内容未改，只是从全局表挪到本游戏表。
+ */
+
+.uc-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  width: 100%;
+  max-width: 1100px;
+  height: 100%;
+  min-height: 0;
+  margin-inline: auto;
+  flex: 1;
+}
+
+.uc-stage__body {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.uc-order {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 18px;
+  border: 3px solid var(--game-line);
+  border-radius: 20px;
+  background: #fffdfa;
+  box-shadow: 0 6px 0 var(--game-line);
+  height: 100%;
+}
+
+.uc-order__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid rgba(41, 39, 34, 0.08);
+  padding-bottom: 8px;
+}
+
+.uc-order__head h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--game-ink);
+}
+
+.uc-order__subtitle {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #343a40;
+}
+
+.uc-order__counter {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: var(--game-ink);
+  padding: 3px 10px;
+  border: 2px solid var(--game-line);
+  border-radius: 999px;
+  background: #fff3bf;
+  box-shadow: 0 2px 0 var(--game-line);
+}
+
+.uc-order__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 4px 6px 8px 4px;
+  list-style: none;
+  overflow-y: auto;
+  flex: 1;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+}
+
+.uc-order-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 2.5px solid var(--game-line);
+  border-radius: 14px;
+  background: #ffffff;
+  color: var(--game-ink);
+  box-shadow: 0 3px 0 var(--game-line);
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
+.uc-order-card__idx {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--game-line);
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 900;
+  background: #f0eae1;
+  color: var(--game-ink);
+  flex-shrink: 0;
+}
+
+.uc-order-card__avatar {
+  flex-shrink: 0;
+}
+
+.uc-order-card__meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  gap: 2px;
+}
+
+.uc-order-card__name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.uc-order-card__name {
+  font-size: 0.92rem;
+  font-weight: 900;
+  color: var(--game-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uc-order-card__seat {
+  display: inline-block;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #343a40;
+  background: #f1f3f5;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid #ced4da;
+  flex-shrink: 0;
+}
+
+.uc-order-card__status-text {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #212529;
+}
+
+.uc-order-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 10px;
+  border: 1.5px solid var(--game-line);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.uc-order-tag--speaking {
+  background: var(--game-coral);
+  color: #ffffff;
+  border-color: var(--game-line);
+  animation: state-breathe 1.4s ease-in-out infinite;
+}
+
+.uc-order-tag--done {
+  background: #d3f9d8;
+  color: #2b8a3e;
+  border-color: #2b8a3e;
+}
+
+.uc-order-tag--waiting {
+  background: #e9ecef;
+  color: #212529;
+  border-color: #adb5bd;
+}
+
+.uc-order-tag--dead {
+  background: #dee2e6;
+  color: #495057;
+  border-color: #ced4da;
+}
+
+.uc-order-card.is-current {
+  border-color: var(--game-coral);
+  background: #fff5f5;
+  box-shadow: 0 4px 0 var(--game-coral);
+  transform: translateY(-1px);
+}
+
+.uc-order-card.is-current .uc-order-card__idx {
+  background: var(--game-coral);
+  color: #ffffff;
+  border-color: var(--game-line);
+}
+
+.uc-order-card.is-done {
+  background: #fbfdf9;
+  opacity: 0.88;
+}
+
+.uc-order-card.is-done .uc-order-card__idx {
+  background: var(--game-green);
+  color: #ffffff;
+  border-color: var(--game-green);
+}
+
+.uc-order-card.is-dead {
+  opacity: 0.5;
+  background: #f8f9fa;
+}
+
+.uc-order-card.is-me:not(.is-current) {
+  border-color: var(--game-purple);
+}
+
+.uc-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 2.5px solid var(--game-line);
+  border-radius: 14px;
+  background: #fffdfa;
+  box-shadow: 0 3px 0 var(--game-line);
+  box-sizing: border-box;
+}
+
+.uc-meter__label {
+  font-size: 0.84rem;
+  font-weight: 900;
+  color: var(--game-ink);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.uc-meter__track {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  background: #e9ecef;
+  border: 1.5px solid var(--game-line);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.uc-meter__track span {
+  display: block;
+  height: 100%;
+  width: var(--uc-meter, 0%);
+  background: linear-gradient(90deg, #ff922b, var(--game-coral));
+  border-radius: 999px;
+  transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.uc-meter__count {
+  font-size: 0.88rem;
+  font-weight: 900;
+  color: var(--game-ink);
+}
+
+.uc-panel { display: flex; width: 100%; flex-shrink: 0; flex-direction: column; gap: 10px; padding: 14px 16px; border: 3.5px solid var(--game-line); border-radius: 18px; background: #fffdfa; box-shadow: 0 6px 0 var(--game-line); color: var(--game-ink, #0f172a); }
+
+.uc-panel__head { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; }
+
+.uc-panel__head h3 { margin: 0; color: var(--game-ink); font-size: .99rem; font-weight: 900; }
+
+.uc-panel__head span { color: #495057; font-size: .72rem; font-weight: 800; }
+
+.uc-guess__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+
+.uc-guess__row input { min-height: 48px; padding: 8px 13px; border: 2.5px solid var(--game-line); border-radius: 12px; background: #fff; box-shadow: inset 2px 2px 0 rgba(41, 39, 34, .08); font: inherit; }
+
+.uc-guess__row input:focus { outline: 3px solid var(--game-yellow); outline-offset: 1px; }
+
+.uc-guess__btn { min-width: 104px; min-height: 48px; border: 2.5px solid var(--game-line); border-radius: 12px; color: #fff; background: var(--game-purple); box-shadow: 0 4px 0 var(--game-line); font-weight: 900; cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; }
+
+.uc-guess__btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 0 var(--game-line); }
+
+.uc-guess__btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--game-line); }
+
+.uc-guess__btn:disabled { color: #8a8175; border-color: #887f73; background: #ded4c4; box-shadow: 0 2px 0 #887f73; cursor: not-allowed; }
+
+.uc-gameover-main-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.uc-gameover-left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.uc-gameover-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+  .uc-gameover-main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 18px;
+    align-items: start;
+    width: 100%;
+    max-width: 1040px;
+    margin-inline: auto;
+  }
+
+  .uc-gameover-left-col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .uc-gameover-right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .uc-order__track { grid-template-columns: repeat(auto-fill, minmax(102px, 1fr)); }
+
+  .uc-order__track { grid-template-columns: repeat(2, minmax(0,1fr)); }
+
+/* ═══════════════════════════════════════════════════════════════════
+ * U06 新增：共享倒计时环与飞行中的选票
+ * ═══════════════════════════════════════════════════════════════════ */
+
+/* 倒计时环浮在舞台右上角，不占布局流 */
+.uc-countdown {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+  z-index: 4;
+}
+
+/* 舞台需要定位上下文给倒计时环。.uc-stage 原本没有 position，
+   这里补上——它是布局量，不影响任何既有样式的视觉。 */
+.uc-stage {
+  position: relative;
+}
+
+/* 飞行中的选票：与囚徒之夜同款语言（黄底墨边圆票） */
+.uc-vote-token {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--gp-ink);
+  border-radius: 50%;
+  background: var(--gp-yellow);
+  box-shadow: 0 2px 0 var(--gp-ink);
+}
+
+@media (max-width: 480px) {
+  .uc-countdown {
+    --stage-countdown-size: 2.5rem;
+    --stage-countdown-font: 1.0625rem;
+  }
+}

@@ -1,14 +1,14 @@
 /** 发言阶段：当面发言者聚光、顺序进度环、底部操作坞。 */
 import { useState } from 'react';
-import { useConnection } from '../connection/useConnection.ts';
-import { describeError } from '../shared-ui/errors.ts';
-import { useCountdown } from '../shared-ui/useCountdown.ts';
-import { GameCountdown, PhaseLead } from './GameChrome.tsx';
-import { nameFor } from './useGameAction.ts';
-import { UserAvatar } from '../user/UserAvatar.tsx';
-import { useUserProfile } from '../user/UserProfileContext.tsx';
-import { resolveMemberAvatar } from '../user/avatar.ts';
-import type { UndercoverPlayerView, PublicPlayerInfo } from './types.ts';
+import { useConnection } from '../../../../connection/useConnection.ts';
+import { describeError } from '../../../../shared-ui/errors.ts';
+import { useCountdown } from '../../../../shared-ui/useCountdown.ts';
+import { GameCountdown, PhaseLead } from '../../../GameChrome.tsx';
+import { nameFor } from '../../../useGameAction.ts';
+import { UserAvatar } from '../../../../user/UserAvatar.tsx';
+import { useUserProfile } from '../../../../user/UserProfileContext.tsx';
+import { resolveMemberAvatar } from '../../../../user/avatar.ts';
+import type { UndercoverPlayerView, PublicPlayerInfo } from '../../../types.ts';
 
 interface Props { view: UndercoverPlayerView; }
 

@@ -1,11 +1,11 @@
 /** 看词阶段：使用通用 IdentityFlipCard 3D 翻牌引擎展示机密档案，防窥与音效联动。 */
 import { useState, type CSSProperties } from 'react';
-import { useConnection } from '../connection/useConnection.ts';
-import { describeError } from '../shared-ui/errors.ts';
-import { useCountdown } from '../shared-ui/useCountdown.ts';
-import { IdentityFlipCard } from '../shared-ui/IdentityFlipCard.tsx';
-import { GameCountdown, PhaseLead } from './GameChrome.tsx';
-import type { UndercoverPlayerView } from './types.ts';
+import { useConnection } from '../../../../connection/useConnection.ts';
+import { describeError } from '../../../../shared-ui/errors.ts';
+import { useCountdown } from '../../../../shared-ui/useCountdown.ts';
+import { IdentityFlipCard } from '../../../../shared-ui/IdentityFlipCard.tsx';
+import { GameCountdown, PhaseLead } from '../../../GameChrome.tsx';
+import type { UndercoverPlayerView } from '../../../types.ts';
 
 interface Props { view: UndercoverPlayerView; }
 
