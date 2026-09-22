@@ -23,7 +23,8 @@ export interface PlayerSeat {
   isReady?: boolean;
   isHost?: boolean;
   roleTag?: string;
-  score?: number;
+  /** 座位上的计分展示。允许字符串：有的游戏按自己的口径展示（如金额） */
+  score?: number | string;
   badge?: string;
   handCount?: number;
 }
