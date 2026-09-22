@@ -54,6 +54,34 @@ export function WitsFlightLayer({ flights, simplified = false }: WitsFlightLayer
       if (ghosts.length === 0) continue;
 
       const duration = flight.durationMs;
+
+      // 牌就是普通放置：直线到位 + 轻微落位缩放，不翻转不飘动不做景深。
+      // 纸张飘动只属于钞票——一张牌在桌上被推过去时不会打旋。
+      if (flight.kind === 'card') {
+        const card = ghosts[0]!;
+        card.animate(
+          [
+            {
+              transform: `translate(${flight.from.x}px, ${flight.from.y}px) scale(0.92)`,
+              opacity: 0.85,
+              offset: 0,
+            },
+            {
+              transform: `translate(${flight.to.x}px, ${flight.to.y}px) scale(1)`,
+              opacity: 1,
+              offset: 1,
+            },
+          ],
+          {
+            duration,
+            delay: flight.delayMs,
+            easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)',
+            fill: 'forwards',
+          },
+        );
+        continue;
+      }
+
       const stagger = simplified ? 0 : noteStagger(flight.budgetMs ?? duration, duration, ghosts.length);
       const styles = pickFlightStyles(ghosts.length);
 
@@ -119,16 +147,13 @@ export function WitsFlightLayer({ flights, simplified = false }: WitsFlightLayer
       {flights.map((flight) => (
         <div key={flight.id} data-flight-id={flight.id}>
           {flight.kind === 'card' ? (
-            <>
-              {!simplified && <span className="ww-flight__shadow" />}
-              <div
-                className="ww-flight__ghost ww-flight__ghost--card"
-                style={{ width: flight.from.width || 64, height: flight.from.height || 44 }}
-              >
-                {/* 交牌演出：背面朝上，DOM 里不含任何数值 */}
-                <WitsAnswerCard target={null} faceUp={false} />
-              </div>
-            </>
+            <div
+              className="ww-flight__ghost ww-flight__ghost--card"
+              style={{ width: flight.from.width || 64, height: flight.from.height || 44 }}
+            >
+              {/* 交牌演出：背面朝上，DOM 里不含任何数值 */}
+              <WitsAnswerCard target={null} faceUp={false} />
+            </div>
           ) : (
             (flight.notes ?? []).map((denom, index) => (
               <FlightNote
