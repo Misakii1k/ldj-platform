@@ -8,6 +8,7 @@ import './styles.css';
 // 必须在 styles.css 之后、game-ui.css 之前，否则 game-ui.css 的归一化层会失去“源顺序在后”的压制力。
 import './game/night-testimony/night-testimony.css';
 import './game/echo-judge/echo-judge.css';
+import './game/bell-clash/bell-clash.css';
 import './game/goose-relay/goose-relay.css';
 import './game/cheese-thief/cheese-thief.css';
 import './game/durian/durian.css';

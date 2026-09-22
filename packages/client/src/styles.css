@@ -5967,44 +5967,13 @@ p { margin: 0.5rem 0; }
 .current-combo-box { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 24px; border: 1.5px solid rgba(255, 209, 102, .4); border-radius: 16px; background: rgba(6, 28, 20, .55); backdrop-filter: blur(8px); box-shadow: 0 10px 26px rgba(0, 0, 0, .28); }
 
 /* —�?铃铛对决（金铃竞技�?—�?*/
-.bell-stage {
-  width: 100%;
-  max-width: 880px;
-  margin: 0 auto;
-}
 
-.bell-dual-col {
-  display: grid;
-  grid-template-columns: minmax(240px, 0.8fr) 1.2fr;
-  gap: 12px;
-  width: 100%;
-  align-items: start;
-}
 
-.bell-right-col {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 0;
-}
 
 @media (max-width: 768px) {
-  .bell-dual-col {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
 }
 
 /* ════════ Ding（铃铛对决）官方 UNO 立绘 + 椭圆短语遮罩 ════════ */
-.bell-board {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  padding: 14px;
-  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
-  border-radius: 18px;
-}
 
 /* 官方立绘 UNO 卡牌容器 */
 .ding-uno-card {
@@ -6058,12 +6027,6 @@ p { margin: 0.5rem 0; }
   z-index: 2;
 }
 
-.ding-phrase-icon {
-  font-size: clamp(0.9rem, 1.6vw, 1.25rem);
-  line-height: 1;
-  margin-bottom: 2px;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
-}
 
 .ding-phrase-text {
   font-size: clamp(0.66rem, 1.15vw, 0.84rem);
@@ -6138,38 +6101,9 @@ p { margin: 0.5rem 0; }
 }
 
 /* 桌面实体抢铃台 */
-.ding-bell-stage-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 10px 14px;
-  border: 3px solid var(--game-line, #221e1a);
-  border-radius: 16px;
-  background: linear-gradient(135deg, #fef08a 0%, #eab308 100%);
-  color: #713f12;
-  box-shadow: 0 5px 0 var(--game-line, #221e1a);
-  cursor: pointer;
-  font-weight: 900;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
-}
 
-.ding-bell-stage-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 7px 0 var(--game-line, #221e1a);
-}
 
-.ding-bell-stage-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 var(--game-line, #221e1a);
-}
 
-.ding-bell-stage-btn.is-ringing {
-  background: linear-gradient(135deg, #fde047 0%, #ca8a04 100%);
-  animation: bellRingShake 0.6s infinite ease-in-out;
-  box-shadow: 0 0 20px #eab308;
-}
 
 @keyframes bellRingShake {
   0%, 100% { transform: rotate(0deg); }
@@ -6177,225 +6111,33 @@ p { margin: 0.5rem 0; }
   75% { transform: rotate(8deg); }
 }
 
-.ding-bell-stage-icon {
-  font-size: 2rem;
-  line-height: 1;
-}
 
-.ding-bell-stage-text {
-  font-size: 0.78rem;
-}
 
-.bell-window { display: flex; width: 100%; flex-shrink: 0; gap: 12px; align-items: center; padding: 14px 18px; border: 3.5px solid var(--game-line); border-radius: 18px; color: var(--game-ink); background: var(--game-yellow); box-shadow: 0 6px 0 var(--game-line); animation: state-breathe 1.6s ease-in-out infinite; box-sizing: border-box; }
-.bell-window__icon { display: grid; width: 46px; height: 46px; flex-shrink: 0; place-items: center; border: 3px solid var(--game-line); border-radius: 50%; background: #fffdf7; box-shadow: 0 3px 0 var(--game-line); font-size: 1.3rem; }
-.bell-window__copy { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
-.bell-window__copy strong { font-size: 1.02rem; font-weight: 900; }
-.bell-window__copy span { font-size: .74rem; font-weight: 700; opacity: 1; color: #343a40; }
-.bell-hand { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
 
 /* ════════ Ding（铃铛对决 · TabletopOvalShell 沉浸式牌桌与三元核案台） ════════ */
-.bell-tabletop-arena {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  width: 100%;
-  height: 100%;
-  position: relative;
-  padding: 8px 12px;
-  box-sizing: border-box;
-}
 
 /* 牌桌中央三元核心案台（摸牌堆 + 弃牌堆 + 抢铃台） */
-.bell-center-core {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(14px, 3.5vw, 28px);
-  position: relative;
-  z-index: 5;
-  padding: 12px 20px;
-  border-radius: 28px;
-  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.12) 0%, rgba(0, 0, 0, 0.25) 100%);
-  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.2), 0 8px 32px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(6px);
-  border: 1.5px solid rgba(255, 255, 255, 0.15);
-}
 
 /* 摸牌堆 */
-.bell-draw-pile {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: clamp(74px, 12vw, 98px);
-  aspect-ratio: 2 / 3;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  border-radius: 12px;
-  transition: transform 0.16s ease, filter 0.16s ease;
-  user-select: none;
-}
 
-.bell-draw-pile:not(:disabled):hover {
-  transform: translateY(-5px) scale(1.04);
-}
 
-.bell-draw-pile.is-playable {
-  animation: bellPlayablePulse 1.8s infinite ease-in-out;
-}
 
-.bell-draw-pile-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 12px;
-  box-shadow: -3px 3px 0 #1e293b, -6px 6px 0 #0f172a, 0 8px 20px rgba(0, 0, 0, 0.5);
-  pointer-events: none;
-}
 
-.bell-pile-badge {
-  position: absolute;
-  bottom: -6px;
-  background: rgba(15, 23, 42, 0.88);
-  color: #f8fafc;
-  font-size: 0.72rem;
-  font-weight: 900;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-  white-space: nowrap;
-}
 
 /* 弃牌堆顶卡牌容器 */
-.bell-discard-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: clamp(86px, 14vw, 114px);
-  aspect-ratio: 2 / 3;
-}
 
-.bell-discard-empty {
-  width: 100%;
-  height: 100%;
-  border: 2px dashed rgba(255, 255, 255, 0.3);
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  color: rgba(255, 255, 255, 0.45);
-  font-size: 0.82rem;
-  font-weight: 700;
-}
 
-.bell-discard-color-badge {
-  position: absolute;
-  bottom: -10px;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(4px);
-  color: #ffffff;
-  font-size: 0.68rem;
-  font-weight: 800;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-  white-space: nowrap;
-}
 
 /* 3D 拟真金属抢铃台 */
-.bell-desk-bell {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: clamp(80px, 13vw, 108px);
-  height: clamp(80px, 13vw, 108px);
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  user-select: none;
-  touch-action: manipulation;
-  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
 
-.bell-desk-bell:active {
-  transform: scale(0.92) translateY(3px);
-}
 
-.bell-desk-bell-dome {
-  position: relative;
-  width: 82%;
-  height: 74%;
-  border-radius: 50% 50% 16% 16% / 60% 60% 12% 12%;
-  background: radial-gradient(circle at 35% 25%, #fffbeb 0%, #fef08a 25%, #eab308 60%, #a16207 90%, #713f12 100%);
-  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.8), inset 0 -3px 6px rgba(0, 0, 0, 0.4), 0 8px 18px rgba(0, 0, 0, 0.5);
-  border: 2px solid #ca8a04;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
-.bell-desk-bell-plunger {
-  position: absolute;
-  top: -10px;
-  width: 18px;
-  height: 12px;
-  background: linear-gradient(180deg, #f8fafc 0%, #94a3b8 60%, #475569 100%);
-  border-radius: 6px 6px 2px 2px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-  border: 1.5px solid #64748b;
-}
 
-.bell-desk-bell-base {
-  width: 96%;
-  height: 14px;
-  margin-top: -2px;
-  background: linear-gradient(180deg, #334155 0%, #1e293b 60%, #0f172a 100%);
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
-  border: 1.5px solid #475569;
-}
 
-.bell-desk-bell-label {
-  margin-top: 6px;
-  font-size: clamp(0.7rem, 1.1vw, 0.8rem);
-  font-weight: 900;
-  color: #fef08a;
-  background: rgba(15, 23, 42, 0.88);
-  padding: 3px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(254, 240, 138, 0.35);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
-  white-space: nowrap;
-}
 
 /* 抢铃激活震颤与声波光环 */
-.bell-desk-bell.is-active {
-  animation: bellActiveJiggle 0.6s infinite ease-in-out;
-}
 
-.bell-desk-bell.is-active .bell-desk-bell-dome {
-  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.9), 0 0 28px #facc15, 0 8px 24px rgba(0, 0, 0, 0.6);
-  border-color: #fef08a;
-}
 
-.bell-sonic-shockwave {
-  position: absolute;
-  inset: -14px;
-  border-radius: 50%;
-  border: 2.5px solid rgba(250, 204, 21, 0.75);
-  pointer-events: none;
-  animation: bellSonicRipple 1.4s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
-}
 
 @keyframes bellSonicRipple {
   0% { transform: scale(0.7); opacity: 1; }
@@ -6414,32 +6156,9 @@ p { margin: 0.5rem 0; }
 }
 
 /* 案台状态元信息 */
-.bell-center-meta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: clamp(0.75rem, 1.2vw, 0.88rem);
-  color: rgba(255, 255, 255, 0.85);
-  background: rgba(0, 0, 0, 0.4);
-  padding: 4px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  z-index: 5;
-}
 
-.bell-center-meta strong {
-  color: #ffd43b;
-}
 
 /* 沉浸式浮动控制按钮（扩展 UNO 浮动条） */
-.bell-floating-bell-btn {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
-  color: #ffffff !important;
-  font-weight: 900 !important;
-  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.55), 0 0 0 2px #fbbf24 !important;
-  animation: bellFloatPulse 1s infinite alternate;
-}
 
 @keyframes bellFloatPulse {
   0% { transform: scale(1); }
@@ -6467,226 +6186,34 @@ p { margin: 0.5rem 0; }
 }
 
 /* 卡牌检视提示条（悬停或点选时大字号居中提示，告别手牌字小难以阅读） */
-.bell-card-inspector {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  background: rgba(15, 23, 42, 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1.5px solid rgba(255, 255, 255, 0.25);
-  border-radius: 999px;
-  padding: 5px 16px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
-  animation: bellInspectorPop 0.15s ease-out;
-  max-width: min(92vw, 680px);
-}
 
 @keyframes bellInspectorPop {
   0% { transform: translateY(4px) scale(0.96); opacity: 0.6; }
   100% { transform: translateY(0) scale(1); opacity: 1; }
 }
 
-.bell-inspector-color-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 1.5px solid #ffffff;
-  box-shadow: 0 0 6px currentColor;
-}
-.bell-inspector-color-dot.color-red { background: #ef4444; color: #ef4444; }
-.bell-inspector-color-dot.color-blue { background: #3b82f6; color: #3b82f6; }
-.bell-inspector-color-dot.color-green { background: #22c55e; color: #22c55e; }
-.bell-inspector-color-dot.color-yellow { background: #facc15; color: #facc15; }
 
-.bell-inspector-title {
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: #ffffff;
-}
 
-.bell-inspector-phrase {
-  font-size: 0.88rem;
-  font-weight: 800;
-  color: #ffd166;
-  letter-spacing: 0.02em;
-}
 
-.bell-inspector-playable-tag {
-  background: rgba(34, 197, 94, 0.25);
-  color: #4ade80;
-  border: 1px solid rgba(74, 222, 128, 0.4);
-  font-size: 0.72rem;
-  font-weight: 800;
-  padding: 2px 8px;
-  border-radius: 999px;
-}
 
-.bell-inspector-unplayable-tag {
-  background: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
-  border: 1px solid rgba(248, 113, 113, 0.35);
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 999px;
-}
 
 /* 矢量级纯正 UNO 椭圆口令卡（零多余杂质、纯净白椭圆、高对比度黑字、角标醒目） */
-.ding-phrase-card-shell {
-  width: 100%;
-  height: 100%;
-  border-radius: 10px;
-  border: 2.5px solid #ffffff;
-  box-sizing: border-box;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.12), 0 3px 10px rgba(0,0,0,0.3);
-  user-select: none;
-}
 
-.ding-phrase-card-shell--top {
-  border-radius: 14px;
-  border-width: 3.5px;
-  box-shadow: inset 0 0 0 1.5px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,0,0.45);
-}
 
-.ding-phrase-card-shell--red {
-  background-color: #b91c1c;
-  background: linear-gradient(145deg, #c02626 0%, #b91c1c 55%, #991b1b 100%);
-}
-.ding-phrase-card-shell--blue {
-  background-color: #1e40af;
-  background: linear-gradient(145deg, #1d4ed8 0%, #1e40af 55%, #1e3a8a 100%);
-}
-.ding-phrase-card-shell--green {
-  background-color: #166534;
-  background: linear-gradient(145deg, #15803d 0%, #166534 55%, #14532d 100%);
-}
-.ding-phrase-card-shell--yellow {
-  background-color: #ca8a04;
-  background: linear-gradient(145deg, #facc15 0%, #eab308 55%, #ca8a04 100%);
-}
 
 /* 经典 UNO 倾斜椭圆 */
-.ding-phrase-card-oval {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 82%;
-  height: 70%;
-  transform: translate(-50%, -50%) rotate(-25deg);
-  background: #ffffff;
-  border-radius: 50%;
-  box-shadow: 0 1.5px 5px rgba(0, 0, 0, 0.25), inset 0 0 4px rgba(0, 0, 0, 0.08);
-  z-index: 1;
-}
 
-.ding-phrase-card-shell--top .ding-phrase-card-oval {
-  width: 84%;
-  height: 72%;
-}
 
 /* 四角醒目口令标 */
-.ding-phrase-card-corner {
-  position: absolute;
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  pointer-events: none;
-}
-.ding-phrase-card-corner--tl {
-  top: 4px;
-  left: 5px;
-}
-.ding-phrase-card-corner--br {
-  bottom: 4px;
-  right: 5px;
-  transform: rotate(180deg);
-}
 
-.ding-phrase-corner-text {
-  font-size: clamp(0.52rem, 0.85vw, 0.65rem);
-  font-weight: 900;
-  font-style: italic;
-  color: #ffffff;
-  line-height: 1;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
-  letter-spacing: 0.5px;
-}
 
-.ding-phrase-card-shell--yellow .ding-phrase-corner-text {
-  color: #1e1b18;
-  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.7);
-}
 
-.ding-phrase-card-shell--top .ding-phrase-corner-text {
-  font-size: 0.88rem;
-}
 
 /* 正中心口令短语：超高对比度深墨色黑字，清晰排版 */
-.ding-phrase-card-core {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 74%;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  pointer-events: none;
-  box-sizing: border-box;
-  padding: 4px 6px;
-  background-color: #ffffff;
-  border-radius: 999px;
-}
 
-.ding-phrase-card-phrase {
-  font-size: clamp(0.68rem, 1.1vw, 0.82rem);
-  font-weight: 900;
-  color: #0f172a;
-  line-height: 1.25;
-  word-break: break-word;
-  text-align: center;
-  letter-spacing: -0.2px;
-}
 
-.ding-phrase-card-shell--top .ding-phrase-card-phrase {
-  font-size: clamp(0.95rem, 1.6vw, 1.25rem);
-  line-height: 1.3;
-}
 
-.bell-center-meta {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  padding: 4px 14px;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 999px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #f8fafc;
-  backdrop-filter: blur(4px);
-}
 
-.bell-center-meta strong {
-  color: #fde047;
-  font-weight: 900;
-}
 
 /* ════════ 囚徒之夜 自告身份游戏内模态弹窗 ════════ */
 
