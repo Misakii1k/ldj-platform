@@ -49,6 +49,13 @@ interface GameCase {
   gameId?: string;
   /** 以第几名种子玩家进入（默认 1 = 非房主；0 = 房主，用于法官控制台这类房主专属视图） */
   viewerIndex?: number;
+  /**
+   * 额外写入的公共大屏席位数。桌面模拟版（*_sim_v1）要求房间里至少有一台
+   * 公共大屏才允许开局（ws.ts 的 isSimRulesetId 校验），否则 start_game 被拒。
+   */
+  spectatorCount?: number;
+  /** 以大屏身份进入页面（桌面模拟版的主机侧视图就是大屏视角） */
+  viewAsSpectator?: boolean;
   /** 覆盖等待文本（selector 之外的兜底） */
 }
 
@@ -190,7 +197,8 @@ const GAME_CASES: GameCase[] = [
     count: 5,
     config: { rulesetId: 'cheese_thief_sim_v1', roleCards: true },
     readySelector: '.tabletop-shell',
-    viewerIndex: 0,
+    spectatorCount: 1,
+    viewAsSpectator: true,
   },
   {
     id: 'bell-clash-sim',
@@ -199,7 +207,8 @@ const GAME_CASES: GameCase[] = [
     count: 3,
     config: { rulesetId: 'bell_clash_sim_v1', handSize: 3 },
     readySelector: '.tabletop-shell',
-    viewerIndex: 0,
+    spectatorCount: 1,
+    viewAsSpectator: true,
   },
   {
     id: 'goose-relay-sim',
@@ -208,7 +217,8 @@ const GAME_CASES: GameCase[] = [
     count: 5,
     config: { rulesetId: 'goose_relay_sim_v1', candidateCount: 9 },
     readySelector: '.tabletop-shell',
-    viewerIndex: 0,
+    spectatorCount: 1,
+    viewAsSpectator: true,
   },
   {
     id: 'night-testimony-sim',
@@ -217,7 +227,8 @@ const GAME_CASES: GameCase[] = [
     count: 4,
     config: { rulesetId: 'night_testimony_sim_v1' },
     readySelector: '.tabletop-shell',
-    viewerIndex: 0,
+    spectatorCount: 1,
+    viewAsSpectator: true,
   },
   {
     id: 'echo-judge-sim',
@@ -226,7 +237,8 @@ const GAME_CASES: GameCase[] = [
     count: 4,
     config: { rulesetId: 'echo_judge_sim_v1' },
     readySelector: '.tabletop-shell',
-    viewerIndex: 0,
+    spectatorCount: 1,
+    viewAsSpectator: true,
   },
   {
     id: 'wits-wagers-sim',
@@ -235,7 +247,8 @@ const GAME_CASES: GameCase[] = [
     count: 3,
     config: { rulesetId: 'wits_wagers_sim_v1' },
     readySelector: '.tabletop-shell',
-    viewerIndex: 0,
+    spectatorCount: 1,
+    viewAsSpectator: true,
   },
 ];
 
@@ -401,6 +414,7 @@ test.describe('G3-B 游戏视口合约（七档常用尺寸）', () => {
         count: game.count,
         ready: true,
         config: game.config,
+        spectatorCount: game.spectatorCount,
       });
       const host = await RoomDriver.resume(WS_URL, seeded.roomCode, seeded.hostId, seeded.hostResumeToken);
       try {
@@ -409,7 +423,10 @@ test.describe('G3-B 游戏视口合约（七档常用尺寸）', () => {
         const startAck = await host.startGame(game.config);
         expect(startAck.type, `start_game 应 ack：${JSON.stringify(startAck.payload)}`).toBe('ack');
 
-        const viewer = seeded.players[game.viewerIndex ?? 1] ?? seeded.players[0]!;
+        // 桌面模拟版的主机侧视图是大屏视角，不是某个玩家的视角
+        const viewer = game.viewAsSpectator
+          ? (seeded.spectators[0] ?? seeded.players[0]!)
+          : (seeded.players[game.viewerIndex ?? 1] ?? seeded.players[0]!);
         const page = await preparePlayerPage(browser, {
           playerId: viewer.playerId,
           resumeToken: viewer.resumeToken,

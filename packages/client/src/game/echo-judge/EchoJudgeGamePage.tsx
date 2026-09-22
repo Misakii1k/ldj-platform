@@ -1,7 +1,10 @@
 /**
  * echo_judge_v1 客户端主页面（线下桌游辅助与卡牌道具形态）。
  * 只消费严格解析后的伪人测试视角（echo-judge/types.ts）。
- * 视觉：赛博法庭——自由选阵营、测谎出题、秘密藏词口头发言、判官多选指认与比分板。
+ *
+ * 视觉：法庭。中央是常驻的「判词台」，考题像一份卷宗摊在台上；
+ * 宣判时木槌敲下、台面下沉回弹，审判阶段聚光判词台压暗旁听席。
+ * 详见 docs/plans/2026-09-22-game-ui-uplift/contracts/echo-judge.md
  */
 import { useRef, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
@@ -10,9 +13,12 @@ import { ActionDock } from '../tabletop/ActionDock.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
 import { IdentityFlipCard } from '../../shared-ui/IdentityFlipCard.tsx';
-import { ArenaBoard } from '../../shared-ui/ArenaBoard.tsx';
 import { ArenaRail } from '../../shared-ui/ArenaRail.tsx';
 import { SeatTargetPicker } from '../../shared-ui/SeatTargetPicker.tsx';
+import { StageCountdownRing } from '../../shared-ui/stage/StageCountdownRing.tsx';
+import { FlightLayer } from '../../shared-ui/stage/FlightLayer.tsx';
+import { JudgeBench } from './stage/JudgeBench.tsx';
+import { useEchoJudgeStage } from './stage/useEchoJudgeStage.tsx';
 import type { EchoJudgePlayerView, TopicCardView } from './types.ts';
 
 function phaseLabel(phase: EchoJudgePlayerView['phase']): string {
@@ -47,6 +53,8 @@ export function EchoJudgeGamePage({ view }: Props) {
 
   // 判官多选指认状态（选中集合由共享 SeatTargetPicker 直接写回）
   const [selectedAccuseTargets, setSelectedAccuseTargets] = useState<string[]>([]);
+
+  const stage = useEchoJudgeStage(view);
 
   const isCurrentSpeaker = view.phase === 'answering' && (view.currentSpeakerId === myId || me?.isCurrentSpeaker === true);
 
@@ -148,6 +156,107 @@ export function EchoJudgeGamePage({ view }: Props) {
   const answerTotal = Math.max(view.players.length - 1, 1);
   const answerPercent = (view.answeredCount / answerTotal) * 100;
 
+  /**
+   * 台上内容：同一时刻只有一种，但判词台容器常驻。
+   * 顺序即优先级——指认 > 考题（发言/审判共用） > 卷宗三选一 > 等待。
+   */
+  const benchContent = (() => {
+    if (view.phase === 'judgment') {
+      return (
+        <div className="ej-focus ej-focus--judgment">
+          <div className="ej-topic" data-quiet="true">
+            <strong className="ej-topic__text">{view.question}</strong>
+          </div>
+          <h3 className="ej-focus__title">谁是伪人？</h3>
+          <p className="ej-focus__hint">
+            {me?.isJudge
+              ? '点选你怀疑把触发词藏进发言里的伪人（可多选；认为全员是人类时直接提交即可）'
+              : `审判长 ${nameFor(members, view.judgeId)} 正在思考并多选指认潜伏的伪人…`}
+          </p>
+          <SeatTargetPicker
+            label="指认潜伏的伪人"
+            max={Math.max(view.players.length - 1, 1)}
+            selectedIds={selectedAccuseTargets}
+            onSelect={(ids) => setSelectedAccuseTargets(ids)}
+            disabled={!me?.isJudge}
+            options={view.players
+              .filter((id) => id !== view.judgeId)
+              .map((id) => ({ id, name: nameFor(members, id) }))}
+          />
+
+          {view.caughtImpostors && view.caughtImpostors.length > 0 && (
+            <div className="ej-caught" data-revealing={stage.revealing ? 'true' : undefined}>
+              <span>抓获的伪人：</span>
+              <strong>{view.caughtImpostors.map((id) => nameFor(members, id)).join('、')}</strong>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (view.phase === 'answering' && view.question) {
+      return (
+        <div className="ej-focus ej-focus--answering">
+          <div className="ej-topic">
+            <span className="ej-topic__quote" aria-hidden="true">“</span>
+            <strong className="ej-topic__text">{view.question}</strong>
+            <span className="ej-topic__quote" aria-hidden="true">”</span>
+          </div>
+
+          <div className="ej-progress">
+            <div className="ej-progress__head">
+              <span>发言进度：{view.answeredCount} / {answerTotal} 人</span>
+              <span className="ej-progress__speaker">
+                当前发言：<strong>{nameFor(members, view.currentSpeakerId ?? '')}</strong>
+              </span>
+            </div>
+            {/* 只动 transform：scaleX 而不是改 width */}
+            <div className="ej-progress__track">
+              <div
+                className="ej-progress__fill"
+                style={{ ['--ej-progress' as string]: answerPercent / 100 }}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (view.phase === 'judge_setup' && me?.isJudge && me.pendingTopicChoices) {
+      return (
+        <div className="ej-focus ej-focus--pick">
+          <h3 className="ej-focus__title">抽选本轮考题</h3>
+          <p className="ej-focus__hint">出题后全员依次口头发言</p>
+          <div className="ej-card-choices" role="radiogroup" aria-label="3 张候选题目卡">
+            {me.pendingTopicChoices.map((card: TopicCardView, index: number) => (
+              <button
+                key={card.id}
+                type="button"
+                className="ej-topic-card"
+                style={{ ['--i' as string]: index }}
+                data-selected={selectedTopicId === card.id ? 'true' : undefined}
+                onClick={() => setSelectedTopicId(card.id)}
+                aria-checked={selectedTopicId === card.id}
+                role="radio"
+              >
+                <span className="ej-topic-card__tag">{card.categoryLabel}</span>
+                <p className="ej-topic-card__text">「{card.text}」</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="ej-focus ej-focus--wait">
+        <p className="ej-focus__waiting">
+          等待审判长 {nameFor(members, view.judgeId)} 挑选第 {view.round} 轮考题…
+        </p>
+      </div>
+    );
+  })();
+
   return (
     <TabletopShell
       title="伪人测试"
@@ -191,12 +300,12 @@ export function EchoJudgeGamePage({ view }: Props) {
       {error && <p className="game-error" role="alert" aria-live="assertive" aria-atomic="true">{error}</p>}
 
       {view.phase !== 'game_over' ? (
-        <div className="sg-stage echo-judge-stage">
+        <div className="ej-game" data-phase={view.phase}>
           {/* 移动端快捷身份卡展开/收起横条 */}
           {me && (
             <button
               type="button"
-              className="echo-identity-toggle-btn"
+              className="ej-identity-toggle"
               onClick={() => setIdentityExpandedMobile((prev) => !prev)}
             >
               <span>
@@ -210,49 +319,40 @@ export function EchoJudgeGamePage({ view }: Props) {
             </button>
           )}
 
-          {/* 辅区：侧栏（身份卡 + 积分榜 + 阵营选择） */}
-          <div className="echo-judge-stage__sidebar">
+          {/* 辅区：侧栏（阵营选择 + 身份卡 + 积分榜） */}
+          <div className="ej-sidebar">
             {/* 非审判长玩家在出题阶段可自由切换阵营 */}
             {view.phase === 'judge_setup' && me && !me.isJudge && (
-              <ArenaBoard
-                className="echo-focal"
-                tone="accent"
-                headline="自由选择本轮阵营"
-                hint="开局阶段可随时切换"
-              >
-                <div className="echo-role-choice-btns">
+              <section className="ej-role-choice" aria-label="选择本轮阵营">
+                <h3 className="ej-role-choice__title">自由选择本轮阵营</h3>
+                <div className="ej-role-btns">
                   <button
                     type="button"
-                    className={`echo-role-btn ${me.role === 'human' ? 'is-active-human' : ''}`}
+                    className="ej-role-btn"
+                    data-active={me.role === 'human' ? 'human' : undefined}
                     onClick={() => void act({ type: 'choose_role', playerId: me.playerId, role: 'human' })}
                   >
-                    <span className="echo-role-btn__title">当正常人类</span>
-                    <span className="echo-role-btn__desc">自由发挥 · 混淆视听</span>
+                    <span className="ej-role-btn__title">当正常人类</span>
+                    <span className="ej-role-btn__desc">自由发挥 · 混淆视听</span>
                   </button>
                   <button
                     type="button"
-                    className={`echo-role-btn ${me.role === 'impostor' ? 'is-active-impostor' : ''}`}
+                    className="ej-role-btn"
+                    data-active={me.role === 'impostor' ? 'impostor' : undefined}
                     onClick={() => void act({ type: 'choose_role', playerId: me.playerId, role: 'impostor' })}
                   >
-                    <span className="echo-role-btn__title">潜伏当伪人</span>
-                    <span className="echo-role-btn__desc">获取绝密词 · 隐秘藏词</span>
+                    <span className="ej-role-btn__title">潜伏当伪人</span>
+                    <span className="ej-role-btn__desc">获取绝密词 · 隐秘藏词</span>
                   </button>
                 </div>
-              </ArenaBoard>
+              </section>
             )}
 
             {me && (
               <section
-                className={`sg-panel echo-private-panel ${!identityExpandedMobile ? 'is-collapsed-mobile' : ''}`}
+                className={`sg-panel echo-private-panel ej-private ${!identityExpandedMobile ? 'is-collapsed-mobile' : ''}`}
                 aria-label="我的私密身份"
               >
-                <div className="sg-panel__head">
-                  <div className="sg-panel__title-group">
-                    <h3>我的绝密身份（按住防窥）</h3>
-                  </div>
-                  <span className="sg-badge sg-badge--dark">第 {view.round} 轮</span>
-                </div>
-
                 <IdentityFlipCard
                   theme="cyber"
                   variant="compact"
@@ -280,143 +380,40 @@ export function EchoJudgeGamePage({ view }: Props) {
               </section>
             )}
 
-            {/* 实时比分 → 共享 ArenaRail（替代面板式积分榜） */}
-            <section className="echo-score-panel" aria-label="实时计分榜">
-              <ArenaRail
-                label="法庭积分榜"
-                className="echo-score-rail"
-                items={view.players.map((id) => {
-                  const score = view.scores?.[id] ?? 0;
-                  const isJudge = id === view.judgeId;
-                  return {
-                    key: id,
-                    label: `${nameFor(members, id)}${isJudge ? ' · 审判长' : ''}`,
-                    value: `${score} 分`,
-                    state: isJudge ? 'active' : score > 0 ? 'done' : score < 0 ? 'warning' : 'idle',
-                  };
-                })}
-              />
-            </section>
+            <ArenaRail
+              label="法庭积分榜"
+              className="ej-score-rail"
+              items={view.players.map((id) => {
+                const score = view.scores?.[id] ?? 0;
+                const isJudge = id === view.judgeId;
+                return {
+                  key: id,
+                  label: `${nameFor(members, id)}${isJudge ? ' · 审判长' : ''}`,
+                  value: `${score} 分`,
+                  state: isJudge ? 'active' : score > 0 ? 'done' : score < 0 ? 'warning' : 'idle',
+                };
+              })}
+            />
           </div>
 
-          {/* 主区：主要活动舞台（出题 / 考题辩论 / 多选指认） */}
-          <div className="echo-judge-stage__main">
-            {/* 1. 审判长 3 选 1 出题卡牌架 */}
-            {view.phase === 'judge_setup' && me?.isJudge && me.pendingTopicChoices && (
-              <ArenaBoard
-                className="echo-focal"
-                tone="accent"
-                headline="抽选 1 张作为本轮审问考题"
-                hint="出题后全员依次口头发言"
-                footer={<span className="sg-badge sg-badge--highlight">3 选 1</span>}
-              >
-                <div className="echo-card-choices" role="radiogroup" aria-label="3张候选题目卡">
-                  {me.pendingTopicChoices.map((card: TopicCardView) => {
-                    const isSelected = selectedTopicId === card.id;
-                    return (
-                      <button
-                        key={card.id}
-                        type="button"
-                        className={`echo-topic-card ${isSelected ? 'is-selected' : ''}`}
-                        onClick={() => setSelectedTopicId(card.id)}
-                        aria-checked={isSelected}
-                        role="radio"
-                      >
-                        <div className="echo-topic-card__header">
-                          <span className="echo-topic-card__tag">{card.categoryLabel}</span>
-                          {isSelected && <span className="echo-topic-card__check">✓ 已选</span>}
-                        </div>
-                        <p className="echo-topic-card__text">「{card.text}」</p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </ArenaBoard>
-            )}
+          {/* 主区：判词台 */}
+          <div className="ej-main">
+            {/* 只在需要玩家行动的阶段催时间；出题阶段不催审判长 */}
+            <StageCountdownRing
+              deadlineAt={view.deadlineAt}
+              phaseKey={`${view.phase}:${view.round}:${view.answeredCount}`}
+              active={view.phase === 'answering' || view.phase === 'judgment'}
+              className="ej-countdown"
+            />
 
-            {/* 2. 等待审判长出题 */}
-            {view.phase === 'judge_setup' && !me?.isJudge && (
-              <ArenaBoard
-                className="echo-focal"
-                tone="paper"
-                headline="等待审判长出题"
-                hint="你可以在下方自由切换人类或伪人阵营"
-              >
-                <div className="echo-waiting-banner">
-                  <span className="echo-waiting-icon">⏳</span>
-                  <div>
-                    <strong>等待审判长 {nameFor(members, view.judgeId)} 挑选第 {view.round} 轮考题…</strong>
-                  </div>
-                </div>
-              </ArenaBoard>
-            )}
-
-            {/* 3. 辩论发言中主舞台 */}
-            {(view.phase === 'answering' || view.phase === 'judgment') && view.question && (
-              <ArenaBoard
-                className="echo-focal"
-                tone="dark"
-                headline={`第 ${view.round} 轮法庭审问 · 审判长：${nameFor(members, view.judgeId)}`}
-                hint={view.phase === 'answering' ? '考题已公开，请按座次依次口头发言' : '发言已结束，等待审判长指认'}
-              >
-                <div className="echo-topic-headline">
-                  <span className="echo-topic-quote">“</span>
-                  <strong className="echo-topic-text">{view.question}</strong>
-                  <span className="echo-topic-quote">”</span>
-                </div>
-
-                {view.phase === 'answering' && (
-                  <div className="echo-progress-box">
-                    <div className="echo-progress-head">
-                      <span>发言进度：{view.answeredCount} / {answerTotal} 人</span>
-                      <span className="echo-speaker-tag">
-                        当前发言：<strong>{nameFor(members, view.currentSpeakerId ?? '')}</strong>
-                      </span>
-                    </div>
-                    <div className="echo-progress-bar-track">
-                      <div className="echo-progress-bar-fill" style={{ width: `${answerPercent}%` }} />
-                    </div>
-                  </div>
-                )}
-              </ArenaBoard>
-            )}
-
-            {/* 4. 审判长多选指认伪人：席位直选（可多选） */}
-            {view.phase === 'judgment' && (
-              <ArenaBoard
-                className="echo-focal"
-                tone="accent"
-                headline="全员发言完毕 · 审判长多选指认伪人"
-                hint={
-                  me?.isJudge
-                    ? '点选你怀疑把触发词藏进发言里的伪人（可多选；认为全员是人类时直接提交即可）'
-                    : `审判长 ${nameFor(members, view.judgeId)} 正在思考并多选指认潜伏的伪人…`
-                }
-                footer={
-                  <span className={`sg-badge ${selectedAccuseTargets.length > 0 ? 'sg-badge--warning' : ''}`}>
-                    {me?.isJudge ? `已勾选 ${selectedAccuseTargets.length} 名嫌疑人` : '等待审判长决断'}
-                  </span>
-                }
-              >
-                <SeatTargetPicker
-                  label="指认潜伏的伪人"
-                  max={Math.max(view.players.length - 1, 1)}
-                  selectedIds={selectedAccuseTargets}
-                  onSelect={(ids) => setSelectedAccuseTargets(ids)}
-                  disabled={!me?.isJudge}
-                  options={view.players
-                    .filter((id) => id !== view.judgeId)
-                    .map((id) => ({ id, name: nameFor(members, id) }))}
-                />
-
-                {view.caughtImpostors && view.caughtImpostors.length > 0 && (
-                  <div className="echo-caught-alert">
-                    <span>抓获的伪人：</span>
-                    <strong>{view.caughtImpostors.map((id) => nameFor(members, id)).join('、')}</strong>
-                  </div>
-                )}
-              </ArenaBoard>
-            )}
+            <JudgeBench
+              stageRef={stage.stageRef}
+              striking={stage.gavelStriking}
+              showGavel={view.phase === 'judgment'}
+              vignette={stage.vignette}
+            >
+              {benchContent}
+            </JudgeBench>
           </div>
         </div>
       ) : (
@@ -434,7 +431,6 @@ export function EchoJudgeGamePage({ view }: Props) {
             <section className="sg-panel echo-reveal-panel">
               <div className="sg-panel__head">
                 <div className="sg-panel__title-group">
-                  
                   <h3>全员真实身份与绝密触发词公开</h3>
                 </div>
                 <span className="sg-badge">真相大白</span>
@@ -473,6 +469,10 @@ export function EchoJudgeGamePage({ view }: Props) {
           </div>
         )
       )}
+
+      {/* 飞行层必须挂在舞台之外：舞台内若有 transform 祖先，
+          position:fixed 会退化为相对定位，实测的屏幕坐标会全部失效。 */}
+      <FlightLayer flights={stage.flights} simplified={stage.simplifiedFlights} />
     </TabletopShell>
   );
 }

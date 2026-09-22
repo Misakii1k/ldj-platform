@@ -50,6 +50,8 @@ export interface SeededRoom {
   hostResumeToken: string;
   /** 与 players 数组对齐；第 0 位是房主 */
   players: SeededPlayer[];
+  /** 公共大屏席位（seat_role='spectator'）；桌面模拟版开局需要至少一台 */
+  spectators: SeededPlayer[];
 }
 
 export interface SeedOptions {
@@ -59,6 +61,12 @@ export interface SeedOptions {
   ready?: boolean;
   /** 建房时携带的 gameConfig（含 rulesetId）；开局时由模块 parseConfig 校验 */
   config?: Record<string, unknown>;
+  /**
+   * 额外写入的公共大屏席位数（seat_role='spectator'）。
+   * 桌面模拟版规则集（*_sim_v1）要求房间里至少有一台大屏才允许开局，
+   * 见 packages/server/src/gateway/ws.ts 的 canAutoStart / autoStartGame。
+   */
+  spectatorCount?: number;
 }
 
 /**
@@ -79,6 +87,13 @@ export function seedRoom(dbPath: string, options: SeedOptions = {}): SeededRoom 
       players.push({ playerId: newPlayerId(), resumeToken: newResumeToken(), seat });
     }
     const hostId = players[0]!.playerId;
+
+    const spectatorCount = Math.max(0, options.spectatorCount ?? 0);
+    const spectators: SeededPlayer[] = [];
+    for (let i = 0; i < spectatorCount; i += 1) {
+      // 大屏不占玩家座位号，续在玩家之后避免与 seat 唯一约束冲突
+      spectators.push({ playerId: newPlayerId(), resumeToken: newResumeToken(), seat: count + i + 1 });
+    }
 
     const configJson = JSON.stringify({
       gameConfig: options.config ?? {},
@@ -108,12 +123,29 @@ export function seedRoom(dbPath: string, options: SeedOptions = {}): SeededRoom 
       );
     }
 
+    for (const spectator of spectators) {
+      db.prepare(
+        `INSERT INTO room_members
+           (room_id, player_id, identity_id, nickname, seat_role, seat, connection_status,
+            resume_token_hash, reserved_until, joined_at, is_bot, bot_kind, ready)
+         VALUES (?, ?, NULL, ?, 'spectator', ?, 'CONNECTED', ?, NULL, ?, 0, NULL, 0)`,
+      ).run(
+        roomId,
+        spectator.playerId,
+        `大屏${spectator.seat - count}`,
+        spectator.seat,
+        hashResumeToken(spectator.resumeToken),
+        now,
+      );
+    }
+
     return {
       roomId,
       roomCode,
       hostId,
       hostResumeToken: players[0]!.resumeToken,
       players,
+      spectators,
     };
   } finally {
     db.close();

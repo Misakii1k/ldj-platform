@@ -1,9 +1,22 @@
-/* 伪人测试：焦点式竞技场（与囚徒之夜同构）
-   中央只留一个焦点板（阵营选择 / 出题 / 考题 / 指认），积分降为 ArenaRail。 */
-.echo-judge-stage {
+/**
+ * 伪人测试 · 法庭
+ *
+ * 契约见 docs/plans/2026-09-22-game-ui-uplift/contracts/echo-judge.md
+ * - 浅色纸感底；只在 judgment 阶段加局部暗角（聚光判词台，旁听席压暗）
+ * - 平面：不启用 .stage-felt-3d
+ * - accent 取 catalog 的 sunset（#e76835，对比度 2.93，6 个主题里最差）：
+ *   只作描边、木槌、聚光边缘，任何文字都不用它
+ * - 布局量用局部 --ej-*，颜色一律平台令牌
+ *
+ * main.tsx 在 styles.css 之后、game-ui.css 之前按原顺序 import。
+ */
+
+.ej-game {
+  --ej-gap: 12px;
+
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--ej-gap);
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
@@ -12,37 +25,514 @@
   padding-bottom: clamp(90px, 14vh, 130px);
 }
 
-.echo-judge-stage__sidebar {
+.ej-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  width: 100%;
-}
-
-.echo-judge-stage__main {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  gap: var(--ej-gap);
   width: 100%;
   min-width: 0;
 }
 
-.echo-score-panel {
-  display: block;
+.ej-main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ej-gap);
+  width: 100%;
+  min-width: 0;
 }
 
-.echo-score-rail {
+/* 倒计时环浮在判词台右上角，不占布局流 */
+.ej-countdown {
+  position: absolute;
+  top: -6px;
+  right: 4px;
+  z-index: 3;
+}
+
+.ej-score-rail {
   justify-content: center;
   flex-wrap: wrap;
 }
 
-.echo-focal {
-  width: 100%;
+/* ── 阵营选择 ──────────────────────────────────────────────── */
+
+.ej-role-choice {
+  padding: 10px 12px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-md);
+  background: var(--gp-surface);
+  box-shadow: var(--gp-shadow-sm);
 }
 
-/* 宽屏 / 横屏自适应双栏布局：辅区（身份卡+积分榜）与主区（出题/辩论/指认）并列 */
+.ej-role-choice__title {
+  margin: 0 0 8px;
+  font-size: 0.88rem;
+  font-weight: 900;
+  color: var(--gp-ink);
+}
+
+.ej-role-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.ej-role-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: var(--gp-touch);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-paper);
+  color: var(--gp-ink);
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--gp-dur-fast) var(--gp-ease-standard),
+    box-shadow var(--gp-dur-fast) ease,
+    border-color var(--gp-dur-fast) ease;
+}
+
+/* 选中态用描边 + 抬起，不用 accent 填底（accent 对比度不够做底色） */
+.ej-role-btn[data-active] {
+  border-color: var(--game-accent, var(--gp-coral));
+  box-shadow: var(--gp-shadow-sm);
+  transform: translateY(-2px);
+}
+
+.ej-role-btn__title {
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.ej-role-btn__desc {
+  font-size: 0.72rem;
+  color: var(--gp-muted);
+}
+
+/* 移动端身份折叠横条 */
+.ej-identity-toggle {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: var(--gp-touch);
+  padding: 10px 14px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-md);
+  background: var(--gp-surface);
+  box-shadow: var(--gp-shadow-sm);
+  color: var(--gp-ink);
+  font-weight: 800;
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+@media (max-width: 767px) {
+  .ej-identity-toggle {
+    display: flex;
+  }
+  .ej-private.is-collapsed-mobile {
+    display: none;
+  }
+}
+
+/* ── 判词台 ────────────────────────────────────────────────── */
+
+.ej-bench-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ej-bench {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px 14px;
+  /* 法官席：厚重的台面，硬投影交代高度 */
+  border: 3px solid var(--game-dark, var(--gp-ink));
+  border-radius: var(--gp-radius-lg);
+  background: var(--gp-paper);
+  box-shadow: 0 7px 0 var(--game-dark, var(--gp-ink));
+  transition: transform var(--gp-dur-fast) var(--gp-ease-press),
+    box-shadow var(--gp-dur-fast) var(--gp-ease-press);
+}
+
+/* 木槌敲下的同一帧：台面下沉 4px，投影压扁 */
+.ej-bench[data-striking='true'] {
+  transform: translateY(4px);
+  box-shadow: 0 3px 0 var(--game-dark, var(--gp-ink));
+}
+
+/* ── 木槌 ──────────────────────────────────────────────────── */
+
+.ej-gavel {
+  position: absolute;
+  top: -14px;
+  right: 14px;
+  z-index: 2;
+  display: block;
+  width: 44px;
+  height: 34px;
+  transform-origin: 10% 90%;
+  transform: rotate(-28deg);
+  pointer-events: none;
+}
+
+.ej-gavel__head {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 26px;
+  height: 15px;
+  border: 2.5px solid var(--gp-ink);
+  border-radius: 4px;
+  background: var(--game-accent, var(--gp-coral));
+}
+
+.ej-gavel__handle {
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  width: 26px;
+  height: 6px;
+  border: 2.5px solid var(--gp-ink);
+  border-radius: var(--gp-radius-pill);
+  background: var(--gp-surface);
+  transform: rotate(32deg);
+  transform-origin: 0 50%;
+}
+
+.ej-gavel[data-striking='true'] {
+  animation: ej-gavel-strike var(--gp-dur-emphasis) var(--gp-ease-press);
+}
+
+@keyframes ej-gavel-strike {
+  0% {
+    transform: rotate(-28deg);
+  }
+  45% {
+    transform: rotate(4deg);
+  }
+  70% {
+    transform: rotate(-10deg);
+  }
+  100% {
+    transform: rotate(-28deg);
+  }
+}
+
+/* 木槌是宣判这件事本身的信息，reduced 档保留；无动画档去掉 */
+html[data-motion-level='minimal'] .ej-gavel[data-striking='true'],
+html[data-motion-level='off'] .ej-gavel[data-striking='true'] {
+  animation: none;
+}
+
+html[data-motion-level='off'] .ej-bench {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ej-gavel[data-striking='true'] {
+    animation: none;
+  }
+  .ej-bench {
+    transition: none;
+  }
+}
+
+/* ── 台上内容 ──────────────────────────────────────────────── */
+
+.ej-focus {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ej-focus__title {
+  /* ≥24px 才允许用 accent 派生的深色 */
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--game-dark, var(--gp-ink));
+}
+
+.ej-focus__hint {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--gp-muted);
+}
+
+.ej-focus__waiting {
+  margin: auto;
+  padding: 28px 12px;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--gp-muted);
+}
+
+/* 大引号考题：本页视觉重心 */
+.ej-topic {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 10px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-md);
+  background: var(--gp-surface);
+}
+
+.ej-topic__quote {
+  flex: 0 0 auto;
+  font-size: 2rem;
+  line-height: 0.8;
+  font-weight: 900;
+  color: var(--game-accent, var(--gp-coral));
+}
+
+.ej-topic__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 1.25rem;
+  font-weight: 900;
+  line-height: 1.35;
+  color: var(--gp-ink);
+}
+
+/* 审判阶段考题退居次要：让位给指认 */
+.ej-topic[data-quiet='true'] {
+  padding: 8px 10px;
+}
+
+.ej-topic[data-quiet='true'] .ej-topic__text {
+  font-size: 0.95rem;
+  color: var(--gp-muted);
+}
+
+/* 卷宗三选一 */
+.ej-card-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.ej-topic-card {
+  min-height: var(--gp-touch);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--gp-dur-fast) var(--gp-ease-standard),
+    box-shadow var(--gp-dur-fast) ease,
+    border-color var(--gp-dur-fast) ease;
+}
+
+.ej-topic-card[data-selected='true'] {
+  border-color: var(--game-accent, var(--gp-coral));
+  box-shadow: var(--gp-shadow-sm);
+  transform: translateY(-2px);
+}
+
+.ej-topic-card__tag {
+  align-self: flex-start;
+  padding: 1px 7px;
+  border: 1.5px solid var(--gp-line);
+  border-radius: var(--gp-radius-pill);
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--gp-muted);
+}
+
+.ej-topic-card__text {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* 发言进度：只动 transform（scaleX），不改 width */
+.ej-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ej-progress__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--gp-muted);
+}
+
+.ej-progress__speaker strong {
+  color: var(--gp-ink);
+}
+
+.ej-progress__track {
+  overflow: hidden;
+  height: 10px;
+  border: 2px solid var(--gp-line);
+  border-radius: var(--gp-radius-pill);
+  background: var(--gp-surface);
+}
+
+.ej-progress__fill {
+  width: 100%;
+  height: 100%;
+  transform-origin: left center;
+  transform: scaleX(var(--ej-progress, 0));
+  background: var(--game-dark, var(--gp-green-dark));
+  transition: transform var(--gp-dur-standard) var(--gp-ease-decelerate);
+}
+
+html[data-motion-level='off'] .ej-progress__fill {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ej-progress__fill {
+    transition: none;
+  }
+}
+
+/* 抓获名单 */
+.ej-caught {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  border: 2.5px solid var(--game-coral);
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-surface);
+  font-size: 0.86rem;
+  color: var(--gp-muted);
+}
+
+.ej-caught strong {
+  color: var(--game-coral);
+  font-weight: 900;
+}
+
+/* 揭晓扫光：一道光从左扫到右，只在 full/reduced 档播 */
+.ej-caught[data-revealing='true'] {
+  position: relative;
+  overflow: hidden;
+}
+
+.ej-caught[data-revealing='true']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    color-mix(in srgb, var(--game-accent, #e76835) 55%, transparent) 50%,
+    transparent 70%
+  );
+  animation: ej-sheen var(--gp-dur-slow) var(--gp-ease-standard);
+}
+
+@keyframes ej-sheen {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(120%);
+  }
+}
+
+/* 扫光是纯装饰，reduced 档就停 */
+html[data-motion-level='reduced'] .ej-caught[data-revealing='true']::after,
+html[data-motion-level='minimal'] .ej-caught[data-revealing='true']::after,
+html[data-motion-level='off'] .ej-caught[data-revealing='true']::after {
+  animation: none;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ej-caught[data-revealing='true']::after {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* ── 暗角 ──────────────────────────────────────────────────── */
+
+/*
+ * 聚光判词台：审判阶段压下四周，台面保持纸白。
+ * 只是叠在上面的一层渐变，不改变其下任何文字的底色，所以不影响对比度。
+ */
+.ej-vignette {
+  position: absolute;
+  inset: -14px;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  border-radius: var(--gp-radius-lg);
+  background: radial-gradient(
+    ellipse at 50% 42%,
+    transparent 40%,
+    rgba(18, 16, 12, 0.32) 80%,
+    rgba(18, 16, 12, 0.5) 100%
+  );
+  transition: opacity var(--gp-dur-phase) var(--gp-ease-standard);
+}
+
+.ej-bench-wrap[data-vignette='true'] .ej-vignette {
+  opacity: 1;
+}
+
+/* 暗角是阶段信息而不是装饰，reduced 档保留；只有无动画档去掉过渡 */
+html[data-motion-level='minimal'] .ej-vignette,
+html[data-motion-level='off'] .ej-vignette {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ej-vignette {
+    transition: none;
+  }
+}
+
+/* ── 飞行中的话筒 ──────────────────────────────────────────── */
+
+.ej-mic-token {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 2.5px solid var(--gp-ink);
+  border-radius: var(--gp-radius-pill);
+  background: var(--gp-yellow);
+  box-shadow: 0 2px 0 var(--gp-ink);
+}
+
+/* ── 宽屏双栏 ──────────────────────────────────────────────── */
+
 @media (min-width: 768px), (orientation: landscape) and (min-width: 640px) {
-  .echo-judge-stage {
+  .ej-game {
     display: grid;
     grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
     grid-template-areas: "side main";
@@ -50,37 +540,121 @@
     gap: 16px;
   }
 
-  .echo-identity-toggle-btn {
-    display: none !important;
-  }
-
-  .echo-judge-stage__sidebar {
+  .ej-sidebar {
     grid-area: side;
     position: sticky;
     top: 8px;
   }
 
-  .echo-judge-stage__main {
+  .ej-main {
     grid-area: main;
   }
 
-  .echo-private-panel.is-collapsed-mobile {
-    display: block !important;
+  /*
+   * 宽屏下折叠开关无意义、身份卡必须常显。
+   * 用 :where() 之外的属性选择器提高特异性，不用 !important。
+   */
+  .ej-game .ej-identity-toggle {
+    display: none;
+  }
+
+  .ej-game .ej-private.is-collapsed-mobile {
+    display: block;
   }
 }
 
-/* 横屏紧凑高度适配（高度低于 520px 的移动设备） */
+/* 横屏紧凑高度适配 */
 @media (orientation: landscape) and (max-height: 520px) {
-  .echo-judge-stage {
-    gap: 8px;
+  .ej-game {
+    --ej-gap: 8px;
     padding-bottom: clamp(60px, 15vh, 84px);
   }
 
-  .echo-private-panel {
+  .ej-private {
     padding: 8px 12px;
   }
 
-  .echo-topic-card {
+  .ej-bench {
+    padding: 10px;
+  }
+
+  .ej-topic__text {
+    font-size: 1.0625rem;
+  }
+
+  .ej-focus__title {
+    font-size: 1.25rem;
+  }
+
+  .ej-topic-card {
     padding: 6px 8px;
   }
+}
+
+@media (max-width: 480px) {
+  .ej-bench {
+    padding: 12px 10px;
+  }
+  .ej-topic__text {
+    font-size: 1.0625rem;
+  }
+  .ej-focus__title {
+    font-size: 1.25rem;
+  }
+  .ej-role-btns {
+    flex-direction: column;
+  }
+}
+
+/* ── 终局复盘（沿用原有类名，未在本轮重做） ─────────────────── */
+
+.echo-over-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.echo-reveal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.echo-reveal-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-surface);
+  box-shadow: var(--gp-shadow-sm);
+}
+
+.echo-reveal-card.is-winner {
+  border-color: var(--gp-yellow);
+  background: color-mix(in srgb, var(--gp-yellow) 18%, var(--gp-surface));
+}
+
+.echo-reveal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+
+.echo-reveal-score,
+.echo-reveal-word {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--gp-muted);
+}
+
+.echo-reveal-score strong,
+.echo-reveal-word strong {
+  color: var(--gp-ink);
 }
