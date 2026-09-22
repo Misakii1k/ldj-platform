@@ -36,30 +36,76 @@ const idempotent = (state: GooseRelayState): GooseRelayReduceResult => ({
 
 const system = (text: string): GameEffect => ({ type: 'system_message', text });
 
-function claimHeadTimer(config: ResolvedGooseRelayConfig, now: number): GameEffect {
+/**
+ * 抢头鹅超时。所有计时 helper 都顺便把截止时刻写进 state：客户端的倒计时环
+ * 需要它，而 effect 里的 deadlineAt 只有运行时看得见，视图拿不到。两处必须同值。
+ */
+function claimHeadTimer(state: GooseRelayState, now: number): GameEffect {
+  const deadlineAt = now + state.config.claimHeadSeconds * 1000;
+  state.deadlineAt = deadlineAt;
   return {
     type: 'schedule_timer',
     timerId: 'claim_head',
-    deadlineAt: now + config.claimHeadSeconds * 1000,
+    deadlineAt,
     action: { type: 'claim_head_timeout' },
   };
 }
 
-function pickCardsTimer(config: ResolvedGooseRelayConfig, now: number): GameEffect {
+function pickCardsTimer(state: GooseRelayState, now: number): GameEffect {
+  const deadlineAt = now + state.config.pickCardsSeconds * 1000;
+  state.deadlineAt = deadlineAt;
   return {
     type: 'schedule_timer',
     timerId: 'pick_cards',
-    deadlineAt: now + config.pickCardsSeconds * 1000,
+    deadlineAt,
     action: { type: 'pick_cards_timeout' },
   };
 }
 
-function relayTimer(config: ResolvedGooseRelayConfig, now: number, index: number): GameEffect {
+function relayTimer(state: GooseRelayState, now: number, index: number): GameEffect {
+  const deadlineAt = now + state.config.relaySeconds * 1000;
+  state.deadlineAt = deadlineAt;
   return {
     type: 'schedule_timer',
     timerId: `relay-${index}`,
-    deadlineAt: now + config.relaySeconds * 1000,
+    deadlineAt,
     action: { type: 'relay_timeout', index },
+  };
+}
+
+/** 讨论阶段超时。 */
+function discussionTimer(state: GooseRelayState, now: number): GameEffect {
+  const deadlineAt = now + state.config.discussionSeconds * 1000;
+  state.deadlineAt = deadlineAt;
+  return {
+    type: 'schedule_timer',
+    timerId: 'discussion',
+    deadlineAt,
+    action: { type: 'end_discussion' },
+  };
+}
+
+/** 指认阶段超时。 */
+function accuseTimer(state: GooseRelayState, now: number): GameEffect {
+  const deadlineAt = now + state.config.accuseSeconds * 1000;
+  state.deadlineAt = deadlineAt;
+  return {
+    type: 'schedule_timer',
+    timerId: `accuse-${state.currentAccuserIndex}`,
+    deadlineAt,
+    action: { type: 'accusation_timeout' },
+  };
+}
+
+/** 投票阶段超时。 */
+function voteTimer(state: GooseRelayState, now: number): GameEffect {
+  const deadlineAt = now + state.config.voteSeconds * 1000;
+  state.deadlineAt = deadlineAt;
+  return {
+    type: 'schedule_timer',
+    timerId: 'vote',
+    deadlineAt,
+    action: { type: 'resolve_vote' },
   };
 }
 
@@ -135,6 +181,7 @@ export function createGooseRelayState(
     votes: {},
     winners: [],
     evilIdentified: null,
+    deadlineAt: null,
   };
   assertGooseRelayInvariants(state);
   return state;
@@ -160,6 +207,8 @@ function settle(
   // OR 胜负逻辑：只要指对案情 或 投出恶鹅，好人白鹅阵营即获胜！
   const whiteWin = caseMatched || evilIdentified;
   state.phase = 'game_over';
+  // 终局不再计时：客户端倒计时环据此隐藏
+  state.deadlineAt = null;
   state.caseMatched = caseMatched;
   state.evilIdentified = evilIdentified;
   state.winners = whiteWin
@@ -194,12 +243,7 @@ function advanceRelay(
     events.push({ type: 'relay_finished' }, { type: 'discussion_started' });
     effects.push(system('动作传递完成，请全员进行线下讨论……'));
     if (state.config.discussionSeconds > 0) {
-      effects.push({
-        type: 'schedule_timer',
-        timerId: 'discussion',
-        deadlineAt: now + state.config.discussionSeconds * 1000,
-        action: { type: 'end_discussion' },
-      });
+      effects.push(discussionTimer(state, now));
     }
     if (state.config.discussionSeconds === 0) {
       enterAccusation(state, events, effects, now);
@@ -209,7 +253,7 @@ function advanceRelay(
     const nextPlayer = state.lineOrder[index + 1]!;
     effects.push(
       system(`第 ${index + 2} 棒（${nextPlayer}）请开始动作传递，表演完成后点击「表演完成」`),
-      relayTimer(state.config, now, index + 1),
+      relayTimer(state, now, index + 1),
     );
   }
 }
@@ -226,12 +270,7 @@ function enterAccusation(
   events.push({ type: 'accusation_started' });
   const accuser = state.lineOrder[state.currentAccuserIndex]!;
   effects.push(system(`请末棒 ${accuser} 指认凶手鹅与受害鹅`));
-  effects.push({
-    type: 'schedule_timer',
-    timerId: `accuse-${state.currentAccuserIndex}`,
-    deadlineAt: now + state.config.accuseSeconds * 1000,
-    action: { type: 'accusation_timeout' },
-  });
+  effects.push(accuseTimer(state, now));
 }
 
 /** 指认一步推进：指对 → 直接进入投票；全部指错 → 进入投票 */
@@ -247,12 +286,7 @@ function advanceAccusation(
     state.phase = 'vote';
     events.push({ type: 'vote_started' });
     effects.push(system('有人指对了案情！请全员投票揪出恶鹅'));
-    effects.push({
-      type: 'schedule_timer',
-      timerId: 'vote',
-      deadlineAt: now + state.config.voteSeconds * 1000,
-      action: { type: 'resolve_vote' },
-    });
+    effects.push(voteTimer(state, now));
     return;
   }
   // 全员指完无人指对 → 依然进入揪恶投票（好人仍有机会通过投出恶鹅获胜！）
@@ -261,23 +295,13 @@ function advanceAccusation(
     state.phase = 'vote';
     events.push({ type: 'vote_started' });
     effects.push(system('全员指认完毕，无人指对案情！请全员投票揪出恶鹅'));
-    effects.push({
-      type: 'schedule_timer',
-      timerId: 'vote',
-      deadlineAt: now + state.config.voteSeconds * 1000,
-      action: { type: 'resolve_vote' },
-    });
+    effects.push(voteTimer(state, now));
     return;
   }
   state.currentAccuserIndex -= 1;
   const accuser = state.lineOrder[state.currentAccuserIndex]!;
   effects.push(system(`请 ${accuser} 指认凶手鹅与受害鹅`));
-  effects.push({
-    type: 'schedule_timer',
-    timerId: `accuse-${state.currentAccuserIndex}`,
-    deadlineAt: now + state.config.accuseSeconds * 1000,
-    action: { type: 'accusation_timeout' },
-  });
+  effects.push(accuseTimer(state, now));
 }
 
 export function reduceGooseRelayState(
@@ -300,7 +324,7 @@ export function reduceGooseRelayState(
         events: [{ type: 'claim_head_started' }],
         effects: [
           system('抢当头鹅开始！请点击「我要当头鹅」抢先确立身份'),
-          claimHeadTimer(state.config, ctx.now),
+          claimHeadTimer(state, ctx.now),
         ],
       };
     }
@@ -323,6 +347,7 @@ export function reduceGooseRelayState(
       delete next.votes[id];
     }
     next.phase = 'game_over';
+    next.deadlineAt = null;
     next.caseMatched = next.caseMatched ?? false;
     next.evilIdentified = false;
     next.winners = [...next.players];
@@ -351,7 +376,7 @@ export function reduceGooseRelayState(
     events.push({ type: 'head_claimed', playerId: action.playerId });
     effects.push(
       system(`${action.playerId} 抢到了头鹅！请头鹅在展示区选择凶手鹅与受害鹅`),
-      pickCardsTimer(next.config, ctx.now),
+      pickCardsTimer(next, ctx.now),
     );
     assertGooseRelayInvariants(next);
     return { ok: true, nextState: next, events, effects };
@@ -373,7 +398,7 @@ export function reduceGooseRelayState(
     events.push({ type: 'head_claimed', playerId: defaultHead });
     effects.push(
       system(`抢头鹅超时，系统指派 ${defaultHead} 为头鹅！请头鹅选择凶手鹅与受害鹅`),
-      pickCardsTimer(next.config, ctx.now),
+      pickCardsTimer(next, ctx.now),
     );
     assertGooseRelayInvariants(next);
     return { ok: true, nextState: next, events, effects };
@@ -397,7 +422,7 @@ export function reduceGooseRelayState(
     );
     effects.push(
       system(`头鹅已确立案情真相！第 1 棒（${next.lineOrder[0]}）请开始表演，完成后点击「表演完成」`),
-      relayTimer(next.config, ctx.now, 0),
+      relayTimer(next, ctx.now, 0),
     );
     assertGooseRelayInvariants(next);
     return { ok: true, nextState: next, events, effects };
@@ -417,7 +442,7 @@ export function reduceGooseRelayState(
     );
     effects.push(
       system(`选卡超时，系统自动确立案情！第 1 棒（${next.lineOrder[0]}）请开始表演，完成后点击「表演完成」`),
-      relayTimer(next.config, ctx.now, 0),
+      relayTimer(next, ctx.now, 0),
     );
     assertGooseRelayInvariants(next);
     return { ok: true, nextState: next, events, effects };

@@ -44,6 +44,8 @@ export interface GooseRelayPublicView {
   caseMatched: boolean | null;
   votesCast: number;
   winners: string[];
+  /** 当前阶段截止时刻；无计时阶段与终局为 null */
+  deadlineAt: number | null;
   reveal: GooseRelayReveal | null;
 }
 
@@ -71,6 +73,7 @@ const PUBLIC_KEYS = [
   'caseMatched',
   'votesCast',
   'winners',
+  'deadlineAt',
   'reveal',
 ] as const;
 const ME_KEYS = ['playerId', 'role', 'observed'] as const;
@@ -206,6 +209,7 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): GooseRelayPu
   if (!isNonNegativeInteger(view.votesCast) || !isPlayerIds(view.winners)) return null;
   const reveal = parseReveal(view.reveal);
   if (reveal === null && view.reveal !== null) return null;
+  if (view.deadlineAt !== null && typeof view.deadlineAt !== 'number') return null;
   return {
     gameId: 'goose-relay',
     rulesetId: 'goose_relay_classic_v1',
@@ -225,6 +229,7 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): GooseRelayPu
     caseMatched: view.caseMatched as boolean | null,
     votesCast: view.votesCast as number,
     winners: [...view.winners],
+    deadlineAt: view.deadlineAt as number | null,
     reveal,
   };
 }

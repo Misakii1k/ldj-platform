@@ -57,6 +57,8 @@ const gooseRelayPublicViewSchema = z
     caseMatched: z.boolean().nullable(),
     votesCast: z.number().int().nonnegative(),
     winners: z.array(pid),
+    /** 当前阶段截止时刻；无计时阶段与终局为 null */
+    deadlineAt: z.number().nullable(),
     reveal: gooseRelayRevealSchema.nullable(),
   })
   .strict();
@@ -119,6 +121,8 @@ function buildPublicView(state: GooseRelayState): GooseRelayPublicView {
     caseMatched: state.caseMatched,
     votesCast,
     winners: [...state.winners],
+    // 老存档没有这个字段，兜底为 null
+    deadlineAt: state.deadlineAt ?? null,
     reveal:
       state.phase === 'game_over'
         ? {

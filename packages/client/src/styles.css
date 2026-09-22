@@ -6536,24 +6536,7 @@ p { margin: 0.5rem 0; }
 .sg-chip--peek { white-space: normal; text-align: center; line-height: 1.35; }
 
 /* —�?以鹅传鹅（草�?落日主题�?—�?*/
-.goose-role-tag { display: inline-flex; gap: 8px; align-items: center; padding: 6px 14px; border: 3px solid var(--game-line); border-radius: 999px; color: var(--game-ink); background: #e6f0c2; box-shadow: 0 4px 0 var(--game-line); font-size: .8rem; font-weight: 900; }
-.goose-role-tag__dot { width: 10px; height: 10px; border: 2px solid var(--game-line); border-radius: 50%; background: var(--game-green); }
-.goose-role-tag--head { color: var(--game-ink); background: #fce790; }
-.goose-role-tag--head .goose-role-tag__dot { background: #d97706; }
-.goose-role-tag--evil { color: #fff; background: var(--game-coral); }
-.goose-role-tag--evil .goose-role-tag__dot { background: var(--game-yellow); }
 
-.goose-head-secret-panel { background: #fffdf5; border-color: #e69138; }
-.goose-peek-btn { padding: 4px 12px; border: 2px solid var(--game-line); border-radius: 999px; background: #fff; color: var(--game-ink); font-weight: 800; font-size: .8rem; cursor: pointer; box-shadow: 0 2px 0 var(--game-line); }
-.goose-peek-btn:hover { background: #fdf5e6; }
-.goose-secret-cards-row { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 8px; flex-wrap: wrap; }
-.goose-secret-card-item { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; border: 3px solid var(--game-line); border-radius: 16px; background: #fff; box-shadow: 0 4px 0 var(--game-line); min-width: 120px; }
-.goose-secret-card--murderer { border-color: var(--game-coral); background: #fff5f5; }
-.goose-secret-card--victim { border-color: #2b78e4; background: #f0f7ff; }
-.goose-secret-card-img { width: 100px; height: 138px; object-fit: contain; border-radius: 10px; background: #881b21; }
-.goose-secret-badge { font-size: .75rem; font-weight: 900; }
-.goose-secret-hint { margin: 0; font-size: .82rem; color: var(--game-muted); text-align: center; }
-.goose-case-arrow { font-size: 1rem; font-weight: 900; color: var(--game-line); }
 
 /* 全局置顶错误/警告提示横幅（Toast Alert Banner）*/
 .game-error, .tabletop-error {
@@ -6613,30 +6596,10 @@ p { margin: 0.5rem 0; }
 }
 
 /* 主舞台卡牌快捷入口横幅（空间紧凑，点击展开遮罩选卡�?*/
-.goose-card-dock-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: #fffdf7; border: 2.5px solid var(--game-line); border-radius: 14px; box-shadow: 0 4px 0 var(--game-line); }
-.goose-card-dock-title { display: flex; align-items: center; gap: 6px; font-size: .88rem; font-weight: 900; color: var(--game-ink); }
-.goose-card-dock-summary { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.goose-dock-tag { font-size: .74rem; font-weight: 900; padding: 2px 8px; border-radius: 999px; border: 1.5px solid var(--game-line); }
-.goose-dock-tag--m { background: #ffe4e4; color: #b71c1c; border-color: #ef5350; }
-.goose-dock-tag--v { background: #e3f2fd; color: #1565c0; border-color: #42a5f5; }
-.goose-dock-hint { font-size: .76rem; font-weight: 700; color: var(--game-muted); }
-.goose-card-dock-btn { padding: 6px 14px; border: 2px solid var(--game-line); border-radius: 12px; background: #fdf6e2; color: var(--game-ink); font-size: .82rem; font-weight: 900; cursor: pointer; box-shadow: 0 3px 0 var(--game-line); transition: all .12s ease; white-space: nowrap; }
-.goose-card-dock-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 0 var(--game-line); background: #fff; }
-.goose-card-dock-btn.is-highlight { background: var(--game-coral); color: #fff; border-color: #b71c1c; box-shadow: 0 3px 0 #7f1d1d; animation: state-breathe 1.5s ease-in-out infinite; }
 
 /* 全屏卡牌遮罩层（Modal Mask Overlay�?—�?宽屏大视野无滚动设计 */
-.goose-card-modal-backdrop { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: clamp(6px, 1.5vw, 16px); background: rgba(14, 22, 18, 0.88); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); animation: modal-backdrop-in 0.2s ease-out; box-sizing: border-box; }
-.goose-card-modal-dialog { position: relative; display: flex; flex-direction: column; width: min(96vw, 1020px); height: auto; max-height: min(95vh, 95dvh); background: #fffdf5; border: 3.5px solid var(--game-line); border-radius: 22px; box-shadow: 0 20px 60px rgba(0,0,0,.7), 0 8px 0 var(--game-line); overflow: hidden; box-sizing: border-box; }
-.goose-card-modal-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 18px 8px; border-bottom: 2.5px solid var(--game-line); background: #fef7e6; flex-shrink: 0; }
-.goose-card-modal-title { margin: 0; font-size: 1.05rem; font-weight: 900; color: var(--game-ink); }
-.goose-card-modal-desc { margin: 2px 0 0; font-size: .76rem; font-weight: 700; color: var(--game-muted); }
-.goose-card-modal-close { display: grid; place-items: center; width: 32px; height: 32px; min-width: 32px; min-height: 32px; padding: 0; border: 2px solid var(--game-line); border-radius: 50%; background: #fff; color: var(--game-ink); cursor: pointer; box-shadow: 0 2px 0 var(--game-line); transition: transform .12s ease, background-color .12s ease; flex-shrink: 0; }
-.goose-card-modal-close:hover { transform: scale(1.08); background: #ffebee; }
 
 /* 遮罩选定状态槽�?*/
-.goose-modal-selection-bar { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 12px; background: #fff3db; border-bottom: 2px dashed #d5c3aa; flex-shrink: 0; flex-wrap: wrap; }
-.goose-select-slot { display: flex; align-items: center; gap: 4px; padding: 3px 10px; border: 2px solid var(--game-line); border-radius: 999px; background: #fff; font-size: .78rem; font-weight: 800; }
-.goose-select-slot.is-picked { background: #f0fdf4; border-color: #22c55e; }
 .slot-label { opacity: .85; }
 .slot-divider { font-size: .85rem; font-weight: 900; color: var(--game-line); }
 
@@ -6663,124 +6626,26 @@ p { margin: 0.5rem 0; }
   text-align: center !important;
 }
 
-.goose-game-stage {
-  width: 100%;
-  max-width: 880px;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 10px;
-  padding: 4px 10px 24px;
-  box-sizing: border-box;
-}
 
 
 
 
 
 /* 遮罩九宫�?9 张卡�?—�?宽屏自适应两行排布�?+4），竖屏三行�?x3），彻底杜绝滚动与截�?*/
-.goose-modal-cards-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: clamp(6px, 1.2vw, 12px);
-  padding: clamp(6px, 1.2vw, 12px);
-  overflow: hidden;
-  flex: 1;
-  min-height: 0;
-  max-width: 100%;
-  box-sizing: border-box;
-}
 
-.goose-modal-card-item {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: clamp(86px, 16vw, 145px);
-  height: clamp(118px, 28vh, 195px);
-  padding: 3px;
-  border: 2.5px solid var(--game-line);
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 3px 0 var(--game-line);
-  cursor: default;
-  transition: transform .12s ease, box-shadow .12s ease;
-  user-select: none;
-  box-sizing: border-box;
-}
 
 @media (max-width: 640px) {
-  .goose-modal-cards-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
-    padding: 6px;
-  }
-  .goose-modal-card-item {
-    width: 100%;
-    max-width: none;
-    height: auto;
-    aspect-ratio: 320 / 440;
-    max-height: min(28dvh, 150px);
-  }
 }
 
-.goose-modal-card-item.is-clickable { cursor: pointer; }
-.goose-modal-card-item.is-clickable:hover { transform: translateY(-3px); box-shadow: 0 6px 0 var(--game-line); }
-.goose-modal-card-item.is-clickable:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--game-line); }
-.goose-modal-card-item.is-murderer { border-color: #d9383a; background: #fff1f0; box-shadow: 0 4px 0 #d9383a; }
-.goose-modal-card-item.is-victim { border-color: #2b78e4; background: #eff6ff; box-shadow: 0 4px 0 #2b78e4; }
-.goose-modal-card-tag { position: absolute; top: -6px; right: -4px; padding: 2px 8px; border-radius: 999px; font-size: .72rem; font-weight: 900; border: 1.5px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,.25); z-index: 2; }
-.goose-modal-card-tag--m { background: #d9383a; color: #fff; }
-.goose-modal-card-tag--v { background: #2b78e4; color: #fff; }
-.goose-modal-card-img { width: 100%; height: 100%; aspect-ratio: 320 / 440; object-fit: contain; border-radius: 10px; background: transparent; }
 
 /* 遮罩底栏操作 */
-.goose-card-modal-footer { display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 8px 18px; border-top: 2.5px solid var(--game-line); background: #fdf6e6; flex-shrink: 0; }
-.goose-modal-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 16px; border: 2.5px solid var(--game-line); border-radius: 12px; font-size: .86rem; font-weight: 900; cursor: pointer; box-shadow: 0 3px 0 var(--game-line); transition: transform .12s ease; }
-.goose-modal-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 0 var(--game-line); }
-.goose-modal-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--game-line); }
-.goose-modal-btn:disabled { opacity: .55; cursor: not-allowed; }
-.goose-modal-btn--primary { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; border-color: #047857; box-shadow: 0 3px 0 #065f46; }
-.goose-modal-btn--secondary { background: #fff; color: var(--game-ink); }
 
 @keyframes modal-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
 
 /* 指认历史列表 */
-.goose-history-list { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 0; padding: 0; list-style: none; }
-.goose-history-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border: 2.5px solid var(--game-line); border-radius: 12px; font-size: .84rem; font-weight: 800; }
-.goose-history-item.is-correct { background: #edf7ed; border-color: #4caf50; color: #2e7d32; }
-.goose-history-item.is-wrong { background: #fff5f5; border-color: #ef5350; color: #c62828; }
-.goose-vote-target-btn.is-selected { background: #fff1f0; border-color: var(--game-coral); box-shadow: 0 4px 0 var(--game-coral); }
 
 /* 终局大揭�?*/
-.goose-game-over-banner { margin-bottom: 16px; }
-.goose-result-card { padding: 16px; border: 3.5px solid var(--game-line); border-radius: 18px; text-align: center; }
-.goose-result-card--white { background: #e8f5e9; border-color: #43a047; box-shadow: 0 6px 0 #2e7d32; color: #1b5e20; }
-.goose-result-card--evil { background: #ffebee; border-color: #e53935; box-shadow: 0 6px 0 #b71c1c; color: #b71c1c; }
-.goose-result-card h2 { margin: 0 0 6px; font-size: 1.4rem; font-weight: 900; }
-.goose-result-card p { margin: 0; font-size: .88rem; font-weight: 700; opacity: .9; }
 
-.goose-reveal-case-box, .goose-reveal-identity-box, .goose-reveal-votes-box { margin-top: 14px; padding: 12px; border: 2.5px solid var(--game-line); border-radius: 14px; background: #fffdf7; color: var(--game-ink); }
-.goose-reveal-case-box h3, .goose-reveal-identity-box h3, .goose-reveal-votes-box h3 { margin: 0 0 10px; font-size: .98rem; font-weight: 900; color: #312d28 !important; }
-.goose-reveal-cards-row { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
-.goose-reveal-card-item { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; border: 3px solid var(--game-line); border-radius: 16px; background: #fff; min-width: 120px; box-shadow: 0 4px 0 var(--game-line); color: #312d28; }
-.goose-reveal-card-img { width: 110px; height: 151px; object-fit: contain; border-radius: 10px; background: #faf3e6; }
-.goose-reveal-tag { font-size: .78rem; font-weight: 900; color: #312d28; }
-.goose-reveal-tag--m { color: #b91c1c !important; }
-.goose-reveal-tag--v { color: #1d4ed8 !important; }
-.goose-reveal-arrow { font-size: 1.05rem; font-weight: 900; color: #312d28 !important; }
-.goose-case-arrow { font-size: 1.02rem; font-weight: 900; color: #312d28 !important; }
-.goose-secret-badge { font-size: .78rem; font-weight: 900; color: #312d28 !important; }
-.goose-evil-names-list { display: flex; gap: 8px; flex-wrap: wrap; }
-.goose-evil-player-badge { padding: 6px 14px; border: 2.5px solid #d32f2f; border-radius: 999px; background: #ffebee; color: #c62828; font-weight: 900; font-size: .88rem; }
-.goose-votes-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
-.goose-vote-stat-item { display: flex; justify-content: space-between; padding: 6px 10px; border-radius: 8px; background: #f5f5f5; font-size: .84rem; font-weight: 800; }
 @keyframes phase-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 .uc-panel__head { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; }
 .uc-panel__head h3 { margin: 0; color: var(--game-ink); font-size: .99rem; font-weight: 900; }

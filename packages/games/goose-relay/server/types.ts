@@ -169,6 +169,11 @@ export interface GooseRelayState {
   winners: string[];
   /** 揪恶投票是否投中（并列最高票包含恶鹅）；未结算为 null */
   evilIdentified: boolean | null;
+  /**
+   * 当前阶段的截止时刻（与 schedule_timer 的 deadlineAt 同值）。
+   * 客户端据此渲染倒计时进度环；无计时阶段与终局为 null。
+   */
+  deadlineAt: number | null;
 }
 
 export type GooseRelayAction =
@@ -238,6 +243,8 @@ export interface GooseRelayPublicView {
   /** 已投票人数（vote 阶段） */
   votesCast: number;
   winners: string[];
+  /** 当前阶段截止时刻；无计时阶段与终局为 null */
+  deadlineAt: number | null;
   reveal: GooseRelayReveal | null;
 }
 

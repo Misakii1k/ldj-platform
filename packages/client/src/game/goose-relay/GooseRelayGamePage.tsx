@@ -6,7 +6,10 @@
  * 2. 遮罩层选卡与阅卡（Modal Mask）：
  *    - 9 张特征鸭卡在遮罩模态框中以 3x3 九宫格清晰呈现；
  *    - 头鹅定案与倒序指认阶段可直接在遮罩中点选「凶手鸭」与「受害鸭」并一键提交；
- *    - 其他阶段可随时通过「查看 9 张特征鸭卡」遮罩随时复习全部卡牌。
+ *    - 其他阶段可随时通过「查看 9 张特征鸭卡」遮罩随时复习全部卡牌；
+ * 3. 演出层（stage/）：草地毡面 3D 传递轨道、鹅卡沿圆弧飞到下一棒、
+ *    接收席位光晕、指认对错印章、终局鹅群列队。
+ *    契约见 docs/plans/2026-09-22-game-ui-uplift/contracts/ 同名文档思路。
  */
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -20,6 +23,9 @@ import { getGooseCard } from './cardCatalog.ts';
 import { ArenaBoard } from '../../shared-ui/ArenaBoard.tsx';
 import { ArenaRail } from '../../shared-ui/ArenaRail.tsx';
 import { SeatTargetPicker } from '../../shared-ui/SeatTargetPicker.tsx';
+import { StageCountdownRing } from '../../shared-ui/stage/StageCountdownRing.tsx';
+import { FlightLayer } from '../../shared-ui/stage/FlightLayer.tsx';
+import { useGooseRelayStage } from './stage/useGooseRelayStage.tsx';
 import type { CharacterId, GooseRelayPlayerView } from './types.ts';
 
 function phaseLabel(phase: GooseRelayPlayerView['phase']): string {
@@ -90,6 +96,8 @@ export function GooseRelayGamePage({ view }: Props) {
 
   const myIndex = myId === null ? -1 : (view.lineOrder ?? []).indexOf(myId);
   const isHeadGoose = myId !== null && view.headPlayerId === myId;
+  const stage = useGooseRelayStage(view);
+
   const myTurnRelay = view.phase === 'relay' && myIndex === view.currentIndex;
   const myTurnAccuse = view.phase === 'accusation' && myIndex === view.currentAccuserIndex;
 
@@ -131,7 +139,9 @@ export function GooseRelayGamePage({ view }: Props) {
       status,
       active:
         (view.phase === 'relay' && index === view.currentIndex) ||
-        (view.phase === 'accusation' && index === view.currentAccuserIndex),
+        (view.phase === 'accusation' && index === view.currentAccuserIndex) ||
+        // 刚接到棒：演出层给一次短暂光晕，让「传到谁了」一眼可见
+        stage.receivingId === playerId,
       isSpeaking: view.phase === 'relay' && index === view.currentIndex,
     };
   });
@@ -448,8 +458,16 @@ export function GooseRelayGamePage({ view }: Props) {
         </p>
       )}
 
-      {/* 舞台区：自适应紧凑排布，空间完全舒展 */}
-      <div className="sg-stage goose-game-stage">
+      {/* 舞台区：草地牧场毡面（3D 透视），传递轨道沿席位环走 */}
+      <div className="gr-stage stage-felt-3d" ref={stage.stageRef}>
+        {/* 只在需要玩家行动的阶段催时间 */}
+        <StageCountdownRing
+          deadlineAt={view.deadlineAt}
+          phaseKey={`${view.phase}:${view.currentIndex}:${view.currentAccuserIndex}`}
+          active={view.phase !== 'game_over' && view.phase !== 'discussion'}
+          className="gr-countdown"
+        />
+        <div className="sg-stage goose-game-stage gr-stage__plane stage-felt-3d__plane" data-stamp={stage.stamp ? (stage.stamp.correct ? 'correct' : 'wrong') : undefined}>
         {/* 抢头鹅初始阶段展台 */}
         {view.phase === 'claim_head' && (
           <ArenaBoard
@@ -736,6 +754,7 @@ export function GooseRelayGamePage({ view }: Props) {
           </section>
         )}
       </div>
+      </div>
 
       {/* 全屏卡牌遮罩层（Modal Mask Overlay） */}
       {cardModalOpen &&
@@ -874,6 +893,9 @@ export function GooseRelayGamePage({ view }: Props) {
           </div>,
           document.body,
         )}
+      {/* 飞行层必须挂在毡面之外：毡面是 perspective 容器，
+          一旦有 transform 祖先，position:fixed 会退化为相对定位。 */}
+      <FlightLayer flights={stage.flights} simplified={stage.simplifiedFlights} />
     </TabletopShell>
   );
 }
