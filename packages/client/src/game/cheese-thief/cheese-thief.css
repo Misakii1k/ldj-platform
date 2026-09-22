@@ -542,3 +542,66 @@
   font-weight: 800;
   color: #a7f3d0;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+ * U09 演出层：夜间暗角与开票飞行
+ *
+ * 契约：平面（G0-3），three.js 奶酪与骰盅保留不动。
+ * 本轮只补两件事——终局揭晓防重播（在 stage/ 里）、夜间暗角与票飞行。
+ * ═══════════════════════════════════════════════════════════════════ */
+
+.cheese-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+/*
+ * 月光：夜里偷奶酪与拉同伙时压下四角，桌中央保持亮。
+ * 只是叠在上面的一层渐变，不改变其下任何文字的底色，所以不影响对比度。
+ */
+.cheese-vignette {
+  position: absolute;
+  inset: -10px;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  border-radius: var(--gp-radius-lg);
+  background: radial-gradient(
+    ellipse at 50% 46%,
+    transparent 36%,
+    rgba(10, 14, 30, 0.38) 78%,
+    rgba(10, 14, 30, 0.58) 100%
+  );
+  transition: opacity var(--gp-dur-phase) var(--gp-ease-standard);
+}
+
+.cheese-stage[data-vignette='true'] .cheese-vignette {
+  opacity: 1;
+}
+
+/* 暗角是阶段信息而不是装饰，reduced 档保留；只有无动画档去掉过渡 */
+html[data-motion-level='minimal'] .cheese-vignette,
+html[data-motion-level='off'] .cheese-vignette {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cheese-vignette {
+    transition: none;
+  }
+}
+
+/* 飞行中的选票：与其余几款同款语言（黄底墨边圆票） */
+.cheese-vote-token {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--gp-ink);
+  border-radius: 50%;
+  background: var(--gp-yellow);
+  box-shadow: 0 2px 0 var(--gp-ink);
+}

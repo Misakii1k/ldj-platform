@@ -11,6 +11,8 @@ import { GameDrawer } from '../tabletop/GameDrawer.tsx';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
 import { CheeseDiceCup3D } from './CheeseDiceCup3D.tsx';
 import { CheeseTabletopArena } from './CheeseTabletopArena.tsx';
+import { FlightLayer } from '../../shared-ui/stage/FlightLayer.tsx';
+import { useCheeseThiefStage } from './stage/useCheeseThiefStage.tsx';
 import { CheeseGameOverReveal } from './CheeseGameOverReveal.tsx';
 import { IdentityFlipCard } from '../../shared-ui/IdentityFlipCard.tsx';
 import { ArenaBoard } from '../../shared-ui/ArenaBoard.tsx';
@@ -49,6 +51,10 @@ export function CheeseThiefGamePage({ view }: Props) {
   const { act, busy, error, clearError } = useGameAction();
   const me = view.me;
   const myId = me?.playerId ?? null;
+
+  // 终局揭晓按 roundToken 去重：演到一半刷新不会重演一次。
+  // 夜间暗角也由演出层统一管，避免和 phase 判断散在两处。
+  const stage = useCheeseThiefStage(view);
   const isSpectator = me === null;
   const rulesRef = useRef<HTMLButtonElement | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
@@ -399,7 +405,13 @@ export function CheeseThiefGamePage({ view }: Props) {
         </p>
       )}
 
-      {/* 🖥️ 桌面端呈现 */}
+      {/* 🖥️ 桌面端呈现。外面这层负责夜间暗角与飞行层的锚点测量宿主 */}
+      <div
+        className="cheese-stage"
+        ref={stage.stageRef}
+        data-vignette={stage.vignette ? 'true' : undefined}
+      >
+      <span className="cheese-vignette" aria-hidden="true" />
       {isSimulatorTable ? (
         <CheeseTabletopArena
           view={view}
@@ -1028,6 +1040,11 @@ export function CheeseThiefGamePage({ view }: Props) {
           </div>
         </div>
       )}
+      </div>
+
+      {/* 飞行层必须挂在舞台之外：舞台内若有 transform 祖先，
+          position:fixed 会退化为相对定位，实测屏幕坐标会全部失效。 */}
+      <FlightLayer flights={stage.flights} simplified={stage.simplifiedFlights} />
     </TabletopShell>
   );
 }
