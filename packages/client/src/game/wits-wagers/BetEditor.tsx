@@ -64,7 +64,7 @@ export function BetEditor({
       </div>
 
       {/* 钞票托盘：也是钞票飞出/飞回的动画锚点 */}
-      <div className="ww-bet-editor__chip-tabs" data-ww-anchor="tray">
+      <div className="ww-bet-editor__chip-tabs" data-stage-anchor="tray">
         {(['A', 'B'] as const).map((cid) => {
           const chip = draft[cid === 'A' ? 0 : 1];
           const isActive = cid === activeChipId;

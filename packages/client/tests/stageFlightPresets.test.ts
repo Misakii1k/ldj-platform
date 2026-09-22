@@ -8,14 +8,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   FLIGHT_STYLES,
-  buildNotePoses,
-  noteStagger,
+  buildFlightPoses,
+  flightStagger,
   pickFlightStyles,
   poseKeyframes,
   shadeKeyframes,
   shadowKeyframes,
   sheenKeyframes,
-} from '../src/game/wits-wagers/stage/noteFlight.ts';
+} from '../src/shared-ui/stage/flightPresets.ts';
 
 const FROM = { x: 100, y: 700, width: 56, height: 30 };
 const TO = { x: 220, y: 300, width: 44, height: 24 };
@@ -30,14 +30,14 @@ function seeded(seed: number): () => number {
 }
 
 function poses(styleIndex: number, index = 0) {
-  return buildNotePoses({
+  return buildFlightPoses({
     from: FROM,
     to: TO,
     style: FLIGHT_STYLES[styleIndex]!,
     index,
     arc: 80,
-    noteWidth: 56,
-    noteHeight: 30,
+    pieceWidth: 56,
+    pieceHeight: 30,
     random: seeded(7 + styleIndex),
   });
 }
@@ -123,9 +123,9 @@ test('noteFlight: 叠内序号产生落点错位，钞票堆成一小摞而非�
 });
 
 test('noteFlight: 错峰间隔随张数收紧，但不会压到 0', () => {
-  assert.equal(noteStagger(1000, 600, 1), 0, '只有一张时无需错峰');
-  const few = noteStagger(1800, 640, 3);
-  const many = noteStagger(1800, 640, 20);
+  assert.equal(flightStagger(1000, 600, 1), 0, '只有一张时无需错峰');
+  const few = flightStagger(1800, 640, 3);
+  const many = flightStagger(1800, 640, 20);
   assert.ok(many < few, '张数越多间隔越小');
   assert.ok(many >= 18, '间隔不得压到 0，否则整叠同时起飞');
   assert.ok(few <= 70, '间隔有上限，否则整叠飞不完');

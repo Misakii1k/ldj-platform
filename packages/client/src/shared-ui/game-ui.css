@@ -1204,3 +1204,241 @@ html[data-motion-level='off'] .tabletop-event-overlay__card {
   color: var(--gp-ink);
   box-shadow: var(--gp-shadow-lg);
 }
+
+/* ===================================================================
+ * 9. 演出层（shared-ui/stage/）
+ *
+ * 三块共享配方：飞行幽灵层、阶段倒计时进度环、3D 透视毡面。
+ * 来源是一智千金打磨后的实现，上提供其余游戏复用。
+ * =================================================================== */
+
+/* --- 飞行幽灵层 ------------------------------------------------------
+ * 这一层刻意挂在牌桌外壳之外（无 transform 祖先），
+ * 否则 position:fixed 会相对祖先定位，实测屏幕坐标失效。
+ *
+ * 层本身是一个 3D 上下文：飞行物靠 translateZ 朝镜头靠近产生真实的
+ * 近大远小（最高点约 1.4×），而不是用 scale 假装。perspective 的数值
+ * 必须与 flightPresets.ts 的 FLIGHT_PERSPECTIVE 保持一致。 */
+.stage-flight-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  pointer-events: none;
+  overflow: hidden;
+  perspective: 700px;
+  perspective-origin: 50% 40%;
+  transform-style: preserve-3d;
+}
+
+.stage-flight__ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+  transform-style: preserve-3d;
+}
+
+/* 纸片是薄的：翻到背面要能看见背面而不是被裁掉 */
+.stage-flight__ghost svg {
+  backface-visibility: visible;
+}
+
+/* 翻到背面时压暗 */
+.stage-flight__shade {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 翻转经过侧面时一道高光扫过 */
+.stage-flight__sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.45) 50%, transparent 70%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 地面阴影：留在桌面上，越高越淡越散，所以和飞行物分开成一层 */
+.stage-flight__shadow {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 44px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.45), transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* 低动效档位：不飞行，只留结果。 */
+html[data-motion-level="minimal"] .stage-flight-layer,
+html[data-motion-level="off"] .stage-flight-layer {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-flight-layer {
+    display: none;
+  }
+}
+
+/* --- 阶段倒计时进度环 ------------------------------------------------
+ * 独立成大号数字 + 进度环：原先它挤在阶段横幅的一行小字里，看不见。
+ * 只在需要玩家行动的阶段出现。尺寸可由各游戏用 --stage-countdown-size
+ * 覆盖（布局量，不含颜色）。 */
+.stage-countdown {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--stage-countdown-size, 3.25rem);
+  height: var(--stage-countdown-size, 3.25rem);
+  display: grid;
+  place-items: center;
+  color: var(--game-ink);
+}
+
+.stage-countdown__ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* 12 点方向起笔、顺时针走完 */
+  transform: rotate(-90deg);
+}
+
+.stage-countdown__track,
+.stage-countdown__bar {
+  fill: none;
+  stroke-width: 4;
+}
+
+.stage-countdown__track {
+  stroke: var(--game-line);
+}
+
+.stage-countdown__bar {
+  /* 主题深色：随外壳主题走（--game-dark 由 styles.css 的各 theme 段定义） */
+  stroke: var(--game-dark, var(--gp-green-dark));
+  stroke-linecap: round;
+  transition: stroke-dashoffset 200ms linear, stroke var(--gp-dur-fast) ease;
+}
+
+.stage-countdown__value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  font-size: var(--stage-countdown-font, 1.375rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* 最后 10 秒：变红。低动效档位也保留这个提示，因为它是信息而非装饰。 */
+.stage-countdown[data-urgent='true'] .stage-countdown__bar {
+  stroke: var(--game-coral);
+}
+
+.stage-countdown[data-urgent='true'] .stage-countdown__value {
+  color: var(--game-coral);
+}
+
+/* 脉冲只在 full/reduced 档开启，由组件判断后加 data-pulsing */
+.stage-countdown[data-pulsing='true'] .stage-countdown__value {
+  animation: stage-countdown-pulse 1s var(--gp-ease-standard) infinite;
+}
+
+@keyframes stage-countdown-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  18% {
+    transform: scale(1.14);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+html[data-motion-level='minimal'] .stage-countdown[data-pulsing='true'] .stage-countdown__value,
+html[data-motion-level='off'] .stage-countdown[data-pulsing='true'] .stage-countdown__value {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-countdown[data-pulsing='true'] .stage-countdown__value {
+    animation: none;
+  }
+  .stage-countdown__bar {
+    transition: none;
+  }
+}
+
+/* --- 3D 透视毡面 -----------------------------------------------------
+ * 只给有飞行道具的游戏启用。透视只作用在这一层：飞行层与幽灵层必须留在
+ * 这棵子树之外，否则 position:fixed 会被祖先 transform 变成相对定位。
+ *
+ * 配色由各游戏给 --stage-felt-a / -b / --stage-felt-rail 三个变量。
+ * 兜底一律走 --gp-* 令牌：共享层不承载任何一款游戏的主题色。 */
+.stage-felt-3d {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--gp-dist-lg) var(--gp-dist-md);
+  border-radius: var(--gp-radius-lg);
+  border: 3px solid var(--stage-felt-rail, var(--gp-ink));
+  background:
+    repeating-linear-gradient(35deg, rgba(255, 255, 255, 0.035) 0 2px, transparent 2px 7px),
+    radial-gradient(
+      circle at 50% 30%,
+      var(--stage-felt-a, var(--gp-green)) 0%,
+      var(--stage-felt-b, var(--gp-green-dark)) 100%
+    );
+  box-shadow:
+    0 6px 0 var(--stage-felt-rail, var(--gp-ink)),
+    inset 0 0 44px rgba(0, 0, 0, 0.42);
+  perspective: var(--stage-felt-perspective, 900px);
+  perspective-origin: 50% 12%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 桌面上的道具统一用这个倾角，改一处全桌一致 */
+.stage-felt-3d__plane {
+  transform: rotateX(var(--stage-felt-tilt, 16deg));
+  transform-style: preserve-3d;
+}
+
+/* 窄屏与横屏矮视口：压平透视，给道具让出垂直空间 */
+@media (max-width: 380px) {
+  .stage-felt-3d {
+    justify-content: flex-start;
+  }
+  .stage-felt-3d__plane {
+    --stage-felt-tilt: 12deg;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .stage-felt-3d {
+    padding: var(--gp-dist-md);
+  }
+  .stage-felt-3d__plane {
+    --stage-felt-tilt: 8deg;
+  }
+}
+
+/* 低动效档位：取消倾角，避免透视带来的视觉位移 */
+html[data-motion-level="off"] .stage-felt-3d__plane {
+  transform: none;
+}

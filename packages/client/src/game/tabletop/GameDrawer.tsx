@@ -8,9 +8,11 @@ interface GameDrawerProps {
   readonly triggerRef: RefObject<HTMLElement | null>;
   readonly onClose: () => void;
   readonly children: ReactNode;
+  /** 各游戏的抽屉专属修饰类，挂在 aside 上 */
+  readonly className?: string;
 }
 
-export function GameDrawer({ kind, title, triggerRef, onClose, children }: GameDrawerProps) {
+export function GameDrawer({ kind, title, triggerRef, onClose, children, className }: GameDrawerProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -29,7 +31,11 @@ export function GameDrawer({ kind, title, triggerRef, onClose, children }: GameD
       }}
     >
       <aside
-        className={`tabletop-drawer tabletop-drawer--${kind}`}
+        className={
+          className
+            ? `tabletop-drawer tabletop-drawer--${kind} ${className}`
+            : `tabletop-drawer tabletop-drawer--${kind}`
+        }
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { useMotion } from '../../../motion/MotionContext.tsx';
-import { playTickCue } from './audioCues.ts';
+import { useMotion } from '../../motion/MotionContext.tsx';
+import { webAudio } from '../WebAudioManager.ts';
 
-export interface WitsCountdownProps {
+export interface StageCountdownRingProps {
   /** 服务端给的截止时刻；null 表示当前阶段不计时 */
   readonly deadlineAt: number | null;
   /** 阶段标识：变化时重新测量本阶段的总时长 */
   readonly phaseKey: string;
   /** 是否显示。纯展示阶段（排牌、结算）不需要催促玩家行动 */
   readonly active: boolean;
+  /** 额外类名：各游戏可挂自己的尺寸/配色修饰 */
+  readonly className?: string;
 }
 
 const RADIUS = 26;
@@ -25,17 +27,30 @@ function formatRemaining(sec: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+function playTickCue(): void {
+  try {
+    webAudio.playTick();
+  } catch {
+    // 音频上下文尚未解锁等情况不应打断演出
+  }
+}
+
 /**
- * 阶段倒计时。
+ * 阶段倒计时进度环（共享版，从 wits-wagers/stage/WitsCountdown.tsx 上提）。
  *
- * 原先倒计时藏在阶段横幅的一行小字里（"把两枚筹码押到你看好的槽位 · 剩余 00:30"），
+ * 原先各游戏的倒计时藏在阶段横幅的一行小字里（"…… · 剩余 00:30"），
  * 信息冗余且看不见。这里独立成一个大号数字 + 进度环。
  *
  * 阶段总时长不从配置读——客户端拿不到服务端 config，而且老房间的时长可能不同。
  * 改为在首次见到某个 deadlineAt 时测一次"还剩多少"，把它当作满格，
  * 这样进度环对任何时长都自适应，刷新重连也只是从当时的剩余量重新满格计算。
  */
-export function WitsCountdown({ deadlineAt, phaseKey, active }: WitsCountdownProps) {
+export function StageCountdownRing({
+  deadlineAt,
+  phaseKey,
+  active,
+  className,
+}: StageCountdownRingProps) {
   const { level } = useMotion();
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
 
@@ -90,17 +105,17 @@ export function WitsCountdown({ deadlineAt, phaseKey, active }: WitsCountdownPro
 
   return (
     <div
-      className="ww-countdown"
+      className={className ? `stage-countdown ${className}` : 'stage-countdown'}
       data-urgent={urgent ? 'true' : undefined}
       data-pulsing={pulsing ? 'true' : undefined}
       role="timer"
       aria-live="off"
       aria-label={`本阶段剩余 ${sec} 秒`}
     >
-      <svg className="ww-countdown__ring" viewBox="0 0 60 60" aria-hidden="true" focusable="false">
-        <circle className="ww-countdown__track" cx="30" cy="30" r={RADIUS} />
+      <svg className="stage-countdown__ring" viewBox="0 0 60 60" aria-hidden="true" focusable="false">
+        <circle className="stage-countdown__track" cx="30" cy="30" r={RADIUS} />
         <circle
-          className="ww-countdown__bar"
+          className="stage-countdown__bar"
           cx="30"
           cy="30"
           r={RADIUS}
@@ -108,7 +123,7 @@ export function WitsCountdown({ deadlineAt, phaseKey, active }: WitsCountdownPro
           strokeDashoffset={CIRCUMFERENCE * (1 - ratio)}
         />
       </svg>
-      <span className="ww-countdown__value">{formatRemaining(sec)}</span>
+      <span className="stage-countdown__value">{formatRemaining(sec)}</span>
     </div>
   );
 }

@@ -792,95 +792,14 @@
 }
 
 /* ===================================================================
- * 阶段倒计时
- * 独立成大号数字 + 进度环：原先它挤在阶段横幅的一行小字里，看不见。
- * 只在需要玩家行动的阶段出现（作答/下注）。
+ * 阶段倒计时：进度环本体已上提到 shared-ui/stage（.stage-countdown）。
+ * 这里只保留本游戏的字号缩放挂钩 —— 一智千金的整体字号受 --ww-font-scale
+ * 控制，共享层的默认 rem 值需要跟着缩放。
  * =================================================================== */
 
 .ww-countdown {
-  position: relative;
-  flex: 0 0 auto;
-  width: calc(3.25rem * var(--ww-font-scale));
-  height: calc(3.25rem * var(--ww-font-scale));
-  display: grid;
-  place-items: center;
-  color: var(--game-ink, #292722);
-}
-
-.ww-countdown__ring {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  /* 12 点方向起笔、顺时针走完 */
-  transform: rotate(-90deg);
-}
-
-.ww-countdown__track,
-.ww-countdown__bar {
-  fill: none;
-  stroke-width: 4;
-}
-
-.ww-countdown__track {
-  stroke: var(--game-line, rgba(41, 39, 34, 0.16));
-}
-
-.ww-countdown__bar {
-  stroke: var(--game-dark, #115665);
-  stroke-linecap: round;
-  transition: stroke-dashoffset 200ms linear, stroke var(--gp-dur-fast, 140ms) ease;
-}
-
-.ww-countdown__value {
-  font-variant-numeric: tabular-nums;
-  font-weight: 800;
-  font-size: calc(1.375rem * var(--ww-font-scale));
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-
-/* 最后 10 秒：变红。低动效档位也保留这个提示，因为它是信息而非装饰。 */
-.ww-countdown[data-urgent='true'] .ww-countdown__bar {
-  stroke: var(--game-coral, #c23616);
-}
-
-.ww-countdown[data-urgent='true'] .ww-countdown__value {
-  color: var(--game-coral, #c23616);
-}
-
-/* 脉冲只在 full/reduced 档开启，由组件判断后加 data-pulsing。
-   不登记进 game-ui.css 的全局环境动画清单——那份清单要求选择器出现在
-   styles.css，而本类只存在于这个游戏的私有样式表。 */
-.ww-countdown[data-pulsing='true'] .ww-countdown__value {
-  animation: ww-countdown-pulse 1s var(--gp-ease-standard, ease-in-out) infinite;
-}
-
-@keyframes ww-countdown-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  18% {
-    transform: scale(1.14);
-  }
-  40% {
-    transform: scale(1);
-  }
-}
-
-html[data-motion-level='minimal'] .ww-countdown[data-pulsing='true'] .ww-countdown__value,
-html[data-motion-level='off'] .ww-countdown[data-pulsing='true'] .ww-countdown__value {
-  animation: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ww-countdown[data-pulsing='true'] .ww-countdown__value {
-    animation: none;
-  }
-  .ww-countdown__bar {
-    transition: none;
-  }
+  --stage-countdown-size: calc(3.25rem * var(--ww-font-scale));
+  --stage-countdown-font: calc(1.375rem * var(--ww-font-scale));
 }
 
 .ww-stage__rail .ww-question-card {
@@ -1324,79 +1243,18 @@ html[data-motion-level="off"] .ww-answer-card[role="button"]:hover {
 }
 
 /* ===================================================================
- * 演出层：飞行幽灵、积分滚动
- * 这一层刻意挂在牌桌外壳之外（无 transform 祖先），
- * 否则 position:fixed 会相对祖先定位，实测屏幕坐标失效。
+ * 演出层：飞行幽灵层已上提到 shared-ui/stage（.stage-flight-layer 及其
+ * 子层、低动效降级、perspective 与 FLIGHT_PERSPECTIVE 的对齐）。
+ * 这里只留本游戏的道具补充。
  * =================================================================== */
 
-/* 飞行层本身是一个 3D 上下文：钞票靠 translateZ 朝镜头靠近产生真实的
-   近大远小（最高点约 1.4×），而不是用 scale 假装。perspective 的数值必须
-   与 noteFlight.ts 的 FLIGHT_PERSPECTIVE 保持一致。 */
-.ww-flight-layer {
-  position: fixed;
-  inset: 0;
-  z-index: 55;
-  pointer-events: none;
-  overflow: hidden;
-  perspective: 700px;
-  perspective-origin: 50% 40%;
-  transform-style: preserve-3d;
-}
-
-.ww-flight__ghost {
-  position: fixed;
-  left: 0;
-  top: 0;
-  pointer-events: none;
-  will-change: transform, opacity;
-  transform-style: preserve-3d;
-}
-
 /* 钞票是薄纸片：翻到背面要能看见背面而不是被裁掉 */
-.ww-flight__ghost .ww-note {
+.stage-flight__ghost .ww-note {
   display: block;
   filter: none;
 }
 
-.ww-flight__ghost .ww-note svg {
-  backface-visibility: visible;
-}
-
-/* 翻到背面时压暗 */
-.ww-flight__shade {
-  position: absolute;
-  inset: 0;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.35);
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* 翻转经过侧面时一道高光扫过 */
-.ww-flight__sheen {
-  position: absolute;
-  inset: 0;
-  border-radius: 6px;
-  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.45) 50%, transparent 70%);
-  mix-blend-mode: screen;
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* 地面阴影：留在桌面上，越高越淡越散，所以和钞票分开成一层 */
-.ww-flight__shadow {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 44px;
-  height: 20px;
-  border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.45), transparent 70%);
-  opacity: 0;
-  pointer-events: none;
-  will-change: transform, opacity;
-}
-
+/* 交牌的那张背面牌：普通放置，靠软投影交代离桌高度 */
 .ww-flight__ghost--card {
   filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.42));
 }
@@ -1404,16 +1262,4 @@ html[data-motion-level="off"] .ww-answer-card[role="button"]:hover {
 .ww-score-ticker {
   font-variant-numeric: tabular-nums;
   font-weight: 800;
-}
-
-/* 低动效档位：不飞行，只留结果。 */
-html[data-motion-level="minimal"] .ww-flight-layer,
-html[data-motion-level="off"] .ww-flight-layer {
-  display: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ww-flight-layer {
-    display: none;
-  }
 }

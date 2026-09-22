@@ -1,0 +1,118 @@
+# 交接状态：其余游戏前端提升
+
+更新时间：2026-09-22（U01 完成）。工作区 `D:\项目`，分支 `feat/wits-wagers-tabletop-stage`，基线 HEAD `f16a70d`。
+
+## 当前结论
+
+G0 五项决策已全部由用户点选确认。**U00 基线、U01 shared-ui 上提均已完成。** 原先的并行会话阻塞已解除（该会话已停止运行），但它在工作区留下了一批未完成改动，见「工作区现状」。
+
+下一张卡是 U02（night-testimony stage）。P1 三款视觉契约已在 `contracts/`，开工前请用户先审一遍。
+
+## 工作区现状（非本计划引入）
+
+另一会话留下的未提交半成品仍在工作区里，本计划**不负责也不应替它收尾**：
+
+- `ModeratorVoicePanel.tsx` / `resultRoster.ts` 两个 untracked 孤儿文件（无引用），带 10 个 typecheck 错误，依赖尚未落地的 `ConnectionSnapshot.clockSample` 与 `reveal.playerId/alive/avatar`。
+- 24 项单测失败（serverClock / seatDrift / 模糊对抗 / Progression View Audit 等），同源。
+- 视口合约 6 个 `*-sim` 用例失败：服务端新增「桌面模拟需至少一台公共大屏」校验，spec 的 `seedRoom` 未 seed 大屏席位。
+- 视口合约 + 动效合约的 werewolf 用例失败：werewolf 页面结构被改动，`readySelector` 再次失配。
+
+**排除这两个孤儿文件后，客户端 typecheck 0 错误。** 后续任务卡的验收基准以此为准，只要求「不新增失败」。
+
+## 红线补充：不要用 git stash 做基线对比
+
+这个工作区的 untracked 文件太多，`git stash pop` 的还原语义不可靠（U01 过程中曾因此回退掉已完成的改动）。要对比基线请用：
+
+```bash
+git worktree add /tmp/ldj-probe f16a70d
+```
+
+用完 `git worktree remove /tmp/ldj-probe --force`。
+
+## G0 决策记录（2026-09-22）
+
+| 编号 | 议题 | 决策 |
+|---|---|---|
+| G0-1 | 视觉方向 | 浅色纸感 + 局部暗角；不做整局深色主题 |
+| G0-2 | 优先顺序 | 简陋优先：night-testimony → echo-judge → bell-clash → goose-relay → undercover → uno → loveletter → cheese-thief → landlord |
+| G0-3 | 3D 预算 | 只给有飞行道具的 5 款：bell-clash / goose-relay / uno / loveletter / landlord |
+| G0-4 | 榴莲 | 本轮不动 `--d-*` 与自建外壳 |
+| G0-5 | 截图基线 | git checkout 还原当前覆写 PNG，U00 重截供审阅 |
+
+详见 `README.md` §6。
+
+## 任务卡进度
+
+| 卡 | 内容 | 状态 |
+|---|---|---|
+| U00 | 基线：全量门 + 9 款样张 | **已完成**（`reports/U00-baseline.md`）。其中榴莲/狼人杀的 e2e 选择器修正已在工作区生效 |
+| U01 | shared-ui 上提（StageCountdownRing / useStageMachine / FlightLayer / flip / stageMemory / felt-3d） | **已完成**（`reports/U01-shared-ui-stage.md`）。一智千金已切换，46/46 单测通过，视口与动效合约零回归 |
+| U02 | night-testimony stage（平面 + 夜间暗角） | 契约已写（`contracts/night-testimony.md`），待实现 |
+| U03 | echo-judge stage（平面 + 判定暗角） | 契约已写（`contracts/echo-judge.md`），待实现 |
+| U04 | bell-clash stage（3D）+ CSS 迁出 | 契约已写（`contracts/bell-clash.md`），待实现 |
+| U05 | goose-relay stage（3D） | 未开始 |
+| U06 | undercover classic 收编（平面） | 未开始 |
+| U07 | uno stage（3D）+ legacy 删除 | 未开始 |
+| U08 | loveletter 拆分 + stage（3D） | 未开始 |
+| U09 | cheese-thief stage 接入（平面） | 未开始 |
+| U10 | landlord 抽出 + stage（3D） | 未开始 |
+| U11 | styles.css 瘦身核对 + 最终验收 | 未开始 |
+
+## U02–U04 开工前必须先解决的前置
+
+调查已确认三款共同的硬前置（详见下一节「P1 三款调查结论」）：
+
+**三款都拿不到 `deadlineAt`。** 服务端六类 timer（`nt-question`/`nt-vote`、`answerSeconds`/`judgmentSeconds`、`turnSeconds`/`bellSeconds`）全部存在且生效，但三个 PublicView 都没暴露截止时刻。客户端解析器用 `hasExactKeys` 做**键数相等**校验，加字段必须三处同步改：服务端 `views.ts` 的 zod schema、客户端 `types.ts` 的 interface、`PUBLIC_KEYS` 数组。这是 `StageCountdownRing` 上屏的唯一前置条件，一智千金已有 `deadlineAt: number | null` 可直接参照。
+
+## P1 三款调查结论（2026-09-22）
+
+### night-testimony 囚徒之夜（平面）
+
+- 阶段：`question → vote → game_over`。**`'deduction'` 是死值**——服务端 `rules.ts` 从未赋过它，页面的「推理辩论」分支与 `usePhaseEventOverlay` 里 `deduction` 的「审讯结束」盖印**永远不会触发**。另有正交的 `guessingInProgress` 布尔支线（狱警猜罪），不是 phase。
+- 外壳：`TabletopShell theme="mystery"` → `TabletopOvalShell`。骨架单列纵向 flex，**四个 ArenaBoard 条件互斥渲染**（不是一个 board 换内容）。
+- 动效：仅 1 个 keyframe（`testimonyWarnPulse`）。**零音效、零震动。**
+- CSS：`night-testimony.css` 仅 51 行，真正的样式在 `styles.css` 里（`^.testimony|^.nt-` 共 116 条规则）。
+
+### echo-judge 伪人测试（平面）
+
+- 阶段：`judge_setup → answering → judgment → game_over`，**四值全部可达**。`judge_setup` 是两类玩家并行操作（审判长选题 / 其余人自由切阵营）；`judgment` 的 `accuse` 可多选也可提交空数组。
+- 外壳：`TabletopShell theme="court"`，`stageFit="arena"`。**三款里唯一的响应式双栏**（宽屏 `grid-template-areas: "side main"`）。
+- 动效：**零 keyframe、零音效、零震动。** 进度条是 inline width 过渡。
+- CSS：`echo-judge.css` 96 行纯布局，`styles.css` 里 46 条。
+
+### bell-clash Ding（3D）
+
+- 阶段：只有 `playing | game_over`，**无真正的阶段机**。状态由三个正交字段承载：`currentPlayerId` / `bellOpen` / `bellClaimantId`。
+- 外壳：**与另两款完全不同**——直接用 `TabletopOvalShell`（不经 `TabletopShell`），`stageFit="safe"`，带 `phaseBannerText`。不使用 ArenaBoard / ArenaRail / SeatTargetPicker / ActionDock / IdentityFlipCard 中的任何一个，改用 `CardFanEngine` + 自绘案台，与 UNO 同构（复用 `.uno-*` 类）。
+- 动效：**三款里唯一有完整感官层**——7 个 keyframes、5 个音效（`playTurnAlert`/`playBuzzer`/`playCardPlay`/`playDealCards`/`playVictory`）、3 种震动节奏、直调 `TabletopEventOverlay`。
+- **抢铃窗口是 `StageCountdownRing` 最有价值的落点**：玩家现在完全不知道窗口还剩多久。
+- CSS：无独立文件，全在 `styles.css`（`^.bell|^.ding` 共 80 条，集中在 5298–6014 行）。
+
+### 改 DOM 前必读：e2e 硬编码类名
+
+1. **`.tabletop-shell`** — 最关键。三款在 viewport-contract 与 motion-contract 都用它作 `readySelector`，bell-clash 专属 spec 也等它。它由 `TabletopOvalShell` 渲染，改根类名会同时炸掉 6 个 spec。
+2. **`.testimony-private`** — `night-testimony-tabletop.spec.ts:111` 的可见性断言，三款里唯一的游戏专属类名断言。
+3. **`.action-dock button`** — NT spec 按索引取 `.nth(1)`，对 ActionDock 内按钮顺序有位置依赖。
+4. **已失效的断言（死代码，靠 `.catch(() => false)` 吞掉）**：`.testimony-over`（实际是 `.testimony-over-stage`）、`.goose-transmit__input`（以鹅传鹅遗留）；`getByRole` 的 `'回答 YES'`/`'回答 NO'`/`'提交猜罪'` 与页面当前 label（`'回答「是」(YES)'` 等）**已对不上**。NT 的浏览器侧驱动现在基本全靠 Node 侧三个座位把局推完。
+5. motion-contract 扫描全页要求 reduced/off 档下任何元素 `animation-duration` ≤ 0.5s。bell-clash 那 7 个 infinite keyframes 必须能被门控住，新增 keyframes 时这是硬约束。
+
+### 两处需要在视觉契约里拍板的不一致
+
+- **shell theme 与 catalog accent 三款全部不一致**：mystery/violet、court/sunset、sunset/berry。且 echo-judge 的 catalog accent(sunset) 与 bell-clash 的 shell theme(sunset) 撞名但语义无关。
+- **两条外壳路线**：NT/echo-judge 走 `TabletopShell` 的「竞技场」语汇；bell-clash 走 `TabletopOvalShell` 的「牌桌」语汇。`TabletopShell` 只是 OvalShell 的薄封装，且带一段按 title 关键字猜 theme 的历史兜底逻辑。
+
+## 未完成（不能宣称已验证）
+
+- U02–U11 共 10 张卡的实现与验收。
+- P1 三款的视觉契约已写，但尚未经用户审核。
+- 9 款关键画面样张尚未产出，更未经用户审核。
+
+## 红线（每张卡都适用）
+
+- 只用 `--gp-*` / `--game-*` 令牌；局部变量只允许布局量，不允许颜色。共享层（`game-ui.css`）禁止写裸主题色——`classContracts` 测试会拦。
+- 断点白名单：宽 380/480/640/768/1024/1280，高 520/620。
+- 动效只动 transform/opacity，遵守 `html[data-motion-level]` 四档。
+- 每视口单一黄色 CTA；禁全屏忙碌遮罩。
+- 改样式必查手机 + 桌面两分辨率；改完跑 typecheck；e2e 前同步 dist（e2e 跑的是构建产物）。
+- 不通过自动重试、删断言、改截图基准来假装通过。
+- 不用 git stash 做基线对比，改用 git worktree。

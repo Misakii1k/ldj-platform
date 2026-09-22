@@ -63,7 +63,7 @@ export function WitsAnswerCard({
       className={classes}
       data-slot={target?.slot}
       data-target-id={target?.id}
-      data-ww-anchor={target ? `target:${target.id}` : undefined}
+      data-stage-anchor={target ? `target:${target.id}` : undefined}
       style={{ ['--ww-reveal-index' as string]: String(revealIndex) }}
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}

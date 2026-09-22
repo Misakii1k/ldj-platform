@@ -1,25 +1,28 @@
 /**
- * 钞票飞行：五种飞行"性格" + 真 3D 景深。
+ * 飞行预设：五种飞行"性格" + 真 3D 景深。共享版。
  *
- * 为什么是预设性格而不是物理模拟：钞票必须在服务端给的阶段时长内准确落到
- * 目标槽位，模拟求解落点既不稳也难压时长。这里改成每张随机抽一种预设轨迹，
+ * 为什么是预设性格而不是物理模拟：飞行物必须在服务端给的阶段时长内准确落到
+ * 目标位置，模拟求解落点既不稳也难压时长。这里改成每件随机抽一种预设轨迹，
  * 靠"性格各异 + 参数随机 + 同叠不连抽同种"来避免整叠齐刷刷的假象。
  *
- * 纸张感的来源：
+ * 纸张 / 卡牌感的来源：
  * - 绕 X 轴翻面（翻到背面压暗、翻回正面高光扫过）与绕 Z 轴摇摆；
  * - 近大远小：以离桌高度映射 translateZ，由飞行层的 perspective 自然放大，
  *   不是假的 scale；
  * - 地面阴影单独一层留在桌面上，越高越淡越散。
+ *
+ * 本文件从 wits-wagers/stage/noteFlight.ts 上提。泛化改动只有命名：
+ * note* → piece*（任何飞行物：钞票、牌、令牌、鹅卡），几何与关键帧逻辑未动。
  */
 
 import type { Rect } from './flip.ts';
 
-/** 飞行层的透视距离，必须与 .ww-flight-layer 的 perspective 一致 */
+/** 飞行层的透视距离，必须与 .stage-flight-layer 的 perspective 一致 */
 export const FLIGHT_PERSPECTIVE = 700;
 /** 离桌高度 → translateZ 的换算；最高点约放大 1.4~1.5× */
 const Z_PER_PX = 0.9;
 
-export interface NoteFlightPose {
+export interface FlightPose {
   /** 屏幕坐标（左上角），已含落点错位与横向飘移 */
   readonly x: number;
   readonly y: number;
@@ -61,7 +64,7 @@ export interface FlightStyle {
 }
 
 /**
- * 五种飞行性格。每张钞票随机抽一种，同一叠里混着飞才像自然散落。
+ * 五种飞行性格。每件飞行物随机抽一种，同一叠里混着飞才像自然散落。
  */
 export const FLIGHT_STYLES: readonly FlightStyle[] = [
   {
@@ -183,8 +186,8 @@ export const FLIGHT_STYLES: readonly FlightStyle[] = [
 ];
 
 /**
- * 给一叠钞票分配飞行性格：同一叠里不连续抽到同一种，
- * 否则相邻两张的轨迹几乎重合，一眼就看出是复制的。
+ * 给一叠飞行物分配飞行性格：同一叠里不连续抽到同一种，
+ * 否则相邻两件的轨迹几乎重合，一眼就看出是复制的。
  */
 export function pickFlightStyles(count: number, random: () => number = Math.random): FlightStyle[] {
   const out: FlightStyle[] = [];
@@ -208,28 +211,28 @@ export interface BuildPosesOptions {
   readonly index: number;
   /** 抛物线拱高基准（px） */
   readonly arc: number;
-  readonly noteWidth: number;
-  readonly noteHeight: number;
+  readonly pieceWidth: number;
+  readonly pieceHeight: number;
   /** 采样点数：36 帧足够平滑，又不会让关键帧数组过大 */
   readonly steps?: number;
   readonly random?: () => number;
 }
 
 /**
- * 按性格把一张钞票的整条轨迹采成关键帧姿态。
+ * 按性格把一件飞行物的整条轨迹采成关键帧姿态。
  *
  * 起终点都用屏幕坐标（getBoundingClientRect 的投影），所以飞行层必须在
  * 3D 变换祖先之外——否则 fixed 定位会退化，落点全错。
  */
-export function buildNotePoses(options: BuildPosesOptions): NoteFlightPose[] {
+export function buildFlightPoses(options: BuildPosesOptions): FlightPose[] {
   const {
     from,
     to,
     style,
     index,
     arc,
-    noteWidth,
-    noteHeight,
+    pieceWidth,
+    pieceHeight,
     steps = 36,
     random = Math.random,
   } = options;
@@ -245,21 +248,21 @@ export function buildNotePoses(options: BuildPosesOptions): NoteFlightPose[] {
   const dy = by - ay;
   const dist = Math.hypot(dx, dy);
 
-  // 落点错位：同叠的钞票不落在同一点，堆成一小摞。
-  // 错位序列以 0 开头（0, +5, -5, …），这样单张飞行落点正中目标，
-  // 不会因为"叠内第一张"就先偏出去 5px。
+  // 落点错位：同叠的飞行物不落在同一点，堆成一小摞。
+  // 错位序列以 0 开头（0, +5, -5, …），这样单件飞行落点正中目标，
+  // 不会因为"叠内第一件"就先偏出去 5px。
   const ox = (((index + 1) % 3) - 1) * 5;
   const oy = -index * 2.5;
   // 抛得越远抬得越高
   const lift = arc * r(0.85, 1.15) + dist * 0.08;
 
-  const poses: NoteFlightPose[] = [];
+  const poses: FlightPose[] = [];
   for (let s = 0; s <= steps; s += 1) {
     const t = s / steps;
     const p = sample(t);
     const height = p.height * lift;
-    const x = ax + dx * p.move - noteWidth / 2 + ox * t + p.sway;
-    const y = ay + dy * p.move - noteHeight / 2 + oy * t - height;
+    const x = ax + dx * p.move - pieceWidth / 2 + ox * t + p.sway;
+    const y = ay + dy * p.move - pieceHeight / 2 + oy * t - height;
     const z = Math.max(0, p.depth) * lift * Z_PER_PX;
 
     poses.push({
@@ -271,18 +274,18 @@ export function buildNotePoses(options: BuildPosesOptions): NoteFlightPose[] {
       rotZ: p.rotZ,
       lift: Math.min(1, Math.max(0, p.height)),
       // 阴影留在桌面：只跟平面位移与部分飘移，不跟抬升
-      shadowX: ax + dx * p.move - noteWidth / 2 + ox * t + p.sway * 0.6,
-      shadowY: ay + dy * p.move - noteHeight * 0.4 + oy * t + 6,
+      shadowX: ax + dx * p.move - pieceWidth / 2 + ox * t + p.sway * 0.6,
+      shadowY: ay + dy * p.move - pieceHeight * 0.4 + oy * t + 6,
       offset: t,
     });
   }
 
-  // 末帧钉死到目标，避免累积误差让钞票停在半空
+  // 末帧钉死到目标，避免累积误差让飞行物停在半空
   const last = poses[poses.length - 1]!;
   poses[poses.length - 1] = {
     ...last,
-    x: bx - noteWidth / 2 + ox,
-    y: by - noteHeight / 2 + oy,
+    x: bx - pieceWidth / 2 + ox,
+    y: by - pieceHeight / 2 + oy,
     z: 0,
     rotX: 0,
     rotY: 0,
@@ -293,8 +296,8 @@ export function buildNotePoses(options: BuildPosesOptions): NoteFlightPose[] {
   return poses;
 }
 
-/** 姿态序列 → 钞票本体的 WAAPI 关键帧。 */
-export function poseKeyframes(poses: readonly NoteFlightPose[]): Keyframe[] {
+/** 姿态序列 → 飞行物本体的 WAAPI 关键帧。 */
+export function poseKeyframes(poses: readonly FlightPose[]): Keyframe[] {
   return poses.map((p) => ({
     transform:
       `translate3d(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px, ${p.z.toFixed(1)}px) ` +
@@ -304,8 +307,8 @@ export function poseKeyframes(poses: readonly NoteFlightPose[]): Keyframe[] {
   }));
 }
 
-/** 背面压暗：钞票翻过去的时候不该还是正面那么亮。 */
-export function shadeKeyframes(poses: readonly NoteFlightPose[]): Keyframe[] {
+/** 背面压暗：飞行物翻过去的时候不该还是正面那么亮。 */
+export function shadeKeyframes(poses: readonly FlightPose[]): Keyframe[] {
   return poses.map((p) => {
     const facing = Math.cos((p.rotX * Math.PI) / 180) * Math.cos((p.rotY * Math.PI) / 180);
     return { opacity: facing < 0 ? 0.45 : 0, offset: p.offset };
@@ -313,7 +316,7 @@ export function shadeKeyframes(poses: readonly NoteFlightPose[]): Keyframe[] {
 }
 
 /** 高光：翻转到接近侧面时一道光扫过。 */
-export function sheenKeyframes(poses: readonly NoteFlightPose[]): Keyframe[] {
+export function sheenKeyframes(poses: readonly FlightPose[]): Keyframe[] {
   return poses.map((p) => {
     const rx = (p.rotX * Math.PI) / 180;
     const ry = (p.rotY * Math.PI) / 180;
@@ -324,7 +327,7 @@ export function sheenKeyframes(poses: readonly NoteFlightPose[]): Keyframe[] {
 }
 
 /** 地面阴影：越高越淡越散。 */
-export function shadowKeyframes(poses: readonly NoteFlightPose[]): Keyframe[] {
+export function shadowKeyframes(poses: readonly FlightPose[]): Keyframe[] {
   return poses.map((p) => ({
     transform: `translate(${p.shadowX.toFixed(1)}px, ${p.shadowY.toFixed(1)}px) scale(${(1 + p.lift * 0.9).toFixed(2)})`,
     opacity: 0.55 * (1 - p.lift * 0.85),
@@ -333,12 +336,12 @@ export function shadowKeyframes(poses: readonly NoteFlightPose[]): Keyframe[] {
 }
 
 /**
- * 一叠钞票的错峰间隔。
+ * 一叠飞行物的错峰间隔。
  *
- * 张数越多间隔越小，保证整叠仍在预算内飞完；但不能压到 0，
- * 否则所有钞票同时起飞，又变回"一块板"了。
+ * 件数越多间隔越小，保证整叠仍在预算内飞完；但不能压到 0，
+ * 否则所有件同时起飞，又变回"一块板"了。
  */
-export function noteStagger(budgetMs: number, durationMs: number, count: number): number {
+export function flightStagger(budgetMs: number, durationMs: number, count: number): number {
   if (count <= 1) return 0;
   return Math.min(70, Math.max(18, (budgetMs - durationMs) / (count - 1)));
 }

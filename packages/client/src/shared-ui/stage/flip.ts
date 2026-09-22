@@ -1,10 +1,14 @@
 /**
- * FLIP 飞行工具（Web Animations API）。
+ * FLIP 飞行工具（Web Animations API）。共享版。
  *
  * 为什么不用 framer-motion 的 layoutId：飞行的起终点跨越不同 DOM 子树
  * （底部托盘 ↔ 毡面槽位 ↔ 顶部座位条 ↔ 银行），而毡面是 preserve-3d 容器，
  * 布局动画在 3D 上下文里落点会偏。这里改为在 3D 子树之外用 fixed 幽灵层飞，
  * 起终点都取 getBoundingClientRect 的屏幕投影，落点稳定且天然可 abort。
+ *
+ * 本文件从 wits-wagers/stage/flip.ts 上提。唯一的泛化改动是锚点属性名：
+ * 原先硬编码 data-ww-anchor，现在默认 data-stage-anchor 且可覆盖，
+ * 这样每款游戏可以沿用自己的前缀而不必改 DOM。
  */
 
 export interface FlightOptions {
@@ -23,6 +27,9 @@ export interface Rect {
   readonly height: number;
 }
 
+/** 默认锚点属性名。各游戏可在 measureAnchor 里传入自己的属性名。 */
+export const STAGE_ANCHOR_ATTR = 'data-stage-anchor';
+
 export function measure(el: Element | null | undefined): Rect | null {
   if (!el) return null;
   const r = el.getBoundingClientRect();
@@ -30,10 +37,19 @@ export function measure(el: Element | null | undefined): Rect | null {
   return { x: r.x, y: r.y, width: r.width, height: r.height };
 }
 
-/** 按锚点属性查找舞台元素。 */
-export function measureAnchor(root: ParentNode | null, anchor: string): Rect | null {
+/**
+ * 按锚点属性查找舞台元素。
+ *
+ * attr 默认 data-stage-anchor；沿用旧前缀的游戏传入自己的属性名即可，
+ * 不需要为了上提去改一遍 DOM。
+ */
+export function measureAnchor(
+  root: ParentNode | null,
+  anchor: string,
+  attr: string = STAGE_ANCHOR_ATTR,
+): Rect | null {
   if (!root) return null;
-  return measure(root.querySelector(`[data-ww-anchor="${CSS.escape(anchor)}"]`));
+  return measure(root.querySelector(`[${attr}="${CSS.escape(anchor)}"]`));
 }
 
 function center(rect: Rect): { x: number; y: number } {

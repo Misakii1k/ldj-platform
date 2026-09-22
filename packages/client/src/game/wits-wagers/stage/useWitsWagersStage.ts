@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMotion } from '../../../motion/MotionContext.tsx';
 import { breakdownNotes, type NoteDenomination, type PlayerRoundLedgerView, type TargetId, type WitsWagersPlayerView } from '../types.ts';
 import { deriveStageEvents, stageEventKey, type ChipMove, type StageEvent } from './deriveStageEvents.ts';
-import { createStageMemory } from './stageMemory.ts';
-import { fitToDeadline, legDuration, measure, measureAnchor, wait, type Rect } from './flip.ts';
+import { createStageMemory } from '../../../shared-ui/stage/stageMemory.ts';
+import { fitToDeadline, legDuration, measure, measureAnchor, wait, type Rect } from '../../../shared-ui/stage/flip.ts';
 import { playCueFor, playFlipCue } from './audioCues.ts';
 
 export interface FlightSpec {
@@ -411,7 +411,7 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
     const prev = prevViewRef.current;
     prevViewRef.current = view;
 
-    const memory = createStageMemory(view.roundToken);
+    const memory = createStageMemory(view.roundToken, { namespace: 'wits-wagers' });
 
     // 首帧（含刷新重连）直接落终态，绝不重演上一笔派奖
     if (prev === null) {

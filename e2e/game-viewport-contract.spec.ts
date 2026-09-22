@@ -75,7 +75,7 @@ const GAME_CASES: GameCase[] = [
     label: 'DURING',
     count: 2,
     config: { rulesetId: 'durian_orchard_v1', orderDeck: DURIAN_ORDER_DECK },
-    readySelector: '.tabletop-shell',
+    readySelector: '.tabletop-shell, .durian-native-page',
   },
   {
     id: 'echo-judge',
@@ -155,7 +155,7 @@ const GAME_CASES: GameCase[] = [
     label: '狼人杀',
     count: 8,
     config: {},
-    readySelector: '.tabletop-shell, .werewolf-arena, .werewolf-wing, .seat-ring',
+    readySelector: '.tabletop-shell, .werewolf-arena, .werewolf-wing, .seat-ring, .seat-rail',
   },
   {
     id: 'werewolf-moderator',
@@ -225,6 +225,15 @@ const GAME_CASES: GameCase[] = [
     gameId: 'echo-judge',
     count: 4,
     config: { rulesetId: 'echo_judge_sim_v1' },
+    readySelector: '.tabletop-shell',
+    viewerIndex: 0,
+  },
+  {
+    id: 'wits-wagers-sim',
+    label: '一智千金·桌面模拟',
+    gameId: 'wits-wagers',
+    count: 3,
+    config: { rulesetId: 'wits_wagers_sim_v1' },
     readySelector: '.tabletop-shell',
     viewerIndex: 0,
   },
@@ -434,10 +443,15 @@ test.describe('G3-B 游戏视口合约（七档常用尺寸）', () => {
               failures.push(`[${vp.name}] 底部溢出：${entry.bottomFit.join(' | ')}`);
             }
             if (game.id === 'werewolf' && (vp.name === '390x844' || vp.name === '360x800' || vp.name === '412x915')) {
-              const wingCount = await page.locator('.werewolf-wing').count();
-              const ringVisible = await page.locator('.werewolf-desktop-seat-ring, .seat-ring').first().isVisible().catch(() => false);
-              if (wingCount === 0 && !ringVisible) {
-                failures.push(`[${vp.name}] 狼人杀席位缺失：左右翼与马蹄环均不可见`);
+              // 席位实现历经重构：旧版左右翼/马蹄环，现版为 .seat-rail 双轨。任一可见即达标。
+              const seatsVisible = await page
+                .locator('.werewolf-wing, .werewolf-desktop-seat-ring, .seat-ring, .seat-rail')
+                .first()
+                .isVisible()
+                .catch(() => false);
+              const seatChipCount = await page.locator('.seat-rail .seat, .seat-ring__list > *').count();
+              if (!seatsVisible || seatChipCount === 0) {
+                failures.push(`[${vp.name}] 狼人杀席位缺失：席位轨不可见或席位数为 0（visible=${seatsVisible} chips=${seatChipCount}）`);
               }
             }
             if (STRICT_TOUCH) {

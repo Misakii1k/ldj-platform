@@ -9,7 +9,7 @@ export interface WitsBankTrayProps {
 const STACKS = [100, 500, 1000] as const;
 
 /**
- * 桌边银行钞箱。收付演出的起点与终点锚（data-ww-anchor="bank"）。
+ * 桌边银行钞箱。收付演出的起点与终点锚（data-stage-anchor="bank"）。
  *
  * 三叠面值各码几张，收付进行时 is-active 会让钞箱亮边、叠层轻抖，
  * 让"钱正在过银行"这件事在小屏上也看得见。
@@ -18,7 +18,7 @@ export function WitsBankTray({ label = '银行', active = false }: WitsBankTrayP
   return (
     <div
       className={`ww-bank ${active ? 'is-active' : ''}`.trim()}
-      data-ww-anchor="bank"
+      data-stage-anchor="bank"
       aria-label={`${label}钞箱`}
     >
       <div className="ww-bank__box" aria-hidden="true">

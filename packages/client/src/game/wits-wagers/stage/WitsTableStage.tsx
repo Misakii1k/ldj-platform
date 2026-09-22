@@ -10,7 +10,7 @@ import type {
 } from '../types.ts';
 import { WitsAnswerCard } from './WitsAnswerCard.tsx';
 import { WitsBankTray } from './WitsBankTray.tsx';
-import { WitsCountdown } from './WitsCountdown.tsx';
+import { StageCountdownRing } from '../../../shared-ui/stage/StageCountdownRing.tsx';
 import { WitsNoteStack } from './WitsNoteStack.tsx';
 
 export interface WitsTableStageProps {
@@ -107,10 +107,11 @@ export function WitsTableStage({
         <WitsBankTray active={bankActive} />
 
         {/* 只有需要玩家行动的阶段才催时间；排牌与结算是纯展示 */}
-        <WitsCountdown
+        <StageCountdownRing
           deadlineAt={deadlineAt}
           phaseKey={phaseKey}
           active={phase === 'answering' || phase === 'betting'}
+          className="ww-countdown"
         />
 
         {question && (
@@ -121,7 +122,7 @@ export function WitsTableStage({
         )}
       </div>
 
-      <div className="ww-felt" data-ww-anchor="felt">
+      <div className="ww-felt" data-stage-anchor="felt">
         <div className="ww-felt__surface" aria-hidden="true" />
 
         {boardRevealed ? (

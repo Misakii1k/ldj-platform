@@ -9,7 +9,7 @@ import {
   writeWitsSettings,
   WITS_SETTINGS_STORAGE_KEY,
 } from '../src/game/wits-wagers/settings/witsSettings.ts';
-import { fitToDeadline, legDuration } from '../src/game/wits-wagers/stage/flip.ts';
+import { fitToDeadline, legDuration } from '../src/shared-ui/stage/flip.ts';
 
 function fakeStorage(initial: Record<string, string> = {}): Storage {
   const map = new Map<string, string>(Object.entries(initial));
