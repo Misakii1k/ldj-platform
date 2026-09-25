@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { useStageMachine, type StagePlayContext } from '../../../shared-ui/stage/useStageMachine.ts';
 import { fitToDeadline, measure, measureAnchor, wait, type Rect } from '../../../shared-ui/stage/flip.ts';
 import type { StageFlight } from '../../../shared-ui/stage/FlightLayer.tsx';
-import type { BellClashPlayerView } from '../types.ts';
+import type { BellClashCard, BellClashPlayerView } from '../types.ts';
 import {
   deriveStageEvents,
   roundTokenOf,
@@ -36,7 +36,17 @@ export interface BellStageApi {
   readonly dismissClaim: () => void;
   /** 我刚错拍被罚摸：检视器区域出提示 */
   readonly penalty: boolean;
+  /**
+   * 最近几手弃牌（最新在前）。服务端只给 discardTop，这里靠差分累积出历史带，
+   * 纯展示、不参与任何判定；刷新后从空开始，这是可接受的。
+   */
+  readonly discardTrail: readonly { seq: number; card: BellClashCard; playerId: string }[];
+  /** 每人抢到铃的次数，同样是差分累积的展示数据 */
+  readonly claimCounts: Readonly<Record<string, number>>;
 }
+
+/** 历史带最多留几张：多了铃左边就挤了 */
+const TRAIL_MAX = 5;
 
 /**
  * Ding 演出编排。
@@ -52,6 +62,8 @@ export function useBellClashStage(
   const [bellPressing, setBellPressing] = useState(false);
   const [penalty, setPenalty] = useState(false);
   const [claimBanner, setClaimBanner] = useState<{ name: string; isMe: boolean } | null>(null);
+  const [discardTrail, setDiscardTrail] = useState<readonly { seq: number; card: BellClashCard; playerId: string }[]>([]);
+  const [claimCounts, setClaimCounts] = useState<Readonly<Record<string, number>>>({});
 
   const stageRef = useRef<HTMLDivElement | null>(null);
   const deadlineRef = useRef<number | null>(null);
@@ -122,6 +134,13 @@ export function useBellClashStage(
         }
 
         case 'cardPlayed': {
+          // 先记历史带再演飞行：动效档位关掉时历史带也得更新
+          const played = viewRef.current.discardTop;
+          if (played) {
+            setDiscardTrail((prev) =>
+              [{ seq: event.seq, card: played, playerId: event.playerId }, ...prev].slice(0, TRAIL_MAX),
+            );
+          }
           if (!ctx.animated) return;
           const from = handOf(event.playerId);
           const to = anchorRect('discard');
@@ -189,6 +208,7 @@ export function useBellClashStage(
 
         case 'bellClaimed': {
           setClaimBanner({ name: nameRef.current(event.claimantId), isMe: event.isMe });
+          setClaimCounts((prev) => ({ ...prev, [event.claimantId]: (prev[event.claimantId] ?? 0) + 1 }));
           if (event.isMe) VIBRATE.ring();
           if (!ctx.softAnimated) return;
 
@@ -285,5 +305,7 @@ export function useBellClashStage(
     claimBanner,
     dismissClaim,
     penalty,
+    discardTrail,
+    claimCounts,
   };
 }

@@ -19,8 +19,18 @@ import { StageCountdownRing } from '../../shared-ui/stage/StageCountdownRing.tsx
 import { FlightLayer } from '../../shared-ui/stage/FlightLayer.tsx';
 import { DeskBell } from './stage/DeskBell.tsx';
 import { PhraseCard, cardLabel, colorLabel } from './stage/PhraseCard.tsx';
+import { BellArt, ClaimBoard, DiscardTrail } from './stage/TableProps.tsx';
 import { useBellClashStage } from './stage/useBellClashStage.tsx';
 import type { BellClashCard, BellClashPlayerView } from './types.ts';
+
+/** 一张牌的通用渲染：数字牌用 UNO 图片，口令牌用同框的 PhraseCard */
+function renderCardFace(card: BellClashCard, className: string) {
+  return card.kind === 'phrase' ? (
+    <PhraseCard card={card} />
+  ) : (
+    <img src={`/assets/uno/${card.color}_${card.number}.png`} alt={cardLabel(card)} className={className} />
+  );
+}
 
 interface Props {
   view: BellClashPlayerView;
@@ -145,9 +155,29 @@ export function BellClashGamePage({ view }: Props) {
     phaseBannerSubtext = `当前顶牌为 ${targetLabel}。观察全场玩家言行随时准备抢铃！`;
   }
 
-  // 中央案台：3D 透视毡面
+  // 中央案台：3D 透视毡面。三区——左弃牌历史带 / 中央铃 + 牌堆 / 右记分板。
+  // 之前整张毡面只有一个 200px 的三件岛，左右三分之一是空的。
+  const trailEntries = stage.discardTrail.map((entry) => ({
+    ...entry,
+    playerName: nameFor(members, entry.playerId),
+  }));
+  const boardRows = view.players.map((playerId) => ({
+    playerId,
+    name: nameFor(members, playerId),
+    claims: stage.claimCounts[playerId] ?? 0,
+    handCount: view.handCounts?.[playerId] ?? 0,
+    isCurrent: playerId === view.currentPlayerId && view.phase !== 'game_over',
+    isClaimant: view.bellClaimantId === playerId,
+    isMe: playerId === myId,
+  }));
+
   const centerArena = (
     <div className="bc-arena stage-felt-3d" ref={stage.stageRef}>
+      {/* 装饰层：铃身剪影压在毡面正中，12% 透明度，这是填空白的那一层 */}
+      <div className="stage-art bc-art">
+        <BellArt />
+      </div>
+
       {/* 倒计时环：抢铃窗口最需要它——玩家现在完全不知道还剩多久。
           deadlineKind 换 phaseKey：两类计时时长差很多，混用会让满格测量错乱。 */}
       <StageCountdownRing
@@ -158,66 +188,79 @@ export function BellClashGamePage({ view }: Props) {
       />
 
       <div className="bc-arena__plane stage-felt-3d__plane">
-        <div className="bc-compass" aria-hidden="true" />
-
         {view.phase !== 'game_over' ? (
-          <div className="bc-core">
-            {/* 1. 摸牌堆 */}
-            <button
-              type="button"
-              className="bc-draw"
-              data-stage-anchor="draw"
-              data-playable={isMyTurn && !busy ? 'true' : undefined}
-              onClick={handleDrawCard}
-              disabled={!isMyTurn || busy}
-              title={isMyTurn ? '点击摸一张牌' : '摸牌堆'}
-            >
-              <img src="/assets/uno/back.png" alt="摸牌堆" className="bc-draw__img" />
-              <span className="bc-draw__badge" aria-label={`剩余 ${view.drawCount} 张`}>
-                {view.drawCount} 张
-              </span>
-            </button>
+          <div className="bc-table">
+            {/* 左：弃牌历史带 */}
+            <DiscardTrail
+              entries={trailEntries}
+              renderCard={(card) => renderCardFace(card, 'bc-trail__img')}
+            />
 
-            {/* 2. 弃牌堆顶牌 + 四色光晕 */}
-            <div className="bc-discard" data-stage-anchor="discard">
-              <span className="bc-halo" data-color={topColor} aria-hidden="true" />
-              {top ? (
-                <div className="bc-discard__card">
-                  {top.kind === 'phrase' ? (
-                    <PhraseCard card={top} isTop />
-                  ) : (
-                    <img
-                      src={`/assets/uno/${top.color}_${top.number}.png`}
-                      alt={cardLabel(top)}
-                      className="bc-discard__img"
-                    />
-                  )}
-                </div>
-              ) : (
-                <div className="bc-discard__empty">等待出牌</div>
-              )}
-              <span className="bc-discard__badge">当前色 · {colorLabel(top?.color)}</span>
+            {/* 中：木托盘上的铃，两侧牌堆 */}
+            <div className="bc-core">
+              {/* 1. 摸牌堆 */}
+              <button
+                type="button"
+                className="bc-draw"
+                data-stage-anchor="draw"
+                data-playable={isMyTurn && !busy ? 'true' : undefined}
+                onClick={handleDrawCard}
+                disabled={!isMyTurn || busy}
+                title={isMyTurn ? '点击摸一张牌' : '摸牌堆'}
+              >
+                <img src="/assets/uno/back.png" alt="摸牌堆" className="bc-draw__img" />
+                <span className="bc-draw__badge stage-numeral" aria-label={`剩余 ${view.drawCount} 张`}>
+                  {view.drawCount}
+                </span>
+              </button>
+
+              {/* 2. 木托盘 + 案台铃 */}
+              <div className="bc-plate" data-open={view.bellOpen ? 'true' : undefined}>
+                <span className="bc-plate__rim" aria-hidden="true" />
+                <DeskBell
+                  open={view.bellOpen}
+                  pressing={stage.bellPressing}
+                  disabled={busy || !myId}
+                  onRing={handleRingBell}
+                  label={
+                    view.bellOpen
+                      ? '立即拍铃!'
+                      : view.bellClaimantId
+                        ? `${nameFor(members, view.bellClaimantId)} 拍铃`
+                        : '抢铃台'
+                  }
+                />
+              </div>
+
+              {/* 3. 弃牌堆顶牌 + 四色光晕 */}
+              <div className="bc-discard" data-stage-anchor="discard">
+                <span className="bc-halo" data-color={topColor} aria-hidden="true" />
+                {top ? (
+                  <div className="bc-discard__card">
+                    {top.kind === 'phrase' ? (
+                      <PhraseCard card={top} isTop />
+                    ) : (
+                      <img
+                        src={`/assets/uno/${top.color}_${top.number}.png`}
+                        alt={cardLabel(top)}
+                        className="bc-discard__img"
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div className="bc-discard__empty">等待出牌</div>
+                )}
+                <span className="bc-discard__badge">当前色 · {colorLabel(top?.color)}</span>
+              </div>
             </div>
 
-            {/* 3. 案台铃 */}
-            <DeskBell
-              open={view.bellOpen}
-              pressing={stage.bellPressing}
-              disabled={busy || !myId}
-              onRing={handleRingBell}
-              label={
-                view.bellOpen
-                  ? '立即拍铃!'
-                  : view.bellClaimantId
-                    ? `${nameFor(members, view.bellClaimantId)} 拍铃`
-                    : '抢铃台'
-              }
-            />
+            {/* 右：抢铃记分板 */}
+            <ClaimBoard rows={boardRows} />
           </div>
         ) : (
           <div className="winner-hero bc-winner">
             <span className="winner-rays" aria-hidden="true" />
-            <h2 className="winner-title">手牌全部打空，游戏获胜！</h2>
+            <h2 className="winner-title stage-title">手牌全部打空，游戏获胜！</h2>
             <p className="winner-names">
               获胜玩家：{(view.winners ?? []).map((id) => nameFor(members, id)).join('、')}
             </p>
