@@ -23,7 +23,10 @@ export type GameIconName =
   | 'uno_draw2'
   | 'uno_draw4'
   | 'uno_alert'
-  | 'uno_challenge';
+  | 'uno_challenge'
+  | 'wits-wagers'
+  | 'wits_wagers'
+  | (string & {});
 
 const ICON_SRC_MAP: Record<GameIconName, string> = {
   crown: '/assets/icons/crown.png',
@@ -49,6 +52,8 @@ const ICON_SRC_MAP: Record<GameIconName, string> = {
   uno_draw4: '/assets/icons/uno_draw4.png',
   uno_alert: '/assets/icons/uno_alert.png',
   uno_challenge: '/assets/icons/uno_challenge.png',
+  'wits-wagers': '/icons/wits-wagers.png',
+  'wits_wagers': '/icons/wits-wagers.png',
 };
 
 export interface GameIconProps extends React.ImgHTMLAttributes<HTMLImageElement> {
@@ -68,9 +73,10 @@ export function GameIcon({
   className = '',
   style,
   alt = '',
+  onError,
   ...rest
 }: GameIconProps) {
-  const src = ICON_SRC_MAP[name];
+  const src = ICON_SRC_MAP[name] || `/icons/${name}.png`;
   const dimension = typeof size === 'number' ? `${size}px` : size;
 
   return (
@@ -86,6 +92,14 @@ export function GameIcon({
         objectFit: 'contain',
         flexShrink: 0,
         ...style,
+      }}
+      onError={(e) => {
+        if (onError) {
+          onError(e);
+        } else {
+          // 优雅隐藏加载失败的破裂图片
+          (e.currentTarget as HTMLElement).style.visibility = 'hidden';
+        }
       }}
       draggable={false}
       {...rest}

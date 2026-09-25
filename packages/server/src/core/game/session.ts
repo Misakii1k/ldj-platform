@@ -8,7 +8,9 @@ import {
   assertPrivateGameEvents,
   createSeededRandom,
   isAdjudicationTaskEffect,
+  isSimRulesetId,
   isVersionedGameModule,
+  SIM_REQUIRES_PUBLIC_SCREEN_MESSAGE,
   type Actor,
   type AdjudicationTaskEffect,
   type ChatMessageView,
@@ -213,7 +215,7 @@ export function applySessionAction(
     action = module.parseAction(rawAction);
   } catch (err) {
     if (isZodError(err)) throw new CommandError('INVALID_MESSAGE', '游戏动作格式无效');
-    throw err;
+    throw new CommandError('INVALID_MESSAGE', (err as Error)?.message || '游戏动作格式无效');
   }
 
   const seq = session.last_seq + 1;
@@ -461,7 +463,15 @@ export function applyGameAction(
   rawAction: unknown,
   requestId: string,
 ): GameActionOutcome {
-  const session = getActiveSession(tx.db, roomId);
+  let session = getActiveSession(tx.db, roomId);
+  const isVoiceControl = typeof rawAction === 'object' && rawAction !== null
+    && ['moderator_voice_play','moderator_voice_stop'].includes(String((rawAction as {type?: unknown}).type));
+  // A narrow post-game exception permits replaying the confirmed result without reopening the game.
+  if (!session && isVoiceControl) {
+    session = tx.db.prepare(`SELECT s.* FROM game_sessions s JOIN rooms r ON r.id = s.room_id
+      WHERE s.room_id = ? AND r.status = 'POST_GAME' ORDER BY s.created_at DESC LIMIT 1`).get(roomId) as SessionRow | undefined;
+    if (session?.status !== 'FINISHED' || session.ruleset_id !== 'werewolf_moderator_v1') session = undefined;
+  }
   if (!session) {
     throw new CommandError('ACTION_NOT_ALLOWED', '当前没有进行中的对局');
   }
@@ -469,7 +479,7 @@ export function applyGameAction(
   if (session.status === 'RECOVERING') {
     throw new CommandError('RECOVERY_IN_PROGRESS');
   }
-  if (session.status !== 'ACTIVE') {
+  if (session.status !== 'ACTIVE' && !(isVoiceControl && session.status === 'FINISHED')) {
     throw new CommandError('ACTION_NOT_ALLOWED', '当前没有进行中的对局');
   }
   return applySessionAction(tx, session, { kind: 'player', playerId }, rawAction, requestId);
@@ -580,14 +590,26 @@ export function startGame(tx: TxContext, roomId: string, gameConfig: unknown): S
       throw new CommandError('ACTION_NOT_ALLOWED', '真人主持模式至少需要 1 名主持人与 5 名参与抽卡玩家（共 6 人）');
     }
   }
-  // 全员就绪校验：未准备的在线玩家不能开局
+  // 桌面模拟模式：没有公共大屏就不成立，在大厅拦住
+  if (isSimRulesetId(rulesetId) && countConnectedSpectators(db, roomId) === 0) {
+    throw new CommandError('ACTION_NOT_ALLOWED', SIM_REQUIRES_PUBLIC_SCREEN_MESSAGE);
+  }
+  // 全员就绪校验：未准备的在线玩家不能开局（真人主持模式下主持人不参局且免准备）
+  const isWerewolfModerator = rulesetId === 'werewolf_moderator_v1';
   const notReadyCount = (
-    db
-      .prepare(
-        `SELECT COUNT(*) AS n FROM room_members
-         WHERE room_id = ? AND seat_role = 'player' AND connection_status = 'CONNECTED' AND ready = 0`,
-      )
-      .get(roomId) as { n: number }
+    isWerewolfModerator && room.host_player_id
+      ? (db
+          .prepare(
+            `SELECT COUNT(*) AS n FROM room_members
+             WHERE room_id = ? AND seat_role = 'player' AND connection_status = 'CONNECTED' AND ready = 0 AND player_id != ?`,
+          )
+          .get(roomId, room.host_player_id) as { n: number })
+      : (db
+          .prepare(
+            `SELECT COUNT(*) AS n FROM room_members
+             WHERE room_id = ? AND seat_role = 'player' AND connection_status = 'CONNECTED' AND ready = 0`,
+          )
+          .get(roomId) as { n: number })
   ).n;
   if (notReadyCount > 0) {
     throw new CommandError('ACTION_NOT_ALLOWED', `还有 ${notReadyCount} 名玩家未准备`);
@@ -596,7 +618,8 @@ export function startGame(tx: TxContext, roomId: string, gameConfig: unknown): S
   const rawMergedConfig: Record<string, unknown> = {
     ...moduleConfig,
     ...(rulesetId === 'werewolf_moderator_v1' && room.host_player_id
-      ? { hostPlayerId: room.host_player_id, moderatorPlayerId: room.host_player_id }
+      ? { hostPlayerId: room.host_player_id, moderatorPlayerId: room.host_player_id,
+          seatNumbers: Object.fromEntries((db.prepare("SELECT player_id, seat FROM room_members WHERE room_id = ? AND seat_role = 'player'").all(roomId) as {player_id: string; seat: number}[]).map(m => [m.player_id,m.seat])) }
       : {}),
   };
   const { rulesetId: _platformRuleset, ...restConfig } = rawMergedConfig;
@@ -731,9 +754,14 @@ export function autoStartGame(
   if (room.status !== 'LOBBY' && room.status !== 'POST_GAME') return null;
   if (getActiveSession(db, roomId)) return null;
   const moduleId = room.game_id ?? DEFAULT_GAME_ID;
-  const module = requireModule(moduleId);
-
   const config = parseRoomGameConfig(db, roomId);
+  const rulesetId = resolveRulesetForStart(moduleId, (config as Record<string, unknown>) ?? {});
+  if (rulesetId === 'werewolf_moderator_v1') return null;
+  const module = getGameModule(moduleId, rulesetId);
+  if (!module) return null;
+  // 桌面模拟模式必须有公共大屏；与 startGame 同一条件，否则倒计时会空转后被驳回
+  if (isSimRulesetId(rulesetId) && countConnectedSpectators(db, roomId) === 0) return null;
+
   // 幂等复检：在线玩家数达标且全员就绪，否则放弃
   const players = (
     db
@@ -762,6 +790,18 @@ export function autoStartGame(
     db.prepare(`UPDATE rooms SET status = 'LOBBY', updated_at = ? WHERE id = ?`).run(now, roomId);
   }
   return startGame(tx, roomId, config);
+}
+
+/** 在线公共大屏数（spectator 席位不会是机器人，见 roomCommand switch_seat_role） */
+function countConnectedSpectators(db: Db, roomId: string): number {
+  return (
+    db
+      .prepare(
+        `SELECT COUNT(*) AS n FROM room_members
+         WHERE room_id = ? AND seat_role = 'spectator' AND connection_status = 'CONNECTED'`,
+      )
+      .get(roomId) as { n: number }
+  ).n;
 }
 
 /** 房间 config_json 里的游戏配置（update_config 保存），无则返回空配置 */
@@ -806,6 +846,37 @@ export function forfeitPlayers(
     if (activeCount.c === 0) {
       abortGame(tx, roomId);
     }
+    return null;
+  }
+}
+
+/**
+ * T07a: 当成员断线时，检查是否为当前活动狼人杀主持对局的主持人。
+ * 必须校验当前 session 身份（moderatorPlayerId === playerId）；
+ * 房主断线但非主持人时绝不误触发。
+ */
+export function notifyModeratorDisconnected(
+  tx: TxContext,
+  roomId: string,
+  playerId: string,
+): GameActionOutcome | null {
+  const session = getActiveSession(tx.db, roomId);
+  if (!session || session.status !== 'ACTIVE') return null;
+  if (session.ruleset_id !== 'werewolf_moderator_v1') return null;
+
+  try {
+    const envelope = JSON.parse(session.snapshot_json) as { state?: { moderatorPlayerId?: string } };
+    const modId = envelope.state?.moderatorPlayerId;
+    if (!modId || modId !== playerId) return null;
+
+    return applySessionAction(
+      tx,
+      session,
+      { kind: 'system', source: 'admin' },
+      { type: 'moderator_disconnected', moderatorPlayerId: playerId },
+      null,
+    );
+  } catch {
     return null;
   }
 }

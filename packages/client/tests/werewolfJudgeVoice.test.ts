@@ -21,7 +21,7 @@ test('法官语音映射表完整包含 1-12 号及各核心阶段语音', () =>
   assert.strictEqual(hasCue('wolf_kill'), true);
   assert.strictEqual(hasCue('wolf_close'), true);
   assert.strictEqual(hasCue('witch_open'), true);
-  assert.strictEqual(hasCue('witch_death_point'), true);
+  assert.strictEqual(hasCue('witch_death_point'), false);
   assert.strictEqual(hasCue('witch_cure_prompt'), true);
   assert.strictEqual(hasCue('witch_poison_prompt'), true);
   assert.strictEqual(hasCue('witch_close'), true);
@@ -34,7 +34,7 @@ test('法官语音映射表完整包含 1-12 号及各核心阶段语音', () =>
   assert.strictEqual(hasCue('day_peaceful'), true);
   assert.strictEqual(hasCue('day_start'), true);
   assert.strictEqual(hasCue('day_death_intro'), true);
-  assert.strictEqual(hasCue('vote_tie_pk'), true);
+  assert.strictEqual(hasCue('vote_tie_pk'), false);
   assert.strictEqual(hasCue('game_over_good'), true);
   assert.strictEqual(hasCue('game_over_wolf'), true);
   assert.strictEqual(hasCue('vote_start'), true);

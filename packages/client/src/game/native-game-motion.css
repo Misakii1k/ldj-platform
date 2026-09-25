@@ -1,0 +1,195 @@
+/**
+ * 狼人杀与榴莲 1:1 原生界面专属动效系统 (Native Game Motion System)
+ * 遵循 WCAG 无障碍与 prefers-reduced-motion 规范，提供丝滑沉浸交互体验。
+ */
+
+/* ─── 1. 狼人杀原生动效 (Werewolf Motion) ─── */
+
+/* 发言中席位金色扩散呼吸光圈 */
+@keyframes ww-speak-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(212, 163, 89, 0.6), 0 3px 0 #0005;
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(212, 163, 89, 0.15), 0 3px 0 #0005;
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(212, 163, 89, 0), 0 3px 0 #0005;
+  }
+}
+
+.werewolf-native-page .seat-rail .seat.active {
+  animation: ww-speak-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* 可操作席位微光引导 */
+@keyframes ww-actionable-breathe {
+  0%, 100% {
+    border-color: var(--detail);
+    box-shadow: 0 0 0 1px rgba(212, 163, 89, 0.2);
+  }
+  50% {
+    border-color: #f6d365;
+    box-shadow: 0 0 0 3px rgba(246, 211, 101, 0.45);
+  }
+}
+
+.werewolf-native-page .seat-rail .seat.is-actionable:not(.out) {
+  animation: ww-actionable-breathe 2.4s ease-in-out infinite;
+}
+
+/* 已锁定目标席位绿光脉冲 */
+@keyframes ww-my-target-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 1px #22c55e, 0 3px 6px rgba(34, 197, 94, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 3px #4ade80, 0 4px 12px rgba(34, 197, 94, 0.4);
+  }
+}
+
+.werewolf-native-page .seat-rail .seat.is-my-target {
+  animation: ww-my-target-pulse 2s ease-in-out infinite;
+}
+
+/* 舞台阶段切换平滑升入 */
+@keyframes ww-stage-arrive {
+  from {
+    opacity: 0.75;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.werewolf-native-page .stage .speaker h1,
+.werewolf-native-page .stage .art {
+  animation: ww-stage-arrive 0.4s ease-out;
+}
+
+/* 席位出局平滑淡入灰化 */
+.werewolf-native-page .seat-rail .seat.out {
+  transition: opacity 0.5s ease, filter 0.5s ease, background 0.5s ease;
+  filter: grayscale(0.85);
+  opacity: 0.65;
+}
+
+/* ─── 2. 榴莲原生动效 (Durian Motion) ─── */
+
+/* 按铃质疑铃铛剧烈摆动震颤 */
+@keyframes durian-bell-shake {
+  0% { transform: rotate(0deg) scale(1); }
+  15% { transform: rotate(-14deg) scale(1.08); }
+  30% { transform: rotate(12deg) scale(1.08); }
+  45% { transform: rotate(-10deg) scale(1.05); }
+  60% { transform: rotate(8deg) scale(1.05); }
+  75% { transform: rotate(-4deg) scale(1.02); }
+  90% { transform: rotate(2deg) scale(1.01); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
+.d-bell-button {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.d-bell-button:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+}
+
+.d-bell-button:hover span,
+.d-bell-button:active span {
+  display: inline-block;
+  animation: durian-bell-shake 0.8s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* 抽牌卡片进场 3D 展开 */
+@keyframes durian-card-enter {
+  0% {
+    opacity: 0.4;
+    transform: scale(0.92) translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.d-drawn-card,
+.d-monkey-stage {
+  animation: durian-card-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* 半边选中高光与立体放大 */
+.d-drawn-card .d-half {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.d-drawn-card .d-half:hover {
+  transform: translateY(-2px);
+}
+
+.d-drawn-card .d-half[aria-pressed="true"] {
+  transform: scale(1.02);
+  box-shadow: 0 6px 18px rgba(34, 197, 94, 0.25), 0 0 0 2px #22c55e;
+}
+
+/* 超卖水果条目红色呼吸警示 */
+@keyframes durian-oversold-warn {
+  0%, 100% {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: #ef4444;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
+  }
+}
+
+.d-tally.is-oversold,
+.d-result-card.is-culprit {
+  animation: durian-oversold-warn 1.8s ease-in-out infinite;
+}
+
+/* ─── 3. 原生模态弹窗系统通用动效 ─── */
+@keyframes native-dialog-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.werewolf-native-page dialog[open],
+.durian-native-page dialog[open] {
+  animation: native-dialog-slide-up 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ─── 4. 无障碍规范：减弱动效降级 (Reduced Motion) ─── */
+@media (prefers-reduced-motion: reduce) {
+  .werewolf-native-page .seat-rail .seat.active,
+  .werewolf-native-page .seat-rail .seat.is-actionable:not(.out),
+  .werewolf-native-page .seat-rail .seat.is-my-target,
+  .d-tally.is-oversold,
+  .d-result-card.is-culprit,
+  .d-bell-button:hover span,
+  .d-bell-button:active span {
+    animation: none !important;
+  }
+
+  .werewolf-native-page .stage .speaker h1,
+  .werewolf-native-page .stage .art,
+  .d-drawn-card,
+  .d-monkey-stage,
+  .werewolf-native-page dialog[open],
+  .durian-native-page dialog[open] {
+    animation-duration: 0.08s !important;
+    transform: none !important;
+  }
+}

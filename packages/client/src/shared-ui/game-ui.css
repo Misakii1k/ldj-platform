@@ -144,7 +144,9 @@ html[data-motion-level="off"] {
      .uno-house-draw-pile.is-my-turn-playable / .ding-uno-card.is-playable /
      .bell-draw-pile.is-playable、紧迫倒计时 .countdown.urgent / .moon-header__timer.is-urgent、
      警告 .testimony-meter-card.is-warning）刻意不在清单内，只降时长。
-     选择器经 styles.css 的 animation 声明反查得出；新增装饰循环必须登记到这里。 */
+     选择器经 styles.css 的 animation 声明反查得出；新增装饰循环必须登记到这里。
+     tabletop-game-motion.css 的回合呼吸（tgm-actor-breathe*）只挂在
+     html[data-motion-level="full"] 下，天然不进 reduced，故不在此重复列出。 */
 html[data-motion-level="reduced"] :is(
   .home-local-badge::before,
   .auto-start-banner,
@@ -1065,17 +1067,20 @@ html[data-motion-level='off'] .tabletop-event-overlay__card {
   box-shadow: 0 2px 0 var(--gp-line);
 }
 
-.sg-badge--highlight {
+.sg-badge--highlight,
+.sg-panel__head span.sg-badge--highlight {
   background: var(--gp-coral);
   color: #ffffff;
 }
 
-.sg-badge--dark {
+.sg-badge--dark,
+.sg-panel__head span.sg-badge--dark {
   background: color-mix(in srgb, var(--gp-ink) 88%, #000);
   color: var(--gp-paper);
 }
 
-.sg-badge--warning {
+.sg-badge--warning,
+.sg-panel__head span.sg-badge--warning {
   background: var(--gp-warning);
   color: #ffffff;
 }
@@ -1202,6 +1207,125 @@ html[data-motion-level='off'] .tabletop-event-overlay__card {
   color: var(--gp-ink);
   box-shadow: var(--gp-shadow-lg);
 }
+
+/* ══════════════════════════════════════════════════════════
+   6. RollingNumber —— iOS 26 风格逐位数字滚动
+   组件：shared-ui/RollingNumber.tsx
+   只有变化的位参与动画：旧字沿反方向滑出、新字同向滑入，
+   叠加模糊与透明度过渡；未变化的位静止不动。
+   ══════════════════════════════════════════════════════════ */
+
+:root {
+  --rn-dur: var(--gp-dur-phase);
+  --rn-ease: var(--gp-ease-standard);
+  --rn-blur: 2.5px;
+  /* 单个数字位宽。等宽数字下 0.62em 视觉最稳，避免 1 与 8 抖动。 */
+  --rn-digit-w: 0.62em;
+}
+
+.rolling-number {
+  display: inline-flex;
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  line-height: 1;
+}
+
+.rolling-number__digit {
+  position: relative;
+  display: inline-block;
+  width: var(--rn-digit-w);
+  height: 1em;
+  overflow: hidden;
+  /* 上下边缘淡出，滑入滑出不硬切 */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 18%, #000 82%, transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0%, #000 18%, #000 82%, transparent 100%);
+}
+
+.rolling-number__glyph {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  will-change: transform, opacity, filter;
+}
+
+.rolling-number__sep,
+.rolling-number__affix {
+  display: inline-block;
+}
+
+/* 方向感知：数值增大时新字从下方入，减小时从上方入 */
+.rolling-number[data-rolling-dir="up"] .rolling-number__glyph.is-enter {
+  animation: rn-enter-up var(--rn-dur) var(--rn-ease) both;
+}
+.rolling-number[data-rolling-dir="up"] .rolling-number__glyph.is-leave {
+  animation: rn-leave-up var(--rn-dur) var(--rn-ease) both;
+}
+.rolling-number[data-rolling-dir="down"] .rolling-number__glyph.is-enter {
+  animation: rn-enter-down var(--rn-dur) var(--rn-ease) both;
+}
+.rolling-number[data-rolling-dir="down"] .rolling-number__glyph.is-leave {
+  animation: rn-leave-down var(--rn-dur) var(--rn-ease) both;
+}
+
+@keyframes rn-enter-up {
+  from { transform: translateY(110%); opacity: 0; filter: blur(var(--rn-blur)); }
+  to   { transform: translateY(0);    opacity: 1; filter: blur(0); }
+}
+@keyframes rn-leave-up {
+  from { transform: translateY(0);     opacity: 1; filter: blur(0); }
+  to   { transform: translateY(-110%); opacity: 0; filter: blur(var(--rn-blur)); }
+}
+@keyframes rn-enter-down {
+  from { transform: translateY(-110%); opacity: 0; filter: blur(var(--rn-blur)); }
+  to   { transform: translateY(0);     opacity: 1; filter: blur(0); }
+}
+@keyframes rn-leave-down {
+  from { transform: translateY(0);    opacity: 1; filter: blur(0); }
+  to   { transform: translateY(110%); opacity: 0; filter: blur(var(--rn-blur)); }
+}
+
+/* 变化瞬间整体轻微呼吸。data-rolling-bump 每次变化递增，重触发动画。 */
+.rolling-number[data-rolling-bump] {
+  animation: rn-bump var(--rn-dur) var(--rn-ease);
+}
+
+@keyframes rn-bump {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+/* 动效档位降级：reduced 去模糊与呼吸，只保留短促位移；minimal/off 直接切换。
+   时长本身已由 --gp-dur-phase 跟随档位缩放，此处只处理装饰性部分。 */
+html[data-motion-level="reduced"] {
+  --rn-blur: 0px;
+}
+html[data-motion-level="reduced"] .rolling-number[data-rolling-bump] {
+  animation: none;
+}
+
+html[data-motion-level="minimal"] .rolling-number__glyph,
+html[data-motion-level="off"] .rolling-number__glyph,
+html[data-motion-level="minimal"] .rolling-number[data-rolling-bump],
+html[data-motion-level="off"] .rolling-number[data-rolling-bump] {
+  animation: none !important;
+}
+/* 无动画档位下隐藏离场字，避免新旧数字重叠 */
+html[data-motion-level="minimal"] .rolling-number__glyph.is-leave,
+html[data-motion-level="off"] .rolling-number__glyph.is-leave {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rolling-number__glyph,
+  .rolling-number[data-rolling-bump] {
+    animation-duration: 1ms !important;
+  }
+  .rolling-number__glyph.is-leave { display: none; }
+}
+
 
 /* ===================================================================
  * 9. 演出层（shared-ui/stage/）

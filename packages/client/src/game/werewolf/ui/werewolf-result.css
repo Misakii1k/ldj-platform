@@ -1,0 +1,134 @@
+/* Self-contained result surface: portals must not inherit table/identity-drawer colors. */
+[data-result-theme] {
+  --result-bg: #f4efe5;
+  --result-surface: #fffdf7;
+  --result-ink: #203c30;
+  --result-muted: #465c4e;
+  --result-line: #748575;
+  --result-accent: #245844;
+  --result-accent-ink: #ffffff;
+  --result-hero: #e7eee6;
+}
+[data-result-theme="theatre-day"] {
+  --result-bg: #f7efe5;
+  --result-surface: #fffaf2;
+  --result-ink: #4b2430;
+  --result-muted: #714654;
+  --result-line: #a57b87;
+  --result-accent: #753747;
+  --result-accent-ink: #ffffff;
+  --result-hero: #f0e3e2;
+}
+[data-result-theme="eclipse-night"] {
+  --result-bg: #191d2b;
+  --result-surface: #272d40;
+  --result-ink: #f0edf6;
+  --result-muted: #c8c8da;
+  --result-line: #81879e;
+  --result-accent: #e6e1ee;
+  --result-accent-ink: #2b2b40;
+  --result-hero: #252839;
+}
+[data-result-theme="theatre-night"] {
+  --result-bg: #1b1019;
+  --result-surface: #321c2a;
+  --result-ink: #fff2e7;
+  --result-muted: #ddc3cd;
+  --result-line: #ab8495;
+  --result-accent: #f1c997;
+  --result-accent-ink: #311821;
+  --result-hero: #301a27;
+}
+.ww-result-modal,
+.ww-result-modal *,
+.ww-result-launcher * { box-sizing: border-box; }
+.ww-result-modal {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  padding: 0;
+  width: min(720px, calc(100% - 32px));
+  max-width: calc(100% - 32px);
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow: hidden;
+  border: 1px solid var(--result-line);
+  border-radius: 20px;
+  background: var(--result-bg);
+  color: var(--result-ink);
+  box-shadow: 0 24px 80px #0006;
+  font-family: 'Microsoft YaHei', system-ui, sans-serif;
+  text-align: left;
+}
+.ww-result-modal[open] { display: flex; flex-direction: column; }
+.ww-result-modal::backdrop { background: #10171fba; backdrop-filter: blur(6px); }
+.ww-result-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 20px; border-bottom: 1px solid var(--result-line); flex-shrink: 0; background: var(--result-surface); }
+.ww-result-topbar h2 { margin: 0; color: var(--result-ink); font-size: 16px; font-weight: 700; }
+.ww-result-modal button, .ww-result-launcher button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-width: 44px; min-height: 44px; padding: 10px 18px;
+  border: 1px solid var(--result-line); border-radius: 10px;
+  background: var(--result-surface); color: var(--result-ink);
+  font: 700 14px/1.4 'Microsoft YaHei', system-ui, sans-serif;
+  cursor: pointer; touch-action: manipulation;
+  /* Theme changes must swap foreground/background together, not cross-fade through low contrast. */
+  transition: box-shadow 150ms ease, border-color 150ms ease;
+}
+.ww-result-modal .ww-result-close { padding: 10px; flex-shrink: 0; }
+.ww-result-modal button:hover, .ww-result-launcher button:hover { border-color: var(--result-accent); box-shadow: 0 0 0 1px var(--result-accent); }
+.ww-result-modal :focus-visible, .ww-result-launcher :focus-visible { outline: 3px solid var(--result-accent); outline-offset: 3px; }
+.ww-result-hero { display: flex; align-items: center; gap: 18px; padding: 24px; background: var(--result-hero); border-bottom: 1px solid var(--result-line); flex-shrink: 0; }
+.ww-result-emblem { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; border: 1px solid var(--result-line); background: var(--result-surface); color: var(--result-accent); flex-shrink: 0; }
+.ww-result-outcome { min-width: 0; }
+.ww-result-eyebrow { color: var(--result-muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; }
+.ww-result-outcome h3 { margin: 6px 0 8px; color: var(--result-ink); font-family: 'SimSun', 'STSong', serif; font-size: clamp(24px, 4vw, 32px); line-height: 1.25; overflow-wrap: anywhere; }
+.ww-result-outcome p { margin: 0; color: var(--result-muted); font-size: 13px; line-height: 1.6; }
+.ww-result-roster { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding: 20px; }
+.ww-result-roster-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 12px; }
+.ww-result-roster-heading h3 { margin: 0; font-size: 14px; font-weight: 700; color: var(--result-ink); }
+.ww-result-roster-heading h3 span { margin-left: 6px; font-size: 12px; font-weight: 400; color: var(--result-muted); }
+.ww-result-tally { color: var(--result-muted); font-size: 12px; }
+.ww-result-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.ww-result-player { display: flex; align-items: center; min-width: 0; gap: 10px; margin: 0; padding: 12px; background: var(--result-surface); border: 1px solid var(--result-line); border-radius: 12px; }
+.ww-result-player-info { display: flex; flex: 1; flex-direction: column; align-items: flex-start; min-width: 0; gap: 4px; }
+.ww-result-seat { color: var(--result-muted); font: 600 11px/1.2 'Microsoft YaHei', sans-serif; }
+.ww-result-name { max-width: 100%; color: var(--result-ink); font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+.ww-result-role { display: inline-block; border: 1px solid #748575; border-radius: 5px; padding: 2px 7px; color: #245844; background: #e7eee6; font-size: 12px; line-height: 1.5; font-weight: 700; }
+.ww-result-role[data-role-kind="wolf"] { color: #8b1530; background: #ffe9ed; border-color: #b85a70; }
+.ww-result-role[data-role-kind="god"] { color: #553878; background: #eee7f7; border-color: #9276af; }
+.ww-result-status { flex-shrink: 0; color: var(--result-muted); font-size: 11px; line-height: 1.5; }
+.ww-result-status[data-status="alive"] { padding: 3px 6px; border: 1px solid #69836c; border-radius: 5px; background: #e7eee6; color: #245844; }
+.ww-result-empty { margin: 0; color: var(--result-muted); font-size: 14px; }
+.ww-result-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; flex-shrink: 0; border-top: 1px solid var(--result-line); background: var(--result-surface); }
+.ww-result-footer p { margin: 0; color: var(--result-muted); font-size: 12px; }
+.ww-result-modal .ww-result-return { background: var(--result-accent); color: var(--result-accent-ink); border-color: var(--result-accent); flex-shrink: 0; }
+.ww-result-launcher { display: flex; justify-content: center; margin: 12px 0; }
+.ww-result-launcher .ww-result-open { background: var(--result-accent); color: var(--result-accent-ink); border-color: var(--result-accent); }
+@media (max-width: 480px) {
+  .ww-result-modal { width: calc(100% - 16px); max-width: calc(100% - 16px); max-height: calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); border-radius: 16px; }
+  .ww-result-topbar { padding: 8px 12px; }
+  .ww-result-hero { padding: 16px 14px; gap: 12px; }
+  .ww-result-emblem { width: 48px; height: 48px; }
+  .ww-result-outcome p { font-size: 12px; }
+  .ww-result-roster { padding: 14px 12px; }
+  .ww-result-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .ww-result-player { padding: 10px 12px; }
+  .ww-result-player-info { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 8px; }
+  .ww-result-role { grid-column: 2; justify-self: start; }
+  .ww-result-footer { padding: 12px; }
+  .ww-result-footer p { max-width: 12em; line-height: 1.5; }
+}
+@media (max-height: 520px) {
+  .ww-result-topbar { padding: 4px 14px; }
+  .ww-result-hero { padding: 10px 16px; gap: 12px; }
+  .ww-result-emblem { width: 44px; height: 44px; }
+  .ww-result-outcome h3 { font-size: 24px; margin: 3px 0; }
+  .ww-result-outcome p { display: none; }
+  .ww-result-roster { padding: 12px 16px; }
+  .ww-result-footer { padding: 8px 14px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ww-result-modal[open] { animation: ww-result-enter 180ms ease-out; }
+  @keyframes ww-result-enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+}
+
+.ww-result-role[data-role-kind="unknown"] { color: var(--result-muted); background: var(--result-bg); border-color: var(--result-line); }

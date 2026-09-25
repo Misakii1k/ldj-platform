@@ -24,26 +24,24 @@ interface GoldenCaseFile {
 const goldenUrl = new URL('./golden-cases.json', import.meta.url);
 const golden = JSON.parse(readFileSync(goldenUrl, 'utf8')) as GoldenCaseFile;
 
-const EDGE_IDS = ['lower', 'higher'];
-const isEdge = (id: string) => EDGE_IDS.includes(id);
+const isEdge = (id: string) => id === 'lower';
 
 test('board: 覆盖 1..7 个不同值的 golden boardCases (B01-B08)', () => {
   for (const tc of golden.boardCases) {
     const board = buildBoard(tc.guesses);
 
-    // 两个边缘槽必须存在、无数值、赔率为 6
-    for (const [id, slot] of [['lower', 'LOWER'], ['higher', 'HIGHER']] as const) {
-      const edge = board.find(t => t.id === id);
-      assert.ok(edge, `${tc.id}: 缺少 ${id} 目标`);
-      assert.equal(edge.slot, slot);
-      assert.equal(edge.odds, tc.expectedEdgeOdds);
-      assert.equal(edge.value, null);
-      assert.deepEqual(edge.authors, []);
-    }
+    // 唯一的边缘槽 lower 必须存在、无数值、赔率为 6
+    const edge = board.find(t => t.id === 'lower');
+    assert.ok(edge, `${tc.id}: 缺少 lower 目标`);
+    assert.equal(edge.slot, 'LOWER');
+    assert.equal(edge.odds, tc.expectedEdgeOdds);
+    assert.equal(edge.value, null);
+    assert.deepEqual(edge.authors, []);
 
-    // 边缘槽分列首尾，数值槽夹在中间
+    // 边缘槽只在最前，右端不再有「更高」卡
     assert.equal(board[0]?.id, 'lower', `${tc.id}: lower 应排在版图最前`);
-    assert.equal(board[board.length - 1]?.id, 'higher', `${tc.id}: higher 应排在版图最后`);
+    assert.ok(!board.some(t => (t.id as string) === 'higher'), `${tc.id}: 版图不得含已删除的 higher`);
+    assert.equal(board.length, tc.expectedValues.length + 1, `${tc.id}: 版图长度应为数值槽 + 1`);
 
     // 猜测目标按数值升序
     const guessTargets = board.filter(t => !isEdge(t.id));
@@ -115,10 +113,10 @@ test('winner: 所有猜测均大于正确答案时 lower 获胜', () => {
   assert.deepEqual(pickWinningTargets(board, 50), ['lower']);
 });
 
-test('winner: 所有猜测均小于正确答案时 higher 获胜', () => {
+test('winner: 所有猜测均小于正确答案时没有特殊槽，最大的猜测获胜', () => {
   const board = buildBoard([100, 200, 300]);
-  assert.deepEqual(pickWinningTargets(board, 301), ['higher']);
-  assert.deepEqual(pickWinningTargets(board, 99999), ['higher']);
+  assert.deepEqual(pickWinningTargets(board, 301), ['g:300']);
+  assert.deepEqual(pickWinningTargets(board, 99999), ['g:300']);
 });
 
 test('winner: 精确匹配时该猜测独赢', () => {

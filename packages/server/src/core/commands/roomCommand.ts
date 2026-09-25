@@ -77,6 +77,57 @@ export function applyRoomCommand(
     writeAudit(tx, roomId, actorPlayerId, `ready:${payload.ready ? 'yes' : 'no'}`, 'ok');
     return { command: payload.command, snapshot: readyOutcome.snapshot };
   }
+
+  // 席位切换（玩家可自由将自己切为公共大屏或加入玩家席；房主亦可协助操作）
+  if (payload.command === 'switch_seat_role') {
+    if (room.status !== 'LOBBY' && room.status !== 'POST_GAME') {
+      throw new CommandError('ACTION_NOT_ALLOWED', '只能在大厅或结算阶段切换席位身份');
+    }
+    const targetPlayerId = payload.targetPlayerId ?? actorPlayerId;
+    if (targetPlayerId !== actorPlayerId && room.host_player_id !== actorPlayerId) {
+      throw new CommandError('NOT_AUTHORIZED', '无权更改他人席位身份');
+    }
+    const target = db
+      .prepare(
+        'SELECT connection_status, seat_role, seat, is_bot FROM room_members WHERE room_id = ? AND player_id = ?',
+      )
+      .get(roomId, targetPlayerId) as
+      | { connection_status: string; seat_role: string; seat: number | null; is_bot: number }
+      | undefined;
+    if (!target || target.connection_status === 'KICKED') {
+      throw new CommandError('ACTION_NOT_ALLOWED', '目标成员不在房间中');
+    }
+    if (target.is_bot) {
+      throw new CommandError('ACTION_NOT_ALLOWED', '机器人席位不能切换为公共大屏');
+    }
+    if (target.seat_role === payload.role) {
+      return { command: payload.command, snapshot: buildRoomSnapshot(db, roomId) };
+    }
+    if (payload.role === 'spectator') {
+      db.prepare(
+        'UPDATE room_members SET seat_role = ?, seat = NULL, ready = 0 WHERE room_id = ? AND player_id = ?',
+      ).run('spectator', roomId, targetPlayerId);
+    } else {
+      const roomRow = db.prepare('SELECT game_id FROM rooms WHERE id = ?').get(roomId) as { game_id: string | null } | undefined;
+      const gameEntry = getGameCatalogEntry(roomRow?.game_id ?? undefined);
+      const maxPlayers = gameEntry?.maxPlayers ?? 12;
+      const currentPlayers = db
+        .prepare("SELECT seat FROM room_members WHERE room_id = ? AND seat_role = 'player' AND connection_status != 'KICKED'")
+        .all(roomId) as { seat: number }[];
+      if (currentPlayers.length >= maxPlayers) {
+        throw new CommandError('ACTION_NOT_ALLOWED', `玩家席位已满（上限 ${maxPlayers} 人）`);
+      }
+      const usedSeats = new Set(currentPlayers.map((p) => p.seat));
+      let nextSeat = 0;
+      while (usedSeats.has(nextSeat)) nextSeat++;
+      db.prepare(
+        'UPDATE room_members SET seat_role = ?, seat = ?, ready = 0 WHERE room_id = ? AND player_id = ?',
+      ).run('player', nextSeat, roomId, targetPlayerId);
+    }
+    writeAudit(tx, roomId, actorPlayerId, `switch_seat_role:${targetPlayerId}:${payload.role}`, 'ok');
+    return { command: payload.command, snapshot: buildRoomSnapshot(db, roomId) };
+  }
+
   if (room.host_player_id !== actorPlayerId) {
     throw new CommandError('NOT_AUTHORIZED');
   }

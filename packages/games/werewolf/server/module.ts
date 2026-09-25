@@ -1,9 +1,11 @@
-import type { GameContext, GameEffect, GameModule, ReduceResult } from '@ldj/shared';
+import type { WerewolfAnnouncement } from '@ldj/shared';
+import type { GameContext, GameEffect, GameModule, ReduceResult, WerewolfTimeline, WerewolfTimelineState } from '@ldj/shared';
 import { WEREWOLF_MANIFEST } from '../shared/manifest.ts';
+import { buildNightPlan, createInitialTimelineState, advanceTimelineStep } from './timeline.ts';
 import { pickWerewolfBotAction } from './bot.ts';
 import { buildWerewolfBotPrompt } from './botPrompt.ts';
 
-export const WEREWOLF_STATE_SCHEMA_VERSION = 4 as const;
+export const WEREWOLF_STATE_SCHEMA_VERSION = 5 as const;
 
 export type WerewolfRole = 'wolf' | 'villager' | 'seer' | 'witch' | 'guard' | 'hunter' | 'idiot';
 export type WerewolfTeam = 'wolves' | 'village';
@@ -54,6 +56,7 @@ export interface WerewolfConfig {
   winCondition: WerewolfWinCondition;
   wolfKillScope: WerewolfWolfKillScope;
   roles: WerewolfRolePool;
+  wolfDelta?: number;
 }
 
 export interface WerewolfPlayerState {
@@ -141,22 +144,26 @@ export interface WerewolfState {
   phaseToken: string | null;
   winner: WerewolfTeam | null;
   aborted: boolean;
+  timelineState: WerewolfTimelineState | null;
+  announcement?: WerewolfAnnouncement | null;
 }
 
 export type WerewolfAction =
   | { type: 'begin' }
-  | { type: 'confirm_role' }
-  | { type: 'night_kill'; targetPlayerId: string }
-  | { type: 'seer_check'; targetPlayerId: string }
-  | { type: 'witch_save'; save: boolean }
-  | { type: 'witch_poison'; targetPlayerId: string | null }
-  | { type: 'guard_guard'; targetPlayerId: string | null }
-  | { type: 'hunter_shoot'; targetPlayerId: string | null }
-  | { type: 'confirm_announcement' }
-  | { type: 'finish_speech' }
-  | { type: 'day_vote'; targetPlayerId: string | null }
-  | { type: 'finish_last_words' }
+  | { type: 'confirm_role'; timelineId?: string }
+  | { type: 'night_kill'; targetPlayerId: string; timelineId?: string }
+  | { type: 'seer_check'; targetPlayerId: string; timelineId?: string }
+  | { type: 'witch_save'; save: boolean; timelineId?: string }
+  | { type: 'witch_poison'; targetPlayerId: string | null; timelineId?: string }
+  | { type: 'guard_guard'; targetPlayerId: string | null; timelineId?: string }
+  | { type: 'hunter_shoot'; targetPlayerId: string | null; timelineId?: string }
+  | { type: 'confirm_announcement'; timelineId?: string }
+  | { type: 'finish_speech'; timelineId?: string }
+  | { type: 'ready_vote'; timelineId?: string }
+  | { type: 'day_vote'; targetPlayerId: string | null; timelineId?: string }
+  | { type: 'finish_last_words'; timelineId?: string }
   | { type: 'phase_timeout'; phase: WerewolfTimedPhase; day: number; token: string }
+  | { type: 'timeline_timeout'; timelineId: string; token: string }
   | { type: 'player_forfeited'; playerIds: string[] };
 
 export interface WerewolfPublicPlayer {
@@ -192,6 +199,8 @@ export interface WerewolfPublicView {
   pendingShooterId: string | null;
   winner: WerewolfTeam | null;
   aborted: boolean;
+  timeline?: WerewolfTimeline | null;
+  announcement?: WerewolfAnnouncement | null;
   reveal: {
     roles: Record<string, WerewolfRole>;
     voteHistory: WerewolfVoteRecord[];
@@ -386,6 +395,10 @@ function schedulePhase(
 
 function cancelCurrentTimer(state: WerewolfState, effects: GameEffect[]): void {
   if (state.phaseToken) effects.push({ type: 'cancel_timer', timerId: `werewolf:${state.phaseToken}` });
+  if (state.timelineState?.activeTimerToken) {
+    effects.push({ type: 'cancel_timer', timerId: `werewolf:timeline:${state.timelineState.activeTimerToken}` });
+    state.timelineState = { ...state.timelineState, activeTimerToken: null };
+  }
   state.deadlineAt = null;
   state.phaseToken = null;
 }
@@ -463,7 +476,27 @@ function startNight(
   state.pendingOutcome = null;
   state.lastWordsPlayerId = null;
   phaseChanged(state, events);
-  schedulePhase(state, ctx, 'night', effects);
+
+  if (state.timelineState) {
+    const plan = buildNightPlan(state.config.roles, day, state.config.pace);
+    const mode = state.timelineState.current.mode ?? 'auto';
+    state.timelineState = createInitialTimelineState(plan, day, mode, ctx.now);
+    state.deadlineAt = state.timelineState.current.endsAt;
+    if (state.timelineState.activeTimerToken && state.timelineState.current.endsAt !== null) {
+      effects.push({
+        type: 'schedule_timer',
+        timerId: `werewolf:timeline:${state.timelineState.activeTimerToken}`,
+        deadlineAt: state.timelineState.current.endsAt,
+        action: {
+          type: 'timeline_timeout',
+          timelineId: state.timelineState.current.id,
+          token: state.timelineState.activeTimerToken,
+        },
+      });
+    }
+  } else {
+    schedulePhase(state, ctx, 'night', effects);
+  }
   effects.push({ type: 'system_message', text: `第 ${day} 夜开始` });
 }
 
@@ -620,6 +653,32 @@ function resolveNightWithContext(
     enterHunterShot(state, ctx, shooterId, events, effects);
     return;
   }
+  if (state.timelineState) {
+    const revision = state.timelineState.revision + 1;
+    state.timelineState = {
+      ...state.timelineState,
+      revision,
+      stepIndex: 0,
+      activeTimerToken: null,
+      pausedRemainingMs: null,
+      current: {
+        version: 1,
+        id: `d${state.day}-dawn-r${revision}`,
+        day: state.day,
+        period: 'day',
+        role: null,
+        segment: 'dawn',
+        cue: 'dawn',
+        label: '天亮了',
+        startedAt: ctx.now,
+        endsAt: ctx.now + 1000,
+        actionDeadlineAt: null,
+        mode: state.timelineState.current.mode,
+        paused: false,
+        pauseRemainingMs: null,
+      },
+    };
+  }
   state.phase = 'day_announcement';
   state.announcementConfirmedPlayerIds = [];
   phaseChanged(state, events);
@@ -636,10 +695,70 @@ function tryResolveNight(
   events: WerewolfEvent[],
   effects: GameEffect[],
 ): void {
+  if (state.timelineState) {
+    return;
+  }
   if (!allWolvesVoted(state)) return;
   state.night.killTargetId ??= selectWolfTarget(state, false);
   if (!state.night.killTargetId || !state.night.seerChecked || !witchFinished(state) || !guardFinished(state)) return;
   resolveNightWithContext(state, ctx, events, effects);
+}
+
+function getTimelineObfuscationMs(day: number, stepIndex: number, revision: number): number {
+  const seed = (day * 10007 + stepIndex * 997 + revision * 97) % 2147483647;
+  const pseudo = (seed * 48271) % 2147483647;
+  return 2000 + (pseudo % 1000);
+}
+
+function getDeadRoleObfuscationMs(day: number, stepIndex: number, revision: number): number {
+  const seed = (day * 13337 + stepIndex * 1009 + revision * 101) % 2147483647;
+  const pseudo = (seed * 48271) % 2147483647;
+  return 3000 + (pseudo % 1000);
+}
+
+function tryAccelerateNightAction(state: WerewolfState, ctx: GameContext, effects: GameEffect[]): void {
+  if (!state.timelineState) return;
+  const cur = state.timelineState.current;
+  if (cur.segment !== 'action' || !cur.role || cur.paused) return;
+
+  let roleDone = false;
+  if (cur.role === 'wolf') {
+    roleDone = allWolvesVoted(state);
+  } else if (cur.role === 'seer') {
+    roleDone = state.night.seerChecked;
+  } else if (cur.role === 'witch') {
+    roleDone = witchFinished(state);
+  } else if (cur.role === 'guard') {
+    roleDone = guardFinished(state);
+  }
+
+  if (!roleDone) return;
+
+  // 角色行动已全部完成：计算 2~3 秒的确定性混淆延迟（防止其他玩家通过秒切阶段猜身份）
+  const obfuscationMs = getTimelineObfuscationMs(state.day, state.timelineState.stepIndex, state.timelineState.revision);
+  const baseNow = Math.max(ctx.now, cur.startedAt);
+  const targetEndsAt = baseNow + obfuscationMs;
+
+  if (cur.endsAt !== null && cur.endsAt <= targetEndsAt) {
+    return;
+  }
+
+  cur.endsAt = targetEndsAt;
+  cur.actionDeadlineAt = targetEndsAt;
+  state.deadlineAt = targetEndsAt;
+
+  if (state.timelineState.activeTimerToken) {
+    effects.push({
+      type: 'schedule_timer',
+      timerId: `werewolf:timeline:${state.timelineState.activeTimerToken}`,
+      deadlineAt: targetEndsAt,
+      action: {
+        type: 'timeline_timeout',
+        timelineId: cur.id,
+        token: state.timelineState.activeTimerToken,
+      },
+    });
+  }
 }
 
 function speakingOrderForDay(state: WerewolfState): string[] {
@@ -873,7 +992,7 @@ function playerId(input: unknown): string {
 function parseConfig(input: unknown): WerewolfConfig {
   const raw = input === undefined ? {} : input;
   if (!isRecord(raw)) throw new Error('Invalid config');
-  exactKeys(raw, ['rulesetId', 'preset', 'pace', 'witchSelfSave', 'winCondition', 'wolfKillScope', 'roles', 'guard', 'hunter', 'idiot']);
+  exactKeys(raw, ['rulesetId', 'preset', 'pace', 'witchSelfSave', 'winCondition', 'wolfKillScope', 'roles', 'guard', 'hunter', 'idiot', 'wolfDelta']);
   const preset = raw.preset ?? 'classic';
   const pace = raw.pace ?? 'standard';
   if (preset !== 'classic' && preset !== 'advanced') throw new Error('Invalid preset');
@@ -897,6 +1016,13 @@ function parseConfig(input: unknown): WerewolfConfig {
   if (raw.wolfKillScope !== undefined && raw.wolfKillScope !== wolfKillScope) {
     throw new Error('rulesetId 与 wolfKillScope 不匹配');
   }
+  let wolfDelta = 0;
+  if (raw.wolfDelta !== undefined) {
+    if (typeof raw.wolfDelta !== 'number' || !Number.isInteger(raw.wolfDelta) || raw.wolfDelta < -1 || raw.wolfDelta > 1) {
+      throw new Error('Invalid wolfDelta');
+    }
+    wolfDelta = raw.wolfDelta;
+  }
   const rolesRaw = isRecord(raw.roles) ? raw.roles : {};
   exactKeys(rolesRaw, ['guard', 'hunter', 'idiot']);
   // 扁平键（目录 setup 选项，客户端统一链路）与旧嵌套 roles 兼容合并：任一为 true 即入池
@@ -905,7 +1031,7 @@ function parseConfig(input: unknown): WerewolfConfig {
     hunter: rolesRaw.hunter === true || raw.hunter === true,
     idiot: rolesRaw.idiot === true || raw.idiot === true,
   };
-  return { rulesetId, preset, pace, witchSelfSave, winCondition, wolfKillScope, roles };
+  return { rulesetId, preset, pace, witchSelfSave, winCondition, wolfKillScope, roles, wolfDelta };
 }
 
 function parseAction(input: unknown): WerewolfAction {
@@ -913,38 +1039,67 @@ function parseAction(input: unknown): WerewolfAction {
   const raw = input;
   switch (raw.type) {
     case 'begin':
+      exactKeys(raw, ['type']);
+      return { type: raw.type };
     case 'confirm_role':
     case 'confirm_announcement':
     case 'finish_speech':
     case 'finish_last_words':
-      exactKeys(raw, ['type']);
-      return { type: raw.type };
+    case 'ready_vote':
+      exactKeys(raw, ['type', 'timelineId']);
+      if (raw.timelineId !== undefined && (typeof raw.timelineId !== 'string' || raw.timelineId.length < 1)) {
+        throw new Error('Invalid timelineId');
+      }
+      return { type: raw.type, timelineId: raw.timelineId };
     case 'night_kill':
     case 'seer_check':
-      exactKeys(raw, ['type', 'targetPlayerId']);
-      return { type: raw.type, targetPlayerId: playerId(raw.targetPlayerId) };
+      exactKeys(raw, ['type', 'targetPlayerId', 'timelineId']);
+      if (raw.timelineId !== undefined && (typeof raw.timelineId !== 'string' || raw.timelineId.length < 1)) {
+        throw new Error('Invalid timelineId');
+      }
+      return { type: raw.type, targetPlayerId: playerId(raw.targetPlayerId), timelineId: raw.timelineId };
     case 'witch_save':
-      exactKeys(raw, ['type', 'save']);
+      exactKeys(raw, ['type', 'save', 'timelineId']);
       if (typeof raw.save !== 'boolean') throw new Error('Invalid save decision');
-      return { type: 'witch_save', save: raw.save };
+      if (raw.timelineId !== undefined && (typeof raw.timelineId !== 'string' || raw.timelineId.length < 1)) {
+        throw new Error('Invalid timelineId');
+      }
+      return { type: 'witch_save', save: raw.save, timelineId: raw.timelineId };
     case 'witch_poison':
-      exactKeys(raw, ['type', 'targetPlayerId']);
-      return { type: 'witch_poison', targetPlayerId: raw.targetPlayerId === null ? null : playerId(raw.targetPlayerId) };
+      exactKeys(raw, ['type', 'targetPlayerId', 'timelineId']);
+      if (raw.timelineId !== undefined && (typeof raw.timelineId !== 'string' || raw.timelineId.length < 1)) {
+        throw new Error('Invalid timelineId');
+      }
+      return { type: 'witch_poison', targetPlayerId: raw.targetPlayerId === null ? null : playerId(raw.targetPlayerId), timelineId: raw.timelineId };
     case 'guard_guard':
-      exactKeys(raw, ['type', 'targetPlayerId']);
-      return { type: 'guard_guard', targetPlayerId: raw.targetPlayerId === null ? null : playerId(raw.targetPlayerId) };
+      exactKeys(raw, ['type', 'targetPlayerId', 'timelineId']);
+      if (raw.timelineId !== undefined && (typeof raw.timelineId !== 'string' || raw.timelineId.length < 1)) {
+        throw new Error('Invalid timelineId');
+      }
+      return { type: 'guard_guard', targetPlayerId: raw.targetPlayerId === null ? null : playerId(raw.targetPlayerId), timelineId: raw.timelineId };
     case 'hunter_shoot':
-      exactKeys(raw, ['type', 'targetPlayerId']);
-      return { type: 'hunter_shoot', targetPlayerId: raw.targetPlayerId === null ? null : playerId(raw.targetPlayerId) };
+      exactKeys(raw, ['type', 'targetPlayerId', 'timelineId']);
+      if (raw.timelineId !== undefined && (typeof raw.timelineId !== 'string' || raw.timelineId.length < 1)) {
+        throw new Error('Invalid timelineId');
+      }
+      return { type: 'hunter_shoot', targetPlayerId: raw.targetPlayerId === null ? null : playerId(raw.targetPlayerId), timelineId: raw.timelineId };
     case 'day_vote':
-      exactKeys(raw, ['type', 'targetPlayerId']);
-      return { type: 'day_vote', targetPlayerId: raw.targetPlayerId === null ? null : playerId(raw.targetPlayerId) };
+      exactKeys(raw, ['type', 'targetPlayerId', 'timelineId']);
+      if (raw.timelineId !== undefined && (typeof raw.timelineId !== 'string' || raw.timelineId.length < 1)) {
+        throw new Error('Invalid timelineId');
+      }
+      return { type: 'day_vote', targetPlayerId: raw.targetPlayerId === null ? null : playerId(raw.targetPlayerId), timelineId: raw.timelineId };
     case 'phase_timeout':
       exactKeys(raw, ['type', 'phase', 'day', 'token']);
       if (!TIMED_PHASES.has(raw.phase as WerewolfTimedPhase)) throw new Error('Invalid timeout phase');
       if (!Number.isInteger(raw.day) || (raw.day as number) < 0) throw new Error('Invalid timeout day');
       if (typeof raw.token !== 'string' || raw.token.length < 1 || raw.token.length > 128) throw new Error('Invalid timeout token');
       return { type: 'phase_timeout', phase: raw.phase as WerewolfTimedPhase, day: raw.day as number, token: raw.token };
+    case 'timeline_timeout':
+      exactKeys(raw, ['type', 'timelineId', 'token']);
+      if (typeof raw.timelineId !== 'string' || raw.timelineId.length < 1) throw new Error('Invalid timelineId');
+      if (typeof raw.token !== 'string' || raw.token.length < 1) throw new Error('Invalid timeline token');
+      return { type: 'timeline_timeout', timelineId: raw.timelineId, token: raw.token };
     case 'player_forfeited': {
       exactKeys(raw, ['type', 'playerIds']);
       if (!Array.isArray(raw.playerIds) || raw.playerIds.length < 1 || raw.playerIds.length > 12) throw new Error('Invalid forfeited players');
@@ -963,6 +1118,11 @@ function playerCanAct(state: WerewolfState, id: string): boolean {
       return player.alive && !state.confirmedRolePlayerIds.includes(id);
     case 'night':
       if (!player.alive) return false;
+      if (state.timelineState) {
+        if (state.timelineState.current.segment !== 'action' || state.timelineState.current.role !== player.role) {
+          return false;
+        }
+      }
       if (player.role === 'wolf') return !(id in state.night.wolfVotes);
       if (player.role === 'seer') return !state.night.seerChecked;
       if (player.role === 'witch') return state.night.killTargetId !== null && !witchFinished(state);
@@ -1019,6 +1179,8 @@ function publicView(state: WerewolfState): WerewolfPublicView {
     pendingShooterId: state.phase === 'hunter_shot' ? state.pendingShoot : null,
     winner: state.winner,
     aborted: state.aborted,
+    timeline: state.timelineState ? structuredClone(state.timelineState.current) : null,
+    announcement: state.announcement ?? null,
     reveal: over
       ? {
           roles: Object.fromEntries(Object.entries(state.players).map(([id, player]) => [id, player.role])),
@@ -1153,21 +1315,35 @@ function migrateV2(snapshot: unknown) {
 }
 
 /** v3 快照（无规则集身份与 wolfKillScope）：锁定为 legacy 的 non_wolf 夜刀语义 */
-function migrateV3(snapshot: unknown): WerewolfState {
+function migrateV3(snapshot: unknown) {
   if (!isRecord(snapshot) || snapshot.schemaVersion !== 3 || !isRecord(snapshot.players) || !isRecord(snapshot.config)) {
     throw new Error('Invalid werewolf v3 snapshot');
   }
-  const old = snapshot as unknown as Omit<WerewolfState, 'schemaVersion' | 'config'> & {
+  const old = snapshot as unknown as Record<string, unknown> & {
     config: Omit<WerewolfConfig, 'rulesetId' | 'wolfKillScope'>;
   };
   return {
     ...old,
-    schemaVersion: WEREWOLF_STATE_SCHEMA_VERSION,
+    schemaVersion: 4,
     config: {
       ...old.config,
       rulesetId: 'werewolf_legacy_platform_v2',
       wolfKillScope: 'non_wolf',
     },
+  };
+}
+
+/** v4 快照迁移到 v5：保持 timelineState = null，保留原状态机字段 */
+function migrateV4(snapshot: unknown): WerewolfState {
+  if (!isRecord(snapshot) || snapshot.schemaVersion !== 4 || !isRecord(snapshot.players) || !isRecord(snapshot.config)) {
+    throw new Error('Invalid werewolf v4 snapshot');
+  }
+  const config = parseConfig(snapshot.config);
+  return {
+    ...(snapshot as unknown as WerewolfState),
+    schemaVersion: 5,
+    config,
+    timelineState: null,
   };
 }
 
@@ -1198,6 +1374,9 @@ export const werewolfModule: GameModule<
     if (parsedConfig.roles.idiot) specials.push('idiot');
     if (wolfCount + specials.length > playerIds.length) {
       throw new Error('扩展角色卡数超过玩家人数，请关闭部分扩展角色');
+    }
+    if (parsedConfig.winCondition === 'roles' && wolfCount + specials.length >= playerIds.length) {
+      throw new Error('标准屠边胜负规则下平民数量不能为 0，请关闭部分神职角色');
     }
     const roles: WerewolfRole[] = [
       ...Array<WerewolfRole>(wolfCount).fill('wolf'),
@@ -1248,6 +1427,30 @@ export const werewolfModule: GameModule<
       phaseToken: null,
       winner: null,
       aborted: false,
+      timelineState: {
+        version: 1,
+        stepIndex: 0,
+        revision: 1,
+        pausedRemainingMs: null,
+        activeTimerToken: null,
+        initialRolePlan: [],
+        current: {
+          version: 1,
+          id: 'n0-s0-r1',
+          day: 0,
+          period: 'day',
+          role: null,
+          segment: 'confirm',
+          cue: null,
+          label: '对局开始，请确认你的身份',
+          startedAt: ctx.now,
+          endsAt: null,
+          actionDeadlineAt: null,
+          mode: 'auto',
+          paused: false,
+          pauseRemainingMs: null,
+        },
+      },
     };
     return state;
   },
@@ -1305,6 +1508,70 @@ export const werewolfModule: GameModule<
           finishLastWords(s, ctx, events, effects);
           return done();
       }
+    }
+
+    if (action.type === 'timeline_timeout') {
+      if (!s.timelineState) return deny('当前对局无时间线状态');
+      if (action.timelineId !== s.timelineState.current.id) return noop(state);
+      if (action.token !== s.timelineState.activeTimerToken) return noop(state);
+      if (s.timelineState.current.endsAt !== null && ctx.now <= s.timelineState.current.startedAt) {
+        return noop(state);
+      }
+
+      const cur = s.timelineState.current;
+      if (cur.segment === 'action') {
+        if (cur.role === 'wolf') {
+          s.night.killTargetId = selectWolfTarget(s, true);
+        } else if (cur.role === 'witch') {
+          if (s.night.witchSaveDecision === null) s.night.witchSaveDecision = false;
+          if (!s.night.witchPoisonDecided) s.night.witchPoisonDecided = true;
+        } else if (cur.role === 'seer') {
+          if (!s.night.seerChecked) s.night.seerChecked = true;
+        } else if (cur.role === 'guard') {
+          if (!s.night.guardDecided) s.night.guardDecided = true;
+        }
+      }
+
+      const plan = buildNightPlan(s.config.roles, s.day, s.config.pace);
+      const now = ctx.now;
+      const result = advanceTimelineStep(s.timelineState, plan, now, action.token);
+      if (!result.advanced) return noop(state);
+
+      if (result.nightResolved) {
+        if (!s.night.killTargetId) {
+          s.night.killTargetId = selectWolfTarget(s, true);
+        }
+        resolveNightWithContext(s, ctx, events, effects);
+        return done();
+      }
+
+      s.timelineState = result.state as WerewolfTimelineState;
+      if (
+        s.timelineState.current.segment === 'action' &&
+        s.timelineState.current.role &&
+        aliveRoleIds(s, s.timelineState.current.role as WerewolfRole).length === 0
+      ) {
+        // 阵亡神职保持 3~4 秒固定混淆空过，防止被全场猜出身份
+        const deadObfuscationMs = getDeadRoleObfuscationMs(s.day, s.timelineState.stepIndex, s.timelineState.revision);
+        const baseNow = Math.max(now, s.timelineState.current.startedAt);
+        const deadEndsAt = baseNow + deadObfuscationMs;
+        s.timelineState.current.endsAt = deadEndsAt;
+        s.timelineState.current.actionDeadlineAt = deadEndsAt;
+      }
+      s.deadlineAt = s.timelineState.current.endsAt;
+      if (s.timelineState.activeTimerToken && s.timelineState.current.endsAt !== null) {
+        effects.push({
+          type: 'schedule_timer',
+          timerId: `werewolf:timeline:${s.timelineState.activeTimerToken}`,
+          deadlineAt: s.timelineState.current.endsAt,
+          action: {
+            type: 'timeline_timeout',
+            timelineId: s.timelineState.current.id,
+            token: s.timelineState.activeTimerToken,
+          },
+        });
+      }
+      return done();
     }
 
     if (action.type === 'player_forfeited') {
@@ -1365,6 +1632,11 @@ export const werewolfModule: GameModule<
       if (!self.alive) return deny('已出局玩家不能夜间行动');
       if (action.type === 'night_kill') {
         if (self.role !== 'wolf') return deny('只有狼人可以投击杀票');
+        if (s.timelineState) {
+          const current = s.timelineState.current;
+          if (current.role !== 'wolf' || current.segment !== 'action') return deny('当前不是狼人行动时间');
+          if (action.timelineId && action.timelineId !== current.id) return deny('时间线版本不匹配');
+        }
         if (actorId in state.night.wolfVotes) return deny('本夜击杀票已经锁定');
         const target = state.players[action.targetPlayerId];
         if (!target?.alive) return deny('击杀目标无效');
@@ -1373,6 +1645,11 @@ export const werewolfModule: GameModule<
         if (allWolvesVoted(s)) s.night.killTargetId = selectWolfTarget(s, false);
       } else if (action.type === 'seer_check') {
         if (self.role !== 'seer' || state.night.seerChecked) return deny('当前不能查验');
+        if (s.timelineState) {
+          const current = s.timelineState.current;
+          if (current.role !== 'seer' || current.segment !== 'action') return deny('当前不是预言家行动时间');
+          if (action.timelineId && action.timelineId !== current.id) return deny('时间线版本不匹配');
+        }
         const target = state.players[action.targetPlayerId];
         if (!target?.alive || action.targetPlayerId === actorId) return deny('查验目标无效');
         const result = { night: state.day, playerId: action.targetPlayerId, team: teamOf(target.role) };
@@ -1382,6 +1659,11 @@ export const werewolfModule: GameModule<
       } else if (action.type === 'witch_save') {
         if (self.role !== 'witch' || state.night.killTargetId === null || state.night.witchSaveDecision !== null) {
           return deny('当前不能决定使用解药');
+        }
+        if (s.timelineState) {
+          const current = s.timelineState.current;
+          if (current.role !== 'witch' || current.segment !== 'action') return deny('当前不是女巫行动时间');
+          if (action.timelineId && action.timelineId !== current.id) return deny('时间线版本不匹配');
         }
         if (action.save) {
           if (state.witchSaveUsed) return deny('解药已经用完');
@@ -1400,6 +1682,11 @@ export const werewolfModule: GameModule<
         if (self.role !== 'witch' || state.night.killTargetId === null || state.night.witchPoisonDecided) {
           return deny('当前不能决定使用毒药');
         }
+        if (s.timelineState) {
+          const current = s.timelineState.current;
+          if (current.role !== 'witch' || current.segment !== 'action') return deny('当前不是女巫行动时间');
+          if (action.timelineId && action.timelineId !== current.id) return deny('时间线版本不匹配');
+        }
         if (state.night.witchSaveDecision === true) return deny('同一夜不能同时使用解药和毒药');
         if (action.targetPlayerId !== null) {
           const target = state.players[action.targetPlayerId];
@@ -1411,18 +1698,27 @@ export const werewolfModule: GameModule<
         s.night.witchPoisonTargetId = action.targetPlayerId;
       } else if (action.type === 'guard_guard') {
         if (self.role !== 'guard' || state.night.guardDecided) return deny('当前不能决定守人');
+        if (s.timelineState) {
+          const current = s.timelineState.current;
+          if (current.role !== 'guard' || current.segment !== 'action') return deny('当前不是守卫行动时间');
+          if (action.timelineId && action.timelineId !== current.id) return deny('时间线版本不匹配');
+        }
         if (action.targetPlayerId !== null) {
           const target = state.players[action.targetPlayerId];
           if (!target?.alive || action.targetPlayerId === actorId) return deny('守人目标无效');
           if (action.targetPlayerId === state.lastGuardTargetId) return deny('不能连续两夜守护同一人');
           s.lastGuardTargetId = action.targetPlayerId;
           s.night.guardTargetId = action.targetPlayerId;
+        } else {
+          s.lastGuardTargetId = null;
+          s.night.guardTargetId = null;
         }
         s.night.guardDecided = true;
       } else {
         return deny('当前是夜晚行动阶段');
       }
       tryResolveNight(s, ctx, events, effects);
+      tryAccelerateNightAction(s, ctx, effects);
       return done();
     }
 
@@ -1449,6 +1745,10 @@ export const werewolfModule: GameModule<
       if (state.speakingOrder[state.currentSpeakerIndex] !== actorId) return deny('还没轮到你发言');
       advanceSpeaker(s, ctx, events, effects);
       return done();
+    }
+
+    if (action.type === 'ready_vote') {
+      return noop(state);
     }
 
     if (action.type === 'day_vote') {
@@ -1542,12 +1842,12 @@ export const werewolfModule: GameModule<
         snapshot.schemaVersion !== WEREWOLF_STATE_SCHEMA_VERSION ||
         !isRecord(snapshot.config)
       ) {
-        throw new Error('Invalid werewolf v4 snapshot');
+        throw new Error('Invalid werewolf v5 snapshot');
       }
       const snapshotConfig = snapshot.config;
       if (!['rulesetId', 'preset', 'pace', 'witchSelfSave', 'winCondition', 'wolfKillScope', 'roles']
         .every((key) => key in snapshotConfig)) {
-        throw new Error('Invalid werewolf v4 snapshot');
+        throw new Error('Invalid werewolf v5 snapshot');
       }
       const config = parseConfig(snapshotConfig);
       return {
@@ -1555,9 +1855,10 @@ export const werewolfModule: GameModule<
         config,
       } as unknown as WerewolfState;
     }
-    if (fromVersion === 3) return migrateV3(snapshot);
-    if (fromVersion === 2) return migrateV3(migrateV2(snapshot));
-    if (fromVersion === 1) return migrateV3(migrateV2(migrateV1(snapshot)));
+    if (fromVersion === 4) return migrateV4(snapshot);
+    if (fromVersion === 3) return migrateV4(migrateV3(snapshot));
+    if (fromVersion === 2) return migrateV4(migrateV3(migrateV2(snapshot)));
+    if (fromVersion === 1) return migrateV4(migrateV3(migrateV2(migrateV1(snapshot))));
     throw new Error(`无法从狼人杀状态版本 ${fromVersion} 迁移`);
   },
 

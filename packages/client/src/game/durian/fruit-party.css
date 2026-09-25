@@ -1,0 +1,529 @@
+/* Toy fruit party — cream reading surfaces, fruit green, mango controls. */
+.tabletop-shell[data-game-id="durian"], .room-page[data-game-id="durian"], .durian-dialog {
+  --gp-paper: #fff7e7; --gp-surface: #fffdf7; --gp-ink: #25351c; --gp-muted: #526047;
+  --gp-line: #526c3b; --gp-green: #285623; --gp-yellow: #ffd05a;
+  --game-paper: #fff7e7; --game-ink: #25351c; --game-muted: #526047;
+  color: #25351c;
+}
+.tabletop-shell[data-game-id="durian"] { height: 100dvh; max-width: none; width: 100%; overflow: hidden; padding: env(safe-area-inset-top) max(12px,env(safe-area-inset-right)) env(safe-area-inset-bottom) max(12px,env(safe-area-inset-left)); gap: 8px; background: radial-gradient(ellipse at 90% 0%,#e3edbe,transparent 50%), #fff7e7; }
+.tabletop-shell[data-game-id="durian"]::before { background: none; }
+.tabletop-shell[data-game-id="durian"] .tabletop-header { margin: 8px 0 0; padding: 10px 16px; background: #fffdf7; border: 2px solid #526c3b; border-radius: 18px; box-shadow: 0 4px 0 #d1d9b5; color: #25351c; flex-shrink: 0; }
+.tabletop-shell[data-game-id="durian"] :is(.tabletop-title,.tabletop-subtitle) { color: #25351c; text-shadow: none; }
+.tabletop-shell[data-game-id="durian"] .tabletop-arena-container { min-height: 0; flex: 1; padding: 0; overflow: hidden; }
+.tabletop-shell[data-game-id="durian"] .tabletop-center-content { height: 100%; width: 100%; max-width: none; min-height: 0; overflow: hidden; }
+.tabletop-shell[data-game-id="durian"] .tabletop-shell-stage { width: 100%; height: 100%; min-height: 0; padding: 0; display: flex; flex-direction: column; overflow: hidden; }
+.tabletop-shell[data-game-id="durian"] .durian-stage { width: 100%; height: 100%; max-width: 1440px; margin: auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 4px; overflow-x: hidden; overflow-y: auto; }
+.durian-round-strip { display: flex; flex-shrink: 0; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 14px; border: 1px solid #526c3b; background: #e7edce; border-radius: 12px; font-size: 14px; }
+.durian-round-strip strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.durian-brand { color: #355426; font-size: 12px; font-weight: 800; letter-spacing: .13em; }
+.tabletop-shell[data-game-id="durian"] .durian-order-board { display: none; }
+.tabletop-shell[data-game-id="durian"] .durian-forehead-bar { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 8px; flex-shrink: 0; background: none; border: 0; box-shadow: none; padding: 0; width: 100%; overflow: visible; }
+.tabletop-shell[data-game-id="durian"] .durian-forehead-slot { min-width: 0; width: auto; max-width: none; padding: 8px; background: #fffdf7; border: 2px solid #829568; border-radius: 16px; box-shadow: 0 4px 0 #d1d9b5; }
+.tabletop-shell[data-game-id="durian"] .durian-forehead-slot--current { border-color: #285623; background: #edf4d9; box-shadow: 0 4px 0 #285623; }
+.tabletop-shell[data-game-id="durian"] .durian-forehead-slot__name { color: #25351c; font-size: 14px; font-weight: 750; }
+.tabletop-shell[data-game-id="durian"] .durian-forehead-slot__header { margin-bottom: 6px; gap: 4px; }
+.durian-self-forehead { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(170px, 260px); align-items: center; gap: 10px; padding: 8px 12px; background: #e7edce; border: 2px solid #526c3b; border-radius: 14px; color: #25351c; flex-shrink: 0; }
+.durian-self-forehead__header { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.durian-self-forehead__header strong { font-size: 14px; }
+.durian-self-forehead__header span { color: #526047; font-size: 12px; }
+.durian-self-forehead .durian-card { min-height: 64px; }
+.durian-density-control { display: inline-flex; align-items: center; gap: 4px; color: #526047; font-size: 12px; white-space: nowrap; }
+.durian-density-control select { min-height: 36px; border: 1px solid #526c3b; border-radius: 8px; background: #fffdf7; color: #25351c; padding: 4px 6px; font-weight: 700; }
+.tabletop-shell[data-game-id="durian"] .durian-card { width: 100%; min-width: 0; min-height: 92px; border: 2px solid #526c3b; border-radius: 12px; box-shadow: 0 4px 0 #bac99b; background: #fffdf7; color: #25351c; overflow: hidden; transform: none; }
+.tabletop-shell[data-game-id="durian"] .durian-card-half { color: #25351c; min-width: 0; padding: 8px 5px; gap: 4px; }
+.tabletop-shell[data-game-id="durian"] .durian-card-half__name { color: #25351c; font-size: 13px; }
+.tabletop-shell[data-game-id="durian"] .durian-card-half__badge { background: #fffdf7; border: 1px solid #526c3b; color: #25351c; font-size: 15px; text-shadow: none; }
+.tabletop-shell[data-game-id="durian"] .durian-card-half--checked { background: #e4efc6; border-color: #285623; }
+.tabletop-shell[data-game-id="durian"] .durian-card-half--crossed { background: #eee9df; opacity: 1; filter: none; }
+.tabletop-shell[data-game-id="durian"] .durian-card--secret { display: flex; align-items: center; justify-content: center; flex-direction: column; background: repeating-linear-gradient(135deg,#e7edce 0 10px,#d8e4b7 10px 12px); color: #25351c; border-style: dashed; }
+.tabletop-shell[data-game-id="durian"] .durian-secret-text { color: #25351c; font-size: 14px; text-shadow: none; }
+.tabletop-shell[data-game-id="durian"] .durian-card--monkey { background: #ffe1a3; color: #42290d; }
+.tabletop-shell[data-game-id="durian"] .durian-card-monkey__label { color: #42290d; }
+.tabletop-shell[data-game-id="durian"] .durian-center-board { width: 100%; min-height: 160px; flex: 1; display: flex; flex-direction: column; padding: 12px; border: 2px solid #526c3b; border-radius: 18px; background: #fffdf7; box-shadow: 0 4px 0 #d1d9b5; overflow: auto; }
+.tabletop-shell[data-game-id="durian"] .durian-center-board .arena-board__body { min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.tabletop-shell[data-game-id="durian"] .durian-board-title { color: #25351c; font-size: 16px; }
+.tabletop-shell[data-game-id="durian"] .durian-board-deck-info { color: #526047; }
+.durian-summary { display: flex; flex-wrap: wrap; gap: 6px; }
+.durian-summary > span { display: flex; align-items: center; gap: 4px; padding: 5px 8px; border: 1px solid #829568; border-radius: 9px; background: #edf4d9; color: #25351c; font-size: 13px; }
+.durian-summary b { font-size: 16px; }
+.durian-history-toggle { min-height: 44px; border: 1px solid #526c3b; border-radius: 10px; background: #fff7e7; color: #25351c; font-weight: 700; padding: 8px 12px; cursor: pointer; flex-shrink: 0; }
+.tabletop-shell[data-game-id="durian"] .durian-placements-wrap { min-height: 0; overflow: auto; flex: 1; padding: 4px; }
+.tabletop-shell[data-game-id="durian"] .durian-placements-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); gap: 10px; max-width: none; }
+.tabletop-shell[data-game-id="durian"] .durian-placement-item { width: auto; min-width: 0; max-width: 360px; color: #25351c; }
+.tabletop-shell[data-game-id="durian"] .durian-placement-item__author { color: #526047; font-size: 13px; }
+.tabletop-shell[data-game-id="durian"] .durian-placement-item--flip-target { cursor: pointer; outline: 3px solid #285623; outline-offset: 2px; border-radius: 12px; padding: 6px; animation: none; }
+.durian-drawn-card { display: grid; grid-template-columns: 1fr minmax(140px,220px); align-items: center; gap: 12px; color: #25351c; padding: 10px; background: #ffedbc; border: 2px solid #836115; border-radius: 12px; }
+.tabletop-shell[data-game-id="durian"] .tabletop-bottom-bar { flex-shrink: 0; padding: 10px; margin: 0 0 8px; background: #fffdf7; border: 2px solid #526c3b; border-radius: 16px; box-shadow: 0 4px 0 #d1d9b5; max-height: 35%; overflow: auto; }
+.tabletop-shell[data-game-id="durian"] .tabletop-action-dock { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; background: none; padding: 0; border: 0; }
+.tabletop-shell[data-game-id="durian"] .tabletop-action-dock__reason { width: 100%; color: #526047; font-size: 14px; margin: 0; }
+.tabletop-shell[data-game-id="durian"] .tabletop-action { min-height: 48px; flex: 1; border: 2px solid #526c3b; border-radius: 12px; background: #fff7e7; color: #25351c; font-size: 15px; font-weight: 800; box-shadow: 0 3px 0 #bac99b; }
+.tabletop-shell[data-game-id="durian"] .tabletop-action--primary { background: #ffd05a; color: #30240b; border-color: #836115; box-shadow: 0 4px 0 #b88a29; }
+.tabletop-shell[data-game-id="durian"] :is(button,[role="button"]):focus-visible, .durian-dialog :focus-visible { outline: 3px solid #285623; outline-offset: 3px; }
+.tabletop-shell[data-game-id="durian"] button:disabled { opacity: .65; cursor: not-allowed; box-shadow: none; }
+.tabletop-shell[data-game-id="durian"] .durian-tabletop-arena { flex: 1; min-height: 0; width: 100%; }
+.tabletop-shell[data-game-id="durian"] .durian-table-center-board, .tabletop-shell[data-game-id="durian"] .durian-table-counter { background: #fffdf7; border: 2px solid #526c3b; border-radius: 18px; color: #25351c; }
+.tabletop-shell[data-game-id="durian"] .durian-sim-bell-btn-compact { min-width: 100px; min-height: 80px; border: 2px solid #83520b; background: #ffd05a; color: #30240b; border-radius: 24px; box-shadow: 0 6px 0 #b88a29; }
+.tabletop-shell[data-game-id="durian"] .durian-verdict-overlay { background: #24351de0; padding: max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom)); z-index: 1600; }
+.tabletop-shell[data-game-id="durian"] .durian-verdict-modal { background: #fff7e7; color: #25351c; border: 2px solid #526c3b; border-radius: 24px; max-height: 100%; overflow: auto; padding: 20px; box-shadow: 0 24px 60px #12220d66; }
+.tabletop-shell[data-game-id="durian"] .durian-verdict-hero { background: #e7edce; border: 1px solid #526c3b; color: #25351c; padding: 16px; border-radius: 16px; }
+.tabletop-shell[data-game-id="durian"] .durian-verdict-hero__title { color: #25351c; font-size: 22px; text-shadow: none; }
+.tabletop-shell[data-game-id="durian"] .durian-verdict-btn { min-height: 48px; background: #ffd05a; color: #30240b; border: 2px solid #836115; border-radius: 12px; }
+.tabletop-shell[data-game-id="durian"] .durian-over { background: #fffdf7; color: #25351c; border: 2px solid #526c3b; border-radius: 20px; padding: 24px; }
+.durian-ranking { list-style: none; margin: 16px 0; padding: 0; display: grid; gap: 8px; }
+.durian-ranking li { display: flex; justify-content: space-between; gap: 16px; color: #25351c; padding: 12px; border: 1px solid #829568; border-radius: 10px; background: #edf4d9; }
+.durian-dialog .tabletop-drawer { background: #fff7e7; color: #25351c; border: 2px solid #526c3b; padding-bottom: env(safe-area-inset-bottom); }
+@media (max-width: 768px) {
+  .tabletop-shell[data-game-id="durian"] { padding-left: max(8px,env(safe-area-inset-left)); padding-right: max(8px,env(safe-area-inset-right)); gap: 6px; }
+  .tabletop-shell[data-game-id="durian"] .tabletop-header { padding: 6px 10px; margin-top: 4px; }
+  .tabletop-shell[data-game-id="durian"] .tabletop-seats-bar { display: none; }
+  .tabletop-shell[data-game-id="durian"] .durian-stage { gap: 8px; }
+  .tabletop-shell[data-game-id="durian"] .durian-forehead-bar { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; }
+  .tabletop-shell[data-game-id="durian"] .durian-forehead-slot { padding: 4px; border-radius: 10px; }
+  .tabletop-shell[data-game-id="durian"] .durian-forehead-slot__header { flex-direction: column; align-items: start; margin-bottom: 2px; }
+  .tabletop-shell[data-game-id="durian"] .durian-self-forehead { grid-template-columns: minmax(0, 1fr) minmax(110px, 1.2fr); padding: 6px 8px; }
+  .tabletop-shell[data-game-id="durian"] .durian-forehead-slot__name { font-size: 12px; width: 100%; }
+  .tabletop-shell[data-game-id="durian"] .durian-forehead-slot .durian-card { min-height: 72px; }
+  .tabletop-shell[data-game-id="durian"] .durian-forehead-slot .durian-card-half { padding: 4px 2px; gap: 2px; }
+  .tabletop-shell[data-game-id="durian"] .durian-forehead-slot svg { max-width: 22px; max-height: 26px; }
+  .tabletop-shell[data-game-id="durian"] .durian-card-half__name { font-size: 12px; }
+  .tabletop-shell[data-game-id="durian"] .durian-center-board { min-height: 210px; padding: 8px; overflow: visible; }
+  .tabletop-shell[data-game-id="durian"] .durian-placements-wrap { overflow: visible; }
+  .tabletop-shell[data-game-id="durian"] .durian-placements-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .tabletop-shell[data-game-id="durian"] .durian-placements-empty { min-height: 50px; padding: 8px; }
+  .durian-round-strip { padding: 8px; gap: 8px; }
+  .durian-round-strip .durian-brand { display: none; }
+  .tabletop-shell[data-game-id="durian"] .tabletop-bottom-bar { padding: 8px; margin-bottom: 4px; }
+  .tabletop-shell[data-game-id="durian"] .tabletop-action { font-size: 14px; padding: 8px; }
+  .tabletop-shell[data-game-id="durian"] .durian-verdict-modal { padding: 12px; }
+  .tabletop-shell[data-game-id="durian"] .durian-verdict-hero__title { font-size: 18px; }
+}
+
+/* 紧凑总览：手机首屏优先保留「累计需求 + 牌列入口」，舒展模式不受影响。 */
+@media (max-width: 768px) {
+  .tabletop-shell[data-game-id="durian"] .durian-stage[data-density="compact"] .durian-forehead-slot {
+    padding: 3px;
+  }
+  .tabletop-shell[data-game-id="durian"] .durian-stage[data-density="compact"] .durian-forehead-slot .durian-card {
+    min-height: 62px;
+    height: 62px;
+  }
+  .tabletop-shell[data-game-id="durian"] .durian-stage[data-density="compact"] .durian-forehead-slot__header {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 0;
+  }
+  .tabletop-shell[data-game-id="durian"] .durian-stage[data-density="compact"] .durian-forehead-slot__name {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tabletop-shell[data-game-id="durian"] .durian-stage[data-density="compact"] .durian-forehead-slot__penalty {
+    flex-shrink: 0;
+    padding-inline: 4px;
+    font-size: 10px;
+  }
+  .tabletop-shell[data-game-id="durian"] .durian-stage[data-density="compact"] .durian-forehead-slot .durian-card-half svg {
+    max-width: 18px;
+    max-height: 20px;
+  }
+  .tabletop-shell[data-game-id="durian"] .durian-stage[data-density="compact"] .durian-forehead-slot .durian-card-half__name {
+    font-size: 10px;
+  }
+  .tabletop-shell[data-game-id="durian"] .durian-stage[data-density="compact"] .durian-forehead-slot .durian-card-half__badge {
+    font-size: 11px;
+    padding: 0 3px;
+  }
+  .tabletop-shell[data-game-id="durian"] .durian-stage[data-density="compact"] .durian-forehead-slot .durian-card-half {
+    padding: 2px 1px;
+  }
+  .tabletop-shell[data-game-id="durian"] .durian-stage[data-density="compact"] .durian-self-forehead {
+    padding-block: 4px;
+  }
+  .tabletop-shell[data-game-id="durian"] .durian-stage[data-density="compact"] .durian-self-forehead .durian-card {
+    min-height: 54px;
+    height: 54px;
+  }
+  .tabletop-shell[data-game-id="durian"] .durian-stage[data-density="compact"] .durian-center-board {
+    min-height: 160px;
+    padding: 6px;
+    gap: 6px;
+  }
+  .tabletop-shell[data-game-id="durian"] .durian-stage[data-density="compact"] .durian-summary {
+    gap: 4px;
+  }
+  .tabletop-shell[data-game-id="durian"] .durian-stage[data-density="compact"] .durian-summary > span {
+    padding: 4px 6px;
+  }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .tabletop-shell[data-game-id="durian"] .tabletop-seats-bar { display: none; }
+  .tabletop-shell[data-game-id="durian"] .durian-stage { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); grid-template-rows: auto 1fr; align-items: start; }
+  .tabletop-shell[data-game-id="durian"] .durian-round-strip { grid-column: 1 / -1; }
+  .tabletop-shell[data-game-id="durian"] .durian-forehead-bar { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .tabletop-shell[data-game-id="durian"] .durian-center-board { min-height: 0; max-height: 100%; }
+  .tabletop-shell[data-game-id="durian"] .durian-tabletop-arena, .tabletop-shell[data-game-id="durian"] .durian-player-arena { grid-column: 1 / -1; }
+}
+.room-page[data-game-id="durian"] { background: radial-gradient(ellipse at 90% 0%,#dfebba,transparent 60%),#fff7e7; color: #25351c; }
+.room-page[data-game-id="durian"] :is(.room-header,.room-hero__panel,.room-panel,.tabletop-setup,.room-code-card) { background: #fffdf7; color: #25351c; border: 2px solid #829568; border-radius: 20px; box-shadow: 0 5px 0 #d1d9b5; }
+.room-page[data-game-id="durian"] :is(.room-hero__title,.room-hero__title span,.room-header__title,.room-panel__title,.tabletop-setup__heading h2,.tabletop-setup__label) { color: #25351c; text-shadow: none; }
+.room-page[data-game-id="durian"] .room-theme-eyebrow { color: #355426; font-size: 12px; font-weight: 800; letter-spacing: .15em; }
+.room-page[data-game-id="durian"] .room-theme-guide { padding: 12px 4px 0; }
+.room-page[data-game-id="durian"] .room-theme-guide p { color: #526047; margin: 8px 0; font-size: 14px; line-height: 1.65; }
+.room-page[data-game-id="durian"] :is(.setup-chip,.setup-chip-info-btn,.room-action-btn,.mini-btn) { color: #25351c; background: #fffdf7; border: 2px solid #829568; min-height: 44px; min-width: 44px; }
+.room-page[data-game-id="durian"] .setup-chip.is-selected { color: #25351c; background: #ffd05a; border-color: #526c3b; box-shadow: 0 3px 0 #526c3b; }
+.room-page[data-game-id="durian"] :focus-visible { outline: 3px solid #285623; outline-offset: 3px; }
+.durian-dialog .tabletop-drawer { width: min(100%,840px); max-width: 840px; }
+.durian-dialog .tabletop-drawer > header { background: #e7edce; color: #25351c; border-bottom: 1px solid #526c3b; }
+.durian-dialog .tabletop-drawer > header button { color: #25351c; background: #fffdf7; border: 1px solid #526c3b; min-height: 44px; min-width: 44px; }
+.durian-dialog .durian-verdict-overlay { position: static; inset: auto; width: 100%; height: auto; padding: 0; background: none; backdrop-filter: none; display: block; }
+.durian-dialog .durian-verdict-modal { background: #fffdf7; color: #25351c; padding: 16px; border: 1px solid #829568; box-shadow: none; max-height: none; width: 100%; }
+.durian-dialog :is(.durian-verdict-hero,.durian-showdown-card) { background: #edf4d9; color: #25351c; border: 1px solid #829568; box-shadow: none; }
+.durian-dialog :is(.durian-verdict-hero__title,.durian-verdict-hero__meta,.durian-showdown-side__label,.durian-showdown-side__val,.durian-showdown-card__name,.durian-showdown-vs) { color: #25351c; text-shadow: none; }
+.durian-dialog .durian-verdict-btn { background: #ffd05a; color: #25351c; border: 2px solid #526c3b; min-height: 44px; }
+.durian-dialog .durian-showdown-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.durian-dialog :focus-visible { outline: 3px solid #285623; outline-offset: 3px; }
+.durian-round-strip { position: sticky; top: 0; z-index: 3; }
+[data-game-ui-hidden="true"] :is([data-game-id="durian"],.durian-dialog) * { animation-play-state: paused !important; }
+[data-motion-level]:not([data-motion-level="full"]) :is([data-game-id="durian"],.durian-dialog) *,
+[data-motion-level]:not([data-motion-level="full"]) :is([data-game-id="durian"],.durian-dialog) *::before,
+[data-motion-level]:not([data-motion-level="full"]) :is([data-game-id="durian"],.durian-dialog) *::after { animation: none !important; transition: none !important; }
+@media (max-width: 480px) {
+  .durian-dialog .durian-verdict-modal { padding: 8px; }
+  .durian-dialog .durian-showdown-grid { grid-template-columns: 1fr; }
+  .durian-dialog .durian-verdict-hero__title { font-size: 20px; }
+}
+
+@media (max-width: 768px) {
+  .tabletop-shell[data-game-id="durian"] .durian-stage[data-density="comfortable"] .durian-forehead-bar { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .tabletop-shell[data-game-id="durian"] .durian-stage[data-density="comfortable"] .durian-forehead-slot { min-height: 116px; }
+}
+
+/* ==========================================================================
+   榴莲操作弹窗 (DurianTurnSheet) 与 收起恢复条 (durian-resume-bar)
+   ========================================================================== */
+
+.durian-turn-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  background: rgba(36, 53, 29, 0.42);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 0 env(safe-area-inset-bottom);
+  animation: durianFadeIn 0.15s ease-out;
+}
+
+@media (min-width: 640px) {
+  .durian-turn-sheet-backdrop {
+    align-items: center;
+    padding: 20px;
+  }
+}
+
+@keyframes durianFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.durian-turn-sheet {
+  background: #fffdf7;
+  color: #25351c;
+  border: 2.5px solid #526c3b;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -4px 24px rgba(37, 53, 28, 0.2), 0 8px 0 #d1d9b5;
+  width: 100%;
+  max-width: 540px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .durian-turn-sheet {
+    border-radius: 20px;
+    box-shadow: 0 16px 40px rgba(37, 53, 28, 0.25), 0 6px 0 #829568;
+  }
+}
+
+.durian-turn-sheet__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #edf4d9;
+  border-bottom: 2px solid #829568;
+  flex-shrink: 0;
+}
+
+.durian-turn-sheet__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 900;
+  color: #25351c;
+  letter-spacing: -0.01em;
+}
+
+.durian-turn-sheet__dismiss {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 6px 14px;
+  background: #fffdf7;
+  color: #25351c;
+  border: 1.5px solid #526c3b;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.durian-turn-sheet__dismiss:hover {
+  background: #f7fbe9;
+}
+
+.durian-turn-sheet__body {
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.durian-turn-sheet__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.durian-turn-sheet__hint {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #526047;
+  font-weight: 600;
+  text-align: center;
+}
+
+.durian-turn-sheet__row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.durian-turn-sheet__btn {
+  flex: 1;
+  min-height: 48px;
+  padding: 10px 14px;
+  font-size: 15px;
+  font-weight: 800;
+  border-radius: 12px;
+  border: 2px solid #526c3b;
+  background: #fffdf7;
+  color: #25351c;
+  box-shadow: 0 3px 0 #bac99b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.durian-turn-sheet__btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 #bac99b;
+}
+
+.durian-turn-sheet__btn:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #bac99b;
+}
+
+.durian-turn-sheet__btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.durian-turn-sheet__btn--primary {
+  background: #ffd05a;
+  color: #30240b;
+  border-color: #836115;
+  box-shadow: 0 4px 0 #b88a29;
+}
+
+.durian-turn-sheet__btn--primary:hover:not(:disabled) {
+  box-shadow: 0 5px 0 #b88a29;
+}
+
+.durian-turn-sheet__btn--primary:active:not(:disabled) {
+  box-shadow: 0 1px 0 #b88a29;
+}
+
+.durian-turn-sheet__btn--challenge {
+  background: #fff1ee;
+  color: #991b1b;
+  border-color: #dc2626;
+  box-shadow: 0 3px 0 #fca5a5;
+}
+
+/* 选半边卡片网格 */
+.durian-turn-sheet__halves {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+}
+
+.durian-turn-sheet__half {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 8px;
+  min-height: 150px;
+  background: #fffdf7;
+  border: 2px solid #829568;
+  border-radius: 14px;
+  box-shadow: 0 3px 0 #d1d9b5;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s ease;
+}
+
+.durian-turn-sheet__half:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0 #829568;
+}
+
+.durian-turn-sheet__half.is-selected {
+  background: #edf4d9;
+  border-color: #285623;
+  box-shadow: 0 4px 0 #285623, inset 0 0 0 2px #285623;
+}
+
+.durian-turn-sheet__half-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #526047;
+}
+
+.durian-turn-sheet__half-name {
+  font-size: 14px;
+  font-weight: 900;
+  color: #25351c;
+}
+
+.durian-turn-sheet__half-qty {
+  font-family: var(--durian-numeral-font, Georgia, serif);
+  font-size: 26px;
+  font-weight: 700;
+  color: #25351c;
+  line-height: 1.1;
+}
+
+.durian-turn-sheet__half-state {
+  font-size: 12px;
+  font-weight: 700;
+  color: #526047;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #f0ede1;
+}
+
+.durian-turn-sheet__half.is-selected .durian-turn-sheet__half-state {
+  background: #285623;
+  color: #ffffff;
+}
+
+.durian-turn-sheet__confirm {
+  width: 100%;
+  margin-top: 4px;
+}
+
+/* 猴子功能牌在回合弹窗中的 Hero 展示 */
+.durian-turn-sheet__monkey-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background: #fff8e8;
+  border: 2px solid #ca8a04;
+  border-radius: 14px;
+}
+
+.durian-turn-sheet__monkey-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.durian-turn-sheet__monkey-title {
+  display: block;
+  font-size: 16px;
+  font-weight: 900;
+  color: #78350f;
+  margin-bottom: 2px;
+}
+
+.durian-turn-sheet__monkey-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #854d0e;
+}
+
+/* 桌面收起后的恢复条 (durian-resume-bar) */
+.durian-resume-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  background: #edf4d9;
+  border: 2px solid #526c3b;
+  border-radius: 14px;
+  box-shadow: 0 3px 0 #bac99b;
+  flex-shrink: 0;
+  margin-bottom: 4px;
+}
+
+.durian-resume-bar__text {
+  font-size: 13px;
+  font-weight: 800;
+  color: #25351c;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.durian-resume-bar__btn {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 16px;
+  background: #ffd05a;
+  color: #30240b;
+  border: 1.5px solid #836115;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 850;
+  cursor: pointer;
+  box-shadow: 0 2px 0 #b88a29;
+  flex-shrink: 0;
+  transition: transform 0.1s ease;
+}
+
+.durian-resume-bar__btn:hover {
+  transform: translateY(-1px);
+}
+
+.durian-resume-bar__btn:active {
+  transform: translateY(1px);
+}
+

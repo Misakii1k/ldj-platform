@@ -1,3 +1,4 @@
+import { WEREWOLF_PUBLIC_VOICE_MANIFEST, WEREWOLF_VOICE_CATALOG, WEREWOLF_VOICE_ALIASES, isPublicVoiceCue } from '@ldj/shared';
 /**
  * 狼人杀法官语音：客户端排程与播放管理器。
  * 支持单曲精准播报（playCue 支持 Promise 等待）、事件排队（enqueue）、
@@ -9,117 +10,110 @@
  */
 export const WEREWOLF_VOICE_BASE = '/werewolf-voice';
 
+/**
+ * 权威时间线公共语音白名单（Contract F / T11）。
+ * 绝不允许包含验人好坏、女巫救人毒人、以及特定玩家死讯等私密/非确定信息。
+ */
+export const TIMELINE_PUBLIC_CUES: ReadonlySet<string> = new Set([
+  ...Object.keys(WEREWOLF_PUBLIC_VOICE_MANIFEST),
+  'wolf_open',
+  'wolf_kill',
+  'wolf_agree',
+  'seer_check',
+  'seer_result_generic',
+  'guard_open_simple',
+  'hunter_idiot_open',
+  'day_start',
+  'day_peaceful',
+  'day_last_words',
+  'vote_start',
+  'vote_tie_night',
+  'game_over_good',
+  'game_over_wolf',
+]);
+
+/**
+ * 校验指定 cue 是否为禁止向公共播报的私密或涉密 cue
+ */
+export function isForbiddenPublicCue(cue: string): boolean {
+  return !TIMELINE_PUBLIC_CUES.has(cue) || !isPublicVoiceCue(cue);
+}
+
+export interface ShouldPlayVoiceOptions {
+  readonly mode: 'auto' | 'manual' | null;
+  readonly paused: boolean;
+  readonly cue: string | null;
+  readonly isHost: boolean;
+  readonly isModerator: boolean;
+  readonly localSettingEnabled: boolean | null;
+  readonly volume: number;
+}
+
+/**
+ * 判定当前设备在当前环节是否应播放时间线语音（Contract F / T11）：
+ * - manual 模式永不自动播报
+ * - 暂停或音量为 0 不出声
+ * - 无 cue 或属于违禁私密 cue 不出声
+ * - 本机设置优先；若无本机设置，仅 host / moderator 默认出声，其他设备默认静音仅显示字幕
+ */
+export function shouldPlayTimelineVoice(options: ShouldPlayVoiceOptions): {
+  readonly shouldPlay: boolean;
+  readonly reason?: string;
+} {
+  const { mode, paused, cue, isHost, isModerator, localSettingEnabled, volume } = options;
+
+  if (mode === 'manual') {
+    return { shouldPlay: false, reason: 'manual_mode' };
+  }
+  if (paused) {
+    return { shouldPlay: false, reason: 'paused' };
+  }
+  if (!cue) {
+    return { shouldPlay: false, reason: 'no_cue' };
+  }
+  if (isForbiddenPublicCue(cue)) {
+    return { shouldPlay: false, reason: 'forbidden_cue' };
+  }
+  if (volume <= 0) {
+    return { shouldPlay: false, reason: 'muted' };
+  }
+
+  if (localSettingEnabled !== null) {
+    return { shouldPlay: localSettingEnabled, reason: 'local_setting' };
+  }
+
+  // 默认设备规则：仅房主或主持人出声
+  const isDefaultDevice = isHost || isModerator;
+  return { shouldPlay: isDefaultDevice, reason: isDefaultDevice ? 'default_device' : 'non_host_default_silent' };
+}
+
+/**
+ * 根据时间线开始时间、当前同步时钟与台词时长，计算起播偏移（Contract F / T11）：
+ * - 若已超过台词总时长，绝不重放/补播过期句子（canPlay: false）
+ * - 若尚在播报窗口内，从已过秒数起播（offsetSeconds: elapsed / 1000）
+ */
+export function calculateTimelineCueOffset(
+  startedAt: number,
+  adjustedNow: number,
+  durationMs: number,
+): { readonly canPlay: boolean; readonly offsetSeconds: number } {
+  const elapsedMs = adjustedNow - startedAt;
+  if (elapsedMs >= durationMs) {
+    return { canPlay: false, offsetSeconds: 0 };
+  }
+  if (elapsedMs <= 0) {
+    return { canPlay: true, offsetSeconds: 0 };
+  }
+  return { canPlay: true, offsetSeconds: elapsedMs / 1000 };
+}
+
 /** 队列键 → 音频文件（相对 WEREWOLF_VOICE_BASE；文件名含中文，播放时 encodeURI）。 */
 export const CUE_FILES: Readonly<Record<string, string>> = {
-  // 夜晚基础
-  night_start: '01_首夜/01_开场_天黑请闭眼.wav',
-  wolf_open_first: '01_首夜/02_狼人_请睁眼确认队友.wav',
-  wolf_open_normal: '01_首夜/02_狼人_请睁眼选择目标.wav',
-  wolf_open: '01_首夜/02_狼人_请睁眼确认队友.wav',
-  wolf_kill: '01_首夜/03_狼人_请杀人.wav',
-  wolf_agree: '01_首夜/04_狼人_请统一意见.wav',
-  wolf_close: '01_首夜/05_狼人_请闭眼.wav',
-
-  // 女巫环节（全套重置新音频）
-  witch_open: '01_首夜/06_女巫_请睁眼.wav',
-  witch_death_point: '01_首夜/07_女巫_今晚死亡的是他.wav',
-  witch_cure_prompt: '01_首夜/07_女巫_请问有一瓶解药你要用吗.wav',
-  witch_poison_prompt: '01_首夜/07_女巫_你有一瓶毒药你要用吗.wav',
-  witch_poison_target: '01_首夜/07_女巫_你要对谁使用.wav',
-  witch_close: '01_首夜/07_女巫_请闭眼.wav',
-  witch_save_generic: '01_首夜/07_女巫_今晚死亡的是他.wav',
-  witch_poison: '01_首夜/07_女巫_你有一瓶毒药你要用吗.wav',
-
-  // 预言家
-  seer_open: '01_首夜/10_预言家_请睁眼.wav',
-  seer_check: '01_首夜/11_预言家_请选择查验玩家.wav',
-  seer_good: '01_首夜/12_预言家_身份是好人.wav',
-  seer_result_generic: '01_首夜/12_预言家_这位玩家的身份是_留尾.wav',
-  seer_wolf: '01_首夜/13_预言家_身份是狼人.wav',
-  seer_close: '01_首夜/14_预言家_请闭眼.wav',
-
-  // 守卫与猎人白痴
-  guard_open: '01_首夜/15_守卫_请睁眼守护谁.wav',
-  guard_open_simple: '01_首夜/15_守卫_请睁眼.wav',
-  guard_close: '01_首夜/16_守卫_请闭眼.wav',
-  hunter_idiot_open: '01_首夜/17_猎人白痴_请睁眼确认身份.wav',
-  hunter_idiot_close: '01_首夜/18_猎人白痴_请闭眼.wav',
-  cupid_open: '01_首夜/19_丘比特_请睁眼.wav',
-  cupid_couple: '01_首夜/20_丘比特_请指定情侣.wav',
-  cupid_close: '01_首夜/21_丘比特_请闭眼.wav',
-  lovers_open: '01_首夜/22_情侣_请睁眼确认身份.wav',
-
-  // 白天播报与导语+号码拼接
-  day_start: '02_首个白天/01_白天_天亮了.wav',
-  day_death_intro: '02_首个白天/05_死亡_昨晚死亡的玩家为_留尾.wav',
-  day_death_number_1: '02_首个白天/05_死亡_号码_1号.wav',
-  day_death_number_2: '02_首个白天/05_死亡_号码_2号.wav',
-  day_death_number_3: '02_首个白天/05_死亡_号码_3号.wav',
-  day_death_number_4: '02_首个白天/05_死亡_号码_4号.wav',
-  day_death_number_5: '02_首个白天/05_死亡_号码_5号.wav',
-  day_death_number_6: '02_首个白天/05_死亡_号码_6号.wav',
-  day_death_number_7: '02_首个白天/05_死亡_号码_7号.wav',
-  day_death_number_8: '02_首个白天/05_死亡_号码_8号.wav',
-  day_death_number_9: '02_首个白天/05_死亡_号码_9号.wav',
-  day_death_number_10: '02_首个白天/05_死亡_号码_10号.wav',
-  day_death_number_11: '02_首个白天/05_死亡_号码_11号.wav',
-  day_death_number_12: '02_首个白天/05_死亡_号码_12号.wav',
-  day_peaceful: '02_首个白天/06_死亡_平安夜.wav',
-  day_last_words: '02_首个白天/07_遗言_请死亡玩家发表遗言.wav',
-
-  // 常规叫号发言 1-12 号
-  speak_normal_1: '02_首个白天/02_发言_请1号玩家发言.wav',
-  speak_normal_2: '02_首个白天/02_发言_请2号玩家发言.wav',
-  speak_normal_3: '02_首个白天/02_发言_请3号玩家发言.wav',
-  speak_normal_4: '02_首个白天/02_发言_请4号玩家发言.wav',
-  speak_normal_5: '02_首个白天/02_发言_请5号玩家发言.wav',
-  speak_normal_6: '02_首个白天/02_发言_请6号玩家发言.wav',
-  speak_normal_7: '02_首个白天/02_发言_请7号玩家发言.wav',
-  speak_normal_8: '02_首个白天/02_发言_请8号玩家发言.wav',
-  speak_normal_9: '02_首个白天/02_发言_请9号玩家发言.wav',
-  speak_normal_10: '02_首个白天/02_发言_请10号玩家发言.wav',
-  speak_normal_11: '02_首个白天/02_发言_请11号玩家发言.wav',
-  speak_normal_12: '02_首个白天/02_发言_请12号玩家发言.wav',
-  speak_1: '02_首个白天/02_发言_请1号玩家发言.wav',
-  speak_2: '02_首个白天/02_发言_请2号玩家发言.wav',
-  speak_3: '02_首个白天/02_发言_请3号玩家发言.wav',
-  speak_4: '02_首个白天/02_发言_请4号玩家发言.wav',
-  speak_5: '02_首个白天/02_发言_请5号玩家发言.wav',
-  speak_6: '02_首个白天/02_发言_请6号玩家发言.wav',
-  speak_7: '02_首个白天/02_发言_请7号玩家发言.wav',
-  speak_8: '02_首个白天/02_发言_请8号玩家发言.wav',
-  speak_9: '02_首个白天/02_发言_请9号玩家发言.wav',
-  speak_10: '02_首个白天/02_发言_请10号玩家发言.wav',
-  speak_11: '02_首个白天/02_发言_请11号玩家发言.wav',
-  speak_12: '02_首个白天/02_发言_请12号玩家发言.wav',
-
-  // 竞选
-  police_hand_up: '02_首个白天/01_竞选_天亮了请举手.wav',
-  police_vote: '02_首个白天/03_竞选_请警下玩家投票.wav',
-
-  // 放逐与遗言 1-12 号
-  vote_tie_pk: '02_首个白天/08_发言_平票请发言.wav',
-  vote_tie_night: '02_首个白天/09_发言_再次平票无人出局.wav',
-  vote_start: '02_首个白天/10_投票_请选择放逐玩家.wav',
-  exile_1: '02_首个白天/11_出局_1号出局请发遗言.wav',
-  exile_2: '02_首个白天/11_出局_2号出局请发遗言.wav',
-  exile_3: '02_首个白天/11_出局_3号出局请发遗言.wav',
-  exile_4: '02_首个白天/11_出局_4号出局请发遗言.wav',
-  exile_5: '02_首个白天/11_出局_5号出局请发遗言.wav',
-  exile_6: '02_首个白天/11_出局_6号出局请发遗言.wav',
-  exile_7: '02_首个白天/11_出局_7号出局请发遗言.wav',
-  exile_8: '02_首个白天/11_出局_8号出局请发遗言.wav',
-  exile_9: '02_首个白天/11_出局_9号出局请发遗言.wav',
-  exile_10: '02_首个白天/11_出局_10号出局请发遗言.wav',
-  exile_11: '02_首个白天/11_出局_11号出局请发遗言.wav',
-  exile_12: '02_首个白天/11_出局_12号出局请发遗言.wav',
-
-  // 技能与终局
-  hunter_shoot: '03_技能与终局/01_猎人_请开枪.wav',
-  hunter_pass: '03_技能与终局/02_猎人_放弃开枪.wav',
-  idiot_reveal: '03_技能与终局/03_白痴_翻牌免死.wav',
-  game_over_good: '03_技能与终局/04_终局_好人获胜.wav',
-  game_over_wolf: '03_技能与终局/05_终局_狼人获胜.wav',
+  ...Object.fromEntries([
+    ...Object.values(WEREWOLF_VOICE_CATALOG).filter(e => e.availability === 'public').map(e => [e.cue, e.file]),
+    ...Object.entries(WEREWOLF_VOICE_ALIASES).filter(([,cue]) => isPublicVoiceCue(cue)).map(([alias,cue]) => [alias, WEREWOLF_VOICE_CATALOG[cue]!.file]),
+  ]),
+  ...(WEREWOLF_VOICE_CATALOG.seer_result_generic ? { seer_result_generic: WEREWOLF_VOICE_CATALOG.seer_result_generic.file } : {}),
 };
 
 /**
@@ -150,6 +144,8 @@ class JudgeVoiceQueue {
   #queue: string[] = [];
   #playing = false;
   #currentAudio: HTMLAudioElement | null = null;
+  #currentSettle: ((value: boolean) => void) | null = null;
+  #processTimer: ReturnType<typeof setTimeout> | null = null;
   /** 在途 playCue 的结算器：interrupt 时统一以 false 结算，杜绝协程挂死。 */
   #waiters = new Set<(value: boolean) => void>();
 
@@ -158,7 +154,12 @@ class JudgeVoiceQueue {
    * 用于阶段突变、终局接管或新一轮夜晚到来时重置。
    */
   interrupt(): void {
+    if (this.#processTimer !== null) {
+      clearTimeout(this.#processTimer);
+      this.#processTimer = null;
+    }
     this.#queue = [];
+    this.#currentSettle = null;
     const waiters = [...this.#waiters];
     this.#waiters.clear();
     const audio = this.#currentAudio;
@@ -202,6 +203,9 @@ class JudgeVoiceQueue {
       const settle = (value: boolean) => {
         if (settled) return;
         settled = true;
+        if (this.#currentSettle === settle) {
+          this.#currentSettle = null;
+        }
         if (watchdog !== null) clearTimeout(watchdog);
         this.#waiters.delete(settle);
         resolve(value);
@@ -210,7 +214,9 @@ class JudgeVoiceQueue {
       try {
         if (this.#currentAudio) {
           const prev = this.#currentAudio;
+          const prevSettle = this.#currentSettle;
           this.#currentAudio = null;
+          this.#currentSettle = null;
           prev.onended = null;
           prev.onerror = null;
           prev.pause();
@@ -219,9 +225,14 @@ class JudgeVoiceQueue {
           } catch {
             // 忽略已释放元素的重置错误
           }
+          if (prevSettle) {
+            this.#waiters.delete(prevSettle);
+            prevSettle(false);
+          }
         }
         const audio = audioFactory(url);
         this.#currentAudio = audio;
+        this.#currentSettle = settle;
         this.#waiters.add(settle);
         audio.onended = () => {
           if (this.#currentAudio === audio) this.#currentAudio = null;
@@ -252,6 +263,58 @@ class JudgeVoiceQueue {
     this.interrupt();
   }
 
+  /**
+   * 播放权威时间线单曲 cue（Contract F / T11）：
+   * - 立即打断并清理旧音频，不入旧队列
+   * - 支持从已流逝的 offsetSeconds 处起播
+   * - 捕获浏览器自动播放受限异常，返回 { success: false, blocked: true }
+   */
+  async playTimelineCue(
+    cue: string,
+    offsetSeconds: number = 0,
+    volume: number = 0.8,
+    announcement: boolean = false,
+  ): Promise<{ success: boolean; blocked?: boolean }> {
+    this.interrupt();
+    if (announcement ? !isPublicVoiceCue(cue) : isForbiddenPublicCue(cue)) return { success: false };
+    const file = CUE_FILES[cue];
+    if (!file) return { success: false };
+    const url = `${WEREWOLF_VOICE_BASE}/${encodeURI(file)}`;
+
+    return new Promise((resolve) => {
+      let settled = false;
+      let audio: HTMLAudioElement | null = null;
+      let watchdog: ReturnType<typeof setTimeout> | null = null;
+      const settle = (success: boolean, blocked = false) => {
+        if (settled) return;
+        settled = true;
+        if (watchdog !== null) clearTimeout(watchdog);
+        this.#waiters.delete(settleWrapper);
+        if (audio) {
+          audio.onended = null;
+          audio.onerror = null;
+          audio.pause();
+        }
+        if (this.#currentAudio === audio) this.#currentAudio = null;
+        resolve({ success, blocked });
+      };
+      const settleWrapper = (val: boolean) => settle(val);
+      this.#waiters.add(settleWrapper);
+      try {
+        audio = audioFactory(url);
+        this.#currentAudio = audio;
+        audio.volume = Math.max(0, Math.min(1, volume));
+        if (offsetSeconds > 0) audio.currentTime = offsetSeconds;
+        audio.onended = () => settle(true);
+        audio.onerror = () => settle(false);
+        watchdog = setTimeout(() => settle(false), PLAY_WATCHDOG_MS);
+        void Promise.resolve(audio.play()).catch((err: unknown) => {
+          settle(false, err instanceof Error && err.name === 'NotAllowedError');
+        });
+      } catch { settle(false); }
+    });
+  }
+
   #process(): void {
     if (this.#playing || this.#queue.length === 0) return;
     const key = this.#queue.shift();
@@ -275,7 +338,10 @@ class JudgeVoiceQueue {
           this.#currentAudio = null;
         }
         this.#playing = false;
-        this.#process();
+        this.#processTimer = setTimeout(() => {
+          this.#processTimer = null;
+          this.#process();
+        }, 500);
       };
 
       audio.onended = finish;

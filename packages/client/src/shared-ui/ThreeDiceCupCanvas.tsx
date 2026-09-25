@@ -1,8 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { useMotion } from '../motion/MotionContext.tsx';
 import type { MotionLevel } from '../motion/motionPolicy.ts';
 import { webAudio } from './WebAudioManager.ts';
+import { createDiceCupShellGeometry } from './diceCupGeometry.ts';
 
 export type ThreeDiceCupTheme = 'wood' | 'felt' | 'metal';
 
@@ -151,62 +153,63 @@ function createDiceFaceTexture(value: number, size: number): THREE.CanvasTexture
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext('2d')!;
-  const s = size / 256; // 相对 256 基准的缩放系数
+  const s = size / 256;
 
-  // 1. 象牙白微渐变底色
+  // 1. 象牙白温润微渐变底色
   const bgGrad = ctx.createRadialGradient(
-    size / 2, size / 2, 10 * s,
-    size / 2, size / 2, size * 0.7
+    size / 2, size / 2, 18 * s,
+    size / 2, size / 2, size * 0.75
   );
   bgGrad.addColorStop(0, '#ffffff');
-  bgGrad.addColorStop(0.85, '#f8fafc');
-  bgGrad.addColorStop(1, '#e2e8f0');
+  bgGrad.addColorStop(0.7, '#faf7f2');
+  bgGrad.addColorStop(1, '#eee6da');
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, size, size);
 
-  // 2. 边缘微圆角反光暗角
-  ctx.lineWidth = 14 * s;
-  ctx.strokeStyle = 'rgba(203, 213, 225, 0.4)';
-  ctx.strokeRect(7 * s, 7 * s, size - 14 * s, size - 14 * s);
+  // 2. 边缘象牙微圆润暗角
+  ctx.lineWidth = 10 * s;
+  ctx.strokeStyle = 'rgba(215, 200, 180, 0.45)';
+  ctx.strokeRect(5 * s, 5 * s, size - 10 * s, size - 10 * s);
 
-  // 3. 点位坐标与色彩
+  // 3. 点位坐标与立体阴刻色彩
   const isRed = value === 1 || value === 4;
-  const dotColor = isRed ? '#dc2626' : '#1e293b';
+  const dotColor = isRed ? '#dc2626' : '#0f172a';
   const dotGlow = isRed ? '#ef4444' : '#334155';
+  const dotDeep = isRed ? '#7f1d1d' : '#020617';
 
   const drawDot = (xPct: number, yPct: number, radius: number) => {
     const x = (xPct / 100) * size;
     const y = (yPct / 100) * size;
 
-    // 内凹阴影
+    // 内凹立体阴刻阴影
     ctx.save();
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
     const grad = ctx.createRadialGradient(
-      x - radius * 0.3, y - radius * 0.3, 1,
+      x - radius * 0.35, y - radius * 0.35, 1,
       x, y, radius
     );
     grad.addColorStop(0, dotGlow);
-    grad.addColorStop(0.8, dotColor);
-    grad.addColorStop(1, isRed ? '#991b1b' : '#0f172a');
+    grad.addColorStop(0.75, dotColor);
+    grad.addColorStop(1, dotDeep);
     ctx.fillStyle = grad;
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-    ctx.shadowBlur = 6 * s;
-    ctx.shadowOffsetX = 1 * s;
-    ctx.shadowOffsetY = 2 * s;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+    ctx.shadowBlur = 7 * s;
+    ctx.shadowOffsetX = 1.2 * s;
+    ctx.shadowOffsetY = 2.2 * s;
     ctx.fill();
 
-    // 内部高光小点
+    // 烤漆高光球
     ctx.beginPath();
-    ctx.arc(x - radius * 0.35, y - radius * 0.35, radius * 0.22, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+    ctx.arc(x - radius * 0.36, y - radius * 0.36, radius * 0.24, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
     ctx.shadowColor = 'transparent';
     ctx.fill();
     ctx.restore();
   };
 
-  const bigR = 36 * s;
-  const normalR = 22 * s;
+  const bigR = 38 * s;
+  const normalR = 23 * s;
 
   if (value === 1) {
     drawDot(50, 50, bigR);
@@ -245,6 +248,7 @@ function createDiceFaceTexture(value: number, size: number): THREE.CanvasTexture
 interface ThemedTextures {
   cupMap: THREE.CanvasTexture;
   matMap: THREE.CanvasTexture;
+  bumpMap: THREE.CanvasTexture | null;
   roughnessMap: THREE.CanvasTexture | null;
 }
 
@@ -265,8 +269,7 @@ function sprayNoise(
 }
 
 /**
- * 主题化程序化贴图：杯体 map / 底盘毡面 map（灰度×材质色）/ 金属拉丝 roughnessMap。
- * 全部 Canvas 生成，无外部静态资产，离线可用。
+ * 主题化程序化贴图：杯体 map / 底盘毡面 map / 木质或金属 bumpMap 与 roughnessMap。
  */
 function createThemedTextures(theme: ThreeDiceCupTheme, size: number): ThemedTextures {
   // ── 杯体贴图 ──
@@ -274,26 +277,85 @@ function createThemedTextures(theme: ThreeDiceCupTheme, size: number): ThemedTex
   cupCanvas.width = cupCanvas.height = size;
   const cc = cupCanvas.getContext('2d')!;
 
+  let bumpMap: THREE.CanvasTexture | null = null;
+  let roughnessMap: THREE.CanvasTexture | null = null;
+
   if (theme === 'wood') {
-    // 竖向木纹：基底 + 正弦扰动条纹 + 噪点
+    // 暖色黑胡桃木/花梨木：温润底色 + 真实自然年轮流动 + 导管微孔
     const base = cc.createLinearGradient(0, 0, size, 0);
-    base.addColorStop(0, '#8a4a1d');
-    base.addColorStop(0.5, '#9a5a28');
-    base.addColorStop(1, '#7a3f16');
+    base.addColorStop(0, '#5a2b16');
+    base.addColorStop(0.28, '#70371d');
+    base.addColorStop(0.55, '#5d2c16');
+    base.addColorStop(0.82, '#763b20');
+    base.addColorStop(1, '#4a2211');
     cc.fillStyle = base;
     cc.fillRect(0, 0, size, size);
+
+    const bCanvas = document.createElement('canvas');
+    bCanvas.width = bCanvas.height = size;
+    const bc = bCanvas.getContext('2d')!;
+    bc.fillStyle = '#808080';
+    bc.fillRect(0, 0, size, size);
+
+    const rCanvas = document.createElement('canvas');
+    rCanvas.width = rCanvas.height = size;
+    const rc = rCanvas.getContext('2d')!;
+    rc.fillStyle = '#555555';
+    rc.fillRect(0, 0, size, size);
+
     for (let x = 0; x < size; x += 2) {
-      const alpha = 0.05 + 0.11 * Math.abs(Math.sin(x * 0.09 + Math.sin(x * 0.021) * 2));
-      cc.strokeStyle = `rgba(52, 26, 7, ${alpha})`;
-      cc.lineWidth = x % 9 === 0 ? 2 : 1;
+      const wave1 = Math.sin(x * 0.016) * 14;
+      const wave2 = Math.sin(x * 0.045 + 1.2) * 6;
+      const intensity = Math.abs(Math.sin(x * 0.03 + wave1 * 0.12)) * 0.14 + 0.025;
+
+      cc.strokeStyle = `rgba(35, 14, 5, ${intensity})`;
+      cc.lineWidth = x % 6 === 0 ? 2.5 : 1;
       cc.beginPath();
-      cc.moveTo(x + Math.sin(x * 0.12) * 4, 0);
-      for (let y = 0; y <= size; y += 8) {
-        cc.lineTo(x + Math.sin(y * 0.045 + x * 0.02) * 5, y);
+      cc.moveTo(x + wave1, 0);
+      for (let y = 0; y <= size; y += 14) {
+        const wobble = Math.sin(y * 0.014 + x * 0.018) * 4.5;
+        cc.lineTo(x + wave1 + wave2 + wobble, y);
       }
       cc.stroke();
+
+      // 金棕高光年轮微纹
+      if (x % 14 === 0) {
+        cc.strokeStyle = `rgba(230, 160, 110, ${intensity * 0.22})`;
+        cc.lineWidth = 1;
+        cc.beginPath();
+        cc.moveTo(x + wave1 + 1, 0);
+        for (let y = 0; y <= size; y += 14) {
+          const wobble = Math.sin(y * 0.014 + x * 0.018) * 4.5;
+          cc.lineTo(x + wave1 + wave2 + wobble + 1, y);
+        }
+        cc.stroke();
+      }
+
+      bc.strokeStyle = `rgba(0, 0, 0, ${intensity * 0.6})`;
+      bc.lineWidth = 1;
+      bc.beginPath();
+      for (let y = 0; y <= size; y += 14) {
+        const gx = x + wave1 + wave2 + Math.sin(y * 0.014 + x * 0.018) * 4.5;
+        if (y === 0) bc.moveTo(gx, y); else bc.lineTo(gx, y);
+      }
+      bc.stroke();
     }
-    sprayNoise(cc, size, size * 3, 0.05);
+
+    // 导管微孔噪点（Wood pores）
+    for (let i = 0; i < size * 4; i++) {
+      const px = Math.random() * size;
+      const py = Math.random() * size;
+      const len = 3 + Math.random() * 8;
+      cc.fillStyle = 'rgba(25, 10, 3, 0.16)';
+      cc.fillRect(px, py, 1.2, len);
+      bc.fillStyle = 'rgba(40, 40, 40, 0.5)';
+      bc.fillRect(px, py, 1.2, len);
+      rc.fillStyle = 'rgba(170, 170, 170, 0.3)';
+      rc.fillRect(px, py, 1.2, len);
+    }
+
+    bumpMap = new THREE.CanvasTexture(bCanvas);
+    roughnessMap = new THREE.CanvasTexture(rCanvas);
   } else if (theme === 'metal') {
     // 深灰金属基底 + 竖向微渐变（拉丝交给 roughnessMap）
     const grad = cc.createLinearGradient(0, 0, size, 0);
@@ -303,6 +365,18 @@ function createThemedTextures(theme: ThreeDiceCupTheme, size: number): ThemedTex
     cc.fillStyle = grad;
     cc.fillRect(0, 0, size, size);
     sprayNoise(cc, size, size * 2, 0.04);
+
+    const rc = document.createElement('canvas');
+    rc.width = rc.height = size;
+    const r2 = rc.getContext('2d')!;
+    r2.fillStyle = '#4d4d4d';
+    r2.fillRect(0, 0, size, size);
+    for (let y = 0; y < size; y += 1) {
+      const lum = 60 + Math.floor(Math.random() * 70);
+      r2.fillStyle = `rgb(${lum},${lum},${lum})`;
+      r2.fillRect(0, y, size, 1);
+    }
+    roughnessMap = new THREE.CanvasTexture(rc);
   } else {
     // felt 绒布：深绛红高频织物噪点
     cc.fillStyle = '#7c1d43';
@@ -324,23 +398,7 @@ function createThemedTextures(theme: ThreeDiceCupTheme, size: number): ThemedTex
   const matMap = new THREE.CanvasTexture(matCanvas);
   matMap.colorSpace = THREE.SRGBColorSpace;
 
-  // ── 金属拉丝 roughnessMap ──
-  let roughnessMap: THREE.CanvasTexture | null = null;
-  if (theme === 'metal') {
-    const rc = document.createElement('canvas');
-    rc.width = rc.height = size;
-    const r2 = rc.getContext('2d')!;
-    r2.fillStyle = '#4d4d4d';
-    r2.fillRect(0, 0, size, size);
-    for (let y = 0; y < size; y += 1) {
-      const lum = 60 + Math.floor(Math.random() * 70);
-      r2.fillStyle = `rgb(${lum},${lum},${lum})`;
-      r2.fillRect(0, y, size, 1);
-    }
-    roughnessMap = new THREE.CanvasTexture(rc);
-  }
-
-  return { cupMap, matMap, roughnessMap };
+  return { cupMap, matMap, bumpMap, roughnessMap };
 }
 
 /* ══════════════════════ 布局 ══════════════════════ */
@@ -382,16 +440,44 @@ interface DieState {
   };
 }
 
-// 掀盖 = 升起并挪向右后方（真实玩家的"掀开挪到一边"），完全让出骰子顶面视线：
-// 杯口半径 1.7 远大于骰子，若仅垂直上浮，任何相机视角下杯口下沿都会遮挡骰面后侧。
-const CUP_LIFT_Y = 1.4;
-const CUP_LIFT_X = 1.2;
-const CUP_LIFT_Z = -1.5;
-const CUP_LIFT_TILT = -0.12;
-const CUP_LIFT_LEAN = 0.25;
+// 掀盖 = 升起并挪向后侧（配合相机微距推进，完全让出顶视线）
+const CUP_LIFT_Y = 3.8;
+const CUP_LIFT_X = 1.8;
+const CUP_LIFT_Z = -3.0;
+const CUP_LIFT_TILT = -0.32;
+const CUP_LIFT_LEAN = 0.38;
 const GRAVITY = 26;
 const SETTLE_DURATION = 0.5;
 const KNOCK_MIN_INTERVAL_MS = 60;
+
+const DEFAULT_CAM_POS = new THREE.Vector3(0, 5.4, 8.4);
+const DEFAULT_LOOK_AT = new THREE.Vector3(0, 0.6, 0);
+
+function getZoomCameraTarget(count: number, isCompact: boolean): {
+  pos: THREE.Vector3;
+  lookAt: THREE.Vector3;
+  fov: number;
+} {
+  if (count <= 1) {
+    return {
+      pos: new THREE.Vector3(0, isCompact ? 3.0 : 2.7, 0.38),
+      lookAt: new THREE.Vector3(0, 0.45, 0),
+      fov: isCompact ? 42 : 38,
+    };
+  }
+  if (count <= 3) {
+    return {
+      pos: new THREE.Vector3(0, isCompact ? 3.4 : 3.15, 0.44),
+      lookAt: new THREE.Vector3(0, 0.44, 0),
+      fov: isCompact ? 44 : 40,
+    };
+  }
+  return {
+    pos: new THREE.Vector3(0, isCompact ? 4.0 : 3.65, 0.52),
+    lookAt: new THREE.Vector3(0, 0.42, 0),
+    fov: isCompact ? 46 : 42,
+  };
+}
 
 export function ThreeDiceCupCanvas({
   diceValues = [4],
@@ -440,53 +526,60 @@ export function ThreeDiceCupCanvas({
       return res;
     };
 
-    // 1. Scene & Camera（留出充裕的安全边距，确保底座与掀开时不裁切）
+    // 1. Scene & Camera
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-    camera.position.set(0, 5.2, 8.2);
-    camera.lookAt(0, 0.6, 0);
+    camera.position.copy(DEFAULT_CAM_POS);
+    camera.lookAt(DEFAULT_LOOK_AT);
 
     // 2. WebGL Renderer
     const renderer = track(
       new THREE.WebGLRenderer({
         antialias: motionLevel === 'full' || motionLevel === 'reduced',
         alpha: true,
-        powerPreference: 'high-performance',
+        powerPreference: 'default',
       })
     );
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelRatioCap));
     renderer.shadowMap.enabled = shadowsEnabled;
-    renderer.shadowMap.type = THREE.PCFShadowMap;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.08;
     container.appendChild(renderer.domElement);
 
     // 3. Lighting
-    scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+    scene.add(new THREE.HemisphereLight(0xfff3df, 0x26313c, 1.4));
 
-    const mainLight = new THREE.DirectionalLight(0xfff5e6, 2.2);
-    mainLight.position.set(4, 9, 5);
+    const mainLight = new THREE.DirectionalLight(0xfff4df, 2.15);
+    mainLight.position.set(3.8, 9, 4.2);
     mainLight.castShadow = shadowsEnabled;
     mainLight.shadow.mapSize.set(shadowMapSize, shadowMapSize);
-    mainLight.shadow.camera.left = -4;
-    mainLight.shadow.camera.right = 4;
-    mainLight.shadow.camera.top = 4;
-    mainLight.shadow.camera.bottom = -4;
-    mainLight.shadow.camera.near = 2;
-    mainLight.shadow.camera.far = 20;
-    mainLight.shadow.bias = -0.0008;
+    const shadowCam = mainLight.shadow.camera as THREE.OrthographicCamera;
+    shadowCam.left = -4;
+    shadowCam.right = 4;
+    shadowCam.top = 4;
+    shadowCam.bottom = -4;
+    shadowCam.near = 2;
+    shadowCam.far = 20;
+    mainLight.shadow.bias = -0.0003;
+    mainLight.shadow.normalBias = 0.025;
+    mainLight.shadow.radius = 3;
     scene.add(mainLight);
+
+    const softFill = new THREE.DirectionalLight(0xffedd5, 0.7);
+    softFill.position.set(0, 8, -4);
+    scene.add(softFill);
 
     const fillLight = new THREE.DirectionalLight(0x93c5fd, 0.8);
     fillLight.position.set(-5, 6, -3);
     scene.add(fillLight);
 
-    const rimLight = new THREE.PointLight(0xfef08a, 1.2, 10);
-    rimLight.position.set(0, 6, 2);
+    const rimLight = new THREE.PointLight(0xfef08a, 1.4, 12);
+    rimLight.position.set(0, 6, 2.5);
     scene.add(rimLight);
 
-    // 4. 环境反射（PMREM + 手写简易灯箱场景，不依赖 addons）
+    // 4. 环境反射
     {
       const pmrem = track(new THREE.PMREMGenerator(renderer));
       const envScene = new THREE.Scene();
@@ -502,29 +595,30 @@ export function ThreeDiceCupCanvas({
         mesh.lookAt(0, 0, 0);
         envScene.add(mesh);
       };
-      panel(7, 3, 0xfff2df, 3.2, 0, 6, 2); // 顶部暖光
-      panel(5, 2, 0xdceaff, 1.8, -5, 2, -3); // 侧冷光
-      panel(4, 3, 0xffe9b8, 1.5, 5, 1, -4); // 背光
+      panel(7, 3, 0xfff2df, 3.2, 0, 6, 2);
+      panel(5, 2, 0xdceaff, 1.8, -5, 2, -3);
+      panel(4, 3, 0xffe9b8, 1.5, 5, 1, -4);
       const envRT = track(pmrem.fromScene(envScene, 0.04));
       scene.environment = envRT.texture;
     }
 
-    // 5. Table Mat & Rim Base（天鹅绒底盘 + 主题毡面 + 木质外框）
+    // 5. Table Mat & Rim Base（天鹅绒底盘 + 主题毡面 + 木质托盘外框）
     const themed = createThemedTextures(theme, texSize);
     track(themed.cupMap);
     track(themed.matMap);
+    if (themed.bumpMap) track(themed.bumpMap);
     if (themed.roughnessMap) track(themed.roughnessMap);
 
     const baseGroup = new THREE.Group();
     scene.add(baseGroup);
 
-    const matColor = theme === 'felt' ? 0x700c36 : theme === 'metal' ? 0x1e293b : 0x164e2b;
+    const matColor = theme === 'felt' ? 0x700c36 : theme === 'metal' ? 0x1e293b : 0x0f3822;
     const matGeo = track(new THREE.CylinderGeometry(2.1, 2.1, 0.12, 48));
     const matMat = track(
       new THREE.MeshStandardMaterial({
         color: matColor,
         map: themed.matMap,
-        roughness: 0.92,
+        roughness: 0.9,
         metalness: 0.02,
       })
     );
@@ -533,13 +627,13 @@ export function ThreeDiceCupCanvas({
     matMesh.receiveShadow = true;
     baseGroup.add(matMesh);
 
-    const rimWoodColor = theme === 'felt' ? 0x4a0422 : theme === 'metal' ? 0x334155 : 0x542c13;
+    const rimWoodColor = theme === 'felt' ? 0x4a0422 : theme === 'metal' ? 0x334155 : 0x2e1408;
     const rimGeo = track(new THREE.TorusGeometry(2.12, 0.12, 16, 48));
     const rimMat = track(
       new THREE.MeshStandardMaterial({
         color: rimWoodColor,
-        roughness: 0.35,
-        metalness: 0.25,
+        roughness: 0.38,
+        metalness: 0.18,
       })
     );
     const rimMesh = new THREE.Mesh(rimGeo, rimMat);
@@ -548,8 +642,7 @@ export function ThreeDiceCupCanvas({
     rimMesh.receiveShadow = true;
     baseGroup.add(rimMesh);
 
-    // 6. Dice（单位立方体 + scale，支持数量动态增减）
-    // 各向异性过滤：斜视角下骰面贴图保持锐利（清晰度关键）
+    // 6. Dice（RoundedBoxGeometry 象牙圆角骰子，支持动态增减与点数自适应）
     const maxAnisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
     const faceTextures = [1, 2, 3, 4, 5, 6].map((num) => {
       const tex = track(createDiceFaceTexture(num, texSize));
@@ -564,15 +657,15 @@ export function ThreeDiceCupCanvas({
         track(
           new THREE.MeshPhysicalMaterial({
             map,
-            roughness: 0.22,
-            metalness: 0.02,
-            clearcoat: 0.55,
-            clearcoatRoughness: 0.28,
+            roughness: 0.16,
+            metalness: 0.01,
+            clearcoat: 0.85,
+            clearcoatRoughness: 0.18,
           })
         )
     );
 
-    const dieGeo = track(new THREE.BoxGeometry(1, 1, 1));
+    const dieGeo = track(new RoundedBoxGeometry(1, 1, 1, 6, 0.12));
     const diceGroup = new THREE.Group();
     scene.add(diceGroup);
 
@@ -649,79 +742,73 @@ export function ThreeDiceCupCanvas({
     syncDice(initialValues, true);
     lastValuesKey = initialValues.join(',');
 
-    // 7. 3D Cup（Lathe 车削钟形杯体 + 金环 + 葫芦顶钮）
+    // 7. 3D Cup（S型流线收腰钟形杯壁 + 鎏金环圈 + 宝珠顶钮）
     const cupGroup = new THREE.Group();
     scene.add(cupGroup);
 
     const cupBodyMat = track(
-      new THREE.MeshStandardMaterial({
+      new THREE.MeshPhysicalMaterial({
         color: 0xffffff,
         map: themed.cupMap,
+        ...(themed.bumpMap ? { bumpMap: themed.bumpMap, bumpScale: 0.015 } : {}),
         ...(themed.roughnessMap ? { roughnessMap: themed.roughnessMap } : {}),
-        metalness: theme === 'metal' ? 0.7 : 0.12,
-        roughness: theme === 'metal' ? 0.34 : theme === 'felt' ? 0.8 : 0.5,
+        metalness: theme === 'metal' ? 0.78 : 0,
+        roughness: theme === 'metal' ? 0.42 : theme === 'felt' ? 0.88 : 0.58,
+        clearcoat: theme === 'wood' ? 0.32 : 0.08,
+        clearcoatRoughness: 0.3,
         side: THREE.DoubleSide,
       })
     );
 
     const goldMat = track(
-      new THREE.MeshStandardMaterial({
-        color: 0xf59e0b,
-        metalness: 0.9,
-        roughness: 0.2,
+      new THREE.MeshPhysicalMaterial({
+        color: theme === 'metal' ? 0xc3ced6 : 0xc59b53,
+        metalness: 0.86,
+        roughness: 0.3,
+        clearcoat: 0.2,
+        clearcoatRoughness: 0.28,
       })
     );
 
-    // 钟形杯壁（底部 r1.70 → 收腰 → 顶部 r1.18，杯口内折呈薄壁）
-    const cupProfile = [
-      [1.7, 0.0],
-      [1.62, 0.22],
-      [1.48, 0.6],
-      [1.34, 1.05],
-      [1.26, 1.55],
-      [1.22, 2.0],
-      [1.18, 2.3],
-      [1.1, 2.3],
-      [1.08, 2.2],
-    ].map(([x, y]) => new THREE.Vector2(x, y));
-    const cupBodyGeo = track(new THREE.LatheGeometry(cupProfile, 48));
+    const cupBodyGeo = track(createDiceCupShellGeometry());
     const cupBodyMesh = new THREE.Mesh(cupBodyGeo, cupBodyMat);
     cupBodyMesh.castShadow = true;
+    cupBodyMesh.receiveShadow = true;
     cupGroup.add(cupBodyMesh);
 
-    // 杯顶盖
-    const cupTopGeo = track(new THREE.CylinderGeometry(1.17, 1.17, 0.09, 48));
-    const cupTopMesh = new THREE.Mesh(cupTopGeo, cupBodyMat);
-    cupTopMesh.position.y = 2.345;
-    cupGroup.add(cupTopMesh);
+    const ring = (radius: number, tube: number, y: number, material: THREE.Material = goldMat) => {
+      const mesh = new THREE.Mesh(track(new THREE.TorusGeometry(radius, tube, 10, 80)), material);
+      mesh.rotation.x = Math.PI / 2;
+      mesh.position.y = y;
+      mesh.castShadow = true;
+      cupGroup.add(mesh);
+    };
+    // Fine brass inlay follows the turned profile, rather than a thick floating belt.
+    ring(1.818, 0.036, 0.10);
+    ring(1.79, 0.019, 0.245);
+    ring(1.497, 0.022, 1.23);
+    ring(1.478, 0.015, 1.29);
+    ring(1.25, 0.032, 2.405);
+    ring(1.10, 0.018, 2.50);
 
-    // 葫芦顶钮：环托 + 球
-    const knobRingGeo = track(new THREE.TorusGeometry(0.15, 0.045, 12, 32));
-    const knobRingMesh = new THREE.Mesh(knobRingGeo, goldMat);
-    knobRingMesh.rotation.x = Math.PI / 2;
-    knobRingMesh.position.y = 2.45;
-    cupGroup.add(knobRingMesh);
-
-    const knobGeo = track(new THREE.SphereGeometry(0.24, 24, 24));
-    const knobMesh = new THREE.Mesh(knobGeo, goldMat);
-    knobMesh.position.y = 2.62;
+    // Low turned finial with a wooden crown and restrained brass collar.
+    const knobProfile = [[0, 2.535], [0.31, 2.535], [0.34, 2.57],
+      [0.30, 2.62], [0.18, 2.67], [0.18, 2.72], [0.25, 2.76],
+      [0.29, 2.82], [0.275, 2.90], [0.22, 2.96], [0.12, 3.005], [0, 3.02]];
+    const knobGeo = track(new THREE.LatheGeometry(knobProfile.map(([r, y]) => new THREE.Vector2(r, y)), 48));
+    const knobMesh = new THREE.Mesh(knobGeo, cupBodyMat);
     knobMesh.castShadow = true;
     cupGroup.add(knobMesh);
+    ring(0.315, 0.018, 2.57);
+    ring(0.18, 0.016, 2.695);
 
-    // 金质边缘饰环（顶口 / 底口）
-    const topRingGeo = track(new THREE.TorusGeometry(1.2, 0.05, 12, 48));
-    const topRingMesh = new THREE.Mesh(topRingGeo, goldMat);
-    topRingMesh.rotation.x = Math.PI / 2;
-    topRingMesh.position.y = 2.39;
-    cupGroup.add(topRingMesh);
+    // Matching inlay in the tray makes the two pieces read as one crafted set.
+    const trayInlay = new THREE.Mesh(track(new THREE.TorusGeometry(2.12, 0.022, 8, 80)), goldMat);
+    trayInlay.rotation.x = Math.PI / 2;
+    trayInlay.position.y = 0.13;
+    baseGroup.add(trayInlay);
 
-    const bottomRingGeo = track(new THREE.TorusGeometry(1.7, 0.06, 12, 48));
-    const bottomRingMesh = new THREE.Mesh(bottomRingGeo, goldMat);
-    bottomRingMesh.rotation.x = Math.PI / 2;
-    bottomRingMesh.position.y = 0.05;
-    cupGroup.add(bottomRingMesh);
-
-    // 8. 动画与物理循环（按需渲染）
+    // 8. 动画与物理循环（按需渲染 + 电影级相机微距推进）
     let lastTime = performance.now();
     let rafId = 0;
     let running = false;
@@ -729,7 +816,12 @@ export function ThreeDiceCupCanvas({
     let elementVisible = typeof IntersectionObserver === 'undefined';
     let visibilityObserver: IntersectionObserver | null = null;
 
-    // 杯体弹簧状态（欠阻尼 → 轻微过冲回弹）：位置 XYZ + 转角 XZ 全弹簧驱动
+    // 相机微距推镜插值进度（0 = 全景扣盖，1 = 微距特写）
+    let camProgress = 0;
+    const currentCamPos = DEFAULT_CAM_POS.clone();
+    const currentLookAt = DEFAULT_LOOK_AT.clone();
+
+    // 杯体弹簧状态：位置 XYZ + 转角 XZ 全弹簧驱动
     let cupX = 0;
     let cupVelX = 0;
     let cupY = 0;
@@ -740,7 +832,7 @@ export function ThreeDiceCupCanvas({
     let cupRotVelX = 0;
     let cupRotZ = 0;
     let cupRotVelZ = 0;
-    // 摇晃抖动偏移（叠加在弹簧姿态之上）
+    // 摇晃抖动偏移
     let wobX = 0;
     let wobZ = 0;
     let wobRotZ = 0;
@@ -764,8 +856,32 @@ export function ThreeDiceCupCanvas({
         syncDice(st.diceValues, st.motionLevel === 'off');
       }
 
-      // 杯体弹簧：掀盖 → 升起并挪向右后方；扣盖 → 回正
+      // ── 相机微距推镜插值 ──
       const lifted = st.isLifted;
+      const targetCamProgress = lifted ? 1 : 0;
+      if (st.motionLevel === 'off') {
+        camProgress = targetCamProgress;
+      } else {
+        const camSpeed = lifted ? 8.0 : 9.5;
+        const diff = targetCamProgress - camProgress;
+        if (Math.abs(diff) > 1e-4) {
+          camProgress += diff * Math.min(1, dt * camSpeed);
+        } else {
+          camProgress = targetCamProgress;
+        }
+      }
+
+      // 平滑余弦缓动运镜
+      const p = 0.5 - 0.5 * Math.cos(camProgress * Math.PI);
+      const zoomTarget = getZoomCameraTarget(dice.length, isCompact);
+      currentCamPos.lerpVectors(DEFAULT_CAM_POS, zoomTarget.pos, p);
+      currentLookAt.lerpVectors(DEFAULT_LOOK_AT, zoomTarget.lookAt, p);
+      camera.position.copy(currentCamPos);
+      camera.lookAt(currentLookAt);
+      camera.fov = THREE.MathUtils.lerp(40, zoomTarget.fov, p);
+      camera.updateProjectionMatrix();
+
+      // ── 杯体弹簧：掀盖顺畅飞出让出视野；扣盖回正 ──
       const targetY = lifted ? CUP_LIFT_Y : 0;
       const targetX = lifted ? CUP_LIFT_X : 0;
       const targetZ = lifted ? CUP_LIFT_Z : 0;
@@ -786,10 +902,10 @@ export function ThreeDiceCupCanvas({
         wobZ = 0;
         wobRotZ = 0;
       } else {
-        [cupY, cupVelY] = spring(cupY, cupVelY, targetY, dt, 90, 11);
-        [cupX, cupVelX] = spring(cupX, cupVelX, targetX, dt, 70, 10);
-        [cupZ, cupVelZ] = spring(cupZ, cupVelZ, targetZ, dt, 70, 10);
-        [cupRotX, cupRotVelX] = spring(cupRotX, cupRotVelX, targetRotX, dt, 70, 10);
+        [cupY, cupVelY] = spring(cupY, cupVelY, targetY, dt, 80, 11);
+        [cupX, cupVelX] = spring(cupX, cupVelX, targetX, dt, 65, 10);
+        [cupZ, cupVelZ] = spring(cupZ, cupVelZ, targetZ, dt, 65, 10);
+        [cupRotX, cupRotVelX] = spring(cupRotX, cupRotVelX, targetRotX, dt, 65, 10);
         [cupRotZ, cupRotVelZ] = spring(cupRotZ, cupRotVelZ, targetRotZ, dt, 60, 9);
       }
 
@@ -809,7 +925,6 @@ export function ThreeDiceCupCanvas({
         const maxR = Math.max(0.1, 1.15 - half * 0.9);
         for (const d of dice) {
           d.settle = null;
-          // 惯性力 + 重力
           d.vel.x += ax * dt * 1.7;
           d.vel.z += az * dt * 1.7;
           d.vel.y -= GRAVITY * dt;
@@ -817,7 +932,6 @@ export function ThreeDiceCupCanvas({
           d.mesh.position.y += d.vel.y * dt;
           d.mesh.position.z += d.vel.z * dt;
 
-          // 底盘碰撞
           if (d.mesh.position.y <= half) {
             d.mesh.position.y = half;
             if (Math.abs(d.vel.y) > 0.9) {
@@ -833,7 +947,6 @@ export function ThreeDiceCupCanvas({
             d.vel.z *= 0.72;
           }
 
-          // 杯壁径向碰撞
           const r = Math.hypot(d.mesh.position.x, d.mesh.position.z);
           if (r > maxR && r > 1e-4) {
             const nx = d.mesh.position.x / r;
@@ -853,19 +966,16 @@ export function ThreeDiceCupCanvas({
             }
           }
 
-          // 翻滚积分
           d.mesh.rotation.x += d.angVel.x * dt;
           d.mesh.rotation.y += d.angVel.y * dt;
           d.mesh.rotation.z += d.angVel.z * dt;
         }
       } else {
-        // 摇骰结束沿 → 全部骰子进入落定动画
         if (wasShaking) {
           for (const d of dice) startSettle(d);
         }
         shakeT = 0;
 
-        // 摇晃抖动衰减回零
         const decay = Math.min(1, dt * 8);
         wobX += (0 - wobX) * decay;
         wobZ += (0 - wobZ) * decay;
@@ -874,18 +984,17 @@ export function ThreeDiceCupCanvas({
         for (const d of dice) {
           if (d.settle) {
             d.settle.t += dt;
-            const p = Math.min(1, d.settle.t / d.settle.duration);
+            const sp = Math.min(1, d.settle.t / d.settle.duration);
             d.mesh.quaternion.slerpQuaternions(
               d.settle.fromQuat,
               d.settle.toQuat,
-              easeOutBack(p)
+              easeOutBack(sp)
             );
             const half = dieSize / 2;
             d.mesh.position.y =
-              d.settle.fromY + (half - d.settle.fromY) * easeOutBounce(p);
-            if (p >= 1) d.settle = null;
+              d.settle.fromY + (half - d.settle.fromY) * easeOutBounce(sp);
+            if (sp >= 1) d.settle = null;
           } else {
-            // 残余角速度衰减
             d.angVel.multiplyScalar(Math.max(0, 1 - dt * 10));
             if (d.angVel.lengthSq() > 1e-4) {
               d.mesh.rotation.x += d.angVel.x * dt;
@@ -895,14 +1004,12 @@ export function ThreeDiceCupCanvas({
             const half = dieSize / 2;
             d.mesh.position.y += (half - d.mesh.position.y) * Math.min(1, dt * 10);
           }
-          // 水平位置渐近布局点
           const lerpXz = Math.min(1, dt * 6);
           d.mesh.position.x += (d.targetX - d.mesh.position.x) * lerpXz;
           d.mesh.position.z += (d.targetZ - d.mesh.position.z) * lerpXz;
         }
       }
 
-      // 应用杯体组合姿态：弹簧（掀盖/扣盖）+ 抖动（摇骰）
       cupGroup.position.set(cupX + wobX, cupY, cupZ + wobZ);
       cupGroup.rotation.set(cupRotX, 0, cupRotZ + wobRotZ);
 
@@ -913,6 +1020,7 @@ export function ThreeDiceCupCanvas({
     const isAnimating = (): boolean => {
       const st = stateRef.current;
       if (st.isShaking && st.motionLevel !== 'off') return true;
+      if (Math.abs(camProgress - (st.isLifted ? 1 : 0)) > 1e-3) return true;
       const lifted = st.isLifted;
       const targetY = lifted ? CUP_LIFT_Y : 0;
       if (Math.abs(cupY - targetY) > 1e-3 || Math.abs(cupVelY) > 2e-2) return true;
@@ -1011,6 +1119,7 @@ export function ThreeDiceCupCanvas({
       document.removeEventListener('visibilitychange', onVisibility);
       renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
       renderer.domElement.removeEventListener('webglcontextrestored', onContextRestored);
+      mainLight.shadow.dispose();
       for (const res of disposables) res.dispose();
       renderer.forceContextLoss();
       if (container.contains(renderer.domElement)) {

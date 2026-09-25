@@ -475,3 +475,75 @@ test('聊天：独立游标不推动 roomSeq；按游标补发不重复不遗漏
     closeDb(ctx.db);
   }
 });
+
+test('公共大屏席位切换与房主大屏开局（switch_seat_role）', async () => {
+  const ctx = await setup();
+  try {
+    // 1. 房主将自己切换为公共大屏
+    const switchOutcome = await ctx.executor.executeOnRoom({
+      roomId: ctx.roomId,
+      actorScope: `player:${ctx.hostId}`,
+      requestId: nextReq(),
+      handler: (tx) =>
+        applyRoomCommand(tx, ctx.roomId, ctx.hostId, {
+          command: 'switch_seat_role',
+          role: 'spectator',
+        }),
+    });
+    const hostMember = switchOutcome.outcome.snapshot.members.find((m) => m.playerId === ctx.hostId);
+    assert.ok(hostMember, '房主应在成员列表中');
+    assert.equal(hostMember.seatRole, 'spectator', '房主应成功切换为观战大屏');
+    assert.equal(hostMember.seat, null, '大屏不占用席位号');
+    assert.equal(hostMember.isHost, true, '大屏仍保留房主身份');
+    assert.equal(hostMember.ready, false, '大屏无须准备');
+
+    // 2. 加入 4 名普通玩家并全部准备
+    const p1 = await join(ctx, '玩家1');
+    const p2 = await join(ctx, '玩家2');
+    const p3 = await join(ctx, '玩家3');
+    const p4 = await join(ctx, '玩家4');
+    for (const p of [p1, p2, p3, p4]) {
+      await ctx.executor.executeOnRoom({
+        roomId: ctx.roomId,
+        actorScope: `player:${p.playerId}`,
+        requestId: nextReq(),
+        handler: (tx) =>
+          applyRoomCommand(tx, ctx.roomId, p.playerId, {
+            command: 'ready',
+            ready: true,
+          }),
+      });
+    }
+
+    // 3. 房主为 spectator 时，调用 start_game 成功开局
+    const startOutcome = await ctx.executor.executeOnRoom({
+      roomId: ctx.roomId,
+      actorScope: `player:${ctx.hostId}`,
+      requestId: nextReq(),
+      handler: (tx) =>
+        applyRoomCommand(tx, ctx.roomId, ctx.hostId, {
+          command: 'start_game',
+        }),
+    });
+    assert.ok(startOutcome.outcome.gameStarted, '房主作为大屏应可正常开局');
+    assert.equal(startOutcome.outcome.snapshot.status, 'IN_GAME', '房间状态应为 IN_GAME');
+
+    // 对局进行中禁止切换席位
+    await assertCommandError(
+      () =>
+        ctx.executor.executeOnRoom({
+          roomId: ctx.roomId,
+          actorScope: `player:${p1.playerId}`,
+          requestId: nextReq(),
+          handler: (tx) =>
+            applyRoomCommand(tx, ctx.roomId, p1.playerId, {
+              command: 'switch_seat_role',
+              role: 'spectator',
+            }),
+        }),
+      'ACTION_NOT_ALLOWED',
+    );
+  } finally {
+    closeDb(ctx.db);
+  }
+});

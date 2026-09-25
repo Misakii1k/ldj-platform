@@ -14,6 +14,7 @@ import { useUserProfile } from '../../../user/UserProfileContext.tsx';
 import { resolveMemberAvatar } from '../../../user/avatar.ts';
 import { buildBlankPhaseKey } from '../motion.ts';
 import type { BlankPlayerView, BlankRole, BlankVoteSummary } from '../types.ts';
+import { TabletopVictoryBurst } from '../../../shared-ui/TabletopVictoryBurst.tsx';
 import '../../focused-game-motion.css';
 
 interface Props {
@@ -130,6 +131,7 @@ export function BlankStageArena({ view }: Props) {
   }
 
   return (
+    <>
     <TabletopOvalShell
       title="谁是卧底 · 白板"
       subtitle={`第 ${view.round} 轮 · 白板之局`}
@@ -177,6 +179,12 @@ export function BlankStageArena({ view }: Props) {
         </div>
       }
     />
+    <TabletopVictoryBurst
+      gameOver={view.phase === 'game_over'}
+      isWinner={me?.role && view.winner ? me.role === view.winner : null}
+      label={view.aborted ? '对局已中止' : view.winner === 'blank' ? '白板方获胜！' : view.winner === 'civilian' ? '平民方获胜！' : '双方平局'}
+    />
+    </>
   );
 }
 
@@ -388,6 +396,7 @@ function BlankSpeechPanel({ view, act, busy }: { view: BlankPlayerView; act: Act
                       !player.alive ? 'is-dead' : '',
                       isMe ? 'is-me' : '',
                     ].filter(Boolean).join(' ')}
+                    style={{ '--stagger-index': index } as CSSProperties}
                   >
                     <div className="uc-order-card__idx">
                       {isDone ? '✓' : index + 1}

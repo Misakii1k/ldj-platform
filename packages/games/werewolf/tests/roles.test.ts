@@ -42,8 +42,10 @@ const BASE_CONFIG: WerewolfConfig = {
   roles: { guard: false, hunter: false, idiot: false },
 };
 
-function createGame(ids: string[], config: WerewolfConfig = BASE_CONFIG): WerewolfState {
-  return werewolfModule.createInitialState(ctx, ids, config);
+function createGame(ids: string[], config: WerewolfConfig = BASE_CONFIG, legacy = true): WerewolfState {
+  const st = werewolfModule.createInitialState(ctx, ids, config);
+  if (legacy) st.timelineState = null;
+  return st;
 }
 
 function configWithRoles(roles: Partial<WerewolfRolePool>): WerewolfConfig {
@@ -370,7 +372,8 @@ test('migrateSnapshot: v2 → v4 fills new fields and keeps the rest', () => {
     aborted: false,
   };
   const migrated = migrateSnapshot(2, v2);
-  assert.equal(migrated.schemaVersion, 4);
+  assert.equal(migrated.schemaVersion, 5);
+  assert.equal(migrated.timelineState, null);
   assert.equal(migrated.config.rulesetId, 'werewolf_legacy_platform_v2');
   assert.equal(migrated.config.wolfKillScope, 'non_wolf');
   assert.equal(migrated.night.guardDecided, true);
@@ -408,7 +411,8 @@ test('migrateSnapshot: v1 → v4 chains legacy fields through v2/v3 defaults', (
   };
 
   const migrated = migrateSnapshot(1, v1);
-  assert.equal(migrated.schemaVersion, 4);
+  assert.equal(migrated.schemaVersion, 5);
+  assert.equal(migrated.timelineState, null);
   assert.equal(migrated.config.rulesetId, 'werewolf_legacy_platform_v2');
   assert.equal(migrated.config.wolfKillScope, 'non_wolf');
   assert.deepEqual(migrated.config.roles, { guard: false, hunter: false, idiot: false });

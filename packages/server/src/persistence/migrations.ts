@@ -313,4 +313,10 @@ SELECT json('foreign_key_violation')
 WHERE EXISTS (SELECT 1 FROM pragma_foreign_key_check);
 `,
   },
+  {
+    version: 9,
+    name: 'private-room-chat',
+    up: `ALTER TABLE chat_messages ADD COLUMN to_player_id TEXT;
+CREATE INDEX idx_chat_recipient ON chat_messages(room_id, to_player_id, id);`,
+  },
 ];

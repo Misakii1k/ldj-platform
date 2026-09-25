@@ -35,7 +35,7 @@ export function WitsAnswerCard({
   revealIndex = 0,
   children,
 }: WitsAnswerCardProps) {
-  const isEdge = target?.id === 'lower' || target?.id === 'higher';
+  const isEdge = target?.id === 'lower';
 
   const classes = [
     'ww-answer-card',
@@ -72,7 +72,7 @@ export function WitsAnswerCard({
       aria-label={
         faceUp && target
           ? isEdge
-            ? `${target.id === 'lower' ? '答案低于全部估数' : '答案高于全部估数'}，净赢 ${target.odds} 倍`
+            ? `答案低于全部估数，净赢 ${target.odds} 倍`
             : `估数 ${target.value?.toLocaleString()}，净赢 ${target.odds} 倍`
           : '未翻开的答案牌'
       }

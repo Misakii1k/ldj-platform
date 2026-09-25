@@ -1,3 +1,4 @@
+import { useGameVisibility } from '../tabletop/useGameVisibility.ts';
 /**
  * 狼人杀页：月相审判桌。
  */
@@ -7,9 +8,11 @@ import { useGameAction } from '../useGameAction.ts';
 import { buildWerewolfPresentation } from './presentation.ts';
 import { parseWerewolfView } from './types.ts';
 import { WerewolfStage } from './ui/WerewolfStage.tsx';
+import { WerewolfThemeProvider } from './WerewolfThemeProvider.tsx';
 import '../focused-game-motion.css';
 
 export function WerewolfGamePage({ view: rawView }: { view: unknown }) {
+  useGameVisibility();
   const view = parseWerewolfView(rawView);
   const { state } = useConnection();
   const { profile } = useUserProfile();
@@ -28,15 +31,30 @@ export function WerewolfGamePage({ view: rawView }: { view: unknown }) {
     );
   }
 
-  const model = buildWerewolfPresentation(view, state.room?.members ?? [], state.chat, profile.avatar);
+  // 过滤私聊，只传公开公屏消息给公共 presentation（Contract E / T08）
+  const publicChat = (state.chat ?? []).filter((msg) => !msg.toPlayerId);
+  const model = buildWerewolfPresentation(
+    view,
+    state.room?.members ?? [],
+    publicChat,
+    profile.avatar,
+    state.clockSample,
+  );
 
   return (
-    <WerewolfStage
-      model={model}
-      synced={state.connState === 'synced'}
-      busy={busy}
-      error={error}
-      onAct={(payload) => void act(payload)}
-    />
+    <WerewolfThemeProvider
+      timelinePeriod={view.timeline?.period}
+      phase={view.phase}
+      nightStage={view.nightStage}
+    >
+      <WerewolfStage
+        key={`${state.game?.sessionId ?? ''}:${view.me?.playerId ?? 'observer'}`}
+        model={model}
+        synced={state.connState === 'synced'}
+        busy={busy}
+        error={error}
+        onAct={(payload) => void act(payload)}
+      />
+    </WerewolfThemeProvider>
   );
 }

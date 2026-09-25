@@ -19,8 +19,8 @@ test('v2 identity/registeredRulesets/defaultRuleset 固定为 open-kill', () => 
   assert.equal(werewolfV2Module.manifest.id, 'werewolf');
   assert.equal(werewolfV2Module.manifest.minPlayers, 6);
   assert.equal(werewolfV2Module.manifest.maxPlayers, 12);
-  assert.equal(werewolfV2Module.manifest.stateSchemaVersion, 1);
-  assert.deepEqual(werewolfV2Module.snapshotMigrations, {});
+  assert.equal(werewolfV2Module.manifest.stateSchemaVersion, 2);
+  assert.ok(werewolfV2Module.snapshotMigrations && typeof werewolfV2Module.snapshotMigrations[1] === 'function');
 });
 
 test('v2 parseConfig 默认值与合法 open-kill 配置', () => {
@@ -118,7 +118,7 @@ test('v2 createInitialState 人数边界 6-12，越界与重复拒绝', () => {
 
 test('v2 parseState/parsePlayerView/parseSpectatorView 拒绝未知字段（严格 schema）', () => {
   const state = werewolfV2Module.createInitialState(IDENTITY_CTX, ['p0', 'p1', 'p2', 'p3', 'p4', 'p5'], werewolfV2Module.parseConfig({}));
-  assert.equal(state.schemaVersion, 1);
+  assert.equal(state.schemaVersion, 2);
   assert.doesNotThrow(() => werewolfV2Module.parseState(state));
   assert.doesNotThrow(() => werewolfV2Module.parsePlayerView(werewolfV2Module.getPlayerView(state, 'p0')));
   assert.doesNotThrow(() => werewolfV2Module.parseSpectatorView(werewolfV2Module.getSpectatorView(state)));

@@ -21,6 +21,8 @@ import { parseBellClashView } from './bell-clash/types.ts';
 import { parseBellClashSimView } from './bell-clash/simTypes.ts';
 import { parseEchoJudgeView } from './echo-judge/types.ts';
 import { parseEchoJudgeSimView } from './echo-judge/simTypes.ts';
+import { parseWitsWagersView } from './wits-wagers/types.ts';
+import { parseWitsWagersSimView } from './wits-wagers/simTypes.ts';
 import type { GameStatePayload } from './types.ts';
 
 interface GameViewParser {
@@ -113,10 +115,18 @@ const REGISTRY: Readonly<Record<string, GameViewParser>> = {
     parsePlayerView: (view) => parseEchoJudgeSimView(view),
     parseSpectatorView: (view) => parseEchoJudgeSimView(view),
   },
+  'wits-wagers:wits_wagers_platform_v1:1': {
+    parsePlayerView: (view) => parseWitsWagersView(view, 'player'),
+    parseSpectatorView: (view) => parseWitsWagersView(view, 'spectator'),
+  },
+  'wits-wagers:wits_wagers_sim_v1:1': {
+    parsePlayerView: (view) => parseWitsWagersSimView(view),
+    parseSpectatorView: (view) => parseWitsWagersSimView(view),
+  },
 };
 
 /** 已迁移到 V2 的游戏：缺失版本化判别符时必须失败关闭，不能静默降级。 */
-const VERSIONED_MODULE_IDS = new Set(['undercover', 'uno', 'durian', 'loveletter', 'cheese-thief', 'goose-relay', 'night-testimony', 'bell-clash', 'echo-judge']);
+const VERSIONED_MODULE_IDS = new Set(['undercover', 'uno', 'durian', 'loveletter', 'cheese-thief', 'goose-relay', 'night-testimony', 'bell-clash', 'echo-judge', 'wits-wagers']);
 
 export type ViewParseResult =
   | { ok: true; view: unknown }

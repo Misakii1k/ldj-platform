@@ -1,3 +1,7 @@
+import { werewolfAnnouncementSchema } from '@ldj/shared';
+import type { WerewolfAnnouncement } from '@ldj/shared';
+import type { WerewolfTimeline } from '@ldj/shared';
+
 export const WEREWOLF_PHASES = [
   'role_reveal',
   'night',
@@ -98,8 +102,8 @@ export interface WerewolfMe {
 
 export interface WerewolfView {
   gameId: 'werewolf';
-  /** legacy（服务端模块 schema v4）与 v2（open-kill schema v1）共用同一客户端视图形状。 */
-  schemaVersion: 4 | 1;
+  /** legacy（服务端模块 schema v4/v5）与 v2（open-kill schema v1/v2）共用同一客户端视图形状。 */
+  schemaVersion: 4 | 5 | 1 | 2;
   /** v2 视图在顶层携带规则集身份；legacy 视图不携带此键。 */
   rulesetId?: 'werewolf_platform_open_kill_v1';
   phase: WerewolfPhase;
@@ -127,6 +131,50 @@ export interface WerewolfView {
     voteHistory: WerewolfVoteRecord[];
   } | null;
   me: WerewolfMe | null;
+  /** 权威公共时间线（Contract B / T08）。旧对局缺省或为 null，新对局为合法 version 1 结构 */
+  timeline?: WerewolfTimeline | null;
+  announcement?: WerewolfAnnouncement | null;
+}
+
+function parseTimeline(value: unknown): WerewolfTimeline | null {
+  if (value === null || value === undefined) return null;
+  if (!isRecord(value) || !hasOnlyKeys(value, [
+    'version', 'id', 'day', 'period', 'role', 'segment', 'cue', 'label',
+    'startedAt', 'endsAt', 'actionDeadlineAt', 'mode', 'paused', 'pauseRemainingMs',
+  ])) return null;
+  const {
+    version, id, day, period, role, segment, cue, label,
+    startedAt, endsAt, actionDeadlineAt, mode, paused, pauseRemainingMs,
+  } = value;
+  if (version !== 1 || typeof id !== 'string' || typeof day !== 'number' || day < 0) return null;
+  if (period !== 'day' && period !== 'night') return null;
+  if (role !== null && typeof role !== 'string') return null;
+  if (typeof segment !== 'string' || (cue !== null && typeof cue !== 'string')) return null;
+  if (typeof label !== 'string' || typeof startedAt !== 'number' || startedAt < 0) return null;
+  if (endsAt !== null && (typeof endsAt !== 'number' || endsAt < startedAt)) return null;
+  if (actionDeadlineAt !== null && (typeof actionDeadlineAt !== 'number' || actionDeadlineAt < startedAt)) return null;
+  if (endsAt !== null && actionDeadlineAt !== null && actionDeadlineAt > endsAt) return null;
+  if (mode !== 'auto' && mode !== 'manual') return null;
+  if (typeof paused !== 'boolean') return null;
+  if (pauseRemainingMs !== null && (typeof pauseRemainingMs !== 'number' || pauseRemainingMs < 0)) return null;
+  if (mode === 'manual' && (endsAt !== null || actionDeadlineAt !== null)) return null;
+  if (paused && (endsAt !== null || actionDeadlineAt !== null)) return null;
+  return {
+    version: 1,
+    id,
+    day,
+    period,
+    role: role as WerewolfTimeline['role'],
+    segment: segment as WerewolfTimeline['segment'],
+    cue: cue as WerewolfTimeline['cue'],
+    label,
+    startedAt,
+    endsAt,
+    actionDeadlineAt,
+    mode,
+    paused,
+    pauseRemainingMs,
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -229,21 +277,23 @@ export function parseWerewolfView(value: unknown, role?: 'player' | 'spectator')
     'gameId', 'rulesetId', 'schemaVersion', 'phase', 'day', 'players', 'config', 'confirmedRolePlayerIds',
     'announcementConfirmedPlayerIds', 'nightStage', 'lastNightDeaths', 'speakingOrder', 'currentSpeakerId',
     'freeDiscussionReadyPlayerIds', 'lastWordsPlayerId', 'deadlineAt', 'votesSubmitted', 'votesExpected', 'runoffCandidates',
-    'lastVoteSummary', 'pendingShooterId', 'winner', 'aborted', 'reveal', 'me',
+    'lastVoteSummary', 'pendingShooterId', 'winner', 'aborted', 'reveal', 'me', 'timeline', 'announcement',
   ])) return null;
   const {
     gameId, rulesetId, schemaVersion, phase, day, players, config, confirmedRolePlayerIds, announcementConfirmedPlayerIds,
     nightStage, lastNightDeaths, speakingOrder, currentSpeakerId, freeDiscussionReadyPlayerIds, lastWordsPlayerId, deadlineAt, votesSubmitted,
-    votesExpected, runoffCandidates, lastVoteSummary, pendingShooterId, winner, aborted, reveal, me,
+    votesExpected, runoffCandidates, lastVoteSummary, pendingShooterId, winner, aborted, reveal, me, timeline, announcement,
   } = value;
+  const parsedAnnouncement = announcement == null ? null : werewolfAnnouncementSchema.safeParse(announcement);
+  if (parsedAnnouncement && !parsedAnnouncement.success) return null;
   const parsedPlayers = Array.isArray(players) ? players.map(parsePlayer) : [];
   const confirmedRoles = asStringArray(confirmedRolePlayerIds);
   const confirmedAnnouncements = asStringArray(announcementConfirmedPlayerIds);
   const deaths = asStringArray(lastNightDeaths);
   const speakers = asStringArray(speakingOrder);
   const runoff = asStringArray(runoffCandidates);
-  if (gameId !== 'werewolf' || (schemaVersion !== 4 && schemaVersion !== 1) || !isPhase(phase) || typeof day !== 'number') return null;
-  const isV2 = schemaVersion === 1;
+  if (gameId !== 'werewolf' || (schemaVersion !== 4 && schemaVersion !== 5 && schemaVersion !== 1 && schemaVersion !== 2) || !isPhase(phase) || typeof day !== 'number') return null;
+  const isV2 = schemaVersion === 1 || schemaVersion === 2;
   if (isV2 && rulesetId !== 'werewolf_platform_open_kill_v1') return null;
   if (!isV2 && rulesetId !== undefined) return null;
   if (!Array.isArray(players) || parsedPlayers.some((player) => player === null)) return null;
@@ -275,6 +325,12 @@ export function parseWerewolfView(value: unknown, role?: 'player' | 'spectator')
   if (role === 'spectator' && me !== undefined) return null;
   const parsedMe = parseMe(me);
   if (me !== null && me !== undefined && parsedMe === null) return null;
+
+  let parsedTimeline: WerewolfTimeline | null = null;
+  if (timeline !== undefined && timeline !== null) {
+    parsedTimeline = parseTimeline(timeline);
+    if (!parsedTimeline) return null;
+  }
 
   let parsedReveal: WerewolfView['reveal'] = null;
   if (reveal !== null) {
@@ -312,5 +368,7 @@ export function parseWerewolfView(value: unknown, role?: 'player' | 'spectator')
     announcementConfirmedPlayerIds: confirmedAnnouncements, ...(nightStage !== undefined ? { nightStage } : {}), lastNightDeaths: deaths, speakingOrder: speakers,
     currentSpeakerId, ...(freeDiscussionReadyPlayerIds ? { freeDiscussionReadyPlayerIds: asStringArray(freeDiscussionReadyPlayerIds) ?? [] } : {}), lastWordsPlayerId, deadlineAt, votesSubmitted, votesExpected, runoffCandidates: runoff,
     lastVoteSummary: summary, pendingShooterId, winner, aborted, reveal: parsedReveal, me: parsedMe,
+    ...(parsedTimeline !== null ? { timeline: parsedTimeline } : {}),
+    announcement: parsedAnnouncement?.success ? parsedAnnouncement.data : null,
   };
 }

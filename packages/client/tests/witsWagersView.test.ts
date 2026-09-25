@@ -37,7 +37,6 @@ function publicView(overrides: Record<string, unknown> = {}): Record<string, unk
       { id: 'lower', value: null, slot: 'LOWER', odds: 6, authors: [] },
       { id: 'g:300', value: 300, slot: 'L1', odds: 3, authors: ['p1'] },
       { id: 'g:900', value: 900, slot: 'R1', odds: 3, authors: ['p2'] },
-      { id: 'higher', value: null, slot: 'HIGHER', odds: 6, authors: [] },
     ],
     publicBets: {
       p1: [
@@ -80,7 +79,7 @@ test('合法玩家视角解析通过并保留白名单字段', () => {
   assert.ok(parsed, '合法视角不应被拒绝');
   assert.equal(parsed.phase, 'betting');
   assert.equal(parsed.totalRounds, 7);
-  assert.equal(parsed.board.length, 4); // lower + 两个数值槽 + higher
+  assert.equal(parsed.board.length, 3); // lower + 两个数值槽
   assert.equal(parsed.me?.reserved, 4);
   assert.equal(parsed.me?.available, 6);
   // reserved + available 必须等于 score，parser 不负责纠正但要原样透出供 UI 校验。
@@ -224,12 +223,13 @@ test('未放置筹码的 extraStake 必须为 0（01 §4 账本前提）', () =>
   assert.equal(parseWitsWagersView(playerView({ publicBets: bad }), 'player'), null);
 });
 
-test('targetId 形状必须是 lower/higher 或 g:<正整数>', () => {
-  for (const good of ['lower', 'higher', 'g:1', 'g:999999999999']) {
+test('targetId 形状必须是 lower 或 g:<正整数>', () => {
+  for (const good of ['lower', 'g:1', 'g:999999999999']) {
     const bets = { p1: [{ chipId: 'A', targetId: good, extraStake: 0 }, { chipId: 'B', targetId: null, extraStake: 0 }] };
     assert.ok(parseWitsWagersView(playerView({ publicBets: bets }), 'player'), `${good} 应通过`);
   }
-  for (const bad of ['g:', 'g:0', 'g:-1', 'g:1.5', 'G:1', 'lower ', 'g:01', 'smaller', 'other']) {
+  // higher 是已删除的旧边缘槽，服务端若还发出来必须失败关闭
+  for (const bad of ['g:', 'g:0', 'g:-1', 'g:1.5', 'G:1', 'lower ', 'g:01', 'smaller', 'other', 'higher']) {
     const bets = { p1: [{ chipId: 'A', targetId: bad, extraStake: 0 }, { chipId: 'B', targetId: null, extraStake: 0 }] };
     assert.equal(parseWitsWagersView(playerView({ publicBets: bets }), 'player'), null, `${bad} 不应通过`);
   }
@@ -255,11 +255,13 @@ test('边缘槽必须无数值、无作者、赔率为 6，槽位名要对得上
     // 边缘槽带了数值
     [{ id: 'lower', value: 5, slot: 'LOWER', odds: 6, authors: [] }],
     // 边缘槽带了作者
-    [{ id: 'higher', value: null, slot: 'HIGHER', odds: 6, authors: ['p1'] }],
+    [{ id: 'lower', value: null, slot: 'LOWER', odds: 6, authors: ['p1'] }],
     // 边缘槽赔率被改
     [{ id: 'lower', value: null, slot: 'LOWER', odds: 3, authors: [] }],
     // id 与槽位名错配
-    [{ id: 'lower', value: null, slot: 'HIGHER', odds: 6, authors: [] }],
+    [{ id: 'lower', value: null, slot: 'L1', odds: 6, authors: [] }],
+    // 已删除的 higher 卡整张混进来
+    [{ id: 'higher', value: null, slot: 'HIGHER', odds: 6, authors: [] }],
     // 数值槽却占用了边缘槽位名
     [{ id: 'g:1', value: 1, slot: 'LOWER', odds: 2, authors: [] }],
   ];
@@ -286,7 +288,7 @@ test('parser 返回副本，改动结果不回写输入', () => {
   const parsed = parseWitsWagersView(input, 'player');
   assert.ok(parsed);
   parsed.board.push({ id: 'g:7', value: 7, slot: 'C', odds: 2, authors: [] });
-  assert.equal((input.board as unknown[]).length, 4, 'parser 不得返回输入数组的引用');
+  assert.equal((input.board as unknown[]).length, 3, 'parser 不得返回输入数组的引用');
 });
 
 // —— T04 冻结：revealed/history/result 严格白名单与对拍测试 ——
@@ -308,7 +310,6 @@ function sampleRoundResult(): Record<string, unknown> {
     board: [
       { id: 'lower', value: null, slot: 'LOWER', odds: 6, authors: [] },
       { id: 'g:8000', value: 8000, slot: 'C', odds: 2, authors: ['p1'] },
-      { id: 'higher', value: null, slot: 'HIGHER', odds: 6, authors: [] },
     ],
     bets: {
       p1: [
@@ -362,7 +363,7 @@ test('revealed/history 严格白名单：合法结构通过，任何未知键或
   assert.equal(parseWitsWagersView(playerView({ revealed: { ...good, winningTargetIds: 'g:8000' } }), 'player'), null);
   assert.equal(parseWitsWagersView(playerView({ revealed: { ...good, winningTargetIds: ['invalid'] } }), 'player'), null);
   assert.equal(
-    parseWitsWagersView(playerView({ revealed: { ...good, winningTargetIds: ['g:8000', 'lower', 'higher'] } }), 'player'),
+    parseWitsWagersView(playerView({ revealed: { ...good, winningTargetIds: ['g:8000', 'lower', 'g:1'] } }), 'player'),
     null,
   );
   // 空数组（全员未作答作废轮）与双胜都合法
@@ -415,7 +416,6 @@ test('breakdownNotes: 贪心拆张，张数最少且总额守恒', () => {
 
 test('targetLabel: 边缘槽用中文，数值槽用千分位', () => {
   assert.equal(targetLabel({ id: 'lower', value: null }), '更低');
-  assert.equal(targetLabel({ id: 'higher', value: null }), '更高');
   assert.equal(targetLabel({ id: 'g:8000', value: 8000 }), '8,000');
   assert.equal(targetLabel(null), '未知槽位');
   assert.equal(targetLabel(undefined), '未知槽位');

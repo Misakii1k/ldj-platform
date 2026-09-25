@@ -237,7 +237,7 @@ function speechForAction(
   if (moduleId === 'werewolf') {
     const view = asWerewolfPlayView(input.view);
     const fallback = view ? cannedWerewolfSpeech(view, input.playerId) : '先听大家把话说完。';
-    return sanitizeBotSpeech(llmSpeech, fallback);
+    return sanitizeBotSpeech(llmSpeech, fallback, 'werewolf');
   }
   if (moduleId === 'undercover') {
     const view = isUndercoverPlayerView(input.view) ? input.view : null;

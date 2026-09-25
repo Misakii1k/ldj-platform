@@ -5,7 +5,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useConnection } from '../connection/useConnection.ts';
-import { describeError } from '../shared-ui/errors.ts';
+import { describeError, ServerError } from '../shared-ui/errors.ts';
 import {
   actionKeyString,
   beginAction,
@@ -63,6 +63,19 @@ export function useScopedAction(): ScopedActionApi {
         setState((prev) => settleAction(prev, key));
         return true;
       } catch (err) {
+        const isStale =
+          (err instanceof ServerError && err.payload.code === 'STALE_CLIENT_STATE') ||
+          (typeof err === 'object' && err !== null && 'code' in err && (err as { code: string }).code === 'STALE_CLIENT_STATE');
+        if (isStale) {
+          try {
+            await new Promise((resolve) => setTimeout(resolve, 150));
+            await send('game_action', payload);
+            setState((prev) => settleAction(prev, key));
+            return true;
+          } catch {
+            // 重试失败则继续走默认错误处理
+          }
+        }
         setState((prev) => failAction(prev, key, describeError(err)));
         // 3.5 秒后自动消失，防止错误横幅永久阻塞界面
         const timer = setTimeout(() => {

@@ -1,17 +1,13 @@
 /**
- * 法官控制台席位行：识别（座位号 + 头像 + 昵称）、角色、唯一状态列、行尾动作。
- * 动作文案随真实状态变化（存活→标记出局 / 已出局→撤销出局），点击后由调用方弹确认框。
+ * 法官控制台席位卡：1:1 对齐原型 moderator.html
+ * 包含座位号、昵称、身份徽章、存活状态与「标记出局 / 撤销出局」操作按钮。
  */
 import type { ModeratorSeatModel } from './presentation.ts';
-import { UserAvatar } from '../../../user/UserAvatar.tsx';
 
 interface ModeratorSeatRowProps {
   readonly seat: ModeratorSeatModel;
-  /** 该席位正在提交请求（只锁这一行） */
   readonly busy: boolean;
-  /** 该席位最近一次失败原因 */
   readonly error: string | null;
-  /** 对局已结束：不再允许改动出局状态 */
   readonly locked?: boolean;
   readonly onRequestToggle: (seat: ModeratorSeatModel) => void;
 }
@@ -24,33 +20,30 @@ export function ModeratorSeatRow({
   onRequestToggle,
 }: ModeratorSeatRowProps) {
   return (
-    <li
-      className={`mod-seat ${seat.alive ? 'is-alive' : 'is-out'}`}
+    <div
+      className={`mod-seat ${!seat.alive ? 'is-out' : ''}`}
       data-player-id={seat.playerId}
     >
-      <span className="mod-seat__number">{seat.seatLabel}</span>
+      <span className="mod-seat__no mod-seat__number">{seat.seatLabel}</span>
 
-      <UserAvatar avatar={seat.avatar} nickname={seat.name} size={40} />
-
-      <div className="mod-seat__identity">
+      <div className="mod-seat__body">
         <span className="mod-seat__name" title={seat.name}>
           {seat.name}{seat.isSelf ? '（我）' : ''}
         </span>
-        <span className="mod-seat__role" data-camp={seat.camp ?? 'unknown'}>
-          {seat.roleLabel ?? '身份未知'}
-        </span>
-      </div>
-
-      <div className="mod-seat__state">
-        <span className={`mod-seat__status ${seat.alive ? 'is-alive' : 'is-out'}`}>
-          {seat.statusLabel}
-        </span>
-        {seat.offline && <span className="mod-seat__offline">离线</span>}
+        <div className="mod-seat__meta">
+          <span className="mod-seat__role" data-camp={seat.camp ?? 'villager'}>
+            {seat.roleLabel ?? '身份未知'}
+          </span>
+          <span className="mod-seat__state" data-out={!seat.alive}>
+            {!seat.alive ? '● 已出局' : '· 存活'}
+          </span>
+          {seat.offline && <span style={{ fontSize: '10px', color: 'var(--detail)' }}>（离线）</span>}
+        </div>
       </div>
 
       <button
         type="button"
-        className="confirm-btn confirm-btn--cancel mod-seat__action"
+        className="mod-seat__btn"
         disabled={busy || locked}
         onClick={() => onRequestToggle(seat)}
       >
@@ -58,10 +51,10 @@ export function ModeratorSeatRow({
       </button>
 
       {error !== null && (
-        <p className="mod-seat__error" role="alert">
+        <p style={{ gridColumn: '1 / -1', margin: '4px 0 0', fontSize: '11px', color: '#ff9d84' }} role="alert">
           {error}
         </p>
       )}
-    </li>
+    </div>
   );
 }

@@ -10,6 +10,7 @@ import {
   nicknameSchema,
   createRoomPayloadSchema,
   chatTextSchema,
+  chatSendPayloadSchema,
 } from '@ldj/shared';
 
 test('clientEnvelopeSchema：合法 envelope 通过', () => {
@@ -107,4 +108,24 @@ test('chatTextSchema：1–300 边界', () => {
   assert.equal(chatTextSchema.safeParse('好').success, true);
   assert.equal(chatTextSchema.safeParse('好'.repeat(300)).success, true);
   assert.equal(chatTextSchema.safeParse('好'.repeat(301)).success, false);
+});
+
+test('chatSendPayloadSchema：公共聊天与私聊 toPlayerId 校验', () => {
+  // 公共聊天（无 toPlayerId）
+  assert.equal(chatSendPayloadSchema.safeParse({ text: '大家好' }).success, true);
+  // 合法私聊
+  assert.equal(
+    chatSendPayloadSchema.safeParse({ text: '悄悄话', toPlayerId: 'target-player-1' }).success,
+    true,
+  );
+  // 拒绝空 toPlayerId
+  assert.equal(
+    chatSendPayloadSchema.safeParse({ text: '悄悄话', toPlayerId: '' }).success,
+    false,
+  );
+  // 拒绝未知字段
+  assert.equal(
+    chatSendPayloadSchema.safeParse({ text: '大家好', extra: 123 }).success,
+    false,
+  );
 });

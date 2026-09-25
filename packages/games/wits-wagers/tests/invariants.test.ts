@@ -64,7 +64,7 @@ test('invariants: 下注期筹码总额超过当前余额时抛错', () => {
   assert.throws(() => assertInvariants(bettingState));
 });
 
-test('invariants: 版图必须同时含 lower 与 higher 边缘槽且赔率为 6', () => {
+test('invariants: 版图必须以 lower 边缘槽开头且赔率为 6，不得含已删除的 higher', () => {
   const ctx = createMockCtx();
   const state = createInitialState(ctx, ['p1', 'p2', 'p3'], {});
 
@@ -75,12 +75,11 @@ test('invariants: 版图必须同时含 lower 与 higher 边缘槽且赔率为 6
     roundToken: 'tok',
   };
 
-  // 缺 higher
+  // 缺 lower
   assert.throws(() =>
     assertInvariants({
       ...base,
       board: [
-        { id: 'lower' as const, value: null, slot: 'LOWER' as const, odds: 6, authors: [] },
         { id: 'g:100' as const, value: 100, slot: 'C' as const, odds: 2, authors: ['p1'] },
       ],
     }),
@@ -93,8 +92,19 @@ test('invariants: 版图必须同时含 lower 与 higher 边缘槽且赔率为 6
       board: [
         { id: 'lower' as const, value: null, slot: 'LOWER' as const, odds: 3, authors: [] },
         { id: 'g:100' as const, value: 100, slot: 'C' as const, odds: 2, authors: ['p1'] },
-        { id: 'higher' as const, value: null, slot: 'HIGHER' as const, odds: 6, authors: [] },
       ],
+    }),
+  );
+
+  // 旧版 higher 卡混进版图必须被拒绝
+  assert.throws(() =>
+    assertInvariants({
+      ...base,
+      board: [
+        { id: 'lower' as const, value: null, slot: 'LOWER' as const, odds: 6, authors: [] },
+        { id: 'g:100' as const, value: 100, slot: 'C' as const, odds: 2, authors: ['p1'] },
+        { id: 'higher', value: null, slot: 'HIGHER', odds: 6, authors: [] },
+      ] as unknown as typeof base.board,
     }),
   );
 
@@ -105,7 +115,6 @@ test('invariants: 版图必须同时含 lower 与 higher 边缘槽且赔率为 6
       board: [
         { id: 'lower' as const, value: null, slot: 'LOWER' as const, odds: 6, authors: [] },
         { id: 'g:100' as const, value: 100, slot: 'C' as const, odds: 2, authors: ['p1'] },
-        { id: 'higher' as const, value: null, slot: 'HIGHER' as const, odds: 6, authors: [] },
       ],
     }),
   );

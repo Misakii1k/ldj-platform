@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { GameCatalogEntry } from '@ldj/shared';
+import { FEATURED_GAME_ID, type GameCatalogEntry } from '@ldj/shared';
 import { Plus, Users } from 'lucide-react';
 
 interface GameCardProps {
@@ -20,6 +20,7 @@ function gameMark(gameId: string): string {
     case 'night-testimony': return '证';
     case 'bell-clash': return '铃';
     case 'echo-judge': return '伪';
+    case 'wits-wagers': return '智';
     default: return '玩';
   }
 }
@@ -39,7 +40,7 @@ function availabilityLabel(game: GameCatalogEntry): string {
 
 export function GameCard({ game, onCreate }: GameCardProps) {
   const isPlayable = game.availability === 'playable';
-  const isFeatured = game.id === 'undercover';
+  const isFeatured = game.id === FEATURED_GAME_ID;
   const [imgError, setImgError] = useState(false);
 
   return (

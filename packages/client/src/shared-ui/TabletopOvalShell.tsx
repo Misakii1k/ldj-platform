@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Menu as MenuIcon } from 'lucide-react';
 import { GameIcon } from './GameIcon.tsx';
 import { UserAvatar } from '../user/UserAvatar.tsx';
 import { useUserProfile } from '../user/UserProfileContext.tsx';
@@ -86,6 +87,7 @@ export interface TabletopOvalShellProps {
   onShowRules?: () => void;
   onLeaveRoom?: () => void;
   recommendLandscape?: boolean;
+  dataTheme?: string;
 }
 
 export function TabletopOvalShell({
@@ -105,6 +107,7 @@ export function TabletopOvalShell({
   phaseKey,
   onShowRules,
   onLeaveRoom,
+  dataTheme,
 }: TabletopOvalShellProps) {
   const { profile } = useUserProfile();
   const { state } = useConnection();
@@ -266,6 +269,7 @@ export function TabletopOvalShell({
       data-game-id={gameId}
       data-phase-key={phaseKey}
       data-view-mode={viewMode}
+      data-ww-theme={dataTheme}
     >
       {/* 顶栏控制（超紧凑空间） */}
       <header className="tabletop-header">
@@ -289,6 +293,7 @@ export function TabletopOvalShell({
               title="展开游戏快捷菜单与设置"
               aria-label="打开快捷菜单"
             >
+              <MenuIcon className="tabletop-sound-btn__icon" size={16} strokeWidth={2.6} aria-hidden="true" />
               <span className="tabletop-sound-btn__label">菜单</span>
             </button>
           </div>
@@ -316,9 +321,14 @@ export function TabletopOvalShell({
           </GamePhaseTransition>
         )}
 
-        {/* 舞台中心竞技/内容区域 */}
+        {/* 舞台中心竞技/内容区域：阶段键变化时整体升入 */}
         <div className="tabletop-center-content" data-phase-key={phaseKey ?? 'stage'}>
-          {centerArena}
+          <GamePhaseTransition
+            phaseKey={phaseKey ?? phaseBannerText ?? 'stage'}
+            className="tabletop-center-content__stage"
+          >
+            {centerArena}
+          </GamePhaseTransition>
         </div>
       </main>
 

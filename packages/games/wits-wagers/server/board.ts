@@ -1,6 +1,6 @@
-export type TargetId = 'lower' | 'higher' | `g:${number}`;
+export type TargetId = 'lower' | `g:${number}`;
 export type Slot = 'L3' | 'L2' | 'L1' | 'C' | 'R1' | 'R2' | 'R3';
-export type EdgeSlot = 'LOWER' | 'HIGHER';
+export type EdgeSlot = 'LOWER';
 export type ChipId = 'A' | 'B';
 export type GuessOrigin = 'submitted';
 
@@ -26,17 +26,16 @@ export interface ChipBet {
 
 export type BetPair = [ChipBet, ChipBet];
 
-/** 两个边缘槽的固定赔率 */
+/** 「更低」边缘槽的固定赔率（原版桌游同档：比所有答案都小 6:1） */
 export const EDGE_ODDS = 6;
 
-export function isEdgeTarget(id: TargetId): id is 'lower' | 'higher' {
-  return id === 'lower' || id === 'higher';
+export function isEdgeTarget(id: TargetId): id is 'lower' {
+  return id === 'lower';
 }
 
 /** 槽位的中文名，服务端日志与 bot 提示词共用。 */
 export function targetLabel(target: Pick<BoardTarget, 'id' | 'value'>): string {
   if (target.id === 'lower') return '更低';
-  if (target.id === 'higher') return '更高';
   return String(target.value);
 }
 
@@ -79,11 +78,12 @@ const SLOT_TABLE: Record<number, SlotAllocation> = {
 
 /**
  * 根据本轮全部**真实提交**的猜测构建版图槽位与赔率。
- * 按照 01 §3（2026-09-22 修订）：
+ * 按照 01 §3（2026-09-22 二次修订）：
  * 1. 提取所有猜测值，去重并升序排序；
  * 2. 查表确定每个唯一值的槽位与净赢赔率；
  * 3. 归集各槽位作者；
- * 4. 两端各放一个边缘槽：'lower'（答案低于全部猜测）与 'higher'（答案高于全部猜测），赔率恒为 6。
+ * 4. 版图最左放唯一的边缘槽 'lower'（答案低于全部猜测），赔率恒为 6；
+ *    右端没有对应卡——与原版桌游一致，答案再高也由最大的猜测卡按距离取胜。
  *
  * 超时未答的玩家不在本轮版图上出现，调用方负责过滤。
  */
@@ -138,13 +138,6 @@ export function buildBoard(
     odds: EDGE_ODDS,
     authors: [],
   };
-  const higherTarget: BoardTarget = {
-    id: 'higher',
-    value: null,
-    slot: 'HIGHER',
-    odds: EDGE_ODDS,
-    authors: [],
-  };
 
   // 4. 构建常规数值目标
   const guessTargets: BoardTarget[] = sortedValues.map((val, idx) => {
@@ -163,14 +156,15 @@ export function buildBoard(
     };
   });
 
-  return [lowerTarget, ...guessTargets, higherTarget];
+  return [lowerTarget, ...guessTargets];
 }
 
 /**
  * 确定获胜目标（可能不止一个）。
- * 按照 01 §2 R04（2026-09-22 修订）：
- * - 答案高于全部猜测 → 'higher'；低于全部猜测 → 'lower'；
+ * 按照 01 §2 R04（2026-09-22 二次修订）：
+ * - 答案低于全部猜测 → 'lower'；
  * - 否则取绝对差值最小的猜测；两侧等距时两者同时获胜。
+ *   答案高于全部猜测时没有特判，自然由最大的猜测卡获胜。
  * 精确命中时差值为 0，只有一个赢家。
  */
 export function pickWinningTargets(
@@ -185,12 +179,9 @@ export function pickWinningTargets(
   }
 
   let min = Infinity;
-  let max = -Infinity;
   for (const t of valued) {
     if (t.value < min) min = t.value;
-    if (t.value > max) max = t.value;
   }
-  if (correctAnswer > max) return ['higher'];
   if (correctAnswer < min) return ['lower'];
 
   let bestDist = Infinity;

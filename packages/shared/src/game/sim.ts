@@ -91,3 +91,23 @@ export function pushSimLog(logs: readonly SimLogEntry[], text: string, now: numb
   const next = [...logs, { text, at: now }];
   return next.length > cap ? next.slice(next.length - cap) : next;
 }
+
+/**
+ * 桌面模拟模式的规则集 ID 约定：所有 *_sim_v1。
+ *
+ * 判定刻意按 ID 后缀而不是查游戏目录：cheese_thief_sim_v1 只在模块注册表里注册、
+ * 并未写进 GAME_CATALOG（服务端 resolveRulesetForStart 走的是模块注册表），
+ * 查目录会漏掉它。新增 sim 规则集只要沿用 *_sim_v1 命名就自动纳入。
+ */
+export function isSimRulesetId(rulesetId: string): boolean {
+  return rulesetId.endsWith('_sim_v1');
+}
+
+/**
+ * 桌面模拟模式要求房间内至少有一台公共大屏（seat_role = 'spectator'）。
+ *
+ * 这个形态是「线下玩、App 当道具」：版图/题目/公开道具都画在大屏上，各人手机只放私密操作。
+ * 一台大屏都没有时整个形态不成立，所以在大厅就拦住开局，而不是让玩家开进去才发现没法玩。
+ */
+export const SIM_REQUIRES_PUBLIC_SCREEN_MESSAGE =
+  '桌面模拟模式需要至少一台公共大屏：请在房间里把一台设备（平板/电脑）设为公共大屏后再开局';

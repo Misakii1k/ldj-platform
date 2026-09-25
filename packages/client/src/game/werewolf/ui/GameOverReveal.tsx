@@ -1,28 +1,11 @@
-import React, { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { ArrowLeft, BookOpen, Trophy, X } from 'lucide-react';
 import type { WerewolfPresentationModel } from '../presentation.ts';
 import { UserAvatar } from '../../../user/UserAvatar.tsx';
-import { resolveMemberAvatar } from '../../../user/avatar.ts';
-
-const ROLE_ICONS: Record<string, string> = {
-  狼人: '🐺',
-  女巫: '🧙',
-  预言家: '🔮',
-  猎人: '🏹',
-  守卫: '🛡️',
-  村民: '🧑',
-  白痴: '🃏',
-};
-
-const ROLE_CLASS: Record<string, string> = {
-  狼人: 'role-wolf',
-  女巫: 'role-witch',
-  预言家: 'role-seer',
-  猎人: 'role-hunter',
-  守卫: 'role-guard',
-  村民: 'role-villager',
-  白痴: 'role-idiot',
-};
+import { useWerewolfTheme } from '../WerewolfThemeProvider.tsx';
+import { buildResultRoster } from './resultRoster.ts';
+import './werewolf-result.css';
 
 interface GameOverRevealProps {
   readonly reveal: WerewolfPresentationModel['reveal'];
@@ -31,110 +14,89 @@ interface GameOverRevealProps {
 
 export function GameOverReveal({ reveal, seats = [] }: GameOverRevealProps) {
   const [closed, setClosed] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const rosterId = useId();
+  const { resolvedTheme } = useWerewolfTheme();
+  const open = Boolean(reveal) && !closed;
 
-  if (reveal === null) return null;
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!open || !dialog) return;
+    dialog.showModal();
+    return () => {
+      dialog.close();
+      triggerRef.current?.focus();
+    };
+  }, [open]);
 
-  const isWolfWin = reveal.headline.includes('狼人');
+  if (!reveal) return null;
+  const rows = buildResultRoster(reveal, seats);
+  const aliveCount = rows.filter(row => row.status === 'alive').length;
+  const outCount = rows.filter(row => row.status === 'out').length;
+  const close = () => setClosed(true);
 
-  // 若用户点击右上角叉号关闭了遮罩弹窗，则在牌桌中央展示重新打开复盘的醒目按钮
-  if (closed) {
-    return (
-      <div className="werewolf-reopen-reveal-container">
-        <button
-          type="button"
-          className="werewolf-reopen-reveal-btn"
-          onClick={() => setClosed(false)}
-          title="重新打开终局全员身份复盘遮罩"
-        >
-          <span className="werewolf-reopen-reveal-btn__icon" aria-hidden="true">🏆</span>
-          <span>查看终局全员身份揭晓</span>
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      {/* 牌桌中央保留简要提示 */}
-      <div className="werewolf-reopen-reveal-container">
-        <button
-          type="button"
-          className="werewolf-reopen-reveal-btn"
-          onClick={() => setClosed(false)}
-        >
-          <span className="werewolf-reopen-reveal-btn__icon" aria-hidden="true">📜</span>
-          <span>终局大揭晓（点击查看）</span>
-        </button>
-      </div>
-
-      {/* 独立遮罩弹层 (Portal to body)，不受移动端窄列限制，支持全景双列展开与随时关闭 */}
-      {createPortal(
-        <div className="werewolf-reveal-overlay" role="dialog" aria-modal="true" aria-label="终局全员身份复盘">
-          <div className="werewolf-reveal-modal">
-            {/* 右上角关闭叉号 */}
-            <button
-              type="button"
-              className="werewolf-reveal__close-btn"
-              onClick={() => setClosed(true)}
-              title="关闭复盘遮罩，返回查看桌面与结算操作"
-              aria-label="关闭"
-            >
-              ✕
-            </button>
-
-            <div className="werewolf-reveal__header">
-              <span className="werewolf-reveal__tag">终局全员身份揭晓</span>
-              <h2 className={`werewolf-reveal__headline ${isWolfWin ? 'winner-wolves' : 'winner-village'}`}>
-                {reveal.headline}
-              </h2>
-            </div>
-
-            <div className="werewolf-reveal__grid">
-              {reveal.rows.map((row) => {
-                const seat = seats.find((s) => s.name === row.name);
-                const roleCls = ROLE_CLASS[row.roleLabel] ?? '';
-                const isAlive = seat ? seat.alive : true;
-
-                return (
-                  <div
-                    key={row.name}
-                    className={`werewolf-reveal-card ${roleCls} ${!isAlive ? 'is-eliminated' : ''}`}
-                  >
-                    <div className="reveal-card__avatar">
-                      <UserAvatar avatar={seat?.avatar ?? resolveMemberAvatar(null, { playerId: row.name })} nickname={row.name} size={36} />
-                      {seat && <span className="reveal-card__seat">{seat.seatLabel}</span>}
-                    </div>
-
-                    <div className="reveal-card__info">
-                      <span className="reveal-card__name" title={row.name}>{row.name}</span>
-                      <div className="reveal-card__role">
-                        <span className="role-icon" aria-hidden="true">{ROLE_ICONS[row.roleLabel] ?? '🎭'}</span>
-                        <strong className="role-text">{row.roleLabel}</strong>
-                      </div>
-                    </div>
-
-                    <span className={`reveal-card__status ${isAlive ? 'status-alive' : 'status-out'}`}>
-                      {isAlive ? '存活' : '出局'}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* 底部收起按钮 */}
-            <div className="werewolf-reveal__footer">
-              <button
-                type="button"
-                className="werewolf-reveal__dismiss-btn"
-                onClick={() => setClosed(true)}
-              >
-                收起复盘 · 查看桌局与准备再来一局 ➔
-              </button>
-            </div>
+  return <>
+    <div className="ww-result-launcher" data-result-theme={resolvedTheme}>
+      <button ref={triggerRef} type="button" className="ww-result-open" aria-haspopup="dialog" onClick={() => setClosed(false)}>
+        <BookOpen size={18} aria-hidden="true" />查看终局复盘
+      </button>
+    </div>
+    {open && createPortal(
+      <dialog ref={dialogRef} className="ww-result-modal" data-result-theme={resolvedTheme}
+        aria-labelledby={titleId} aria-modal="true"
+        onCancel={event => { event.preventDefault(); close(); }}
+        onKeyDown={event => {
+          if (event.key !== 'Tab') return;
+          const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), [tabindex="0"]'));
+          const first = controls[0];
+          const last = controls.at(-1);
+          if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+          else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+        }}
+        onClick={event => {
+          if (event.target !== event.currentTarget) return;
+          const box = event.currentTarget.getBoundingClientRect();
+          if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) close();
+        }}>
+        <div className="ww-result-topbar">
+          <h2 id={titleId}>终局复盘</h2>
+          <button type="button" className="ww-result-close" onClick={close} aria-label="关闭终局复盘" autoFocus>
+            <X size={20} aria-hidden="true" />
+          </button>
+        </div>
+        <div className="ww-result-hero">
+          <div className="ww-result-emblem" aria-hidden="true"><Trophy size={28} /></div>
+          <div className="ww-result-outcome">
+            <span className="ww-result-eyebrow">对局结束 · 身份揭晓</span>
+            <h3>{reveal.headline}</h3>
+            <p>所有身份已公开，一起回看这局的隐藏角色。</p>
           </div>
-        </div>,
-        document.body
-      )}
-    </>
-  );
+        </div>
+        <section className="ww-result-roster" aria-labelledby={rosterId} tabIndex={0}>
+          <div className="ww-result-roster-heading">
+            <h3 id={rosterId}>全员身份 <span>{rows.length} 人</span></h3>
+            <span className="ww-result-tally">存活 {aliveCount} · 出局 {outCount}</span>
+          </div>
+          <ul className="ww-result-grid">
+            {rows.map(row => <li key={row.key} className="ww-result-player">
+              <div aria-hidden="true"><UserAvatar avatar={row.avatar} nickname={row.name} size={40} /></div>
+              <div className="ww-result-player-info">
+                <span className="ww-result-seat">{row.seatLabel}</span>
+                <strong className="ww-result-name" title={row.name}>{row.name}</strong>
+                <span className="ww-result-role" data-role-kind={row.roleKind}>{row.roleLabel}</span>
+              </div>
+              <span className="ww-result-status" data-status={row.status}>{row.statusLabel}</span>
+            </li>)}
+          </ul>
+          {rows.length === 0 && <p className="ww-result-empty">暂无公开身份记录</p>}
+        </section>
+        <div className="ww-result-footer">
+          <p>返回后仍可随时查看本局复盘</p>
+          <button type="button" className="ww-result-return" onClick={close}><ArrowLeft size={18} aria-hidden="true" />返回桌面</button>
+        </div>
+      </dialog>, document.body,
+    )}
+  </>;
 }

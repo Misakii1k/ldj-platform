@@ -1,15 +1,16 @@
 import React from 'react';
 import type { WerewolfPresentationModel } from '../presentation.ts';
 import { GameIcon } from '../../../shared-ui/GameIcon.tsx';
-import { IdentityFlipCard } from '../../../shared-ui/IdentityFlipCard.tsx';
+import { SecretRoleCard } from './SecretRoleCard.tsx';
 import { UserAvatar } from '../../../user/UserAvatar.tsx';
 import { useTypewriter } from './useTypewriter.ts';
 
 interface WerewolfRoleSpotlightProps {
+  readonly privateView?: boolean;
   readonly model: WerewolfPresentationModel;
 }
 
-export function WerewolfRoleSpotlight({ model }: WerewolfRoleSpotlightProps) {
+export function WerewolfRoleSpotlight({ model, privateView = false }: WerewolfRoleSpotlightProps) {
   const { self, phase, mood, seats } = model;
   const isNight = mood === 'night';
   const isDawn = mood === 'dawn';
@@ -18,21 +19,20 @@ export function WerewolfRoleSpotlight({ model }: WerewolfRoleSpotlightProps) {
 
   // 身份确认阶段：使用 3D 哥特暗夜翻牌引擎
   if (isRoleReveal && self) {
-    const isWolf = self.role === 'wolf';
-    const camp = isWolf ? 'evil' : 'good';
-    return (
-      <div className="werewolf-spotlight werewolf-spotlight--reveal-3d">
-        <IdentityFlipCard
-          theme="gothic"
-          roleName={self.roleLabel}
-          roleSubtitle={isWolf ? '狼人阵营 · 夜袭猎杀' : '好人阵营 · 找出伪装'}
-          roleCamp={camp}
-          artworkUrl={self.artworkUrl}
-          secretHints={[self.roleHint]}
-          canInteract={true}
-        />
-      </div>
-    );
+    return <div className="werewolf-spotlight werewolf-spotlight--reveal-3d">
+      <span className="ww-eyebrow">THE NIGHT THEATRE · 身份契约</span>
+      <h2>每个人，都有一个秘密</h2>
+      <SecretRoleCard name={self.roleLabel} camp={self.role === 'wolf' ? '狼人阵营' : '好人阵营'} artwork={self.artworkUrl} label="翻开身份契约">
+        <p>{self.roleHint}</p>
+      </SecretRoleCard>
+      <p>查看后在下方确认就绪，等待全员入夜。</p>
+    </div>;
+  }
+  if (isNight && !privateView) {
+    return <div className="werewolf-spotlight ww-night-prompt"><span className="ww-moon" aria-hidden="true">☾</span>
+      <div><span className="ww-eyebrow">NIGHT WATCH · 静候天明</span><h2>{model.phaseLabel}</h2>
+      <p>留意法官提示；私密信息请从底部身份入口查看。</p></div>
+    </div>;
   }
 
   // 天亮公告阶段

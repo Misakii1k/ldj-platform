@@ -113,11 +113,22 @@ test('migrate：v4 既有数据经 v5/v6 安全升级且重复执行幂等', () 
      VALUES ('finished-result', 'finished-session', 'richman', '{"winner":"p1"}', ?)`,
   ).run(now);
 
+  db.prepare(
+    `INSERT INTO chat_messages (room_id, session_id, from_player_id, kind, text, created_at)
+     VALUES ('removed-room', NULL, 'legacy-player', 'player', '旧版历史公共发言', ?)`,
+  ).run(now);
+
   // v7 重建 game_sessions 后：已 ABORTED/FINISHED 的历史行不被反转（与 v5 退役语义一致）；
   // 只有仍处于活动态的未注册 module 会话会被标 SUSPENDED + FAILED_RULESET_UNAVAILABLE。
   // D4-A1：v8 追加 adjudication_tasks（普通 CREATE TABLE，不触碰既有数据）。
-  assert.deepEqual(migrate(db), [5, 6, 7, 8]);
+  // v9 追加 chat_messages.to_player_id（新增列保留旧消息且值为 NULL）。
+  assert.deepEqual(migrate(db), [5, 6, 7, 8, 9]);
   assert.deepEqual(migrate(db), []);
+  const legacyChat = db
+    .prepare("SELECT text, to_player_id FROM chat_messages WHERE room_id = 'removed-room'")
+    .get() as { text: string; to_player_id: string | null };
+  assert.equal(legacyChat.text, '旧版历史公共发言');
+  assert.equal(legacyChat.to_player_id, null);
   assert.equal(
     (db.prepare("SELECT status FROM rooms WHERE id = 'removed-room'").get() as { status: string }).status,
     'CLOSED',

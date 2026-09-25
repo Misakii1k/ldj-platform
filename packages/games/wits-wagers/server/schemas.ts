@@ -5,11 +5,11 @@ import type { WitsWagersConfig, WitsWagersAction } from './types.ts';
 export const MIN_GUESS = 1;
 export const MAX_GUESS = 999_999_999_999;
 
-const targetIdRegex = /^(lower|higher|g:[1-9]\d*)$/;
+const targetIdRegex = /^(lower|g:[1-9]\d*)$/;
 
 const targetIdSchema = z.custom<TargetId>(
   (val) => typeof val === 'string' && targetIdRegex.test(val),
-  { message: 'targetId 必须为 lower、higher 或 g:<正整数> 格式' },
+  { message: 'targetId 必须为 lower 或 g:<正整数> 格式' },
 );
 
 const chipBetASchema = z

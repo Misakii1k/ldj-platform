@@ -1254,12 +1254,116 @@ html[data-motion-level="off"] .ww-answer-card[role="button"]:hover {
   filter: none;
 }
 
+.ww-score-ticker {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
 /* 交牌的那张背面牌：普通放置，靠软投影交代离桌高度 */
 .ww-flight__ghost--card {
   filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.42));
 }
 
-.ww-score-ticker {
-  font-variant-numeric: tabular-nums;
+/* ===== 桌面模拟模式（wits_wagers_sim_v1）专属补充：骨架走共享 .sim-* ===== */
+
+.ww-sim__question-row {
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.ww-sim__prompt {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.ww-sim__prompt-text {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
   font-weight: 800;
+  line-height: 1.4;
+}
+
+.ww-sim__answer-card {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 92px;
+}
+
+.ww-sim__answer-card .ww-answer-card {
+  width: 90px;
+  height: 126px;
+}
+
+.ww-sim__board {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.ww-sim__board .ww-answer-card {
+  width: 90px;
+  height: 126px;
+  flex: 0 0 auto;
+}
+
+/* 版图上牌自带 children 槽，筹码堆在牌脚 */
+.ww-sim__chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.ww-sim__chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  font-size: 0.6rem;
+  line-height: 1;
+}
+
+.ww-sim__chip small {
+  max-width: 44px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ww-sim .sim-tool__btn.is-active {
+  background: var(--ww-gold, #f7c84b);
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 var(--gp-line, #292722);
+}
+
+.ww-sim__me-row {
+  align-items: stretch;
+  gap: 14px;
+}
+
+.ww-sim__me-row .sim-tool {
+  flex: 1 1 180px;
+}
+
+.ww-sim__guess-input {
+  width: 100%;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 2px solid var(--gp-line, #292722);
+  font: inherit;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.ww-sim__money {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
 }

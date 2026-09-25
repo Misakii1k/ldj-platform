@@ -1,9 +1,11 @@
 /**
- * 倒计时 hook（§7.4：颜色 + 数字双信号）。
+ * 倒计时 hook（§7.4：颜色 + 数字双信号 / T08 固定采样时钟）。
  * 基于 deadlineAt（服务端绝对毫秒时间戳）计算剩余秒数；
- * 用 serverNow 与本地 now 的偏移做时钟校正，避免时钟漂移。
+ * 支持 ServerClockSample 固定时钟样本或旧 serverNow 偏移，保持对所有既有游戏 100% 兼容。
  */
 import { useEffect, useState } from 'react';
+import type { ServerClockSample } from './serverClock.ts';
+import { calculateAdjustedNow } from './serverClock.ts';
 
 export interface Countdown {
   /** 剩余秒数（向下取整，<0 则为 0） */
@@ -12,19 +14,14 @@ export interface Countdown {
   expired: boolean;
 }
 
-function nowMs(): number {
-  return Date.now();
-}
-
-/**
- * @param deadlineAt 服务端绝对时间戳（毫秒）；null 表示无倒计时
- * @param serverNow 最近一次服务端 serverNow（用于时钟校正，可选）
- */
 function toDeadlineMs(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
-export function useCountdown(deadlineAt: number | null | undefined, serverNow?: number): Countdown {
+export function useCountdown(
+  deadlineAt: number | null | undefined,
+  serverNowOrSample?: number | ServerClockSample | null,
+): Countdown {
   const deadlineMs = toDeadlineMs(deadlineAt);
   const [tick, setTick] = useState(0);
 
@@ -36,40 +33,55 @@ export function useCountdown(deadlineAt: number | null | undefined, serverNow?: 
 
     const schedule = () => {
       window.clearTimeout(timeoutId);
-      if (cancelled || document.hidden) return;
+      if (cancelled || (typeof document !== 'undefined' && document.hidden)) return;
       setTick((current) => current + 1);
-      const remaining = Math.max(0, deadlineMs - Date.now());
+      const currentNow = typeof serverNowOrSample === 'object' && serverNowOrSample !== null
+        ? calculateAdjustedNow(serverNowOrSample)
+        : Date.now();
+      const remaining = Math.max(0, deadlineMs - currentNow);
       const delay = Math.min(1000, Math.max(120, remaining % 1000 || 1000));
       timeoutId = window.setTimeout(schedule, delay);
     };
 
     const handleVisibilityChange = () => {
-      if (document.hidden) {
+      if (typeof document !== 'undefined' && document.hidden) {
         window.clearTimeout(timeoutId);
         return;
       }
       schedule();
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
     schedule();
 
     return () => {
       cancelled = true;
       window.clearTimeout(timeoutId);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
     };
-  }, [deadlineMs]);
+  }, [deadlineMs, serverNowOrSample]);
 
-  // 时钟偏移：服务端时间 - 本地时间（>0 表示本地慢）
-  const offset = serverNow !== undefined && serverNow > 0 ? serverNow - nowMs() : 0;
-  // 用 tick 强制重算
+  // 用 tick 强制组件依调度重算
   void tick;
 
   if (deadlineMs === null) {
     return { secondsLeft: 0, expired: false };
   }
-  const adjustedNow = nowMs() + offset;
+
+  let adjustedNow: number;
+  if (typeof serverNowOrSample === 'object' && serverNowOrSample !== null) {
+    adjustedNow = calculateAdjustedNow(serverNowOrSample);
+  } else if (typeof serverNowOrSample === 'number' && serverNowOrSample > 0) {
+    const offset = serverNowOrSample - Date.now();
+    adjustedNow = Date.now() + offset;
+  } else {
+    adjustedNow = Date.now();
+  }
+
   const remain = Math.ceil((deadlineMs - adjustedNow) / 1000);
   return {
     secondsLeft: Math.max(0, remain),

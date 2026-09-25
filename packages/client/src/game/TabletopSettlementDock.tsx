@@ -6,6 +6,7 @@ import { UserAvatar } from '../user/UserAvatar.tsx';
 import { useUserProfile } from '../user/UserProfileContext.tsx';
 import { resolveMemberAvatar } from '../user/avatar.ts';
 import { nameFor } from './useGameAction.ts';
+import { RollingNumber } from '../shared-ui/RollingNumber.tsx';
 
 export function TabletopSettlementDock() {
   const { state, me, send, clearMe, setViewingHome } = useConnection();
@@ -28,10 +29,12 @@ export function TabletopSettlementDock() {
   const totalPlayers = playerMembers.length;
   const isAllReady = totalPlayers > 0 && readyCount === totalPlayers;
 
-  // 全员就绪 3 秒倒计时逻辑
+  const isWerewolf = room?.gameId === 'werewolf';
+
+  // 全员就绪 3 秒倒计时逻辑（狼人杀等深度长时推理游戏禁用自动开局，保留充足大复盘交流时间）
   // D-FIX：useEffect 必须在 early return 之前调用，否则违反 React Hooks 规则
   useEffect(() => {
-    if (!isPostGame || !isAllReady) {
+    if (!isPostGame || !isAllReady || isWerewolf) {
       setCountdown(3);
       return;
     }
@@ -40,6 +43,9 @@ export function TabletopSettlementDock() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
+          if (isHost) {
+            void send('room_command', { command: 'start_game' });
+          }
           return 0;
         }
         return prev - 1;
@@ -47,7 +53,7 @@ export function TabletopSettlementDock() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isPostGame, isAllReady]);
+  }, [isPostGame, isAllReady, isWerewolf, isHost, send]);
 
   // 仅在房间处于 POST_GAME 结算阶段时展示
   if (!isPostGame) {
@@ -111,8 +117,12 @@ export function TabletopSettlementDock() {
     }
   };
 
+  const portalTheme = isWerewolf
+    ? (typeof document !== 'undefined' ? document.getElementById('werewolf-portal-root')?.getAttribute('data-ww-theme') : null) ?? 'woodcut-day'
+    : undefined;
+
   return createPortal(
-    <aside className="tabletop-settlement-dock" role="region" aria-label="对局结算与再来一局操作坞">
+    <aside className="tabletop-settlement-dock" data-ww-theme={portalTheme} role="region" aria-label="对局结算与再来一局操作坞">
       {/* 顶部玩家准备状态卡片条 */}
       <div className="settlement-dock-strip">
         <div className="settlement-dock-status">
@@ -120,12 +130,12 @@ export function TabletopSettlementDock() {
             {isAllReady ? (
               <>
                 <Clock size={15} strokeWidth={2.4} aria-hidden="true" />
-                <span>全员已就绪，{countdown > 0 ? `${countdown} 秒后` : '正在'}自动开局</span>
+                <span>{isWerewolf ? '全员已就绪 · 由房主点击立即开局' : <>全员已就绪，{countdown > 0 ? <>{<RollingNumber value={countdown} />} 秒后</> : '正在'}自动开局</>}</span>
               </>
             ) : (
               <>
                 <Gamepad2 size={15} strokeWidth={2.4} aria-hidden="true" />
-                <span>对局已结算 · 已准备 {readyCount} / {totalPlayers}</span>
+                <span>对局已结算 · 已准备 <RollingNumber value={readyCount} /> / <RollingNumber value={totalPlayers} /></span>
               </>
             )}
           </div>
@@ -167,7 +177,7 @@ export function TabletopSettlementDock() {
               {isMeReady ? (
                 <>
                   <RotateCcw size={16} strokeWidth={2.5} aria-hidden="true" />
-                  <span>{isAllReady ? `已准备 (${countdown}s)` : '已准备 (取消)'}</span>
+                  <span>{isAllReady && !isWerewolf ? `已准备 (${countdown}s)` : '已准备 (取消)'}</span>
                 </>
               ) : (
                 <>

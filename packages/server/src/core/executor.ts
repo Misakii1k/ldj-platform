@@ -143,6 +143,7 @@ export class RoomCommandExecutor {
    */
   async executeInternal<T>(opts: {
     roomId: string;
+    now?: number;
     handler: (tx: TxContext) => T | null;
   }): Promise<{ roomSeq: number; outcome: T } | null> {
     const db = this.#db;
@@ -152,7 +153,7 @@ export class RoomCommandExecutor {
         | undefined;
       if (!room || room.status === 'CLOSED') return null;
 
-      const now = Date.now();
+      const now = opts.now ?? Date.now();
       const roomSeq = room.seq + 1;
       let applied = false;
       const outcome = withTransaction(db, () => {

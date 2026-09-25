@@ -32,6 +32,11 @@ function buildV2BotPromptCore(input: BotDecisionInput<V2PlayerView>): BotPromptC
         : { roleBrief: brief, situation, options: [{ id: 'confirm', label: '确认身份', action: { type: 'confirm_role' } }] };
     case 'night': {
       if (!me.alive) return null;
+      if (view.timeline) {
+        if (view.timeline.segment !== 'action' || view.timeline.role !== me.role) {
+          return null;
+        }
+      }
       const others = othersAlive(view, playerId);
       const options: BotActionOption<V2Action>[] = [];
       if (me.role === 'wolf' && !me.hasNightVoted) options.push(...targetOptions(view, view.players.filter((p) => p.alive), '刀', (id) => ({ type: 'night_kill', targetPlayerId: id })));

@@ -22,7 +22,7 @@ import { wrapV2WithJudgeVoice } from '../judgeVoiceWrapper.ts';
 export const WEREWOLF_V2_IDENTITY = { engineContractVersion: 2, rulesetId: 'werewolf_platform_open_kill_v1', viewVersion: 1 } as const;
 
 const rawWerewolfV2Module: GameModuleV2<V2Config, V2State, V2Action, V2PlayerView, V2PublicView, V2Event, V2Result> = {
-  manifest: { id: 'werewolf', version: '0.2.0', displayName: '狼人杀', minPlayers: 6, maxPlayers: 12, stateSchemaVersion: 1 },
+  manifest: { id: 'werewolf', version: '0.2.0', displayName: '狼人杀', minPlayers: 6, maxPlayers: 12, stateSchemaVersion: 2 },
   identity: WEREWOLF_V2_IDENTITY,
   registeredRulesets: ['werewolf_platform_open_kill_v1'],
   defaultRulesetId: 'werewolf_platform_open_kill_v1',
@@ -32,7 +32,13 @@ const rawWerewolfV2Module: GameModuleV2<V2Config, V2State, V2Action, V2PlayerVie
   parsePlayerView: (input) => v2PlayerViewSchema.parse(input),
   parseSpectatorView: (input) => v2PublicViewSchema.parse(input),
   assertInvariants: assertV2Invariants,
-  snapshotMigrations: {},
+  snapshotMigrations: {
+    1: (snap: any) => ({
+      ...snap,
+      schemaVersion: 2,
+      timelineState: null,
+    }),
+  },
   createInitialState: createV2InitialState,
   reduce: reduceV2,
   getPlayerView: buildV2PlayerView,

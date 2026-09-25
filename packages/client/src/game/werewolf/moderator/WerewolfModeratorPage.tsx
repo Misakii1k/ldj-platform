@@ -1,3 +1,4 @@
+import { useGameVisibility } from '../../tabletop/useGameVisibility.ts';
 /**
  * 狼人杀「真人主持」模式入口：按身份分流到法官控制台 / 玩家端 / 观战端。
  *
@@ -9,6 +10,7 @@ import { useConnection } from '../../../connection/useConnection.ts';
 import { useUserProfile } from '../../../user/UserProfileContext.tsx';
 import { ModeratorHostConsole } from './ModeratorHostConsole.tsx';
 import { PlayerCardView } from './PlayerCardView.tsx';
+import { WerewolfThemeProvider } from '../WerewolfThemeProvider.tsx';
 import './werewolf-moderator.css';
 
 interface WerewolfModeratorPageProps {
@@ -16,6 +18,7 @@ interface WerewolfModeratorPageProps {
 }
 
 export function WerewolfModeratorPage({ view }: WerewolfModeratorPageProps) {
+  useGameVisibility();
   const { state, me } = useConnection();
   const { profile } = useUserProfile();
 
@@ -24,24 +27,28 @@ export function WerewolfModeratorPage({ view }: WerewolfModeratorPageProps) {
   const sessionId = state.game?.sessionId ?? '';
   const spectator = state.game?.role === 'spectator';
 
-  if (view.isModerator) {
-    return (
-      <ModeratorHostConsole
-        view={view}
-        members={members}
-        myAvatar={profile.avatar}
-      />
-    );
-  }
-
   return (
-    <PlayerCardView
-      view={view}
-      members={members}
-      sessionId={sessionId}
-      myUserId={myUserId}
-      myAvatar={profile.avatar}
-      spectator={spectator}
-    />
+    <WerewolfThemeProvider
+      timelinePeriod={view.timeline?.period}
+      phase={view.gameEnded ? 'game_over' : undefined}
+    >
+      {view.isModerator ? (
+        <ModeratorHostConsole
+          view={view}
+          members={members}
+          myAvatar={profile.avatar}
+        />
+      ) : (
+        <PlayerCardView
+          key={`${sessionId}:${myUserId}`}
+          view={view}
+          members={members}
+          sessionId={sessionId}
+          myUserId={myUserId}
+          myAvatar={profile.avatar}
+          spectator={spectator}
+        />
+      )}
+    </WerewolfThemeProvider>
   );
 }

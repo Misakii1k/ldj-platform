@@ -10,7 +10,7 @@ export const WEREWOLF_MANIFEST = {
   version: '0.4.0',
   minPlayers: 6,
   maxPlayers: 12,
-  stateSchemaVersion: 4,
+  stateSchemaVersion: 5,
 } as const satisfies GameManifest;
 
 export type WerewolfManifest = typeof WEREWOLF_MANIFEST;

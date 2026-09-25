@@ -1,0 +1,454 @@
+/**
+ * 桌面型对局共享动效层（Tabletop Game Motion）
+ *
+ * 覆盖：bell-clash / cheese-thief / echo-judge / goose-relay / landlord /
+ *       loveletter / night-testimony / undercover / uno
+ * 不覆盖：werewolf / durian（有各自 native 动效）、wits-wagers。
+ *
+ * 规则：
+ * - 所有时长/缓动只引用 game-ui.css 的 --gp-* 令牌，不写字面量。
+ * - 装饰性循环只在 full 档播放；minimal / off 全部关闭；
+ *   prefers-reduced-motion 作为 data-motion-level 尚未注入时的兜底。
+ * - 卡扇（CardFanEngine）的按钮 transform 由内联样式接管，
+ *   进场动画只作用于其直接子元素，避免与扇形布局互相覆盖。
+ */
+
+.tabletop-shell[data-game-id='bell-clash'],
+.tabletop-shell[data-game-id='cheese-thief'],
+.tabletop-shell[data-game-id='echo-judge'],
+.tabletop-shell[data-game-id='goose-relay'],
+.tabletop-shell[data-game-id='landlord'],
+.tabletop-shell[data-game-id='loveletter'],
+.tabletop-shell[data-game-id='night-testimony'],
+.tabletop-shell[data-game-id='undercover'],
+.tabletop-shell[data-game-id='uno'] {
+  --tgm-stage-shift: var(--gp-dist-md);
+}
+
+/* ─── 1. 舞台进场：阶段切换时中心内容整体升入 ─── */
+/* 包裹层对布局透明：沿用父级 flex 列的尺寸约束，子级仍按原来 100% 高度铺满 */
+.tabletop-center-content__stage {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.tabletop-center-content__stage.is-active > * {
+  animation: tgm-stage-arrive var(--gp-dur-phase) var(--gp-ease-decelerate) backwards;
+}
+
+@keyframes tgm-stage-arrive {
+  from {
+    opacity: 0.6;
+    transform: translate3d(0, var(--tgm-stage-shift, 8px), 0) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/* ─── 2. 发牌 / 选项错落进场 ─── */
+.card-fan-item > *,
+.landlord-hand-card > *,
+.loveletter-card,
+.ll-mini-card,
+.echo-topic-card,
+.testimony-topic-card,
+.testimony-crime-btn,
+.echo-role-btn,
+.goose-modal-card-item,
+.goose-secret-card-item,
+.goose-reveal-card-item,
+.cheese-vote-candidate-card,
+.cheese-hour-choice-die,
+.cheese-peek-item,
+.vote-card,
+.uc-order-card,
+.ll-role-btn,
+.uno-color-wheel-btn,
+.uno-opponent-station,
+.ll-opponent,
+.landlord-opponent {
+  animation: tgm-card-deal var(--gp-dur-emphasis) var(--gp-ease-decelerate) backwards;
+  animation-delay: calc(var(--gp-stagger) * var(--i, var(--stagger-index, 0)));
+}
+
+@keyframes tgm-card-deal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, var(--gp-dist-lg), 0) scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/* ─── 3. 选中态一次性弹跳（只挂在没有静态 transform 的元素上，避免覆盖其定位） ─── */
+.echo-topic-card.is-selected,
+.testimony-topic-card.is-selected,
+.testimony-crime-btn.is-active,
+.echo-role-btn.is-active-human,
+.echo-role-btn.is-active-impostor,
+.goose-select-slot.is-picked,
+.goose-modal-card-item.is-selected,
+.cheese-hour-choice-die.is-selected,
+.cheese-peek-item.is-selected,
+.loveletter-card.is-selected,
+.ll-role-btn.is-active,
+.vote-card.voted {
+  animation: tgm-pick-pop var(--gp-dur-standard) var(--gp-ease-press) backwards;
+}
+
+@keyframes tgm-pick-pop {
+  0% { transform: scale(1); }
+  55% { transform: scale(var(--gp-scale-pop)); }
+  100% { transform: scale(1); }
+}
+
+/* ─── 4. 按下反馈：统一的物理下压 ─── */
+.tabletop-action:not(:disabled):active,
+.landlord-btn:not(:disabled):active,
+.uno-floating-btn:not(:disabled):active,
+.goose-modal-btn:not(:disabled):active,
+.goose-peek-btn:not(:disabled):active,
+.goose-card-dock-btn:not(:disabled):active,
+.cheese-player-steal-btn:not(:disabled):active,
+.cheese-confirm-btn:not(:disabled):active,
+.cheese-cancel-btn:not(:disabled):active,
+.cheese-skip-discussion-btn:not(:disabled):active,
+.cheese-vote-abstain-btn:not(:disabled):active,
+.cheese-model-3d-btn:not(:disabled):active,
+.sg-btn:not(:disabled):active,
+.nt-expose-btn:not(:disabled):active,
+.echo-identity-toggle-btn:not(:disabled):active,
+.testimony-identity-toggle-btn:not(:disabled):active,
+.ll-target-self-btn:not(:disabled):active,
+.uc-guess__btn:not(:disabled):active,
+.game-primary-action:not(:disabled):active,
+.bell-floating-bell-btn:not(:disabled):active,
+.uno-color-wheel-btn:not(:disabled):active {
+  transform: translate3d(0, 2px, 0) scale(var(--gp-scale-press));
+  transition-duration: var(--gp-dur-instant);
+}
+
+/* ─── 5. 回合焦点呼吸（仅 full 档） ─── */
+html[data-motion-level='full'] .tabletop-seat.tabletop-seat--active-turn,
+html[data-motion-level='full'] .landlord-opponent.is-turn,
+html[data-motion-level='full'] .uno-opponent-station.is-active-turn,
+html[data-motion-level='full'] .ll-opponent.is-current-turn,
+html[data-motion-level='full'] .cheese-hour-node.is-current {
+  animation: tgm-actor-breathe 1.8s var(--gp-ease-standard) infinite;
+}
+
+@keyframes tgm-actor-breathe {
+  0%, 100% { transform: translateZ(0) scale(1.04); }
+  50% { transform: translateZ(0) scale(1.075); }
+}
+
+/* 斗地主 / UNO 对手站位不是 chip，scale 基准回到 1 */
+html[data-motion-level='full'] .landlord-opponent.is-turn,
+html[data-motion-level='full'] .uno-opponent-station.is-active-turn,
+html[data-motion-level='full'] .ll-opponent.is-current-turn,
+html[data-motion-level='full'] .cheese-hour-node.is-current {
+  animation-name: tgm-actor-breathe-soft;
+}
+
+@keyframes tgm-actor-breathe-soft {
+  0%, 100% { transform: translateZ(0) scale(1); }
+  50% { transform: translateZ(0) scale(1.025); }
+}
+
+/* ─── 6. 出牌落桌 ─── */
+.bell-discard-wrap > .ding-uno-card--top,
+.uno-house-discard > .uno-house-card-img,
+.ll-opponent-discards > :last-child,
+.ll-discard-pill:last-child,
+.landlord-drop-cards > :last-child,
+.cheese-stolen-badge,
+.goose-history-result:last-child {
+  animation: tgm-card-land var(--gp-dur-emphasis) var(--gp-ease-decelerate) backwards;
+}
+
+@keyframes tgm-card-land {
+  0% {
+    opacity: 0.4;
+    transform: translate3d(0, calc(-1 * var(--gp-dist-xl)), 0) scale(1.18) rotate(-4deg);
+  }
+
+  70% {
+    opacity: 1;
+    transform: translate3d(0, 2px, 0) scale(0.98) rotate(1deg);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+}
+
+/* ─── 7. 胜利横幅 / 结果揭示 ─── */
+.winner-hero {
+  animation: tgm-winner-in var(--gp-dur-slow) var(--gp-ease-decelerate) backwards;
+}
+
+.winner-hero .winner-title,
+.winner-hero p,
+.winner-hero .winner-names,
+.winner-hero .winner-tag {
+  animation: tgm-card-deal var(--gp-dur-emphasis) var(--gp-ease-decelerate) backwards;
+  animation-delay: calc(var(--gp-stagger) * 3);
+}
+
+.winner-hero p,
+.winner-hero .winner-names {
+  animation-delay: calc(var(--gp-stagger) * 5);
+}
+
+@keyframes tgm-winner-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, var(--gp-dist-lg), 0) scale(0.92);
+  }
+
+  60% {
+    opacity: 1;
+    transform: translate3d(0, -2px, 0) scale(1.02);
+  }
+
+  to {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.echo-reveal-card,
+.testimony-dossier-card,
+.goose-result-card,
+.cheese-reveal__card,
+.result-banner,
+.word-reveal-box,
+.tally-player,
+.ll-history-round-card,
+.goose-vote-stat-item {
+  animation: tgm-reveal-flip var(--gp-dur-emphasis) var(--gp-ease-decelerate) backwards;
+  animation-delay: calc(var(--gp-stagger) * var(--i, var(--stagger-index, 0)));
+}
+
+@keyframes tgm-reveal-flip {
+  from {
+    opacity: 0;
+    transform: perspective(600px) rotateX(-18deg) translate3d(0, var(--gp-dist-md), 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: perspective(600px) rotateX(0deg) translate3d(0, 0, 0);
+  }
+}
+
+/* ─── 8. 各游戏原有 transition 的时长归一到令牌 ─── */
+.ding-uno-card,
+.card-fan-item,
+.landlord-hand-card,
+.echo-topic-card,
+.testimony-topic-card,
+.cheese-vote-candidate-card,
+.goose-modal-card-item,
+.tabletop-action,
+.tabletop-seat {
+  transition-duration: var(--gp-dur-standard);
+  transition-timing-function: var(--gp-ease-standard);
+}
+
+/* ─── 9. 降级 ─── */
+html[data-motion-level='reduced'] .tabletop-seat.tabletop-seat--active-turn,
+html[data-motion-level='reduced'] .landlord-opponent.is-turn,
+html[data-motion-level='reduced'] .uno-opponent-station.is-active-turn,
+html[data-motion-level='reduced'] .ll-opponent.is-current-turn,
+html[data-motion-level='reduced'] .cheese-hour-node.is-current {
+  animation: none;
+}
+
+html[data-motion-level='minimal'] .tabletop-center-content__stage.is-active > *,
+html[data-motion-level='off'] .tabletop-center-content__stage.is-active > *,
+html[data-motion-level='minimal'] .winner-hero,
+html[data-motion-level='off'] .winner-hero,
+html[data-motion-level='minimal'] .winner-hero > *,
+html[data-motion-level='off'] .winner-hero > *,
+html[data-motion-level='minimal'] .card-fan-item > *,
+html[data-motion-level='off'] .card-fan-item > *,
+html[data-motion-level='minimal'] .landlord-hand-card > *,
+html[data-motion-level='off'] .landlord-hand-card > * {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabletop-center-content__stage.is-active > *,
+  .card-fan-item > *,
+  .landlord-hand-card > *,
+  .loveletter-card,
+  .ll-mini-card,
+  .echo-topic-card,
+  .testimony-topic-card,
+  .testimony-crime-btn,
+  .echo-role-btn,
+  .goose-modal-card-item,
+  .goose-secret-card-item,
+  .goose-reveal-card-item,
+  .cheese-vote-candidate-card,
+  .cheese-hour-choice-die,
+  .cheese-peek-item,
+  .vote-card,
+  .uc-order-card,
+  .ll-role-btn,
+  .uno-color-wheel-btn,
+  .uno-opponent-station,
+  .ll-opponent,
+  .landlord-opponent,
+  .winner-hero,
+  .winner-hero > *,
+  .echo-reveal-card,
+  .testimony-dossier-card,
+  .goose-result-card,
+  .cheese-reveal__card,
+  .result-banner,
+  .word-reveal-box,
+  .tally-player,
+  .ll-history-round-card,
+  .goose-vote-stat-item,
+  .tabletop-seat.tabletop-seat--active-turn,
+  .landlord-opponent.is-turn,
+  .uno-opponent-station.is-active-turn,
+  .ll-opponent.is-current-turn,
+  .cheese-hour-node.is-current {
+    animation: none !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* ─── 10. 可读性防护：深色/材质底上的说明性文字补细阴影（AGENTS.md 第 4 条） ─── */
+.tabletop-theme-mystery .tabletop-header__sub,
+.tabletop-theme-court .tabletop-header__sub,
+.tabletop-theme-party .tabletop-header__sub,
+.tabletop-theme-night .tabletop-header__sub,
+.tabletop-theme-letter .tabletop-header__sub,
+.tabletop-theme-arena .tabletop-header__sub,
+.tabletop-theme-orchard .tabletop-header__sub,
+.tabletop-theme-dark .tabletop-header__sub,
+.cheese-cup-hint,
+.cheese-hour-node__status,
+.cheese-vote-board-hint,
+.cheese-tally-badge,
+.cheese-voter-chip--empty,
+.cheese-abstain-label,
+.cheese-abstain-chip,
+.cheese-reveal__desc,
+.cheese-die-unknown,
+.bell-discard-empty,
+.nt-expose-modal__sub,
+.nt-expose-modal__desc,
+.uno-opponent-score,
+.ll-deck-corner__label,
+.ll-opponent-name,
+.hint-press,
+.hint-lifted {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* ─── 11. 倒计时紧迫态（TabletopCountdownText） ─── */
+.tabletop-countdown-text {
+  display: inline-block;
+  transition: color var(--gp-dur-fast) var(--gp-ease-standard);
+}
+
+.tabletop-countdown-text[data-countdown-state='urgent'] {
+  color: #fca5a5;
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.55), 0 1px 2px rgba(0, 0, 0, 0.6);
+  animation: tgm-countdown-tick var(--gp-dur-standard) var(--gp-ease-press);
+}
+
+/* 浅色面板里的倒计时（斗地主、谁是卧底、伪人测试等）用深红，保证 ≥ 4.5:1 */
+.tabletop-theme-poker .tabletop-countdown-text[data-countdown-state='urgent'],
+.tabletop-theme-sunset .tabletop-countdown-text[data-countdown-state='urgent'],
+.tabletop-theme-tribunal .tabletop-countdown-text[data-countdown-state='urgent'],
+.tabletop-theme-tribunal-day .tabletop-countdown-text[data-countdown-state='urgent'],
+.arena-board .tabletop-countdown-text[data-countdown-state='urgent'],
+.sg-panel .tabletop-countdown-text[data-countdown-state='urgent'],
+.landlord-drop-badge .tabletop-countdown-text[data-countdown-state='urgent'],
+.game-countdown .tabletop-countdown-text[data-countdown-state='urgent'] {
+  color: #b91c1c;
+  text-shadow: none;
+}
+
+.tabletop-countdown-text[data-countdown-state='expired'] {
+  opacity: 0.8;
+}
+
+@keyframes tgm-countdown-tick {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+
+html[data-motion-level='minimal'] .tabletop-countdown-text,
+html[data-motion-level='off'] .tabletop-countdown-text {
+  animation: none !important;
+}
+
+/* ─── 12. 身份卡主题对比度修正（IdentityFlipCard：cyber / prison） ─── */
+/* prison 正面沿用浅色纸底，亮黄角色名不可读 → 改深琥珀并加描边感 */
+.theme-prison .identity-card-front__role-name {
+  color: #7c2d12;
+  text-shadow: none;
+}
+
+/* cyber / prison 正面为深色底，底部安全提示与说明文字必须转亮色 */
+.theme-cyber .identity-card-front__footer,
+.theme-cyber .identity-card-front__safe-hint,
+.theme-cyber .identity-hint-text {
+  color: #ccfbf1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* 深色卡面（cyber / gothic）上的秘密词盒：基础样式用深墨字，在深底上只有 1.02:1 */
+.theme-cyber .identity-card-front__secret-word-box,
+.theme-gothic .identity-card-front__secret-word-box {
+  background: rgba(253, 224, 71, 0.16);
+  border-color: #fde047;
+}
+
+.theme-cyber .identity-card-front__secret-word-box .secret-word,
+.theme-gothic .identity-card-front__secret-word-box .secret-word {
+  color: #fef9c3;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+}
+
+.theme-cyber .identity-card-front__secret-word-box .secret-label,
+.theme-gothic .identity-card-front__secret-word-box .secret-label {
+  color: #fde68a;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+/* 背面备注（“其他玩家不可翻动”）在深色卡背上必须是亮色；基础规则带 !important，这里同级覆盖 */
+.theme-cyber .identity-card-back .identity-card-back__note {
+  color: #99f6e4 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.theme-prison .identity-card-back .identity-card-back__note {
+  color: #e4e4e7 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.theme-gothic .identity-card-back .identity-card-back__note {
+  color: #c7d2fe !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}

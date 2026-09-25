@@ -6,6 +6,7 @@
  * 因此整段抽卡只有两个真实步骤：洗牌（自动一次）→ 点牌翻开（唯一交互出口）。
  */
 import { useEffect } from 'react';
+import { useMotion } from '../../../motion/MotionContext.tsx';
 
 const SHUFFLE_DURATION_MS = 1200;
 
@@ -15,10 +16,11 @@ interface DealCeremonyProps {
 }
 
 export function DealCeremony({ onFinished }: DealCeremonyProps) {
+  const { level } = useMotion();
   useEffect(() => {
-    const timer = window.setTimeout(onFinished, SHUFFLE_DURATION_MS);
+    const timer = window.setTimeout(onFinished, level === 'full' && !document.hidden ? SHUFFLE_DURATION_MS : 0);
     return () => window.clearTimeout(timer);
-  }, [onFinished]);
+  }, [onFinished, level]);
 
   return (
     <div className="mod-deal-ceremony" role="status" aria-live="polite">

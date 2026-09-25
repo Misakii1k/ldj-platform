@@ -23,11 +23,11 @@ const FULL = {
 const FULL_PLAYERS = ['p0', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'];
 
 test('d4-v 完整局：9 人全角色机器人局在界内收束为唯一正式结果', () => {
-  const { steps, final } = driveBotGame(FULL_PLAYERS, FULL, 'v2-server-full-9p', 400);
+  const { steps, final } = driveBotGame(FULL_PLAYERS, FULL, 'v2-server-full-9p', 800);
   assert.equal(final.phase, 'game_over');
   assert.ok(final.winner === 'wolves' || final.winner === 'village');
   assert.ok(final.aborted === false);
-  assert.ok(steps.length <= 400);
+  assert.ok(steps.length <= 800);
   // 视角：终局 reveal 非空；赢家一致
   const spectator = werewolfV2Module.getSpectatorView(final);
   assert.notEqual(spectator.reveal, null);
@@ -35,13 +35,13 @@ test('d4-v 完整局：9 人全角色机器人局在界内收束为唯一正式�
 });
 
 test('d4-v 确定性重放：同种子同轨迹两次重放字节一致，末态过 schema/不变量', () => {
-  const { steps } = driveBotGame(FULL_PLAYERS, FULL, 'v2-server-replay-9p', 400);
+  const { steps } = driveBotGame(FULL_PLAYERS, FULL, 'v2-server-replay-9p', 800);
   const run = () => {
     const ctx = { now: 1_700_000_000_000, random: createSeededRandom('v2-server-replay-9p') };
     let state = werewolfV2Module.createInitialState(ctx, [...FULL_PLAYERS], werewolfV2Module.parseConfig(FULL));
     const states: V2State[] = [structuredClone(state)];
     for (const step of steps) {
-      ctx.now += 1_000;
+      ctx.now = step.now ?? (ctx.now + 1_000);
       const reduced = werewolfV2Module.reduce(ctx, structuredClone(state), step.actor, step.action);
       if (!reduced.ok) throw new Error(`重放动作被拒：${JSON.stringify(step.action)}`);
       state = reduced.nextState;
@@ -58,16 +58,18 @@ test('d4-v 确定性重放：同种子同轨迹两次重放字节一致，末态
 });
 
 test('d4-v 不可变性：reduce 不修改传入状态', () => {
-  const { steps, final } = driveBotGame(FULL_PLAYERS, FULL, 'v2-server-immutable', 400);
+  const { steps, final } = driveBotGame(FULL_PLAYERS, FULL, 'v2-server-immutable', 800);
   const random = createSeededRandom('v2-server-immutable');
   const ctx = { now: 1_700_000_000_000, random };
   let state = werewolfV2Module.createInitialState(ctx, [...FULL_PLAYERS], werewolfV2Module.parseConfig(FULL));
   const mid = Math.floor(steps.length / 2);
   for (let i = 0; i < mid; i += 1) {
+    ctx.now = steps[i]!.now ?? (ctx.now + 1_000);
     const reduced = werewolfV2Module.reduce(ctx, state, steps[i]!.actor, steps[i]!.action);
     if (reduced.ok) state = reduced.nextState;
   }
   const before = structuredClone(state);
+  ctx.now = steps[mid]!.now ?? (ctx.now + 1_000);
   werewolfV2Module.reduce(ctx, state, steps[mid]!.actor, steps[mid]!.action);
   assert.deepEqual(state, before);
   assert.equal(final.phase, 'game_over');

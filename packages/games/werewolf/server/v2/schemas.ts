@@ -1,7 +1,9 @@
+import { werewolfAnnouncementSchema } from '@ldj/shared';
 /** werewolf_platform_open_kill_v1 — strict zod schemas（config/action/state/views）。 */
 import { z } from 'zod';
+import { werewolfTimelineSchema, WEREWOLF_TIMELINE_ROLES } from '@ldj/shared';
 
-export const V2_STATE_SCHEMA_VERSION = 1;
+export const V2_STATE_SCHEMA_VERSION = 2;
 const pid = z.string().min(1).max(64);
 export const v2RoleSchema = z.enum(['wolf', 'villager', 'seer', 'witch', 'guard', 'hunter', 'idiot']);
 const team = z.enum(['wolves', 'village']);
@@ -69,6 +71,18 @@ const voteSummary = z.object({
 const voteRecord = voteSummary.extend({ votes: z.record(pid, pid.nullable()) });
 const pending = z.object({ next: z.enum(['runoff', 'last_words', 'next_night']), candidates: z.array(pid), winner: team.nullable() }).strict();
 
+export const v2TimelineStateSchema = z
+  .object({
+    version: z.literal(1),
+    stepIndex: z.number().int().nonnegative(),
+    revision: z.number().int().positive(),
+    pausedRemainingMs: z.number().int().nonnegative().nullable(),
+    activeTimerToken: z.string().nullable(),
+    initialRolePlan: z.array(z.enum(WEREWOLF_TIMELINE_ROLES)),
+    current: werewolfTimelineSchema,
+  })
+  .strict();
+
 export const v2StateSchema = z.object({
   schemaVersion: z.literal(V2_STATE_SCHEMA_VERSION), phase, day: z.number().int().nonnegative(), players: z.record(pid, player), config: v2ConfigSchema,
   confirmedRolePlayerIds: z.array(pid), announcementConfirmedPlayerIds: z.array(pid), night, seerHistory: z.array(seerResult),
@@ -76,23 +90,26 @@ export const v2StateSchema = z.object({
   runoffCandidates: z.array(pid), lastVoteSummary: voteSummary.nullable(), voteHistory: z.array(voteRecord), pendingOutcome: pending.nullable(),
   lastWordsPlayerId: pid.nullable(), lastWordsQueue: z.array(pid).nullable().default(null), witchSaveUsed: z.boolean(), witchPoisonUsed: z.boolean(), lastGuardTargetId: pid.nullable(),
   pendingShoot: pid.nullable(), deadlineAt: z.number().int().nullable(), phaseToken: z.string().max(128).nullable(), winner: team.nullable(), aborted: z.boolean(),
+  timelineState: v2TimelineStateSchema.nullable().default(null),
+  announcement: werewolfAnnouncementSchema.nullable().optional(),
 }).strict();
 
 export const v2ActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('begin') }).strict(),
-  z.object({ type: z.literal('confirm_role') }).strict(),
-  z.object({ type: z.literal('night_kill'), targetPlayerId: pid }).strict(),
-  z.object({ type: z.literal('seer_check'), targetPlayerId: pid }).strict(),
-  z.object({ type: z.literal('witch_save'), save: z.boolean() }).strict(),
-  z.object({ type: z.literal('witch_poison'), targetPlayerId: pid.nullable() }).strict(),
-  z.object({ type: z.literal('guard_guard'), targetPlayerId: pid.nullable() }).strict(),
-  z.object({ type: z.literal('hunter_shoot'), targetPlayerId: pid.nullable() }).strict(),
-  z.object({ type: z.literal('confirm_announcement') }).strict(),
-  z.object({ type: z.literal('finish_speech') }).strict(),
-  z.object({ type: z.literal('ready_vote') }).strict(),
-  z.object({ type: z.literal('day_vote'), targetPlayerId: pid.nullable() }).strict(),
-  z.object({ type: z.literal('finish_last_words') }).strict(),
+  z.object({ type: z.literal('confirm_role'), timelineId: z.string().optional() }).strict(),
+  z.object({ type: z.literal('night_kill'), targetPlayerId: pid, timelineId: z.string().optional() }).strict(),
+  z.object({ type: z.literal('seer_check'), targetPlayerId: pid, timelineId: z.string().optional() }).strict(),
+  z.object({ type: z.literal('witch_save'), save: z.boolean(), timelineId: z.string().optional() }).strict(),
+  z.object({ type: z.literal('witch_poison'), targetPlayerId: pid.nullable(), timelineId: z.string().optional() }).strict(),
+  z.object({ type: z.literal('guard_guard'), targetPlayerId: pid.nullable(), timelineId: z.string().optional() }).strict(),
+  z.object({ type: z.literal('hunter_shoot'), targetPlayerId: pid.nullable(), timelineId: z.string().optional() }).strict(),
+  z.object({ type: z.literal('confirm_announcement'), timelineId: z.string().optional() }).strict(),
+  z.object({ type: z.literal('finish_speech'), timelineId: z.string().optional() }).strict(),
+  z.object({ type: z.literal('ready_vote'), timelineId: z.string().optional() }).strict(),
+  z.object({ type: z.literal('day_vote'), targetPlayerId: pid.nullable(), timelineId: z.string().optional() }).strict(),
+  z.object({ type: z.literal('finish_last_words'), timelineId: z.string().optional() }).strict(),
   z.object({ type: z.literal('phase_timeout'), phase: timed, day: z.number().int().nonnegative(), token: z.string().min(1).max(128) }).strict(),
+  z.object({ type: z.literal('timeline_timeout'), timelineId: z.string().min(1), token: z.string().min(1) }).strict(),
   z.object({ type: z.literal('player_forfeited'), playerIds: z.array(pid).min(1).max(12) }).strict(),
 ]);
 
@@ -101,10 +118,12 @@ const reveal = z.object({ roles: z.record(pid, v2RoleSchema), voteHistory: z.arr
 export const v2NightStageSchema = z.enum(['wolf', 'witch', 'seer', 'guard', 'done']);
 
 const pubBase = z.object({
-  gameId: z.literal('werewolf'), rulesetId: z.literal('werewolf_platform_open_kill_v1'), schemaVersion: z.literal(V2_STATE_SCHEMA_VERSION), phase, day: z.number().int().nonnegative(), players: z.array(pubPlayer),
+  gameId: z.literal('werewolf'), rulesetId: z.literal('werewolf_platform_open_kill_v1'), schemaVersion: z.union([z.literal(1), z.literal(2)]).default(2), phase, day: z.number().int().nonnegative(), players: z.array(pubPlayer),
   config: v2ConfigSchema, confirmedRolePlayerIds: z.array(pid), announcementConfirmedPlayerIds: z.array(pid), nightStage: v2NightStageSchema, lastNightDeaths: z.array(pid), speakingOrder: z.array(pid),
   currentSpeakerId: pid.nullable(), freeDiscussionReadyPlayerIds: z.array(pid).default([]), lastWordsPlayerId: pid.nullable(), deadlineAt: z.number().int().nullable(), votesSubmitted: z.number().int().nonnegative(), votesExpected: z.number().int().nonnegative(),
   runoffCandidates: z.array(pid), lastVoteSummary: voteSummary.nullable(), pendingShooterId: pid.nullable(), winner: team.nullable(), aborted: z.boolean(), reveal: reveal.nullable(),
+  timeline: werewolfTimelineSchema.nullable().optional(),
+  announcement: werewolfAnnouncementSchema.nullable().optional(),
 }).strict();
 
 const me = z.object({

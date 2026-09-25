@@ -18,6 +18,7 @@ import {
   resyncPayloadSchema,
   roomStatusPayloadSchema,
   makeErrorPayload,
+  isSimRulesetId,
   MAX_MESSAGE_BYTES,
   PROTOCOL_VERSION,
   type ChatMessageView,
@@ -33,7 +34,7 @@ import { applyJoinRoom } from '../core/commands/joinRoom.ts';
 import { applyResumeRoom } from '../core/commands/resumeRoom.ts';
 import { applyLeaveRoom } from '../core/commands/leaveRoom.ts';
 import { applyRoomCommand } from '../core/commands/roomCommand.ts';
-import { applyChatSend, insertSystemChat, listChatAfter } from '../core/commands/chat.ts';
+import { canReadChat, applyChatSend, insertSystemChat, listChatAfter } from '../core/commands/chat.ts';
 import {
   applyMarkDisconnected,
   applyAutoTransferHost,
@@ -41,7 +42,7 @@ import {
 } from '../core/commands/presence.ts';
 import { applyGameAction, type GameActionOutcome } from '../core/game/session.ts';
 import { autoStartGame } from '../core/game/session.ts';
-import { getGameModule, getDefaultRuleset, DEFAULT_GAME_ID } from '../core/game/registry.ts';
+import { getGameModule, resolveRulesetForStart, DEFAULT_GAME_ID } from '../core/game/registry.ts';
 import { isVersionedEventEnvelope } from '../core/game/eventEnvelope.ts';
 import { buildGameStatePayload, type GameStatePayload } from '../core/game/views.ts';
 import { findRoomIdByCode } from '../core/roomLookup.ts';
@@ -99,6 +100,60 @@ export const MAX_PUBLIC_GAME_EVENT_REPLAY_GAP = 50;
 interface GameResumeIdentity {
   readonly sessionId: string;
   readonly viewVersion: number;
+}
+
+/**
+ * 自动开局判定用的规则集：与 autoStartGame 走同一条解析路径（房间 config 里的 gameConfig），
+ * 这样倒计时的准入条件和真正开局时的复检条件一致，不会出现「倒计时走完却没开局」。
+ * config_json 损坏或游戏未注册时返回 null，调用方据此放弃自动开局而不是抛异常打断广播。
+ */
+export function resolveAutoStartRuleset(gameId: string, configJson: string): string | null {
+  let gameConfig: unknown = {};
+  try {
+    gameConfig = (JSON.parse(configJson) as Record<string, unknown>).gameConfig ?? {};
+  } catch {
+    gameConfig = {};
+  }
+  try {
+    return resolveRulesetForStart(gameId, gameConfig);
+  } catch {
+    return null;
+  }
+}
+
+export interface AutoStartRoomRow {
+  status: string;
+  game_id: string | null;
+  config_json: string;
+  ready_online: number;
+  online: number;
+  /** 在线公共大屏数（桌面模拟模式的开局前提） */
+  spectators_online: number;
+}
+
+/**
+ * 全员就绪自动开局的准入判定。
+ *
+ * 人数上下限按房间实际选中的规则集取，而不是该游戏的默认规则集——两者的 manifest
+ * 人数范围可能不同（UNO 屋规 2-10 对默认 2-6，狼人杀主持人版 5-13 对默认 6-12）。
+ * 用默认规则集判定会同时造成两种故障：合法人数等不到倒计时启动，以及倒计时空转 5 秒后
+ * 被 autoStartGame 的复检驳回、客户端却只看到倒计时走完什么都没发生。
+ */
+export function canAutoStart(row: AutoStartRoomRow | undefined): boolean {
+  if (!row) return false;
+  if (row.status !== 'LOBBY' && row.status !== 'POST_GAME') return false;
+  const moduleId = row.game_id ?? DEFAULT_GAME_ID;
+  const rulesetId = resolveAutoStartRuleset(moduleId, row.config_json);
+  if (rulesetId === null) return false;
+  // 主持人版由主持人手动开局，没有自动开局语义（与 autoStartGame 的同名短路保持一致）
+  if (rulesetId === 'werewolf_moderator_v1') return false;
+  const module = getGameModule(moduleId, rulesetId);
+  if (!module) return false;
+  // 桌面模拟模式没有公共大屏就不开局；与 startGame/autoStartGame 保持同一条件
+  if (isSimRulesetId(rulesetId) && row.spectators_online === 0) return false;
+  if (row.online === 0) return false;
+  if (row.online < module.manifest.minPlayers || row.online > module.manifest.maxPlayers) return false;
+  return row.ready_online === row.online;
 }
 
 /**
@@ -304,6 +359,13 @@ export class WsGateway {
       if (result.outcome.wasHost) {
         this.#scheduleHostTransfer(roomId, playerId);
       }
+      if (result.outcome.gameOutcome) {
+        this.broadcastGameViews(roomId, result.outcome.gameOutcome.roomSeq);
+        this.#broadcastGameEvents(roomId, result.outcome.gameOutcome);
+        if (result.outcome.gameOutcome.timersChanged) {
+          this.#deps.onTimersChanged?.();
+        }
+      }
     } catch (err) {
       log.error('disconnect_mark_failed', { message: (err as Error).message });
     }
@@ -352,38 +414,21 @@ export class WsGateway {
   #checkAutoStart(roomId: string): void {
     const row = this.#deps.db
       .prepare(
-        `SELECT r.status AS status, r.game_id AS game_id,
+        `SELECT r.status AS status, r.game_id AS game_id, r.config_json AS config_json,
                 COUNT(CASE WHEN m.seat_role = 'player' AND m.connection_status = 'CONNECTED' AND m.ready = 1 THEN 1 END) AS ready_online,
-                COUNT(CASE WHEN m.seat_role = 'player' AND m.connection_status = 'CONNECTED' THEN 1 END) AS online
+                COUNT(CASE WHEN m.seat_role = 'player' AND m.connection_status = 'CONNECTED' THEN 1 END) AS online,
+                COUNT(CASE WHEN m.seat_role = 'spectator' AND m.connection_status = 'CONNECTED' THEN 1 END) AS spectators_online
          FROM rooms r
          LEFT JOIN room_members m ON m.room_id = r.id
          WHERE r.id = ?`,
       )
-      .get(roomId) as
-      | { status: string; game_id: string | null; ready_online: number; online: number }
-      | undefined;
-    if (!row) {
-      this.#clearAutoStart(roomId);
-      return;
-    }
-    if (row.status !== 'LOBBY' && row.status !== 'POST_GAME') {
-      this.#clearAutoStart(roomId);
-      return;
-    }
-    const moduleId = row.game_id ?? DEFAULT_GAME_ID;
-    const module = getGameModule(moduleId, getDefaultRuleset(moduleId));
-    if (
-      !module ||
-      row.online < module.manifest.minPlayers ||
-      row.online > module.manifest.maxPlayers ||
-      row.ready_online !== row.online ||
-      row.online === 0
-    ) {
+      .get(roomId) as AutoStartRoomRow | undefined;
+    if (!canAutoStart(row)) {
       this.#clearAutoStart(roomId);
       return;
     }
     if (this.#autoStartTimers.has(roomId)) return; // 已在倒计时
-    const delayMs = row.status === 'POST_GAME' ? 3_000 : AUTO_START_DELAY_MS;
+    const delayMs = row!.status === 'POST_GAME' ? 3_000 : AUTO_START_DELAY_MS;
     const timer = setTimeout(() => {
       this.#autoStartTimers.delete(roomId);
       void this.#deps.executor
@@ -405,7 +450,20 @@ export class WsGateway {
           });
         })
         .catch((err: Error) => {
-          this.#deps.logger.error('auto_start_failed', { message: err.message });
+          this.#deps.logger.error('auto_start_failed', { roomId, message: err.message });
+          // 倒计时已经在所有客户端上走完了。若不回话，玩家只会看到横幅归零后房间毫无反应
+          // （无从判断是卡住还是掉线）。播一条系统消息说明原因，并让房主可以手动重试。
+          void this.#deps.executor
+            .executeInternal({
+              roomId,
+              handler: (tx) => insertSystemChat(tx, roomId, `自动开局失败：${err.message}。请房主检查游戏设置后手动开始。`),
+            })
+            .then((result) => {
+              if (result?.outcome) this.#broadcastChat(roomId, [result.outcome]);
+            })
+            .catch(() => {
+              // 连系统消息都发不出去时只能作罢，错误已记进日志
+            });
         });
     }, delayMs);
     this.#autoStartTimers.set(roomId, timer);
@@ -996,7 +1054,7 @@ export class WsGateway {
       actorScope: `player:${playerId}`,
       requestId,
       bumpSeq: false,
-      handler: (tx) => applyChatSend(tx, roomId, playerId, payload.data.text),
+      handler: (tx) => applyChatSend(tx, roomId, playerId, payload.data.text, payload.data.toPlayerId),
     });
 
     this.#send(socket, 'ack', { cursor: result.outcome.cursor }, { requestId });
@@ -1095,7 +1153,7 @@ export class WsGateway {
       snapshot.seq,
     );
     if (gameState) this.#send(socket, 'game_state', gameState, { requestId, roomSeq: snapshot.seq });
-    const missed = listChatAfter(this.#deps.db, roomId, input.chatCursor);
+    const missed = listChatAfter(this.#deps.db, roomId, input.chatCursor, state.playerId);
     if (missed.length > 0) {
       this.#send(socket, 'chat_batch', { messages: missed }, { requestId });
     }
@@ -1164,7 +1222,13 @@ export class WsGateway {
   }
 
   #broadcastChat(roomId: string, messages: ChatMessageView[]): void {
-    this.broadcastToRoom(roomId, 'chat_batch', { messages });
+    for (const socket of this.#roomSubscribers.get(roomId) ?? []) {
+      const viewer = this.#states.get(socket)?.playerId ?? null;
+      const visible = messages.filter((message) => canReadChat(message, viewer));
+      if (socket.readyState === WebSocket.OPEN && visible.length > 0) {
+        this.#send(socket, 'chat_batch', { messages: visible });
+      }
+    }
   }
 
   broadcastToRoom(

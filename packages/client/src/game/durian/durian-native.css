@@ -1,0 +1,1362 @@
+/* ── 榴莲 1:1 原生全屏沉浸式视觉规范 (Durian Native Design) ── */
+
+:root {
+  --d-ink: #243d29;
+  --d-muted: #59644b;
+  --d-green: #265a35;
+  --d-green-dark: #173d23;
+  --d-cream: #f7f1df;
+  --d-paper: #fffdf4;
+  --d-line: #c8cbb1;
+  --d-yellow: #f4c95d;
+  --d-shadow: 0 4px 0 #d7cfb6, 0 9px 17px #3341270b;
+  --d-numeral-font: Georgia, 'Times New Roman', serif;
+}
+
+.durian-native-page {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 0;
+  color: var(--d-ink);
+  background: var(--d-cream);
+  font-family: 'Segoe UI', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+  box-sizing: border-box;
+  z-index: 10;
+}
+
+.durian-native-page *,
+.durian-native-page *::before,
+.durian-native-page *::after {
+  box-sizing: border-box;
+}
+
+/* 衬线数字规范 */
+.durian-native-page .d-round strong,
+.durian-native-page .d-mini-half b,
+.durian-native-page .d-total strong,
+.durian-native-page .d-half-fruit b,
+.durian-native-page .d-penalty b,
+.durian-native-page .d-history-half b,
+.durian-native-page .dt-placement__no,
+.durian-native-page .dt-half-mini b,
+.durian-native-page .dt-deck b,
+.durian-native-page .dt-player__no,
+.durian-native-page .dt-player__pen b {
+  font-family: var(--d-numeral-font);
+  font-style: normal;
+  font-weight: 700;
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: 0;
+}
+
+.durian-native-page .d-round strong {
+  font-style: italic;
+  font-weight: 400;
+}
+
+.durian-native-page .d-number,
+.durian-native-page .d-score b {
+  font-family: inherit;
+  font-style: normal;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+/* 主对局容器 */
+.durian-native-page .d-game {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(ellipse at 0 0, #e9ecd3 0, transparent 40%), var(--d-cream);
+}
+
+.durian-native-page .d-page {
+  width: min(1180px, 100%);
+  margin: auto;
+  padding: 16px 28px 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 头部 Header */
+.durian-native-page .d-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 0 16px;
+  border-bottom: 1px solid #bdc2a3;
+  flex-shrink: 0;
+}
+
+.durian-native-page .d-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.durian-native-page .d-brand > img,
+.durian-native-page .d-brand > svg {
+  width: 48px;
+  height: 48px;
+  transform: rotate(-10deg);
+  flex-shrink: 0;
+}
+
+.durian-native-page .d-eyebrow {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  line-height: 1.6;
+  color: var(--d-green-dark);
+}
+
+.durian-native-page .d-header h1 {
+  font-family: Georgia, 'Microsoft YaHei', serif;
+  font-size: 28px;
+  letter-spacing: 0.04em;
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  color: var(--d-ink);
+}
+
+.durian-native-page .d-header h1 span {
+  font-family: 'Microsoft YaHei', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: var(--d-muted);
+}
+
+.durian-native-page .d-round {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.durian-native-page .d-round > span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  align-self: center;
+  margin-right: 4px;
+  color: var(--d-muted);
+}
+
+.durian-native-page .d-round strong {
+  font: italic 34px Georgia, serif;
+  color: var(--d-ink);
+}
+
+.durian-native-page .d-round small {
+  font-size: 12px;
+  color: var(--d-muted);
+}
+
+/* 布局与玩家区 */
+.durian-native-page .d-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  padding-top: 18px;
+}
+
+.durian-native-page .d-players-area {
+  flex: 1;
+  min-height: 0;
+}
+
+.durian-native-page .d-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.durian-native-page .d-section-heading h2 {
+  font-size: 15px;
+  margin: 0;
+  letter-spacing: 0.03em;
+  color: var(--d-ink);
+}
+
+.durian-native-page .d-card-layout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--d-muted);
+}
+
+.durian-native-page .d-card-layout select {
+  min-height: 38px;
+  min-width: 100px;
+  padding: 4px 8px;
+  background: var(--d-paper);
+  color: var(--d-ink);
+  border: 1px solid #727c64;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 11px;
+}
+
+/* 玩家网格（紧凑总览 vs 舒展牌面） */
+.durian-native-page .d-player-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(115px, 1fr));
+  gap: 12px 10px;
+  min-height: 240px;
+}
+
+.durian-native-page[data-card-layout="comfortable"] .d-player-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(130px, 1fr));
+  min-height: 390px;
+}
+
+.durian-native-page .d-player {
+  min-width: 0;
+}
+
+.durian-native-page .d-player-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: start;
+  min-height: 30px;
+  margin-bottom: 4px;
+}
+
+.durian-native-page .d-number {
+  font: 700 11px 'Segoe UI', sans-serif;
+  color: var(--d-paper);
+  background: var(--d-green);
+  border-radius: 50%;
+  height: 22px;
+  min-width: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.durian-native-page .d-player-name {
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  font-weight: 600;
+  min-width: 0;
+}
+
+.durian-native-page .d-player-penalty {
+  font-size: 10px;
+  margin-left: auto;
+  white-space: nowrap;
+  color: var(--d-muted);
+}
+
+.durian-native-page .d-mini-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid #b4b99c;
+  border-radius: 10px;
+  background: var(--d-paper);
+  box-shadow: var(--d-shadow);
+  overflow: hidden;
+}
+
+.durian-native-page .d-mini-half {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 4px;
+  min-width: 0;
+}
+
+.durian-native-page .d-mini-half + .d-mini-half {
+  border-left: 1px dashed #bcc29f;
+  background: #eeefd9;
+}
+
+.durian-native-page .d-mini-half img,
+.durian-native-page .d-mini-half svg {
+  width: 36px;
+  height: 36px;
+  filter: drop-shadow(1px 3px 1px #54482418);
+}
+
+.durian-native-page .d-mini-half > span {
+  font-size: 11px;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+.durian-native-page .d-mini-half b {
+  font-size: 20px;
+  line-height: 1.1;
+  color: var(--d-ink);
+}
+
+/* 本人卡条 */
+.durian-native-page .d-self {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  background: #e4e7ce;
+  border: 1px solid #bac3a2;
+  border-radius: 9px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #41513b;
+}
+
+.durian-native-page .d-self > strong {
+  font-size: 12px;
+  color: var(--d-ink);
+}
+
+.durian-native-page .d-self .d-number {
+  background: #465c35;
+}
+
+.durian-native-page .d-hidden-card {
+  width: 18px;
+  height: 24px;
+  background: var(--d-green);
+  color: var(--d-paper);
+  font: italic 16px Georgia, serif;
+  text-align: center;
+  border: 1px solid var(--d-paper);
+  outline: 1px solid var(--d-green);
+  border-radius: 3px;
+  transform: rotate(-8deg);
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.durian-native-page .d-score {
+  white-space: nowrap;
+  margin-left: 4px;
+}
+
+.durian-native-page .d-score b {
+  color: var(--d-ink);
+}
+
+/* 桌面需求大看板 */
+.durian-native-page .d-demand {
+  margin-top: 18px;
+}
+
+.durian-native-page .d-demand-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.durian-native-page .d-total {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  background: #fffdf0;
+  border: 1px solid #d0cfb4;
+  border-radius: 9px;
+  padding: 8px 4px 6px;
+}
+
+.durian-native-page .d-total img,
+.durian-native-page .d-total svg {
+  height: 28px;
+  width: 28px;
+}
+
+.durian-native-page .d-total-name {
+  font-size: 11px;
+  color: var(--d-muted);
+  margin-top: 2px;
+}
+
+.durian-native-page .d-total strong {
+  font: 700 24px Georgia, serif;
+  line-height: 1.15;
+  color: var(--d-ink);
+}
+
+.durian-native-page .d-total small {
+  position: absolute;
+  right: 3px;
+  top: 3px;
+  background: var(--d-green);
+  color: white;
+  border-radius: 8px;
+  font-size: 10px;
+  line-height: 15px;
+  padding: 0 4px;
+}
+
+.durian-native-page .d-history-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  border: 1px solid #bcc7a5;
+  border-radius: 6px;
+  background: var(--d-paper);
+  color: var(--d-green);
+  font-size: 11px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.durian-native-page .d-history-button b {
+  font-weight: 800;
+}
+
+/* 底部操作与收起恢复条 */
+.durian-native-page #d-resume-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 20px;
+  background: #eef4e1;
+  border-top: 2px solid var(--d-green);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.durian-native-page #d-resume-bar[hidden] {
+  display: none !important;
+}
+
+.durian-native-page #d-turn-summary {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--d-green-dark);
+}
+
+.durian-native-page .d-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  margin-top: auto;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 12px 24px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  background: #fffbee;
+  box-shadow: 0 -1px 0 #bfc5a3, 0 -8px 18px #33412705;
+}
+
+.durian-native-page .d-action-copy {
+  margin-right: auto;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.durian-native-page .d-action-copy strong {
+  display: block;
+  font-size: 13px;
+  color: var(--d-ink);
+}
+
+.durian-native-page .d-action-copy span {
+  color: var(--d-muted);
+  font-size: 11px;
+}
+
+.durian-native-page .d-button {
+  min-height: 44px;
+  border: 1px solid #8c9a72;
+  border-radius: 9px;
+  padding: 10px 20px;
+  background: #fffdf4;
+  color: var(--d-green-dark);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.durian-native-page .d-primary {
+  background: var(--d-green);
+  color: #fffdf0;
+  border-color: var(--d-green-dark);
+  box-shadow: 0 3px 0 var(--d-green-dark);
+  min-width: 160px;
+}
+
+.durian-native-page .d-button:hover {
+  background: #edf0dc;
+}
+
+.durian-native-page .d-primary:hover {
+  background: #1e4b2c;
+}
+
+.durian-native-page .d-button:disabled {
+  background: #e2e5d4;
+  color: #59644b;
+  border-color: #a5b092;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.durian-native-page .d-bell-button {
+  background: var(--d-yellow);
+  color: #3d361b;
+  border: 1px solid #ad8233;
+  box-shadow: 0 3px 0 #af843a;
+}
+
+.durian-native-page .d-bell-button:hover {
+  background: #f8d377;
+}
+
+.durian-native-page .d-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 5px 12px;
+  background: #fdfaf2;
+  color: #173820;
+  border: 1.5px solid #5a7346;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.durian-native-page .d-menu-btn:hover {
+  background: #e9e3ce;
+  border-color: #27472e;
+  transform: translateY(-1px);
+}
+
+.durian-native-page .d-menu-btn:active {
+  transform: translateY(1px);
+}
+
+/* 模态弹窗系统：原生 Dialog */
+.durian-native-page .d-dialog {
+  padding: 0;
+  border: 1px solid #a3ad89;
+  border-radius: 18px;
+  width: min(520px, calc(100vw - 28px));
+  max-height: calc(100dvh - 28px);
+  color: var(--d-ink);
+  background: var(--d-paper);
+  box-shadow: 0 25px 90px #182b2466;
+}
+
+.durian-native-page .d-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.durian-native-page .d-dialog::backdrop {
+  background: rgba(31, 53, 41, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+.durian-native-page .d-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #c7cbb4;
+  flex-shrink: 0;
+}
+
+.durian-native-page .d-dialog-header h2 {
+  margin: 2px 0 0;
+  font-size: 22px;
+  color: var(--d-ink);
+}
+
+.durian-native-page .d-close {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid #b2bb9d;
+  border-radius: 50%;
+  font-size: 22px;
+  background: #f1f3e4;
+  color: var(--d-ink);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.durian-native-page .d-dialog-body {
+  overflow-y: auto;
+  min-height: 0;
+  padding: 16px 20px;
+}
+
+.durian-native-page .d-dialog-intro {
+  font-size: 12px;
+  color: var(--d-muted);
+  margin: 0 0 14px;
+}
+
+.durian-native-page .d-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 12px 20px;
+  border-top: 1px solid #c7cbb4;
+  background: #f3f4e4;
+}
+
+/* 抽牌与选择半边弹窗（d-turn-dialog） */
+.durian-native-page .d-turn-dialog {
+  width: min(500px, calc(100vw - 24px));
+}
+
+.durian-native-page .d-turn-dialog .d-play-area {
+  border: 0;
+  background: transparent;
+  padding: 8px 4px;
+}
+
+.durian-native-page .d-turn-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.durian-native-page .d-turn-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--d-green);
+  box-shadow: 0 0 0 4px #265a3512;
+}
+
+.durian-native-page .d-turn-heading h2 {
+  font-size: 21px;
+  margin: 2px 0 0;
+  font-family: Georgia, 'Microsoft YaHei', serif;
+}
+
+.durian-native-page .d-deck-count {
+  font-size: 11px;
+  margin-left: auto;
+  color: var(--d-muted);
+  white-space: nowrap;
+}
+
+.durian-native-page .d-card-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 230px;
+  padding: 16px 4px;
+}
+
+.durian-native-page .d-drawn-card {
+  width: 100%;
+  max-width: 340px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 2px solid #8a9771;
+  border-radius: 14px;
+  box-shadow: 0 5px 0 #c2c8ac, 0 14px 24px #304a2915;
+  background: var(--d-paper);
+  padding: 6px;
+  gap: 4px;
+  position: relative;
+  transform: rotate(-2deg);
+}
+
+.durian-native-page .d-half {
+  appearance: none;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-direction: column;
+  border: 2px solid transparent;
+  border-radius: 9px;
+  background: #fff6da;
+  color: var(--d-ink);
+  padding: 10px 4px 12px;
+  min-height: 180px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.durian-native-page .d-half + .d-half {
+  background: #e7efda;
+}
+
+.durian-native-page .d-half[aria-pressed="true"] {
+  border-color: var(--d-green);
+  background: #ddeccf;
+  box-shadow: inset 0 0 0 2px #fffdf0;
+}
+
+.durian-native-page .d-half img,
+.durian-native-page .d-half svg {
+  width: 64px;
+  height: 64px;
+  margin: 4px 0 2px;
+  filter: drop-shadow(2px 5px 1px #60532a18);
+}
+
+.durian-native-page .d-half-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--d-muted);
+}
+
+.durian-native-page .d-half-fruit {
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.durian-native-page .d-half-fruit b {
+  font: 700 32px Georgia, serif;
+  color: var(--d-ink);
+}
+
+.durian-native-page .d-check {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 12px;
+  min-width: 72px;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 6px;
+  border: 1px solid #8a9771;
+  color: var(--d-muted);
+  background: #fffdf5;
+}
+
+.durian-native-page .d-half[aria-pressed="true"] .d-check {
+  background: var(--d-green);
+  color: #fffdf5;
+  border-color: var(--d-green);
+}
+
+.durian-native-page .d-deck {
+  width: 130px;
+  aspect-ratio: 3 / 4;
+  border: 6px solid #fff9de;
+  outline: 1px solid #7d8c61;
+  border-radius: 12px;
+  background: repeating-linear-gradient(45deg, #2c6038 0, #2c6038 9px, #306b3e 9px, #306b3e 10px);
+  box-shadow: 5px 4px 0 #f6f1dc, 6px 5px 0 #8d9d76, 10px 8px 0 #f6f1dc;
+  transform: rotate(-7deg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff7d9;
+}
+
+.durian-native-page .d-deck img,
+.durian-native-page .d-deck svg {
+  width: 65px;
+  height: 65px;
+}
+
+.durian-native-page .d-deck strong {
+  font: 700 18px Georgia, serif;
+  letter-spacing: 0.17em;
+}
+
+.durian-native-page .d-deck small {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  margin-top: 6px;
+}
+
+.durian-native-page .d-play-hint {
+  font-size: 12px;
+  text-align: center;
+  margin: 8px 0 14px;
+  color: #42563b;
+  line-height: 1.6;
+}
+
+.durian-native-page .d-turn-footnote {
+  border-top: 1px dashed #b5c09e;
+  padding-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10px;
+  color: #546145;
+}
+
+/* 结算弹窗（d-result-dialog） */
+.durian-native-page .d-verdict {
+  padding: 14px;
+  background: #e2eace;
+  border: 1px solid #afbd98;
+  border-radius: 12px;
+  margin-bottom: 14px;
+}
+
+.durian-native-page .d-verdict strong {
+  font-size: 17px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.durian-native-page .d-verdict p {
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.durian-native-page .d-result-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.durian-native-page .d-result-table th {
+  font-size: 11px;
+  color: var(--d-muted);
+  font-weight: 500;
+  text-align: right;
+  padding: 8px 6px;
+  border-bottom: 1px solid #bcc6a8;
+}
+
+.durian-native-page .d-result-table th:first-child {
+  text-align: left;
+}
+
+.durian-native-page .d-result-table td {
+  padding: 8px 6px;
+  text-align: right;
+  border-bottom: 1px solid #e2e5d6;
+}
+
+.durian-native-page .d-result-table td:first-child {
+  text-align: left;
+}
+
+.durian-native-page .d-result-table td:first-child > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.durian-native-page .d-result-table img,
+.durian-native-page .d-result-table svg {
+  width: 22px;
+  height: 22px;
+}
+
+.durian-native-page .d-result-table tr.is-over {
+  background: #fbebcc;
+  color: #713719;
+}
+
+.durian-native-page .d-result-table td:last-child {
+  font-weight: 700;
+}
+
+.durian-native-page .d-reveal {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f3f0e1;
+  border: 1px dashed #afb596;
+  border-radius: 8px;
+  padding: 10px;
+  margin-top: 12px;
+  font-size: 11px;
+  flex-wrap: wrap;
+}
+
+.durian-native-page .d-reveal img,
+.durian-native-page .d-reveal svg {
+  width: 22px;
+  height: 22px;
+}
+
+.durian-native-page .d-penalty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 0 0;
+  font-size: 12px;
+}
+
+.durian-native-page .d-penalty b {
+  font-size: 20px;
+  color: #773b1b;
+}
+
+/* 牌列历史弹窗（d-history-dialog） */
+.durian-native-page .d-history-list {
+  display: grid;
+  gap: 8px;
+}
+
+.durian-native-page .d-history-row {
+  display: grid;
+  grid-template-columns: 48px 1fr 1fr;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.durian-native-page .d-history-meta {
+  font-size: 11px;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.durian-native-page .d-history-meta strong {
+  font-size: 12px;
+}
+
+.durian-native-page .d-history-half {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #c7cbb4;
+  border-radius: 7px;
+  background: #eeeedd;
+  padding: 6px 8px;
+  font-size: 11px;
+}
+
+.durian-native-page .d-history-half img,
+.durian-native-page .d-history-half svg {
+  width: 24px;
+  height: 24px;
+}
+
+.durian-native-page .d-history-half b {
+  font-size: 14px;
+}
+
+.durian-native-page .d-history-half.is-active {
+  background: #e1edcf;
+  border-color: #76995e;
+}
+
+.durian-native-page .d-history-half.is-active::after {
+  content: '✓';
+  margin-left: auto;
+  color: var(--d-green);
+  font-weight: 900;
+}
+
+/* ── 榴莲公共大屏样式 (Durian Table Screen) ── */
+.durian-native-page .dt-game {
+  overflow: hidden;
+}
+
+.durian-native-page .dt-page {
+  height: 100%;
+  min-height: 0;
+  width: min(1320px, 100%);
+  padding: 14px 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.durian-native-page .dt-header {
+  padding-bottom: 10px;
+  gap: 12px;
+}
+
+.durian-native-page .dt-header h1 {
+  font-size: 26px;
+}
+
+.durian-native-page .dt-head-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.durian-native-page .dt-badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--d-green);
+  color: #fffdf4;
+  border: 2px solid var(--d-green-dark);
+  white-space: nowrap;
+}
+
+.durian-native-page .dt-demand {
+  flex-shrink: 0;
+}
+
+.durian-native-page .dt-demand-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.durian-native-page .dt-demand-grid .d-total {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 4px;
+  background: var(--d-paper);
+  border: 2px solid var(--d-line);
+  border-radius: 12px;
+  box-shadow: var(--d-shadow);
+}
+
+.durian-native-page .dt-demand-grid .d-total img,
+.durian-native-page .dt-demand-grid .d-total svg {
+  width: 32px;
+  height: 32px;
+}
+
+.durian-native-page .dt-demand-grid .d-total strong {
+  font-size: 34px;
+  line-height: 1.05;
+}
+
+.durian-native-page .dt-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.durian-native-page .dt-placements,
+.durian-native-page .dt-side {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.durian-native-page .dt-placement-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+  align-content: start;
+}
+
+.durian-native-page .dt-placement {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  background: var(--d-paper);
+  border: 2px solid var(--d-line);
+  border-radius: 10px;
+  box-shadow: var(--d-shadow);
+}
+
+.durian-native-page .dt-placement__no {
+  font-family: var(--d-numeral-font);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--d-green);
+  min-width: 26px;
+  text-align: center;
+}
+
+.durian-native-page .dt-placement__halves {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+}
+
+.durian-native-page .dt-half-mini {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 4px 2px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background: #f1ecda;
+}
+
+.durian-native-page .dt-half-mini img,
+.durian-native-page .dt-half-mini svg {
+  width: 22px;
+  height: 22px;
+}
+
+.durian-native-page .dt-half-mini span {
+  font-size: 10px;
+  color: var(--d-muted);
+}
+
+.durian-native-page .dt-half-mini b {
+  font-family: var(--d-numeral-font);
+  font-size: 15px;
+  line-height: 1;
+  color: var(--d-ink);
+}
+
+.durian-native-page .dt-half-mini.is-active {
+  background: #dff0e4;
+  border-color: var(--d-green);
+}
+
+.durian-native-page .dt-half-mini.is-active span {
+  color: var(--d-green-dark);
+  font-weight: 700;
+}
+
+.durian-native-page .dt-half-mini.is-void {
+  opacity: 0.55;
+}
+
+.durian-native-page .dt-side {
+  gap: 8px;
+}
+
+.durian-native-page .dt-turn {
+  padding: 8px 10px;
+  border: 2px solid var(--d-green);
+  border-radius: 10px;
+  background: #e6f1e8;
+  box-shadow: var(--d-shadow);
+}
+
+.durian-native-page .dt-turn strong {
+  display: block;
+  font-size: 12px;
+  color: var(--d-green-dark);
+  margin-bottom: 2px;
+}
+
+.durian-native-page .dt-turn span {
+  display: block;
+  font-size: 11px;
+  color: var(--d-muted);
+  line-height: 1.5;
+}
+
+.durian-native-page .dt-deck {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 2px solid var(--d-line);
+  border-radius: 10px;
+  background: var(--d-paper);
+  box-shadow: var(--d-shadow);
+}
+
+.durian-native-page .dt-deck img,
+.durian-native-page .dt-deck svg {
+  width: 26px;
+  height: 26px;
+}
+
+.durian-native-page .dt-deck span {
+  display: block;
+  font-size: 11px;
+  color: var(--d-muted);
+}
+
+.durian-native-page .dt-deck b {
+  font-family: var(--d-numeral-font);
+  font-size: 22px;
+  line-height: 1.1;
+  color: var(--d-ink);
+}
+
+.durian-native-page .dt-players {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.durian-native-page .dt-player-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px;
+  align-content: start;
+}
+
+.durian-native-page .dt-player {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: var(--d-paper);
+  border: 2px solid var(--d-line);
+  border-radius: 10px;
+}
+
+.durian-native-page .dt-player__no {
+  font-family: var(--d-numeral-font);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--d-green);
+  min-width: 22px;
+  text-align: center;
+}
+
+.durian-native-page .dt-player__name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--d-ink);
+  overflow-wrap: anywhere;
+  line-height: 1.3;
+}
+
+.durian-native-page .dt-player__pen {
+  font-size: 10px;
+  color: var(--d-muted);
+  white-space: nowrap;
+}
+
+.durian-native-page .dt-player__pen b {
+  font-family: var(--d-numeral-font);
+  font-size: 15px;
+  color: var(--d-ink);
+}
+
+.durian-native-page .dt-player.is-current {
+  border-color: var(--d-green);
+  background: #e6f1e8;
+}
+
+.durian-native-page .dt-player.is-eliminated {
+  background: #ece7d6;
+  border-style: dashed;
+}
+
+.durian-native-page .dt-footer {
+  flex-shrink: 0;
+  padding-top: 8px;
+  border-top: 1px solid #bdc2a3;
+}
+
+.durian-native-page .dt-footer p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--d-muted);
+}
+
+.durian-native-page .dt-footer b {
+  color: var(--d-green-dark);
+}
+
+/* 响应式断点适配：遵守 768 / 640 / 380 宽与 620 / 520 高契约 */
+@media (max-width: 768px) {
+  .durian-native-page .d-page { padding: 12px 14px 20px; }
+  .durian-native-page .d-header { padding-bottom: 12px; }
+  .durian-native-page .d-brand > img,
+  .durian-native-page .d-brand > svg { width: 38px; height: 38px; }
+  .durian-native-page .d-header h1 { font-size: 22px; }
+  .durian-native-page .d-header h1 span { display: none; }
+  .durian-native-page .d-round strong { font-size: 28px; }
+  .durian-native-page .d-layout { padding-top: 12px; }
+  .durian-native-page .d-player-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    min-height: 240px;
+  }
+  .durian-native-page .d-mini-half img,
+  .durian-native-page .d-mini-half svg { width: 28px; height: 28px; }
+  .durian-native-page .d-mini-half b { font-size: 18px; }
+  .durian-native-page .d-total strong { font-size: 20px; }
+  .durian-native-page .d-actions { padding: 10px 14px; gap: 8px; flex-wrap: wrap; }
+  .durian-native-page .d-action-copy { width: 100%; }
+  .durian-native-page .d-button { flex: 1; min-width: 0; padding: 8px 12px; }
+
+  /* 大屏在移动端降级 */
+  .durian-native-page .dt-body { grid-template-columns: 1fr; gap: 8px; }
+  .durian-native-page .dt-header h1 { font-size: 20px; }
+  .durian-native-page .dt-badge { display: none; }
+}
+
+@media (max-width: 380px) {
+  .durian-native-page .d-page { padding-left: 8px; padding-right: 8px; }
+  .durian-native-page .d-player-penalty { display: none; }
+  .durian-native-page .d-mini-half b { font-size: 16px; }
+}
+
+@media (max-height: 620px) {
+  .durian-native-page .d-page { padding-top: 8px; padding-bottom: 8px; }
+  .durian-native-page .d-header { padding-bottom: 6px; }
+  .durian-native-page .d-player-grid { min-height: 140px; }
+  .durian-native-page .dt-footer { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .durian-native-page * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

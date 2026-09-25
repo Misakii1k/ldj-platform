@@ -7,7 +7,7 @@ import type { Db } from '../../persistence/db.ts';
 import type { TxContext } from '../executor.ts';
 import { parseRoomConfig } from '../roomConfig.ts';
 import { buildRoomSnapshot } from '../snapshot.ts';
-import { forfeitPlayers, type GameActionOutcome } from '../game/session.ts';
+import { forfeitPlayers, notifyModeratorDisconnected, type GameActionOutcome } from '../game/session.ts';
 import { insertSystemChat } from './chat.ts';
 import { purgeBotsIfNoHumans } from './bots.ts';
 import type { ChatMessageView, RoomSnapshotView } from '@ldj/shared';
@@ -77,6 +77,7 @@ export interface MarkDisconnectedOutcome {
   snapshot: RoomSnapshotView;
   /** 断线者是否为当前房主（gateway 据此安排 30 秒自动转让计时器） */
   wasHost: boolean;
+  gameOutcome?: GameActionOutcome | null;
 }
 
 /**
@@ -112,9 +113,12 @@ export function applyMarkDisconnected(
      WHERE room_id = ? AND player_id = ?`,
   ).run(reservedUntil, roomId, playerId);
 
+  const gameOutcome = notifyModeratorDisconnected(tx, roomId, playerId);
+
   return {
     snapshot: buildRoomSnapshot(db, roomId),
     wasHost: room.host_player_id === playerId,
+    gameOutcome,
   };
 }
 

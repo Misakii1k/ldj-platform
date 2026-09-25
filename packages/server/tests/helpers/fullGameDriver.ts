@@ -193,8 +193,8 @@ function planBotAction(
     // 已淘汰成员按模块自身视角排除：reducer 侧一律拒绝已淘汰者动作，
     // 个别规则策略漏检（如 blank 投票策略），驱动器在规划期过滤，避免无效动作无限重试。
     // 仅当 me.alive 显式为 false 时跳过；UNO/landlord 等无 alive 字段的模块不受影响。
-    const me = (view as { me?: { alive?: unknown } | null }).me;
-    if (me !== null && me !== undefined && me.alive === false) continue;
+    const me = (view as { me?: { alive?: unknown; canAct?: unknown } | null }).me;
+    if (me !== null && me !== undefined && (me.alive === false || me.canAct === false)) continue;
     const random = createSeededRandom(`matrix:${player.playerId}:${step}`);
     const input: BotDecisionInput<unknown> = { view, playerId: player.playerId, random };
     try {
@@ -226,6 +226,7 @@ async function forceAdvanceTimers(
   ).run(Date.now() - 1, due.session_id, due.timer_id);
   const fired = await executor.executeInternal({
     roomId,
+    now: due.deadline_at + 1,
     handler: (tx) => consumeDueTimer(tx, due.session_id, due.timer_id),
   });
   return { fired: fired !== null, deadlineAt: due.deadline_at };

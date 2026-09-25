@@ -22,6 +22,8 @@ import { TestimonyNote } from './stage/TestimonyNote.tsx';
 import { useNightTestimonyStage } from './stage/useNightTestimonyStage.tsx';
 import { CRIME_META } from './types.ts';
 import type { CrimeId, NightTestimonyPlayerView, QuestionCardView } from './types.ts';
+import { TabletopVictoryBurst } from '../../shared-ui/TabletopVictoryBurst.tsx';
+import { usePhaseEventOverlay } from '../../shared-ui/usePhaseEventOverlay.tsx';
 
 /**
  * 阶段标签。
@@ -74,6 +76,17 @@ export function NightTestimonyGamePage({ view }: Props) {
   const hasSelfExposed = Boolean(myId && view.revealedIdentities[myId]);
   const isMyTurnToPickCard = view.phase === 'question' && view.currentQuestion === null && view.currentQuestionerId === myId && !hasSelfExposed;
   const isQuestionActive = view.phase === 'question' && view.currentQuestion !== null;
+
+  // 阶段切换全屏盖印：推理 / 投票 / 猜罪
+  const { overlay: phaseOverlay } = usePhaseEventOverlay(
+    `${view.phase}:${view.guessingInProgress ? 'guessing' : 'normal'}`,
+    (key) => {
+      if (key.startsWith('deduction')) return { label: '审讯结束', sublabel: '进入推理讨论', variant: 'stamp' };
+      if (key.startsWith('vote:normal')) return { label: '投票指认狱警', variant: 'warning' };
+      if (key.endsWith(':guessing')) return { label: '狱警猜罪', sublabel: '猜中全部罪行即可翻盘', variant: 'reveal' };
+      return null;
+    },
+  );
 
   const players = view.players.map((playerId) => {
     let status = '';
@@ -541,14 +554,14 @@ export function NightTestimonyGamePage({ view }: Props) {
                 </div>
 
                 <div className="testimony-dossier-grid">
-                  {view.players.map((playerId) => {
+                  {view.players.map((playerId, dossierIndex) => {
                     const isWarden = playerId === reveal.wardenId;
                     const crime = isWarden ? null : reveal.crimes[playerId];
                     const wardenGuess = reveal.wardenGuesses?.[playerId];
                     const isGuessCorrect = wardenGuess && crime && wardenGuess === crime;
 
                     return (
-                      <div key={playerId} className={`testimony-dossier-card ${isWarden ? 'is-warden' : ''}`}>
+                      <div key={playerId} className={`testimony-dossier-card ${isWarden ? 'is-warden' : ''}`} style={{ ['--i' as string]: dossierIndex }}>
                         <div className="testimony-dossier-card__head">
                           <strong>{nameFor(members, playerId)}</strong>
                           <span className={`sg-tag ${isWarden ? 'sg-tag--warden' : 'sg-tag--prisoner'}`}>
@@ -646,6 +659,13 @@ export function NightTestimonyGamePage({ view }: Props) {
           </div>
         </div>
       )}
+      {phaseOverlay}
+      <TabletopVictoryBurst
+        gameOver={view.phase === 'game_over'}
+        isWinner={myId ? (view.winners ?? []).includes(myId) : null}
+        label={view.reveal && (!view.reveal.wardenRevealed || view.reveal.crimesAllGuessed) ? '狱警胜利' : '囚犯联盟胜利'}
+        sublabel={`获胜玩家：${(view.winners ?? []).map((id) => nameFor(members, id)).join('、')}`}
+      />
     </TabletopShell>
   );
 }

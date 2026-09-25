@@ -17,6 +17,7 @@ import { webAudio } from '../../shared-ui/WebAudioManager.ts';
 import { FlightLayer } from '../../shared-ui/stage/FlightLayer.tsx';
 import { useLoveLetterStage } from './stage/useLoveLetterStage.tsx';
 import { LOVELETTER_ROLES, type LoveLetterPlayerView, type LoveLetterRole, type LoveLetterCard } from './types.ts';
+import { TabletopVictoryBurst } from '../../shared-ui/TabletopVictoryBurst.tsx';
 
 import { ROLE_LABELS, ROLE_ABILITIES, NEEDS_TARGET } from './roleMeta.ts';
 
@@ -351,7 +352,7 @@ export function LoveLetterGamePage({ view }: Props) {
           ref={stage.stageRef}
         >
           <div className="loveletter-opponents">
-            {view.players.filter((p) => p.playerId !== myId).map((player) => {
+            {view.players.filter((p) => p.playerId !== myId).map((player, opponentIndex) => {
               const isTargetable = targetOptions.includes(player.playerId);
               const isSelected = targetId === player.playerId;
               const isOut = (view.eliminatedPlayers ?? []).includes(player.playerId);
@@ -362,7 +363,8 @@ export function LoveLetterGamePage({ view }: Props) {
               return (
                 <div
                   key={player.playerId}
-                  className={`ll-opponent ${isOut ? 'is-out' : ''} ${isProtected ? 'is-protected' : ''} ${isTargetable ? 'is-targetable' : ''} ${isSelected ? 'is-selected' : ''}`}
+                  className={`ll-opponent ${isOut ? 'is-out' : ''} ${isProtected ? 'is-protected' : ''} ${isTargetable ? 'is-targetable' : ''} ${isSelected ? 'is-selected' : ''} ${view.phase === 'playing' && player.playerId === view.currentPlayerId ? 'is-current-turn' : ''}`}
+                  style={{ ['--i' as string]: opponentIndex }}
                   // 飞行层按 data-player-id 定位对手手边，作为出牌与淘汰演出的起终点
                   data-player-id={player.playerId}
                   data-eliminating={stage.eliminatingIds.includes(player.playerId) ? 'true' : undefined}
@@ -462,11 +464,12 @@ export function LoveLetterGamePage({ view }: Props) {
           {me && (
             <div className={`loveletter-my-area ${isPrince && needsTargetChoice ? 'can-target-self' : ''}`}>
               <div className="loveletter-my-hand" data-stage-anchor="hand">
-                {(me.hand ?? []).map((card) => (
+                {(me.hand ?? []).map((card, handIndex) => (
                   <button
                     key={card.id}
                     type="button"
                     className={`env-card loveletter-card loveletter-card--${card.role} ${selectedCardId === card.id ? 'is-selected' : ''}`}
+                    style={{ ['--i' as string]: handIndex }}
                     onClick={() => { setSelectedCardId(card.id); setTargetId(null); setGuessedRole(null); }}
                     onMouseEnter={() => setHoveredRole(card.role)}
                     onMouseLeave={() => setHoveredRole(null)}
@@ -780,6 +783,12 @@ export function LoveLetterGamePage({ view }: Props) {
       {/* 飞行层必须挂在毡面之外：毡面是 perspective 容器，
           一旦有 transform 祖先，position:fixed 会退化为相对定位。 */}
       <FlightLayer flights={stage.flights} simplified={stage.simplifiedFlights} />
+      <TabletopVictoryBurst
+        gameOver={view.phase === 'game_over'}
+        isWinner={myId ? (view.winners ?? []).includes(myId) : null}
+        label={myId && (view.winners ?? []).includes(myId) ? '你赢得了公主的芳心！' : '情书送达'}
+        sublabel={`获胜：${(view.winners ?? []).map((id) => nameFor(members, id)).join('、')}`}
+      />
     </TabletopShell>
   );
 }

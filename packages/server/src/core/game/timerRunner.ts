@@ -6,7 +6,7 @@
  */
 import type { Db } from '../../persistence/db.ts';
 import { CommandError, type RoomCommandExecutor, type TxContext } from '../executor.ts';
-import { applySessionAction, type GameActionOutcome, type SessionRow } from './session.ts';
+import { applySessionAction, getActiveSession, type GameActionOutcome, type SessionRow } from './session.ts';
 
 interface DueTimerRow {
   session_id: string;
@@ -41,7 +41,23 @@ export function consumeDueTimer(
   const session = db
     .prepare(`SELECT * FROM game_sessions WHERE id = ? AND status IN ('ACTIVE','RECOVERING')`)
     .get(sessionId) as SessionRow | undefined;
-  if (!session) return null;
+  if (!session) {
+    db.prepare(`UPDATE timers SET status = 'cancelled' WHERE session_id = ? AND timer_id = ?`).run(
+      sessionId,
+      timerId,
+    );
+    return null;
+  }
+
+  // T07a: 校验该 session 是否仍为房间活跃/恢复会话。旧 session 的 timer 不落入新局
+  const activeSession = getActiveSession(db, session.room_id);
+  if (!activeSession || activeSession.id !== sessionId) {
+    db.prepare(`UPDATE timers SET status = 'cancelled' WHERE session_id = ? AND timer_id = ?`).run(
+      sessionId,
+      timerId,
+    );
+    return null;
+  }
 
   db.prepare(`UPDATE timers SET status = 'consumed' WHERE session_id = ? AND timer_id = ?`).run(
     sessionId,

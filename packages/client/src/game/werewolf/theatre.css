@@ -1,0 +1,1026 @@
+/* ── 狼人杀三主题设计系统与权威视觉规范 ── */
+
+/* 1. 主题变量作用域 */
+/* A · 林中木刻（Woodcut - 默认主题） / woodcut-day */
+.tabletop-shell[data-game-id="werewolf"],
+.tabletop-shell[data-game-id="werewolf"][data-ww-theme="woodcut"],
+.tabletop-shell[data-game-id="werewolf"][data-ww-theme="woodcut-day"],
+[data-ww-theme="woodcut-day"] .tabletop-shell,
+[data-ww-theme="woodcut-day"],
+.mod-console,
+.ww-private-dialog {
+  --ww-bg: #f4efe5;
+  --ww-panel: #fffdf7;
+  --ww-ink: #203c30;
+  --ww-muted: #465c4e;
+  --ww-line: #748575;
+  --ww-accent: #245844;
+  --ww-active: #245844;
+  --ww-active-ink: #ffffff;
+  --ww-silver: #748575;
+  --gp-paper: #f4efe5;
+  --gp-surface: #fffdf7;
+  --gp-surface-strong: #e9e4d8;
+  --gp-ink: #203c30;
+  --gp-muted: #465c4e;
+  --gp-line: #748575;
+  --game-ink: #203c30;
+  --game-muted: #465c4e;
+  --game-paper: #f4efe5;
+  color: var(--ww-ink);
+}
+
+.tabletop-shell[data-game-id="werewolf"],
+.tabletop-shell[data-game-id="werewolf"][data-ww-theme="woodcut"],
+.tabletop-shell[data-game-id="werewolf"][data-ww-theme="woodcut-day"] {
+  background: radial-gradient(ellipse at 50% 35%, #24584414, transparent 65%), #f4efe5;
+}
+
+/* B · 月蚀星轨（Eclipse） / eclipse-night */
+.tabletop-shell[data-game-id="werewolf"][data-ww-theme="eclipse"],
+.tabletop-shell[data-game-id="werewolf"][data-ww-theme="eclipse-night"],
+[data-ww-theme="eclipse-night"] .tabletop-shell,
+[data-ww-theme="eclipse-night"] {
+  --ww-bg: #100f24;
+  --ww-panel: #1c1b37;
+  --ww-ink: #f0ecff;
+  --ww-muted: #c7c0df;
+  --ww-line: #77718f;
+  --ww-accent: #ddd0ff;
+  --ww-active: #e6e1ee;
+  --ww-active-ink: #2b2b40;
+  --ww-silver: #ddd0ff;
+  --gp-paper: #100f24;
+  --gp-surface: #1c1b37;
+  --gp-surface-strong: #28234a;
+  --gp-ink: #f0ecff;
+  --gp-muted: #c7c0df;
+  --gp-line: #77718f;
+  --game-ink: #f0ecff;
+  --game-muted: #c7c0df;
+  --game-paper: #100f24;
+  background: radial-gradient(ellipse at 25% 35%, #28234a, transparent 55%), #100f24;
+  color: var(--ww-ink);
+}
+
+/* C · 白昼剧场（Theatre Day） / theatre-day */
+.tabletop-shell[data-game-id="werewolf"][data-ww-theme="theatre-day"],
+[data-ww-theme="theatre-day"] .tabletop-shell,
+[data-ww-theme="theatre-day"] {
+  --ww-bg: #f7efe5;
+  --ww-panel: #fffaf2;
+  --ww-ink: #4b2430;
+  --ww-muted: #714654;
+  --ww-line: #a57b87;
+  --ww-accent: #753747;
+  --ww-active: #753747;
+  --ww-active-ink: #ffffff;
+  --ww-silver: #a57b87;
+  --gp-paper: #f7efe5;
+  --gp-surface: #fffaf2;
+  --gp-surface-strong: #ede3d8;
+  --gp-ink: #4b2430;
+  --gp-muted: #714654;
+  --gp-line: #a57b87;
+  --game-ink: #4b2430;
+  --game-muted: #714654;
+  --game-paper: #f7efe5;
+  background: radial-gradient(ellipse at 50% 30%, #75374714, transparent 65%), #f7efe5;
+  color: var(--ww-ink);
+}
+
+/* D · 赤幕剧场（Theatre Night） / theatre-night */
+.tabletop-shell[data-game-id="werewolf"][data-ww-theme="theatre"],
+.tabletop-shell[data-game-id="werewolf"][data-ww-theme="theatre-night"],
+[data-ww-theme="theatre-night"] .tabletop-shell,
+[data-ww-theme="theatre-night"] {
+  --ww-bg: #210e13;
+  --ww-panel: #331820;
+  --ww-ink: #fff0dc;
+  --ww-muted: #dcc3ba;
+  --ww-line: #a57573;
+  --ww-accent: #ffdeaa;
+  --ww-active: #eeddcb;
+  --ww-active-ink: #412b31;
+  --ww-silver: #ffdeaa;
+  --gp-paper: #210e13;
+  --gp-surface: #331820;
+  --gp-surface-strong: #421e2a;
+  --gp-ink: #fff0dc;
+  --gp-muted: #dcc3ba;
+  --gp-line: #a57573;
+  --game-ink: #fff0dc;
+  --game-muted: #dcc3ba;
+  --game-paper: #210e13;
+  background: radial-gradient(ellipse at 50% 35%, #3d1b264d, transparent 65%), #210e13;
+  color: var(--ww-ink);
+}
+
+/* 2. 顶栏主题切换器控件 */
+.ww-theme-switcher {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--ww-panel);
+  border: 1px solid var(--ww-line);
+  border-radius: 8px;
+  padding: 2px;
+  flex-shrink: 0;
+}
+.ww-theme-btn {
+  min-height: 38px;
+  min-width: 44px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ww-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+.ww-theme-btn:hover {
+  color: var(--ww-ink);
+}
+.ww-theme-btn.is-active {
+  background: var(--ww-accent);
+  color: var(--ww-bg);
+  border-color: var(--ww-accent);
+}
+.ww-theme-btn:focus-visible {
+  outline: 2px solid var(--ww-accent);
+  outline-offset: 1px;
+}
+
+/* 3. 舞台与基础外壳 */
+.tabletop-shell[data-game-id="werewolf"] {
+  height: 100dvh;
+  max-width: none;
+  width: 100%;
+  overflow: hidden;
+  gap: 0;
+  padding: env(safe-area-inset-top) max(12px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(12px, env(safe-area-inset-left));
+}
+.tabletop-shell[data-game-id="werewolf"]::before {
+  background: none;
+}
+.tabletop-shell[data-game-id="werewolf"] :is(.tabletop-header, .tabletop-bottom-bar) {
+  background: var(--ww-panel);
+  color: var(--ww-ink);
+  border: 1px solid var(--ww-line);
+  box-shadow: none;
+  border-radius: 14px;
+  flex-shrink: 0;
+}
+.tabletop-shell[data-game-id="werewolf"] .tabletop-header {
+  margin: 6px 0;
+  padding: 8px 14px;
+}
+.tabletop-shell[data-game-id="werewolf"] :is(.tabletop-title, .tabletop-subtitle) {
+  color: var(--ww-ink);
+  text-shadow: none;
+}
+.tabletop-shell[data-game-id="werewolf"] .tabletop-arena-container {
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+.tabletop-shell[data-game-id="werewolf"] .tabletop-center-content {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  min-height: 0;
+  overflow: hidden;
+}
+.tabletop-shell[data-game-id="werewolf"] .werewolf-arena {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  gap: 8px;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  overflow: hidden;
+}
+.tabletop-shell[data-game-id="werewolf"] .werewolf-arena::before,
+.tabletop-shell[data-game-id="werewolf"] .werewolf-arena::after {
+  display: none;
+}
+.tabletop-shell[data-game-id="werewolf"] :is(.werewolf-ambient-fx, .werewolf-arena__caption) {
+  display: none;
+}
+
+/* 4. 顶部天象置顶条 MoonPhaseHeader */
+.tabletop-shell[data-game-id="werewolf"] .moon-header {
+  position: relative;
+  inset: auto;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 12px;
+  min-height: 58px;
+  padding: 8px 14px;
+  color: var(--ww-ink);
+  background: var(--ww-panel);
+  border: 1px solid var(--ww-line);
+  border-radius: 12px;
+  box-shadow: none;
+  width: 100%;
+}
+.tabletop-shell[data-game-id="werewolf"] .moon-header__dial {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  background: var(--ww-bg);
+  border: 1px solid var(--ww-line);
+  border-radius: 50%;
+}
+.tabletop-shell[data-game-id="werewolf"] .moon-header__copy {
+  flex: 1;
+  min-width: 0;
+}
+.tabletop-shell[data-game-id="werewolf"] .moon-header__copy h1 {
+  font-size: 18px;
+  color: var(--ww-ink);
+  margin: 0;
+}
+.tabletop-shell[data-game-id="werewolf"] .moon-header__copy p {
+  color: var(--ww-muted);
+  font-size: 13px;
+  margin: 0;
+}
+.tabletop-shell[data-game-id="werewolf"] .moon-header__eyebrow {
+  color: var(--ww-accent);
+  font-size: 11px;
+  letter-spacing: .12em;
+}
+.tabletop-shell[data-game-id="werewolf"] .moon-header__timer {
+  color: var(--ww-bg);
+  background: var(--ww-accent);
+  border: 1px solid var(--ww-accent);
+  min-height: 44px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  text-shadow: none;
+}
+
+/* 5. 左右双翼席位布局与舞台中央架构 */
+.tabletop-shell[data-game-id="werewolf"] .werewolf-arena__board {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+/* 统一左右两列席位与中央聚焦容器 */
+.ww-seat-rails {
+  display: grid;
+  grid-template-columns: minmax(115px, 180px) minmax(0, 1fr) minmax(115px, 180px);
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  align-items: stretch;
+  padding: 2px 4px;
+  box-sizing: border-box;
+}
+
+.ww-seat-rail {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-auto-rows: minmax(44px, 1fr);
+  gap: 6px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.tabletop-shell[data-game-id="werewolf"] .ww-seat-rail > .seat-chip {
+  position: relative;
+  inset: auto;
+  left: auto;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  translate: 0 0;
+  transform: none;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* 席位卡片 SeatChip */
+.seat-chip {
+  min-height: 44px;
+  padding: 5px 8px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 8px;
+  align-content: center;
+  background: var(--ww-panel);
+  color: var(--ww-ink);
+  border: 1px solid var(--ww-line);
+  border-radius: 10px;
+  box-shadow: 0 2px 0 #0004;
+  text-align: left;
+  position: relative;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+  overflow: hidden;
+}
+
+.seat-chip .seat-chip__seat {
+  grid-row: 1 / 3;
+  align-self: center;
+  font: 500 22px Georgia, serif;
+  color: var(--ww-accent);
+  line-height: 1;
+}
+
+.seat-chip .seat-chip__name {
+  font-size: 12px;
+  font-weight: 500;
+  margin: 0;
+  color: var(--ww-ink);
+  overflow-wrap: anywhere;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+.seat-chip .seat-chip__status-line {
+  font-size: 10px;
+  color: var(--ww-muted);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.seat-chip .seat-chip__head-badges {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.seat-chip .seat-chip__avatar {
+  border-radius: 50%;
+  border: 1px solid var(--ww-line);
+}
+
+.seat-chip:focus-visible {
+  outline: 3px solid var(--ww-accent);
+  outline-offset: 2px;
+}
+
+.seat-chip.is-self {
+  border: 2px solid var(--ww-accent);
+}
+
+.seat-chip.is-speaking {
+  background: var(--ww-active);
+  color: var(--ww-active-ink);
+  border: 1px solid var(--ww-active);
+  box-shadow: 0 3px 0 #0005;
+}
+
+.seat-chip.is-speaking :is(.seat-chip__seat, .seat-chip__name, .seat-chip__status-line) {
+  color: var(--ww-active-ink);
+}
+
+.seat-chip.is-speaking::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 18%;
+  height: 64%;
+  width: 4px;
+  background: var(--ww-accent);
+  border-radius: 4px;
+}
+
+.seat-chip.is-targetable {
+  cursor: pointer;
+  outline: 2px solid var(--ww-accent);
+  outline-offset: 1px;
+}
+
+.seat-chip.is-out {
+  background: var(--ww-bg);
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.35);
+  color: var(--ww-muted);
+  opacity: 0.85;
+  box-shadow: none;
+}
+
+.seat-chip.is-out :is(.seat-chip__seat, .seat-chip__name) {
+  color: var(--ww-muted);
+  text-decoration: line-through;
+}
+
+.seat-chip__badge {
+  background: var(--ww-accent);
+  color: var(--ww-bg);
+  border: 1px solid var(--ww-accent);
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* 6. 中央发言/翻牌/复盘舞台 */
+.tabletop-shell[data-game-id="werewolf"] .werewolf-arena__center-stack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  z-index: 2;
+  padding: 4px;
+}
+
+.tabletop-shell[data-game-id="werewolf"] .werewolf-spotlight {
+  min-height: 0;
+  height: auto;
+  max-width: 520px;
+  width: 100%;
+  padding: 16px;
+  background: var(--ww-panel);
+  color: var(--ww-ink);
+  border: 1px solid var(--ww-line);
+  border-radius: 16px;
+  box-shadow: 0 10px 28px #0005;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.tabletop-shell[data-game-id="werewolf"] .werewolf-spotlight :is(h2, p, strong, .werewolf-spotlight__speaker-name, .werewolf-spotlight__speaker-line) {
+  color: var(--ww-ink);
+  text-shadow: none;
+}
+
+.ww-eyebrow {
+  color: var(--ww-accent);
+  font-size: 11px;
+  letter-spacing: .12em;
+  font-weight: 700;
+}
+
+/* 7. 主题专属艺术插画层 WerewolfThemeArt */
+.ww-theme-art {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0.12;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.ww-art-woodcut, .ww-art-eclipse, .ww-art-theatre {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--ww-accent);
+}
+
+.ww-art-forest {
+  width: 80%;
+  max-height: 70%;
+  display: block;
+}
+
+.ww-art-caption {
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--ww-muted);
+  margin-top: 8px;
+}
+
+/* 月蚀插画 */
+.ww-astral {
+  position: relative;
+  width: 220px;
+  height: 220px;
+}
+.ww-orbit {
+  position: absolute;
+  border: 1px solid var(--ww-line);
+  left: 50%;
+  top: 48%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+}
+.ww-o1 { width: 200px; height: 200px; }
+.ww-o2 { width: 170px; height: 170px; border-style: dashed; }
+.ww-o3 { width: 230px; height: 120px; transform: translate(-50%, -50%) rotate(-30deg); }
+.ww-moon {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  transform: translate(-50%, -50%);
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: var(--ww-accent);
+  box-shadow: 0 0 35px rgba(222, 198, 153, 0.3);
+  overflow: hidden;
+}
+.ww-moon::after {
+  content: '';
+  position: absolute;
+  width: 95px;
+  height: 95px;
+  border-radius: 50%;
+  background: var(--ww-bg);
+  top: -12px;
+  left: 20px;
+}
+.ww-star {
+  position: absolute;
+  font-size: 22px;
+  background: transparent !important;
+}
+.ww-s1 { top: 10%; left: 20%; }
+.ww-s2 { bottom: 15%; right: 20%; }
+.ww-lunar-label {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  letter-spacing: .3em;
+  font: 13px Georgia, serif;
+}
+
+/* 赤幕插画 */
+.ww-theatre-stage {
+  position: relative;
+  width: 240px;
+  height: 200px;
+  overflow: hidden;
+}
+.ww-drape {
+  position: absolute;
+  top: 0;
+  width: 38%;
+  height: 100%;
+  background: repeating-linear-gradient(90deg, #531726, #872238 18%, #3c1020 34%);
+  z-index: 2;
+}
+.ww-drape--left {
+  left: 0;
+  clip-path: polygon(0 0, 100% 0, 55% 65%, 25% 100%, 0 100%);
+}
+.ww-drape--right {
+  right: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 75% 100%, 45% 65%);
+}
+.ww-beam {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(#f4d7aa38, #f4d7aa05);
+  clip-path: polygon(42% 0, 58% 0, 98% 100%, 2% 100%);
+}
+.ww-act {
+  position: absolute;
+  inset: 20px 0;
+  text-align: center;
+  font: 11px Georgia;
+  letter-spacing: .3em;
+  color: var(--ww-accent);
+}
+.ww-act b {
+  display: block;
+  font: 80px Georgia;
+  margin-top: 4px;
+}
+
+/* 8. 底部操作区与交互面板 */
+.tabletop-shell[data-game-id="werewolf"] .tabletop-bottom-bar {
+  padding: 8px 12px;
+  margin: 6px 0 4px;
+  max-height: 40%;
+  overflow-y: auto;
+}
+.tabletop-shell[data-game-id="werewolf"] .werewolf-bottom-dock {
+  width: 100%;
+  max-width: 1100px;
+  margin: auto;
+  display: grid;
+  gap: 8px;
+}
+.tabletop-shell[data-game-id="werewolf"] .werewolf-actions {
+  background: none;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+  min-height: 0;
+  color: var(--ww-ink);
+}
+.tabletop-shell[data-game-id="werewolf"] .werewolf-actions__group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.tabletop-shell[data-game-id="werewolf"] .werewolf-actions__title {
+  color: var(--ww-ink);
+  font-size: 14px;
+}
+.tabletop-shell[data-game-id="werewolf"] :is(.werewolf-actions__hint, .werewolf-actions__waiting-text) {
+  color: var(--ww-muted);
+  font-size: 13px;
+}
+.tabletop-shell[data-game-id="werewolf"] .werewolf-action-btn,
+.jv-target-menu__btn {
+  min-height: 44px;
+  color: var(--ww-bg);
+  background: var(--ww-accent);
+  border: 1px solid var(--ww-accent);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 750;
+  box-shadow: 0 2px 0 #0004;
+  cursor: pointer;
+}
+.tabletop-shell[data-game-id="werewolf"] .werewolf-bottom-dock__row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.tabletop-shell[data-game-id="werewolf"] .werewolf-compact-role {
+  background: none;
+  border: 0;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  box-shadow: none;
+}
+.ww-secret-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 16px;
+  border: 1px solid var(--ww-line);
+  border-radius: 12px;
+  color: var(--ww-ink);
+  background: var(--ww-panel);
+  box-shadow: inset 0 0 0 1px var(--ww-line);
+  cursor: pointer;
+  text-align: left;
+}
+.ww-secret-trigger strong {
+  display: block;
+  font-size: 14px;
+}
+.ww-secret-trigger small {
+  display: block;
+  color: var(--ww-muted);
+  font-size: 12px;
+}
+.ww-secret-seal {
+  font-size: 26px;
+  line-height: 1;
+  color: var(--ww-accent);
+}
+.tabletop-shell[data-game-id="werewolf"] .werewolf-bottom-chat-btn {
+  min-width: 76px;
+  min-height: 48px;
+  background: var(--ww-panel);
+  color: var(--ww-ink);
+  border: 1px solid var(--ww-line);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.tabletop-shell[data-game-id="werewolf"] .vote-ledger {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  border: 0;
+  color: var(--ww-ink);
+}
+.tabletop-shell[data-game-id="werewolf"] :is(.vote-ledger__progress-label, .vote-ledger__progress-tally) {
+  color: var(--ww-ink);
+}
+
+/* 9. 私密身份弹层与法官控制台 */
+.ww-private-dialog .tabletop-drawer {
+  background: var(--ww-bg);
+  color: var(--ww-ink);
+  border: 1px solid var(--ww-line);
+  width: min(100% - 24px, 600px);
+  max-height: calc(100dvh - 32px);
+  border-radius: 20px;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.ww-private-dialog .tabletop-drawer header {
+  background: var(--ww-panel);
+  color: var(--ww-ink);
+}
+.ww-private-dialog button {
+  min-width: 44px;
+  min-height: 44px;
+}
+.ww-private-dialog p {
+  color: var(--ww-muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.ww-secret-card {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+.ww-secret-card h2 {
+  margin: 6px 0;
+  font-size: 28px;
+  color: var(--ww-ink);
+}
+.ww-secret-art {
+  width: 110px;
+  height: 155px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--ww-panel);
+  border: 1px solid var(--ww-line);
+  overflow: hidden;
+}
+.ww-secret-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tabletop-shell[data-game-id="werewolf"] :is(button, [role="button"]):focus-visible,
+.ww-private-dialog :focus-visible {
+  outline: 3px solid var(--ww-accent);
+  outline-offset: 2px;
+}
+.tabletop-shell[data-game-id="werewolf"] button:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.mod-console {
+  background: var(--ww-bg);
+  min-height: 100dvh;
+}
+.mod-console :is(h1, h2, h3, p, span, strong, label) {
+  text-shadow: none;
+}
+.mod-console :is(.mod-console__header, .mod-console__suggestion, .mod-seat) {
+  border: 1px solid var(--ww-line);
+  border-radius: 14px;
+  background: var(--ww-panel);
+  box-shadow: none;
+}
+.mod-console .mod-seat {
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  gap: 8px;
+}
+@media (max-width: 380px) {
+  .mod-console .mod-seat {
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    grid-template-rows: auto auto !important;
+    gap: 4px 8px !important;
+  }
+}
+.mod-console :is(.confirm-btn, .mod-console__menu-btn) {
+  color: var(--ww-ink);
+  background: var(--ww-panel);
+  border: 1px solid var(--ww-line);
+  min-height: 44px;
+  min-width: 44px;
+}
+.mod-console .mod-console__badge {
+  color: var(--ww-bg);
+  background: var(--ww-accent);
+}
+.mod-console :focus-visible {
+  outline: 3px solid var(--ww-accent);
+  outline-offset: 3px;
+}
+
+/* 10. 响应式断点 (严格遵守 AGENTS.md 契约: 380/480/640/768/1024/1280 宽, 520/620 高) */
+@media (max-width: 768px) {
+  .tabletop-shell[data-game-id="werewolf"] {
+    padding-left: max(6px, env(safe-area-inset-left));
+    padding-right: max(6px, env(safe-area-inset-right));
+  }
+  .tabletop-shell[data-game-id="werewolf"] .tabletop-header {
+    padding: 6px 8px;
+    margin: 3px 0 4px;
+  }
+  .tabletop-shell[data-game-id="werewolf"] .tabletop-subtitle {
+    display: none;
+  }
+  .tabletop-shell[data-game-id="werewolf"] .moon-header {
+    min-height: 48px;
+    padding: 6px 8px;
+    gap: 8px;
+  }
+  .tabletop-shell[data-game-id="werewolf"] .moon-header__copy h1 {
+    font-size: 16px;
+  }
+  .tabletop-shell[data-game-id="werewolf"] .moon-header__copy p {
+    display: none;
+  }
+  .ww-seat-rails {
+    grid-template-columns: 72px minmax(0, 1fr) 72px;
+    gap: 6px;
+    padding: 2px;
+  }
+  .ww-seat-rail {
+    gap: 5px;
+    grid-auto-rows: minmax(44px, auto);
+    align-content: start;
+  }
+  .seat-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 2px;
+    text-align: center;
+    border-radius: 6px;
+    min-height: 44px;
+  }
+  .seat-chip .seat-chip__seat {
+    font-size: 18px;
+    line-height: 1;
+  }
+  .seat-chip .seat-chip__name {
+    font-size: 10px;
+    max-width: 100%;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-top: 2px;
+  }
+  .seat-chip .seat-chip__status-line {
+    font-size: 9px;
+    margin-top: 1px;
+  }
+  .ww-theme-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 3px 5px;
+    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tabletop-shell[data-game-id="werewolf"] .tabletop-bottom-bar {
+    padding: 6px;
+    margin: 4px 0 2px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ww-secret-art {
+    width: 88px;
+    height: 126px;
+  }
+  .ww-secret-card {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 380px) {
+  .ww-seat-rails {
+    grid-template-columns: 64px minmax(0, 1fr) 64px;
+    gap: 4px;
+  }
+  .seat-chip {
+    padding: 2px;
+  }
+  .seat-chip .seat-chip__seat {
+    font-size: 16px;
+  }
+  .seat-chip .seat-chip__name {
+    font-size: 9.5px;
+  }
+  /* 极窄屏隐藏状态行让位给 2 行昵称，杜绝文字裁切 */
+  .seat-chip .seat-chip__status-line {
+    display: none;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .ww-seat-rails {
+    grid-template-columns: minmax(110px, 1fr) minmax(140px, 1.4fr) minmax(110px, 1fr);
+    gap: 8px;
+    padding: 2px 6px;
+  }
+  .ww-seat-rail {
+    grid-auto-rows: minmax(38px, 1fr);
+    gap: 4px;
+  }
+  .seat-chip {
+    min-height: 38px;
+    padding: 2px 4px;
+  }
+  .seat-chip .seat-chip__seat {
+    font-size: 17px;
+  }
+  .seat-chip .seat-chip__name {
+    font-size: 10px;
+  }
+  .tabletop-shell[data-game-id="werewolf"] .moon-header {
+    min-height: 44px;
+  }
+  .tabletop-shell[data-game-id="werewolf"] .moon-header__dial {
+    display: none;
+  }
+}
+
+/* 动效与保活策略 */
+[data-game-ui-hidden="true"] :is([data-game-id="werewolf"], .mod-console, .ww-private-dialog) * {
+  animation-play-state: paused !important;
+}
+[data-motion-level]:not([data-motion-level="full"]) :is([data-game-id="werewolf"], .mod-console, .ww-private-dialog) *,
+[data-motion-level]:not([data-motion-level="full"]) :is([data-game-id="werewolf"], .mod-console, .ww-private-dialog) *::before,
+[data-motion-level]:not([data-motion-level="full"]) :is([data-game-id="werewolf"], .mod-console, .ww-private-dialog) *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/*
+ * 旧 tribunal-day 皮肤仍会给席位环和 ::before 注入奶油色。新的三主题系统
+ * 由 data-ww-theme 负责权威配色，白天阶段只改变阶段文案，不应覆盖主题桌面。
+ */
+.tabletop-shell[data-game-id="werewolf"].tabletop-theme-tribunal-day {
+  background: radial-gradient(ellipse at 50% 35%, color-mix(in srgb, var(--ww-accent) 14%, transparent), transparent 65%), var(--ww-bg) !important;
+  color: var(--ww-ink) !important;
+}
+.tabletop-shell[data-game-id="werewolf"].tabletop-theme-tribunal-day::before {
+  background: none !important;
+  opacity: 0 !important;
+}
+.tabletop-shell[data-game-id="werewolf"].tabletop-theme-tribunal-day :is(.tabletop-header, .tabletop-bottom-bar, .moon-header, .werewolf-spotlight) {
+  background: var(--ww-panel) !important;
+  color: var(--ww-ink) !important;
+  border-color: var(--ww-line) !important;
+  box-shadow: none !important;
+}
+.tabletop-shell[data-game-id="werewolf"].tabletop-theme-tribunal-day :is(.tabletop-title, .tabletop-subtitle, .tabletop-header__kicker, .tabletop-header__title, .tabletop-header__sub, .moon-header__copy h1, .moon-header__copy p, .werewolf-spotlight h2, .werewolf-spotlight p, .werewolf-spotlight strong) {
+  color: var(--ww-ink) !important;
+  text-shadow: none !important;
+}
+.tabletop-shell[data-game-id="werewolf"].tabletop-theme-tribunal-day .seat-chip {
+  background: var(--ww-panel) !important;
+  color: var(--ww-ink) !important;
+  border-color: var(--ww-line) !important;
+  box-shadow: 0 2px 0 #0004 !important;
+}
+.tabletop-shell[data-game-id="werewolf"].tabletop-theme-tribunal-day .seat-chip :is(.seat-chip__seat, .seat-chip__name, .seat-chip__status, .seat-chip__status-line) {
+  color: var(--ww-ink) !important;
+}
+.tabletop-shell[data-game-id="werewolf"].tabletop-theme-tribunal-day .seat-chip.is-speaking {
+  background: var(--ww-active) !important;
+  border-color: var(--ww-active) !important;
+  color: var(--ww-active-ink) !important;
+}
+.tabletop-shell[data-game-id="werewolf"].tabletop-theme-tribunal-day .seat-chip.is-speaking :is(.seat-chip__seat, .seat-chip__name, .seat-chip__status, .seat-chip__status-line) {
+  color: var(--ww-active-ink) !important;
+}
+.tabletop-shell[data-game-id="werewolf"].tabletop-theme-tribunal-day .seat-chip.is-out {
+  background: var(--ww-bg) !important;
+  color: var(--ww-muted) !important;
+}

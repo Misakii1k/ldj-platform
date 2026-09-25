@@ -13,7 +13,7 @@ export function computeVersionCode(version: string): number {
 }
 
 export const LOCAL_APP_VERSION_CODE = computeVersionCode(LOCAL_APP_VERSION);
-export const DEFAULT_CLOUD_ORIGIN = 'https://tabletop.pages.dev';
+export const DEFAULT_CLOUD_ORIGIN = 'https://ldj-platform.pages.dev';
 
 export interface AppUpdatePlugin {
   getInstalledVersion(): Promise<{ versionName: string; versionCode: number; packageName: string }>;

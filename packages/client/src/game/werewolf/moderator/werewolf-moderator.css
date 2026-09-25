@@ -1,406 +1,404 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   狼人杀「真人主持」模块样式
+/* ── 狼人杀法官控制台 1:1 原生全屏规范（Moderator Console） ── */
 
-   只承担模块自身的页面布局（法官控制台工作台栅格、席位行、抽卡洗牌演出）。
-   按钮、弹窗、抽屉、身份牌、席位环等组件视觉全部由共享层负责：
-   - 设计令牌：game-ui.css 的 --gp-*（本文件不定义任何私有色值）
-   - 共享组件：confirm-btn / confirm-dialog / tabletop-drawer / identity-flip-card
-                 / seat-ring / seat-chip / user-avatar
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* ==========================================================================
-   法官控制台（工作台布局）
-   ========================================================================== */
-.mod-console {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  min-height: 100dvh;
-  padding: calc(var(--safe-top) + 14px) 14px calc(var(--safe-bottom) + 18px);
-  box-sizing: border-box;
-  max-width: 1180px;
-  margin: 0 auto;
-  width: 100%;
-  background: var(--gp-paper);
-  color: var(--gp-ink);
+:root {
+  --v2-radius: 12px;
 }
 
-.mod-console__header {
+.mod-console-root {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  font-family: 'SimSun', 'STSong', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+  --desk: #161e20;
+  --card: #222d2e;
+  --text: #f1eadc;
+  --secondary: #c0c8c1;
+  --edge: #71827d;
+  --detail: #dec699;
+  --active: #e9dfc9;
+  --active-ink: #27372e;
+  background: radial-gradient(ellipse at 50% 35%, #2c3b374d, transparent 65%), var(--desk);
+  color: var(--text);
+  z-index: 10;
+}
+
+.mod-console-root *,
+.mod-console-root *::before,
+.mod-console-root *::after {
+  box-sizing: border-box;
+}
+
+.mod-console {
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 24px max(12px, env(safe-area-inset-bottom));
+}
+
+/* 顶部 Header */
+.mod-header {
+  margin: 0;
+  padding: 10px 0 12px;
+  gap: 14px;
+  border-bottom: 1px solid var(--edge);
+  background: transparent;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
   flex-wrap: wrap;
-  padding: 10px 14px;
-  background: var(--gp-surface);
-  border: var(--gp-border-sm);
-  border-radius: var(--gp-radius-md);
-  box-shadow: var(--gp-shadow-sm);
 }
 
-.mod-console__title-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  min-width: 0;
+.mod-header .brand {
+  font: 700 22px 'STSong', 'SimSun', serif;
+  letter-spacing: 0.06em;
+  color: var(--text);
 }
 
-.mod-console__badge {
-  background: var(--gp-purple);
-  color: var(--gp-surface);
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  padding: 3px 8px;
-  border-radius: var(--gp-radius-sm);
-  white-space: nowrap;
+.mod-header .brand small {
+  display: block;
+  font: 500 10px Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.18em;
+  color: var(--detail);
+  margin-top: 4px;
 }
 
-.mod-console__title {
-  margin: 0;
-  font-size: 1.15rem;
-  font-weight: 900;
-  line-height: 1.2;
+.mod-header .chapter {
+  color: var(--secondary);
+  font-size: 12px;
+  margin-left: auto;
 }
 
-.mod-console__seat {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--gp-muted);
-  white-space: nowrap;
+.mod-header button {
+  border: 1px solid var(--edge);
+  background: var(--card);
+  color: var(--text);
+  font-weight: 500;
+  font-size: 12px;
+  border-radius: var(--v2-radius);
+  box-shadow: 0 2px 0 #0003;
+  min-height: 44px;
+  padding: 8px 14px;
+  cursor: pointer;
 }
 
-.mod-console__menu-btn {
+.mod-header button:focus-visible {
+  outline: 3px solid var(--detail);
+  outline-offset: 3px;
+}
+
+/* 4格全局状态卡片 */
+.mod-status {
   flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.mod-console__status {
+.mod-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--edge);
+  border-radius: var(--v2-radius);
+  background: var(--card);
+  box-shadow: 0 2px 0 #0004;
+}
+
+.mod-stat > span {
+  font-size: 12px;
+  color: var(--secondary);
+}
+
+.mod-stat > strong {
+  font: 500 30px Georgia, 'Times New Roman', serif;
+  line-height: 1;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: var(--text);
+}
+
+.mod-stat > small {
+  font-size: 11px;
+  color: var(--secondary);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.mod-stat > small b {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.mod-stat--alive > strong {
+  color: var(--detail);
+}
+
+.mod-stat--wolf {
+  border-color: #b8563f;
+}
+
+.mod-stat--wolf > strong {
+  color: #ff9d84;
+}
+
+.mod-stat--god > strong {
+  color: #8fd8bd;
+}
+
+.mod-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--secondary);
+}
+
+.mod-ended-banner {
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
+  padding: 10px 14px;
+  border: 1px solid #c2724f;
+  border-radius: var(--v2-radius);
+  background: #3a231c;
+  color: #ffd9c4;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* 席位网格区域 */
+.mod-seats {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.mod-console__summary {
+.mod-seats-head {
+  flex-shrink: 0;
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
+  align-items: baseline;
   gap: 10px;
-  margin: 0;
-  font-size: 0.88rem;
-  font-weight: 800;
+  flex-wrap: wrap;
 }
 
-.mod-console__summary-item {
-  color: var(--gp-muted);
+.mod-seats-head h2 {
+  font-size: 15px;
+  margin: 0;
   font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.03em;
 }
 
-.mod-console__suggestion {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 10px 14px;
-  background: var(--gp-surface);
-  border: var(--gp-border-sm);
-  border-radius: var(--gp-radius-md);
-  box-shadow: var(--gp-shadow-sm);
+.mod-seats-head span {
+  font-size: 11px;
+  color: var(--secondary);
 }
 
-.mod-console__suggestion-text {
-  font-size: 0.9rem;
-  font-weight: 800;
-  color: var(--gp-green-dark);
-}
-
-.mod-console__ended {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 900;
-  color: var(--gp-purple);
-}
-
-.mod-console__empty {
-  margin: 0;
-  padding: 24px;
-  text-align: center;
-  font-size: 0.9rem;
-  color: var(--gp-muted);
-  background: var(--gp-surface);
-  border: var(--gp-border-sm);
-  border-radius: var(--gp-radius-md);
-}
-
-/* 席位栅格：窄屏单列，宽屏两列 / 三列 */
-.mod-console__seats {
+.mod-seat-grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+  align-content: start;
+  padding-right: 2px;
 }
 
-@media (min-width: 768px) {
-  .mod-console__seats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
-@media (min-width: 1024px) {
-  .mod-console__seats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-
-/* ==========================================================================
-   席位行：座位号 · 头像 · 昵称/角色 · 状态 · 动作
-   ========================================================================== */
+/* 席位单卡 */
 .mod-seat {
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
-  background: var(--gp-surface);
-  border: var(--gp-border-sm);
-  border-radius: var(--gp-radius-md);
-  box-shadow: var(--gp-shadow-sm);
+  border: 1px solid var(--edge);
+  border-radius: var(--v2-radius);
+  background: var(--card);
+  box-shadow: 0 2px 0 #0004, inset 0 1px 0 #ffffff0a;
 }
 
 .mod-seat.is-out {
-  background: var(--gp-paper);
+  background: var(--desk);
+  border-style: dashed;
   box-shadow: none;
 }
 
-.mod-seat__number {
-  font-size: 0.9rem;
-  font-weight: 900;
-  color: var(--gp-purple);
-  white-space: nowrap;
+.mod-seat__no {
+  font: 500 20px Georgia, 'Times New Roman', serif;
+  color: var(--detail);
+  min-width: 34px;
+  text-align: center;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
-.mod-seat__identity {
+.mod-seat.is-out .mod-seat__no {
+  color: var(--secondary);
+  text-decoration: line-through;
+}
+
+.mod-seat__body {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  min-width: 0;
+  gap: 4px;
 }
 
 .mod-seat__name {
-  font-size: 0.92rem;
-  font-weight: 800;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text);
+  overflow-wrap: anywhere;
 }
 
-.mod-seat__role {
-  font-size: 0.78rem;
-  font-weight: 800;
-  color: var(--gp-muted);
-}
-
-.mod-seat__role[data-camp='wolves'] { color: var(--gp-coral-dark); }
-.mod-seat__role[data-camp='village'] { color: var(--gp-green); }
-
-.mod-seat.is-out .mod-seat__name,
-.mod-seat.is-out .mod-seat__role {
-  color: var(--gp-muted);
-}
-
-.mod-seat__state {
+.mod-seat__meta {
   display: flex;
   align-items: center;
   gap: 6px;
-  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
-.mod-seat__status {
-  font-size: 0.78rem;
-  font-weight: 900;
+/* 身份徽章：高对比实底 */
+.mod-seat__role {
+  font-size: 11px;
+  font-weight: 700;
   padding: 2px 8px;
-  border-radius: var(--gp-radius-pill);
+  border-radius: 999px;
+  border: 1px solid transparent;
   white-space: nowrap;
 }
 
-.mod-seat__status.is-alive {
-  background: var(--gp-green);
-  color: var(--gp-surface);
+.mod-seat__role[data-camp="wolf"] {
+  background: #8d2f1d;
+  color: #fff1e8;
+  border-color: #d4735a;
 }
 
-.mod-seat__status.is-out {
-  background: var(--gp-muted);
-  color: var(--gp-surface);
+.mod-seat__role[data-camp="god"] {
+  background: #0f5a48;
+  color: #eafff7;
+  border-color: #4fae91;
 }
 
-.mod-seat__offline {
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: var(--gp-warning);
-  white-space: nowrap;
+.mod-seat__role[data-camp="villager"] {
+  background: #3a453f;
+  color: #eef3ee;
+  border-color: #8fa79a;
 }
 
-.mod-seat__action {
-  padding: 0 14px;
-  font-size: 0.82rem;
-  white-space: nowrap;
+.mod-seat__state {
+  font-size: 11px;
+  color: var(--secondary);
+}
+
+.mod-seat__state[data-out="true"] {
+  color: #ff9d84;
+  font-weight: 700;
+}
+
+.mod-seat__btn {
+  min-height: 44px;
+  min-width: 88px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--v2-radius);
+  border: 1px solid var(--edge);
+  box-shadow: 0 2px 0 #0003;
+  background: var(--card);
+  color: var(--text);
+  padding: 8px 12px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.mod-seat__btn:hover {
+  background: var(--active);
+  color: var(--active-ink);
+}
+
+.mod-seat__btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* 底部操作栏 */
+.mod-footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--edge);
+}
+
+.mod-footer p {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--secondary);
+  flex: 1;
+  min-width: 0;
+}
+
+.mod-reveal {
+  min-height: 46px;
+  border: 1px solid var(--active);
+  border-radius: var(--v2-radius);
+  box-shadow: 0 3px 0 #0005;
+  background: var(--active);
+  color: var(--active-ink);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 9px 20px;
   cursor: pointer;
 }
 
-.mod-seat__action:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
+.mod-reveal:disabled {
+  background: var(--card);
+  border-color: var(--edge);
+  color: var(--secondary);
+  box-shadow: none;
+  cursor: default;
 }
 
-.mod-seat__error {
-  grid-column: 1 / -1;
-  margin: 0;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--gp-danger);
+/* 响应式断点 */
+@media (max-width: 768px) {
+  .mod-console {
+    padding: 8px 12px max(10px, env(safe-area-inset-bottom));
+    gap: 8px;
+  }
+  .mod-header .brand { font-size: 18px; }
+  .mod-header .chapter { display: none; }
+  .mod-status { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .mod-stat { padding: 6px 10px; }
+  .mod-stat > strong { font-size: 24px; }
+  .mod-seat-grid { grid-template-columns: 1fr; gap: 6px; }
+  .mod-seat { padding: 6px 10px; }
+  .mod-footer p { display: none; }
+  .mod-reveal { flex: 1; }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 380px) {
   .mod-seat {
-    grid-template-columns: auto auto minmax(0, 1fr);
-    row-gap: 6px;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: 4px 8px;
   }
-
-  .mod-seat__state {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
-  }
-
-  .mod-seat__action {
-    grid-column: 1 / -1;
-    width: 100%;
-  }
+  .mod-seat__no { grid-row: 1 / 3; }
+  .mod-seat__btn { grid-column: 2; width: 100%; }
 }
 
-/* ==========================================================================
-   玩家端：中心舞台 + 洗牌演出
-   ========================================================================== */
-.mod-player-arena {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-}
-
-.mod-player-center {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  width: min(340px, 78vw);
-}
-
-.mod-player-spectator {
-  margin: 0;
-  padding: 16px;
-  text-align: center;
-  font-size: 0.9rem;
-  font-weight: 800;
-  color: var(--gp-paper);
-}
-
-.mod-player-eliminated {
-  margin: 0;
-  padding: 8px 12px;
-  text-align: center;
-  font-size: 0.82rem;
-  font-weight: 800;
-  color: var(--gp-surface);
-  background: var(--gp-coral-dark);
-  border-radius: var(--gp-radius-md);
-}
-
-.mod-player-dock {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-}
-
-.mod-player-dock__status {
-  font-size: 0.82rem;
-  font-weight: 900;
-  color: var(--gp-ink);
-}
-
-/* 洗牌演出：一次性覆盖层，结束后卸载 */
-.mod-deal-ceremony {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  background: color-mix(in srgb, var(--gp-ink) 82%, transparent);
-  border-radius: var(--gp-radius-lg);
-}
-
-.mod-deal-deck {
-  position: relative;
-  width: 96px;
-  height: 136px;
-}
-
-.mod-deal-card {
-  position: absolute;
-  inset: 0;
-  border-radius: var(--gp-radius-md);
-  border: var(--gp-border-sm);
-  background: var(--gp-purple);
-  box-shadow: var(--gp-shadow-sm);
-}
-
-.mod-deal-card:nth-child(1) { animation: modDealLeft 1.1s ease-in-out infinite; }
-.mod-deal-card:nth-child(2) { animation: modDealRight 1.1s ease-in-out infinite; animation-delay: 0.12s; }
-.mod-deal-card:nth-child(3) { animation: modDealCenter 1.1s ease-in-out infinite; animation-delay: 0.24s; }
-
-@keyframes modDealLeft {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  50% { transform: translate(-26px, -8px) rotate(-10deg); }
-}
-
-@keyframes modDealRight {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  50% { transform: translate(26px, -8px) rotate(10deg); }
-}
-
-@keyframes modDealCenter {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(0, 10px) scale(0.96); }
-}
-
-.mod-deal-caption {
-  margin: 0;
-  font-size: 0.88rem;
-  font-weight: 800;
-  color: var(--gp-paper);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .mod-deal-card { animation: none; }
-}
-
-/* ==========================================================================
-   本局规则弹层内容
-   ========================================================================== */
-.mod-rules-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin: 0;
-  padding-left: 1.1em;
-  font-size: 0.9rem;
-  line-height: 1.6;
-  color: var(--gp-ink);
-}
+.mod-role-art { position: relative; flex: 0 0 64px; height: 64px; overflow: hidden; border-radius: 10px; }

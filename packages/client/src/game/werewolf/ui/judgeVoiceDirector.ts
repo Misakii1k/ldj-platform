@@ -365,7 +365,7 @@ export class JudgeVoiceDirector {
       // 1. 开场：天黑请闭眼
       await play('night_start');
       if (!valid()) return;
-      await sleep(600);
+      await sleep(1100);
       if (!valid()) return;
 
       // 2. 狼人环节
@@ -373,13 +373,13 @@ export class JudgeVoiceDirector {
       if (day <= 1) {
         await play('wolf_open_first');
         if (!valid()) return;
-        await sleep(400);
+        await sleep(900);
         if (!valid()) return;
         await play('wolf_kill');
       } else {
         await play('wolf_open_normal');
         if (!valid()) return;
-        await sleep(400);
+        await sleep(900);
         if (!valid()) return;
         await play('wolf_kill');
       }
@@ -390,28 +390,21 @@ export class JudgeVoiceDirector {
 
       await play('wolf_close');
       if (!valid()) return;
-      await sleep(600);
+      await sleep(1100);
       if (!valid()) return;
 
       // 3. 女巫环节
       this.#patchFlags({ currentNightRole: 'witch' });
       await play('witch_open');
       if (!valid()) return;
-      await sleep(350);
+      await sleep(850);
       if (!valid()) return;
 
-      const isWitchSaveUsed = Boolean(this.#host.getModel().self?.witchSaveUsed);
-      if (!isWitchSaveUsed) {
-        // 解药未用时：全场播报手势指向死者（不报具体几号）并提示解药
-        await play('witch_death_point');
-        if (!valid()) return;
-        await sleep(300);
-        if (!valid()) return;
-        await play('witch_cure_prompt');
-        if (!valid()) return;
-        await sleep(300);
-        if (!valid()) return;
-      }
+      // Fixed neutral prompts never depend on a player's private remaining potions.
+      await play('witch_cure_prompt');
+      if (!valid()) return;
+      await sleep(500);
+      if (!valid()) return;
 
       await play('witch_poison_prompt');
       if (!valid()) return;
@@ -429,14 +422,14 @@ export class JudgeVoiceDirector {
 
       await play('witch_close');
       if (!valid()) return;
-      await sleep(600);
+      await sleep(1100);
       if (!valid()) return;
 
       // 4. 预言家环节
       this.#patchFlags({ currentNightRole: 'seer' });
       await play('seer_open');
       if (!valid()) return;
-      await sleep(300);
+      await sleep(800);
       if (!valid()) return;
       await play('seer_check');
       if (!valid()) return;
@@ -449,18 +442,18 @@ export class JudgeVoiceDirector {
         12000,
       );
       if (!valid()) return;
-      await sleep(400);
+      await sleep(900);
       if (!valid()) return;
 
       // 全场播放留尾手势音效（不泄露好人/狼人阵营）
       await play('seer_result_generic');
       if (!valid()) return;
-      await sleep(300);
+      await sleep(800);
       if (!valid()) return;
 
       await play('seer_close');
       if (!valid()) return;
-      await sleep(600);
+      await sleep(1100);
       if (!valid()) return;
 
       // 5. 守卫环节（若本局角色池配置了守卫）
@@ -468,13 +461,15 @@ export class JudgeVoiceDirector {
         this.#patchFlags({ currentNightRole: 'guard' });
         await play('guard_open');
         if (!valid()) return;
+        await sleep(500);
+        if (!valid()) return;
 
         await waitForRole('guard', () => Boolean(this.#host.getModel().self?.guardDecided), 6000, 12000);
         if (!valid()) return;
 
         await play('guard_close');
         if (!valid()) return;
-        await sleep(600);
+        await sleep(1100);
         if (!valid()) return;
       }
 
@@ -483,11 +478,11 @@ export class JudgeVoiceDirector {
       if (day <= 1 && (rolesConfig.hunter || rolesConfig.idiot)) {
         await play('hunter_idiot_open');
         if (!valid()) return;
-        await sleep(3000);
+        await sleep(3500);
         if (!valid()) return;
         await play('hunter_idiot_close');
         if (!valid()) return;
-        await sleep(600);
+        await sleep(1100);
         if (!valid()) return;
       }
     } finally {
@@ -517,7 +512,10 @@ export class JudgeVoiceDirector {
   ): Promise<void> {
     return new Promise<void>((resolve) => {
       const start = this.#host.now();
-      const self = this.#host.getModel().self;
+      const startModel = this.#host.getModel();
+      const alreadyPassedAtStart =
+        (STAGE_ORDER[startModel.nightStage ?? 'done'] ?? 4) > (STAGE_ORDER[role] ?? 0);
+      const self = startModel.self;
       const selfIsThisRole = self?.role === role && self.alive;
       const fallbackDurationMs = selfIsThisRole ? maxWaitMs : simulatedMs;
       this.#patchFlags({
@@ -546,9 +544,10 @@ export class JudgeVoiceDirector {
         const serverStagePassed =
           (STAGE_ORDER[model.nightStage ?? 'done'] ?? 4) > (STAGE_ORDER[role] ?? 0);
         const deadlineAt = model.deadlineAt;
+        const roleLeftMs = Math.max(0, start + fallbackDurationMs - this.#host.now());
         const leftMs = deadlineAt
-          ? Math.max(0, deadlineAt - this.#host.now())
-          : Math.max(0, start + fallbackDurationMs - this.#host.now());
+          ? Math.min(Math.max(0, deadlineAt - this.#host.now()), roleLeftMs)
+          : roleLeftMs;
         this.#patchFlags({ roleRemainingSeconds: Math.ceil(leftMs / 1000) });
 
         const currentSelf = model.self;
@@ -569,8 +568,11 @@ export class JudgeVoiceDirector {
           } else if (leftMs <= 0 || (!deadlineAt && elapsed >= maxWaitMs)) {
             finish();
           }
-        } else if ((elapsed >= simulatedMs && serverStagePassed) || elapsed >= maxWaitMs || leftMs <= 0) {
-          finish();
+        } else {
+          const waitSatisfied = alreadyPassedAtStart ? elapsed >= simulatedMs : true;
+          if ((waitSatisfied && serverStagePassed) || elapsed >= maxWaitMs || leftMs <= 0) {
+            finish();
+          }
         }
       });
     });
@@ -599,14 +601,14 @@ export class JudgeVoiceDirector {
       judgeVoice.interrupt();
       if (!valid()) return;
       await judgeVoice.playCue('day_start');
-      await this.#sleep(300, epoch);
+      await this.#sleep(800, epoch);
       if (!valid()) return;
 
       if (segment.seats.length === 0) {
         await judgeVoice.playCue('day_peaceful');
       } else {
         await judgeVoice.playCue('day_death_intro');
-        await this.#sleep(200, epoch);
+        await this.#sleep(700, epoch);
         if (!valid()) return;
 
         for (const seat of segment.seats) {
@@ -615,18 +617,18 @@ export class JudgeVoiceDirector {
           const key = hasCue(numberCue) ? numberCue : hasCue(legacyCue) ? legacyCue : null;
           if (!key) continue;
           await judgeVoice.playCue(key);
-          await this.#sleep(200, epoch);
+          await this.#sleep(700, epoch);
           if (!valid()) return;
         }
 
         if (segment.isDay1 && hasCue('day_last_words')) {
-          await this.#sleep(300, epoch);
+          await this.#sleep(800, epoch);
           if (!valid()) return;
           await judgeVoice.playCue('day_last_words');
         }
       }
 
-      await this.#sleep(400, epoch);
+      await this.#sleep(900, epoch);
     } finally {
       this.#patchFlags({ isDayAnnouncementRunning: false });
     }

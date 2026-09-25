@@ -16,10 +16,24 @@ import { UserProfileModal } from './user/UserProfileModal.tsx';
 import { ErrorBoundary } from './shared-ui/ErrorBoundary.tsx';
 import { AppModeProvider, useAppMode } from './app/AppModeContext.tsx';
 import { isNativeApp } from './app/nativePlatform.ts';
+import { OutdoorDisplayPage } from './display/OutdoorDisplayPage.tsx';
 
 function Router() {
   const { state, me, isViewingHome, setViewingHome, reset, resync } = useConnection();
   const { backToModeSelection } = useAppMode();
+
+  const isDisplayMode = typeof window !== 'undefined' && (
+    new URLSearchParams(window.location.search).get('display') === 'true' ||
+    new URLSearchParams(window.location.search).get('display') === '1' ||
+    new URLSearchParams(window.location.search).get('view') === 'display' ||
+    window.location.pathname === '/display' ||
+    window.location.pathname.startsWith('/display/')
+  );
+
+  if (isDisplayMode) {
+    return <OutdoorDisplayPage />;
+  }
+
   const { connState, room, game, isRefreshing, isRecovering } = state;
   const { showToast } = useToast();
   const [inGameTransition, setInGameTransition] = useState(false);

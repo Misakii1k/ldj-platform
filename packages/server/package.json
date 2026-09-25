@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@ldj/game-undercover": "*",
+    "@ldj/game-wits-wagers": "*",
     "@ldj/shared": "*",
     "bonjour-service": "^1.4.4",
     "qrcode-terminal": "^0.12.0",

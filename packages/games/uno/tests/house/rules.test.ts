@@ -524,3 +524,109 @@ test('UNO-DIFF-002/DRAW：摸牌后无可出牌自动跳下家，有可出牌保
   assert.equal(r3.nextState.round.currentPlayerId, 'p2', '手动过牌后推进至下家 p2');
   assertUnoHouseInvariants(r3.nextState);
 });
+
+test('UNO-005：手牌回升后预喊标记失效（不得永久免罚）', () => {
+  const top: UnoHouseCard = { id: 'top-red-5', kind: 'number', color: 'red', value: 5 };
+  let state = scenarioState(['p1', 'p2'], {
+    p1: [
+      { id: 'p1-red-1', kind: 'number', color: 'red', value: 1 },
+      { id: 'p1-red-2', kind: 'number', color: 'red', value: 2 },
+    ],
+    p2: [
+      { id: 'p2-red-3', kind: 'number', color: 'red', value: 3 },
+      { id: 'p2-red-4', kind: 'number', color: 'red', value: 4 },
+      { id: 'p2-red-6', kind: 'number', color: 'red', value: 6 },
+    ],
+  }, top, 'red', 'p1');
+
+  // p1 预喊出牌 → 剩 1 张，安全无窗口
+  state = reduce(state, 'p1', { type: 'play_card', cardId: 'p1-red-1', preCallUno: true });
+  assert.equal(state.round.unoRaceWindow, null, '预喊后不得开窗口');
+  assert.equal(state.round.preCallPlayerIds['p1'], true);
+
+  // p2 出牌，轮回 p1；p1 摸牌使手牌回升到 2 张
+  state = reduce(state, 'p2', { type: 'play_card', cardId: 'p2-red-3' });
+  assert.equal(state.round.currentPlayerId, 'p1');
+  state = reduce(state, 'p1', { type: 'draw_card' });
+  assert.ok((state.round.hands['p1'] ?? []).length >= 2);
+  assert.equal(state.round.preCallPlayerIds['p1'], false, '手牌回升后预喊标记必须失效');
+  assertUnoHouseInvariants(state);
+});
+
+test('UNO-005：抓漏报后为当前玩家重建回合计时器', () => {
+  const top: UnoHouseCard = { id: 'top-red-5', kind: 'number', color: 'red', value: 5 };
+  const state0 = scenarioState(['p1', 'p2'], {
+    p1: [
+      { id: 'p1-red-1', kind: 'number', color: 'red', value: 1 },
+      { id: 'p1-red-2', kind: 'number', color: 'red', value: 2 },
+    ],
+    p2: [
+      { id: 'p2-red-3', kind: 'number', color: 'red', value: 3 },
+      { id: 'p2-red-4', kind: 'number', color: 'red', value: 4 },
+      { id: 'p2-red-6', kind: 'number', color: 'red', value: 6 },
+    ],
+  }, top, 'red', 'p1');
+
+  // p1 静默出牌 → 剩 1 张开窗口，回合交给 p2
+  const state1 = reduce(state0, 'p1', { type: 'play_card', cardId: 'p1-red-1' });
+  const token = state1.round.unoRaceWindow!.windowToken;
+  assert.equal(state1.round.currentPlayerId, 'p2');
+
+  const res = unoHouseModule.reduce(
+    makeCtx(), state1, { kind: 'player', playerId: 'p2' },
+    { type: 'catch_missed_uno', targetPlayerId: 'p1', windowToken: token } as never,
+  );
+  assert.ok(res.ok);
+  const schedules = res.effects.filter((e) => e.type === 'schedule_timer');
+  assert.ok(schedules.length > 0, '抓捕取消了回合计时器，必须为当前玩家重建');
+  assert.equal(res.nextState.round.currentPlayerId, 'p2', '抓捕不改变轮到谁');
+  assert.equal((res.nextState.round.hands['p1'] ?? []).length, 3, '被抓者罚摸 2 张');
+  assertUnoHouseInvariants(res.nextState);
+});
+
+test('UNO-005：漏报窗口期内 unoCalled 为假（UI 才能提示可抓）', () => {
+  const top: UnoHouseCard = { id: 'top-red-5', kind: 'number', color: 'red', value: 5 };
+  const state0 = scenarioState(['p1', 'p2'], {
+    p1: [
+      { id: 'p1-red-1', kind: 'number', color: 'red', value: 1 },
+      { id: 'p1-red-2', kind: 'number', color: 'red', value: 2 },
+    ],
+    p2: [
+      { id: 'p2-red-3', kind: 'number', color: 'red', value: 3 },
+      { id: 'p2-red-4', kind: 'number', color: 'red', value: 4 },
+    ],
+  }, top, 'red', 'p1');
+
+  // 静默出牌 → 漏报窗口开启，此时不得显示为「已喊 UNO」
+  const missed = reduce(state0, 'p1', { type: 'play_card', cardId: 'p1-red-1' });
+  assert.ok(missed.round.unoRaceWindow);
+  const viewMissed = unoHouseModule.getPlayerView(missed, 'p2');
+  const p1Missed = viewMissed.players.find((p) => p.playerId === 'p1')!;
+  assert.equal(p1Missed.handCount, 1);
+  assert.equal(p1Missed.unoCalled, false, '漏报窗口期必须显示为未喊');
+
+  // 补喊后窗口关闭 → 恢复为已喊
+  const called = reduce(missed, 'p1', { type: 'call_uno' });
+  assert.equal(called.round.unoRaceWindow, null);
+  const p1Called = unoHouseModule.getPlayerView(called, 'p2').players.find((p) => p.playerId === 'p1')!;
+  assert.equal(p1Called.unoCalled, true, '补喊后应显示为已喊');
+});
+
+test('UNO-005：剩 2 张给 canPreCallUno 而非会被拒的 canCallUno', () => {
+  const top: UnoHouseCard = { id: 'top-red-5', kind: 'number', color: 'red', value: 5 };
+  const state = scenarioState(['p1', 'p2'], {
+    p1: [
+      { id: 'p1-red-1', kind: 'number', color: 'red', value: 1 },
+      { id: 'p1-red-2', kind: 'number', color: 'red', value: 2 },
+    ],
+    p2: [{ id: 'p2-red-3', kind: 'number', color: 'red', value: 3 }],
+  }, top, 'red', 'p1');
+
+  const caps = unoHouseModule.getPlayerView(state, 'p1').me!.capabilities;
+  assert.ok(caps.includes('canPreCallUno'), '剩 2 张应提示出牌预喊');
+  assert.ok(!caps.includes('canCallUno'), '剩 2 张不得给出会被服务端拒绝的 canCallUno');
+
+  // 反证：此时直接 call_uno 必然被拒
+  const r = reduceRaw(state, 'p1', { type: 'call_uno' });
+  assert.equal(r.ok, false, 'call_uno 在剩 2 张时应被拒绝');
+});

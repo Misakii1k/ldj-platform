@@ -129,7 +129,7 @@ test('reducer: submit_guess 正常提交与全员答齐提前推进', () => {
   state = p3Res.nextState;
 
   assert.equal(state.phase, 'arranging');
-  assert.equal(state.board.length, 5); // lower + g:100 + g:200 + g:300 + higher
+  assert.equal(state.board.length, 4); // lower + g:100 + g:200 + g:300
 
   // 必须产生 cancel 旧 timer 和 schedule 新 timer 的 effects
   assert.equal(p3Res.effects.length, 2);
@@ -187,8 +187,8 @@ test('reducer: answering 超时未提交者不补答、不上版图 (G0 P1 2026-
   assert.equal(state.guesses['p2'], null);
   assert.equal(state.guesses['p3'], null);
 
-  // 版图只有 p1 的答案 + 两个边缘槽，不存在凭空出现的 g:1
-  assert.equal(state.board.length, 3);
+  // 版图只有 p1 的答案 + 「更低」边缘槽，不存在凭空出现的 g:1
+  assert.equal(state.board.length, 2);
   assert.equal(state.board.find((t) => t.id === 'g:1'), undefined);
   const t500 = state.board.find((t) => t.id === 'g:500');
   assert.ok(t500);

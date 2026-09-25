@@ -70,6 +70,22 @@ export function startedNight(
   players: string[],
   config: Record<string, unknown> = {},
   ctx: Ctx = IDENTITY_CTX,
+  legacy = true,
+): V2State {
+  let state = init(players, config, ctx);
+  if (legacy) {
+    state.timelineState = null;
+  }
+  state = apply(state, system, { type: 'begin' }, ctx);
+  for (const id of players) state = apply(state, actor(id), { type: 'confirm_role' }, ctx);
+  if (state.phase !== 'night') throw new Error(`期望 night，实际 ${state.phase}`);
+  return state;
+}
+
+export function startedTimelineNight(
+  players: string[],
+  config: Record<string, unknown> = {},
+  ctx: Ctx = IDENTITY_CTX,
 ): V2State {
   let state = init(players, config, ctx);
   state = apply(state, system, { type: 'begin' }, ctx);
@@ -137,6 +153,7 @@ export function skipDiscussion(state: V2State, ctx: Ctx = IDENTITY_CTX): V2State
 }
 
 export interface BotStep {
+  now?: number;
   actor: Actor;
   action: V2Action;
 }
@@ -155,6 +172,7 @@ export function driveBotGame(
   for (let step = 0; step < maxSteps; step += 1) {
     if (state.phase === 'game_over') break;
     ctx.now += 1_000;
+    if (state.announcement) ctx.now = Math.max(ctx.now,state.announcement.endsAt);
     let acted = false;
     for (const id of players) {
       const view = werewolfV2Module.getPlayerView(state, id);
@@ -164,23 +182,39 @@ export function driveBotGame(
       const parsed = werewolfV2Module.parseAction(action);
       const reduced = werewolfV2Module.reduce(ctx, state, { kind: 'player', playerId: id }, parsed);
       if (!reduced.ok) continue;
-      steps.push({ actor: { kind: 'player', playerId: id }, action: parsed });
+      steps.push({ now: ctx.now, actor: { kind: 'player', playerId: id }, action: parsed });
       state = reduced.nextState;
       acted = true;
       break;
     }
-    if (!acted && state.phase !== 'game_over' && state.phaseToken) {
-      const action: V2Action = {
-        type: 'phase_timeout',
-        phase: state.phase as V2TimedPhase,
-        day: state.day,
-        token: state.phaseToken,
-      };
-      const reduced = werewolfV2Module.reduce(ctx, state, system, action);
-      if (reduced.ok) {
-        steps.push({ actor: system, action });
-        state = reduced.nextState;
-        acted = true;
+    if (!acted && state.phase !== 'game_over') {
+      if (state.timelineState?.activeTimerToken) {
+        ctx.now = Math.max(ctx.now,state.timelineState.current.endsAt ?? ctx.now);
+        const action: V2Action = {
+          type: 'timeline_timeout',
+          timelineId: state.timelineState.current.id,
+          token: state.timelineState.activeTimerToken,
+        };
+        const reduced = werewolfV2Module.reduce(ctx, state, system, action);
+        if (reduced.ok) {
+          steps.push({ now: ctx.now, actor: system, action });
+          state = reduced.nextState;
+          acted = true;
+        }
+      } else if (state.phaseToken) {
+        ctx.now = Math.max(ctx.now,state.deadlineAt ?? ctx.now);
+        const action: V2Action = {
+          type: 'phase_timeout',
+          phase: state.phase as V2TimedPhase,
+          day: state.day,
+          token: state.phaseToken,
+        };
+        const reduced = werewolfV2Module.reduce(ctx, state, system, action);
+        if (reduced.ok) {
+          steps.push({ now: ctx.now, actor: system, action });
+          state = reduced.nextState;
+          acted = true;
+        }
       }
     }
     if (!acted) throw new Error(`对局在第 ${step} 步卡死（phase=${state.phase}）`);

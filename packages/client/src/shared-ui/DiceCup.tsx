@@ -34,6 +34,7 @@ export interface DiceCupProps {
 export type DiceCupAction =
   | { type: 'lift_down'; canInteract: boolean }
   | { type: 'lift_up' }
+  | { type: 'lift_toggle'; canInteract: boolean }
   | { type: 'lift_cancel' }
   | { type: 'emergency_hide' }
   | { type: 'shake_start'; canInteract: boolean; allowShake: boolean }
@@ -67,6 +68,9 @@ export function reduceDiceCupState(
     case 'lift_down':
       if (!action.canInteract) return state;
       return { ...state, isLifted: true };
+    case 'lift_toggle':
+      if (!action.canInteract) return state;
+      return { ...state, isLifted: !state.isLifted };
     case 'lift_up':
     case 'lift_cancel':
     case 'emergency_hide':
@@ -100,6 +104,11 @@ export function DiceCup({
   // 归一化点数数组
   const normalizedValues = normalizeDiceValues(diceValues);
 
+  // 双模交互计时器与按压追踪
+  const downTimeRef = React.useRef<number>(0);
+  const longPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isHoldModeRef = React.useRef<boolean>(false);
+
   // 环境级安全防窥：切换后台或失焦时自动扣盖
   useEffect(() => {
     const hide = () => {
@@ -117,37 +126,85 @@ export function DiceCup({
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('blur', hide);
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
     };
   }, [isLifted, onInspectCommit]);
+
+  const triggerReveal = useCallback(() => {
+    webAudio.playDiceReveal();
+    try {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(12);
+      }
+    } catch {
+      // Ignore vibration error on unsupported platforms
+    }
+  }, []);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!canInteract) return;
       e.preventDefault();
-      setIsLifted(true);
-      webAudio.playDiceReveal();
-      try {
-        if (typeof navigator !== 'undefined' && navigator.vibrate) {
-          navigator.vibrate(10);
-        }
-      } catch {
-        // Ignore vibration error on unsupported platforms
+      downTimeRef.current = performance.now();
+      isHoldModeRef.current = false;
+
+      // 如果当前已经是定格掀开状态，准备在 PointerUp 时识别为点击扣盖
+      if (isLifted) {
+        return;
       }
+
+      // 启动 220ms 长按判定：若按住不放则进入长按偷看模式并立即掀开
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = setTimeout(() => {
+        isHoldModeRef.current = true;
+        setIsLifted(true);
+        triggerReveal();
+      }, 220);
     },
-    [canInteract]
+    [canInteract, isLifted, triggerReveal]
   );
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent) => {
-      if (!isLifted) return;
+      if (!canInteract) return;
       e.preventDefault();
-      setIsLifted(false);
-      onInspectCommit?.();
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+
+      const pressDuration = performance.now() - downTimeRef.current;
+
+      if (isHoldModeRef.current) {
+        // 长按偷看结束：松手立即扣盖防窥
+        isHoldModeRef.current = false;
+        setIsLifted(false);
+        onInspectCommit?.();
+        return;
+      }
+
+      // 短按（单击）：点击切换掀开定格/扣盖
+      if (pressDuration < 280) {
+        setIsLifted((prev) => {
+          const next = !prev;
+          if (next) {
+            triggerReveal();
+          } else {
+            onInspectCommit?.();
+          }
+          return next;
+        });
+      }
     },
-    [isLifted, onInspectCommit]
+    [canInteract, onInspectCommit, triggerReveal]
   );
 
   const handlePointerCancel = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    isHoldModeRef.current = false;
     if (isLifted) {
       setIsLifted(false);
       onInspectCommit?.();
@@ -216,7 +273,7 @@ export function DiceCup({
           {canInteract ? (
             isLifted ? (
               <span className="hint-lifted">
-                松开手指自动扣盖防窥{' '}
+                点击或松开扣盖防窥{' '}
                 {normalizedValues.length === 1
                   ? `（${normalizedValues[0]} 点）`
                   : normalizedValues.length > 1
@@ -224,7 +281,7 @@ export function DiceCup({
                     : ''}
               </span>
             ) : (
-              <span className="hint-press">{hint || '按住掀开 3D 骰盅查看'}</span>
+              <span className="hint-press">{hint || '点击掀开大图或按住偷看'}</span>
             )
           ) : (
             <span className="hint-disabled">{hint || '骰盅已扣紧'}</span>

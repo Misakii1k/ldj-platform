@@ -26,8 +26,8 @@ function apply(state: WerewolfState, by: Actor, action: WerewolfAction): Werewol
   return result.state;
 }
 
-function newGame(): WerewolfState {
-  return werewolfModule.createInitialState(ctx, ids, {
+function newGame(legacy = true): WerewolfState {
+  const state = werewolfModule.createInitialState(ctx, ids, {
     rulesetId: 'werewolf_legacy_platform_v2',
     preset: 'classic',
     pace: 'standard',
@@ -36,6 +36,8 @@ function newGame(): WerewolfState {
     wolfKillScope: 'non_wolf',
     roles: { guard: false, hunter: false, idiot: false },
   });
+  if (legacy) state.timelineState = null;
+  return state;
 }
 
 function timeout(state: WerewolfState, phase: WerewolfTimedPhase): WerewolfState {
@@ -77,7 +79,7 @@ test('werewolf assigns roles and keeps spectator view redacted', () => {
   assert.equal(roles.filter((r) => r === 'wolf').length, 2);
   assert.equal(roles.filter((r) => r === 'seer').length, 1);
   assert.equal(roles.filter((r) => r === 'witch').length, 1);
-  assert.equal(state.schemaVersion, 4);
+  assert.equal(state.schemaVersion, 5);
   assert.equal(state.phase, 'role_reveal');
 
   const wolfView = werewolfModule.getPlayerView(state, 'w1');
@@ -187,6 +189,7 @@ test('werewolf witch self-save respects config', () => {
   assert.equal(state.night.witchSaveDecision, true);
 
   let state2 = werewolfModule.createInitialState(ctx, ids, { rulesetId: 'werewolf_legacy_platform_v2', preset: 'classic', pace: 'standard', witchSelfSave: 'never', winCondition: 'numbers', wolfKillScope: 'non_wolf', roles: { guard: false, hunter: false, idiot: false } });
+  state2.timelineState = null;
   state2 = apply(state2, system, { type: 'begin' });
   for (const id of ids) state2 = apply(state2, actor(id), { type: 'confirm_role' });
   state2 = apply(state2, actor('w1'), { type: 'night_kill', targetPlayerId: 'x' });
@@ -276,6 +279,7 @@ test('werewolf winCondition roles ends game when specials wiped (numbers would c
       wolfKillScope: 'non_wolf',
       roles: { guard: false, hunter: false, idiot: false },
     });
+    st.timelineState = null;
     st = apply(st, system, { type: 'begin' });
     for (const id of ids8) st = apply(st, actor(id), { type: 'confirm_role' });
     st = apply(st, actor('w1'), { type: 'night_kill', targetPlayerId: 'v1' });

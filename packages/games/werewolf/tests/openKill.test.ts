@@ -43,8 +43,9 @@ function apply(state: WerewolfState, by: Actor, action: WerewolfAction): Werewol
   return result.state;
 }
 
-function startedNight(config: WerewolfConfig): WerewolfState {
+function startedNight(config: WerewolfConfig, legacy = true): WerewolfState {
   let state = werewolfModule.createInitialState(ctx, ids, config);
+  if (legacy) state.timelineState = null;
   state = apply(state, system, { type: 'begin' });
   for (const id of ids) state = apply(state, actor(id), { type: 'confirm_role' });
   assert.equal(state.phase, 'night');
@@ -213,7 +214,7 @@ test('migrateSnapshot: v3 → v4 补 wolfKillScope 并保持其余字段', () =>
   };
 
   const migrated = werewolfModule.migrateSnapshot(3, v3);
-  assert.equal(migrated.schemaVersion, 4);
+  assert.equal(migrated.schemaVersion, 5);
   assert.equal(migrated.config.rulesetId, 'werewolf_legacy_platform_v2');
   assert.equal(migrated.config.wolfKillScope, 'non_wolf');
   assert.equal(migrated.night.killTargetId, 'v1');
@@ -227,14 +228,14 @@ test('migrateSnapshot: v4 保留开放规则并拒绝矛盾规则集配置', () 
   const migrateSnapshot = werewolfModule.migrateSnapshot;
   assert.ok(migrateSnapshot);
   const state = startedNight(OPEN_KILL_CONFIG);
-  const restored = migrateSnapshot(4, state);
-  assert.deepEqual(restored, state);
-  assert.notEqual(restored, state);
+  const v4State = { ...state, schemaVersion: 4 };
+  const restored = migrateSnapshot(4, v4State);
+  assert.deepEqual(restored, { ...state, schemaVersion: 5, timelineState: null });
 
   assert.throws(() => migrateSnapshot(4, {
-    ...state,
+    ...v4State,
     config: {
-      ...state.config,
+      ...v4State.config,
       wolfKillScope: 'non_wolf',
     },
   }), /rulesetId 与 wolfKillScope 不匹配/);

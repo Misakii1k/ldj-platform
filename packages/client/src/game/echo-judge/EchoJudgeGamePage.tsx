@@ -20,6 +20,8 @@ import { FlightLayer } from '../../shared-ui/stage/FlightLayer.tsx';
 import { JudgeBench } from './stage/JudgeBench.tsx';
 import { useEchoJudgeStage } from './stage/useEchoJudgeStage.tsx';
 import type { EchoJudgePlayerView, TopicCardView } from './types.ts';
+import { TabletopVictoryBurst } from '../../shared-ui/TabletopVictoryBurst.tsx';
+import { usePhaseEventOverlay } from '../../shared-ui/usePhaseEventOverlay.tsx';
 
 function phaseLabel(phase: EchoJudgePlayerView['phase']): string {
   switch (phase) {
@@ -57,6 +59,13 @@ export function EchoJudgeGamePage({ view }: Props) {
   const stage = useEchoJudgeStage(view);
 
   const isCurrentSpeaker = view.phase === 'answering' && (view.currentSpeakerId === myId || me?.isCurrentSpeaker === true);
+
+  // 阶段切换全屏盖印：开始作答 / 进入审判
+  const { overlay: phaseOverlay } = usePhaseEventOverlay(view.phase, (phase) => {
+    if (phase === 'answering') return { label: '考题公开', sublabel: '按座次依次口头作答', variant: 'stamp' };
+    if (phase === 'judgment') return { label: '进入审判', sublabel: '审判长即将指认伪人', variant: 'warning' };
+    return null;
+  });
 
   const players = view.players.map((playerId) => {
     let status = '';
@@ -437,14 +446,14 @@ export function EchoJudgeGamePage({ view }: Props) {
               </div>
 
               <div className="echo-reveal-grid">
-                {view.players.map((playerId) => {
+                {view.players.map((playerId, revealIndex) => {
                   const role = view.reveal?.roles[playerId];
                   const word = view.reveal?.triggerWords[playerId];
                   const score = view.scores?.[playerId] ?? 0;
                   const isWinner = (view.winners ?? []).includes(playerId);
 
                   return (
-                    <div key={playerId} className={`echo-reveal-card ${isWinner ? 'is-winner' : ''}`}>
+                    <div key={playerId} className={`echo-reveal-card ${isWinner ? 'is-winner' : ''}`} style={{ ['--i' as string]: revealIndex }}>
                       <div className="echo-reveal-head">
                         <strong>{nameFor(members, playerId)}</strong>
                         <span className={`sg-tag ${role === 'impostor' ? 'sg-tag--echo' : 'sg-tag--human'}`}>
@@ -473,6 +482,13 @@ export function EchoJudgeGamePage({ view }: Props) {
       {/* 飞行层必须挂在舞台之外：舞台内若有 transform 祖先，
           position:fixed 会退化为相对定位，实测的屏幕坐标会全部失效。 */}
       <FlightLayer flights={stage.flights} simplified={stage.simplifiedFlights} />
+      {phaseOverlay}
+      <TabletopVictoryBurst
+        gameOver={view.phase === 'game_over'}
+        isWinner={myId ? (view.winners ?? []).includes(myId) : null}
+        label={(view.caughtImpostors ?? []).length > 0 ? '伪人被揪出！' : '伪人成功潜伏'}
+        sublabel={`获胜玩家：${(view.winners ?? []).map((id) => nameFor(members, id)).join('、')}`}
+      />
     </TabletopShell>
   );
 }

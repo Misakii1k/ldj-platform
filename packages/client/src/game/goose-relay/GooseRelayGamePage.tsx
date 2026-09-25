@@ -27,6 +27,8 @@ import { StageCountdownRing } from '../../shared-ui/stage/StageCountdownRing.tsx
 import { FlightLayer } from '../../shared-ui/stage/FlightLayer.tsx';
 import { useGooseRelayStage } from './stage/useGooseRelayStage.tsx';
 import type { CharacterId, GooseRelayPlayerView } from './types.ts';
+import { TabletopVictoryBurst } from '../../shared-ui/TabletopVictoryBurst.tsx';
+import { usePhaseEventOverlay } from '../../shared-ui/usePhaseEventOverlay.tsx';
 
 function phaseLabel(phase: GooseRelayPlayerView['phase']): string {
   switch (phase) {
@@ -100,6 +102,15 @@ export function GooseRelayGamePage({ view }: Props) {
 
   const myTurnRelay = view.phase === 'relay' && myIndex === view.currentIndex;
   const myTurnAccuse = view.phase === 'accusation' && myIndex === view.currentAccuserIndex;
+
+  // 阶段切换全屏盖印
+  const { overlay: phaseOverlay } = usePhaseEventOverlay(view.phase, (phase) => {
+    if (phase === 'relay') return { label: '传递开始', sublabel: '头鹅起手，逐棒肢体接力', variant: 'stamp' };
+    if (phase === 'discussion') return { label: '传递完毕', sublabel: '自由讨论案情', variant: 'stamp' };
+    if (phase === 'accusation') return { label: '倒序指认', sublabel: '从末棒开始还原案情', variant: 'warning' };
+    if (phase === 'vote') return { label: '票选恶鹅', variant: 'warning' };
+    return null;
+  });
 
   const headPlayerName = view.headPlayerId ? nameFor(members, view.headPlayerId) : null;
   const currentRelayPlayerName = view.lineOrder[view.currentIndex]
@@ -743,8 +754,8 @@ export function GooseRelayGamePage({ view }: Props) {
             <div className="goose-reveal-votes-box">
               <h3>投票统计</h3>
               <ul className="goose-votes-list">
-                {Object.entries(view.reveal?.voteCounts ?? {}).map(([pid, count]) => (
-                  <li key={pid} className="goose-vote-stat-item">
+                {Object.entries(view.reveal?.voteCounts ?? {}).map(([pid, count], voteIndex) => (
+                  <li key={pid} className="goose-vote-stat-item" style={{ ['--i' as string]: voteIndex }}>
                     <span>{nameFor(members, pid)}</span>
                     <strong>{count} 票</strong>
                   </li>
@@ -814,7 +825,7 @@ export function GooseRelayGamePage({ view }: Props) {
 
               {/* 9 张卡牌九宫格展示区 */}
               <div className="goose-modal-cards-grid">
-                {view.candidateCards.map((cardKey) => {
+                {view.candidateCards.map((cardKey, cardIndex) => {
                   const card = getGooseCard(cardKey);
                   const isMurderer = murdererPick === cardKey;
                   const isVictim = victimPick === cardKey;
@@ -825,6 +836,7 @@ export function GooseRelayGamePage({ view }: Props) {
                       role={isSelectionPhase ? 'button' : undefined}
                       tabIndex={isSelectionPhase ? 0 : undefined}
                       className={`goose-modal-card-item ${isMurderer ? 'is-murderer' : ''} ${isVictim ? 'is-victim' : ''} ${isSelectionPhase ? 'is-clickable' : ''}`}
+                      style={{ ['--i' as string]: cardIndex }}
                       onClick={() => handleCardClick(cardKey)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') handleCardClick(cardKey);
@@ -896,6 +908,13 @@ export function GooseRelayGamePage({ view }: Props) {
       {/* 飞行层必须挂在毡面之外：毡面是 perspective 容器，
           一旦有 transform 祖先，position:fixed 会退化为相对定位。 */}
       <FlightLayer flights={stage.flights} simplified={stage.simplifiedFlights} />
+      {phaseOverlay}
+      <TabletopVictoryBurst
+        gameOver={view.phase === 'game_over'}
+        isWinner={myId ? (view.winners ?? []).includes(myId) : null}
+        label={(view.winners ?? []).some((id) => (view.reveal?.evilGeese ?? []).includes(id)) ? '恶鹅阵营获胜' : '白鹅村民获胜'}
+        sublabel={`获胜玩家：${(view.winners ?? []).map((id) => nameFor(members, id)).join('、')}`}
+      />
     </TabletopShell>
   );
 }

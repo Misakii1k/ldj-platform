@@ -184,8 +184,8 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
   );
 
   // 处理收到的 envelope
-  const processEnvelope = useCallback((envelope: ServerEnvelope) => {
-    const result = applyEnvelope(stateRef.current, envelope);
+  const processEnvelope = useCallback((envelope: ServerEnvelope, receivedAtMonotonic?: number) => {
+    const result = applyEnvelope(stateRef.current, envelope, receivedAtMonotonic);
     stateRef.current = result.state;
     setState(result.state);
 
@@ -281,6 +281,7 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
     };
 
     socket.onmessage = (event) => {
+      const receivedAtMonotonic = typeof performance !== 'undefined' ? performance.now() : Date.now();
       // 严格 envelope 校验：版本/类型/序号/时间戳不合法的一律丢弃（D3 Task 9）。
       const envelope = parseServerEnvelope(event.data as string);
       if (envelope === null) return;
@@ -288,7 +289,7 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
         clearTimeout(welcomeWatchdogRef.current);
         welcomeWatchdogRef.current = null;
       }
-      processEnvelope(envelope);
+      processEnvelope(envelope, receivedAtMonotonic);
     };
 
     socket.onclose = (event) => {

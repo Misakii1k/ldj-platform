@@ -1,3 +1,4 @@
+import { createWerewolfAnnouncement } from '@ldj/shared';
 import type { GameManifest, GameModuleV2 } from '@ldj/shared';
 import type {
   ModeratorEvent,
@@ -28,8 +29,23 @@ export const WEREWOLF_MODERATOR_MANIFEST: GameManifest = {
   version: '1.0.0',
   minPlayers: 5,
   maxPlayers: 13,
-  stateSchemaVersion: 1,
+  stateSchemaVersion: 2,
 };
+
+function migrateV1(snapshot: unknown): ModeratorState {
+  if (typeof snapshot !== 'object' || snapshot === null) {
+    throw new Error('Invalid moderator v1 snapshot');
+  }
+  const s = snapshot as Record<string, unknown>;
+  if (s.schemaVersion !== 1) {
+    throw new Error('Invalid moderator v1 schemaVersion');
+  }
+  return {
+    ...(s as unknown as ModeratorState),
+    schemaVersion: 2,
+    timelineState: null,
+  };
+}
 
 export const werewolfModeratorModule: GameModuleV2<
   WerewolfModeratorConfig,
@@ -54,9 +70,19 @@ export const werewolfModeratorModule: GameModuleV2<
   parsePlayerView: (input) => input as WerewolfModeratorView,
   parseSpectatorView: (input) => input as WerewolfModeratorView,
   assertInvariants: assertModeratorInvariants,
-  snapshotMigrations: {},
+  snapshotMigrations: {
+    1: migrateV1,
+  },
   createInitialState: createModeratorInitialState,
-  reduce: reduceModerator,
+  reduce(ctx, state, actor, action) {
+    const result = reduceModerator(ctx,state,actor,action);
+    if (!result.ok || !result.nextState.timelineState) return result;
+    const current = result.nextState.timelineState.current;
+    if ((state.timelineState?.current.role !== 'witch' || state.timelineState?.current.segment !== 'action') && current.role === 'witch' && current.segment === 'action' && current.mode === 'auto') {
+      return { ...result, nextState: { ...result.nextState, announcement: createWerewolfAnnouncement('witch:' + current.id, ['witch_cure_prompt','witch_poison_prompt'],ctx.now) } };
+    }
+    return result;
+  },
   getPlayerView: buildModeratorPlayerView,
   getSpectatorView: buildModeratorSpectatorView,
 };

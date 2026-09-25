@@ -135,15 +135,18 @@ export function assertInvariants(state: WitsWagersState): void {
     }
   }
 
-  // 6. 版图不变量（当 board 非空时）
+  // 6. 版图不变量（当 board 非空时）：唯一边缘槽 lower 排在最前，右端不得再出现旧版 higher 卡
   if (state.board.length > 0) {
-    for (const [id, slot] of [['lower', 'LOWER'], ['higher', 'HIGHER']] as const) {
-      const edge = state.board.find((t) => t.id === id);
-      if (!edge) {
-        throw new Error(`board must contain a ${id} target`);
-      }
-      if (edge.slot !== slot || edge.odds !== EDGE_ODDS || edge.value !== null) {
-        throw new Error(`${id} target has invalid slot, odds, or value`);
+    const edge = state.board[0];
+    if (!edge || edge.id !== 'lower') {
+      throw new Error('board must start with the lower target');
+    }
+    if (edge.slot !== 'LOWER' || edge.odds !== EDGE_ODDS || edge.value !== null) {
+      throw new Error('lower target has invalid slot, odds, or value');
+    }
+    for (const t of state.board as readonly { id: string; slot: string }[]) {
+      if (t.id === 'higher' || t.slot === 'HIGHER') {
+        throw new Error('board must not contain the removed higher target');
       }
     }
   }

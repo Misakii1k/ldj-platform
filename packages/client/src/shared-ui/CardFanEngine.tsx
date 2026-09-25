@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { webAudio } from './WebAudioManager.ts';
 import { GameIcon } from './GameIcon.tsx';
+import { computeDenseHandLayout } from './denseHandLayout.ts';
 
 export interface CardItem {
   id: string;
@@ -28,6 +29,15 @@ export interface CardFanEngineProps {
   disabled?: boolean;
   playButtonText?: string;
   hidePlayButton?: boolean;
+  /**
+   * 稠密手牌策略（UNO 专用，默认关闭）。
+   * 开启后手牌超过阈值时改用 denseHandLayout：可出牌前置抬升、不可出牌压成色条，
+   * 再多则拆双排。斗地主 17~20 张是常态且没有「可出/不可出」的强区分，
+   * 保持等距扇形更合适，所以做成 opt-in 而非默认行为。
+   */
+  denseWhenCrowded?: boolean;
+  /** 稠密策略触发阈值（张数），缺省 12；主要供测试与调参 */
+  denseThreshold?: number;
 }
 
 interface FanMetrics {
@@ -135,6 +145,8 @@ export function CardFanEngine({
   disabled = false,
   playButtonText = '出牌',
   hidePlayButton = false,
+  denseWhenCrowded = false,
+  denseThreshold,
 }: CardFanEngineProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const deckRef = useRef<HTMLDivElement | null>(null);
@@ -204,6 +216,19 @@ export function CardFanEngine({
     metrics.containerWidth
   );
 
+  // 稠密策略（opt-in）：手牌拥挤时按可出性重排，普通局面仍走上面的等距扇形
+  const dense = denseWhenCrowded
+    ? computeDenseHandLayout(
+        cards.map((c) => ({ id: c.id, playable: !c.disabled })),
+        { cardWidth: effCardWidth, containerWidth: metrics.containerWidth, denseThreshold },
+      )
+    : null;
+  const densePlacements = dense && dense.mode !== 'fan'
+    ? new Map(dense.placements.map((p) => [p.id, p]))
+    : null;
+  // 双排时牌堆要加高，否则后排会被裁掉
+  const deckHeight = effCardHeight + 28 + (dense?.mode === 'double' ? Math.abs(dense.rowOffsetY) : 0);
+
   // 手指滑动/触摸探索卡牌辅助函数
   const updatePeekFromClientX = (clientX: number) => {
     if (total <= 0 || !deckRef.current) return;
@@ -257,9 +282,9 @@ export function CardFanEngine({
 
       {/* 扇形卡牌渲染区 */}
       <div
-        className="card-fan-deck"
+        className={`card-fan-deck ${dense && dense.mode !== 'fan' ? `card-fan-deck--${dense.mode}` : ''}`}
         ref={deckRef}
-        style={{ height: effCardHeight + 28 }}
+        style={{ height: deckHeight }}
         onPointerDown={handleDeckPointerDown}
         onPointerMove={handleDeckPointerMove}
         onPointerUp={handleDeckPointerUp}
@@ -270,15 +295,29 @@ export function CardFanEngine({
           const isSelected = activeSelected.includes(card.id);
           const isPlaying = playingId === card.id;
           const isPeeking = peekIdx === idx;
-          const baseAngle = startAngle + idx * stepAngle;
+          const dp = densePlacements?.get(card.id) ?? null;
+          const baseAngle = dp ? dp.angle : startAngle + idx * stepAngle;
           let angle = baseAngle;
-          let translateX = startX + idx * stepX;
-          let translateY = isSelected ? -metrics.lift : Math.abs(angle) * metrics.slope;
+          let translateX = dp ? dp.x : startX + idx * stepX;
+          // 稠密模式下可出牌抬升成为视觉焦点；双排时后排再整体上移
+          // （rowOffsetY 为负表示向上，translateY 同样是负值向上，故直接相加）
+          const denseOffsetY = dp
+            ? -dp.lift + (dp.row === 1 ? (dense?.rowOffsetY ?? 0) : 0)
+            : 0;
+          let translateY = isSelected
+            ? -metrics.lift + denseOffsetY
+            : (dp ? denseOffsetY : Math.abs(angle) * metrics.slope);
           let scale = isSelected ? 1.06 : 1;
-          let zIndex = isSelected || isPlaying ? 100 + idx : idx;
+          // 可出牌压在不可出牌之上，保证抬起来那几张完整可见
+          let zIndex = isSelected || isPlaying
+            ? 100 + idx
+            : dp
+              ? (dp.playable ? 60 + idx : (dp.row === 1 ? idx : 20 + idx))
+              : idx;
 
           // 邻卡风琴式向两侧避让展开（手指长按/滑动/hover 时的清晰观察动效）
-          if (peekIdx !== null && !isPlaying) {
+          // 稠密模式已按可出性精确排布，风琴避让会打乱它，故只在普通扇形下启用
+          if (peekIdx !== null && !isPlaying && !dp) {
             const dist = Math.abs(idx - peekIdx);
             if (isPeeking) {
               // 当前聚焦选中的卡牌：大幅抬升、放大、最高层级、稍微摆正角度
@@ -322,6 +361,7 @@ export function CardFanEngine({
                 zIndex,
                 width: effCardWidth,
                 height: effCardHeight,
+                ['--i' as string]: idx,
               }}
               onClick={() => handleCardClick(card)}
               onMouseEnter={() => {
@@ -341,6 +381,7 @@ export function CardFanEngine({
                 onHoverCard?.(null);
               }}
               aria-disabled={card.disabled || disabled || undefined}
+              data-fan-row={dp ? dp.row : undefined}
               aria-label={typeof card.label === 'string' ? card.label : undefined}
             >
               {card.customContent ? (

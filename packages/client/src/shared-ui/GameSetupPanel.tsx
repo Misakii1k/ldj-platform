@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { GameDrawer } from '../game/tabletop/GameDrawer.tsx';
 import type { GameRulesetSpec, GameSetupSpec } from '@ldj/shared';
 import { Info, X } from 'lucide-react';
 import { applySetupValue, type SetupConfig } from './setupState.ts';
 
 interface GameSetupPanelProps {
+  readonly dialogClassName?: string;
   readonly setup: GameSetupSpec;
   readonly value: SetupConfig;
   readonly disabled?: boolean;
@@ -20,12 +22,14 @@ interface GameSetupPanelProps {
  */
 export function GameSetupPanel({
   setup,
+  dialogClassName,
   value,
   disabled = false,
   variant = 'default',
   isOptionChoiceDisabled,
   onChange,
 }: GameSetupPanelProps) {
+  const ruleTrigger = useRef<HTMLButtonElement>(null);
   const update = (key: string, next: unknown) => onChange(applySetupValue(setup, value, key, next));
   const compact = variant === 'compact';
   const [activeRulesetModal, setActiveRulesetModal] = useState<GameRulesetSpec | null>(null);
@@ -62,6 +66,7 @@ export function GameSetupPanel({
                       aria-label={`查看「${ruleset.label}」规则要点`}
                       onClick={(e) => {
                         e.stopPropagation();
+                        ruleTrigger.current = e.currentTarget;
                         setActiveRulesetModal(ruleset);
                       }}
                     >
@@ -76,7 +81,12 @@ export function GameSetupPanel({
       )}
 
       {/* 规则详情弹窗 */}
-      {activeRulesetModal && typeof document !== 'undefined' && createPortal(
+      {activeRulesetModal && dialogClassName && <GameDrawer kind="rules" title={activeRulesetModal.label} className={dialogClassName} triggerRef={ruleTrigger} onClose={() => setActiveRulesetModal(null)}>
+        <p>{activeRulesetModal.description}</p>
+        <ul>{activeRulesetModal.details?.map((detail) => <li key={detail}>{detail}</li>)}</ul>
+        <button className="setup-chip is-selected" type="button" disabled={disabled} onClick={() => { update('rulesetId', activeRulesetModal.id); setActiveRulesetModal(null); }}>选用此规则</button>
+      </GameDrawer>}
+      {activeRulesetModal && !dialogClassName && typeof document !== 'undefined' && createPortal(
         <div
           className="rules-detail-backdrop"
           role="presentation"

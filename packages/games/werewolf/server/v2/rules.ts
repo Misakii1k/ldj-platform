@@ -9,7 +9,8 @@
  * 6. 猎人被放逐统一先展示 vote_result 票型面板，再进入 hunter_shot 开枪；
  * 7. 局中死因隐藏：出局玩家 exitReason 仅在终局 game_over 时揭示。
  */
-import { calculateWerewolfDistribution, type Actor, type GameContext, type GameEffect, type PrivateGameEvent } from '@ldj/shared';
+import { calculateWerewolfDistribution, type Actor, type GameContext, type GameEffect, type PrivateGameEvent, type WerewolfTimelineState } from '@ldj/shared';
+import { buildNightPlan, createInitialTimelineState, advanceTimelineStep } from '../timeline.ts';
 import type { V2Action, V2Config, V2ConfigPace, V2Event, V2ExitReason, V2NightStage, V2NightState, V2PendingOutcome, V2PlayerView, V2PublicView, V2Result, V2Role, V2State, V2Team, V2TimedPhase, V2VoteKind, V2VoteOutcome, V2VoteSummary } from './types.ts';
 import { v2ActionSchema, v2StateSchema } from './schemas.ts';
 
@@ -31,9 +32,9 @@ const PLAYER_ACTIONS = new Set<V2Action['type']>([
 ]);
 const SPECIAL_ROLES: readonly V2Role[] = ['seer', 'witch', 'guard', 'hunter', 'idiot'];
 const PACE_MS: Record<V2ConfigPace, Record<V2TimedPhase, number>> = {
-  fast: { role_reveal: 15_000, night: 45_000, hunter_shot: 15_000, day_announcement: 10_000, discussion: 30_000, free_discussion: 30_000, voting: 20_000, runoff_voting: 20_000, vote_result: 4_000, last_words: 20_000 },
-  standard: { role_reveal: 30_000, night: 60_000, hunter_shot: 30_000, day_announcement: 10_000, discussion: 60_000, free_discussion: 60_000, voting: 45_000, runoff_voting: 45_000, vote_result: 5_000, last_words: 30_000 },
-  relaxed: { role_reveal: 45_000, night: 90_000, hunter_shot: 45_000, day_announcement: 10_000, discussion: 90_000, free_discussion: 90_000, voting: 60_000, runoff_voting: 60_000, vote_result: 7_000, last_words: 45_000 },
+  fast: { role_reveal: 15_000, night: 45_000, hunter_shot: 15_000, day_announcement: 12_000, discussion: 30_000, free_discussion: 30_000, voting: 20_000, runoff_voting: 20_000, vote_result: 4_000, last_words: 20_000 },
+  standard: { role_reveal: 30_000, night: 60_000, hunter_shot: 30_000, day_announcement: 12_000, discussion: 60_000, free_discussion: 60_000, voting: 45_000, runoff_voting: 45_000, vote_result: 5_000, last_words: 30_000 },
+  relaxed: { role_reveal: 45_000, night: 90_000, hunter_shot: 45_000, day_announcement: 12_000, discussion: 90_000, free_discussion: 90_000, voting: 60_000, runoff_voting: 60_000, vote_result: 7_000, last_words: 45_000 },
 };
 
 const deny = (message: string): V2ReduceResult => ({ ok: false, code: 'ACTION_NOT_ALLOWED', message });
@@ -68,6 +69,10 @@ function schedulePhase(state: V2State, ctx: GameContext, phase: V2TimedPhase, ef
 }
 function cancelCurrentTimer(state: V2State, effects: GameEffect[]): void {
   if (state.phaseToken) effects.push({ type: 'cancel_timer', timerId: `werewolf:${state.phaseToken}` });
+  if (state.timelineState?.activeTimerToken) {
+    effects.push({ type: 'cancel_timer', timerId: `werewolf:timeline:${state.timelineState.activeTimerToken}` });
+    state.timelineState = { ...state.timelineState, activeTimerToken: null };
+  }
   state.deadlineAt = null;
   state.phaseToken = null;
 }
@@ -101,7 +106,27 @@ function startNight(state: V2State, ctx: GameContext, day: number, publicEvents:
   state.votes = {}; state.runoffCandidates = []; state.pendingOutcome = null; state.lastWordsPlayerId = null;
   state.lastWordsQueue = null;
   phaseChanged(state, publicEvents);
-  schedulePhase(state, ctx, 'night', effects);
+
+  if (state.timelineState) {
+    const plan = buildNightPlan(state.config.roles, day, state.config.pace);
+    const mode = state.timelineState.current.mode ?? 'auto';
+    state.timelineState = createInitialTimelineState(plan, day, mode, ctx.now);
+    state.deadlineAt = state.timelineState.current.endsAt;
+    if (state.timelineState.activeTimerToken && state.timelineState.current.endsAt !== null) {
+      effects.push({
+        type: 'schedule_timer',
+        timerId: `werewolf:timeline:${state.timelineState.activeTimerToken}`,
+        deadlineAt: state.timelineState.current.endsAt,
+        action: {
+          type: 'timeline_timeout',
+          timelineId: state.timelineState.current.id,
+          token: state.timelineState.activeTimerToken,
+        },
+      });
+    }
+  } else {
+    schedulePhase(state, ctx, 'night', effects);
+  }
   effects.push({ type: 'system_message', text: `第 ${day} 夜开始` });
 }
 const wolfTargetCandidates = (state: V2State): string[] => aliveIds(state);
@@ -215,15 +240,101 @@ function resolveNightWithContext(state: V2State, ctx: GameContext, publicEvents:
 }
 
 function tryResolveNight(state: V2State, ctx: GameContext, publicEvents: V2Event[], effects: GameEffect[]): void {
+  if (state.timelineState) {
+    return;
+  }
   if (!allWolvesVoted(state) || !state.night.seerChecked || !witchFinished(state) || !guardFinished(state)) return;
   state.night.killTargetId = selectWolfTarget(state, true);
   resolveNightWithContext(state, ctx, publicEvents, effects);
+}
+
+function getTimelineObfuscationMs(day: number, stepIndex: number, revision: number): number {
+  const seed = (day * 10007 + stepIndex * 997 + revision * 97) % 2147483647;
+  const pseudo = (seed * 48271) % 2147483647;
+  return 2000 + (pseudo % 1000);
+}
+
+function getDeadRoleObfuscationMs(day: number, stepIndex: number, revision: number): number {
+  const seed = (day * 13337 + stepIndex * 1009 + revision * 101) % 2147483647;
+  const pseudo = (seed * 48271) % 2147483647;
+  return 3000 + (pseudo % 1000);
+}
+
+function tryAccelerateNightAction(state: V2State, ctx: GameContext, effects: GameEffect[]): void {
+  if (!state.timelineState) return;
+  const cur = state.timelineState.current;
+  if (cur.segment !== 'action' || !cur.role || cur.paused) return;
+
+  let roleDone = false;
+  if (cur.role === 'wolf') {
+    roleDone = allWolvesVoted(state);
+  } else if (cur.role === 'seer') {
+    roleDone = state.night.seerChecked;
+  } else if (cur.role === 'witch') {
+    roleDone = witchFinished(state);
+  } else if (cur.role === 'guard') {
+    roleDone = guardFinished(state);
+  }
+
+  if (!roleDone) return;
+
+  // 角色行动已全部完成：计算 2~3 秒的确定性混淆延迟（防止其他玩家通过秒切阶段猜身份）
+  const obfuscationMs = getTimelineObfuscationMs(state.day, state.timelineState.stepIndex, state.timelineState.revision);
+  const baseNow = Math.max(ctx.now, cur.startedAt);
+  const targetEndsAt = baseNow + obfuscationMs;
+
+  if (cur.endsAt !== null && cur.endsAt <= targetEndsAt) {
+    return;
+  }
+
+  cur.endsAt = targetEndsAt;
+  cur.actionDeadlineAt = targetEndsAt;
+  state.deadlineAt = targetEndsAt;
+
+  if (state.timelineState.activeTimerToken) {
+    effects.push({
+      type: 'schedule_timer',
+      timerId: `werewolf:timeline:${state.timelineState.activeTimerToken}`,
+      deadlineAt: targetEndsAt,
+      action: {
+        type: 'timeline_timeout',
+        timelineId: cur.id,
+        token: state.timelineState.activeTimerToken,
+      },
+    });
+  }
 }
 
 function startDayAnnouncement(state: V2State, ctx: GameContext, publicEvents: V2Event[], effects: GameEffect[]): void {
   state.phase = 'day_announcement';
   state.announcementConfirmedPlayerIds = [];
   phaseChanged(state, publicEvents);
+  if (state.timelineState) {
+    const revision = state.timelineState.revision + 1;
+    state.timelineState = {
+      ...state.timelineState,
+      revision,
+      stepIndex: 0,
+      activeTimerToken: null,
+      pausedRemainingMs: null,
+      current: {
+        version: 1,
+        id: `d${state.day}-dawn-r${revision}`,
+        day: state.day,
+        period: 'day',
+        role: null,
+        segment: 'dawn',
+        cue: 'dawn',
+        label: '天亮了',
+        startedAt: ctx.now,
+        endsAt: ctx.now + 1000,
+        actionDeadlineAt: null,
+        mode: state.timelineState.current.mode,
+        paused: false,
+        pauseRemainingMs: null,
+      },
+    };
+  }
   schedulePhase(state, ctx, 'day_announcement', effects);
 }
 
@@ -473,7 +584,7 @@ export function createV2InitialState(ctx: GameContext, players: string[], config
   const shuffled = ctx.random.shuffle(roles);
   const playerEntries = Object.fromEntries(players.map((id, seat) => [id, { role: shuffled[seat]!, alive: true, seat, forfeited: false, exitReason: null, idiotRevealed: false }]));
   const state: V2State = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     phase: 'role_reveal',
     day: 0,
     players: playerEntries,
@@ -501,6 +612,30 @@ export function createV2InitialState(ctx: GameContext, players: string[], config
     phaseToken: null,
     winner: null,
     aborted: false,
+    timelineState: {
+      version: 1,
+      stepIndex: 0,
+      revision: 1,
+      pausedRemainingMs: null,
+      activeTimerToken: null,
+      initialRolePlan: [],
+      current: {
+        version: 1,
+        id: 'n0-s0-r1',
+        day: 0,
+        period: 'day',
+        role: null,
+        segment: 'confirm',
+        cue: null,
+        label: '对局开始，请确认你的身份',
+        startedAt: ctx.now,
+        endsAt: null,
+        actionDeadlineAt: null,
+        mode: 'auto',
+        paused: false,
+        pauseRemainingMs: null,
+      },
+    },
   };
   return state;
 }
@@ -541,6 +676,70 @@ export function reduceV2(ctx: GameContext, state: V2State, actor: Actor, action:
       case 'vote_result': continueAfterVoteResult(s, ctx, publicEvents, effects); break;
       case 'last_words': finishLastWords(s, ctx, publicEvents, effects); break;
       default: return noop(state);
+    }
+    return done();
+  }
+
+  if (action.type === 'timeline_timeout') {
+    if (!s.timelineState) return deny('当前对局无时间线状态');
+    if (action.timelineId !== s.timelineState.current.id) return noop(state);
+    if (action.token !== s.timelineState.activeTimerToken) return noop(state);
+    if (s.timelineState.current.endsAt !== null && ctx.now <= s.timelineState.current.startedAt) {
+      return noop(state);
+    }
+
+    const cur = s.timelineState.current;
+    if (cur.segment === 'action') {
+      if (cur.role === 'wolf') {
+        s.night.killTargetId = selectWolfTarget(s, true);
+      } else if (cur.role === 'witch') {
+        if (s.night.witchSaveDecision === null) s.night.witchSaveDecision = false;
+        if (!s.night.witchPoisonDecided) s.night.witchPoisonDecided = true;
+      } else if (cur.role === 'seer') {
+        if (!s.night.seerChecked) s.night.seerChecked = true;
+      } else if (cur.role === 'guard') {
+        if (!s.night.guardDecided) s.night.guardDecided = true;
+      }
+    }
+
+    const plan = buildNightPlan(s.config.roles, s.day, s.config.pace);
+    const now = ctx.now;
+    const result = advanceTimelineStep(s.timelineState, plan, now, action.token);
+    if (!result.advanced) return noop(state);
+
+    if (result.nightResolved) {
+      if (!s.night.killTargetId) {
+        s.night.killTargetId = selectWolfTarget(s, true);
+      }
+      resolveNightWithContext(s, ctx, publicEvents, effects);
+      return done();
+    }
+
+    s.timelineState = result.state as WerewolfTimelineState;
+    if (
+      s.timelineState.current.segment === 'action' &&
+      s.timelineState.current.role &&
+      aliveRoleIds(s, s.timelineState.current.role as V2Role).length === 0
+    ) {
+      // 阵亡神职保持 3~4 秒固定混淆空过，防止被全场猜出身份
+      const deadObfuscationMs = getDeadRoleObfuscationMs(s.day, s.timelineState.stepIndex, s.timelineState.revision);
+      const baseNow = Math.max(now, s.timelineState.current.startedAt);
+      const deadEndsAt = baseNow + deadObfuscationMs;
+      s.timelineState.current.endsAt = deadEndsAt;
+      s.timelineState.current.actionDeadlineAt = deadEndsAt;
+    }
+    s.deadlineAt = s.timelineState.current.endsAt;
+    if (s.timelineState.activeTimerToken && s.timelineState.current.endsAt !== null) {
+      effects.push({
+        type: 'schedule_timer',
+        timerId: `werewolf:timeline:${s.timelineState.activeTimerToken}`,
+        deadlineAt: s.timelineState.current.endsAt,
+        action: {
+          type: 'timeline_timeout',
+          timelineId: s.timelineState.current.id,
+          token: s.timelineState.activeTimerToken,
+        },
+      });
     }
     return done();
   }
@@ -594,17 +793,29 @@ export function reduceV2(ctx: GameContext, state: V2State, actor: Actor, action:
 
   if (action.type === 'night_kill') {
     if (state.phase !== 'night' || !self.alive || self.role !== 'wolf') return deny('当前不能发起狼人击杀');
+    if (s.timelineState) {
+      const current = s.timelineState.current;
+      if (current.role !== 'wolf' || current.segment !== 'action') return deny('当前不是狼人行动时间');
+      if (action.timelineId && action.timelineId !== current.id) return deny('时间线版本不匹配');
+      if (actorId in s.night.wolfVotes) return deny('狼人不可重复提交击杀投票');
+    }
     if (!wolfTargetCandidates(state).includes(action.targetPlayerId)) return deny('击杀目标必须是存活玩家');
     s.night.wolfVotes[actorId] = action.targetPlayerId;
     if (allWolvesVoted(s)) {
       s.night.killTargetId = selectWolfTarget(s, false);
       tryResolveNight(s, ctx, publicEvents, effects);
+      tryAccelerateNightAction(s, ctx, effects);
     }
     return done();
   }
 
   if (action.type === 'seer_check') {
     if (state.phase !== 'night' || !self.alive || self.role !== 'seer') return deny('当前不能查验身份');
+    if (s.timelineState) {
+      const current = s.timelineState.current;
+      if (current.role !== 'seer' || current.segment !== 'action') return deny('当前不是预言家行动时间');
+      if (action.timelineId && action.timelineId !== current.id) return deny('时间线版本不匹配');
+    }
     if (state.night.seerChecked) return deny('今晚已经查验过');
     const target = state.players[action.targetPlayerId];
     if (!target || !target.alive || action.targetPlayerId === actorId) return deny('查验目标无效');
@@ -613,11 +824,17 @@ export function reduceV2(ctx: GameContext, state: V2State, actor: Actor, action:
     s.night.seerResult = result;
     s.seerHistory.push(result);
     tryResolveNight(s, ctx, publicEvents, effects);
+    tryAccelerateNightAction(s, ctx, effects);
     return done();
   }
 
   if (action.type === 'witch_save') {
     if (state.phase !== 'night' || !self.alive || self.role !== 'witch') return deny('当前不能使用解药');
+    if (s.timelineState) {
+      const current = s.timelineState.current;
+      if (current.role !== 'witch' || current.segment !== 'action') return deny('当前不是女巫行动时间');
+      if (action.timelineId && action.timelineId !== current.id) return deny('时间线版本不匹配');
+    }
     if (state.witchSaveUsed || state.night.witchSaveDecision !== null) return deny('解药已不可用或已做出决定');
     if (!state.night.killTargetId) return deny('尚未确定刀口目标');
     const canSelfSave = state.config.witchSelfSave === 'always' || (state.config.witchSelfSave === 'first_night' && state.day === 1);
@@ -628,11 +845,17 @@ export function reduceV2(ctx: GameContext, state: V2State, actor: Actor, action:
       s.night.witchPoisonDecided = true;
     }
     tryResolveNight(s, ctx, publicEvents, effects);
+    tryAccelerateNightAction(s, ctx, effects);
     return done();
   }
 
   if (action.type === 'witch_poison') {
     if (state.phase !== 'night' || !self.alive || self.role !== 'witch') return deny('当前不能使用毒药');
+    if (s.timelineState) {
+      const current = s.timelineState.current;
+      if (current.role !== 'witch' || current.segment !== 'action') return deny('当前不是女巫行动时间');
+      if (action.timelineId && action.timelineId !== current.id) return deny('时间线版本不匹配');
+    }
     if (state.witchPoisonUsed || state.night.witchPoisonDecided) return deny('毒药已不可用或已做出决定');
     if (state.night.witchSaveDecision === null) return deny('请先确认是否使用解药');
     if (action.targetPlayerId !== null) {
@@ -644,11 +867,17 @@ export function reduceV2(ctx: GameContext, state: V2State, actor: Actor, action:
     }
     s.night.witchPoisonDecided = true;
     tryResolveNight(s, ctx, publicEvents, effects);
+    tryAccelerateNightAction(s, ctx, effects);
     return done();
   }
 
   if (action.type === 'guard_guard') {
     if (state.phase !== 'night' || !self.alive || self.role !== 'guard') return deny('当前不能执行守护');
+    if (s.timelineState) {
+      const current = s.timelineState.current;
+      if (current.role !== 'guard' || current.segment !== 'action') return deny('当前不是守卫行动时间');
+      if (action.timelineId && action.timelineId !== current.id) return deny('时间线版本不匹配');
+    }
     if (state.night.guardDecided) return deny('今晚已做出守护决定');
     if (action.targetPlayerId !== null) {
       const target = state.players[action.targetPlayerId];
@@ -658,6 +887,7 @@ export function reduceV2(ctx: GameContext, state: V2State, actor: Actor, action:
     s.night.guardDecided = true;
     s.night.guardTargetId = action.targetPlayerId;
     tryResolveNight(s, ctx, publicEvents, effects);
+    tryAccelerateNightAction(s, ctx, effects);
     return done();
   }
 
@@ -723,7 +953,7 @@ export function buildV2PublicView(state: V2State): V2PublicView {
   return {
     gameId: 'werewolf',
     rulesetId: 'werewolf_platform_open_kill_v1',
-    schemaVersion: 1,
+    schemaVersion: state.schemaVersion,
     phase: state.phase,
     day: state.day,
     players: orderedIds(state).map((id) => {
@@ -752,6 +982,8 @@ export function buildV2PublicView(state: V2State): V2PublicView {
     winner: state.winner,
     aborted: state.aborted,
     reveal: over ? { roles: Object.fromEntries(Object.entries(state.players).map(([id, p]) => [id, p.role])), voteHistory: structuredClone(state.voteHistory) } : null,
+    timeline: state.timelineState?.current ?? null,
+    announcement: state.announcement ?? null,
   };
 }
 

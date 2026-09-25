@@ -161,6 +161,20 @@ function applyRoomSeq(
   return state;
 }
 
+function withClockSample(
+  nextState: ConnectionSnapshot,
+  envelope: ServerEnvelope,
+  receivedAtMonotonic?: number,
+): ConnectionSnapshot {
+  if (receivedAtMonotonic === undefined || !Number.isFinite(envelope.serverNow) || envelope.serverNow <= 0) {
+    return nextState;
+  }
+  return {
+    ...nextState,
+    clockSample: { serverNow: envelope.serverNow, receivedAtMonotonic },
+  };
+}
+
 /**
  * 主 reducer：处理一个 server envelope，返回新状态 + 副作用列表。
  * 纯函数，便于单元测试。
@@ -168,6 +182,7 @@ function applyRoomSeq(
 export function applyEnvelope(
   state: ConnectionSnapshot,
   envelope: ServerEnvelope,
+  receivedAtMonotonic?: number,
 ): ReducerResult {
   const effects: ReducerSideEffect[] = [];
 
@@ -176,14 +191,14 @@ export function applyEnvelope(
       const payload = parseWelcomePayload(envelope.payload);
       if (!payload) return { state, effects };
       return {
-        state: {
+        state: withClockSample({
           ...withConnState(state, 'connected'),
           serverVersion: payload.serverVersion,
           connectionId: payload.connectionId,
           llmAvailable: payload.llmAvailable,
           // 重连后清空旧 closeReason
           closeReason: null,
-        },
+        }, envelope, receivedAtMonotonic),
         effects,
       };
     }
@@ -191,7 +206,7 @@ export function applyEnvelope(
     case 'ack': {
       // ack 不改变连接状态；roomSeq 更新由 applyRoomSeq 处理
       const next = applyRoomSeq(state, envelope, effects);
-      return { state: next, effects };
+      return { state: withClockSample(next, envelope, receivedAtMonotonic), effects };
     }
 
     case 'error': {
@@ -214,7 +229,7 @@ export function applyEnvelope(
           nextState = { ...nextState, roomSeq: payload.currentSeq };
         }
       }
-      return { state: nextState, effects };
+      return { state: withClockSample(nextState, envelope, receivedAtMonotonic), effects };
     }
 
     case 'room_snapshot': {
@@ -261,7 +276,7 @@ export function applyEnvelope(
         ...(roomSwitched ? { chat: [], chatCursor: null } : {}),
       }, 'synced');
       // 权威完整快照可直接建立跳号后的恢复基线，不再要求第二轮 resync。
-      return { state: nextState, effects };
+      return { state: withClockSample(nextState, envelope, receivedAtMonotonic), effects };
     }
 
     case 'chat_batch': {
@@ -269,7 +284,7 @@ export function applyEnvelope(
       if (!payload) return { state, effects };
       const { messages, cursor } = mergeChat(state.chat, payload);
       return {
-        state: { ...state, chat: messages, chatCursor: cursor ?? state.chatCursor },
+        state: withClockSample({ ...state, chat: messages, chatCursor: cursor ?? state.chatCursor }, envelope, receivedAtMonotonic),
         effects,
       };
     }
@@ -300,23 +315,23 @@ export function applyEnvelope(
       }
       const sequenced = applyRoomSeq(state, envelope, effects);
       return {
-        state: {
+        state: withClockSample({
           ...sequenced,
           game: { ...payload, view: parsed.view },
-        },
+        }, envelope, receivedAtMonotonic),
         effects,
       };
     }
 
     case 'game_event': {
-      return { state: applyRoomSeq(state, envelope, effects), effects };
+      return { state: withClockSample(applyRoomSeq(state, envelope, effects), envelope, receivedAtMonotonic), effects };
     }
 
     case 'session_replaced': {
       const payload = parseErrorPayload(envelope.payload);
       effects.push({ type: 'clear_local_session' });
       return {
-        state: {
+        state: withClockSample({
           ...state,
           connState: 'seat_expired',
           closeReason: { code: 'session_replaced', message: payload?.message ?? '已在其他设备登录' },
@@ -328,7 +343,7 @@ export function applyEnvelope(
                 ...(payload.retryAfterMs !== undefined ? { retryAfterMs: payload.retryAfterMs } : {}),
               }
             : state.lastError,
-        },
+        }, envelope, receivedAtMonotonic),
         effects,
       };
     }
@@ -341,7 +356,7 @@ export function applyEnvelope(
       if (payload?.currentSeq !== undefined) {
         nextState = { ...nextState, roomSeq: payload.currentSeq };
       }
-      return { state: nextState, effects };
+      return { state: withClockSample(nextState, envelope, receivedAtMonotonic), effects };
     }
 
     default:

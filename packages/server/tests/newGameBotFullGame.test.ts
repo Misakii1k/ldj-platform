@@ -50,6 +50,7 @@ const SPECS: FullGameSpec[] = [
   { gameId: 'night-testimony', botCount: 3, maxRounds: 400 }, // 4 人局，覆盖狱警猜罪
   { gameId: 'bell-clash', botCount: 3, maxRounds: 400 }, // 4 人局
   { gameId: 'echo-judge', botCount: 3, maxRounds: 400 }, // 4 人局
+  { gameId: 'wits-wagers', botCount: 2, maxRounds: 400 }, // 3 人局（1 真人 + 2 机器人）
 ];
 
 /** 消费最早 pending 计时器（拨到过去并 consumeDueTimer）；返回是否触发成功 */
@@ -156,10 +157,11 @@ for (const spec of SPECS) {
         if (!session) break; // 对局已结束（FINISHED/ABORTED）
         if (session.last_seq === lastSeq) {
           stalled += 1;
-          const snapshot = JSON.parse(session.snapshot_json) as { phase?: string };
+          const snapshot = JSON.parse(session.snapshot_json);
+          const currentPhase = snapshot?.state?.phase ?? snapshot?.phase;
           assert.ok(
             stalled < 20,
-            `${spec.gameId} 对局疑似卡死：连续 ${stalled} 轮无任何进展（phase=${snapshot.phase ?? '?'}，lastSeq=${lastSeq}，fired=${fired}）`,
+            `${spec.gameId} 对局疑似卡死：连续 ${stalled} 轮无任何进展（phase=${currentPhase ?? '?'}，lastSeq=${lastSeq}，fired=${fired}）`,
           );
         } else {
           stalled = 0;

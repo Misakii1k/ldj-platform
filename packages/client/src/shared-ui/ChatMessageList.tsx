@@ -5,6 +5,7 @@ export interface ChatMessageViewLike {
   cursor: number;
   kind: 'player' | 'system';
   fromPlayerId: string | null;
+  toPlayerId?: string | null;
   text: string;
   at: number;
 }
@@ -63,10 +64,12 @@ export function ChatMessageList({ messages, myPlayerId, memberNames }: ChatMessa
           );
         }
         const mine = message.fromPlayerId === myPlayerId;
+        const isDm = Boolean(message.toPlayerId);
         return (
-          <article key={message.cursor} className={`game-chat-message ${mine ? 'mine' : ''}`}>
+          <article key={message.cursor} className={`game-chat-message ${mine ? 'mine' : ''} ${isDm ? 'is-dm' : ''}`}>
             <div className="game-chat-meta">
               <strong>{mine ? '我' : memberNames.get(message.fromPlayerId ?? '') ?? '玩家'}</strong>
+              {isDm && <span className="game-chat-dm-badge">私聊</span>}
               <time>{formatChatTime(message.at)}</time>
             </div>
             <p>{message.text}</p>

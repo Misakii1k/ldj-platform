@@ -17,31 +17,25 @@ export type WitsWagersPhase =
   | 'game_over';
 
 export type ChipId = 'A' | 'B';
-export type TargetId = 'lower' | 'higher' | `g:${number}`;
+export type TargetId = 'lower' | `g:${number}`;
 export type Slot = 'L3' | 'L2' | 'L1' | 'C' | 'R1' | 'R2' | 'R3';
-export type EdgeSlot = 'LOWER' | 'HIGHER';
+export type EdgeSlot = 'LOWER';
 export type GuessOrigin = 'submitted';
 
 /** G0 P7：猜测与答案的闭区间。 */
 export const MIN_GUESS = 1;
 export const MAX_GUESS = 999_999_999_999;
 
-/** 01 §3 查表中出现的全部净赢倍率，含两个边缘槽的 6。 */
+/** 01 §3 查表中出现的全部净赢倍率，含「更低」边缘槽的 6。 */
 const ALLOWED_ODDS = new Set([2, 3, 4, 5, 6]);
 
-/** 「更低」「更高」两个边缘槽的固定净赢倍率。 */
+/** 「更低」边缘槽的固定净赢倍率。 */
 export const EDGE_ODDS = 6;
 
 const PHASES: readonly WitsWagersPhase[] = [
   'created', 'answering', 'arranging', 'betting', 'settlement', 'game_over',
 ];
-const SLOTS: readonly (Slot | EdgeSlot)[] = ['L3', 'L2', 'L1', 'C', 'R1', 'R2', 'R3', 'LOWER', 'HIGHER'];
-
-/** 边缘槽 id 与其槽位名的固定对应关系。 */
-const EDGE_SLOT_BY_ID: Readonly<Record<'lower' | 'higher', EdgeSlot>> = {
-  lower: 'LOWER',
-  higher: 'HIGHER',
-};
+const SLOTS: readonly (Slot | EdgeSlot)[] = ['L3', 'L2', 'L1', 'C', 'R1', 'R2', 'R3', 'LOWER'];
 
 export const TOTAL_ROUNDS = 7;
 
@@ -82,11 +76,10 @@ export function breakdownNotes(points: number): NoteDenomination[] {
   return notes;
 }
 
-/** 槽位在界面上的名字：两个边缘槽用中文，数值槽用千分位数字。 */
+/** 槽位在界面上的名字：边缘槽用中文，数值槽用千分位数字。 */
 export function targetLabel(target: Pick<BoardTargetView, 'id' | 'value'> | null | undefined): string {
   if (!target) return '未知槽位';
   if (target.id === 'lower') return '更低';
-  if (target.id === 'higher') return '更高';
   return target.value?.toLocaleString('zh-CN') ?? '未知槽位';
 }
 
@@ -261,9 +254,9 @@ function isPlayerIds(value: unknown): value is string[] {
   return Array.isArray(value) && value.every(isPlayerId);
 }
 
-/** 目标 ID 只接受 lower、higher 或 g:<正整数>；拒绝前导零、小数、负号与大小写变体。 */
+/** 目标 ID 只接受 lower 或 g:<正整数>；拒绝前导零、小数、负号与大小写变体。 */
 function isTargetId(value: unknown): value is TargetId {
-  if (value === 'lower' || value === 'higher') return true;
+  if (value === 'lower') return true;
   if (typeof value !== 'string' || !value.startsWith('g:')) return false;
   const digits = value.slice(2);
   if (!/^[1-9][0-9]*$/.test(digits)) return false;
@@ -321,13 +314,13 @@ function parseBoardTarget(value: unknown): BoardTargetView | null {
   if (typeof value.odds !== 'number' || !ALLOWED_ODDS.has(value.odds)) return null;
   if (!isPlayerIds(value.authors)) return null;
   // 边缘槽无数值也无作者，普通槽必须有合法猜测值。
-  if (value.id === 'lower' || value.id === 'higher') {
-    if (value.value !== null || value.slot !== EDGE_SLOT_BY_ID[value.id]) return null;
+  if (value.id === 'lower') {
+    if (value.value !== null || value.slot !== 'LOWER') return null;
     if (value.authors.length !== 0) return null;
     if (value.odds !== EDGE_ODDS) return null;
   } else {
     if (!isGuessValue(value.value)) return null;
-    if (value.slot === 'LOWER' || value.slot === 'HIGHER') return null;
+    if (value.slot === 'LOWER') return null;
     if (`g:${value.value}` !== value.id) return null;
   }
   return {

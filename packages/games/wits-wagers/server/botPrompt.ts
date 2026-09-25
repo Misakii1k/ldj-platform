@@ -1,10 +1,10 @@
 import type { BotActionOption, BotDecisionInput, BotPromptContext } from '@ldj/shared';
 import type { WitsWagersPlayerView } from './views.ts';
-import type { WitsWagersAction, BoardTarget } from './types.ts';
+import type { WitsWagersAction } from './types.ts';
 import { estimateGuess, pickBestBets } from './bot.ts';
 import { targetLabel } from './board.ts';
 
-const ROLE_BRIEF = '你在玩聚会博弈桌游《一智千金》（Wits & Wagers）平台适配版。游戏共 7 轮，每轮面对一个答案为正整数的问题。所有玩家秘密提交猜测后版图按数值升序排列并标明赔率，玩家用两枚筹码进行下注。判定规则：与正确答案绝对差值最小的槽位获胜（同距时两侧并列获胜）；答案高于全部猜测则「更高」槽获胜，低于全部猜测则「更低」槽获胜。';
+const ROLE_BRIEF = '你在玩聚会博弈桌游《一智千金》（Wits & Wagers）平台适配版。游戏共 7 轮，每轮面对一个答案为正整数的问题。所有玩家秘密提交猜测后版图按数值升序排列并标明赔率，玩家用两枚筹码进行下注。判定规则：与正确答案绝对差值最小的槽位获胜（同距时两侧并列获胜）；答案低于全部猜测则「更低」槽获胜，答案高于全部猜测时没有特殊槽，由最大的猜测获胜。';
 
 export function buildWitsWagersBotPrompt(
   input: BotDecisionInput<WitsWagersPlayerView>,

@@ -12,6 +12,9 @@ import type {
   ServerEnvelope,
 } from '@ldj/shared';
 import type { GameStatePayload } from '../game/types.ts';
+import type { ServerClockSample } from '../shared-ui/serverClock.ts';
+
+export type { ServerClockSample } from '../shared-ui/serverClock.ts';
 
 export type ConnState =
   | 'connecting'
@@ -70,6 +73,8 @@ export interface ConnectionSnapshot {
    * false 时房主只能加规则机器人，"加 AI 玩家"按钮隐藏。
    */
   llmAvailable: boolean;
+  /** 服务端时钟固定采样点（Contract F / T08） */
+  clockSample: ServerClockSample | null;
 }
 
 /**
@@ -108,6 +113,7 @@ export const INITIAL_CONNECTION_STATE: ConnectionSnapshot = {
   lastError: null,
   closeReason: null,
   llmAvailable: false,
+  clockSample: null,
 };
 
 /** reducer 产出的副作用提示（保持 reducer 纯函数） */

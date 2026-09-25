@@ -393,8 +393,9 @@ for (const schemaVersion of [1, 2, 3] as const) {
         .get(sessionId) as { status: string; state_schema_version: number; snapshot_json: string };
       const migrated = JSON.parse(migratedRow.snapshot_json) as Record<string, unknown>;
       assert.equal(migratedRow.status, 'ACTIVE');
-      assert.equal(migratedRow.state_schema_version, 4);
-      assert.equal(migrated.schemaVersion, 4);
+      assert.equal(migratedRow.state_schema_version, 5);
+      assert.equal(migrated.schemaVersion, 5);
+      assert.equal(migrated.timelineState, null);
       assert.deepEqual((migrated.config as { roles: unknown }).roles, {
         guard: false,
         hunter: false,
@@ -415,7 +416,7 @@ for (const schemaVersion of [1, 2, 3] as const) {
       const afterSecond = db
         .prepare(`SELECT state_schema_version, snapshot_json FROM game_sessions WHERE id = ?`)
         .get(sessionId) as { state_schema_version: number; snapshot_json: string };
-      assert.equal(afterSecond.state_schema_version, 4);
+      assert.equal(afterSecond.state_schema_version, 5);
       assert.equal(afterSecond.snapshot_json, snapshotAfterFirstRecovery);
     } finally {
       closeDb(db);

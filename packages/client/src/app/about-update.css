@@ -321,6 +321,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.home-header__button-icon-wrap > svg {
+  display: block;
+  flex-shrink: 0;
 }
 
 .home-header__badge-dot {

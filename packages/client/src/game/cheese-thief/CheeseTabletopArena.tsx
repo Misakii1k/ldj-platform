@@ -1,7 +1,9 @@
 import { useRef, useState } from 'react';
 import { useCountdown } from '../../shared-ui/useCountdown.ts';
+import { TabletopCountdownText } from '../../shared-ui/TabletopCountdownText.tsx';
 import type { CheeseThiefPlayerView, CheeseThiefPublicView } from './types.ts';
 import { CheeseGameOverReveal } from './CheeseGameOverReveal.tsx';
+import { CheeseModel3DCanvas } from './CheeseModel3DCanvas.tsx';
 
 interface RoomMemberInfo {
   playerId: string;
@@ -46,9 +48,6 @@ export function CheeseTabletopArena({
   const showStolenScene = cheeseGone && (isDawn || isVote || isGameOver);
 
   const countdown = useCountdown(view.deadlineAt);
-  const mm = Math.floor(countdown.secondsLeft / 60);
-  const ss = countdown.secondsLeft % 60;
-  const timeFormatted = `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
 
   const handleSteal = () => {
     if (!isNight || cheeseGone || stealSubmitting) return;
@@ -106,7 +105,7 @@ export function CheeseTabletopArena({
             {view.deadlineAt && (
               <div className="cheese-countdown-pill" aria-label="剩余时间">
                 <span className="cheese-countdown-pill__label">倒计时</span>
-                <strong className="cheese-countdown-pill__time">{timeFormatted}</strong>
+                <TabletopCountdownText className="cheese-countdown-pill__time" secondsLeft={countdown.secondsLeft} format="clock" />
               </div>
             )}
           </div>
@@ -129,7 +128,7 @@ export function CheeseTabletopArena({
         <div className="cheese-dawn-control-banner">
           <div className="cheese-dawn-info">
             <h4>白天自由讨论中</h4>
-            <p>讨论时间到将自动进入投票，也可由桌面端提前开启投票。</p>
+            <p>讨论时间到将自动进入投票，也可在大屏点击提前开启投票。</p>
           </div>
           {onSkipDiscussion && (
             <button
@@ -154,7 +153,7 @@ export function CheeseTabletopArena({
               <h3>全员投票指认大盗</h3>
               <span className="cheese-vote-progress-badge">已投票 {totalVoted} / {view.players.length} 人</span>
             </div>
-            <p className="cheese-vote-board-hint">玩家在手机端弹出窗口投票，桌面端实时统计并公开票数及投票人</p>
+            <p className="cheese-vote-board-hint">玩家在个人手机端投票，公共大屏实时统计并公开票数及投票人</p>
           </div>
 
           <div className="cheese-vote-card-grid">
@@ -206,11 +205,9 @@ export function CheeseTabletopArena({
               {isNight ? (
                 <div className="cheese-night-stage">
                   {cheeseGone ? (
-                    /* 偷取成功：空盘展示并保持到天亮（不可放回、不可重复偷） */
+                    /* 偷取成功：3D空盘碎屑展示并保持到天亮（不可放回、不可重复偷） */
                     <div className="cheese-model-3d-btn is-stolen" aria-live="polite">
-                      <div className="cheese-model-3d">
-                        <span className="cheese-model-emoji" aria-hidden="true"></span>
-                      </div>
+                      <CheeseModel3DCanvas isStolen={true} />
                       <div className="cheese-steal-status-badge">
                         <span className="badge-stolen">✓ 奶酪已被悄悄取走</span>
                       </div>
@@ -223,10 +220,12 @@ export function CheeseTabletopArena({
                       disabled={stealSubmitting}
                       title="【桌面交互】大盗在自己醒来的时刻点击偷走奶酪"
                     >
-                      <div className="cheese-model-3d">
-                        <span className="cheese-model-emoji" aria-hidden="true">🧀</span>
-                        <div className="cheese-glow" />
-                      </div>
+                      <CheeseModel3DCanvas
+                        isStolen={false}
+                        interactive={true}
+                        disabled={stealSubmitting}
+                        onSteal={handleSteal}
+                      />
                       <div className="cheese-steal-status-badge">
                         <span className="badge-ready">触摸/点击偷走奶酪</span>
                       </div>
@@ -239,9 +238,9 @@ export function CheeseTabletopArena({
                 </div>
               ) : showStolenScene ? (
                 <div className="cheese-stolen-stage">
+                  <CheeseModel3DCanvas isStolen={true} />
                   <div className="cheese-stolen-crumbs">
-                    <span className="crumbs-emoji">🍽️</span>
-                    <span className="crumbs-warning">奶酪不见了！</span>
+                    <span className="crumbs-warning">⚠️ 奶酪不见了！</span>
                   </div>
                   <div className="cheese-crime-alert">
                     <strong>案发现场：</strong>桌上的大奶酪已被大盗偷吃！请找出真凶！
@@ -249,8 +248,8 @@ export function CheeseTabletopArena({
                 </div>
               ) : (
                 <div className="cheese-safe-stage">
-                  <span className="cheese-model-emoji">🧀</span>
-                  <p className="cheese-safe-text">奶酪安然无恙（无人偷窃）</p>
+                  <CheeseModel3DCanvas isStolen={false} />
+                  <p className="cheese-safe-text">🧀 奶酪安然无恙（无人偷窃）</p>
                 </div>
               )}
             </div>

@@ -162,7 +162,7 @@ export function IdentityFlipCard({
     onRevealChange?.(isRevealed);
   }, [isRevealed, onRevealChange]);
 
-  // 环境级安全防窥：切换后台或失焦时，100% 立即扣回并解锁
+  // 环境级安全防窥：切换后台、失焦或页面隐藏时，100% 立即扣回
   useEffect(() => {
     const hideAndLock = () => {
       setIsPressing(false);
@@ -177,12 +177,23 @@ export function IdentityFlipCard({
 
     document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('blur', hideAndLock);
+    window.addEventListener('pagehide', hideAndLock);
 
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('blur', hideAndLock);
+      window.removeEventListener('pagehide', hideAndLock);
     };
   }, []);
+
+  // 翻牌常亮模式（flip）8 秒空闲防偷窥自动遮蔽机制
+  useEffect(() => {
+    if (!isFlipped || isPressMode) return;
+    const timer = setTimeout(() => {
+      setIsFlipped(false);
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [isFlipped, isPressMode]);
 
   const [tilt, setTilt] = useState<{ x: number; y: number; glareX: number; glareY: number } | null>(null);
 
@@ -200,15 +211,26 @@ export function IdentityFlipCard({
     setTilt({ x: rotateX, y: rotateY, glareX, glareY });
   }, [canReveal]);
 
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (!canReveal || !isPressMode) return;
-    // 忽略小锁按钮本身的 pointer 事件穿透
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
     e.preventDefault();
     setIsPressing(true);
     triggerFeedback();
   }, [canReveal, isPressMode, triggerFeedback]);
 
-  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // ignore
+    }
     if (isPressing) {
       e.preventDefault();
       setIsPressing(false);
@@ -254,6 +276,7 @@ export function IdentityFlipCard({
         '--glare-x': `${tilt ? tilt.glareX.toFixed(1) : 50}%`,
         '--glare-y': `${tilt ? tilt.glareY.toFixed(1) : 50}%`,
       } as React.CSSProperties}
+      onContextMenu={(e) => e.preventDefault()}
     >
       {/* 3D 翻牌主舞台 */}
       <div
@@ -264,6 +287,7 @@ export function IdentityFlipCard({
         onPointerLeave={handlePointerCancel}
         onPointerCancel={handlePointerCancel}
         onClick={handleClick}
+        onContextMenu={(e) => e.preventDefault()}
         onKeyDown={isPressMode ? undefined : (event) => {
           if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();

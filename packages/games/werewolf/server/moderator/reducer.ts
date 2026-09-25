@@ -1,10 +1,22 @@
+import { createWerewolfAnnouncement, getModeratorVoiceError } from '@ldj/shared';
 import {
   calculateWerewolfDistribution,
+  getVoiceCueDurationMs,
   WEREWOLF_ROLE_DEFS,
   type Actor,
   type GameContext,
+  type GameEffect,
   type VersionedReduceResult,
+  type WerewolfTimeline,
+  type WerewolfTimelineRole,
+  type WerewolfTimelineState,
 } from '@ldj/shared';
+import {
+  buildNightPlan,
+  pauseTimeline,
+  resumeTimeline,
+  type ConfiguredRoles,
+} from '../timeline.ts';
 import type {
   ModeratorEvent,
   ModeratorResult,
@@ -146,8 +158,51 @@ export function createModeratorInitialState(
     assignedRoles[pid] = shuffled[idx]!;
   });
 
+  const pace = config.pace ?? 'standard';
+  const configuredRoles: ConfiguredRoles = {
+    guard: config.roles?.guard ?? config.guard,
+    hunter: config.roles?.hunter ?? config.hunter,
+    idiot: config.roles?.idiot ?? config.idiot,
+  };
+  const initialRolePlan: WerewolfTimelineRole[] = ['wolf', 'witch', 'seer'];
+  if (configuredRoles.guard) initialRolePlan.push('guard');
+  if (configuredRoles.hunter && configuredRoles.idiot) {
+    initialRolePlan.push('hunter_idiot');
+  } else if (configuredRoles.hunter) {
+    initialRolePlan.push('hunter');
+  } else if (configuredRoles.idiot) {
+    initialRolePlan.push('idiot');
+  }
+
+  const initialTimeline: WerewolfTimeline = {
+    version: 1,
+    id: 'd0-s0-r1',
+    day: 0,
+    period: 'day',
+    role: null,
+    segment: 'confirm',
+    cue: null,
+    label: '等待主持人开始首夜',
+    startedAt: ctx.now,
+    endsAt: null,
+    actionDeadlineAt: null,
+    mode: 'manual',
+    paused: false,
+    pauseRemainingMs: null,
+  };
+
+  const timelineState: WerewolfTimelineState = {
+    version: 1,
+    stepIndex: 0,
+    revision: 1,
+    pausedRemainingMs: null,
+    activeTimerToken: null,
+    initialRolePlan,
+    current: initialTimeline,
+  };
+
   const state: ModeratorState = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     moderatorPlayerId: modId,
     playerOrder: cardPlayers,
     assignedRoles,
@@ -155,6 +210,11 @@ export function createModeratorInitialState(
     gameEnded: false,
     winner: null,
     history: [],
+    timelineState,
+    config: {
+      ...config,
+      pace,
+    },
   };
 
   assertModeratorInvariants(state);
@@ -162,7 +222,7 @@ export function createModeratorInitialState(
 }
 
 export function assertModeratorInvariants(state: ModeratorState): void {
-  if (state.schemaVersion !== 1) {
+  if (state.schemaVersion !== 2) {
     throw new Error(`状态版本不合法: ${state.schemaVersion}`);
   }
   if (typeof state.moderatorPlayerId !== 'string' || state.moderatorPlayerId.length === 0) {
@@ -190,15 +250,368 @@ export function assertModeratorInvariants(state: ModeratorState): void {
   }
 }
 
+function advanceModeratorTimeline(
+  state: ModeratorState,
+  ctx: GameContext,
+  modeOverride?: 'manual' | 'auto',
+): { nextTimelineState: WerewolfTimelineState; effects: GameEffect[] } {
+  if (!state.timelineState) throw new Error('No timeline state');
+  const cur = state.timelineState.current;
+  const mode = modeOverride ?? cur.mode;
+  const isAuto = mode === 'auto';
+  const pace = state.config?.pace ?? 'standard';
+  const configuredRoles: ConfiguredRoles = {
+    guard: state.config?.roles?.guard ?? state.config?.guard,
+    hunter: state.config?.roles?.hunter ?? state.config?.hunter,
+    idiot: state.config?.roles?.idiot ?? state.config?.idiot,
+  };
+  const revision = state.timelineState.revision + 1;
+  const effects: GameEffect[] = [];
+
+  if (state.timelineState.activeTimerToken) {
+    effects.push({
+      type: 'cancel_timer',
+      timerId: `werewolf:moderator:timeline:${state.timelineState.activeTimerToken}`,
+    });
+  }
+
+  // 1. Day 0 Confirm (game start) -> Day 1 Night Intro
+  if (cur.day === 0 && cur.segment === 'confirm') {
+    const plan = buildNightPlan(configuredRoles, 1, pace);
+    const step = plan[0]!;
+    const endsAt = isAuto ? ctx.now + step.durationMs : null;
+    const timerToken = isAuto ? `tkn-n1-0-r${revision}` : null;
+    const current: WerewolfTimeline = {
+      version: 1,
+      id: `n1-s0-r${revision}`,
+      day: 1,
+      period: 'night',
+      role: step.role,
+      segment: step.segment,
+      cue: step.cue,
+      label: step.label,
+      startedAt: ctx.now,
+      endsAt,
+      actionDeadlineAt: isAuto && step.isAction ? endsAt : null,
+      mode,
+      paused: false,
+      pauseRemainingMs: null,
+    };
+    if (timerToken && endsAt !== null) {
+      effects.push({
+        type: 'schedule_timer',
+        timerId: `werewolf:moderator:timeline:${timerToken}`,
+        deadlineAt: endsAt,
+        action: {
+          type: 'timeline_timeout',
+          timelineId: current.id,
+          token: timerToken,
+        },
+      });
+    }
+    return {
+      nextTimelineState: {
+        ...state.timelineState,
+        revision,
+        stepIndex: 0,
+        activeTimerToken: timerToken,
+        pausedRemainingMs: null,
+        current,
+      },
+      effects,
+    };
+  }
+
+  // 2. In Night -> advance next step in plan
+  if (cur.period === 'night') {
+    const plan = buildNightPlan(configuredRoles, cur.day, pace);
+    const nextIndex = state.timelineState.stepIndex + 1;
+    if (nextIndex < plan.length) {
+      const step = plan[nextIndex]!;
+      const endsAt = isAuto ? ctx.now + step.durationMs : null;
+      const timerToken = isAuto ? `tkn-n${cur.day}-${nextIndex}-r${revision}` : null;
+      const current: WerewolfTimeline = {
+        version: 1,
+        id: `n${cur.day}-s${nextIndex}-r${revision}`,
+        day: cur.day,
+        period: 'night',
+        role: step.role,
+        segment: step.segment,
+        cue: step.cue,
+        label: step.label,
+        startedAt: ctx.now,
+        endsAt,
+        actionDeadlineAt: isAuto && step.isAction ? endsAt : null,
+        mode,
+        paused: false,
+        pauseRemainingMs: null,
+      };
+      if (timerToken && endsAt !== null) {
+        effects.push({
+          type: 'schedule_timer',
+          timerId: `werewolf:moderator:timeline:${timerToken}`,
+          deadlineAt: endsAt,
+          action: {
+            type: 'timeline_timeout',
+            timelineId: current.id,
+            token: timerToken,
+          },
+        });
+      }
+      return {
+        nextTimelineState: {
+          ...state.timelineState,
+          revision,
+          stepIndex: nextIndex,
+          activeTimerToken: timerToken,
+          pausedRemainingMs: null,
+          current,
+        },
+        effects,
+      };
+    }
+
+    // Night complete -> Dawn
+    const dawnDuration = getVoiceCueDurationMs('dawn');
+    const endsAt = isAuto ? ctx.now + dawnDuration : null;
+    const timerToken = isAuto ? `tkn-d${cur.day}-dawn-r${revision}` : null;
+    const current: WerewolfTimeline = {
+      version: 1,
+      id: `d${cur.day}-dawn-r${revision}`,
+      day: cur.day,
+      period: 'day',
+      role: null,
+      segment: 'dawn',
+      cue: 'dawn',
+      label: '天亮了',
+      startedAt: ctx.now,
+      endsAt,
+      actionDeadlineAt: null,
+      mode,
+      paused: false,
+      pauseRemainingMs: null,
+    };
+    if (timerToken && endsAt !== null) {
+      effects.push({
+        type: 'schedule_timer',
+        timerId: `werewolf:moderator:timeline:${timerToken}`,
+        deadlineAt: endsAt,
+        action: {
+          type: 'timeline_timeout',
+          timelineId: current.id,
+          token: timerToken,
+        },
+      });
+    }
+    return {
+      nextTimelineState: {
+        ...state.timelineState,
+        revision,
+        stepIndex: 0,
+        activeTimerToken: timerToken,
+        pausedRemainingMs: null,
+        current,
+      },
+      effects,
+    };
+  }
+
+  // 3. Dawn -> Confirm (ALWAYS pauses/stops, no timer)
+  if (cur.period === 'day' && cur.segment === 'dawn') {
+    const current: WerewolfTimeline = {
+      version: 1,
+      id: `d${cur.day}-confirm-r${revision}`,
+      day: cur.day,
+      period: 'day',
+      role: null,
+      segment: 'confirm',
+      cue: null,
+      label: '等待主持人确认伤亡与信息',
+      startedAt: ctx.now,
+      endsAt: null,
+      actionDeadlineAt: null,
+      mode,
+      paused: false,
+      pauseRemainingMs: null,
+    };
+    return {
+      nextTimelineState: {
+        ...state.timelineState,
+        revision,
+        stepIndex: 0,
+        activeTimerToken: null,
+        pausedRemainingMs: null,
+        current,
+      },
+      effects,
+    };
+  }
+
+  // 4. Confirm -> Day (discussion) (no timer)
+  if (cur.period === 'day' && cur.segment === 'confirm') {
+    const current: WerewolfTimeline = {
+      version: 1,
+      id: `d${cur.day}-day-r${revision}`,
+      day: cur.day,
+      period: 'day',
+      role: null,
+      segment: 'day',
+      cue: null,
+      label: '白天自由发言与放逐讨论',
+      startedAt: ctx.now,
+      endsAt: null,
+      actionDeadlineAt: null,
+      mode,
+      paused: false,
+      pauseRemainingMs: null,
+    };
+    return {
+      nextTimelineState: {
+        ...state.timelineState,
+        revision,
+        stepIndex: 0,
+        activeTimerToken: null,
+        pausedRemainingMs: null,
+        current,
+      },
+      effects,
+    };
+  }
+
+  // 5. Day -> Next Night Intro
+  if (cur.period === 'day' && cur.segment === 'day') {
+    const nextDay = cur.day + 1;
+    const plan = buildNightPlan(configuredRoles, nextDay, pace);
+    const step = plan[0]!;
+    const endsAt = isAuto ? ctx.now + step.durationMs : null;
+    const timerToken = isAuto ? `tkn-n${nextDay}-0-r${revision}` : null;
+    const current: WerewolfTimeline = {
+      version: 1,
+      id: `n${nextDay}-s0-r${revision}`,
+      day: nextDay,
+      period: 'night',
+      role: step.role,
+      segment: step.segment,
+      cue: step.cue,
+      label: step.label,
+      startedAt: ctx.now,
+      endsAt,
+      actionDeadlineAt: isAuto && step.isAction ? endsAt : null,
+      mode,
+      paused: false,
+      pauseRemainingMs: null,
+    };
+    if (timerToken && endsAt !== null) {
+      effects.push({
+        type: 'schedule_timer',
+        timerId: `werewolf:moderator:timeline:${timerToken}`,
+        deadlineAt: endsAt,
+        action: {
+          type: 'timeline_timeout',
+          timelineId: current.id,
+          token: timerToken,
+        },
+      });
+    }
+    return {
+      nextTimelineState: {
+        ...state.timelineState,
+        revision,
+        stepIndex: 0,
+        activeTimerToken: timerToken,
+        pausedRemainingMs: null,
+        current,
+      },
+      effects,
+    };
+  }
+
+  return { nextTimelineState: state.timelineState, effects };
+}
+
 export function reduceModerator(
   ctx: GameContext,
   state: ModeratorState,
   actor: Actor,
   action: WerewolfModeratorAction,
 ): VersionedReduceResult<ModeratorState, ModeratorEvent, ModeratorResult> {
+  // 1. 系统专用命令拦截
+  if (action.type === 'timeline_timeout') {
+    if (actor.kind !== 'system') {
+      return {
+        ok: false,
+        code: 'SYSTEM_ONLY',
+        message: '只有系统可触发时间线超时',
+      };
+    }
+    if (!state.timelineState) {
+      return {
+        ok: false,
+        code: 'NO_TIMELINE',
+        message: '当前对局无时间线状态',
+      };
+    }
+    if (state.timelineState.current.paused) {
+      return { ok: true, nextState: state, publicEvents: [], privateEvents: [], effects: [], resultCandidate: null };
+    }
+    if (action.timelineId !== state.timelineState.current.id || action.token !== state.timelineState.activeTimerToken) {
+      return { ok: true, nextState: state, publicEvents: [], privateEvents: [], effects: [], resultCandidate: null };
+    }
+    if (state.timelineState.current.endsAt !== null && ctx.now < state.timelineState.current.endsAt) {
+      return { ok: true, nextState: state, publicEvents: [], privateEvents: [], effects: [], resultCandidate: null };
+    }
+
+    const { nextTimelineState, effects } = advanceModeratorTimeline(state, ctx);
+    return {
+      ok: true,
+      nextState: { ...state, announcement: null, timelineState: nextTimelineState },
+      publicEvents: [],
+      privateEvents: [],
+      effects,
+      resultCandidate: null,
+    };
+  }
+
+  if (action.type === 'moderator_disconnected') {
+    if (actor.kind !== 'system') {
+      return {
+        ok: false,
+        code: 'SYSTEM_ONLY',
+        message: '只有系统可触发主持人断线',
+      };
+    }
+    if (action.moderatorPlayerId !== state.moderatorPlayerId) {
+      return {
+        ok: false,
+        code: 'NOT_MODERATOR',
+        message: '目标不是主持人',
+      };
+    }
+    if (!state.timelineState || state.timelineState.current.paused) {
+      return { ok: true, nextState: state, publicEvents: [], privateEvents: [], effects: [], resultCandidate: null };
+    }
+    const nextTimelineState = pauseTimeline(state.timelineState, ctx.now);
+    const effects: GameEffect[] = [];
+    if (state.timelineState.activeTimerToken) {
+      effects.push({
+        type: 'cancel_timer',
+        timerId: `werewolf:moderator:timeline:${state.timelineState.activeTimerToken}`,
+      });
+    }
+    return {
+      ok: true,
+      nextState: { ...state, announcement: null, timelineState: nextTimelineState },
+      publicEvents: [],
+      privateEvents: [],
+      effects,
+      resultCandidate: null,
+    };
+  }
+
+  // 2. 主持人权限校验（begin/end_game 允许 system）
   const isMod =
     (actor.kind === 'player' && actor.playerId === state.moderatorPlayerId) ||
-    actor.kind === 'system';
+    (actor.kind === 'system' && (action.type === 'begin' || action.type === 'end_game'));
 
   if (!isMod) {
     return {
@@ -208,12 +621,264 @@ export function reduceModerator(
     };
   }
 
+  if (action.type === 'moderator_voice_play' || action.type === 'moderator_voice_stop') {
+    if (action.type === 'moderator_voice_stop') {
+      if (state.announcement?.id !== action.announcementId) return { ok: false, code: 'STALE_VOICE', message: '播报已改变，请重试' };
+      const effects: GameEffect[] = [];
+      let timelineState = state.timelineState;
+      if (timelineState?.current.mode === 'auto' && !timelineState.current.paused) {
+        if (timelineState.activeTimerToken) effects.push({ type: 'cancel_timer', timerId: `werewolf:moderator:timeline:${timelineState.activeTimerToken}` });
+        timelineState = pauseTimeline(timelineState, ctx.now);
+      }
+      return { ok: true, nextState: { ...state, timelineState, announcement: null }, publicEvents: [], privateEvents: [], effects, resultCandidate: null };
+    }
+    if (action.timelineId !== (state.timelineState?.current.id ?? null)) return { ok: false, code: 'STALE_TIMELINE', message: '环节已改变，请重试' };
+    const error = getModeratorVoiceError(action.cues, {
+      period: state.gameEnded ? 'day' : state.timelineState?.current.period ?? 'night',
+      seats: state.playerOrder.flatMap(pid => state.config?.seatNumbers?.[pid] ? [state.config.seatNumbers[pid]!] : []), roles: [...new Set(Object.values(state.assignedRoles))],
+      confirmed: action.confirmed, gameEnded: state.gameEnded, winner: state.winner,
+    });
+    if (error) return { ok: false, code: 'VOICE_NOT_ALLOWED', message: error };
+    const effects: GameEffect[] = [];
+    let timelineState = state.timelineState;
+    if (timelineState?.current.mode === 'auto' && !timelineState.current.paused) {
+      if (timelineState.activeTimerToken) effects.push({ type: 'cancel_timer', timerId: `werewolf:moderator:timeline:${timelineState.activeTimerToken}` });
+      timelineState = pauseTimeline(timelineState, ctx.now);
+    }
+    const revision = (state.voiceRevision ?? 0) + 1;
+    const announcement = createWerewolfAnnouncement(`moderator:${revision}:${ctx.now}`, action.cues, ctx.now, 'moderator', action.output);
+    return { ok: true, nextState: { ...state, timelineState, announcement, voiceRevision: revision }, publicEvents: [], privateEvents: [], effects, resultCandidate: null };
+  }
+
   if (state.gameEnded) {
     return {
       ok: false,
       code: 'GAME_ALREADY_ENDED',
       message: '对局已结束',
     };
+  }
+
+  // 3. 时间线控场动作
+  if (
+    action.type === 'moderator_set_mode' ||
+    action.type === 'moderator_next' ||
+    action.type === 'moderator_pause' ||
+    action.type === 'moderator_resume' ||
+    action.type === 'moderator_skip'
+  ) {
+    if (!state.timelineState) {
+      return {
+        ok: false,
+        code: 'NO_TIMELINE',
+        message: '当前对局无时间线',
+      };
+    }
+    if (action.timelineId !== state.timelineState.current.id) {
+      return {
+        ok: false,
+        code: 'TIMELINE_ID_MISMATCH',
+        message: '时间线版本不匹配',
+      };
+    }
+
+    if (action.type === 'moderator_set_mode') {
+      if (state.timelineState.current.mode === action.mode) {
+        return { ok: true, nextState: state, publicEvents: [], privateEvents: [], effects: [], resultCandidate: null };
+      }
+      if (action.mode === 'manual') {
+        const revision = state.timelineState.revision + 1;
+        const prefix = state.timelineState.current.period === 'night' ? 'n' : 'd';
+        const current: WerewolfTimeline = {
+          ...state.timelineState.current,
+          id: `${prefix}${state.timelineState.current.day}-s${state.timelineState.stepIndex}-r${revision}`,
+          mode: 'manual',
+          endsAt: null,
+          actionDeadlineAt: null,
+        };
+        const nextTimelineState: WerewolfTimelineState = {
+          ...state.timelineState,
+          revision,
+          activeTimerToken: null,
+          pausedRemainingMs: null,
+          current,
+        };
+        const effects: GameEffect[] = [];
+        if (state.timelineState.activeTimerToken) {
+          effects.push({
+            type: 'cancel_timer',
+            timerId: `werewolf:moderator:timeline:${state.timelineState.activeTimerToken}`,
+          });
+        }
+        return {
+          ok: true,
+          nextState: { ...state, announcement: null, timelineState: nextTimelineState },
+          publicEvents: [],
+          privateEvents: [],
+          effects,
+          resultCandidate: null,
+        };
+      } else {
+        // manual -> auto
+        const revision = state.timelineState.revision + 1;
+        const cur = state.timelineState.current;
+        let stepDuration: number | null = null;
+        let isAction = false;
+        if (cur.period === 'night') {
+          const pace = state.config?.pace ?? 'standard';
+          const configuredRoles: ConfiguredRoles = {
+            guard: state.config?.roles?.guard ?? state.config?.guard,
+            hunter: state.config?.roles?.hunter ?? state.config?.hunter,
+            idiot: state.config?.roles?.idiot ?? state.config?.idiot,
+          };
+          const plan = buildNightPlan(configuredRoles, cur.day, pace);
+          const step = plan[state.timelineState.stepIndex];
+          stepDuration = step?.durationMs ?? 20000;
+          isAction = step?.isAction ?? false;
+        } else if (cur.segment === 'dawn') {
+          stepDuration = getVoiceCueDurationMs('dawn');
+        }
+        const endsAt = stepDuration !== null ? ctx.now + stepDuration : null;
+        const timerToken = endsAt !== null ? `tkn-auto-r${revision}` : null;
+        const prefix = state.timelineState.current.period === 'night' ? 'n' : 'd';
+        const current: WerewolfTimeline = {
+          ...state.timelineState.current,
+          id: `${prefix}${state.timelineState.current.day}-s${state.timelineState.stepIndex}-r${revision}`,
+          mode: 'auto',
+          startedAt: ctx.now,
+          endsAt,
+          actionDeadlineAt: isAction ? endsAt : null,
+          paused: false,
+          pauseRemainingMs: null,
+        };
+        const effects: GameEffect[] = [];
+        if (timerToken && endsAt !== null) {
+          effects.push({
+            type: 'schedule_timer',
+            timerId: `werewolf:moderator:timeline:${timerToken}`,
+            deadlineAt: endsAt,
+            action: {
+              type: 'timeline_timeout',
+              timelineId: current.id,
+              token: timerToken,
+            },
+          });
+        }
+        return {
+          ok: true,
+          nextState: {
+            ...state,
+            announcement: null,
+            timelineState: {
+              ...state.timelineState,
+              revision,
+              activeTimerToken: timerToken,
+              pausedRemainingMs: null,
+              current,
+            },
+          },
+          publicEvents: [],
+          privateEvents: [],
+          effects,
+          resultCandidate: null,
+        };
+      }
+    }
+
+    if (action.type === 'moderator_pause') {
+      if (state.timelineState.current.paused) {
+        return { ok: true, nextState: state, publicEvents: [], privateEvents: [], effects: [], resultCandidate: null };
+      }
+      const nextTimelineState = pauseTimeline(state.timelineState, ctx.now);
+      const effects: GameEffect[] = [];
+      if (state.timelineState.activeTimerToken) {
+        effects.push({
+          type: 'cancel_timer',
+          timerId: `werewolf:moderator:timeline:${state.timelineState.activeTimerToken}`,
+        });
+      }
+      return {
+        ok: true,
+        nextState: { ...state, announcement: null, timelineState: nextTimelineState },
+        publicEvents: [],
+        privateEvents: [],
+        effects,
+        resultCandidate: null,
+      };
+    }
+
+    if (action.type === 'moderator_resume') {
+      if (!state.timelineState.current.paused) {
+        return { ok: true, nextState: state, publicEvents: [], privateEvents: [], effects: [], resultCandidate: null };
+      }
+      const nextTimelineState = resumeTimeline(state.timelineState, ctx.now);
+      const effects: GameEffect[] = [];
+      if (nextTimelineState.activeTimerToken && nextTimelineState.current.endsAt !== null) {
+        effects.push({
+          type: 'schedule_timer',
+          timerId: `werewolf:moderator:timeline:${nextTimelineState.activeTimerToken}`,
+          deadlineAt: nextTimelineState.current.endsAt,
+          action: {
+            type: 'timeline_timeout',
+            timelineId: nextTimelineState.current.id,
+            token: nextTimelineState.activeTimerToken,
+          },
+        });
+      }
+      return {
+        ok: true,
+        nextState: { ...state, announcement: null, timelineState: nextTimelineState },
+        publicEvents: [],
+        privateEvents: [],
+        effects,
+        resultCandidate: null,
+      };
+    }
+
+    if (action.type === 'moderator_skip') {
+      if (state.timelineState.current.mode !== 'auto') {
+        return {
+          ok: false,
+          code: 'INVALID_MODE',
+          message: '仅自动模式下可以使用跳过',
+        };
+      }
+      if (state.timelineState.current.paused) {
+        return {
+          ok: false,
+          code: 'IS_PAUSED',
+          message: '暂停状态下不可跳过',
+        };
+      }
+      const { nextTimelineState, effects } = advanceModeratorTimeline(state, ctx);
+      return {
+        ok: true,
+        nextState: { ...state, announcement: null, timelineState: nextTimelineState },
+        publicEvents: [],
+        privateEvents: [],
+        effects,
+        resultCandidate: null,
+      };
+    }
+
+    if (action.type === 'moderator_next') {
+      const cur = state.timelineState.current;
+      if (cur.mode === 'auto' && cur.period === 'night') {
+        return {
+          ok: false,
+          code: 'INVALID_MODE',
+          message: '自动模式下夜间仅可跳过，天亮及确认阶段可手动推进',
+        };
+      }
+      const { nextTimelineState, effects } = advanceModeratorTimeline(state, ctx);
+      return {
+        ok: true,
+        nextState: { ...state, announcement: null, timelineState: nextTimelineState },
+        publicEvents: [],
+        privateEvents: [],
+        effects,
+        resultCandidate: null,
+      };
+    }
   }
 
   switch (action.type) {
@@ -313,6 +978,12 @@ export function reduceModerator(
         ...state,
         gameEnded: true,
         winner,
+        timelineState: state.timelineState ? { ...state.timelineState, activeTimerToken: null, pausedRemainingMs: null,
+          current: { ...state.timelineState.current, id: 'ended:' + ctx.now, period: 'day', role: null,
+            segment: 'day', cue: null, label: '对局结束', startedAt: ctx.now, endsAt: null, actionDeadlineAt: null,
+            paused: false, pauseRemainingMs: null } } : null,
+        announcement: winner && state.timelineState?.current.mode === 'auto'
+          ? createWerewolfAnnouncement('end:' + ctx.now, [winner === 'good' ? 'game_over_good' : 'game_over_wolf'], ctx.now) : null,
       };
 
       return {
@@ -350,7 +1021,7 @@ export function buildModeratorPlayerView(
       const role = state.assignedRoles[pid]!;
       return {
         playerId: pid,
-        seat: idx + 1,
+        seat: state.config?.seatNumbers?.[pid] ?? idx + 1,
         isEliminated: state.eliminatedPlayerIds.includes(pid),
         role,
         roleInfo: WEREWOLF_ROLE_DEFS[role],
@@ -369,6 +1040,8 @@ export function buildModeratorPlayerView(
       suggestedOutcomeReason: outcome.suggestedOutcomeReason,
       myRole: null,
       isMeEliminated: false,
+      timeline: state.timelineState ? state.timelineState.current : null,
+      announcement: state.announcement ?? null,
     };
   }
 
@@ -378,7 +1051,7 @@ export function buildModeratorPlayerView(
     const roleInfo = state.gameEnded && role ? WEREWOLF_ROLE_DEFS[role] : undefined;
     return {
       playerId: pid,
-      seat: idx + 1,
+      seat: state.config?.seatNumbers?.[pid] ?? idx + 1,
       isEliminated: state.eliminatedPlayerIds.includes(pid),
       role,
       roleInfo,
@@ -398,6 +1071,8 @@ export function buildModeratorPlayerView(
     statistics: state.gameEnded ? stats : undefined,
     myRole,
     isMeEliminated,
+    timeline: state.timelineState ? state.timelineState.current : null,
+      announcement: state.announcement?.output === 'room' ? state.announcement : null,
   };
 }
 
@@ -408,7 +1083,7 @@ export function buildModeratorSpectatorView(state: ModeratorState): WerewolfMode
     const roleInfo = state.gameEnded && role ? WEREWOLF_ROLE_DEFS[role] : undefined;
     return {
       playerId: pid,
-      seat: idx + 1,
+      seat: state.config?.seatNumbers?.[pid] ?? idx + 1,
       isEliminated: state.eliminatedPlayerIds.includes(pid),
       role,
       roleInfo,
@@ -425,5 +1100,7 @@ export function buildModeratorSpectatorView(state: ModeratorState): WerewolfMode
     statistics: state.gameEnded ? stats : undefined,
     myRole: null,
     isMeEliminated: false,
+    timeline: state.timelineState ? state.timelineState.current : null,
+      announcement: state.announcement?.output === 'room' ? state.announcement : null,
   };
 }

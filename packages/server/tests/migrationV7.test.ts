@@ -303,8 +303,8 @@ test('v7：迁移后 PRAGMA foreign_key_check 无违规', () => {
 
 test('v7：幂等，重复 migrate 不再应用任何迁移', () => {
   const { db, applied } = buildMigratedDb();
-  // D4-A1：v8（add-adjudication-tasks）是当前最末迁移
-  assert.deepEqual(applied.slice(-1), [8]);
+  // v9（private-room-chat）是当前最末迁移
+  assert.deepEqual(applied.slice(-1), [9]);
   assert.deepEqual(migrate(db), []);
   db.close();
 });

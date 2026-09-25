@@ -1,3 +1,6 @@
+import type { WerewolfAnnouncement } from './werewolfAnnouncement.ts';
+import type { WerewolfTimeline } from './werewolfTimeline.ts';
+
 /**
  * 狼人杀「真人主持模式」（werewolf_moderator_v1）共享契约与视图结构。
  */
@@ -77,10 +80,12 @@ export interface WerewolfModeratorConfig {
   readonly rulesetId?: 'werewolf_moderator_v1';
   readonly moderatorPlayerId?: string;
   readonly hostPlayerId?: string;
+  readonly seatNumbers?: Readonly<Record<string,number>>;
   readonly guard?: boolean;
   readonly hunter?: boolean;
   readonly idiot?: boolean;
   readonly wolfDelta?: number;
+  readonly pace?: 'fast' | 'standard' | 'relaxed';
   readonly roles?: {
     readonly guard?: boolean;
     readonly hunter?: boolean;
@@ -123,10 +128,22 @@ export interface WerewolfModeratorView {
   readonly myRole?: WerewolfRoleInfo | null;
   /** 当前玩家是否已出局 */
   readonly isMeEliminated?: boolean;
+  /** 公共时间线呈现（新局为 version=1，旧局或未启用为 null/undefined） */
+  readonly timeline?: WerewolfTimeline | null;
+  readonly announcement?: WerewolfAnnouncement | null;
 }
 
 export type WerewolfModeratorAction =
+  | { readonly type: 'moderator_voice_play'; readonly cues: readonly string[]; readonly output: 'local' | 'room'; readonly timelineId: string | null; readonly confirmed: boolean }
+  | { readonly type: 'moderator_voice_stop'; readonly announcementId: string }
   | { readonly type: 'begin' }
   | { readonly type: 'eliminate_player'; readonly targetPlayerId: string }
   | { readonly type: 'revive_player'; readonly targetPlayerId: string }
-  | { readonly type: 'end_game' };
+  | { readonly type: 'end_game' }
+  | { readonly type: 'moderator_set_mode'; readonly mode: 'manual' | 'auto'; readonly timelineId: string }
+  | { readonly type: 'moderator_next'; readonly timelineId: string }
+  | { readonly type: 'moderator_pause'; readonly timelineId: string }
+  | { readonly type: 'moderator_resume'; readonly timelineId: string }
+  | { readonly type: 'moderator_skip'; readonly timelineId: string }
+  | { readonly type: 'moderator_disconnected'; readonly moderatorPlayerId: string }
+  | { readonly type: 'timeline_timeout'; readonly timelineId: string; readonly token: string };

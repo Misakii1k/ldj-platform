@@ -93,22 +93,22 @@ export function GameHomePage() {
               >
                 <span className="home-header__host-dot" aria-hidden="true" />
                 <Radio size={16} strokeWidth={2.4} aria-hidden="true" />
-                <span className="home-header__host-text">主机大屏</span>
+                <span className="home-header__button-text home-header__host-text">主机大屏</span>
               </button>
             )}
             <UserProfileBadge onClick={() => setActiveSheet('profile')} />
             <button
               type="button"
-              className="home-header__button"
+              className="home-header__button home-header__button--settings"
               onClick={() => setActiveSheet('settings')}
               aria-label={hasNewUpdate ? '打开设置（有可用更新）' : '打开设置'}
               title="设置"
             >
-              <span className="home-header__button-icon-wrap">
-                <Settings size={18} strokeWidth={2.4} aria-hidden="true" />
-                {hasNewUpdate && <span className="home-header__badge-dot" aria-hidden="true" />}
+              <span className="home-header__button-icon-wrap" aria-hidden="true">
+                <Settings size={18} strokeWidth={2.4} />
+                {hasNewUpdate && <span className="home-header__badge-dot" />}
               </span>
-              <span>设置</span>
+              <span className="home-header__button-text">设置</span>
             </button>
           </div>
         </header>

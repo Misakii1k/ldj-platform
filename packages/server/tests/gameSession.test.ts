@@ -410,9 +410,9 @@ test('注册表：默认游戏可查、manifest 一致', () => {
 test('注册表：上架游戏可建房（playable + 模块存在）', async () => {
   const { listGameManifests } = await import('../src/core/game/registry.ts');
   const manifests = listGameManifests();
-  assert.deepEqual(manifests.map((manifest) => manifest.id), ['undercover', 'uno', 'landlord', 'werewolf', 'durian', 'loveletter', 'cheese-thief', 'goose-relay', 'night-testimony', 'bell-clash', 'echo-judge']);
+  assert.deepEqual(manifests.map((manifest) => manifest.id), ['undercover', 'uno', 'landlord', 'werewolf', 'durian', 'loveletter', 'cheese-thief', 'goose-relay', 'night-testimony', 'bell-clash', 'echo-judge', 'wits-wagers']);
   const playable = GAME_CATALOG.filter((game) => String(game.availability) === 'playable');
-  assert.deepEqual(playable.map((game) => game.id).sort(), ['bell-clash', 'cheese-thief', 'durian', 'echo-judge', 'goose-relay', 'landlord', 'loveletter', 'night-testimony', 'undercover', 'uno', 'werewolf']);
+  assert.deepEqual(playable.map((game) => game.id).sort(), ['bell-clash', 'cheese-thief', 'durian', 'echo-judge', 'goose-relay', 'landlord', 'loveletter', 'night-testimony', 'undercover', 'uno', 'werewolf', 'wits-wagers']);
   // 每款 playable 游戏都必须同时存在注册模块（create_room 准入依赖两者同时满足）
   for (const game of playable) {
     assert.ok(getGameModule(game.id), `${game.id} 应注册模块以支持建房`);

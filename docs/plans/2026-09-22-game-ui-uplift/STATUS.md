@@ -1,15 +1,28 @@
 # 交接状态：其余游戏前端提升
 
-更新时间：2026-09-23（U00–U11 全部完成）。工作区 `D:\项目`，分支 `feat/wits-wagers-tabletop-stage`，计划起点 `f16a70d`。
+更新时间：2026-09-25（U00–U11 全部完成；09-25 找回被 stash 回退的改动，见下）。工作区 `D:\项目`，分支 `feat/wits-wagers-tabletop-stage`，计划起点 `f16a70d`。
 
 ## 当前结论
 
 **12 张任务卡（U00–U11）全部完成。** 9 款游戏均已接入 shared-ui 演出层，
-styles.css 由 27,021 行瘦身到 22,466 行（−16.9%）。
+styles.css 由 27,021 行瘦身到 18,047 行（−33%）。
 
-最终验收见 `reports/U11-final.md`：typecheck 排除并行会话孤儿文件后 0 错误、
-lint 133（低于基线 134）、单测 1534/1558（24 失败全为并行会话半成品，本计划零新增）、
-视口合约 18/20 与动效合约 25/27（失败项均为 werewolf 与 wits-wagers-sim 存量）。
+最终验收（2026-09-25 复测）：typecheck 0 错误、单测 1559/1570（11 失败全为并行会话的 sim 大屏校验 fixture 未更新）、
+视口合约 20/20、动效合约 27/27、build 通过。
+
+## 2026-09-25 事故复盘：stash 回退了并行会话的整版工作
+
+U01 期间那次 `git stash push --include-untracked` / `pop` 往返，除了回退我自己的 U01 改动（当时已重做），
+还**静默回退了并行会话已完成、未提交的一整版工作**：狼人杀三主题剧场、榴莲水果派对、一智千金客户端路由、
+以及 6 款游戏的阶段盖印 / 胜利爆屏。表现是新 CSS 与组件文件仍在磁盘上，但 `main.tsx` 的 import、
+`GamePage` 的 case、`viewRegistry` 的键全没了——**文件存在不代表生效**。
+
+后果：U11 报告把 werewolf 视口/动效门与 `wits-wagers-sim` 的失败误判为「并行会话存量」，实际都是这次回退造成的；
+榴莲的 184 条 styles.css 残留被写成「G0-4 决议不动」，实际早已迁完。
+
+恢复方式：从 `git fsck --unreachable` 找回 stash 提交 `0a72ea19ed`（untracked 部分在 `f7a2616dee`），
+54 个无冲突文件直接 checkout，24 个双方都改过的文件逐个三方合并（功能重叠全部保留待用户裁决），
+styles.css 用当初迁移脚本同一套正则剥掉狼人杀/榴莲规则（剥前核对：34 条游戏表里找不到的选择器在 TSX 中也零引用，是被新页面替换的旧 DOM）。
 
 **仍需你做的**：9 款关键画面样张尚未经你审核；P1 三款的视觉契约（`contracts/`）
 你也还没看过。契约里写明「基线由用户审核，禁止失败后自动接受新截图」。
@@ -18,12 +31,10 @@ lint 133（低于基线 134）、单测 1534/1558（24 失败全为并行会话�
 
 另一会话留下的未提交半成品仍在工作区里，本计划**不负责也不应替它收尾**：
 
-- `ModeratorVoicePanel.tsx` / `resultRoster.ts` 两个 untracked 孤儿文件（无引用），带 10 个 typecheck 错误，依赖尚未落地的 `ConnectionSnapshot.clockSample` 与 `reveal.playerId/alive/avatar`。
-- 24 项单测失败（serverClock / seatDrift / 模糊对抗 / Progression View Audit 等），同源。
-- 视口合约 6 个 `*-sim` 用例失败：服务端新增「桌面模拟需至少一台公共大屏」校验，spec 的 `seedRoom` 未 seed 大屏席位。
-- 视口合约 + 动效合约的 werewolf 用例失败：werewolf 页面结构被改动，`readySelector` 再次失配。
+- 11 项单测失败（`Client-to-Game Full Start` / `Progression View Audit` 的 5 个 `*_sim_v1` + `autoStart`）：服务端新增「桌面模拟需至少一台公共大屏」校验，这些 fixture 未 seed 大屏席位。
+- `scripts/add_batch*.cjs` / `merge_all_batches.cjs` 6 个 untracked 脚本带 97 个 lint 错误。
 
-**排除这两个孤儿文件后，客户端 typecheck 0 错误。** 后续任务卡的验收基准以此为准，只要求「不新增失败」。
+~~`ModeratorVoicePanel.tsx` / `resultRoster.ts` 孤儿文件~~ ——09-25 查明它们不是孤儿，是被 stash 回退后失去引用方的正常组件，恢复后 typecheck 0 错误。
 
 ## 红线补充：不要用 git stash 做基线对比
 

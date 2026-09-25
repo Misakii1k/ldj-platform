@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { GameContext } from '@ldj/shared';
 import { witsWagersModule } from '../server/module.ts';
-import { pickWitsWagersBotAction, estimateGuess, pickBestBets } from '../server/bot.ts';
+import { pickWitsWagersBotAction, estimateGuess } from '../server/bot.ts';
 import { buildWitsWagersBotPrompt } from '../server/botPrompt.ts';
 
 function createMockCtx(now = 1000): GameContext {

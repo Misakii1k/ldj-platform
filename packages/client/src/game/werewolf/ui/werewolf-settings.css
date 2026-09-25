@@ -1,0 +1,43 @@
+.ww-settings-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: flex-end;
+  background: #0009;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+}
+.ww-settings-panel {
+  width: min(100%, 440px);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--edge);
+  border-radius: 16px;
+  box-shadow: 0 12px 48px #0008;
+  animation: ww-settings-in 220ms ease-out;
+}
+.ww-settings-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px; border-bottom: 1px solid var(--edge); }
+.ww-settings-title { margin: 4px 0 0; font-size: 18px; color: var(--text); }
+.ww-settings-kicker { font-size: 11px; color: var(--secondary); }
+.ww-settings-content { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 16px; }
+.ww-settings-section { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.ww-settings-section:last-child { margin-bottom: 0; }
+.ww-settings-section-title { font-size: 12px; font-weight: 700; color: var(--secondary); }
+.ww-settings-item { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--edge); border-radius: 10px; background: var(--desk); color: var(--text); text-align: left; width: 100%; }
+.ww-settings-item__icon { display: flex; flex-shrink: 0; color: inherit; }
+.ww-settings-item__text { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.ww-settings-item__text strong { font-size: 13px; color: var(--text); }
+.ww-settings-item__text span { font-size: 11px; color: var(--secondary); line-height: 1.5; }
+.werewolf-native-page .ww-settings-toggle { flex-shrink: 0; min-width: 56px; min-height: 44px; padding: 6px 10px; font-size: 12px; font-weight: 700; background: var(--active); color: var(--active-ink); border: 1px solid var(--active); box-shadow: 0 2px 4px #0003; }
+.werewolf-native-page .ww-settings-close-btn { min-width: 44px; padding: 8px; color: var(--text); background: var(--desk); }
+.werewolf-native-page .ww-settings-item--danger { background: #fff0f1; color: #8b1530; border-color: #b53e59; }
+.ww-settings-item--danger .ww-settings-item__text strong, .ww-settings-item--danger .ww-settings-item__text span { color: #8b1530; }
+.ww-settings-panel input[type='range'] { accent-color: var(--active); min-width: 0; min-height: 44px; }
+.ww-settings-panel input:focus-visible { outline: 3px solid var(--detail); outline-offset: 3px; }
+@keyframes ww-settings-in { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
+@media (max-width: 480px) { .ww-settings-backdrop { padding: 8px; } .ww-settings-content { padding: 12px; } }
+@media (prefers-reduced-motion: reduce) { .ww-settings-panel { animation: none; } }

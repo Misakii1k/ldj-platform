@@ -1,4 +1,5 @@
 export { witsWagersModule, WITS_WAGERS_VERSIONED_IDENTITY } from './module.ts';
+export { witsWagersSimModule, WITS_WAGERS_SIM_IDENTITY } from './sim/module.ts';
 export { WITS_WAGERS_MANIFEST } from '../shared/manifest.ts';
 export { buildBoard, pickWinningTargets, isEdgeTarget, targetLabel, EDGE_ODDS } from './board.ts';
 export { settlePlayer, settleRound, computeRankings, winningOddsMap } from './scoring.ts';
@@ -51,3 +52,12 @@ export type {
   WitsWagersPlayerView,
   WitsWagersSpectatorView,
 } from './views.ts';
+
+export type {
+  WitsWagersSimConfig,
+  WitsWagersSimState,
+  WitsWagersSimAction,
+  WitsWagersSimEvent,
+  WitsWagersSimPublicView,
+  WitsWagersSimPlayerView,
+} from './sim/types.ts';

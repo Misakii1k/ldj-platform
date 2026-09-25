@@ -144,6 +144,14 @@ export const roomCommandPayloadSchema = z.discriminatedUnion('command', [
   z.object({ command: z.literal('abort_game') }).strict(),
   // POST_GAME → LOBBY（FR-RESULT-004 / D-6）
   z.object({ command: z.literal('return_to_lobby') }).strict(),
+  // 切换席位身份：切换为参局玩家或公共桌面大屏/观战
+  z
+    .object({
+      command: z.literal('switch_seat_role'),
+      role: z.enum(['player', 'spectator']),
+      targetPlayerId: z.string().min(1).max(64).optional(),
+    })
+    .strict(),
 ]);
 export type RoomCommandPayload = z.infer<typeof roomCommandPayloadSchema>;
 
@@ -151,6 +159,7 @@ export type RoomCommandPayload = z.infer<typeof roomCommandPayloadSchema>;
 export const chatSendPayloadSchema = z
   .object({
     text: z.string().max(1200),
+    toPlayerId: z.string().min(1).max(200).optional(),
   })
   .strict();
 export type ChatSendPayload = z.infer<typeof chatSendPayloadSchema>;
@@ -160,6 +169,7 @@ export interface ChatMessageView {
   cursor: number;
   kind: 'player' | 'system';
   fromPlayerId: string | null;
+  toPlayerId?: string;
   text: string;
   at: number;
 }

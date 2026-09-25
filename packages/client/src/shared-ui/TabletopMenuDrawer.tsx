@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BookOpen, Eye, Volume2, VolumeX, Home, LogOut, Flame } from 'lucide-react';
+import { BookOpen, Eye, Volume2, VolumeX, Home, LogOut, Flame, Monitor } from 'lucide-react';
 
 export interface TabletopMenuDrawerProps {
   isOpen: boolean;
@@ -135,6 +135,25 @@ export function TabletopMenuDrawer({
                 <div className="tabletop-drawer-item__text">
                   <strong>{muted ? '开启游戏音效' : '游戏音效静音'}</strong>
                   <span>{muted ? '当前为静音状态' : '已开启出牌与倒计时音效'}</span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className="tabletop-drawer-item"
+                onClick={() => {
+                  onClose();
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('display', 'true');
+                  window.open(url.toString(), '_blank');
+                }}
+              >
+                <span className="tabletop-drawer-item__icon" aria-hidden="true">
+                  <Monitor size={20} strokeWidth={2.2} />
+                </span>
+                <div className="tabletop-drawer-item__text">
+                  <strong>对外展示牌</strong>
+                  <span>在新窗口打开路人/朝外展示牌</span>
                 </div>
               </button>
             </div>

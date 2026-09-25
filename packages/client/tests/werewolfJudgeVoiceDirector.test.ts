@@ -283,7 +283,6 @@ test('夜晚剧场完整播完不被服务端提前结算截断，天亮死讯�
       'wolf_kill',
       'wolf_close',
       'witch_open',
-      'witch_death_point',
       'witch_cure_prompt',
       'witch_poison_prompt',
       'witch_close',

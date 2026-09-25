@@ -7,10 +7,10 @@ import { lazyWithRetry } from '../shared-ui/lazyWithRetry.ts';
 import { useConnection } from '../connection/useConnection.ts';
 import { asPlayerView } from './types.ts';
 import { parseGameView } from './viewRegistry.ts';
-import { GameChatDrawer } from './GameChatDrawer.tsx';
 import { UndercoverTableStage } from './undercover/stage/classic/UndercoverTableStage.tsx';
 import { TabletopOvalShell } from '../shared-ui/TabletopOvalShell.tsx';
 import { TabletopSettlementDock } from './TabletopSettlementDock.tsx';
+import { GameChatDrawer } from './GameChatDrawer.tsx';
 import { nameFor } from './useGameAction.ts';
 import { setAppImmersiveMode } from '../native/immersive.ts';
 
@@ -32,6 +32,8 @@ const EchoJudgeSimStage = lazyWithRetry(() => import('./echo-judge/EchoJudgeSimS
 const NightTestimonySimStage = lazyWithRetry(() => import('./night-testimony/NightTestimonySimStage.tsx').then((module) => ({ default: module.NightTestimonySimStage })), 'night-testimony-sim');
 const GooseRelaySimStage = lazyWithRetry(() => import('./goose-relay/GooseRelaySimStage.tsx').then((module) => ({ default: module.GooseRelaySimStage })), 'goose-relay-sim');
 const CheeseThiefSimStage = lazyWithRetry(() => import('./cheese-thief/CheeseThiefSimStage.tsx').then((module) => ({ default: module.CheeseThiefSimStage })), 'cheese-thief-sim');
+const WitsWagersGamePage = lazyWithRetry(() => import('./wits-wagers/WitsWagersGamePage.tsx').then((module) => ({ default: module.WitsWagersGamePage })), 'wits-wagers');
+const WitsWagersSimStage = lazyWithRetry(() => import('./wits-wagers/WitsWagersSimStage.tsx').then((module) => ({ default: module.WitsWagersSimStage })), 'wits-wagers-sim');
 
 import { GameIcon } from '../shared-ui/GameIcon.tsx';
 
@@ -328,6 +330,18 @@ export function GamePage() {
       content = isRecord(v) && v.rulesetId === 'echo_judge_sim_v1'
         ? <EchoJudgeSimStage view={v as unknown as import('./echo-judge/simTypes.ts').EchoJudgeSimPlayerView} />
         : <EchoJudgeGamePage view={parsed.view as import('./echo-judge/types.ts').EchoJudgePlayerView} />;
+      break;
+    }
+    case 'wits-wagers': {
+      const parsed = parseGameView(game);
+      if (!parsed.ok) {
+        content = <GameErrorCard title="一智千金数据格式异常" />;
+        break;
+      }
+      const v = parsed.view;
+      content = isRecord(v) && v.rulesetId === 'wits_wagers_sim_v1'
+        ? <WitsWagersSimStage view={v as unknown as import('./wits-wagers/simTypes.ts').WitsWagersSimPlayerView} />
+        : <WitsWagersGamePage view={parsed.view as import('./wits-wagers/types.ts').WitsWagersPlayerView} />;
       break;
     }
     default:

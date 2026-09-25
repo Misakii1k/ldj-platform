@@ -1,0 +1,1227 @@
+/* ── 狼人杀 1:1 原生全屏沉浸式视觉规范 (Woodcut / Eclipse / Theatre) ── */
+
+:root {
+  --v2-paper: #f4efe5;
+  --v2-surface: #fffdf7;
+  --v2-ink: #292d2a;
+  --v2-muted: #586059;
+  --v2-line: #8a9187;
+  --v2-green: #245844;
+  --v2-gold: #e6c68c;
+  --v2-radius: 12px;
+  --v2-shadow: 0 2px 0 #29362d24, 0 8px 22px #29362d09;
+}
+
+/* 全屏沉浸式原生根容器 */
+.werewolf-native-page {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  font-family: 'SimSun', 'STSong', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+  touch-action: manipulation;
+  z-index: 10;
+}
+
+.werewolf-native-page *,
+.werewolf-native-page *::before,
+.werewolf-native-page *::after {
+  box-sizing: border-box;
+}
+
+/* 主题与色盘定义：A · 林中木刻（Woodcut）默认 / woodcut-day */
+.werewolf-native-page,
+.werewolf-native-page[data-theme="woodcut"],
+.werewolf-native-page[data-ww-theme="woodcut-day"],
+[data-ww-theme="woodcut-day"] .werewolf-native-page {
+  --desk: #f4efe5;
+  --card: #fffdf7;
+  --text: #203c30;
+  --secondary: #465c4e;
+  --active: #245844;
+  --active-ink: #ffffff;
+  --edge: #748575;
+  --detail: #245844;
+  --bg: #f4efe5;
+  --panel: #fffdf7;
+  --ink: #203c30;
+  --muted: #465c4e;
+  --line: #748575;
+  --accent: #245844;
+  background: radial-gradient(ellipse at 50% 35%, #24584414, transparent 65%), var(--desk);
+  color: var(--text);
+}
+
+/* B · 月蚀星轨（Eclipse） / eclipse-night */
+.werewolf-native-page[data-theme="eclipse"],
+.werewolf-native-page[data-ww-theme="eclipse-night"],
+[data-ww-theme="eclipse-night"] .werewolf-native-page {
+  --desk: #191d2b;
+  --card: #272d40;
+  --text: #f0edf6;
+  --secondary: #c8c8da;
+  --edge: #81879e;
+  --detail: #d6c7ec;
+  --active: #e6e1ee;
+  --active-ink: #2b2b40;
+  --bg: #100f24;
+  --panel: #1c1b37;
+  --ink: #f0ecff;
+  --muted: #c7c0df;
+  --accent: #ddd0ff;
+  --line: #77718f;
+  background: radial-gradient(ellipse at 25% 35%, #28234a, transparent 55%), var(--desk);
+  color: var(--text);
+}
+
+/* C · 白昼剧场（Theatre Day） / theatre-day */
+.werewolf-native-page[data-ww-theme="theatre-day"],
+[data-ww-theme="theatre-day"] .werewolf-native-page {
+  --desk: #f7efe5;
+  --card: #fffaf2;
+  --text: #4b2430;
+  --secondary: #714654;
+  --active: #753747;
+  --active-ink: #ffffff;
+  --edge: #a57b87;
+  --detail: #753747;
+  --bg: #f7efe5;
+  --panel: #fffaf2;
+  --ink: #4b2430;
+  --muted: #714654;
+  --line: #a57b87;
+  --accent: #753747;
+  background: radial-gradient(ellipse at 50% 30%, #75374714, transparent 65%), var(--desk);
+  color: var(--text);
+}
+
+/* D · 赤幕剧场（Theatre Night） / theatre-night */
+.werewolf-native-page[data-theme="theatre"],
+.werewolf-native-page[data-theme="curtain"],
+.werewolf-native-page[data-ww-theme="theatre-night"],
+[data-ww-theme="theatre-night"] .werewolf-native-page {
+  --desk: #1b1019;
+  --card: #321c2a;
+  --text: #fff2e7;
+  --secondary: #ddc3cd;
+  --edge: #ab8495;
+  --detail: #f1c997;
+  --active: #f1c997;
+  --active-ink: #311821;
+  --bg: #1b1019;
+  --panel: #321c2a;
+  --ink: #fff2e7;
+  --muted: #ddc3cd;
+  --accent: #f1c997;
+  --line: #ab8495;
+  background: radial-gradient(ellipse at 50% 35%, #5a203940, transparent 65%), var(--desk);
+  color: var(--text);
+  transition: background-color 0.9s ease, color 0.9s ease;
+}
+
+/* Role art occupies only the central art stage, never the seats or controls. */
+.ww-role-turn-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--desk);
+  pointer-events: none;
+  z-index: 3;
+  overflow: hidden;
+  border-radius: inherit;
+  transition: opacity 350ms ease;
+}
+.ww-role-turn-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse, color-mix(in srgb, var(--detail) 18%, transparent), transparent 72%);
+}
+.ww-role-silhouette-art {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 12px #0006);
+  transition: opacity 700ms ease, transform 700ms ease, filter 700ms ease;
+}
+.ww-role-turn-overlay.is-enter .ww-role-silhouette-art { opacity: 0; }
+.ww-role-turn-overlay.is-enter[data-ready="true"] .ww-role-silhouette-art {
+  animation: ww-role-arrive 450ms cubic-bezier(.16, 1, .3, 1) both;
+}
+.ww-role-turn-overlay.is-highlight .ww-role-silhouette-art { opacity: 1; }
+.ww-role-turn-overlay.is-silhouette .ww-role-silhouette-art {
+  opacity: .8;
+  transform: scale(.96);
+  filter: saturate(.7) drop-shadow(0 5px 10px #0005);
+}
+.ww-role-turn-overlay.is-exit { opacity: 0; }
+.ww-role-turn-overlay.is-exit .ww-role-silhouette-art {
+  opacity: 0;
+  transform: translateY(12px) scale(.96);
+  transition-duration: 350ms;
+}
+@keyframes ww-role-arrive {
+  from { opacity: 0; transform: translateY(24px) scale(.88); filter: blur(6px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0) drop-shadow(0 8px 12px #0006); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ww-role-turn-overlay, .ww-role-silhouette-art,
+  .ww-role-turn-overlay.is-enter[data-ready="true"] .ww-role-silhouette-art {
+    opacity: 1;
+    animation: none;
+    transition: none;
+    transform: none;
+  }
+}
+
+.werewolf-native-page button,
+.werewolf-native-page a {
+  touch-action: manipulation;
+  font: inherit;
+  cursor: pointer;
+  min-height: 44px;
+  color: inherit;
+  border: 1px solid var(--edge);
+  background: var(--card);
+  padding: 8px 14px;
+  border-radius: var(--v2-radius);
+  transition: transform 0.08s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.werewolf-native-page button:focus-visible,
+.werewolf-native-page a:focus-visible {
+  outline: 3px solid var(--detail);
+  outline-offset: 3px;
+}
+
+.werewolf-native-page button:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.werewolf-native-page button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* 顶部快速工具切换栏（内联 Header 或吸顶） */
+.werewolf-native-page .ww-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 5%;
+  background: var(--panel);
+  color: var(--ink);
+  border-bottom: 1px solid var(--edge);
+  flex-shrink: 0;
+  z-index: 5;
+}
+
+.werewolf-native-page .ww-tools .choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.werewolf-native-page .ww-tools button {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--edge);
+  font-size: 11px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.werewolf-native-page .ww-tools button[aria-pressed="true"] {
+  background: var(--active);
+  color: var(--active-ink);
+  font-weight: 700;
+  border-color: var(--active);
+}
+
+.werewolf-native-page .ww-tools-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.werewolf-native-page .ww-chat-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 4px 10px;
+  position: relative;
+}
+
+.werewolf-native-page .ww-chat-badge {
+  background: #e11d48;
+  color: #fff;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+/* 主容器布局 */
+.werewolf-native-page main {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  max-width: 1600px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+/* 头部 Header */
+.werewolf-native-page header {
+  margin: 0 5%;
+  padding: 12px 0;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--edge);
+  flex-shrink: 0;
+}
+
+.werewolf-native-page .brand {
+  font: 700 22px 'SimSun', serif;
+  letter-spacing: 0.1em;
+  color: var(--text);
+}
+
+.werewolf-native-page .brand small {
+  display: block;
+  font: 9px Georgia, serif;
+  letter-spacing: 0.22em;
+  margin-top: 4px;
+  color: var(--secondary);
+}
+
+.werewolf-native-page .chapter {
+  font-size: 12px;
+  color: var(--secondary);
+  white-space: nowrap;
+}
+
+.werewolf-native-page header button {
+  font-size: 12px;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--edge);
+  border-radius: var(--v2-radius);
+}
+
+/* 舞台双翼与中央对局桌 */
+.werewolf-native-page .layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(110px, 190px) minmax(0, 1fr) minmax(110px, 190px);
+  gap: 4%;
+  padding: 14px 5%;
+  align-items: stretch;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 左右席位轨 */
+.werewolf-native-page .seat-rail {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: repeat(6, minmax(44px, 1fr));
+  gap: 8px;
+  overflow: hidden;
+}
+
+.werewolf-native-page .seat-rail .seat {
+  min-height: 44px;
+  padding: 6px 10px;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-content: center;
+  column-gap: 8px;
+  text-align: left;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--edge);
+  border-radius: var(--v2-radius);
+  box-shadow: 0 2px 0 #0004, inset 0 1px 0 #ffffff0a;
+  position: relative;
+}
+
+.werewolf-native-page .seat-rail .seat b {
+  grid-row: 1 / 3;
+  align-self: center;
+  font: 500 26px Georgia, serif;
+  line-height: 1;
+  color: var(--detail);
+}
+
+.werewolf-native-page .seat-rail .seat .name {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.werewolf-native-page .seat-rail .seat small {
+  margin: 4px 0 0;
+  font-size: 10px;
+  color: var(--secondary);
+}
+
+/* 席位高亮状态：正在发言 / 自己 */
+.werewolf-native-page .seat-rail .seat.active {
+  background: var(--active);
+  color: var(--active-ink);
+  border: 1px solid var(--active);
+  box-shadow: 0 3px 0 #0005;
+}
+
+.werewolf-native-page .seat-rail .seat.active b,
+.werewolf-native-page .seat-rail .seat.active small {
+  color: var(--active-ink);
+}
+
+.werewolf-native-page .seat-rail .seat.active::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 24%;
+  height: 52%;
+  width: 4px;
+  background: var(--detail);
+  border: 1px solid var(--active-ink);
+  border-radius: 4px;
+}
+
+/* 席位出局状态 */
+.werewolf-native-page .seat-rail .seat.out {
+  background: var(--desk);
+  border: 1px dashed var(--edge);
+  color: var(--secondary);
+  box-shadow: none;
+}
+
+.werewolf-native-page .seat-rail .seat.out b {
+  color: var(--secondary);
+  text-decoration: line-through;
+}
+
+/* 中央聚焦舞台 */
+.werewolf-native-page .stage {
+  min-width: 0;
+  min-height: 0;
+  padding: 10px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  border-left: 1px solid var(--edge);
+  border-right: 1px solid var(--edge);
+}
+
+.werewolf-native-page[data-theme="eclipse"] .stage,
+.werewolf-native-page[data-theme="curtain"] .stage,
+.werewolf-native-page[data-theme="theatre"] .stage {
+  border-left: 0;
+  border-right: 0;
+}
+
+.werewolf-native-page[data-theme="curtain"] .stage,
+.werewolf-native-page[data-theme="theatre"] .stage {
+  background: #160c10;
+}
+
+/* 舞台顶部状态 */
+.werewolf-native-page .stage-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--secondary);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  flex-shrink: 0;
+}
+
+.werewolf-native-page .stage-top .time {
+  font: 22px Georgia, serif;
+  color: var(--text);
+  white-space: nowrap;
+  background: var(--card);
+  border: 1px solid var(--edge);
+  padding: 3px 10px;
+  border-radius: 8px;
+}
+
+.werewolf-native-page .stage-top .time small {
+  display: block;
+  font: 9px 'Microsoft YaHei', sans-serif;
+  text-align: right;
+  margin-top: 2px;
+  color: var(--secondary);
+}
+
+/* 矢量艺术插画舞台 */
+.werewolf-native-page .art {
+  height: auto;
+  min-height: 0;
+  flex: 1;
+  max-height: 350px;
+  position: relative;
+  overflow: hidden;
+  color: var(--detail);
+  margin-top: 8px;
+}
+
+.werewolf-native-page .forest {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.werewolf-native-page .astral,
+.werewolf-native-page .theatre {
+  display: none;
+}
+
+.werewolf-native-page[data-theme="eclipse"] .forest {
+  display: none;
+}
+
+.werewolf-native-page[data-theme="eclipse"] .astral {
+  display: block;
+  height: 100%;
+  position: relative;
+}
+
+.werewolf-native-page[data-theme="curtain"] .forest,
+.werewolf-native-page[data-theme="theatre"] .forest {
+  display: none;
+}
+
+.werewolf-native-page[data-theme="curtain"] .theatre,
+.werewolf-native-page[data-theme="theatre"] .theatre {
+  display: block;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 月蚀星轨元素 */
+.werewolf-native-page .orbit {
+  position: absolute;
+  border: 1px solid #9588ba;
+  left: 50%;
+  top: 48%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+}
+
+.werewolf-native-page .o1 { width: 225px; height: 225px; }
+.werewolf-native-page .o2 { width: 195px; height: 195px; border-style: dashed; }
+.werewolf-native-page .o3 { width: 260px; height: 140px; transform: translate(-50%, -50%) rotate(-30deg); }
+
+.werewolf-native-page .moon {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  transform: translate(-50%, -50%);
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: #ded6f4;
+  box-shadow: 0 0 45px #b09bda40;
+  overflow: hidden;
+}
+
+.werewolf-native-page .moon::after {
+  content: '';
+  position: absolute;
+  width: 125px;
+  height: 125px;
+  border-radius: 50%;
+  background: #15142b;
+  top: -15px;
+  left: 28px;
+}
+
+.werewolf-native-page .star {
+  position: absolute;
+  font-size: 26px;
+  background: transparent !important;
+}
+
+.werewolf-native-page .s1 { top: 12%; left: 25%; }
+.werewolf-native-page .s2 { bottom: 17%; right: 21%; }
+
+.werewolf-native-page .lunar-label {
+  position: absolute;
+  bottom: 24px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  letter-spacing: 0.4em;
+  font: 16px Georgia, serif;
+  color: var(--detail);
+}
+
+/* 赤幕剧场元素 */
+.werewolf-native-page .drape {
+  position: absolute;
+  top: 0;
+  width: 34%;
+  height: 100%;
+  background: repeating-linear-gradient(90deg, #531726, #872238 18%, #3c1020 34%);
+  z-index: 2;
+}
+
+.werewolf-native-page .drape.left {
+  left: 0;
+  clip-path: polygon(0 0, 100% 0, 55% 65%, 25% 100%, 0 100%);
+}
+
+.werewolf-native-page .drape.right {
+  right: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 75% 100%, 45% 65%);
+}
+
+.werewolf-native-page .beam {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(#f4d7aa38, #f4d7aa05);
+  clip-path: polygon(42% 0, 58% 0, 98% 100%, 2% 100%);
+}
+
+.werewolf-native-page .act {
+  position: absolute;
+  inset: 20px 0;
+  text-align: center;
+  font: 12px Georgia, serif;
+  letter-spacing: 0.4em;
+  color: #f4d7aa;
+}
+
+.werewolf-native-page .act b {
+  display: block;
+  font: 100px Georgia, serif;
+  letter-spacing: -0.08em;
+  margin-top: 6px;
+}
+
+.werewolf-native-page .art-caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font: 11px 'SimSun', serif;
+  letter-spacing: 0.18em;
+  color: var(--secondary);
+  background: var(--desk);
+  padding: 6px;
+}
+
+/* 发言人区 */
+.werewolf-native-page .speaker {
+  text-align: center;
+  padding: 10px 0;
+  flex-shrink: 0;
+}
+
+.werewolf-native-page .speaker-tag {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--edge);
+  padding: 3px 10px;
+  border-radius: 6px;
+  display: inline-block;
+  font-weight: 500;
+}
+
+.werewolf-native-page .speaker h1 {
+  font-family: 'STSong', 'SimSun', serif;
+  font-weight: 600;
+  font-size: 28px;
+  margin: 8px 0;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.werewolf-native-page .speaker p {
+  color: var(--secondary);
+  font: 13px 'SimSun', serif;
+  letter-spacing: 0.12em;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* 下一位提示与全桌概览 */
+.werewolf-native-page .next {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid var(--edge);
+  padding-top: 10px;
+  font-size: 11px;
+  color: var(--secondary);
+  flex-shrink: 0;
+}
+
+.werewolf-native-page .next b {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.werewolf-native-page .table-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--secondary);
+  font-size: 11px;
+  margin-top: 8px;
+  flex-shrink: 0;
+}
+
+.werewolf-native-page .table-summary small {
+  font: 9px Georgia, serif;
+  letter-spacing: 0.12em;
+}
+
+.werewolf-native-page .ledger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  font-size: 11px;
+  margin-top: 8px;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--edge);
+  border-radius: var(--v2-radius);
+  box-shadow: 0 2px 0 #0003;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+/* 底部操作与身份卡 Dock */
+.werewolf-native-page footer {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin: 0 5%;
+  border-top: 1px solid var(--edge);
+  padding: 12px 0 max(12px, env(safe-area-inset-bottom));
+  flex-shrink: 0;
+}
+
+.werewolf-native-page footer p {
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 0;
+  color: var(--text);
+}
+
+.werewolf-native-page footer small {
+  font-size: 10px;
+  color: var(--secondary);
+}
+
+.werewolf-native-page .identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  min-width: 140px;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--edge);
+  border-radius: var(--v2-radius);
+  box-shadow: 0 2px 0 #0003;
+  font-weight: 500;
+}
+
+.werewolf-native-page .identity > span:first-child {
+  font: 28px Georgia, serif;
+  line-height: 1;
+  color: var(--detail);
+}
+
+.werewolf-native-page .identity small {
+  display: block;
+  font-size: 9px;
+  margin-top: 3px;
+  color: var(--secondary);
+}
+
+.werewolf-native-page .primary {
+  margin-left: auto;
+  min-width: 200px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  min-height: 50px;
+  background: var(--active);
+  color: var(--active-ink);
+  font-weight: 700;
+  border: 1px solid var(--active);
+  border-radius: var(--v2-radius);
+  box-shadow: 0 3px 0 #0005;
+}
+
+.werewolf-native-page .primary:disabled {
+  background: var(--card);
+  border-color: var(--edge);
+  color: var(--secondary);
+  box-shadow: none;
+}
+
+/* 席位可选与已锁定目标状态 */
+.werewolf-native-page .seat-rail .seat.is-actionable {
+  border-color: var(--detail);
+  cursor: pointer;
+  position: relative;
+}
+
+.werewolf-native-page .seat-rail .seat.is-actionable:hover {
+  background: color-mix(in srgb, var(--detail) 18%, var(--card));
+  transform: translateY(-1px);
+}
+
+.werewolf-native-page .seat-rail .seat.is-my-target {
+  border-color: #22c55e;
+  box-shadow: 0 0 0 1px #22c55e, 0 3px 6px rgba(34, 197, 94, 0.2);
+}
+
+.werewolf-native-page .seat-rail .seat.is-my-target b {
+  color: #4ade80;
+}
+
+/* 底部操作按钮组 */
+.werewolf-native-page .ww-footer-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.werewolf-native-page .ww-global-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: var(--v2-radius);
+  border: 1px solid var(--edge);
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 2px 0 #0003;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.werewolf-native-page .ww-global-action-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+.werewolf-native-page .ww-global-action-btn.primary {
+  background: var(--active);
+  color: var(--active-ink);
+  border-color: var(--active);
+  box-shadow: 0 3px 0 #0005;
+}
+
+.werewolf-native-page .ww-global-action-btn.is-danger {
+  background: color-mix(in srgb, #991b1b 24%, var(--card));
+  border-color: color-mix(in srgb, #ef4444 48%, var(--edge));
+  color: #fca5a5;
+}
+
+.werewolf-native-page .ww-global-action-btn.is-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, #991b1b 36%, var(--card));
+  color: #fee2e2;
+}
+
+.werewolf-native-page .ww-global-action-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* 模态弹窗（规则 / 身份卡 / 票型 / 目标操作） */
+.werewolf-native-page dialog {
+  max-width: calc(100vw - 32px);
+  width: 400px;
+  max-height: calc(100dvh - 40px);
+  overflow: auto;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--edge);
+  border-radius: 16px;
+  box-shadow: 0 25px 80px #0007;
+  padding: 24px;
+}
+
+.werewolf-native-page dialog::backdrop {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+}
+
+.werewolf-native-page dialog h2 {
+  margin: 0 0 16px;
+  font-size: 20px;
+  font-family: 'SimSun', serif;
+  letter-spacing: 0.05em;
+  color: var(--detail);
+}
+
+.werewolf-native-page dialog p {
+  line-height: 1.8;
+  font-size: 13px;
+  color: var(--secondary);
+}
+
+.werewolf-native-page dialog img {
+  display: block;
+  width: 140px;
+  margin: 12px auto;
+  border-radius: 8px;
+}
+
+.werewolf-native-page dialog .dialog-close-btn {
+  width: 100%;
+  margin-top: 18px;
+  background: var(--active);
+  color: var(--active-ink);
+  font-weight: 700;
+  border: 1px solid var(--active);
+  border-radius: 10px;
+  min-height: 44px;
+}
+
+/* 目标操作菜单浮层 */
+.werewolf-native-page .ww-target-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.werewolf-native-page .ww-target-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.werewolf-native-page .ww-target-btn {
+  min-height: 46px;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.werewolf-native-page .ww-target-btn.danger {
+  background: #4a191e;
+  border-color: #832731;
+  color: #ffb4b4;
+}
+
+.werewolf-native-page .ww-target-btn.safe {
+  background: #143628;
+  border-color: #27624c;
+  color: #c0f4dc;
+}
+
+/* 响应式断点适配：遵守项目契约 768 / 640 / 380 宽与 620 / 520 高 */
+@media (max-width: 768px) {
+  .werewolf-native-page header {
+    margin: 0 12px;
+    padding: 8px 0;
+    gap: 8px;
+  }
+  .werewolf-native-page .brand { font-size: 18px; }
+  .werewolf-native-page .brand small { font-size: 8px; margin-top: 2px; }
+  .werewolf-native-page .chapter { display: none; }
+  .werewolf-native-page header button { font-size: 11px; padding: 6px 10px; }
+
+  .werewolf-native-page .layout {
+    grid-template-columns: 74px minmax(0, 1fr) 74px;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .werewolf-native-page .seat-rail { gap: 6px; }
+  .werewolf-native-page .seat-rail .seat {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 4px;
+    text-align: center;
+    border-radius: 8px;
+  }
+  .werewolf-native-page .seat-rail .seat b { font-size: 20px; line-height: 1; }
+  .werewolf-native-page .seat-rail .seat .name {
+    font-size: 10px;
+    margin-top: 3px;
+    max-width: 100%;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .werewolf-native-page .seat-rail .seat small { font-size: 9px; margin-top: 2px; }
+
+  .werewolf-native-page .stage { padding: 4px 6px; border: 0; }
+  .werewolf-native-page .stage-top { flex-direction: column; gap: 6px; }
+  .werewolf-native-page .stage-top > span:first-child { font-size: 10px; text-align: center; }
+  .werewolf-native-page .stage-top .time { font-size: 20px; padding: 2px 8px; }
+  .werewolf-native-page .art { max-height: 220px; }
+  .werewolf-native-page .art-caption { display: none; }
+
+  .werewolf-native-page .speaker { padding: 8px 0; }
+  .werewolf-native-page .speaker-tag { font-size: 10px; padding: 2px 6px; }
+  .werewolf-native-page .speaker h1 { font-size: 20px; margin: 4px 0; }
+  .werewolf-native-page .speaker p { font-size: 11px; }
+
+  .werewolf-native-page .next { justify-content: center; gap: 4px; font-size: 10px; }
+  .werewolf-native-page .next > span:first-child { width: 100%; text-align: center; }
+  .werewolf-native-page .next > span:last-child { display: none; }
+
+  .werewolf-native-page .table-summary { justify-content: center; margin-top: 6px; }
+  .werewolf-native-page .table-summary small { display: none; }
+  .werewolf-native-page .ledger { font-size: 10px; padding: 4px 8px; justify-content: center; margin-top: 6px; }
+
+  .werewolf-native-page footer {
+    margin: 0 8px;
+    padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+    gap: 10px;
+  }
+  .werewolf-native-page footer p { display: none; }
+  .werewolf-native-page .identity { min-width: 110px; padding: 6px 8px; min-height: 46px; }
+  .werewolf-native-page .primary { min-width: 0; flex: 1; font-size: 13px; min-height: 46px; padding: 6px 12px; }
+
+  .werewolf-native-page .o1 { width: 140px; height: 140px; }
+  .werewolf-native-page .o2 { width: 115px; height: 115px; }
+  .werewolf-native-page .o3 { width: 155px; height: 85px; }
+  .werewolf-native-page .moon { width: 85px; height: 85px; }
+  .werewolf-native-page .moon::after { width: 80px; height: 80px; left: 20px; top: -10px; }
+  .werewolf-native-page .lunar-label { bottom: 8px; font-size: 11px; }
+  .werewolf-native-page .star { font-size: 18px; }
+  .werewolf-native-page .act b { font-size: 70px; }
+}
+
+@media (max-width: 380px) {
+  .werewolf-native-page .layout { grid-template-columns: 65px minmax(0, 1fr) 65px; gap: 4px; }
+  .werewolf-native-page .seat-rail .seat b { font-size: 17px; }
+  .werewolf-native-page .seat-rail .seat .name { font-size: 9px; margin-top: 1px; }
+  .werewolf-native-page .seat-rail .seat small { display: none; }
+  .werewolf-native-page .speaker h1 { font-size: 18px; }
+}
+
+@media (max-height: 620px) {
+  .werewolf-native-page .art { display: block; min-height: 48px; max-height: 90px; margin-top: 4px; }
+  .werewolf-native-page header { padding: 4px 0; }
+  .werewolf-native-page .layout { padding-top: 4px; padding-bottom: 4px; }
+  .werewolf-native-page .seat-rail { gap: 3px; }
+  .werewolf-native-page .speaker { padding: 4px 0; }
+  .werewolf-native-page .speaker h1 { margin: 2px 0; }
+  .werewolf-native-page .speaker p,
+  .werewolf-native-page .art-caption,
+  .werewolf-native-page .table-summary { display: none; }
+  .werewolf-native-page .stage-top > span:first-child { display: none; }
+  .werewolf-native-page .seat-rail .seat small { display: none; }
+  .werewolf-native-page .ledger { margin-top: 4px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .werewolf-native-page * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* One title, one toolbar; secondary progress wraps rather than squeezing controls. */
+.werewolf-native-page .ww-topbar {
+  margin: 0;
+  padding: max(8px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 8px max(16px, env(safe-area-inset-left));
+  gap: 16px;
+  background: var(--card);
+  z-index: 5;
+}
+.ww-title-group { display: flex; align-items: baseline; gap: 10px; flex-shrink: 0; }
+.ww-title-group h1 { margin: 0; font-size: 22px; color: var(--text); letter-spacing: .12em; }
+.ww-brand-kicker { font-size: 11px; color: var(--secondary); }
+.ww-round-status { display: flex; gap: 10px; min-width: 0; align-items: center; font-size: 12px; }
+.ww-round-status span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--secondary); }
+.werewolf-native-page .ww-topbar .ww-tools { padding: 0; border: 0; flex-wrap: nowrap; gap: 6px; background: none; }
+.werewolf-native-page .ww-topbar .ww-tools button { gap: 6px; font: 600 12px 'Microsoft YaHei', sans-serif; }
+.ww-table-meta { display: flex; justify-content: space-between; padding: 6px 5%; font-size: 11px; color: var(--secondary); }
+.werewolf-native-page .ww-chat-badge { position: absolute; top: -5px; right: -4px; background: #a91635; }
+@media (max-width: 640px) {
+  .werewolf-native-page .ww-topbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; padding-inline: 12px; }
+  .ww-title-group { display: block; }
+  .ww-title-group h1 { font-size: 19px; }
+  .ww-brand-kicker { font-size: 10px; }
+  .ww-round-status { grid-column: 1 / -1; grid-row: 2; font-size: 11px; }
+  .werewolf-native-page .ww-topbar .ww-tools { grid-column: 2; grid-row: 1; }
+  .werewolf-native-page .ww-topbar .ww-tools button { padding: 6px 8px; }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .werewolf-native-page .ww-topbar { padding-block: 4px; }
+  .ww-title-group h1 { font-size: 18px; }
+  .ww-table-meta { padding-block: 2px; }
+}
+
+.ww-role-turn-overlay[data-role="hunter_idiot"] { grid-template-columns: 1fr 1fr; }
+.ww-role-turn-overlay[data-role="hunter_idiot"]::before { grid-column: 1 / -1; }
+
+.werewolf-native-page .ww-table-meta .table-summary { margin: 0; padding: 0; border: 0; font-size: inherit; }
+
+/* 预言家查验专属反馈样式与席位徽章 (WCAG AA/AAA 高对比度合规) */
+.ww-seer-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 10px;
+  line-height: 1.3;
+  margin-left: 4px;
+  letter-spacing: 0.02em;
+}
+.ww-seer-pill.is-good {
+  background: rgba(16, 68, 40, 0.95);
+  color: #86efac;
+  border: 1px solid #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.35);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+.ww-seer-pill.is-wolf {
+  background: rgba(88, 16, 25, 0.95);
+  color: #fca5a5;
+  border: 1px solid #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.35);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.seat.seer-good,
+.seat.seer-village {
+  border-color: rgba(34, 197, 94, 0.7) !important;
+}
+.seat.seer-werewolf,
+.seat.seer-wolves {
+  border-color: rgba(239, 68, 68, 0.7) !important;
+}
+
+.ww-seer-verdict-card {
+  margin: 6px 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+.ww-seer-verdict-card.is-good {
+  background: rgba(10, 36, 24, 0.9);
+  border: 1.5px solid #22c55e;
+}
+.ww-seer-verdict-card.is-wolf {
+  background: rgba(46, 12, 18, 0.9);
+  border: 1.5px solid #ef4444;
+}
+.ww-verdict-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ww-verdict-icon {
+  font-size: 15px;
+}
+.ww-verdict-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #f0edf6;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+.ww-verdict-body {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 14px;
+}
+.ww-verdict-target {
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+.ww-verdict-is {
+  color: #cbd5e1;
+  font-size: 12px;
+}
+.ww-verdict-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+}
+.ww-verdict-pill.team-good {
+  background: #14532d;
+  color: #bbf7d0;
+  border: 1px solid #4ade80;
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.4);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+.ww-verdict-pill.team-wolf {
+  background: #7f1d1d;
+  color: #fecaca;
+  border: 1px solid #f87171;
+  box-shadow: 0 0 8px rgba(248, 113, 113, 0.4);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+

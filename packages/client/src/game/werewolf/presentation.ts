@@ -1,3 +1,4 @@
+import type { WerewolfAnnouncement } from '@ldj/shared';
 /**
  * 狼人杀客户端表现层映射：把服务端权威视角翻译成纯展示数据。
  * 只消费 parseWerewolfView 的结果，不读取权威快照，不合成新动作，不重算票数。
@@ -11,10 +12,12 @@ import type {
   WerewolfView,
   WerewolfVoteOutcome,
 } from './types.ts';
-import type { ChatMessageView } from '@ldj/shared';
+import type { ChatMessageView, WerewolfTimeline } from '@ldj/shared';
 import type { MemberLike } from '../useGameAction.ts';
 import { nameFor } from '../useGameAction.ts';
 import { resolveMemberAvatar } from '../../user/avatar.ts';
+import type { ServerClockSample, TimelineTimerDisplay } from '../../shared-ui/serverClock.ts';
+import { formatTimelineTimer } from '../../shared-ui/serverClock.ts';
 
 export const WEREWOLF_ROLE_NAMES: Record<WerewolfRole, string> = {
   wolf: '狼人',
@@ -70,6 +73,12 @@ export interface WerewolfSeatModel {
   readonly avatar?: string;
   /** 点击该席位头像后可执行的动作（如投票放逐/查验/毒杀），由 actionGroups 派生。 */
   readonly targetActions: readonly WerewolfActionOption[];
+  /** 是否为本人当前锁定的目标（如已投该席/已锁定袭击/已验该席） */
+  readonly isMyTarget?: boolean;
+  /** 预言家查验该席位的阵营结果（仅预言家本人可见） */
+  readonly seerResultTeam?: WerewolfTeam | null;
+  /** 预言家查验该席位的标签（如“好人”或“狼人”，仅预言家本人可见） */
+  readonly seerResultLabel?: string | null;
 }
 
 export interface WerewolfActionOption {
@@ -202,7 +211,13 @@ export interface WerewolfPresentationModel {
   readonly winner: WerewolfTeam | null;
   readonly reveal: {
     readonly headline: string;
-    readonly rows: readonly { readonly name: string; readonly roleLabel: string }[];
+    readonly rows: readonly {
+      readonly playerId: string;
+      readonly name: string;
+      readonly roleLabel: string;
+      readonly alive?: boolean;
+      readonly avatar?: string;
+    }[];
   } | null;
   /** 当前发言者最近一条公屏，遗言阶段同样适用 */
   readonly speakerLine: string | null;
@@ -212,6 +227,11 @@ export interface WerewolfPresentationModel {
   readonly freeDiscussionReadyCount?: number;
   /** 本人是否已在自由发言环节就绪 */
   readonly hasReadiedVote?: boolean;
+  /** 权威公共时间线（Contract B / T08） */
+  readonly timeline: WerewolfTimeline | null;
+  readonly announcement?: WerewolfAnnouncement | null;
+  readonly isAuthoritativeTimeline: boolean;
+  readonly timelineTimer: TimelineTimerDisplay | null;
 }
 
 /**
@@ -294,6 +314,13 @@ function waitingHintOf(view: WerewolfView, canAct: boolean): string | null {
   const me = view.me;
   if (!me) return '你当前处于观战状态。';
   if (!me.alive) return '你已出局，请保持安静。';
+  if (view.timeline) {
+    if (view.timeline.paused) return '对局已暂停，等待主持人恢复';
+    if (view.timeline.mode === 'manual') return '等待主持人推进环节';
+    if (view.timeline.segment === 'intro' || view.timeline.segment === 'open') return '正在播报环节指引...';
+    if (view.timeline.segment === 'action' && view.timeline.role !== me.role) return '等待其他角色行动...';
+    if (view.timeline.segment === 'close') return '闭眼环节，请稍候...';
+  }
   if (view.phase === 'runoff_voting' && (view.runoffCandidates ?? []).includes(me.playerId)) {
     return '你是加赛候选人，本轮不投票';
   }
@@ -354,69 +381,125 @@ function narrativeOf(view: WerewolfView, members: readonly MemberLike[]): string
 function buildActionGroups(view: WerewolfView, members: readonly MemberLike[]): readonly WerewolfActionGroup[] {
   const me = view.me;
   if (!me || me.forfeited) return [];
+  if (view.timeline?.paused) return [];
+  const timelineId = view.timeline?.id;
   const groups: WerewolfActionGroup[] = [];
+
+  const isNightRoleAction = (role: WerewolfRole): boolean => {
+    if (!view.timeline) return true;
+    return view.timeline.role === role && view.timeline.segment === 'action';
+  };
 
   if (view.phase === 'role_reveal' && me.alive) {
     groups.push({
       id: 'confirm_role',
       title: '就绪确认',
       hint: me.confirmedRole ? '已确认身份，等待全员就绪' : '请查看中央卡牌并确认身份',
-      options: me.confirmedRole ? [] : [{ id: 'confirm', label: '我已记住身份并就绪', payload: { type: 'confirm_role' } }],
+      options: me.confirmedRole ? [] : [{
+        id: 'confirm',
+        label: '我已记住身份并就绪',
+        payload: { type: 'confirm_role' },
+      }],
     });
     return groups;
   }
 
   if (view.phase === 'night' && me.alive) {
     if (me.role === 'wolf') {
+      const isMyTurn = isNightRoleAction('wolf');
       const candidates = view.config.wolfKillScope === 'any'
         ? view.players.filter((player) => player.alive)
         : aliveOthers(view).filter((player) => !(me.wolfTeammateIds ?? []).includes(player.playerId));
       const myVotedTarget = me.hasNightVoted && me.myVote ? me.myVote : null;
-      const options: WerewolfActionOption[] = me.hasNightVoted ? [] : targetOptions(members, candidates, '袭击', (targetPlayerId) => ({ type: 'night_kill', targetPlayerId }));
+      const options: WerewolfActionOption[] = (me.hasNightVoted || !isMyTurn) ? [] : targetOptions(
+        members,
+        candidates,
+        '袭击',
+        (targetPlayerId) => (timelineId ? { type: 'night_kill', targetPlayerId, timelineId } : { type: 'night_kill', targetPlayerId }),
+      );
       groups.push({
         id: 'night_kill',
         title: '狼人夜袭',
-        hint: myVotedTarget
-          ? `你已锁定袭击 ${nameFor(members, myVotedTarget)}，等待同伴决断`
-          : view.config.wolfKillScope === 'any'
-            ? '请选择今夜袭击目标（包含自己或同伴）'
-            : '请选择今夜袭击目标',
+        hint: !isMyTurn
+          ? (view.timeline?.mode === 'manual' ? '等待主持人推进' : '等待轮到狼人行动')
+          : myVotedTarget
+            ? `你已锁定袭击 ${nameFor(members, myVotedTarget)}，等待同伴决断`
+            : view.config.wolfKillScope === 'any'
+              ? '请选择今夜袭击目标（包含自己或同伴）'
+              : '请选择今夜袭击目标',
         options,
       });
     }
 
     if (me.role === 'seer') {
+      const isMyTurn = isNightRoleAction('seer');
       const candidates = aliveOthers(view);
+      const latestResult = me.seerResults[me.seerResults.length - 1];
+      const tonightResult = (me.seerResults ?? []).find((r) => r.night === view.day);
+      const displayResult = tonightResult ?? latestResult;
       groups.push({
         id: 'seer_check',
         title: '预言家查验',
-        hint: me.seerCheckedThisNight ? '今晚查验已完成' : '请选择一名存活玩家查验阵营',
-        options: me.seerCheckedThisNight ? [] : targetOptions(members, candidates, '查验', (targetPlayerId) => ({ type: 'seer_check', targetPlayerId })),
+        hint: !isMyTurn
+          ? (view.timeline?.mode === 'manual' ? '等待主持人推进' : '等待轮到预言家行动')
+          : me.seerCheckedThisNight
+            ? (displayResult
+                ? `今夜查验完成：${nameFor(members, displayResult.playerId)} 是【${teamLabel(displayResult.team)}】`
+                : '今晚查验已完成')
+            : '请选择一名存活玩家查验阵营',
+        options: (me.seerCheckedThisNight || !isMyTurn) ? [] : targetOptions(
+          members,
+          candidates,
+          '查验',
+          (targetPlayerId) => (timelineId ? { type: 'seer_check', targetPlayerId, timelineId } : { type: 'seer_check', targetPlayerId }),
+        ),
       });
     }
 
     if (me.role === 'witch') {
+      const isMyTurn = isNightRoleAction('witch');
       const victim = me.nightVictimId ? view.players.find((player) => player.playerId === me.nightVictimId) : null;
       const canSelfSave = me.nightVictimId !== me.playerId || me.witchCanSelfSave;
       const saveOptions: WerewolfActionOption[] = [];
-      if (!me.witchSaveUsed && victim && me.witchSaveDecision === null) {
-        if (canSelfSave) saveOptions.push({ id: 'save_yes', label: `使用解药救 ${seatLabelOf(victim.seat)} ${nameFor(members, victim.playerId)}`, payload: { type: 'witch_save', save: true } });
-        saveOptions.push({ id: 'skip_save', label: '不使用解药', payload: { type: 'witch_save', save: false } });
-      }
-
-      if (saveOptions.length > 0) {
-        groups.push({
-          id: 'witch_save',
-          title: '女巫用药 · 解药',
-          hint: victim ? `今夜遇袭的是 ${nameFor(members, victim.playerId)}` : '今夜无人遇袭',
-          options: saveOptions,
+      if (isMyTurn && !me.witchSaveUsed && victim && me.witchSaveDecision === null) {
+        if (canSelfSave) saveOptions.push({
+          id: 'save_yes',
+          label: `使用解药救 ${seatLabelOf(victim.seat)} ${nameFor(members, victim.playerId)}`,
+          payload: timelineId ? { type: 'witch_save', save: true, timelineId } : { type: 'witch_save', save: true },
+        });
+        saveOptions.push({
+          id: 'skip_save',
+          label: '不使用解药',
+          payload: timelineId ? { type: 'witch_save', save: false, timelineId } : { type: 'witch_save', save: false },
         });
       }
 
-      if (me.witchSaveDecision !== null && !me.witchPoisonUsed && !me.witchPoisonDecided) {
+      if (saveOptions.length > 0 || !isMyTurn) {
+        groups.push({
+          id: 'witch_save',
+          title: '女巫用药 · 解药',
+          hint: !isMyTurn
+            ? (view.timeline?.mode === 'manual' ? '等待主持人推进' : '等待轮到女巫行动')
+            : victim
+              ? `今夜遇袭的是 ${nameFor(members, victim.playerId)}`
+              : '今夜无人遇袭',
+          options: isMyTurn ? saveOptions : [],
+        });
+      }
+
+      if (isMyTurn && me.witchSaveDecision !== null && !me.witchPoisonUsed && !me.witchPoisonDecided) {
         const poisonCandidates = aliveOthers(view);
-        const options: WerewolfActionOption[] = me.witchSaveDecision === true ? [] : targetOptions(members, poisonCandidates, '毒杀', (targetPlayerId) => ({ type: 'witch_poison', targetPlayerId }));
-        options.push({ id: 'poison_skip', label: '今晚不用毒药', payload: { type: 'witch_poison', targetPlayerId: null } });
+        const options: WerewolfActionOption[] = me.witchSaveDecision === true ? [] : targetOptions(
+          members,
+          poisonCandidates,
+          '毒杀',
+          (targetPlayerId) => (timelineId ? { type: 'witch_poison', targetPlayerId, timelineId } : { type: 'witch_poison', targetPlayerId }),
+        );
+        options.push({
+          id: 'poison_skip',
+          label: '今晚不用毒药',
+          payload: timelineId ? { type: 'witch_poison', targetPlayerId: null, timelineId } : { type: 'witch_poison', targetPlayerId: null },
+        });
         groups.push({
           id: 'witch_poison',
           title: '女巫用药 · 毒药',
@@ -427,16 +510,34 @@ function buildActionGroups(view: WerewolfView, members: readonly MemberLike[]): 
     }
 
     if (me.role === 'guard') {
+      const isMyTurn = isNightRoleAction('guard');
       const candidates = (view.config?.rulesetId === 'werewolf_platform_open_kill_v1'
         ? view.players.filter((p) => p.alive)
         : aliveOthers(view)
       ).filter((player) => player.playerId !== me.lastGuardTargetId);
-      const options: WerewolfActionOption[] = me.guardDecided ? [] : targetOptions(members, candidates, '守护', (targetPlayerId) => ({ type: 'guard_guard', targetPlayerId }));
-      if (!me.guardDecided) options.push({ id: 'skip_guard', label: '今晚空守（不守护任何人）', payload: { type: 'guard_guard', targetPlayerId: null } });
+      const options: WerewolfActionOption[] = (me.guardDecided || !isMyTurn) ? [] : targetOptions(
+        members,
+        candidates,
+        '守护',
+        (targetPlayerId) => (timelineId ? { type: 'guard_guard', targetPlayerId, timelineId } : { type: 'guard_guard', targetPlayerId }),
+      );
+      if (isMyTurn && !me.guardDecided) {
+        options.push({
+          id: 'skip_guard',
+          label: '今晚空守（不守护任何人）',
+          payload: timelineId ? { type: 'guard_guard', targetPlayerId: null, timelineId } : { type: 'guard_guard', targetPlayerId: null },
+        });
+      }
       groups.push({
         id: 'guard_guard',
         title: '守卫守护',
-        hint: me.guardDecided ? '今夜守护已决断' : me.lastGuardTargetId ? `昨夜守护了 ${nameFor(members, me.lastGuardTargetId)}，今夜不可连守` : '请选择今晚要守护的玩家',
+        hint: !isMyTurn
+          ? (view.timeline?.mode === 'manual' ? '等待主持人推进' : '等待轮到守卫行动')
+          : me.guardDecided
+            ? '今夜守护已决断'
+            : me.lastGuardTargetId
+              ? `昨夜守护了 ${nameFor(members, me.lastGuardTargetId)}，今夜不可连守`
+              : '请选择今晚要守护的玩家',
         options,
       });
     }
@@ -446,8 +547,17 @@ function buildActionGroups(view: WerewolfView, members: readonly MemberLike[]): 
 
   if (view.phase === 'hunter_shot' && me.pendingShoot) {
     const candidates = aliveOthers(view);
-    const options: WerewolfActionOption[] = targetOptions(members, candidates, '开枪带走', (targetPlayerId) => ({ type: 'hunter_shoot', targetPlayerId }));
-    options.push({ id: 'shoot_skip', label: '放弃开枪', payload: { type: 'hunter_shoot', targetPlayerId: null } });
+    const options: WerewolfActionOption[] = targetOptions(
+      members,
+      candidates,
+      '开枪带走',
+      (targetPlayerId) => (timelineId ? { type: 'hunter_shoot', targetPlayerId, timelineId } : { type: 'hunter_shoot', targetPlayerId }),
+    );
+    options.push({
+      id: 'shoot_skip',
+      label: '放弃开枪',
+      payload: timelineId ? { type: 'hunter_shoot', targetPlayerId: null, timelineId } : { type: 'hunter_shoot', targetPlayerId: null },
+    });
     groups.push({ id: 'hunter_shoot', title: '猎人开枪', hint: '请选择一名存活玩家开枪带走，或放弃', options });
     return groups;
   }
@@ -457,13 +567,26 @@ function buildActionGroups(view: WerewolfView, members: readonly MemberLike[]): 
       id: 'confirm_announcement',
       title: '死讯确认',
       hint: me.confirmedAnnouncement ? '你已确认死讯，等待其他人完成' : '请确认已知晓昨夜结果',
-      options: me.confirmedAnnouncement ? [] : [{ id: 'confirm_day', label: '已知晓死讯', payload: { type: 'confirm_announcement' } }],
+      options: me.confirmedAnnouncement ? [] : [{
+        id: 'confirm_day',
+        label: '已知晓死讯',
+        payload: timelineId ? { type: 'confirm_announcement', timelineId } : { type: 'confirm_announcement' },
+      }],
     });
     return groups;
   }
 
   if (view.phase === 'discussion' && me.alive && view.currentSpeakerId === me.playerId) {
-    groups.push({ id: 'finish_speech', title: '轮到你发言', hint: '公屏打字发言后，点击结束发言交麦给下一位', options: [{ id: 'finish_speech', label: '结束发言', payload: { type: 'finish_speech' } }] });
+    groups.push({
+      id: 'finish_speech',
+      title: '轮到你发言',
+      hint: '公屏打字发言后，点击结束发言交麦给下一位',
+      options: [{
+        id: 'finish_speech',
+        label: '结束发言',
+        payload: timelineId ? { type: 'finish_speech', timelineId } : { type: 'finish_speech' },
+      }],
+    });
     return groups;
   }
 
@@ -477,7 +600,11 @@ function buildActionGroups(view: WerewolfView, members: readonly MemberLike[]): 
       hint: hasReadied
         ? `你已准备就绪（全员已就绪 ${readyCount}/${aliveCount}），可继续在公屏畅聊`
         : `自由辩论环节，存活玩家均可畅所欲言；准备好后请点击进入投票`,
-      options: hasReadied ? [] : [{ id: 'ready_vote', label: `准备进入投票 (${readyCount}/${aliveCount})`, payload: { type: 'ready_vote' } }],
+      options: hasReadied ? [] : [{
+        id: 'ready_vote',
+        label: `准备进入投票 (${readyCount}/${aliveCount})`,
+        payload: timelineId ? { type: 'ready_vote', timelineId } : { type: 'ready_vote' },
+      }],
     });
     return groups;
   }
@@ -490,8 +617,19 @@ function buildActionGroups(view: WerewolfView, members: readonly MemberLike[]): 
     const candidates = isRunoff
       ? view.players.filter((p) => p.alive && view.runoffCandidates.includes(p.playerId) && p.playerId !== me.playerId && !p.idiotRevealed)
       : aliveOthers(view).filter((p) => !p.idiotRevealed);
-    const options: WerewolfActionOption[] = me.hasVoted ? [] : targetOptions(members, candidates, '投票放逐', (targetPlayerId) => ({ type: 'day_vote', targetPlayerId }));
-    if (!me.hasVoted) options.push({ id: 'abstain', label: '弃票', payload: { type: 'day_vote', targetPlayerId: null } });
+    const options: WerewolfActionOption[] = me.hasVoted ? [] : targetOptions(
+      members,
+      candidates,
+      '投票放逐',
+      (targetPlayerId) => (timelineId ? { type: 'day_vote', targetPlayerId, timelineId } : { type: 'day_vote', targetPlayerId }),
+    );
+    if (!me.hasVoted) {
+      options.push({
+        id: 'abstain',
+        label: '弃票',
+        payload: timelineId ? { type: 'day_vote', targetPlayerId: null, timelineId } : { type: 'day_vote', targetPlayerId: null },
+      });
+    }
     groups.push({
       id: 'day_vote',
       title: isRunoff ? '加赛放逐投票' : '放逐投票',
@@ -502,7 +640,16 @@ function buildActionGroups(view: WerewolfView, members: readonly MemberLike[]): 
   }
 
   if (view.phase === 'last_words' && view.lastWordsPlayerId === me.playerId) {
-    groups.push({ id: 'finish_last_words', title: '发表遗言', hint: '发表完毕后，点击完成遗言进入下一阶段', options: [{ id: 'finish_lw', label: '完成遗言', payload: { type: 'finish_last_words' } }] });
+    groups.push({
+      id: 'finish_last_words',
+      title: '发表遗言',
+      hint: '发表完毕后，点击完成遗言进入下一阶段',
+      options: [{
+        id: 'finish_lw',
+        label: '完成遗言',
+        payload: timelineId ? { type: 'finish_last_words', timelineId } : { type: 'finish_last_words' },
+      }],
+    });
     return groups;
   }
 
@@ -551,7 +698,7 @@ export function latestSpeakerLine(
   if (!speakerId) return null;
   for (let index = chat.length - 1; index >= 0; index -= 1) {
     const message = chat[index];
-    if (message && message.kind === 'player' && message.fromPlayerId === speakerId && message.text.trim()) {
+    if (message && message.kind === 'player' && message.fromPlayerId === speakerId && !message.toPlayerId && message.text.trim()) {
       return message.text.trim();
     }
   }
@@ -574,9 +721,14 @@ function targetActionsByPlayer(view: WerewolfView, members: readonly MemberLike[
   }
   if (view.phase === 'night' && me.role === 'witch' && me.nightVictimId !== null && !me.witchSaveUsed && me.witchSaveDecision === null) {
     const canSelfSave = me.nightVictimId !== me.playerId || me.witchCanSelfSave;
+    const timelineId = view.timeline?.id;
     if (canSelfSave) {
       const list = map.get(me.nightVictimId) ?? [];
-      list.push({ id: 'save_on_chip', label: '使用解药救他', payload: { type: 'witch_save', save: true } });
+      list.push({
+        id: 'save_on_chip',
+        label: '使用解药救他',
+        payload: timelineId ? { type: 'witch_save', save: true, timelineId } : { type: 'witch_save', save: true },
+      });
       map.set(me.nightVictimId, list);
     }
   }
@@ -588,6 +740,8 @@ export function buildWerewolfPresentation(
   members: readonly MemberLike[],
   chat: readonly ChatMessageView[] = [],
   myAvatar?: string | null,
+  clockSample?: ServerClockSample | null,
+  currentMonotonic?: number,
 ): WerewolfPresentationModel {
   const me = view.me;
   const actionGroups = buildActionGroups(view, members);
@@ -621,6 +775,19 @@ export function buildWerewolfPresentation(
         isZeroBased: true,
         playerId: player.playerId,
       });
+      const seerResult = me?.role === 'seer'
+        ? (me.seerResults ?? []).find((r) => r.playerId === player.playerId)
+        : null;
+      const seerResultTeam = seerResult?.team ?? null;
+      const seerResultLabel = seerResult
+        ? (seerResult.team === 'wolves' ? '狼人' : '好人')
+        : null;
+      const isMyTarget = Boolean(
+        ((view.phase === 'voting' || view.phase === 'runoff_voting') && me?.myVote === player.playerId)
+        || (view.phase === 'night' && me?.role === 'wolf' && me.wolfVotes?.[me.playerId] === player.playerId)
+        || (view.phase === 'night' && me?.role === 'guard' && me.guardTargetId === player.playerId)
+        || (view.phase === 'night' && me?.role === 'seer' && (me.seerResults ?? []).some((r) => r.night === view.day && r.playerId === player.playerId))
+      );
       return {
         playerId: player.playerId,
         name: nameFor(members, player.playerId),
@@ -636,6 +803,9 @@ export function buildWerewolfPresentation(
         revealedRoleLabel: player.revealedRole ? WEREWOLF_ROLE_NAMES[player.revealedRole] : null,
         avatar,
         targetActions: targetActions[player.playerId] ?? [],
+        isMyTarget,
+        seerResultTeam,
+        seerResultLabel,
       };
     }),
     self: me
@@ -710,10 +880,17 @@ export function buildWerewolfPresentation(
     reveal: view.reveal
       ? {
           headline: view.aborted ? '本局已中止' : `${teamLabel(view.winner)}获胜`,
-          rows: Object.entries(view.reveal.roles ?? {}).map(([playerId, role]) => ({
-            name: nameFor(members, playerId),
-            roleLabel: WEREWOLF_ROLE_NAMES[role],
-          })),
+          rows: Object.entries(view.reveal.roles ?? {}).map(([playerId, role]) => {
+            const player = view.players.find((p) => p.playerId === playerId);
+            const member = members.find((m) => m.playerId === playerId);
+            return {
+              playerId,
+              name: member ? nameFor(members, playerId) : '未知玩家',
+              roleLabel: WEREWOLF_ROLE_NAMES[role] ?? '未知身份',
+              alive: player ? player.alive : undefined,
+              avatar: member ? resolveMemberAvatar(member) : undefined,
+            };
+          }),
         }
       : null,
     rolesConfig: view.config?.roles ?? { guard: false, hunter: false, idiot: false },
@@ -721,5 +898,9 @@ export function buildWerewolfPresentation(
     hasReadiedVote: Boolean(
       me?.hasReadiedVote || (view.freeDiscussionReadyPlayerIds ?? []).includes(me?.playerId ?? ''),
     ),
+    timeline: view.timeline ?? null,
+    announcement: view.announcement ?? null,
+    isAuthoritativeTimeline: view.timeline !== null && view.timeline !== undefined,
+    timelineTimer: view.timeline ? formatTimelineTimer(view.timeline, clockSample, currentMonotonic) : null,
   };
 }

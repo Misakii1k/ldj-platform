@@ -3,6 +3,7 @@
  * 深度集成 TabletopOvalShell、CardFanEngine、四色选色轮盘、UNO 暴击动效与 WebAudio。
  */
 import React, { useState, useEffect, useRef } from 'react';
+import { ArrowRight, RotateCw, RotateCcw } from 'lucide-react';
 import { useConnection } from '../../../connection/useConnection.ts';
 import { useCountdown } from '../../../shared-ui/useCountdown.ts';
 import { TabletopOvalShell, type PlayerSeat } from '../../../shared-ui/TabletopOvalShell.tsx';
@@ -10,10 +11,14 @@ import { CardFanEngine, type CardItem } from '../../../shared-ui/CardFanEngine.t
 import { StageCountdownRing } from '../../../shared-ui/stage/StageCountdownRing.tsx';
 import { FlightLayer } from '../../../shared-ui/stage/FlightLayer.tsx';
 import { useUnoHouseStage } from './useUnoHouseStage.tsx';
+import { RollingNumber } from '../../../shared-ui/RollingNumber.tsx';
 import { GameIcon } from '../../../shared-ui/GameIcon.tsx';
 import { UserAvatar } from '../../../user/UserAvatar.tsx';
 import { webAudio } from '../../../shared-ui/WebAudioManager.ts';
 import { nameFor, useGameAction } from '../../useGameAction.ts';
+import { TabletopVictoryBurst } from '../../../shared-ui/TabletopVictoryBurst.tsx';
+import { TabletopCountdownText } from '../../../shared-ui/TabletopCountdownText.tsx';
+import { usePhaseEventOverlay } from '../../../shared-ui/usePhaseEventOverlay.tsx';
 import {
   UNO_COLORS,
   UNO_COLOR_NAMES,
@@ -24,6 +29,7 @@ import {
   type UnoColor,
   type UnoHousePlayerView,
 } from '../types.ts';
+import { computeRingPositions } from './ringLayout.ts';
 
 interface Props {
   view: UnoHousePlayerView;
@@ -43,6 +49,10 @@ export function UnoHouseStage({ view }: Props) {
   const members = state.room?.members ?? [];
   const { act, busy, error } = useGameAction();
   const [wildCardId, setWildCardId] = useState<string | null>(null);
+  /** 预喊确认：手上剩 2 张时点牌，先问喊不喊 UNO 再出。 */
+  const [preCallCardId, setPreCallCardId] = useState<string | null>(null);
+  /** 万能牌走「选色」二段确认时，暂存上一步的预喊意图。 */
+  const [pendingPreCall, setPendingPreCall] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
   const [unoShouter, setUnoShouter] = useState<string | null>(null);
@@ -51,6 +61,13 @@ export function UnoHouseStage({ view }: Props) {
   const me = view.me;
   const isSpectator = me === null || me === undefined;
   const phase = view.phase;
+
+  // 局间 / 整场结束盖印（单局结束时整场未结束才弹，整场结束交给 VictoryBurst）
+  const { overlay: phaseOverlay } = usePhaseEventOverlay(`${phase}:${view.round}`, (key) => {
+    if (key.startsWith('round_over')) return { label: `第 ${view.round} 局结束`, sublabel: '结算积分，准备下一局', variant: 'stamp' };
+    if (key.startsWith('round_playing') && view.round > 1) return { label: `第 ${view.round} 局开始`, variant: 'stamp' };
+    return null;
+  });
   const turnCountdown = useCountdown(view.clockInfo?.turnDeadlineAt);
   const windowCountdown = useCountdown(view.clockInfo?.windowDeadlineAt);
 
@@ -91,6 +108,20 @@ export function UnoHouseStage({ view }: Props) {
 
   const cardColor = (card: UnoCard): string => ('color' in card ? card.color : 'wild');
 
+  /** 真正提交出牌：preCallUno 为 true 时同时喊 UNO（落地即安全，不开抓捕窗口）。 */
+  function submitPlay(card: UnoCard, preCallUno: boolean) {
+    if (card.kind === 'wild' || card.kind === 'wild4') {
+      // 万能牌还需选色，把预喊意图带到选色确认那一步
+      setWildCardId(card.id);
+      setPendingPreCall(preCallUno);
+      return;
+    }
+    if (preCallUno) webAudio.playUnoShout();
+    void act(preCallUno
+      ? { type: 'play_card', cardId: card.id, preCallUno: true }
+      : { type: 'play_card', cardId: card.id });
+  }
+
   function handlePlayCard(card: UnoCard) {
     if (me === null || busy) return;
 
@@ -105,8 +136,13 @@ export function UnoHouseStage({ view }: Props) {
       setSelectedCardIds([]);
       return;
     }
-    if (card.kind === 'wild' || card.kind === 'wild4') setWildCardId(card.id);
-    else void act({ type: 'play_card', cardId: card.id });
+    // 剩 2 张：这张打出去就只剩 1 张，先问喊不喊 UNO
+    if (caps.has('canPreCallUno')) {
+      setPreCallCardId(card.id);
+      setSelectedCardIds([]);
+      return;
+    }
+    submitPlay(card, false);
     setSelectedCardIds([]);
   }
 
@@ -115,10 +151,14 @@ export function UnoHouseStage({ view }: Props) {
     webAudio.playCardPlay();
     if (inWindow && caps.has('canStackPenalty')) {
       void act({ type: 'stack_penalty', cardId: wildCardId, declaredColor: color });
+    } else if (pendingPreCall) {
+      webAudio.playUnoShout();
+      void act({ type: 'play_card', cardId: wildCardId, declaredColor: color, preCallUno: true });
     } else {
       void act({ type: 'play_card', cardId: wildCardId, declaredColor: color });
     }
     setWildCardId(null);
+    setPendingPreCall(false);
     setSelectedCardIds([]);
   }
 
@@ -159,10 +199,12 @@ export function UnoHouseStage({ view }: Props) {
   }, [wildCardId, showRules]);
 
   // 映射玩家席位
+  const raceTargetId = view.unoRaceWindow?.targetPlayerId ?? null;
   const seats: PlayerSeat[] = view.players.map((player) => {
     const member = members.find((m) => m.playerId === player.playerId);
     const isCurrent = player.playerId === view.currentPlayerId;
     const playerIdx = view.players.findIndex((p) => p.playerId === player.playerId);
+    const isMissedTarget = player.playerId === raceTargetId;
     return {
       id: player.playerId,
       name: nameFor(members, player.playerId),
@@ -170,7 +212,8 @@ export function UnoHouseStage({ view }: Props) {
       isCurrentTurn: isCurrent,
       handCount: player.handCount,
       roleTag: player.teamId !== null ? `队伍 ${player.teamId}` : undefined,
-      badge: player.unoCalled ? 'UNO!' : undefined,
+      // 漏报中优先显示警示徽章，提示其他人可以抓他
+      badge: isMissedTarget ? '漏报!' : player.unoCalled ? 'UNO!' : undefined,
       score: view.cumulativeScores?.[playerIdx],
     };
   });
@@ -197,7 +240,68 @@ export function UnoHouseStage({ view }: Props) {
   const directionLabel = view.direction === -1 ? '逆时针' : '顺时针';
   const isCW = view.direction === 1;
 
-  const opponents = view.players.filter((p) => p.playerId !== me?.playerId);
+  // 对手按「座次 + 方向」环绕取出，数组顺序 = 真实出牌顺序。
+  // view.players 的顺序即座次，direction 语义与服务端 nextTurnParticipant 一致
+  // （shared/game/rules/turns.ts 的 wrapIndex(index + direction)），客户端可自行推算。
+  const myIndex = view.players.findIndex((p) => p.playerId === me?.playerId);
+  const total = view.players.length;
+  const opponents = myIndex < 0
+    ? view.players.filter((p) => p.playerId !== me?.playerId)
+    : Array.from({ length: Math.max(total - 1, 0) }, (_, step) =>
+        view.players[(((myIndex + view.direction * (step + 1)) % total) + total) % total]!);
+
+  // 下一位玩家：house 视图没有 nextPlayerId，同样按座次 + 方向推算
+  const curIndex = view.players.findIndex((p) => p.playerId === view.currentPlayerId);
+  const nextPlayerId = curIndex < 0 || total === 0
+    ? null
+    : view.players[(((curIndex + view.direction) % total) + total) % total]!.playerId;
+
+  // 环形站位定位：需要容器与中央牌堆的实际几何，随窗口/旋转变化重算。
+  // 一律用 getBoundingClientRect 统一基准；牌堆位置也必须实测——
+  // 它在容器里并非垂直居中，且偏移量随视口变化，写死比例会让站位压上牌堆。
+  const ringRef = useRef<HTMLDivElement>(null);
+  const pileRef = useRef<HTMLDivElement>(null);
+  const [ringGeom, setRingGeom] = useState({
+    width: 0, height: 0, pileLeft: 0, pileRight: 0, pileTop: 0, pileBottom: 0,
+  });
+  useEffect(() => {
+    const el = ringRef.current;
+    if (!el) return;
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      const p = pileRef.current?.getBoundingClientRect();
+      const next = {
+        width: rect.width,
+        height: rect.height,
+        pileLeft: p ? p.left - rect.left : rect.width / 2 - 80,
+        pileRight: p ? p.right - rect.left : rect.width / 2 + 80,
+        pileTop: p ? p.top - rect.top : rect.height / 2 - 56,
+        pileBottom: p ? p.bottom - rect.top : rect.height / 2 + 56,
+      };
+      setRingGeom((prev) => (
+        (Object.keys(next) as (keyof typeof next)[]).every((k) => Math.abs(prev[k] - next[k]) < 0.5)
+          ? prev
+          : next
+      ));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    if (pileRef.current) observer.observe(pileRef.current);
+    return () => observer.disconnect();
+  }, [opponents.length]);
+
+  const ringPositions = computeRingPositions(
+    opponents.length,
+    ringGeom.width,
+    ringGeom.height,
+    {
+      left: ringGeom.pileLeft,
+      right: ringGeom.pileRight,
+      top: ringGeom.pileTop,
+      bottom: ringGeom.pileBottom,
+    },
+  );
 
   // 中央舞台牌桌
   const centerArena = (
@@ -212,42 +316,77 @@ export function UnoHouseStage({ view }: Props) {
       {/* 顺时针 / 逆时针流光旋转方向环 */}
       <div className={`uno-direction-compass ${isCW ? 'is-cw' : 'is-ccw'}`} aria-hidden="true" />
 
-      {/* 牌桌对手环绕席位（竖屏/小屏核心对手展示） */}
+      {/* 牌桌对手环绕席位：按座次 + 方向沿椭圆弧摆放，方位即出牌顺序 */}
       {opponents.length > 0 && (
-        <div className="uno-opponents-ring" data-count={opponents.length}>
-          {opponents.map((opp) => {
+        <div className="uno-opponents-ring" data-count={opponents.length} ref={ringRef}>
+          {opponents.map((opp, oppIndex) => {
             const oppMember = members.find((m) => m.playerId === opp.playerId);
             const isCurrent = opp.playerId === view.currentPlayerId;
+            const isNext = !isCurrent && opp.playerId === nextPlayerId;
+            const isMissedTarget = opp.playerId === raceTargetId;
             const oppIdx = view.players.findIndex((p) => p.playerId === opp.playerId);
             const oppScore = view.cumulativeScores?.[oppIdx];
+            const pos = ringPositions[oppIndex];
+            // 手牌少即危险：2 张转橙、1 张转红
+            const danger = opp.handCount === 1 ? 'is-danger-1' : opp.handCount === 2 ? 'is-danger-2' : '';
 
             return (
               <div
                 key={opp.playerId}
-                className={`uno-opponent-station ${isCurrent ? 'is-active-turn' : ''} ${opp.unoCalled ? 'is-uno-shout' : ''}`}
+                className={`uno-opponent-station ${isCurrent ? 'is-active-turn' : ''} ${
+                  isNext ? 'is-next-turn' : ''
+                } ${danger} ${opp.unoCalled ? 'is-uno-shout' : ''}`}
+                style={pos ? {
+                  left: `${pos.left}px`,
+                  top: `${pos.top}px`,
+                  // 容器放不下全尺寸站位时整体缩小；--ring-scale 供 CSS 同步负 margin
+                  ['--ring-scale' as string]: pos.scale,
+                } : undefined}
                 data-player-id={opp.playerId}
               >
+                {isNext && <span className="uno-opponent-next-tag">下一位</span>}
                 <div className="uno-opponent-avatar-box">
                   <UserAvatar
                     avatar={oppMember?.avatar}
                     nickname={nameFor(members, opp.playerId)}
-                    size={34}
+                    size={Math.round(40 * (pos?.scale ?? 1))}
                     className="uno-opponent-avatar"
                   />
                   {isCurrent && <div className="uno-opponent-turn-halo" />}
-                  {opp.unoCalled && <span className="uno-opponent-uno-badge">UNO!</span>}
                 </div>
 
                 <div className="uno-opponent-info">
                   <span className="uno-opponent-name">{nameFor(members, opp.playerId)}</span>
                   <div className="uno-opponent-cards-tag">
-                    <GameIcon name="cards_deck" size={11} style={{ marginRight: '2px' }} />
                     <strong>{opp.handCount}</strong> 张
                   </div>
-                  {oppScore !== undefined && (
-                    <span className="uno-opponent-score">{oppScore}分</span>
+                  {view.roundLimit > 1 && oppScore !== undefined && (
+                    <RollingNumber className="uno-opponent-score" value={oppScore} suffix="分" />
                   )}
                 </div>
+                {isMissedTarget
+                  ? <span className="uno-opponent-uno-badge is-missed">漏报!</span>
+                  : opp.unoCalled && <span className="uno-opponent-uno-badge">UNO!</span>}
+              </div>
+            );
+          })}
+
+          {/* 站位之间的方向箭头：沿出牌顺序指向下一位 */}
+          {ringPositions.slice(0, -1).map((pos, i) => {
+            const next = ringPositions[i + 1]!;
+            const angle = Math.atan2(next.top - pos.top, next.left - pos.left) * 180 / Math.PI;
+            return (
+              <div
+                key={`arrow-${i}`}
+                className="uno-ring-arrow"
+                aria-hidden="true"
+                style={{
+                  left: `${(pos.left + next.left) / 2}px`,
+                  top: `${(pos.top + next.top) / 2}px`,
+                  transform: `translate(-50%,-50%) rotate(${angle}deg)`,
+                }}
+              >
+                <ArrowRight size={17} strokeWidth={3.4} />
               </div>
             );
           })}
@@ -279,7 +418,7 @@ export function UnoHouseStage({ view }: Props) {
       )}
 
       {/* 牌堆与弃牌堆 */}
-      <div className="uno-deck-pile-wrap stage-felt-3d__plane" style={{ position: 'relative', zIndex: 5 }}>
+      <div className="uno-deck-pile-wrap stage-felt-3d__plane" ref={pileRef} style={{ position: 'relative', zIndex: 5 }}>
         {/* 摸牌堆 */}
         <button
           type="button"
@@ -323,9 +462,14 @@ export function UnoHouseStage({ view }: Props) {
 
       {/* 回合与状态信息 */}
       <p className="uno-house-center__meta" style={{ zIndex: 5 }}>
-        <span>方向：<strong>{directionLabel}</strong></span>
-        <span>轮到：<strong>{nameFor(members, view.currentPlayerId)}</strong></span>
-        {turnCountdown.expired ? null : <span style={{ color: '#ea580c' }}>{turnCountdown.secondsLeft}s</span>}
+        <span className="uno-direction-badge">
+          {isCW
+            ? <RotateCw size={15} strokeWidth={2.6} aria-hidden="true" />
+            : <RotateCcw size={15} strokeWidth={2.6} aria-hidden="true" />}
+          {directionLabel}
+        </span>
+        <span className="uno-turn-badge">轮到 <strong>{nameFor(members, view.currentPlayerId)}</strong></span>
+        {turnCountdown.expired ? null : <TabletopCountdownText as="span" secondsLeft={turnCountdown.secondsLeft} style={{ color: '#c2410c', fontWeight: 800 }} />}
       </p>
 
       {error && <p className="game-error uno-house-stage__error" role="alert">{error}</p>}
@@ -384,10 +528,13 @@ export function UnoHouseStage({ view }: Props) {
               type="button"
               className="uno-floating-btn btn-danger"
               disabled={busy}
+              title={me?.activeWindow === 'race'
+                ? '你漏喊了 UNO，趁还没被抓赶紧补喊'
+                : '你只剩 1 张牌，喊一声 UNO'}
               onClick={() => void act({ type: 'call_uno' })}
             >
               <GameIcon name="uno_alert" size={16} />
-              喊 UNO!
+              {me?.activeWindow === 'race' ? '补喊 UNO!' : '喊 UNO!'}
             </button>
           )}
 
@@ -396,6 +543,7 @@ export function UnoHouseStage({ view }: Props) {
               type="button"
               className="uno-floating-btn btn-danger"
               disabled={busy}
+              title={`${nameFor(members, view.unoRaceWindow.targetPlayerId)} 只剩 1 张却没喊 UNO，抓他罚摸 2 张`}
               onClick={() => void act({
                 type: 'catch_missed_uno',
                 targetPlayerId: view.unoRaceWindow!.targetPlayerId,
@@ -403,7 +551,7 @@ export function UnoHouseStage({ view }: Props) {
               })}
             >
               <GameIcon name="horn" size={16} />
-              抓漏报 UNO
+              抓 {nameFor(members, view.unoRaceWindow.targetPlayerId)} 漏报
             </button>
           )}
 
@@ -450,6 +598,9 @@ export function UnoHouseStage({ view }: Props) {
           selectedCardIds={selectedCardIds}
           onSelectCards={setSelectedCardIds}
           hidePlayButton
+          /* 罚牌链容易把手牌堆到 20+ 张，开启稠密策略：
+             可出牌抬升前置、不可出牌压成色条，再多则拆双排 */
+          denseWhenCrowded
           disabled={busy || phase !== 'round_playing'}
         />
         </div>
@@ -479,6 +630,17 @@ export function UnoHouseStage({ view }: Props) {
         centerArena={centerArena}
         bottomBar={bottomBar}
         onShowRules={() => setShowRules(true)}
+      />
+      {phaseOverlay}
+      <TabletopVictoryBurst
+        gameOver={phase === 'match_over'}
+        isWinner={me && view.matchRanking ? view.matchRanking.find((entry) => entry.rank === 1)?.playerId === me.playerId : null}
+        label="整场结束"
+        sublabel={
+          view.matchRanking
+            ? `冠军：${nameFor(members, view.matchRanking.find((entry) => entry.rank === 1)?.playerId ?? '')}`
+            : undefined
+        }
       />
 
       {/* 飞行层必须挂在牌桌外壳之外：毡面是 perspective 容器，
@@ -510,7 +672,56 @@ export function UnoHouseStage({ view }: Props) {
             <button
               type="button"
               className="uno-color-wheel-cancel"
-              onClick={() => setWildCardId(null)}
+              onClick={() => { setWildCardId(null); setPendingPreCall(false); }}
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 预喊确认：手上剩 2 张，这张打出去就只剩 1 张 */}
+      {preCallCardId !== null && (
+        <div className="uno-color-wheel-backdrop" role="dialog" aria-modal="true" aria-label="是否喊 UNO">
+          <div className="uno-color-wheel-dialog uno-precall-dialog">
+            <h3>
+              <GameIcon name="uno_alert" size={24} />
+              这张打出后只剩 1 张
+            </h3>
+            <p className="uno-precall-hint">
+              现在喊 UNO 就安全了；不喊的话，出牌后 5 秒内会被其他人抓到，罚摸 2 张。
+            </p>
+            <div className="uno-precall-actions">
+              <button
+                type="button"
+                className="uno-precall-btn uno-precall-btn--call"
+                disabled={busy}
+                onClick={() => {
+                  const card = (me?.hand ?? []).find((c) => c.id === preCallCardId);
+                  setPreCallCardId(null);
+                  if (card) submitPlay(card, true);
+                }}
+              >
+                <GameIcon name="horn" size={18} />
+                喊 UNO 并出牌
+              </button>
+              <button
+                type="button"
+                className="uno-precall-btn uno-precall-btn--silent"
+                disabled={busy}
+                onClick={() => {
+                  const card = (me?.hand ?? []).find((c) => c.id === preCallCardId);
+                  setPreCallCardId(null);
+                  if (card) submitPlay(card, false);
+                }}
+              >
+                静默出牌（冒险）
+              </button>
+            </div>
+            <button
+              type="button"
+              className="uno-color-wheel-cancel"
+              onClick={() => setPreCallCardId(null)}
             >
               取消
             </button>

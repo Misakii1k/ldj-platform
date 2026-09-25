@@ -5,6 +5,7 @@ import { buildGameStatePayload } from '../../server/src/core/game/views.ts';
 import { openDb, closeDb, type Db } from '../../server/src/persistence/db.ts';
 import { migrate } from '../../server/src/persistence/migrator.ts';
 import { applyRoomCommand } from '../../server/src/core/commands/roomCommand.ts';
+import { applyJoinRoom } from '../../server/src/core/commands/joinRoom.ts';
 import { RoomCommandExecutor } from '../../server/src/core/executor.ts';
 import { seedRoom } from '../../server/tests/helpers/seedRoom.ts';
 import { parseGameStatePayload } from '../../client/src/game/types.ts';
@@ -50,13 +51,28 @@ for (const game of playableGames) {
         const seeded = seedRoom(db, { gameId: game.id, ready: true, config: { gameConfig: clientGameConfig } });
         const { roomId, hostId } = seeded;
 
-        for (let i = 2; i <= game.minPlayers; i += 1) {
-          await executor.executeOnRoom({
-            roomId,
-            actorScope: `conn:addbot-${i}`,
-            requestId: `req-addbot-${i}`,
-            handler: (tx) => applyRoomCommand(tx, roomId, hostId, { command: 'add_bot', kind: 'rule' }, {}),
-          });
+        if ((game.botSupport as string) === 'none') {
+          for (let i = 2; i <= game.minPlayers; i += 1) {
+            await executor.executeOnRoom({
+              roomId,
+              actorScope: `conn:join-${i}`,
+              requestId: `req-join-${i}`,
+              handler: (tx) => {
+                const joined = applyJoinRoom(tx, roomId, { roomCode: seeded.roomCode, nickname: `玩家${i}`, asSpectator: false });
+                applyRoomCommand(tx, roomId, joined.playerId, { command: 'ready', ready: true }, {});
+                return joined;
+              },
+            });
+          }
+        } else {
+          for (let i = 2; i <= game.minPlayers; i += 1) {
+            await executor.executeOnRoom({
+              roomId,
+              actorScope: `conn:addbot-${i}`,
+              requestId: `req-addbot-${i}`,
+              handler: (tx) => applyRoomCommand(tx, roomId, hostId, { command: 'add_bot', kind: 'rule' }, {}),
+            });
+          }
         }
 
         await executor.executeOnRoom({
@@ -68,35 +84,37 @@ for (const game of playableGames) {
 
         validateAllViews(db, roomId, `${game.id}:${ruleset.id} [start]`);
 
-        const runner = new BotRunner({
-          db,
-          executor,
-          logger: silentLogger,
-          thinkDelayMs: 0,
-          onOutcome: () => {},
-        });
+        if ((game.botSupport as string) !== 'none') {
+          const runner = new BotRunner({
+            db,
+            executor,
+            logger: silentLogger,
+            thinkDelayMs: 0,
+            onOutcome: () => {},
+          });
 
-        // Run bot steps and validate views at each step
-        for (let step = 0; step < 50; step += 1) {
-          const session = getActiveSession(db, roomId);
-          if (!session) break;
+          // Run bot steps and validate views at each step
+          for (let step = 0; step < 50; step += 1) {
+            const session = getActiveSession(db, roomId);
+            if (!session) break;
 
-          await runner.triggerAndWait(roomId);
-          validateAllViews(db, roomId, `${game.id}:${ruleset.id} [step ${step} post-bot]`);
+            await runner.triggerAndWait(roomId);
+            validateAllViews(db, roomId, `${game.id}:${ruleset.id} [step ${step} post-bot]`);
 
-          // Advance timers if any
-          const timer = db.prepare(
-            `SELECT * FROM timers WHERE session_id = ? AND status = 'pending' ORDER BY deadline_at ASC LIMIT 1`,
-          ).get(session.id) as { timer_id: string; deadline_at: number } | undefined;
-          if (timer) {
-            db.prepare(`UPDATE timers SET deadline_at = ? WHERE session_id = ? AND timer_id = ?`).run(Date.now() - 1000, session.id, timer.timer_id);
-            await executor.executeOnRoom({
-              roomId,
-              actorScope: `timer:${timer.timer_id}`,
-              requestId: `timer-${Date.now()}`,
-              handler: (tx) => consumeDueTimer(tx, session.id, timer.timer_id),
-            });
-            validateAllViews(db, roomId, `${game.id}:${ruleset.id} [step ${step} post-timer]`);
+            // Advance timers if any
+            const timer = db.prepare(
+              `SELECT * FROM timers WHERE session_id = ? AND status = 'pending' ORDER BY deadline_at ASC LIMIT 1`,
+            ).get(session.id) as { timer_id: string; deadline_at: number } | undefined;
+            if (timer) {
+              db.prepare(`UPDATE timers SET deadline_at = ? WHERE session_id = ? AND timer_id = ?`).run(Date.now() - 1000, session.id, timer.timer_id);
+              await executor.executeOnRoom({
+                roomId,
+                actorScope: `timer:${timer.timer_id}`,
+                requestId: `timer-${Date.now()}`,
+                handler: (tx) => consumeDueTimer(tx, session.id, timer.timer_id),
+              });
+              validateAllViews(db, roomId, `${game.id}:${ruleset.id} [step ${step} post-timer]`);
+            }
           }
         }
       } finally {

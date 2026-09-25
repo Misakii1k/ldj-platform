@@ -183,12 +183,19 @@ function buildReveal(
   if (!view.gameEnded) return null;
 
   const nameOf = new Map(seats.map((seat) => [seat.playerId, seat.name]));
+  const seatOf = new Map(seats.map((seat) => [seat.playerId, seat]));
   const rows = view.players
     .filter((player) => player.roleInfo !== undefined)
-    .map((player) => ({
-      name: nameOf.get(player.playerId) ?? '未知玩家',
-      roleLabel: player.roleInfo!.name,
-    }));
+    .map((player) => {
+      const s = seatOf.get(player.playerId);
+      return {
+        playerId: player.playerId,
+        name: nameOf.get(player.playerId) ?? '未知玩家',
+        roleLabel: player.roleInfo!.name,
+        alive: !player.isEliminated,
+        avatar: s?.avatar,
+      };
+    });
 
   const headline = view.winner === 'werewolf'
     ? '狼人阵营获胜'

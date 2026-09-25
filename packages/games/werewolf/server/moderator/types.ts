@@ -1,3 +1,4 @@
+import type { WerewolfAnnouncement } from '@ldj/shared';
 import type {
   WerewolfModeratorAction,
   WerewolfModeratorConfig,
@@ -7,6 +8,7 @@ import type {
   WerewolfRole,
   WerewolfRoleInfo,
   WerewolfTeam,
+  WerewolfTimelineState,
 } from '@ldj/shared';
 
 export type {
@@ -18,6 +20,7 @@ export type {
   WerewolfRole,
   WerewolfRoleInfo,
   WerewolfTeam,
+  WerewolfTimelineState,
 };
 
 export interface ModeratorHistoryEntry {
@@ -27,7 +30,7 @@ export interface ModeratorHistoryEntry {
 }
 
 export interface ModeratorState {
-  readonly schemaVersion: 1;
+  readonly schemaVersion: 2;
   readonly moderatorPlayerId: string;
   readonly playerOrder: readonly string[];
   readonly assignedRoles: Readonly<Record<string, WerewolfRole>>;
@@ -35,6 +38,10 @@ export interface ModeratorState {
   readonly gameEnded: boolean;
   readonly winner: 'werewolf' | 'good' | null;
   readonly history: readonly ModeratorHistoryEntry[];
+  readonly timelineState: WerewolfTimelineState | null;
+  readonly announcement?: WerewolfAnnouncement | null;
+  readonly voiceRevision?: number;
+  readonly config?: WerewolfModeratorConfig;
 }
 
 export type ModeratorEvent =

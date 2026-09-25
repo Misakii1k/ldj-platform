@@ -11,6 +11,8 @@ import type { AnyGameModuleV2 } from '../../src/game/versionedContract.ts';
 
 /** 可重放的动作步：actor + 待解析动作 */
 export interface ReplayStep {
+  /** Captured server clock for time-authoritative games; old fixtures retain 1s increments. */
+  now?: number;
   actor: Actor;
   action: unknown;
 }
@@ -99,7 +101,7 @@ function replayWithSeed(
   states.push(structuredClone(state));
   resultCandidates.push(null);
   for (const step of actions) {
-    ctx.now += 1_000;
+    ctx.now = step.now ?? ctx.now + 1_000;
     const reduced = module.reduce(ctx, structuredClone(state), step.actor as never, step.action as never);
     if (!reduced.ok) {
       throw new Error(`快照重放动作被拒: actor=${JSON.stringify(step.actor)} action=${JSON.stringify(step.action)}`);

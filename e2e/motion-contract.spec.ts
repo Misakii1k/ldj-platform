@@ -31,7 +31,8 @@ interface GameCase {
 /** 全部 11 款游戏：动效门控必须逐款生效，不能只抽查代表样本。 */
 const GAME_CASES: GameCase[] = [
   { id: 'undercover', label: '谁是卧底', count: 6, config: {}, readySelector: '.tabletop-shell' },
-  { id: 'werewolf', label: '狼人杀', count: 8, config: {}, readySelector: '.tabletop-shell' },
+  // 狼人杀 / 榴莲的新版页面自带外壳，根节点不再是 .tabletop-shell
+  { id: 'werewolf', label: '狼人杀', count: 8, config: {}, readySelector: '.tabletop-shell, .werewolf-native-page' },
   { id: 'loveletter', label: '情书', count: 2, config: { rulesetId: 'loveletter_classic16_v1' }, readySelector: '.tabletop-shell' },
   {
     id: 'echo-judge',
@@ -82,7 +83,7 @@ const GAME_CASES: GameCase[] = [
     config: { rulesetId: 'cheese_thief_classic_v1', nightHourSeconds: 60, discussionSeconds: 60, voteSeconds: 60 },
     readySelector: '.tabletop-shell',
   },
-  { id: 'durian', label: 'DURING', count: 2, config: { rulesetId: 'durian_orchard_v1' }, readySelector: '.tabletop-shell' },
+  { id: 'durian', label: 'DURING', count: 2, config: { rulesetId: 'durian_orchard_v1' }, readySelector: '.tabletop-shell, .durian-native-page' },
 ];
 
 type MotionLevel = 'full' | 'reduced' | 'minimal' | 'off';
@@ -226,7 +227,7 @@ test.describe('动效合约 · 游戏页门控', () => {
 
           // 确定性验证 reduced 门控本身（不受运行时采样降级影响）：临时把档位钉到 reduced 后复测。
           const reducedGate = await page.evaluate(
-            (selectors: string[]) => {
+            ({ selectors, rootSelector }: { selectors: string[]; rootSelector: string }) => {
               const root = document.documentElement;
               const previous = root.dataset.motionLevel;
               root.dataset.motionLevel = 'reduced';
@@ -243,14 +244,15 @@ test.describe('动效合约 · 游戏页门控', () => {
                   }
                 }
               }
-              const shell = document.querySelector('.tabletop-shell');
+              // 在游戏真正的根节点上测：自带外壳的页面（狼人杀/榴莲）根节点不是 .tabletop-shell
+              const shell = document.querySelector(rootSelector);
               const phaseDuration = shell
                 ? parseFloat(getComputedStyle(shell).getPropertyValue('--game-motion-phase-duration')) || 0
                 : 0;
               root.dataset.motionLevel = previous ?? 'reduced';
               return { offenders, phaseDuration };
             },
-            AMBIENT_MOTION_SELECTORS as unknown as string[],
+            { selectors: AMBIENT_MOTION_SELECTORS as unknown as string[], rootSelector: game.readySelector },
           );
           expect(
             reducedGate.offenders,

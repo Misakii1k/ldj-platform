@@ -6,6 +6,7 @@
  * 详见 docs/plans/2026-09-22-game-ui-uplift/contracts/bell-clash.md
  */
 import { useEffect, useRef, useState } from 'react';
+import { BookOpen } from 'lucide-react';
 import { useConnection } from '../../connection/useConnection.ts';
 import { nameFor, useGameAction } from '../useGameAction.ts';
 import { TabletopOvalShell, type PlayerSeat } from '../../shared-ui/TabletopOvalShell.tsx';
@@ -13,6 +14,7 @@ import { CardFanEngine, type CardItem } from '../../shared-ui/CardFanEngine.tsx'
 import { GameIcon } from '../../shared-ui/GameIcon.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
 import { TabletopEventOverlay } from '../../shared-ui/TabletopEventOverlay.tsx';
+import { TabletopVictoryBurst } from '../../shared-ui/TabletopVictoryBurst.tsx';
 import { StageCountdownRing } from '../../shared-ui/stage/StageCountdownRing.tsx';
 import { FlightLayer } from '../../shared-ui/stage/FlightLayer.tsx';
 import { DeskBell } from './stage/DeskBell.tsx';
@@ -367,6 +369,7 @@ export function BellClashGamePage({ view }: Props) {
             onClick={() => setRulesOpen(true)}
             title="查看游戏规则"
           >
+            <BookOpen className="tabletop-sound-btn__icon" size={16} strokeWidth={2.6} aria-hidden="true" />
             <span className="tabletop-sound-btn__label">规则</span>
           </button>
         )}
@@ -383,6 +386,12 @@ export function BellClashGamePage({ view }: Props) {
         sublabel={stage.claimBanner?.isMe ? '立即打出口令短语卡' : '本回合由他接管出牌'}
         durationMs={1600}
         onComplete={stage.dismissClaim}
+      />
+      <TabletopVictoryBurst
+        gameOver={view.phase === 'game_over'}
+        isWinner={myId ? (view.winners ?? []).includes(myId) : null}
+        label={myId && (view.winners ?? []).includes(myId) ? '手牌清空，你赢了！' : '对局结案'}
+        sublabel={`获胜玩家：${(view.winners ?? []).map((id) => nameFor(members, id)).join('、')}`}
       />
 
       {rulesOpen && (

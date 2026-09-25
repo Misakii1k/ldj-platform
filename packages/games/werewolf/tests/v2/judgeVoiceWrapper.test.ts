@@ -19,6 +19,8 @@ test('v2 judgeVoiceWrapper: 进入夜晚和天亮公告时对 deadlineAt 补齐�
   };
   const cfg = werewolfV2Module.parseConfig({ roles: { guard: false, hunter: false, idiot: false } });
   let st = werewolfV2Module.createInitialState(ctx, IDS, cfg);
+  // 契约 C / T04.c：旧局 fixture（timelineState=null）保持原 wrapper 时限补齐
+  st.timelineState = null;
 
   assert.equal(st.phase, 'role_reveal');
 
@@ -61,4 +63,27 @@ test('v2 judgeVoiceWrapper: 进入夜晚和天亮公告时对 deadlineAt 补齐�
     lastNightAction.nextState.deadlineAt! >= ctx.now + JUDGE_DAY_ANNOUNCEMENT_HOLD_MS,
     `day_announcement deadlineAt 应大于等于 now + hold (${ctx.now + JUDGE_DAY_ANNOUNCEMENT_HOLD_MS})`,
   );
+});
+
+test('v2 judgeVoiceWrapper: 权威时间线新局（timelineState.version===1）旁路旧整夜保底', () => {
+  const ctx = {
+    now: 1_000_000,
+    random: {
+      nextInt: () => 0,
+      shuffle: <T>(items: readonly T[]) => [...items],
+    },
+  };
+  const cfg = werewolfV2Module.parseConfig({ roles: { guard: false, hunter: false, idiot: false } });
+  let st = werewolfV2Module.createInitialState(ctx, IDS, cfg);
+  assert.equal(st.timelineState?.version, 1);
+
+  for (let i = 0; i < IDS.length - 1; i += 1) {
+    st = apply(st, actor(IDS[i]!), { type: 'confirm_role' }, ctx);
+  }
+  const lastConfirm = werewolfV2Module.reduce(ctx, st, actor(IDS[IDS.length - 1]!), { type: 'confirm_role' });
+  assert.equal(lastConfirm.ok, true);
+  if (!lastConfirm.ok) return;
+
+  // 新时间线流程旁路旧整夜 holdMs，保持新流程自身节奏
+  assert.notEqual(lastConfirm.nextState.deadlineAt, ctx.now + JUDGE_NIGHT_HOLD_MS);
 });

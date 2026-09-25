@@ -44,6 +44,23 @@ test('不可交互状态禁止掀开骰盅', () => {
   assert.equal(state.isLifted, false);
 });
 
+test('支持单击切换掀开定格与再次单击扣回（双模兼容）', () => {
+  let state = INITIAL_DICE_CUP_STATE;
+  assert.equal(state.isLifted, false);
+
+  // 单击掀开
+  state = reduceDiceCupState(state, { type: 'lift_toggle', canInteract: true });
+  assert.equal(state.isLifted, true);
+
+  // 再次单击扣回
+  state = reduceDiceCupState(state, { type: 'lift_toggle', canInteract: true });
+  assert.equal(state.isLifted, false);
+
+  // 不可交互时无法单击切换
+  state = reduceDiceCupState(state, { type: 'lift_toggle', canInteract: false });
+  assert.equal(state.isLifted, false);
+});
+
 test('摇骰动效状态机触发与完成', () => {
   let state = INITIAL_DICE_CUP_STATE;
 

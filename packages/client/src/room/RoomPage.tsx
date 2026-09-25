@@ -39,9 +39,14 @@ function statusText(status: string): string {
 }
 
 function memberStatusBadge(m: RoomMemberView): { label: string; cls: string } {
+  if (m.seatRole === 'spectator') {
+    return m.connectionStatus === 'CONNECTED'
+      ? { label: '大屏展示', cls: 'table-screen' }
+      : { label: '已断开', cls: 'expired' };
+  }
   switch (m.connectionStatus) {
     case 'CONNECTED':
-      return m.ready ? { label: '已就绪', cls: 'online ready' } : { label: '待准备', cls: 'online' };
+      return m.ready ? { label: '已就绪', cls: 'online ready' } : { label: '待准备', cls: 'pending' };
     case 'DISCONNECTED_RESERVED': return { label: '保留席位', cls: 'reserved' };
     case 'EXPIRED': return { label: '已过期', cls: 'expired' };
     case 'KICKED': return { label: '已移出', cls: 'kicked' };
@@ -89,6 +94,7 @@ export function RoomPage() {
   const chatInputRef = useRef<HTMLInputElement | null>(null);
   const roomCommandInFlightRef = useRef(false);
   const [gameConfig, setGameConfig] = useState<SetupConfig>({});
+  const [chatExpanded, setChatExpanded] = useState(false);
 
   const synced = state.connState === 'synced';
   const isHost = me !== null && room !== null && room.members.some(
@@ -96,6 +102,7 @@ export function RoomPage() {
   );
   const myPlayerId = me?.playerId ?? null;
   const myMember = room?.members.find((m) => m.playerId === myPlayerId);
+  const isScreen = myMember?.seatRole === 'spectator';
 
   // P1-9：成员昵称索引（聊天渲染共用）
   const memberNames = useMemo(() => {
@@ -103,9 +110,22 @@ export function RoomPage() {
     return new Map(entries);
   }, [room]);
 
-  const onlinePlayers = room?.members.filter(
-    (m) => m.seatRole === 'player' && m.connectionStatus === 'CONNECTED',
-  ) ?? [];
+  const playerMembers = useMemo(() => {
+    return (room?.members ?? [])
+      .filter((m) => m.seatRole === 'player' && m.connectionStatus !== 'KICKED')
+      .sort((a, b) => (a.seat ?? 999) - (b.seat ?? 999));
+  }, [room?.members]);
+
+  const onlinePlayerMembers = useMemo(() => {
+    return playerMembers.filter((m) => m.connectionStatus === 'CONNECTED');
+  }, [playerMembers]);
+
+  const spectatorMembers = useMemo(() => {
+    return (room?.members ?? [])
+      .filter((m) => m.seatRole === 'spectator' && m.connectionStatus !== 'KICKED');
+  }, [room?.members]);
+
+  const onlinePlayers = onlinePlayerMembers;
 
   const selectedGame = getGameCatalogEntry(room?.gameId);
 
@@ -221,6 +241,13 @@ export function RoomPage() {
     void doRoomCommand({ command: 'ready', ready: !ready }, ready ? '取消准备' : '准备');
   }
 
+  function handleSwitchSeatRole(playerId: string, role: 'player' | 'spectator') {
+    void doRoomCommand(
+      { command: 'switch_seat_role', role, targetPlayerId: playerId },
+      role === 'spectator' ? '设为公共大屏' : '加入游戏席位',
+    );
+  }
+
   function handleKick(playerId: string, name: string) {
     setConfirmState({ kind: 'kick', targetPlayerId: playerId, name });
   }
@@ -290,11 +317,15 @@ export function RoomPage() {
   const roomGame = selectedGame;
   const isWerewolfModerator = roomGame.id === 'werewolf' && gameConfig.rulesetId === 'werewolf_moderator_v1';
   const minimumPlayersToStart = isWerewolfModerator ? 6 : roomGame.minPlayers;
-  const maximumPlayers = roomGame.maxPlayers;
-  const notReadyCount = onlinePlayers.filter((p) => !p.ready).length;
-  // 自己是否还没准备：机器人加入即就绪，最容易出现"人数够了但卡在 1 人未准备"的就是房主本人
-  const meNotReady = me !== null && room !== null
-    && (room.members.find((m) => m.playerId === me.playerId)?.ready === false);
+  const maximumPlayers = isWerewolfModerator ? 13 : (roomGame.id === 'werewolf' ? 12 : roomGame.maxPlayers);
+  const effectiveOnlinePlayersForReady = isWerewolfModerator
+    ? onlinePlayers.filter((p) => !p.isHost)
+    : onlinePlayers;
+  const notReadyCount = effectiveOnlinePlayersForReady.filter((p) => !p.ready).length;
+  // 自己是否还没准备：仅当前作为参局玩家（player）且未准备时才阻断开局；真人法官无需准备
+  const meNotReady = isWerewolfModerator && isHost
+    ? false
+    : myMember?.seatRole === 'player' && myMember.ready === false;
 
   const cardPlayerCount = isWerewolfModerator ? Math.max(0, onlinePlayers.length - 1) : onlinePlayers.length;
   const werewolfDist = roomGame.id === 'werewolf'
@@ -319,7 +350,7 @@ export function RoomPage() {
     ? isWerewolfInvalid
       ? (werewolfDist?.error ?? '狼人杀阵营配置不平衡（需平民保底 2 人），请调整配置后再开局')
       : meNotReady
-        ? '你还未准备：先点击成员列表中自己（我）的「准备」按钮'
+        ? '你还未就绪：请先点击「点击准备」'
         : onlinePlayers.length < minimumPlayersToStart
           ? isWerewolfModerator
             ? `需要 1 名主持人 + 5–12 名抽卡玩家（当前共 ${onlinePlayers.length} 人）`
@@ -348,6 +379,7 @@ export function RoomPage() {
   // 席位满了就不能再加：服务端也会拒，这里提前禁用避免无效往返
   const seatsFull = onlinePlayers.length >= maximumPlayers;
   const autoStartActive =
+    !isWerewolfModerator &&
     (room.status === 'LOBBY' || room.status === 'POST_GAME') &&
     onlinePlayers.length >= minimumPlayersToStart &&
     onlinePlayers.length <= maximumPlayers &&
@@ -356,10 +388,94 @@ export function RoomPage() {
     !isWerewolfInvalid &&
     room.members.every((m) => m.connectionStatus === 'CONNECTED');
 
-  const sortedMembers = [...room.members].sort((a, b) => {
-    if (a.seatRole !== b.seatRole) return a.seatRole === 'player' ? -1 : 1;
-    return (a.seat ?? 999) - (b.seat ?? 999);
-  });
+  const renderMemberCard = (m: RoomMemberView) => {
+    const badge = memberStatusBadge(m);
+    const isMe = m.playerId === myPlayerId;
+    const hasActions =
+      isHost &&
+      (room.status === 'LOBBY' || room.status === 'POST_GAME') &&
+      ((!isMe && m.botKind === null) || m.botKind !== null);
+
+    return (
+      <li key={m.playerId} className={'member ' + badge.cls + (hasActions ? ' has-actions' : '')}>
+        <span className="member-seat">
+          {m.seatRole === 'player' ? '#' + (m.seat !== undefined && m.seat !== null ? m.seat + 1 : '?') : '📺'}
+        </span>
+        <UserAvatar
+          avatar={resolveMemberAvatar(m, { isMe, myAvatar: profile.avatar })}
+          nickname={m.nickname}
+          size={32}
+          style={{ marginRight: '6px' }}
+        />
+        <span className="member-name">
+          {m.nickname}
+          {m.isHost && (
+            <span className="host-icon" title="房主">
+              <GameIcon name="crown" size={15} style={{ marginLeft: '4px' }} />
+            </span>
+          )}
+          {isMe && <span className="me-tag">（我）</span>}
+          {m.botKind === 'llm' && <span className="bot-tag bot-tag--llm" title="由大模型决策">AI</span>}
+          {m.botKind === 'rule' && <span className="bot-tag" title="随机合法出牌">机器人</span>}
+        </span>
+        <span className={'member-status ' + badge.cls}>{badge.label}</span>
+        {hasActions && (
+          <div className="member-actions member-manage-group">
+            {!isMe && m.botKind === null && (
+              <>
+                <button
+                  type="button"
+                  className="mini-btn mini-btn--seat"
+                  aria-label={m.seatRole === 'spectator' ? '加入玩家席' : '设为公共大屏'}
+                  title={m.seatRole === 'spectator' ? '将该成员加入玩家席位' : '将该设备设为公共大屏'}
+                  onClick={() => handleSwitchSeatRole(m.playerId, m.seatRole === 'spectator' ? 'player' : 'spectator')}
+                  disabled={busy || !synced}
+                >
+                  {m.seatRole === 'spectator' ? '入席' : '设为公屏'}
+                </button>
+                {m.connectionStatus === 'CONNECTED' && (
+                  <>
+                    <button
+                      type="button"
+                      className="mini-btn mini-btn--transfer"
+                      aria-label={'转让房主给 ' + m.nickname}
+                      title="将房主移交给该玩家"
+                      onClick={() => handleTransfer(m.playerId, m.nickname)}
+                      disabled={busy || !synced || room.status === 'CLOSED'}
+                    >
+                      转让
+                    </button>
+                    <button
+                      type="button"
+                      className="mini-btn mini-btn--danger"
+                      aria-label={'踢出玩家 ' + m.nickname}
+                      title="将该玩家移出房间"
+                      onClick={() => handleKick(m.playerId, m.nickname)}
+                      disabled={busy || !synced || room.status === 'CLOSED'}
+                    >
+                      踢出
+                    </button>
+                  </>
+                )}
+              </>
+            )}
+            {m.botKind !== null && (
+              <button
+                type="button"
+                className="mini-btn mini-btn--danger"
+                aria-label={'移除 ' + m.nickname}
+                title="移除该机器人"
+                onClick={() => handleRemoveBot(m.playerId)}
+                disabled={busy || !synced}
+              >
+                移除
+              </button>
+            )}
+          </div>
+        )}
+      </li>
+    );
+  };
 
   return (
     <main className="room-page game-home-page" data-game-id={roomGame.id}>
@@ -377,6 +493,11 @@ export function RoomPage() {
               <span className="room-status-badge__dot" />
               {statusText(room.status)}
             </span>
+            {isScreen && (
+              <span className="room-status-badge room-status-badge--screen" title="当前设备为公共大屏（免准备，纯展示）">
+                📺 公共大屏
+              </span>
+            )}
           </div>
           <div className="home-header__actions room-header__actions">
             {isHost && room.status !== 'IN_GAME' && (
@@ -403,8 +524,10 @@ export function RoomPage() {
 
         <section className="room-hero" aria-labelledby="room-title">
           <div className="room-hero__panel">
+            {roomGame.id === 'werewolf' && <p className="room-theme-eyebrow">THE NIGHT THEATRE · 暗夜剧场</p>}
+            {roomGame.id === 'durian' && <p className="room-theme-eyebrow">FRUIT PARTY · 玩具水果派对</p>}
             <h1 id="room-title" className="room-hero__title">
-              等待好友<span>入座</span>
+              {roomGame.id === 'werewolf' ? <>月亮升起前，<span>请入座</span></> : roomGame.id === 'durian' ? <>水果已就位，<span>等你按铃</span></> : <>等待好友<span>入座</span></>}
             </h1>
             <p className="room-hero__description">
               本游戏支持 {minimumPlayersToStart}–{maximumPlayers} 人。将房间码分享给身边的朋友，全员准备后即可开始对局。
@@ -423,7 +546,10 @@ export function RoomPage() {
 
         {actionError && <div className="error-banner room-sheet__error" role="alert">{actionError}</div>}
 
+        {roomGame.id === 'werewolf' && <div className="room-theme-guide"><strong>01 选择本局玩法</strong><p>平台主持由系统推进昼夜；真人主持由房主担任法官。下方阵营分布随人数和配置实时更新。</p></div>}
+        {roomGame.id === 'durian' && <div className="room-theme-guide"><strong>01 选择派对模式</strong><p>标准模式：系统判定质疑并计分。纯模拟模式：用电子桌面配合现场游玩，保留手动操作。玩家设备显示个人操作；公共大屏只读展示桌面，不占玩家席位。</p></div>}
         <GameSetupPanel
+          dialogClassName={roomGame.id === 'werewolf' ? 'ww-private-dialog' : roomGame.id === 'durian' ? 'durian-dialog' : undefined}
           setup={roomGame.setup}
           value={gameConfig}
           disabled={!isHost || busy || !synced || room.status !== 'LOBBY'}
@@ -433,7 +559,7 @@ export function RoomPage() {
 
         {roomGame.id === 'werewolf' && (
           <WerewolfCampPreview
-            playerCount={onlinePlayers.length}
+            playerCount={cardPlayerCount}
             gameConfig={gameConfig}
             isHost={isHost}
             disabled={!isHost || busy || !synced || room.status !== 'LOBBY'}
@@ -441,75 +567,56 @@ export function RoomPage() {
           />
         )}
 
+        {['werewolf', 'durian'].includes(roomGame.id) && <div className="room-theme-guide"><strong>02 入座与准备</strong><p>配置仅由房主调整。确认玩法后准备，未满足人数或配置条件时无法开局。</p></div>}
         <div className="room-content-grid">
-          <section className="room-panel room-players-panel members-section">
-            <div className="room-panel__head">
-              <div>
-                <h2 className="room-panel__title">成员（{onlinePlayers.length}/{maximumPlayers}）</h2>
+          <div className="room-members-column">
+            {/* 区块 1：参局玩家 */}
+            <section className="room-panel room-players-panel members-section" aria-labelledby="players-heading">
+              <div className="room-panel__head">
+                <div>
+                  <h2 id="players-heading" className="room-panel__title">
+                    🎮 参局玩家（{onlinePlayerMembers.length}/{maximumPlayers}）
+                  </h2>
+                </div>
+                {playerMembers.some((m) => m.connectionStatus !== 'CONNECTED' && m.connectionStatus !== 'KICKED') && (
+                  <span className="members-hint room-panel__hint">含断线保留</span>
+                )}
               </div>
-              {room.members.some((m) => m.connectionStatus !== 'CONNECTED' && m.connectionStatus !== 'KICKED') && <span className="members-hint room-panel__hint">含断线保留</span>}
-            </div>
-            <ul className="members-list room-members-list" aria-label="房间成员列表">
-              {sortedMembers.map((m) => {
-                const badge = memberStatusBadge(m);
-                const isMe = m.playerId === myPlayerId;
-                return (
-                  <li key={m.playerId} className={'member ' + badge.cls}>
-                    <span className="member-seat">{m.seatRole === 'player' ? '#' + (m.seat !== undefined && m.seat !== null ? m.seat : '?') : '观'}</span>
-                    <UserAvatar
-                      avatar={resolveMemberAvatar(m, { isMe, myAvatar: profile.avatar })}
-                      nickname={m.nickname}
-                      size={32}
-                      style={{ marginRight: '6px' }}
-                    />
-                    <span className="member-name">
-                      {m.nickname}
-                      {m.isHost && (
-                        <span className="host-icon" title="房主">
-                          <GameIcon name="crown" size={15} style={{ marginLeft: '4px' }} />
-                        </span>
-                      )}
-                      {isMe && <span className="me-tag">（我）</span>}
-                      {m.botKind === 'llm' && <span className="bot-tag bot-tag--llm" title="由大模型决策">AI</span>}
-                      {m.botKind === 'rule' && <span className="bot-tag" title="随机合法出牌">机器人</span>}
-                    </span>
-                    <span className={'member-status ' + badge.cls}>{badge.label}</span>
-                    {/* 我自己的准备/取消准备（非机器人；机器人自动就绪） */}
-                    {isMe && m.botKind === null && (room.status === 'LOBBY' || room.status === 'POST_GAME') && (
-                      <span className="member-actions">
-                        <button
-                          type="button"
-                          className="mini-btn"
-                          aria-label={m.ready ? '取消准备' : '准备'}
-                          onClick={() => handleToggleReady(m.ready)}
-                          disabled={busy || !synced}
-                        >
-                          {m.ready ? '取消准备' : '准备'}
-                        </button>
-                      </span>
-                    )}
-                    {/* 机器人不能当房主、也不叫"踢出"，只给一个移除入口 */}
-                    {isHost && m.botKind !== null && (room.status === 'LOBBY' || room.status === 'POST_GAME') && (
-                      <span className="member-actions">
-                        <button type="button" className="mini-btn" aria-label={'移除 ' + m.nickname} onClick={() => handleRemoveBot(m.playerId)} disabled={busy || !synced}>移除</button>
-                      </span>
-                    )}
-                    {isHost && m.botKind === null && m.playerId !== myPlayerId && m.connectionStatus === 'CONNECTED' && (
-                      <span className="member-actions">
-                        <button type="button" className="mini-btn" aria-label={'踢出玩家 ' + m.nickname} onClick={() => handleKick(m.playerId, m.nickname)} disabled={busy || !synced || room.status === 'CLOSED'}>踢出</button>
-                        <button type="button" className="mini-btn" aria-label={'转让房主给 ' + m.nickname} onClick={() => handleTransfer(m.playerId, m.nickname)} disabled={busy || !synced || room.status === 'CLOSED'}>转让房主</button>
-                      </span>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
+              <ul className="members-list room-members-list" aria-label="参局玩家列表">
+                {playerMembers.map((m) => renderMemberCard(m))}
+              </ul>
+            </section>
 
-          <section className="room-panel room-chat-panel chat-section">
+            {/* 区块 2：公共大屏 / 观战 */}
+            <section className="room-panel room-spectators-panel members-section" aria-labelledby="spectators-heading">
+              <div className="room-panel__head">
+                <div>
+                  <h2 id="spectators-heading" className="room-panel__title">
+                    📺 公共大屏 / 观战（{spectatorMembers.length}）
+                  </h2>
+                  <span className="spectators-subtitle">不占用玩家席位 · 纯净展示</span>
+                </div>
+              </div>
+              {spectatorMembers.length === 0 ? (
+                <div className="spectator-empty-card">
+                  <span className="spectator-empty-card__icon" aria-hidden="true">📺</span>
+                  <div className="spectator-empty-card__text">
+                    <strong>暂无公共大屏设备</strong>
+                    <p>可将备用手机、平板或电视置于桌面中央，设为公屏纯净展示计票板与公共天象。</p>
+                  </div>
+                </div>
+              ) : (
+                <ul className="members-list room-members-list" aria-label="公共大屏与观战列表">
+                  {spectatorMembers.map((m) => renderMemberCard(m))}
+                </ul>
+              )}
+            </section>
+          </div>
+
+          <section className="room-panel room-chat-panel chat-section" aria-labelledby="chat-heading">
             <div className="room-panel__head">
               <div>
-                <h2 className="room-panel__title">聊天</h2>
+                <h2 id="chat-heading" className="room-panel__title">聊天</h2>
               </div>
               <span className="room-panel__glyph" aria-hidden="true">✦</span>
             </div>
@@ -518,29 +625,80 @@ export function RoomPage() {
                 <ChatMessageList messages={state.chat} myPlayerId={myPlayerId} memberNames={memberNames} />
               )}
             </div>
-            <form className="chat-input-row" onSubmit={handleSendChat}>
-              <input ref={chatInputRef} type="text" value={chatDraft} onChange={(e) => setChatDraft(e.target.value.slice(0, 300))} placeholder={synced ? '输入消息…' : '同步中…暂不能发送'} maxLength={300} disabled={!synced} aria-label="聊天输入" />
-              <button type="submit" className="game-card__action room-inline-btn" aria-label="发送消息" disabled={!synced || !chatDraft.trim() || busy}>发送</button>
-            </form>
+            {isScreen && !chatExpanded ? (
+              <button
+                type="button"
+                className="chat-screen-fold-bar"
+                onClick={() => setChatExpanded(true)}
+                title="展开聊天输入框"
+              >
+                <span>📺 公屏模式已收起输入栏（点击展开）</span>
+              </button>
+            ) : (
+              <form className={`chat-input-row ${isScreen ? 'has-fold-btn' : ''}`} onSubmit={handleSendChat}>
+                <input
+                  ref={chatInputRef}
+                  type="text"
+                  value={chatDraft}
+                  onChange={(e) => setChatDraft(e.target.value.slice(0, 300))}
+                  placeholder={synced ? '输入消息…' : '同步中…暂不能发送'}
+                  maxLength={300}
+                  disabled={!synced}
+                  aria-label="聊天输入"
+                />
+                <button type="submit" className="game-card__action room-inline-btn" aria-label="发送消息" disabled={!synced || !chatDraft.trim() || busy}>发送</button>
+                {isScreen && (
+                  <button
+                    type="button"
+                    className="chat-fold-toggle-btn"
+                    onClick={() => setChatExpanded(false)}
+                    title="收起聊天输入栏"
+                  >
+                    收起
+                  </button>
+                )}
+              </form>
+            )}
           </section>
         </div>
 
         <section className="home-join-callout room-share-note room-console" aria-labelledby="room-actions-title">
           <div className="room-console__head">
-            <span className="home-join-callout__icon" aria-hidden="true">♟</span>
-            <div>
-              <h2 id="room-actions-title" className="room-console__title">{(room.status === 'LOBBY' || room.status === 'POST_GAME') ? '对局准备中' : '当前状态：' + statusText(room.status)}</h2>
-            </div>
-            {(room.status === 'LOBBY' || room.status === 'POST_GAME') && (
-              <div className="room-console__ready" role="status" aria-label="就绪进度">
-                <span className="room-console__ready-label">已就绪 {onlinePlayers.filter((p) => p.ready).length} / {onlinePlayers.length}</span>
-                <div className="room-console__ready-track">
-                  <span style={{ width: `${onlinePlayers.length > 0 ? (onlinePlayers.filter((p) => p.ready).length / onlinePlayers.length) * 100 : 0}%` }} />
+            {isScreen ? (
+              <div className="room-console__screen-banner" role="status">
+                <div className="room-console__screen-title">
+                  <span className="screen-icon" aria-hidden="true">📺</span>
+                  <h2 id="room-actions-title" className="room-console__title">当前设备为公共大屏</h2>
+                  <span className="screen-tag">免准备 · 纯展示</span>
                 </div>
+                <p className="room-console__screen-desc">
+                  本屏幕将展示全局天象、中央果摊与公共计票板，不占用玩家对局席位。
+                </p>
               </div>
+            ) : (
+              <>
+                <span className="home-join-callout__icon" aria-hidden="true">♟</span>
+                <div>
+                  <h2 id="room-actions-title" className="room-console__title">{(room.status === 'LOBBY' || room.status === 'POST_GAME') ? '对局准备中' : '当前状态：' + statusText(room.status)}</h2>
+                </div>
+                {(room.status === 'LOBBY' || room.status === 'POST_GAME') && (
+                  <div className="room-console__ready" role="status" aria-label="就绪进度">
+                    <span className="room-console__ready-label">已就绪 {onlinePlayers.filter((p) => p.ready).length} / {onlinePlayers.length}</span>
+                    <div className="room-console__ready-track">
+                      <span style={{ width: `${onlinePlayers.length > 0 ? (onlinePlayers.filter((p) => p.ready).length / onlinePlayers.length) * 100 : 0}%` }} />
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
           <div className="action-bar room-console__actions">
+            {isHost && (room.status === 'LOBBY' || room.status === 'POST_GAME') && (
+              <button type="button" className="room-console__btn room-console__btn--primary" onClick={handleStartGame} disabled={busy || !synced || !canStart}>
+                <GameIcon name="cards_deck" size={18} />
+                <span>开始游戏</span>
+              </button>
+            )}
             {myMember && myMember.seatRole === 'player' && myMember.botKind === null && (room.status === 'LOBBY' || room.status === 'POST_GAME') && (
               <button
                 type="button"
@@ -553,20 +711,28 @@ export function RoomPage() {
                 <span>{myMember.ready ? '已准备 (取消)' : '点击准备'}</span>
               </button>
             )}
-            <button type="button" className="room-console__btn room-console__btn--leave" onClick={handleLeaveRoom} disabled={busy}>
-              <GameIcon name="door_exit" size={18} />
-              <span>离开房间</span>
-            </button>
-            {room.status === 'POST_GAME' && isHost && (
-              <button type="button" className="room-console__btn room-console__btn--secondary" onClick={handleReturnToLobby} disabled={busy || !synced}>
-                <GameIcon name="horn" size={18} />
-                <span>返回大厅</span>
+            {myMember && myMember.seatRole === 'spectator' && (room.status === 'LOBBY' || room.status === 'POST_GAME') && (
+              <button
+                type="button"
+                className="room-console__btn room-console__btn--switch-back"
+                onClick={() => handleSwitchSeatRole(myMember.playerId, 'player')}
+                disabled={busy || !synced || seatsFull}
+                title={seatsFull ? `玩家席位已满（上限 ${maximumPlayers} 人）` : '当前设备为公共大屏。点击加入玩家席位亲自参局'}
+              >
+                <GameIcon name="cards_deck" size={18} />
+                <span>{seatsFull ? '玩家席已满' : '加入玩家席'}</span>
               </button>
             )}
-            {isHost && (room.status === 'LOBBY' || room.status === 'POST_GAME') && (
-              <button type="button" className="room-console__btn room-console__btn--primary" onClick={handleStartGame} disabled={busy || !synced || !canStart}>
-                <GameIcon name="cards_deck" size={18} />
-                <span>开始游戏</span>
+            {myMember && myMember.seatRole === 'player' && myMember.botKind === null && (room.status === 'LOBBY' || room.status === 'POST_GAME') && (
+              <button
+                type="button"
+                className="room-console__btn room-console__btn--secondary"
+                onClick={() => handleSwitchSeatRole(myMember.playerId, 'spectator')}
+                disabled={busy || !synced}
+                title="将此设备设为公共大屏（不占用人数，纯净展示全场）"
+              >
+                <span style={{ fontSize: '1.05rem', lineHeight: 1 }} aria-hidden="true">📺</span>
+                <span>设为公屏</span>
               </button>
             )}
             {isHost && (room.status === 'LOBBY' || room.status === 'POST_GAME') && roomGame.botSupport !== 'none' && (
@@ -587,6 +753,16 @@ export function RoomPage() {
                 <span>移除机器人 ({botCount})</span>
               </button>
             )}
+            {room.status === 'POST_GAME' && isHost && (
+              <button type="button" className="room-console__btn room-console__btn--secondary" onClick={handleReturnToLobby} disabled={busy || !synced}>
+                <GameIcon name="horn" size={18} />
+                <span>返回大厅</span>
+              </button>
+            )}
+            <button type="button" className="room-console__btn room-console__btn--leave" onClick={handleLeaveRoom} disabled={busy}>
+              <GameIcon name="door_exit" size={18} />
+              <span>离开房间</span>
+            </button>
             {isHost && room.status === 'IN_GAME' && (
               <button type="button" className="room-console__btn room-console__btn--danger" onClick={() => setConfirmState({ kind: 'abort' })} disabled={busy || !synced}>
                 <GameIcon name="bomb" size={18} />

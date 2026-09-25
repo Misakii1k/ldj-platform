@@ -14,7 +14,7 @@ export interface TabletopPlayer {
   readonly isSpeaking?: boolean;
   /** 持牌数：驱动外壳的手牌徽章。 */
   readonly handCount?: number;
-  /** 与 PlayerSeat.score 同步放宽：一智千金要显示「¥1,200」这类带格式的分数 */
+  /** 得分；可传格式化好的文案（如「¥1,200」），与 PlayerSeat.score 同宽。 */
   readonly score?: number | string;
   readonly roleTag?: string;
   /** 覆盖席位徽章文本；未提供时回落到 status。 */

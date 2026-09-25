@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildWerewolfPresentation } from '../src/game/werewolf/presentation.ts';
+import { buildWerewolfPresentation, latestSpeakerLine } from '../src/game/werewolf/presentation.ts';
 import { parseWerewolfView, type WerewolfMe, type WerewolfPhase, type WerewolfView } from '../src/game/werewolf/types.ts';
 
 const members = ['w1', 'w2', 's', 'x', 'g', 'v'].map((playerId, index) => ({
@@ -330,4 +330,134 @@ test('presentation 模型正确透传 nightStage 和 pendingShooterId', () => {
   );
   assert.equal(model.nightStage, 'witch');
   assert.equal(model.pendingShooterId, 'w1');
+});
+
+test('Contract B / T08: parseWerewolfView 接受无 timeline 与合法 timeline，拒绝坏 timeline', () => {
+  const base = view('night');
+  // 1. 无 timeline (legacy)
+  const parsed1 = parseWerewolfView(base);
+  assert.ok(parsed1);
+  assert.equal(parsed1.timeline, undefined);
+
+  // 2. 合法 timeline
+  const validTimeline = {
+    version: 1,
+    id: 'n1-s0-r1',
+    day: 1,
+    period: 'night',
+    role: 'wolf',
+    segment: 'action',
+    cue: null,
+    label: '狼人请杀人',
+    startedAt: 1000,
+    endsAt: 21000,
+    actionDeadlineAt: 21000,
+    mode: 'auto',
+    paused: false,
+    pauseRemainingMs: null,
+  };
+  const parsed2 = parseWerewolfView({ ...base, timeline: validTimeline });
+  assert.ok(parsed2);
+  assert.equal(parsed2.timeline?.id, 'n1-s0-r1');
+
+  // 3. 坏 timeline (如 version 不为 1，或者 actionDeadlineAt > endsAt)
+  const invalidTimeline = { ...validTimeline, version: 2 };
+  const parsed3 = parseWerewolfView({ ...base, timeline: invalidTimeline });
+  assert.equal(parsed3, null);
+});
+
+test('Contract F / T08: buildWerewolfPresentation 透传 timeline 且动作携带 timelineId', () => {
+  const validTimeline = {
+    version: 1 as const,
+    id: 'n1-s1-r2',
+    day: 1,
+    period: 'night' as const,
+    role: 'wolf' as const,
+    segment: 'action' as const,
+    cue: null,
+    label: '狼人请杀人',
+    startedAt: 1000,
+    endsAt: 21000,
+    actionDeadlineAt: 21000,
+    mode: 'auto' as const,
+    paused: false,
+    pauseRemainingMs: null,
+  };
+  const model = buildWerewolfPresentation(
+    view('night', { timeline: validTimeline }),
+    members,
+  );
+  assert.equal(model.isAuthoritativeTimeline, true);
+  assert.equal(model.timeline?.id, 'n1-s1-r2');
+  const wolfGroup = model.actionGroups.find((g) => g.id === 'night_kill');
+  assert.ok(wolfGroup);
+  assert.ok(wolfGroup.options.length > 0);
+  assert.equal((wolfGroup.options[0].payload as { timelineId?: string }).timelineId, 'n1-s1-r2');
+});
+
+test('Contract E / T08: latestSpeakerLine 与 presentation 过滤私聊消息', () => {
+  const chats = [
+    { cursor: 1, kind: 'player' as const, fromPlayerId: 'w1', text: '公开发言一', at: 100 },
+    { cursor: 2, kind: 'player' as const, fromPlayerId: 'w1', toPlayerId: 'w2', text: '这是私聊，绝不能在公屏展示', at: 200 },
+  ];
+  const line = latestSpeakerLine('w1', chats);
+  assert.equal(line, '公开发言一');
+});
+
+test('Contract B / T08: 时间线非当前角色行动窗口时，玩家动作组为空', () => {
+  const seerTurnTimeline = {
+    version: 1 as const,
+    id: 'n1-s2-r3',
+    day: 1,
+    period: 'night' as const,
+    role: 'seer' as const,
+    segment: 'action' as const,
+    cue: null,
+    label: '预言家请验人',
+    startedAt: 1000,
+    endsAt: 21000,
+    actionDeadlineAt: 21000,
+    mode: 'auto' as const,
+    paused: false,
+    pauseRemainingMs: null,
+  };
+  // baseMe 是 wolf，当前是 seer 的 action 窗口
+  const model = buildWerewolfPresentation(
+    view('night', { timeline: seerTurnTimeline }),
+    members,
+  );
+  const wolfGroup = model.actionGroups.find((g) => g.id === 'night_kill');
+  assert.ok(wolfGroup);
+  assert.equal(wolfGroup.options.length, 0);
+});
+
+test('Contract G3 / T09: reveal.rows 包含 playerId 且重名玩家身份与出局状态不混淆', () => {
+  const duplicateMembers = [
+    { playerId: 'p1', nickname: '同名玩家' },
+    { playerId: 'p2', nickname: '同名玩家' },
+  ];
+  const model = buildWerewolfPresentation(
+    view('game_over', {
+      players: [
+        { playerId: 'p1', alive: false, seat: 0, forfeited: false, exitReason: null, revealedRole: null, idiotRevealed: false },
+        { playerId: 'p2', alive: true, seat: 1, forfeited: false, exitReason: null, revealedRole: null, idiotRevealed: false },
+      ],
+      reveal: {
+        roles: { p1: 'wolf', p2: 'seer' },
+        voteHistory: [],
+      },
+    }),
+    duplicateMembers,
+  );
+  assert.ok(model.reveal);
+  assert.equal(model.reveal.rows.length, 2);
+
+  const r1 = model.reveal.rows.find((r) => r.playerId === 'p1');
+  const r2 = model.reveal.rows.find((r) => r.playerId === 'p2');
+  assert.ok(r1);
+  assert.ok(r2);
+  assert.equal(r1.roleLabel, '狼人');
+  assert.equal(r1.alive, false);
+  assert.equal(r2.roleLabel, '预言家');
+  assert.equal(r2.alive, true);
 });

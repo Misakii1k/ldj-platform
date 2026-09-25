@@ -15,6 +15,7 @@ import { RoomCommandExecutor } from '../src/core/executor.ts';
 import { applyRoomCommand } from '../src/core/commands/roomCommand.ts';
 import { seedRoom } from './helpers/seedRoom.ts';
 import { BotRunner } from '../src/core/game/botRunner.ts';
+import { consumeDueTimer } from '../src/core/game/timerRunner.ts';
 import { applySessionAction, getActiveSession, loadSessionState, type GameActionOutcome } from '../src/core/game/session.ts';
 import { getSessionGameModule } from '../src/core/game/registry.ts';
 import { pickWerewolfPlayAction } from '@ldj/game-werewolf/server';
@@ -224,7 +225,7 @@ test('BotRunner：狼人杀机器人结束发言前会先写公屏', async () =>
     });
 
     let lastSeq = -1;
-    for (let round = 0; round < 40; round++) {
+    for (let round = 0; round < 60; round++) {
       await runner.triggerAndWait(ctx.roomId);
       const session = getActiveSession(ctx.db, ctx.roomId);
       if (!session) break;
@@ -237,19 +238,38 @@ test('BotRunner：狼人杀机器人结束发言前会先写公屏', async () =>
           random: createSeededRandom(`host:${session.last_seq}`),
         });
         if (hostAction) {
-          await ctx.executor.executeInternal({
-            roomId: ctx.roomId,
-            handler: (tx) => {
-              const current = getActiveSession(tx.db, ctx.roomId);
-              if (!current) return null;
-              return applySessionAction(tx, current, { kind: 'player', playerId: ctx.hostId }, hostAction, null);
-            },
-          });
+          try {
+            await ctx.executor.executeInternal({
+              roomId: ctx.roomId,
+              handler: (tx) => {
+                const current = getActiveSession(tx.db, ctx.roomId);
+                if (!current) return null;
+                return applySessionAction(tx, current, { kind: 'player', playerId: ctx.hostId }, hostAction, null);
+              },
+            });
+          } catch {
+            // 播报中等约束暂不接受动作，交由计时器推进
+          }
         }
       }
       const after = getActiveSession(ctx.db, ctx.roomId);
       if (!after) break;
-      if (after.last_seq === lastSeq) break;
+      if (after.last_seq === lastSeq) {
+        const pendingTimer = ctx.db
+          .prepare(
+            `SELECT session_id, timer_id, deadline_at FROM timers WHERE session_id = ? AND status = 'pending' ORDER BY deadline_at ASC LIMIT 1`,
+          )
+          .get(after.id) as { session_id: string; timer_id: string; deadline_at: number } | undefined;
+        if (pendingTimer) {
+          await ctx.executor.executeInternal({
+            roomId: ctx.roomId,
+            now: pendingTimer.deadline_at + 1,
+            handler: (tx) => consumeDueTimer(tx, pendingTimer.session_id, pendingTimer.timer_id),
+          });
+          continue;
+        }
+        break;
+      }
       lastSeq = after.last_seq;
     }
 

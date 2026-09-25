@@ -156,6 +156,6 @@ test('套话和 prompt 覆盖不泄露他人私密身份', () => {
     },
   );
   assert.ok(prompt?.speech);
-  assert.match(prompt.situation, /3 号：3 号先听身份/);
+  assert.match(prompt.situation, /3 号："3 号先听身份"/);
   assert.doesNotMatch(prompt.situation, /w2 是狼人/);
 });

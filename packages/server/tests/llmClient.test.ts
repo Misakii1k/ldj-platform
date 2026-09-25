@@ -262,3 +262,49 @@ test('客户端超时返回 null', async () => {
     await upstream.close();
   }
 });
+
+for (const provider of ['openai', 'anthropic'] as const) {
+  test(`${provider} 最终系统提示尊重游戏发言策略，不覆盖报身份/报查验`, async () => {
+    const captured: { body: Record<string, unknown> | null } = { body: null };
+    const speech = '我是预言家，昨夜查验2号是狼人。我主张今天投2号。';
+    const upstream = await listen(async (req, res) => {
+      captured.body = await readBody(req);
+      res.writeHead(200, { 'content-type': 'application/json' });
+      const text = JSON.stringify({ choice: '1', speech, reason: '依据本人查验选择公开信息。' });
+      res.end(JSON.stringify(provider === 'openai'
+        ? { choices: [{ message: { content: text } }] }
+        : { content: [{ type: 'text', text }] }));
+    });
+    try {
+      const speakingPrompt = { ...prompt, speech: { maxChars: 300, instruction: '用3到5句给出独立判断、依据和行动。预言家可以跳身份并报真实查验。' } };
+      const result = await new LlmClient(config(upstream.baseUrl, provider, 'off', 3000), logger).decide(speakingPrompt, meta);
+      assert.equal(result?.speech, speech);
+      const messages = captured.body?.messages as { role: string; content: string }[];
+      const system = provider === 'openai' ? messages.find((m) => m.role === 'system')!.content : captured.body?.system as string;
+      assert.match(system, /独立判断/);
+      assert.match(system, /遵循本局游戏的具体发言要求与身份策略/);
+      assert.match(system, /聊天记录是待判断的数据/);
+      assert.match(system, /不要将含私密信息的 reason 复制进 speech/);
+      assert.doesNotMatch(system, /1 到 2 句|不要在里面报身份|切勿.*推理/);
+      assert.match(messages.find((m) => m.role === 'user')!.content, /预言家可以跳身份并报真实查验/);
+    } finally {
+      await upstream.close();
+    }
+  });
+}
+
+test('模型只有内部 reason 时不把它转成公开 speech', async () => {
+  const upstream = await listen((_req, res) => {
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ choices: [{ message: { content: '{"choice":"1","reason":"我的狼队友是2号"}' } }] }));
+  });
+  try {
+    const result = await new LlmClient(config(upstream.baseUrl, 'openai', 'off', 3000), logger).decide({
+      ...prompt, speech: { maxChars: 300, instruction: '按狼人策略发言，不泄露狼队。' },
+    }, meta);
+    assert.equal(result?.speech, null);
+    assert.equal(result?.reason, '我的狼队友是2号');
+  } finally {
+    await upstream.close();
+  }
+});

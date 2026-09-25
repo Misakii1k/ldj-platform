@@ -4,7 +4,6 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
-import { resolveInitialDeviceRole } from '../../app/appMode.ts';
 import { nameFor, useGameAction } from '../useGameAction.ts';
 import { ActionDock } from '../tabletop/ActionDock.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
@@ -20,6 +19,11 @@ import { ArenaRail } from '../../shared-ui/ArenaRail.tsx';
 import { SeatTargetPicker } from '../../shared-ui/SeatTargetPicker.tsx';
 import { useCheeseTTS } from './useCheeseTTS.ts';
 import { useCountdown } from '../../shared-ui/useCountdown.ts';
+import { TabletopCountdownText } from '../../shared-ui/TabletopCountdownText.tsx';
+import { TabletopVictoryBurst } from '../../shared-ui/TabletopVictoryBurst.tsx';
+import { usePhaseEventOverlay } from '../../shared-ui/usePhaseEventOverlay.tsx';
+import { UserAvatar } from '../../user/UserAvatar.tsx';
+import { resolveMemberAvatar } from '../../user/avatar.ts';
 import type { CheeseThiefPlayerView, RoleCard } from './types.ts';
 
 const ROLE_LABELS: Record<RoleCard, string> = {
@@ -46,7 +50,7 @@ interface Props {
 }
 
 export function CheeseThiefGamePage({ view }: Props) {
-  const { state } = useConnection();
+  const { state, me: connMe } = useConnection();
   const members = state.room?.members ?? [];
   const { act, busy, error, clearError } = useGameAction();
   const me = view.me;
@@ -55,7 +59,8 @@ export function CheeseThiefGamePage({ view }: Props) {
   // 终局揭晓按 roundToken 去重：演到一半刷新不会重演一次。
   // 夜间暗角也由演出层统一管，避免和 phase 判断散在两处。
   const stage = useCheeseThiefStage(view);
-  const isSpectator = me === null;
+  const myMember = state.room?.members.find((m) => m.playerId === (connMe?.playerId ?? me?.playerId ?? myId));
+  const isSpectator = view.me === null || myMember?.seatRole === 'spectator' || state.game?.role === 'spectator';
   const rulesRef = useRef<HTMLButtonElement | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [peekTarget, setPeekTarget] = useState<string | null>(null);
@@ -69,6 +74,20 @@ export function CheeseThiefGamePage({ view }: Props) {
   const mm = Math.floor(countdown.secondsLeft / 60);
   const ss = countdown.secondsLeft % 60;
   const timeFormatted = `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+
+  // 阶段切换全屏盖印：天亮 / 进入投票 / 终局
+  const { overlay: phaseOverlay } = usePhaseEventOverlay(view.phase, (phase) => {
+    if (phase === 'dawn') {
+      return {
+        label: '天亮了',
+        sublabel: view.cheeseStolen ? '奶酪不见了！开始追查' : '奶酪安然无恙',
+        variant: view.cheeseStolen ? 'warning' : 'reveal',
+      };
+    }
+    if (phase === 'accomplice_select') return { label: '大盗正在物色同伙', variant: 'stamp' };
+    if (phase === 'vote') return { label: '指认大盗', sublabel: '投票找出偷吃奶酪的人', variant: 'stamp' };
+    return null;
+  });
   const totalVoted = view.votes ? Object.keys(view.votes).length : 0;
 
   // 进入投票阶段时自动弹出手机端投票窗口
@@ -84,25 +103,15 @@ export function CheeseThiefGamePage({ view }: Props) {
     clearError();
   }, [view.phase, view.currentHour, clearError]);
 
-  // 模拟模式设备角色：'table' 桌面中央大屏，'player' 玩家手牌端
+  // 席位驱动设备角色：
+  // 若在房间中是 spectator，或无 me 个人视图，则锁定为纯正公共大屏（不发手牌、不参与个人操作）；
+  // 若是参局玩家，则为玩家端手持体验。
   const isSimulator = view.mode === 'simulator';
-  const [deviceRole, setDeviceRole] = useState<'player' | 'table'>(
-    () => resolveInitialDeviceRole('ldj_cheese_device_role'),
-  );
+  const isTableScreen = isSpectator;
+  const isSimulatorTable = isTableScreen;
 
-  const selectDeviceRole = (role: 'player' | 'table') => {
-    setDeviceRole(role);
-    try {
-      localStorage.setItem('ldj_cheese_device_role', role);
-    } catch {
-      // Ignore localStorage errors
-    }
-  };
-
-  const isSimulatorTable = deviceRole === 'table';
-
-  // 开局准备阶段判定（两骰自选或夜间第 0 时刻）
-  const isOpening = view.phase === 'hour_choice' || (view.phase === 'night' && view.currentHour === 0);
+  // 开局准备阶段判定（两骰自选或夜间第 0 时刻）——仅对非大屏且有个人身份的玩家展示
+  const isOpening = !isTableScreen && view.me !== null && (view.phase === 'hour_choice' || (view.phase === 'night' && view.currentHour === 0));
   const [identityCardVisible, setIdentityCardVisible] = useState(isOpening);
   const [identityCardExiting, setIdentityCardExiting] = useState(false);
   const prevOpeningRef = useRef(isOpening);
@@ -173,125 +182,139 @@ export function CheeseThiefGamePage({ view }: Props) {
     return { id: playerId, name: nameFor(members, playerId), status, active: false };
   });
 
-  // 主操作
+  // 主操作（仅在非大屏的参局玩家设备上生成；公共大屏设备绝对不生成或触发任何个人动作）
   let primary: Parameters<typeof ActionDock>[0]['primary'] | null = null;
   let secondary: Parameters<typeof ActionDock>[0]['secondary'] = [];
 
-  if (view.phase === 'hour_choice' && me?.hourChoices && myId) {
-    const hasChosen = typeof me.wakeHour === 'number' && me.wakeHour > 0;
-    if (hasChosen) {
-      primary = {
-        id: 'hour-chosen',
-        label: `已选定第 ${me.wakeHour} 时刻醒来（等待其他玩家）`,
-        disabled: true,
-        onAction: () => {},
-      };
-      secondary = [];
-    } else {
-      const [h1, h2] = me.hourChoices;
-      primary = {
-        id: `choose-${h1}`,
-        label: `选定 ${h1} 点醒来`,
-        disabled: busy,
-        onAction: () => {
-          void act({ type: 'choose_hour', playerId: myId, hour: h1 });
-        },
-      };
-      secondary = [
-        {
-          id: `choose-${h2}`,
-          label: `选定 ${h2} 点醒来`,
+  if (!isTableScreen && !isSpectator) {
+    if (view.phase === 'hour_choice' && me?.hourChoices && myId) {
+      const hasChosen = typeof me.wakeHour === 'number' && me.wakeHour > 0;
+      if (hasChosen) {
+        primary = {
+          id: 'hour-chosen',
+          label: `已选定第 ${me.wakeHour} 时刻醒来（等待其他玩家）`,
+          disabled: true,
+          onAction: () => {},
+        };
+        secondary = [];
+      } else {
+        const [h1, h2] = me.hourChoices;
+        primary = {
+          id: `choose-${h1}`,
+          label: `选定 ${h1} 点醒来`,
           disabled: busy,
           onAction: () => {
-            void act({ type: 'choose_hour', playerId: myId, hour: h2 });
+            void act({ type: 'choose_hour', playerId: myId, hour: h1 });
           },
-        },
-      ];
-    }
-  } else if (myTurnAccomplice && myId) {
-    const selected = accomplicePicks;
-    const ready = selected.length === accompliceCount;
-    primary = {
-      id: 'confirm-accomplice',
-      label: ready ? `确认共犯（${selected.map((id) => nameFor(members, id)).join('、')}）` : `已选 ${selected.length}/${accompliceCount}`,
-      disabled: !ready,
-      onAction: () => {
-        if (!ready) return;
-        void act({ type: 'select_accomplice', playerId: myId, accompliceIds: selected });
-      },
-    };
-  } else if (view.phase === 'night' && me && me.wakeHour === view.currentHour && !view.cheeseStolen && (me.coWakers ?? []).length === 0 && myId) {
-    primary = {
-      id: 'steal-cheese',
-      label: '🧀 伸手偷走奶酪（成为大盗）',
-      disabled: busy,
-      onAction: () => {
-        void act({ type: 'steal_cheese', playerId: myId });
-      },
-    };
-  } else if (view.phase === 'night' && me?.canPeek && myId) {
-    primary = peekTarget
-      ? { id: 'confirm-peek', label: `查看 ${nameFor(members, peekTarget)} 的骰子`, disabled: false, onAction: () => { void act({ type: 'peek_die', playerId: myId, targetPlayerId: peekTarget }); } }
-      : { id: 'skip-peek', label: '不查看（跳过）', disabled: false, onAction: () => void act({ type: 'skip_peek', playerId: myId }) };
-  } else if (view.phase === 'dawn' && me?.roleCard === 'cat' && myId && view.revealedCat === null) {
-    primary = { id: 'reveal-cat', label: '展示猫身份并查看骰子', disabled: false, onAction: () => {} };
-    secondary = view.players
-      .filter((id) => id !== myId)
-      .map((id) => ({
-        id: `cat-${id}`,
-        label: `查看 ${nameFor(members, id)}`,
-        disabled: false,
-        onAction: () => void act({ type: 'reveal_cat', playerId: myId, targetPlayerId: id }),
-      }));
-  } else if (view.phase === 'dawn' && me?.roleCard === 'dog' && myId && view.revealedDog === null) {
-    primary = { id: 'reveal-dog', label: '展示狗身份并指定先投票', disabled: false, onAction: () => {} };
-    secondary = view.players
-      .filter((id) => id !== myId)
-      .map((id) => ({
-        id: `dog-${id}`,
-        label: `指定 ${nameFor(members, id)} 先投票`,
-        disabled: false,
-        onAction: () => void act({ type: 'reveal_dog', playerId: myId, firstVoterId: id }),
-      }));
-  } else if (view.phase === 'vote' && myId) {
-    if (me?.hasVoted) {
+        };
+        secondary = [
+          {
+            id: `choose-${h2}`,
+            label: `选定 ${h2} 点醒来`,
+            disabled: busy,
+            onAction: () => {
+              void act({ type: 'choose_hour', playerId: myId, hour: h2 });
+            },
+          },
+        ];
+      }
+    } else if (myTurnAccomplice && myId) {
+      const selected = accomplicePicks;
+      const ready = selected.length === accompliceCount;
       primary = {
-        id: 'has-voted',
-        label: voteTarget ? `已指认 ${nameFor(members, voteTarget)}（已投票）` : '已完成投票，等待开票…',
-        disabled: true,
-        onAction: () => {},
+        id: 'confirm-accomplice',
+        label: ready ? `确认共犯（${selected.map((id) => nameFor(members, id)).join('、')}）` : `已选 ${selected.length}/${accompliceCount}`,
+        disabled: !ready,
+        onAction: () => {
+          if (!ready) return;
+          void act({ type: 'select_accomplice', playerId: myId, accompliceIds: selected });
+        },
       };
-      secondary = [];
-    } else {
-      primary = voteTarget
-        ? { id: 'confirm-vote', label: `指认 ${nameFor(members, voteTarget)}`, disabled: false, onAction: () => { void act({ type: 'cast_vote', playerId: myId, targetPlayerId: voteTarget }); } }
-        : { id: 'abstain', label: '弃票', disabled: false, onAction: () => void act({ type: 'cast_abstention', playerId: myId }) };
+    } else if (view.phase === 'night' && me && me.wakeHour === view.currentHour && !view.cheeseStolen && (me.coWakers ?? []).length === 0 && myId) {
+      primary = {
+        id: 'steal-cheese',
+        label: '🧀 伸手偷走奶酪（成为大盗）',
+        disabled: busy,
+        onAction: () => {
+          void act({ type: 'steal_cheese', playerId: myId });
+        },
+      };
+    } else if (view.phase === 'night' && me?.canPeek && myId) {
+      primary = peekTarget
+        ? { id: 'confirm-peek', label: `查看 ${nameFor(members, peekTarget)} 的骰子`, disabled: false, onAction: () => { void act({ type: 'peek_die', playerId: myId, targetPlayerId: peekTarget }); } }
+        : { id: 'skip-peek', label: '不查看（跳过）', disabled: false, onAction: () => void act({ type: 'skip_peek', playerId: myId }) };
+    } else if (view.phase === 'dawn' && me?.roleCard === 'cat' && myId && view.revealedCat === null) {
+      primary = { id: 'reveal-cat', label: '展示猫身份并查看骰子', disabled: false, onAction: () => {} };
+      secondary = view.players
+        .filter((id) => id !== myId)
+        .map((id) => ({
+          id: `cat-${id}`,
+          label: `查看 ${nameFor(members, id)}`,
+          disabled: false,
+          onAction: () => void act({ type: 'reveal_cat', playerId: myId, targetPlayerId: id }),
+        }));
+    } else if (view.phase === 'dawn' && me?.roleCard === 'dog' && myId && view.revealedDog === null) {
+      primary = { id: 'reveal-dog', label: '展示狗身份并指定先投票', disabled: false, onAction: () => {} };
+      secondary = view.players
+        .filter((id) => id !== myId)
+        .map((id) => ({
+          id: `dog-${id}`,
+          label: `指定 ${nameFor(members, id)} 先投票`,
+          disabled: false,
+          onAction: () => void act({ type: 'reveal_dog', playerId: myId, firstVoterId: id }),
+        }));
+    } else if (view.phase === 'vote' && myId) {
+      if (me?.hasVoted) {
+        primary = {
+          id: 'has-voted',
+          label: voteTarget ? `已指认 ${nameFor(members, voteTarget)}（已投票）` : '已完成投票，等待开票…',
+          disabled: true,
+          onAction: () => {},
+        };
+        secondary = [];
+      } else {
+        primary = voteTarget
+          ? { id: 'confirm-vote', label: `指认 ${nameFor(members, voteTarget)}`, disabled: false, onAction: () => { void act({ type: 'cast_vote', playerId: myId, targetPlayerId: voteTarget }); } }
+          : { id: 'abstain', label: '弃票', disabled: false, onAction: () => void act({ type: 'cast_abstention', playerId: myId }) };
+      }
     }
   }
 
-  const waitingReason = view.phase === 'game_over'
-    ? null
-    : view.phase === 'hour_choice'
-      ? me?.wakeHour
-        ? `你已选定第 ${me.wakeHour} 时刻，等待其他玩家完成选择…`
-        : '你掷出了两枚骰子，请在下方选择你的醒来时刻'
-      : view.phase === 'night'
-        ? me?.wakeHour === view.currentHour
-          ? !view.cheeseStolen && (me.coWakers ?? []).length === 0
-            ? '轮到你的时刻且独醒！奶酪就在桌上，点击偷走奶酪成为怪盗'
-            : me.canPeek
-              ? '轮到你的时刻且独醒：按住目标玩家骰盅偷看其点数，或直接跳过'
-              : (me.coWakers ?? []).length > 0
-                ? '轮到你的时刻：有其他人同时醒来，互相目击'
-                : '轮到你的时刻推进中'
-          : '夜间进行中——闭眼装睡，轮到你的时刻才睁眼'
-        : view.phase === 'accomplice_select'
-          ? '大盗正在秘密挑选共犯（限时 17 秒）…'
-          : view.phase === 'dawn'
-            ? '天亮讨论中——线下自由发言，讨论结束自动进入投票'
-            : me?.hasVoted
-              ? '你已完成投票，等待其他玩家完成投票…'
-              : '请选择你怀疑的大盗，或在下方操作栏弃票';
+  const waitingReason = isTableScreen
+    ? view.phase === 'game_over'
+      ? null
+      : view.phase === 'hour_choice'
+        ? '玩家正在选择各自的醒来时刻…'
+        : view.phase === 'night'
+          ? `夜间进行中 · 第 ${Math.max(1, view.currentHour)} 时刻`
+          : view.phase === 'accomplice_select'
+            ? '大盗正在秘密挑选共犯…'
+            : view.phase === 'dawn'
+              ? '天亮讨论中 · 自由发言，讨论结束进入投票'
+              : '指认投票中 · 请参局玩家在手机上完成指认投票'
+    : view.phase === 'game_over'
+      ? null
+      : view.phase === 'hour_choice'
+        ? me?.wakeHour
+          ? `你已选定第 ${me.wakeHour} 时刻，等待其他玩家完成选择…`
+          : '你掷出了两枚骰子，请在下方选择你的醒来时刻'
+        : view.phase === 'night'
+          ? me?.wakeHour === view.currentHour
+            ? !view.cheeseStolen && (me.coWakers ?? []).length === 0
+              ? '轮到你的时刻且独醒！奶酪就在桌上，点击偷走奶酪成为怪盗'
+              : me.canPeek
+                ? '轮到你的时刻且独醒：按住目标玩家骰盅偷看其点数，或直接跳过'
+                : (me.coWakers ?? []).length > 0
+                  ? '轮到你的时刻：有其他人同时醒来，互相目击'
+                  : '轮到你的时刻推进中'
+            : '夜间进行中——闭眼装睡，轮到你的时刻才睁眼'
+          : view.phase === 'accomplice_select'
+            ? '大盗正在秘密挑选共犯（限时 17 秒）…'
+            : view.phase === 'dawn'
+              ? '天亮讨论中——线下自由发言，讨论结束自动进入投票'
+              : me?.hasVoted
+                ? '你已完成投票，等待其他玩家完成投票…'
+                : '请选择你怀疑的大盗，或在下方操作栏弃票';
 
   const presentationState = error
     ? 'error'
@@ -308,28 +331,11 @@ export function CheeseThiefGamePage({ view }: Props) {
 
   const headerControls = (
     <div className="cheese-top-controls">
-      <div className="cheese-role-switch" role="group" aria-label="设备用途选择">
-        <button
-          type="button"
-          className={`cheese-role-pill ${deviceRole === 'player' ? 'is-active' : ''}`}
-          onClick={() => selectDeviceRole('player')}
-          aria-pressed={deviceRole === 'player'}
-          title="作为玩家个人手牌设备使用（持在手中）"
-        >
-          
-          <span className="cheese-btn-text">玩家端</span>
-        </button>
-        <button
-          type="button"
-          className={`cheese-role-pill ${deviceRole === 'table' ? 'is-active' : ''}`}
-          onClick={() => selectDeviceRole('table')}
-          aria-pressed={deviceRole === 'table'}
-          title="作为桌面中央公共案发大屏使用（平放于桌面正中）"
-        >
-          
-          <span className="cheese-btn-text">桌面端</span>
-        </button>
-      </div>
+      {isSpectator && (
+        <div className="cheese-screen-badge" title="当前设备为房间公共桌面大屏（纯净展示，不发手牌）">
+          <span>📺 公共大屏</span>
+        </div>
+      )}
       <button
         type="button"
         className={`cheese-tts-icon-btn ${ttsEnabled ? 'is-active' : ''}`}
@@ -356,7 +362,7 @@ export function CheeseThiefGamePage({ view }: Props) {
       rulesButton={headerControls}
       stageFit="arena"
       actions={
-        primary ? (
+        !isTableScreen && primary ? (
           <ActionDock
             primary={primary}
             secondary={secondary}
@@ -451,7 +457,7 @@ export function CheeseThiefGamePage({ view }: Props) {
                 view.deadlineAt ? (
                   <span className="cheese-countdown-pill cheese-countdown-pill--opening" aria-label="时刻选择倒计时">
                     <span className="cheese-countdown-pill__label">选择倒计时</span>
-                    <strong className="cheese-countdown-pill__time">{timeFormatted}</strong>
+                    <TabletopCountdownText className="cheese-countdown-pill__time" secondsLeft={countdown.secondsLeft} format="clock" />
                   </span>
                 ) : undefined
               }
@@ -464,6 +470,7 @@ export function CheeseThiefGamePage({ view }: Props) {
                       key={`${h}-${idx}`}
                       type="button"
                       className={`cheese-hour-choice-die ${isSelected ? 'is-selected' : ''}`}
+                      style={{ ['--i' as string]: idx }}
                       onClick={() => {
                         if (!me.wakeHour && myId) {
                           void act({ type: 'choose_hour', playerId: myId, hour: h });
@@ -503,7 +510,7 @@ export function CheeseThiefGamePage({ view }: Props) {
                 !isOpening && !countdownMoving && view.deadlineAt ? (
                   <span className="cheese-countdown-pill cheese-countdown-pill--night" aria-label="时刻倒计时">
                     <span className="cheese-countdown-pill__label">时刻倒计时</span>
-                    <strong className="cheese-countdown-pill__time">{timeFormatted}</strong>
+                    <TabletopCountdownText className="cheese-countdown-pill__time" secondsLeft={countdown.secondsLeft} format="clock" />
                   </span>
                 ) : undefined
               }
@@ -623,7 +630,7 @@ export function CheeseThiefGamePage({ view }: Props) {
                 </div>
                 <span className="cheese-countdown-pill cheese-countdown-pill--opening" aria-label="开局倒计时">
                   <span className="cheese-countdown-pill__label">倒计时</span>
-                  <strong className="cheese-countdown-pill__time">{timeFormatted}</strong>
+                  <TabletopCountdownText className="cheese-countdown-pill__time" secondsLeft={countdown.secondsLeft} format="clock" />
                 </span>
               </div>
             </div>
@@ -746,7 +753,7 @@ export function CheeseThiefGamePage({ view }: Props) {
                     {view.deadlineAt && (
                       <span className="cheese-countdown-pill" aria-label="讨论倒计时">
                         <span className="cheese-countdown-pill__label">倒计时</span>
-                        <strong className="cheese-countdown-pill__time">{timeFormatted}</strong>
+                        <TabletopCountdownText className="cheese-countdown-pill__time" secondsLeft={countdown.secondsLeft} format="clock" />
                       </span>
                     )}
                     {(view.revealedCat || view.revealedDog) && (
@@ -800,7 +807,7 @@ export function CheeseThiefGamePage({ view }: Props) {
                   <span className="cheese-dawn-bottom-bar__status">线下自由讨论中</span>
                   {view.deadlineAt && (
                     <span className="cheese-countdown-pill cheese-countdown-pill--mini" aria-label="讨论倒计时">
-                      <strong className="cheese-countdown-pill__time">{timeFormatted}</strong>
+                      <TabletopCountdownText className="cheese-countdown-pill__time" secondsLeft={countdown.secondsLeft} format="clock" />
                     </span>
                   )}
                 </div>
@@ -832,7 +839,7 @@ export function CheeseThiefGamePage({ view }: Props) {
               footer={view.deadlineAt ? (
                 <span className="cheese-countdown-pill" aria-label="投票倒计时">
                   <span className="cheese-countdown-pill__label">倒计时</span>
-                  <strong className="cheese-countdown-pill__time">{timeFormatted}</strong>
+                  <TabletopCountdownText className="cheese-countdown-pill__time" secondsLeft={countdown.secondsLeft} format="clock" />
                 </span>
               ) : undefined}
             >
@@ -897,7 +904,7 @@ export function CheeseThiefGamePage({ view }: Props) {
               <div className="cheese-modal-title-box">
                 <h3>🗳️ 指认奶酪大盗</h3>
                 {view.deadlineAt && (
-                  <span className="cheese-modal-timer">倒计时：{timeFormatted}</span>
+                  <span className="cheese-modal-timer">倒计时：<TabletopCountdownText secondsLeft={countdown.secondsLeft} format="clock" /></span>
                 )}
               </div>
               <button
@@ -916,19 +923,43 @@ export function CheeseThiefGamePage({ view }: Props) {
                 <div className="cheese-vote-submitted-pane">
                   <div className="cheese-submitted-icon">✓</div>
                   <h3>投票已成功提交！</h3>
-                  <p className="cheese-voted-target-desc">
-                    {(() => {
-                      const myVote = view.votes?.[myId];
-                      if (myVote?.kind === 'accuse') {
-                        return `你已指认【${nameFor(members, myVote.targetPlayerId)}】为奶酪大盗`;
-                      } else if (myVote?.kind === 'abstain') {
-                        return '你已选择【弃票】';
-                      } else if (voteTarget) {
-                        return `你已指认【${nameFor(members, voteTarget)}】为奶酪大盗`;
-                      }
-                      return '你的投票已记录完成';
-                    })()}
-                  </p>
+                  {(() => {
+                    const myVote = view.votes?.[myId];
+                    const targetId = myVote?.kind === 'accuse' ? myVote.targetPlayerId : voteTarget;
+                    const isAbstain = myVote?.kind === 'abstain' || (!targetId && myVote);
+
+                    if (targetId) {
+                      const targetMember = members.find((m) => m.playerId === targetId);
+                      const targetAvatar = resolveMemberAvatar(targetMember, {
+                        playerId: targetId,
+                        isMe: targetId === myId,
+                      });
+                      const targetName = nameFor(members, targetId);
+
+                      return (
+                        <div className="cheese-voted-target-card">
+                          <UserAvatar avatar={targetAvatar} nickname={targetName} size={40} />
+                          <div className="cheese-voted-target-info">
+                            <span className="cheese-voted-target-tag">怀疑目标</span>
+                            <strong className="cheese-voted-target-desc">
+                              {targetName}
+                            </strong>
+                          </div>
+                        </div>
+                      );
+                    } else if (isAbstain) {
+                      return (
+                        <div className="cheese-voted-target-card cheese-voted-target-card--abstain">
+                          <span className="cheese-confirm-target-emoji">🏳️</span>
+                          <div className="cheese-voted-target-info">
+                            <span className="cheese-voted-target-tag">选择弃票</span>
+                            <strong className="cheese-voted-target-desc">未指认任何人</strong>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return <p className="cheese-voted-target-desc">你的投票已记录完成</p>;
+                  })()}
                   <div className="cheese-vote-modal-progress">
                     <span>全场已投票：{totalVoted} / {view.players.length} 人</span>
                     <p className="cheese-vote-modal-sub">
@@ -947,8 +978,15 @@ export function CheeseThiefGamePage({ view }: Props) {
                 <div className="cheese-vote-confirm-pane">
                   {voteConfirmCandidate === 'abstain' ? (
                     <>
-                      <h4>确认放弃本次投票？</h4>
-                      <p className="cheese-confirm-warning">弃票后，本局将不计入你对任何人的指认。</p>
+                      <h4>确认放弃本次指认？</h4>
+                      <div className="cheese-confirm-target-box cheese-confirm-target-box--abstain">
+                        <span className="cheese-confirm-target-emoji">🏳️</span>
+                        <div className="cheese-confirm-target-info">
+                          <strong className="cheese-confirm-target-name">放弃指认</strong>
+                          <span className="cheese-confirm-target-seat">本局不指认任何玩家</span>
+                        </div>
+                      </div>
+                      <p className="cheese-confirm-warning">弃票后，本局将不计入你对任何人的怀疑票。</p>
                       <div className="cheese-vote-confirm-actions">
                         <button
                           type="button"
@@ -969,44 +1007,54 @@ export function CheeseThiefGamePage({ view }: Props) {
                         </button>
                       </div>
                     </>
-                  ) : (
-                    <>
-                      <h4>确认指认该玩家？</h4>
-                      <div className="cheese-confirm-target-box">
-                        <span className="cheese-confirm-target-avatar">🧀</span>
-                        <strong className="cheese-confirm-target-name">
-                          {nameFor(members, voteConfirmCandidate)}
-                        </strong>
-                      </div>
-                      <p className="cheese-confirm-warning">
-                        提交后不可更改，桌面端将同步公开投票结果。
-                      </p>
-                      <div className="cheese-vote-confirm-actions">
-                        <button
-                          type="button"
-                          className="cheese-confirm-btn is-primary"
-                          disabled={busy}
-                          onClick={() => {
-                            setVoteTarget(voteConfirmCandidate);
-                            void act({
-                              type: 'cast_vote',
-                              playerId: myId,
-                              targetPlayerId: voteConfirmCandidate,
-                            });
-                          }}
-                        >
-                          确认指认【{nameFor(members, voteConfirmCandidate)}】
-                        </button>
-                        <button
-                          type="button"
-                          className="cheese-cancel-btn"
-                          onClick={() => setVoteConfirmCandidate(null)}
-                        >
-                          返回重选其他玩家
-                        </button>
-                      </div>
-                    </>
-                  )}
+                  ) : (() => {
+                    const targetMember = members.find((m) => m.playerId === voteConfirmCandidate);
+                    const targetAvatar = resolveMemberAvatar(targetMember, {
+                      playerId: voteConfirmCandidate,
+                      isMe: voteConfirmCandidate === myId,
+                    });
+                    const targetName = nameFor(members, voteConfirmCandidate);
+
+                    return (
+                      <>
+                        <h4>确认指认该玩家为大盗？</h4>
+                        <div className="cheese-confirm-target-box">
+                          <UserAvatar avatar={targetAvatar} nickname={targetName} size={48} />
+                          <div className="cheese-confirm-target-info">
+                            <strong className="cheese-confirm-target-name">{targetName}</strong>
+                            <span className="cheese-confirm-target-seat">指认怀疑对象</span>
+                          </div>
+                        </div>
+                        <p className="cheese-confirm-warning">
+                          提交后不可更改，倒计时结束后将公开全场投票结果。
+                        </p>
+                        <div className="cheese-vote-confirm-actions">
+                          <button
+                            type="button"
+                            className="cheese-confirm-btn is-primary"
+                            disabled={busy}
+                            onClick={() => {
+                              setVoteTarget(voteConfirmCandidate);
+                              void act({
+                                type: 'cast_vote',
+                                playerId: myId,
+                                targetPlayerId: voteConfirmCandidate,
+                              });
+                            }}
+                          >
+                            确认指认【{targetName}】
+                          </button>
+                          <button
+                            type="button"
+                            className="cheese-cancel-btn"
+                            onClick={() => setVoteConfirmCandidate(null)}
+                          >
+                            返回重选其他玩家
+                          </button>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               ) : (
                 <>
@@ -1014,18 +1062,30 @@ export function CheeseThiefGamePage({ view }: Props) {
                   <div className="cheese-candidate-stack">
                     {view.players
                       .filter((id) => id !== myId)
-                      .map((id) => (
-                        <button
-                          key={id}
-                          type="button"
-                          className="cheese-vote-candidate-card"
-                          onClick={() => setVoteConfirmCandidate(id)}
-                        >
-                          <span className="candidate-avatar">👤</span>
-                          <strong className="candidate-name">{nameFor(members, id)}</strong>
-                          <span className="candidate-action">指认TA →</span>
-                        </button>
-                      ))}
+                      .map((id, candidateIndex) => {
+                        const member = members.find((m) => m.playerId === id);
+                        const avatar = resolveMemberAvatar(member, {
+                          playerId: id,
+                          isMe: id === myId,
+                        });
+                        const candidateName = nameFor(members, id);
+
+                        return (
+                          <button
+                            key={id}
+                            type="button"
+                            className="cheese-vote-candidate-card"
+                            style={{ ['--i' as string]: candidateIndex }}
+                            onClick={() => setVoteConfirmCandidate(id)}
+                          >
+                            <div className="candidate-avatar">
+                              <UserAvatar avatar={avatar} nickname={candidateName} size={38} />
+                            </div>
+                            <strong className="candidate-name" title={candidateName}>{candidateName}</strong>
+                            <span className="candidate-action">指认TA →</span>
+                          </button>
+                        );
+                      })}
                   </div>
                   <button
                     type="button"
@@ -1045,6 +1105,13 @@ export function CheeseThiefGamePage({ view }: Props) {
       {/* 飞行层必须挂在舞台之外：舞台内若有 transform 祖先，
           position:fixed 会退化为相对定位，实测屏幕坐标会全部失效。 */}
       <FlightLayer flights={stage.flights} simplified={stage.simplifiedFlights} />
+      {phaseOverlay}
+      <TabletopVictoryBurst
+        gameOver={view.phase === 'game_over'}
+        isWinner={myId ? (view.winners ?? []).includes(myId) : null}
+        label={view.thiefCaught ? '大盗被抓获！' : '大盗成功脱逃'}
+        sublabel={myId ? ((view.winners ?? []).includes(myId) ? '你所在的阵营获胜' : '你所在的阵营落败') : undefined}
+      />
     </TabletopShell>
   );
 }

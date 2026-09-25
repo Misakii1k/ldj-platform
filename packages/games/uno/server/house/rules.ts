@@ -589,6 +589,11 @@ function drawForPlayer(
   const result = drawWithExpansion(zones, playerId, count, ctx.random, r.roundNumber);
   const drawn = result.drawn;
   const nextHand = [...(r.hands[playerId] ?? []), ...drawn];
+  // 手牌回升到 2 张以上即脱离 UNO 状态：必须清除旧的预喊标记，
+  // 否则该玩家本回合内再次打到 1 张时永远不会开启竞速窗口（永久免罚）。
+  const preCallPlayerIds = nextHand.length > 1 && r.preCallPlayerIds[playerId]
+    ? { ...r.preCallPlayerIds, [playerId]: false }
+    : r.preCallPlayerIds;
   return {
     ...state,
     round: {
@@ -596,6 +601,7 @@ function drawForPlayer(
       deck: [...(result.zones.zones['deck'] as readonly UnoHouseCard[])],
       discardPile: [...(result.zones.zones['discardPile'] as readonly UnoHouseCard[])],
       hands: { ...r.hands, [playerId]: nextHand },
+      preCallPlayerIds,
       deckGenerationCount: r.deckGenerationCount + result.deckGenerationsUsed,
       sequence: r.sequence + 1,
     },
@@ -794,8 +800,11 @@ function handleCallUno(state: UnoHouseState, playerId: string): Result {
   if (hand.length !== 1) return deny('只剩 1 张牌时才能喊 UNO');
   if (r.unoRaceWindow) {
     if (r.unoRaceWindow.targetPlayerId !== playerId) return deny('补喊只限目标玩家');
+    // 补喊成功即关闭窗口：同时撤掉已排程的窗口超时，避免留下野定时器。
+    const effects: GameEffect[] = [];
+    cancelWindowTimer(state, effects);
     const next = { ...state, round: { ...r, unoRaceWindow: null, windowDeadlineAt: null } };
-    return { ok: true, nextState: next, publicEvents: [{ type: 'uno_called', playerId }], privateEvents: [], effects: [], resultCandidate: null };
+    return { ok: true, nextState: next, publicEvents: [{ type: 'uno_called', playerId }], privateEvents: [], effects, resultCandidate: null };
   }
   // 无竞速窗口时允许普通补喊（不影响状态）。
   return { ok: true, nextState: state, publicEvents: [{ type: 'uno_called', playerId }], privateEvents: [], effects: [], resultCandidate: null };
@@ -810,7 +819,10 @@ function handleCatchMissed(state: UnoHouseState, actorId: string, targetPlayerId
   cancelWindowTimer(state, effects);
   cancelTurnTimer(state, effects);
   const drawn = drawForPlayer(ctx, state, targetPlayerId, 2, effects);
-  const next = { ...drawn, round: { ...drawn.round, unoRaceWindow: null, windowDeadlineAt: null } };
+  const cleared: UnoHouseState = { ...drawn, round: { ...drawn.round, unoRaceWindow: null, windowDeadlineAt: null } };
+  // 抓捕是插入式动作，不改变轮到谁。上面取消了当前回合计时器，必须为同一玩家重建，
+  // 否则该玩家掉线时回合永不超时，整局卡死。
+  const next = startTurn(ctx, cleared, cleared.round.currentPlayerId, effects);
   return {
     ok: true,
     nextState: next,
@@ -951,7 +963,11 @@ export function buildUnoHousePublicView(state: UnoHouseState): UnoHousePublicVie
     players: r.players.map((id) => ({
       playerId: id,
       handCount: (r.hands[id] ?? []).length,
-      unoCalled: (r.preCallPlayerIds[id] ?? false) || (r.hands[id]?.length ?? 0) <= 1,
+      // 只有真正喊过才算已喊：预喊过，或剩 1 张且没有挂在自己头上的漏报窗口
+      // （窗口一旦因补喊/超时关闭即视为安全）。不能用 handCount<=1 兜底，
+      // 否则漏报窗口期的玩家会被显示成已喊，UI 无法提示「可以抓他」。
+      unoCalled: (r.preCallPlayerIds[id] ?? false)
+        || ((r.hands[id]?.length ?? 0) === 1 && r.unoRaceWindow?.targetPlayerId !== id),
       isCurrentPlayer: id === r.currentPlayerId,
       teamId: m.teamPlayerIds?.[id] ?? null,
     })),
@@ -1006,8 +1022,11 @@ export function buildUnoHousePlayerView(state: UnoHouseState, playerId: string):
     capabilities.push('canPlayCard');
     if (!r.hasDrawnThisTurn) capabilities.push('canDraw');
     if (r.hasDrawnThisTurn) capabilities.push('canPassAfterDraw');
+    // 剩 1 张才能用独立的 call_uno 补喊（与 handleCallUno 的校验一致）。
+    // 剩 2 张时的「喊 UNO」不是独立动作，而是出牌时附带 preCallUno，
+    // 由 canPreCallUno 告知客户端应在出牌交互中给出预喊入口。
     if (hand.length === 1) capabilities.push('canCallUno');
-    if (hand.length === 2) capabilities.push('canCallUno');
+    if (hand.length === 2) capabilities.push('canPreCallUno');
   }
   return {
     ...publicView,

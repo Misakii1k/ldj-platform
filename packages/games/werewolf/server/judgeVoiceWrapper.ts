@@ -1,37 +1,13 @@
-/**
- * 法官语音包装器：给狼人杀（legacy 与 open-kill v2 两套模块）叠加"夜晚语音最短时限"。
- *
- * 需求：夜晚法官语音必须完整播放——哪怕玩家很快点完、哪怕对应神职已阵亡；
- * 每段播完后有间隔（客户端随机 2-5s）；未阵亡角色以玩家正常操作完成为准。
- *
- * 实现：不缓冲、不改任何游戏语义，只在【进入夜晚】的那次提交里，把夜晚的
- * phase_timeout 时限补齐到"语音脚本总长"（取 max(节奏时限, 脚本总长)）。
- * 这样快速/标准节奏下，夜晚不会在语音播完前被超时强制收尾，慢节奏保持原样。
- * 语音文件与播放排程全部由客户端本地负责（见 client werewolf/ui/judgeVoice.ts）：
- * 即使全部玩家秒操作导致夜晚提前结算，客户端也会把整段脚本播完，
- * 白天播报（死亡/投票/出局）自动排在脚本之后，保持法官的主持节奏。
- *
- * 时长表来自 assets 实测（packages/client/public/werewolf-voice）。
- */
-import type { GameContext, GameEffect, GameModule, GameModuleV2 } from '@ldj/shared';
+import { applyPublicSceneVoice, type VoiceState, type VoiceView } from './publicVoice.ts';
+/** New games use server timelines and public announcements; legacy snapshots retain their hold fallback. */
+import { getVoiceCueDurationMs, type GameContext, type GameEffect, type GameModule, type GameModuleV2 } from '@ldj/shared';
 
-/** 夜晚固定脚本各段时长（ms），与客户端 CUE_FILES 顺序一一对应。 */
+/** Legacy hold durations also come from the shared measured catalog. */
 const NIGHT_CUE_DURATIONS_MS: readonly number[] = [
-  1700, // 天黑请闭眼
-  4500, // 狼人请睁眼确认队友
-  2000, // 狼人请杀人
-  1500, // 狼人请闭眼
-  1280, // 女巫请睁眼
-  4500, // 女巫请选择毒杀目标
-  1500, // 女巫请闭眼
-  1780, // 预言家请睁眼
-  2700, // 预言家请选择查验玩家
-  1880, // 预言家请闭眼
-  3080, // 守卫请睁眼守护谁
-  1500, // 守卫请闭眼
-  2000, // 猎人白痴请睁眼确认身份
-  3000, // 确认间隔
-  1500, // 猎人白痴请闭眼
+  ...['night_start','wolf_open_first','wolf_kill','wolf_close','witch_open','witch_poison_prompt',
+    'witch_close','seer_open','seer_check','seer_close','guard_prompt','guard_close',
+    'hunter_idiot_confirm','hunter_idiot_close'].map(getVoiceCueDurationMs),
+  3000, // Legacy identity-confirmation action window, not an audio duration.
 ];
 /** 每段播完后的间隔：取 2-5s 的中值并固定，保证服务端确定性（客户端实际随机 2-5s）。 */
 const JUDGE_GAP_MS = 3500;
@@ -87,8 +63,26 @@ export function wrapLegacyWithJudgeVoice<C, S, A, PV, SV, E, R>(
   return {
     ...inner,
     reduce(ctx, state, actor, action) {
-      const probe = inner.reduce(ctx, state, actor, action);
+      if (isRecord(state) && isRecord(state.announcement) && state.announcement.source === 'automatic'
+        && typeof state.announcement.endsAt === 'number' && ctx.now < state.announcement.endsAt
+        && isRecord(action) && ['confirm_announcement','finish_speech','finish_last_words','ready_vote','hunter_shoot'].includes(String(action.type))) {
+        return { ok: false, code: 'ACTION_NOT_ALLOWED', message: '请等待当前公开播报结束' };
+      }
+      let probe = inner.reduce(ctx, state, actor, action);
       if (!probe.ok) return probe;
+      if (isRecord(probe.state) && probe.state.timelineState && isRecord(state)) {
+        const voiced = applyPublicSceneVoice(state as unknown as VoiceState, probe.state as unknown as VoiceState, inner.getSpectatorView(state) as unknown as VoiceView,
+          inner.getSpectatorView(probe.state) as unknown as VoiceView, ctx.now, probe.effects,
+          state.phase === 'hunter_shot' && probe.state.phase !== 'hunter_shot' && ((isRecord(action) && action.type === 'hunter_shoot' && action.targetPlayerId === null) || (isRecord(action) && action.type === 'phase_timeout')));
+        probe = { ...probe, state: voiced.state as unknown as S, effects: voiced.effects };
+      }
+      // 权威时间线新流程（timelineState.version === 1）旁路，不叠加旧整夜保底与随机间隔
+      if (
+        (isRecord(state) && isRecord(state.timelineState) && state.timelineState.version === 1) ||
+        (isRecord(probe.state) && isRecord(probe.state.timelineState) && probe.state.timelineState.version === 1)
+      ) {
+        return probe;
+      }
       const effects = applyPhaseHold('night', JUDGE_NIGHT_HOLD_MS, state, probe.state, ctx, probe.effects);
       return { ...probe, effects: effects.length > 0 ? effects : probe.effects };
     },
@@ -102,8 +96,26 @@ export function wrapV2WithJudgeVoice<C, S, A, PV, SV, E, R>(
   return {
     ...inner,
     reduce(ctx, state, actor, action) {
-      const probe = inner.reduce(ctx, state, actor, action);
+      if (isRecord(state) && isRecord(state.announcement) && state.announcement.source === 'automatic'
+        && typeof state.announcement.endsAt === 'number' && ctx.now < state.announcement.endsAt
+        && isRecord(action) && ['confirm_announcement','finish_speech','finish_last_words','ready_vote','hunter_shoot'].includes(String(action.type))) {
+        return { ok: false, code: 'ACTION_NOT_ALLOWED', message: '请等待当前公开播报结束' };
+      }
+      let probe = inner.reduce(ctx, state, actor, action);
       if (!probe.ok) return probe;
+      if (isRecord(probe.nextState) && probe.nextState.timelineState && isRecord(state)) {
+        const voiced = applyPublicSceneVoice(state as unknown as VoiceState, probe.nextState as unknown as VoiceState, inner.getSpectatorView(state) as unknown as VoiceView,
+          inner.getSpectatorView(probe.nextState) as unknown as VoiceView, ctx.now, probe.effects,
+          state.phase === 'hunter_shot' && probe.nextState.phase !== 'hunter_shot' && ((isRecord(action) && action.type === 'hunter_shoot' && action.targetPlayerId === null) || (isRecord(action) && action.type === 'phase_timeout')));
+        probe = { ...probe, nextState: voiced.state as unknown as S, effects: voiced.effects };
+      }
+      // 权威时间线新流程（timelineState.version === 1）旁路，不叠加旧整夜保底与随机间隔
+      if (
+        (isRecord(state) && isRecord(state.timelineState) && state.timelineState.version === 1) ||
+        (isRecord(probe.nextState) && isRecord(probe.nextState.timelineState) && probe.nextState.timelineState.version === 1)
+      ) {
+        return probe;
+      }
       let effects: readonly GameEffect[] = applyPhaseHold('night', JUDGE_NIGHT_HOLD_MS, state, probe.nextState, ctx, probe.effects);
       if (effects.length === 0) effects = probe.effects;
       const dayEffects = applyPhaseHold('day_announcement', JUDGE_DAY_ANNOUNCEMENT_HOLD_MS, state, probe.nextState, ctx, effects);

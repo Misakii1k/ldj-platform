@@ -15,6 +15,7 @@ interface ChatRow {
   id: number;
   kind: string;
   from_player_id: string | null;
+  to_player_id: string | null;
   text: string;
   created_at: number;
 }
@@ -24,6 +25,7 @@ function toView(row: ChatRow): ChatMessageView {
     cursor: row.id,
     kind: row.kind as 'player' | 'system',
     fromPlayerId: row.from_player_id,
+    ...(row.to_player_id ? { toPlayerId: row.to_player_id } : {}),
     text: row.text,
     at: row.created_at,
   };
@@ -35,6 +37,7 @@ export function applyChatSend(
   roomId: string,
   fromPlayerId: string,
   rawText: string,
+  toPlayerId?: string,
 ): ChatMessageView {
   const { db, now } = tx;
   const parsed = chatTextSchema.safeParse(rawText);
@@ -44,22 +47,31 @@ export function applyChatSend(
 
   // 发言者必须是房间内活跃成员
   const member = db
-    .prepare('SELECT connection_status FROM room_members WHERE room_id = ? AND player_id = ?')
-    .get(roomId, fromPlayerId) as { connection_status: string } | undefined;
+    .prepare('SELECT connection_status, is_bot FROM room_members WHERE room_id = ? AND player_id = ?')
+    .get(roomId, fromPlayerId) as { connection_status: string; is_bot: number } | undefined;
   if (!member || member.connection_status === 'KICKED' || member.connection_status === 'EXPIRED') {
     throw new CommandError('NOT_AUTHORIZED', '不在该房间中');
   }
 
+  if (toPlayerId !== undefined) {
+    const recipient = db.prepare('SELECT connection_status, is_bot FROM room_members WHERE room_id = ? AND player_id = ?')
+      .get(roomId, toPlayerId) as { connection_status: string; is_bot: number } | undefined;
+    if (member.is_bot || toPlayerId === fromPlayerId || !recipient || recipient.is_bot || ['KICKED', 'EXPIRED'].includes(recipient.connection_status)) {
+      throw new CommandError('NOT_AUTHORIZED', '只能私聊本房间内的其他真人玩家');
+    }
+  }
+
   const info = db
     .prepare(
-      `INSERT INTO chat_messages (room_id, session_id, from_player_id, kind, text, created_at)
-       VALUES (?, NULL, ?, 'player', ?, ?)`,
+      `INSERT INTO chat_messages (room_id, session_id, from_player_id, kind, text, created_at, to_player_id)
+       VALUES (?, NULL, ?, 'player', ?, ?, ?)`,
     )
-    .run(roomId, fromPlayerId, parsed.data, now);
+    .run(roomId, fromPlayerId, parsed.data, now, toPlayerId ?? null);
   return {
     cursor: Number(info.lastInsertRowid),
     kind: 'player',
     fromPlayerId,
+    ...(toPlayerId ? { toPlayerId } : {}),
     text: parsed.data,
     at: now,
   };
@@ -77,22 +89,16 @@ export function insertSystemChat(tx: TxContext, roomId: string, text: string): C
 }
 
 /** 游标之后的消息（补发用，FR-CHAT-004）；cursor 为 null 取最近一批 */
-export function listChatAfter(db: Db, roomId: string, cursor: number | null): ChatMessageView[] {
-  if (cursor === null) {
-    // 无游标：取最近 CHAT_BATCH_LIMIT 条，按游标升序返回
-    const rows = db
-      .prepare(
-        `SELECT id, kind, from_player_id, text, created_at FROM chat_messages
-         WHERE room_id = ? ORDER BY id DESC LIMIT ?`,
-      )
-      .all(roomId, CHAT_BATCH_LIMIT) as unknown as ChatRow[];
-    return rows.reverse().map(toView);
-  }
-  const rows = db
-    .prepare(
-      `SELECT id, kind, from_player_id, text, created_at FROM chat_messages
-       WHERE room_id = ? AND id > ? ORDER BY id ASC LIMIT ?`,
-    )
-    .all(roomId, cursor, CHAT_BATCH_LIMIT) as unknown as ChatRow[];
-  return rows.map(toView);
+export function canReadChat(message: ChatMessageView, viewerId: string | null): boolean {
+  return !message.toPlayerId || (viewerId !== null && (message.fromPlayerId === viewerId || message.toPlayerId === viewerId));
+}
+
+/** Filter before LIMIT so unrelated private traffic cannot starve public resync. */
+export function listChatAfter(db: Db, roomId: string, cursor: number | null, viewerId: string | null = null): ChatMessageView[] {
+  const rows = db.prepare(`SELECT id, kind, from_player_id, to_player_id, text, created_at FROM chat_messages
+    WHERE room_id = ? AND (to_player_id IS NULL OR from_player_id = ? OR to_player_id = ?)
+    ${cursor === null ? '' : 'AND id > ?'} ORDER BY id ${cursor === null ? 'DESC' : 'ASC'} LIMIT ?`).all(
+      roomId, viewerId, viewerId, ...(cursor === null ? [] : [cursor]), CHAT_BATCH_LIMIT,
+    ) as unknown as ChatRow[];
+  return (cursor === null ? rows.reverse() : rows).map(toView);
 }

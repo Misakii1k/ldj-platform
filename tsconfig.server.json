@@ -43,6 +43,12 @@
       ],
       "@ldj/game-echo-judge/server": [
         "./packages/games/echo-judge/server/index.ts"
+      ],
+      "@ldj/game-wits-wagers/manifest": [
+        "./packages/games/wits-wagers/shared/manifest.ts"
+      ],
+      "@ldj/game-wits-wagers/server": [
+        "./packages/games/wits-wagers/server/index.ts"
       ]
     }
   },

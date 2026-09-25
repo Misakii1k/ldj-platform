@@ -1,4 +1,6 @@
+import type { WerewolfAnnouncement } from '@ldj/shared';
 /** werewolf_platform_open_kill_v1 — 纯类型声明（LOC 测量排除）。 */
+import type { WerewolfTimeline, WerewolfTimelineState } from '@ldj/shared';
 
 export type V2Role = 'wolf' | 'villager' | 'seer' | 'witch' | 'guard' | 'hunter' | 'idiot';
 export type V2Team = 'wolves' | 'village';
@@ -91,7 +93,7 @@ export interface V2PendingOutcome {
 }
 
 export interface V2State {
-  schemaVersion: 1;
+  schemaVersion: 2;
   phase: V2Phase;
   day: number;
   players: Record<string, V2PlayerState>;
@@ -119,23 +121,26 @@ export interface V2State {
   phaseToken: string | null;
   winner: V2Team | null;
   aborted: boolean;
+  timelineState: WerewolfTimelineState | null;
+  announcement?: WerewolfAnnouncement | null;
 }
 
 export type V2Action =
   | { type: 'begin' }
-  | { type: 'confirm_role' }
-  | { type: 'night_kill'; targetPlayerId: string }
-  | { type: 'seer_check'; targetPlayerId: string }
-  | { type: 'witch_save'; save: boolean }
-  | { type: 'witch_poison'; targetPlayerId: string | null }
-  | { type: 'guard_guard'; targetPlayerId: string | null }
-  | { type: 'hunter_shoot'; targetPlayerId: string | null }
-  | { type: 'confirm_announcement' }
-  | { type: 'finish_speech' }
-  | { type: 'ready_vote' }
-  | { type: 'day_vote'; targetPlayerId: string | null }
-  | { type: 'finish_last_words' }
+  | { type: 'confirm_role'; timelineId?: string }
+  | { type: 'night_kill'; targetPlayerId: string; timelineId?: string }
+  | { type: 'seer_check'; targetPlayerId: string; timelineId?: string }
+  | { type: 'witch_save'; save: boolean; timelineId?: string }
+  | { type: 'witch_poison'; targetPlayerId: string | null; timelineId?: string }
+  | { type: 'guard_guard'; targetPlayerId: string | null; timelineId?: string }
+  | { type: 'hunter_shoot'; targetPlayerId: string | null; timelineId?: string }
+  | { type: 'confirm_announcement'; timelineId?: string }
+  | { type: 'finish_speech'; timelineId?: string }
+  | { type: 'ready_vote'; timelineId?: string }
+  | { type: 'day_vote'; targetPlayerId: string | null; timelineId?: string }
+  | { type: 'finish_last_words'; timelineId?: string }
   | { type: 'phase_timeout'; phase: V2TimedPhase; day: number; token: string }
+  | { type: 'timeline_timeout'; timelineId: string; token: string }
   | { type: 'player_forfeited'; playerIds: string[] };
 
 export interface V2PublicPlayer {
@@ -158,7 +163,7 @@ export type V2NightStage = 'wolf' | 'witch' | 'seer' | 'guard' | 'done';
 export interface V2PublicView {
   gameId: 'werewolf';
   rulesetId: 'werewolf_platform_open_kill_v1';
-  schemaVersion: 1;
+  schemaVersion: 1 | 2;
   phase: V2Phase;
   day: number;
   players: V2PublicPlayer[];
@@ -180,6 +185,8 @@ export interface V2PublicView {
   winner: V2Team | null;
   aborted: boolean;
   reveal: V2Reveal | null;
+  timeline?: WerewolfTimeline | null;
+  announcement?: WerewolfAnnouncement | null;
 }
 
 export interface V2MeView {

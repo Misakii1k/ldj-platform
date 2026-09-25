@@ -13,7 +13,7 @@ export function VoteLedger({ progress, ledger }: VoteLedgerProps) {
       {progress && (
         <div className="vote-ledger__progress-box">
           <div className="vote-ledger__progress-header">
-            <span className="vote-ledger__progress-label">🗳️ 投票进度</span>
+            <span className="vote-ledger__progress-label">投票进度</span>
             <span className="vote-ledger__progress-tally">
               <strong>{progress.submitted}</strong> / {progress.expected}
               <span className="vote-ledger__progress-percent">({progress.percent}%)</span>
@@ -35,7 +35,7 @@ export function VoteLedger({ progress, ledger }: VoteLedgerProps) {
         </div>
       )}
       {ledger && (
-        <>
+        <details className="ww-vote-history"><summary>查看历史票型</summary>
           <h2 className="vote-ledger__headline">{ledger.headline}</h2>
           {ledger.rows.length === 0 ? (
             <p className="vote-ledger__empty">本轮没有有效票</p>
@@ -50,7 +50,7 @@ export function VoteLedger({ progress, ledger }: VoteLedgerProps) {
             </ul>
           )}
           <p className="vote-ledger__abstain">弃票 {ledger.abstained}</p>
-        </>
+        </details>
       )}
     </section>
   );

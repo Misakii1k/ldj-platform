@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
   "rulesetId": "wits_wagers_platform_v1",
-  "approvalStatus": "core-user-baseline; 2026-09-22 判定规则修订（绝对差值最近 + lower/higher 边缘槽 + 超时不补答）",
+  "approvalStatus": "core-user-baseline; 2026-09-22 判定规则二次修订（绝对差值最近 + 仅保留 lower 边缘槽 + 超时不补答）",
   "notes": [
     "Board guess order identifies players p1,p2,... in seat order.",
     "Settlement cases are isolated player ledgers; round cases cross-check board, authors and score together.",
     "Bets must contain A then B. winner odds is net profit, not returned principal.",
-    "2026-09-22 修订：胜者为与正确答案绝对差值最小的槽位，同距离时两侧并列获胜；答案高于全部猜测则 higher 胜，低于全部则 lower 胜；两个边缘槽赔率恒为 6。",
+    "2026-09-22 二次修订：胜者为与正确答案绝对差值最小的槽位，同距离时两侧并列获胜；答案低于全部猜测则 lower 胜（赔率恒为 6）；答案高于全部猜测时没有特殊槽，由最大的猜测获胜。原「更高」边缘槽已删除，回归原版桌游只有一张「比所有答案都小」卡的设定。",
     "2026-09-22 修订：超时未作答者本轮不上版图，不可能成为作者，也不占槽位。",
     "R02 and ranking tie policy require G0 approval; never treat this fixture as user approval."
   ],
@@ -285,7 +285,7 @@
     },
     {
       "id": "W04",
-      "note": "高于全部猜测 → higher",
+      "note": "高于全部猜测 → 最大的猜测 g:300 获胜（无更高槽）",
       "guesses": [
         100,
         200,
@@ -293,7 +293,7 @@
       ],
       "correctAnswer": 900,
       "expectedWinners": [
-        "higher"
+        "g:300"
       ]
     },
     {
@@ -386,13 +386,13 @@
     },
     {
       "id": "W12",
-      "note": "单一猜测且答案更高 → higher",
+      "note": "单一猜测且答案更高 → 该猜测 g:5 获胜（无更高槽）",
       "guesses": [
         5
       ],
       "correctAnswer": 100,
       "expectedWinners": [
-        "higher"
+        "g:5"
       ]
     },
     {

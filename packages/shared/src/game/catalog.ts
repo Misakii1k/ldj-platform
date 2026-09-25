@@ -81,6 +81,100 @@ function defaultSetup(
 
 export const GAME_CATALOG = [
   {
+    id: 'werewolf',
+    displayName: '狼人杀',
+    minPlayers: 6,
+    maxPlayers: 13,
+    availability: 'playable',
+    maturity: 'M4',
+    summary: '阵营推理桌游。玩家分为好人与狼人两方，好人通过白天发言与投票放逐狼人，狼人利用夜间袭击消灭好人。',
+    tags: ['推理', '阵营', '社交'],
+    theme: 'violet',
+    rulesets: [
+      {
+        id: 'werewolf_legacy_platform_v2',
+        label: '标准屠边（狼人夜间只杀好人）',
+        description: '狼人夜间只能袭击非狼人玩家；支持预言家、女巫、猎人等角色，女巫首夜可自救。',
+        details: [
+          '【屠边胜负】狼人杀光所有神职或所有平民获胜；好人放逐所有狼人获胜。',
+          '【夜刀限制】狼人夜间只能选择非狼人玩家作为袭击目标。',
+          '【角色技能】支持预言家、女巫、猎人、守卫与白痴多种神职组合。',
+          '【阵营分布】推荐模板：6–8人配2狼，9–10人配3狼，11–12人配4狼；支持在安全区间内微调（±1 狼），且平民保底至少 2 人。',
+          '【同守同救】守卫与女巫同时守护/救治同一目标时生效（平安夜），好人存活。',
+        ],
+      },
+      {
+        id: 'werewolf_platform_open_kill_v1',
+        label: '开放夜刀（狼人夜间可刀任何人）',
+        description: '狼人夜间可以袭击包括狼人在内的任意存活玩家，支持自刀策略。',
+        details: [
+          '【开放夜刀】狼人夜间可将目标选为任意存活玩家（包含狼人自己与队友）。',
+          '【战术博弈】支持狼人自刀骗取女巫解药或制造假银水身份。',
+          '【阵营分布】推荐模板：6–8人配2狼，9–10人配3狼，11–12人配4狼；支持在安全区间内微调（±1 狼），且平民保底至少 2 人。',
+          '【胜负标准】同标准屠边胜负判定，考验更深层的逻辑与心理战。',
+          '【同守同救】守卫与女巫同一夜同时作用于中刀目标时发生冲突判死（俗称奶穿）。',
+        ],
+      },
+      {
+        id: 'werewolf_moderator_v1',
+        label: '真人主持（线下发牌与出局控制）',
+        description: '房主作为真人法官主持线下对局，系统负责随机分发抽卡与出局状态实时同步。',
+        details: [
+          '【真人主持】房主担任法官不参与发牌，主持掌控全场身份底牌与出局操作。',
+          '【抽卡动效】普通玩家进入对局体验洗牌与 3D 翻转动效，私密揭示自身底牌。',
+          '【出局同步】法官在席位行一键标记出局（需二次确认），全员看板头像变灰并标明出局状态；误判可随时撤销。',
+          '【胜负亮牌】达成条件后主持人可结束对局，全场公开真实身份底牌进行复盘。',
+        ],
+      },
+    ],
+    setup: defaultSetup({
+      id: 'werewolf_legacy_platform_v2',
+      label: '标准屠边（狼人夜间只杀好人）',
+      description: '狼人夜间只能袭击非狼人玩家；支持预言家、女巫、猎人等角色，女巫首夜可自救。',
+      details: [
+        '【屠边胜负】狼人杀光所有神职或所有平民获胜；好人放逐所有狼人获胜。',
+        '【夜刀限制】狼人夜间只能选择非狼人玩家作为袭击目标。',
+        '【角色技能】支持预言家、女巫、猎人、守卫与白痴多种神职组合。',
+        '【阵营分布】推荐模板：6–8人配2狼，9–10人配3狼，11–12人配4狼；支持在安全区间内微调（±1 狼），且平民保底至少 2 人。',
+        '【同守同救】守卫与女巫同时守护/救治同一目标时生效（平安夜），好人存活。',
+      ],
+    }, [
+      { key: 'pace', kind: 'select', label: '对局节奏', defaultValue: 'standard', choices: [{ value: 'fast', label: '快速' }, { value: 'standard', label: '标准' }, { value: 'relaxed', label: '轻松' }] },
+      { key: 'witchSelfSave', kind: 'select', label: '女巫自救', defaultValue: 'first_night', choices: [{ value: 'first_night', label: '仅首夜' }, { value: 'never', label: '禁止' }, { value: 'always', label: '允许' }] },
+      { key: 'winCondition', kind: 'select', label: '胜负条件', defaultValue: 'roles', choices: [{ value: 'roles', label: '标准屠边（神职或平民全灭）' }, { value: 'numbers', label: '屠城绑票（狼人数≥好人数）' }] },
+      { key: 'guard', kind: 'boolean', label: '守卫加入角色池', defaultValue: false },
+      { key: 'hunter', kind: 'boolean', label: '猎人加入角色池', defaultValue: false },
+      { key: 'idiot', kind: 'boolean', label: '白痴加入角色池', defaultValue: false },
+      { key: 'wolfDelta', kind: 'segmented', label: '狼人数量微调', defaultValue: 0, choices: [{ value: -1, label: '-1 狼' }, { value: 0, label: '推荐' }, { value: 1, label: '+1 狼' }] },
+    ], { preset: 'classic', pace: 'standard', witchSelfSave: 'first_night', winCondition: 'roles', guard: false, hunter: false, idiot: false, wolfDelta: 0 }, [
+      {
+        id: 'werewolf_platform_open_kill_v1',
+        label: '开放夜刀（狼人夜间可刀任何人）',
+        description: '狼人夜间可以袭击包括狼人在内的任意存活玩家，支持自刀策略。',
+        details: [
+          '【开放夜刀】狼人夜间可将目标选为任意存活玩家（包含狼人自己与队友）。',
+          '【战术博弈】支持狼人自刀骗取女巫解药或制造假银水身份。',
+          '【阵营分布】推荐模板：6–8人配2狼，9–10人配3狼，11–12人配4狼；支持在安全区间内微调（±1 狼），且平民保底至少 2 人。',
+          '【胜负标准】同标准屠边胜负判定，考验更深层的逻辑与心理战。',
+          '【同守同救】守卫与女巫同一夜同时作用于中刀目标时发生冲突判死（俗称奶穿）。',
+        ],
+      },
+      {
+        id: 'werewolf_moderator_v1',
+        label: '真人主持（线下发牌与出局控制）',
+        description: '房主作为真人法官主持线下对局，系统负责随机分发抽卡与出局状态实时同步。',
+        details: [
+          '【真人主持】房主担任法官不参与发牌，主持掌控全场身份底牌与出局操作。',
+          '【抽卡动效】普通玩家进入对局体验洗牌与 3D 翻转动效，私密揭示自身底牌。',
+          '【出局同步】法官在席位行一键标记出局（需二次确认），全员看板头像变灰并标明出局状态；误判可随时撤销。',
+          '【胜负亮牌】达成条件后主持人可结束对局，全场公开真实身份底牌进行复盘。',
+        ],
+      },
+    ]),
+    botSupport: 'rule_and_llm',
+    visualTheme: { accent: 'violet', surface: 'social' },
+  },
+  {
     id: 'undercover',
     displayName: '谁是卧底',
     minPlayers: 4,
@@ -297,95 +391,6 @@ export const GAME_CATALOG = [
     ]),
     botSupport: 'rule_and_llm',
     visualTheme: { accent: 'mint', surface: 'cards' },
-  },
-  {
-    id: 'werewolf',
-    displayName: '狼人杀',
-    minPlayers: 6,
-    maxPlayers: 12,
-    availability: 'playable',
-    maturity: 'M4',
-    summary: '阵营推理桌游。玩家分为好人与狼人两方，好人通过白天发言与投票放逐狼人，狼人利用夜间袭击消灭好人。',
-    tags: ['推理', '阵营', '社交'],
-    theme: 'violet',
-    rulesets: [
-      {
-        id: 'werewolf_legacy_platform_v2',
-        label: '标准屠边（狼人夜间只杀好人）',
-        description: '狼人夜间只能袭击非狼人玩家；支持预言家、女巫、猎人等角色，女巫首夜可自救。',
-        details: [
-          '【屠边胜负】狼人杀光所有神职或所有平民获胜；好人放逐所有狼人获胜。',
-          '【夜刀限制】狼人夜间只能选择非狼人玩家作为袭击目标。',
-          '【角色技能】支持预言家、女巫、猎人、守卫与白痴多种神职组合。',
-          '【阵营分布】推荐模板：6–8人配2狼，9–10人配3狼，11–12人配4狼；支持在安全区间内微调（±1 狼），且平民保底至少 2 人。',
-        ],
-      },
-      {
-        id: 'werewolf_platform_open_kill_v1',
-        label: '开放夜刀（狼人夜间可刀任何人）',
-        description: '狼人夜间可以袭击包括狼人在内的任意存活玩家，支持自刀策略。',
-        details: [
-          '【开放夜刀】狼人夜间可将目标选为任意存活玩家（包含狼人自己与队友）。',
-          '【战术博弈】支持狼人自刀骗取女巫解药或制造假银水身份。',
-          '【阵营分布】推荐模板：6–8人配2狼，9–10人配3狼，11–12人配4狼；支持在安全区间内微调（±1 狼），且平民保底至少 2 人。',
-          '【胜负标准】同标准屠边胜负判定，考验更深层的逻辑与心理战。',
-        ],
-      },
-      {
-        id: 'werewolf_moderator_v1',
-        label: '真人主持（线下发牌与出局控制）',
-        description: '房主作为真人法官主持线下对局，系统负责随机分发抽卡与出局状态实时同步。',
-        details: [
-          '【真人主持】房主担任法官不参与发牌，主持掌控全场身份底牌与出局操作。',
-          '【抽卡动效】普通玩家进入对局体验洗牌与 3D 翻转动效，私密揭示自身底牌。',
-          '【出局同步】法官在席位行一键标记出局（需二次确认），全员看板头像变灰并标明出局状态；误判可随时撤销。',
-          '【胜负亮牌】达成条件后主持人可结束对局，全场公开真实身份底牌进行复盘。',
-        ],
-      },
-    ],
-    setup: defaultSetup({
-      id: 'werewolf_legacy_platform_v2',
-      label: '标准屠边（狼人夜间只杀好人）',
-      description: '狼人夜间只能袭击非狼人玩家；支持预言家、女巫、猎人等角色，女巫首夜可自救。',
-      details: [
-        '【屠边胜负】狼人杀光所有神职或所有平民获胜；好人放逐所有狼人获胜。',
-        '【夜刀限制】狼人夜间只能选择非狼人玩家作为袭击目标。',
-        '【角色技能】支持预言家、女巫、猎人、守卫与白痴多种神职组合。',
-        '【阵营分布】推荐模板：6–8人配2狼，9–10人配3狼，11–12人配4狼；支持在安全区间内微调（±1 狼），且平民保底至少 2 人。',
-      ],
-    }, [
-      { key: 'pace', kind: 'select', label: '对局节奏', defaultValue: 'standard', choices: [{ value: 'fast', label: '快速' }, { value: 'standard', label: '标准' }, { value: 'relaxed', label: '轻松' }] },
-      { key: 'witchSelfSave', kind: 'select', label: '女巫自救', defaultValue: 'first_night', choices: [{ value: 'first_night', label: '仅首夜' }, { value: 'never', label: '禁止' }, { value: 'always', label: '允许' }] },
-      { key: 'winCondition', kind: 'select', label: '胜负条件', defaultValue: 'numbers', choices: [{ value: 'numbers', label: '屠边人数' }, { value: 'roles', label: '屠神规则' }] },
-      { key: 'guard', kind: 'boolean', label: '守卫加入角色池', defaultValue: false },
-      { key: 'hunter', kind: 'boolean', label: '猎人加入角色池', defaultValue: false },
-      { key: 'idiot', kind: 'boolean', label: '白痴加入角色池', defaultValue: false },
-    ], { preset: 'classic', pace: 'standard', witchSelfSave: 'first_night', winCondition: 'numbers', guard: false, hunter: false, idiot: false, wolfDelta: 0 }, [
-      {
-        id: 'werewolf_platform_open_kill_v1',
-        label: '开放夜刀（狼人夜间可刀任何人）',
-        description: '狼人夜间可以袭击包括狼人在内的任意存活玩家，支持自刀策略。',
-        details: [
-          '【开放夜刀】狼人夜间可将目标选为任意存活玩家（包含狼人自己与队友）。',
-          '【战术博弈】支持狼人自刀骗取女巫解药或制造假银水身份。',
-          '【阵营分布】推荐模板：6–8人配2狼，9–10人配3狼，11–12人配4狼；支持在安全区间内微调（±1 狼），且平民保底至少 2 人。',
-          '【胜负标准】同标准屠边胜负判定，考验更深层的逻辑与心理战。',
-        ],
-      },
-      {
-        id: 'werewolf_moderator_v1',
-        label: '真人主持（线下发牌与出局控制）',
-        description: '房主作为真人法官主持线下对局，系统负责随机分发抽卡与出局状态实时同步。',
-        details: [
-          '【真人主持】房主担任法官不参与发牌，主持掌控全场身份底牌与出局操作。',
-          '【抽卡动效】普通玩家进入对局体验洗牌与 3D 翻转动效，私密揭示自身底牌。',
-          '【出局同步】法官在席位行一键标记出局（需二次确认），全员看板头像变灰并标明出局状态；误判可随时撤销。',
-          '【胜负亮牌】达成条件后主持人可结束对局，全场公开真实身份底牌进行复盘。',
-        ],
-      },
-    ]),
-    botSupport: 'rule_and_llm',
-    visualTheme: { accent: 'violet', surface: 'social' },
   },
   {
     id: 'durian',
@@ -781,6 +786,72 @@ export const GAME_CATALOG = [
     botSupport: 'rule',
     visualTheme: { accent: 'sunset', surface: 'social' },
   },
+  {
+    id: 'wits-wagers',
+    displayName: '一智千金',
+    minPlayers: 3,
+    maxPlayers: 7,
+    availability: 'playable',
+    maturity: 'M3',
+    summary: '数字竞猜与赔率下注的聚会博弈',
+    tags: ['竞猜', '博弈', '聚会', '赔率'],
+    theme: 'ocean',
+    rulesets: [
+      {
+        id: 'wits_wagers_platform_v1',
+        label: '标准规则（平台适配版）',
+        description: '7轮数字竞猜与赔率下注，与正确答案差距最小的猜测获胜。',
+        details: [
+          '【秘密作答】所有玩家就一个数字问题秘密提交整数猜测。',
+          '【版图排列】猜测按升序排列并生成赔率槽位，最左另有「更低」边缘槽。',
+          '【赔率下注】两枚永久筹码附带积分投注，赢家返还本金并获净赔率收益。',
+          '【七轮决胜】七轮后积分最高者获胜，同分比较答对次数。',
+        ],
+      },
+      {
+        id: 'wits_wagers_sim_v1',
+        label: '桌面模拟（无判定 · 自由道具）',
+        description: '系统只负责出题、收秘密猜测、亮牌后自动排版图算赔率；筹码摆放与钞票加减全由玩家自觉，不记分不判胜负。',
+        details: [
+          '【出题亮牌】服务端抽题，各人私密写数字，集体亮牌后自动排出带赔率的版图。',
+          '【自由筹码】两枚筹码随意摆放，钞票自行增减，标准答案由主持人翻面公开。',
+          '【无系统判定】不记分、不判胜负，适合按线下原版规则自由玩。',
+        ],
+      },
+    ],
+    setup: defaultSetup(
+      {
+        id: 'wits_wagers_platform_v1',
+        label: '标准规则（平台适配版）',
+        description: '7轮数字竞猜与赔率下注，与正确答案差距最小的猜测获胜。',
+        details: [
+          '【秘密作答】所有玩家就一个数字问题秘密提交整数猜测。',
+          '【版图排列】猜测按升序排列并生成赔率槽位，最左另有「更低」边缘槽。',
+          '【赔率下注】两枚永久筹码附带积分投注，赢家返还本金并获净赔率收益。',
+          '【七轮决胜】七轮后积分最高者获胜，同分比较答对次数。',
+        ],
+      },
+      [
+        { key: 'answerSeconds', kind: 'integer', label: '作答限时（秒）', defaultValue: 30, min: 30, max: 90, step: 30 },
+        { key: 'betSeconds', kind: 'integer', label: '下注限时（秒）', defaultValue: 30, min: 30, max: 90, step: 30 },
+      ],
+      {},
+      [
+        {
+          id: 'wits_wagers_sim_v1',
+          label: '桌面模拟（无判定 · 自由道具）',
+          description: '系统只负责出题、收秘密猜测、亮牌后自动排版图算赔率；筹码摆放与钞票加减全由玩家自觉，不记分不判胜负。',
+          details: [
+            '【出题亮牌】服务端抽题，各人私密写数字，集体亮牌后自动排出带赔率的版图。',
+            '【自由筹码】两枚筹码随意摆放，钞票自行增减，标准答案由主持人翻面公开。',
+            '【无系统判定】不记分、不判胜负，适合按线下原版规则自由玩。',
+          ],
+        },
+      ],
+    ),
+    botSupport: 'rule_and_llm',
+    visualTheme: { accent: 'ocean', surface: 'board' },
+  },
 ] as const satisfies readonly GameCatalogEntry[];
 
 export type GameId = (typeof GAME_CATALOG)[number]['id'];
@@ -838,6 +909,7 @@ export function listGamesForPlayerCount(playerCount: number | null | undefined):
 }
 
 export const DEFAULT_PLAYABLE_GAME_ID: GameId | null = null;
+export const FEATURED_GAME_ID: GameId = 'werewolf';
 
 export function listGameCatalog(): readonly GameCatalogEntry[] {
   return GAME_CATALOG;
