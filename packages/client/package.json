@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@capacitor/core": "^8.5.0",
+    "@fontsource/noto-serif-sc": "^5.3.0",
     "@ldj/shared": "*",
     "@types/howler": "^2.2.13",
     "@types/three": "^0.185.4",

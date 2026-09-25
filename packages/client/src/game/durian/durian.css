@@ -2,7 +2,7 @@
 
 /* 榴莲大数量使用 Georgia 衬线数字；座位号、罚分小标签等辅助数字保持正文无衬线。 */
 .tabletop-shell[data-game-id="durian"] {
-  --durian-numeral-font: Georgia, 'Times New Roman', serif;
+  --durian-numeral-font: var(--gp-font-display);
 }
 
 .tabletop-shell[data-game-id="durian"] :is(

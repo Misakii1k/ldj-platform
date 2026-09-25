@@ -3,6 +3,10 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App.tsx';
 import { isNativeApp } from './app/nativePlatform.ts';
 import { initGestureLock } from './shared-ui/gestureLock.ts';
+// 展示字体：只给 ≥20px 的标题与数字用（--gp-font-display）。fontsource 按 unicode-range
+// 切成约 100 片，每片 ~3.5KB，浏览器只拉页面真正用到的字所在的片，不是整包 1.5MB。
+import '@fontsource/noto-serif-sc/400.css';
+import '@fontsource/noto-serif-sc/700.css';
 import './styles.css';
 // 各游戏专属样式（由 styles.css 按游戏拆分而来）。顺序刻意保持与拆分前一致：
 // 必须在 styles.css 之后、game-ui.css 之前，否则 game-ui.css 的归一化层会失去“源顺序在后”的压制力。

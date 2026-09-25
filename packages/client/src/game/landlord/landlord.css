@@ -53,7 +53,7 @@
   background: linear-gradient(180deg, #fff, #f8fafc);
   color: #111827;
   box-shadow: 0 12px 22px rgba(0,0,0,.28);
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--gp-font-display);
   cursor: default;
 }
 

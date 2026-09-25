@@ -422,7 +422,7 @@
 }
 
 .durian-turn-sheet__half-qty {
-  font-family: var(--durian-numeral-font, Georgia, serif);
+  font-family: var(--gp-font-display);
   font-size: 26px;
   font-weight: 700;
   color: #25351c;

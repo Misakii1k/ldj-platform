@@ -80,7 +80,7 @@
 .ww-result-emblem { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; border: 1px solid var(--result-line); background: var(--result-surface); color: var(--result-accent); flex-shrink: 0; }
 .ww-result-outcome { min-width: 0; }
 .ww-result-eyebrow { color: var(--result-muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; }
-.ww-result-outcome h3 { margin: 6px 0 8px; color: var(--result-ink); font-family: 'SimSun', 'STSong', serif; font-size: clamp(24px, 4vw, 32px); line-height: 1.25; overflow-wrap: anywhere; }
+.ww-result-outcome h3 { margin: 6px 0 8px; color: var(--result-ink); font-family: var(--gp-font-display); font-size: clamp(24px, 4vw, 32px); line-height: 1.25; overflow-wrap: anywhere; }
 .ww-result-outcome p { margin: 0; color: var(--result-muted); font-size: 13px; line-height: 1.6; }
 .ww-result-roster { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding: 20px; }
 .ww-result-roster-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 12px; }

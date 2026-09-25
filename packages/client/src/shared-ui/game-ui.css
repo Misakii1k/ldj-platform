@@ -71,6 +71,18 @@
   --gp-dock-offset: 92px;
   --gp-chrome-header: 46px;
   --gp-font: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  /* 展示字：≥20px 的标题与数字专用。Noto Serif SC 由 main.tsx 按 unicode-range 分片加载；
+     未命中或加载中退到系统衬线，狼人杀/榴莲此前就是靠这条退路撑起来的。 */
+  --gp-font-display: "Noto Serif SC", Georgia, "Songti SC", "STSong", "SimSun", "Times New Roman", serif;
+
+  /* 3.3 舞台配方令牌：从狼人杀/榴莲抽出的三样共性——
+     舞台光（径向、偏心、8%~12% 强度）、贴纸阴影（硬偏移 + 顶部一线高光）、艺术层透明度。
+     accent-glow 由各游戏在自己的根节点上覆盖为「accent + 14 透明度后缀」。 */
+  --gp-accent-glow: rgba(255, 255, 255, 0.08);
+  --gp-stage-light: radial-gradient(ellipse at 50% 35%, var(--gp-accent-glow), transparent 65%);
+  --gp-shadow-sticker: 0 2px 0 rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --gp-shadow-sticker-lift: 0 3px 0 rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --gp-art-opacity: 0.12;
 
   /* 3.1 动效时间 / 缓动 / 位移 —— 全平台唯一来源。
      任何 animation / transition 都必须引用这里的令牌，不再写字面量时长。
@@ -1563,4 +1575,143 @@ html[data-motion-level='off'] .stage-countdown[data-pulsing='true'] .stage-count
 /* 低动效档位：取消倾角，避免透视带来的视觉位移 */
 html[data-motion-level="off"] .stage-felt-3d__plane {
   transform: none;
+}
+
+/* ===================================================================
+ * 10. 舞台配方工具类
+ *
+ * 从狼人杀（werewolf-native.css）与榴莲（durian-native.css）里抽出的四个
+ * 「让页面像一张桌而不是一张表单」的共性做法。各游戏只填变量、不再各写一套。
+ * 颜色全部走 --gp-* 令牌（本段受 classContracts 裸色检查约束）。
+ * =================================================================== */
+
+/* 10.1 全屏根节点：页面自己占满视口再往下分配，而不是一张卡片居中在壳里。
+   狼人杀 / 榴莲的「没有死空间」全靠这一条。 */
+.stage-native-page {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 10;
+  background: var(--gp-stage-light), var(--gp-paper);
+  color: var(--gp-ink);
+  font-family: var(--gp-font);
+}
+
+/* 10.2 小标题（eyebrow）：全大写、宽字距、9~11px，压在中文标题上方。 */
+.stage-eyebrow {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gp-muted);
+  line-height: 1.2;
+}
+
+.stage-eyebrow--accent {
+  color: var(--gp-accent, var(--gp-ink));
+}
+
+/* 10.3 展示数字：衬线 + 等宽数字，2~4 倍正文字号，accent 色。 */
+.stage-numeral {
+  font-family: var(--gp-font-display);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.stage-title {
+  font-family: var(--gp-font-display);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+}
+
+/* 10.4 装饰艺术层：一张 currentColor 的 SVG 或纯 CSS 图形，压在舞台中央，
+   12% 透明度、不接事件。这就是「填满空白」的那一层；短屏时按高度递减。 */
+.stage-art {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+  opacity: var(--gp-art-opacity);
+  color: var(--gp-accent, var(--gp-ink));
+}
+
+.stage-art > svg,
+.stage-art > img {
+  width: min(100%, 640px);
+  height: auto;
+  max-height: 360px;
+}
+
+@media (max-width: 768px) {
+  .stage-art > svg,
+  .stage-art > img {
+    max-height: 220px;
+  }
+}
+
+@media (max-height: 620px) {
+  .stage-art > svg,
+  .stage-art > img {
+    max-height: 140px;
+  }
+}
+
+@media (max-height: 520px) {
+  .stage-art {
+    display: none;
+  }
+}
+
+/* 10.5 贴纸阴影：硬偏移 + 顶部一线高光；按下沉 1px。 */
+.stage-sticker {
+  box-shadow: var(--gp-shadow-sticker);
+  transition: transform var(--gp-dur-fast) var(--gp-ease-standard),
+    box-shadow var(--gp-dur-fast) var(--gp-ease-standard);
+}
+
+.stage-sticker:active {
+  transform: translateY(1px);
+  box-shadow: var(--gp-shadow-press);
+}
+
+.stage-sticker--lift {
+  box-shadow: var(--gp-shadow-sticker-lift);
+}
+
+/* 10.6 多信号状态：当前行动者左侧 4px accent 竖条；淘汰者虚线 + 划线。
+   颜色之外至少再给一种形状信号，色弱与低对比环境下才读得出来。 */
+.stage-chip {
+  position: relative;
+}
+
+.stage-chip[data-active="true"]::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 24%;
+  width: 4px;
+  height: 52%;
+  border-radius: 2px;
+  background: var(--gp-accent, var(--gp-ink));
+}
+
+.stage-chip[data-out="true"] {
+  border-style: dashed;
+  box-shadow: none;
+  opacity: 0.72;
+}
+
+.stage-chip[data-out="true"] .stage-numeral {
+  text-decoration: line-through;
 }

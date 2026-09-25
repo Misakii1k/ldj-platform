@@ -304,14 +304,17 @@
 }
 
 .werewolf-native-page .brand {
-  font: 700 22px 'SimSun', serif;
+  font-weight: 700;
+  font-size: 22px;
+  font-family: var(--gp-font-display);
   letter-spacing: 0.1em;
   color: var(--text);
 }
 
 .werewolf-native-page .brand small {
   display: block;
-  font: 9px Georgia, serif;
+  font-size: 9px;
+  font-family: var(--gp-font-display);
   letter-spacing: 0.22em;
   margin-top: 4px;
   color: var(--secondary);
@@ -371,7 +374,9 @@
 .werewolf-native-page .seat-rail .seat b {
   grid-row: 1 / 3;
   align-self: center;
-  font: 500 26px Georgia, serif;
+  font-weight: 500;
+  font-size: 26px;
+  font-family: var(--gp-font-display);
   line-height: 1;
   color: var(--detail);
 }
@@ -468,7 +473,8 @@
 }
 
 .werewolf-native-page .stage-top .time {
-  font: 22px Georgia, serif;
+  font-size: 22px;
+  font-family: var(--gp-font-display);
   color: var(--text);
   white-space: nowrap;
   background: var(--card);
@@ -585,7 +591,8 @@
   right: 0;
   text-align: center;
   letter-spacing: 0.4em;
-  font: 16px Georgia, serif;
+  font-size: 16px;
+  font-family: var(--gp-font-display);
   color: var(--detail);
 }
 
@@ -620,14 +627,16 @@
   position: absolute;
   inset: 20px 0;
   text-align: center;
-  font: 12px Georgia, serif;
+  font-size: 12px;
+  font-family: var(--gp-font-display);
   letter-spacing: 0.4em;
   color: #f4d7aa;
 }
 
 .werewolf-native-page .act b {
   display: block;
-  font: 100px Georgia, serif;
+  font-size: 100px;
+  font-family: var(--gp-font-display);
   letter-spacing: -0.08em;
   margin-top: 6px;
 }
@@ -638,7 +647,8 @@
   left: 0;
   right: 0;
   text-align: center;
-  font: 11px 'SimSun', serif;
+  font-size: 11px;
+  font-family: var(--gp-font-display);
   letter-spacing: 0.18em;
   color: var(--secondary);
   background: var(--desk);
@@ -665,7 +675,7 @@
 }
 
 .werewolf-native-page .speaker h1 {
-  font-family: 'STSong', 'SimSun', serif;
+  font-family: var(--gp-font-display);
   font-weight: 600;
   font-size: 28px;
   margin: 8px 0;
@@ -675,7 +685,8 @@
 
 .werewolf-native-page .speaker p {
   color: var(--secondary);
-  font: 13px 'SimSun', serif;
+  font-size: 13px;
+  font-family: var(--gp-font-display);
   letter-spacing: 0.12em;
   margin: 0;
   line-height: 1.5;
@@ -709,7 +720,8 @@
 }
 
 .werewolf-native-page .table-summary small {
-  font: 9px Georgia, serif;
+  font-size: 9px;
+  font-family: var(--gp-font-display);
   letter-spacing: 0.12em;
 }
 
@@ -768,7 +780,8 @@
 }
 
 .werewolf-native-page .identity > span:first-child {
-  font: 28px Georgia, serif;
+  font-size: 28px;
+  font-family: var(--gp-font-display);
   line-height: 1;
   color: var(--detail);
 }
@@ -905,7 +918,7 @@
 .werewolf-native-page dialog h2 {
   margin: 0 0 16px;
   font-size: 20px;
-  font-family: 'SimSun', serif;
+  font-family: var(--gp-font-display);
   letter-spacing: 0.05em;
   color: var(--detail);
 }
