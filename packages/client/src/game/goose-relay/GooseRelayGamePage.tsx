@@ -11,7 +11,7 @@
  *    接收席位光晕、指认对错印章、终局鹅群列队。
  *    契约见 docs/plans/2026-09-22-game-ui-uplift/contracts/ 同名文档思路。
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, Eye, EyeOff, LayoutGrid, RotateCcw, X } from 'lucide-react';
 import { useConnection } from '../../connection/useConnection.ts';
@@ -21,11 +21,11 @@ import { GameDrawer } from '../tabletop/GameDrawer.tsx';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
 import { getGooseCard } from './cardCatalog.ts';
 import { ArenaBoard } from '../../shared-ui/ArenaBoard.tsx';
-import { ArenaRail } from '../../shared-ui/ArenaRail.tsx';
 import { SeatTargetPicker } from '../../shared-ui/SeatTargetPicker.tsx';
 import { StageCountdownRing } from '../../shared-ui/stage/StageCountdownRing.tsx';
 import { FlightLayer } from '../../shared-ui/stage/FlightLayer.tsx';
 import { useGooseRelayStage } from './stage/useGooseRelayStage.tsx';
+import { GooseTrack, PastureArt, assignGooseAvatars, gooseAvatarFor } from './stage/PastureProps.tsx';
 import type { CharacterId, GooseRelayPlayerView } from './types.ts';
 import { TabletopVictoryBurst } from '../../shared-ui/TabletopVictoryBurst.tsx';
 import { usePhaseEventOverlay } from '../../shared-ui/usePhaseEventOverlay.tsx';
@@ -98,7 +98,14 @@ export function GooseRelayGamePage({ view }: Props) {
 
   const myIndex = myId === null ? -1 : (view.lineOrder ?? []).indexOf(myId);
   const isHeadGoose = myId !== null && view.headPlayerId === myId;
-  const stage = useGooseRelayStage(view);
+  // 每位玩家一只鹅：跑道席位与传递飞行共用这一份分配
+  const playersKey = view.players.join('|');
+  const gooseAvatars = useMemo(
+    () => assignGooseAvatars(playersKey ? playersKey.split('|') : []),
+    [playersKey],
+  );
+  const avatarOf = (playerId: string) => gooseAvatars.get(playerId) ?? gooseAvatarFor(playerId);
+  const stage = useGooseRelayStage(view, avatarOf);
 
   const myTurnRelay = view.phase === 'relay' && myIndex === view.currentIndex;
   const myTurnAccuse = view.phase === 'accusation' && myIndex === view.currentAccuserIndex;
@@ -471,6 +478,10 @@ export function GooseRelayGamePage({ view }: Props) {
 
       {/* 舞台区：草地牧场毡面（3D 透视），传递轨道沿席位环走 */}
       <div className="gr-stage stage-felt-3d" ref={stage.stageRef}>
+        {/* 装饰层：篱笆 + 云朵剪影，12% 透明度，填毡面四周的空白 */}
+        <div className="stage-art gr-art">
+          <PastureArt />
+        </div>
         {/* 只在需要玩家行动的阶段催时间 */}
         <StageCountdownRing
           deadlineAt={view.deadlineAt}
@@ -554,7 +565,7 @@ export function GooseRelayGamePage({ view }: Props) {
           </section>
         )}
 
-        {/* 表演传递轨 / 指认进度轨 → 共享 ArenaRail */}
+        {/* 表演传递轨 / 指认进度轨 → 牧场跑道：每个席位是一只鹅 */}
         {(view.phase === 'relay' || view.phase === 'accusation' || view.phase === 'discussion') && (
           <ArenaBoard
             className="goose-focal goose-track-board"
@@ -562,30 +573,35 @@ export function GooseRelayGamePage({ view }: Props) {
             headline={view.phase === 'accusation' ? '末棒倒序指认轨' : '动作传递接力轨'}
             hint={view.phase === 'accusation' ? '从末位倒序向前指认' : '从头鹅逐棒向后传递'}
           >
-            <ArenaRail
+            <GooseTrack
               label="接力进度轨"
-              className="goose-track-rail"
-              items={(view.lineOrder ?? []).map((playerId, index) => {
+              reverse={view.phase === 'accusation'}
+              seats={(view.lineOrder ?? []).map((playerId, index) => {
                 const isHead = playerId === view.headPlayerId;
                 const isCurrentRelay = view.phase === 'relay' && index === view.currentIndex;
                 const isCurrentAccuse =
                   view.phase === 'accusation' && index === view.currentAccuserIndex;
                 const doneRelay =
-                  view.phase === 'relay' && view.currentIndex >= 0 && index < view.currentIndex;
+                  (view.phase === 'relay' && view.currentIndex >= 0 && index < view.currentIndex) ||
+                  // 讨论阶段：整条跑道都已传完
+                  view.phase === 'discussion';
                 const doneAccuse =
                   view.phase === 'accusation' &&
                   view.currentAccuserIndex >= 0 &&
                   index > view.currentAccuserIndex;
 
                 return {
-                  key: playerId,
+                  playerId,
                   label: `${isHead ? '头 · ' : ''}${playerId === myId ? `${nameFor(members, playerId)} (我)` : nameFor(members, playerId)}`,
-                  value: isHead ? '头鹅' : doneRelay || doneAccuse ? '✓' : index + 1,
+                  badge: isHead ? '头鹅' : doneRelay || doneAccuse ? '✓' : index + 1,
                   state: isCurrentRelay || isCurrentAccuse
                     ? 'active'
                     : doneRelay || doneAccuse
                       ? 'done'
                       : 'idle',
+                  isHead,
+                  isMe: playerId === myId,
+                  avatar: avatarOf(playerId),
                 };
               })}
             />
