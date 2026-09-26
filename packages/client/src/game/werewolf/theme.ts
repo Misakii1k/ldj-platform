@@ -76,13 +76,17 @@ export function getThemePairPreference(storage?: Storage): WerewolfThemePair {
     if (legacy === 'theatre') {
       try {
         s.setItem(THEME_PAIR_STORAGE_KEY, 'theatre');
-      } catch {}
+      } catch {
+        // ignore storage errors
+      }
       return 'theatre';
     }
     if (legacy === 'woodcut' || legacy === 'eclipse') {
       try {
         s.setItem(THEME_PAIR_STORAGE_KEY, 'forest');
-      } catch {}
+      } catch {
+        // ignore storage errors
+      }
       return 'forest';
     }
   } catch {

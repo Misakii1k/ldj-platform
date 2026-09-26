@@ -4,18 +4,18 @@ import { werewolfModule } from '../server/module.ts';
 import { werewolfV2Module } from '../server/v2/module.ts';
 import type { WerewolfState } from '../server/module.ts';
 
-const DUMMY_CTX = {
-  now: 1_700_000_000_000,
+type TestCtx = {
+  now: number;
   random: {
-    nextInt: () => 0,
-    shuffle: <T>(items: readonly T[]) => [...items],
-  },
+    nextInt: () => number;
+    shuffle: <T>(items: readonly T[]) => T[];
+  };
 };
 
 const PLAYERS = ['w1', 'w2', 's1', 'x1', 'g1', 'v1', 'v2', 'v3'];
 
-function startedLegacyTimelineNight(pace: 'fast' | 'standard' | 'relaxed' = 'standard', now = 1_000_000): { state: WerewolfState; ctx: any } {
-  const ctx = {
+function startedLegacyTimelineNight(pace: 'fast' | 'standard' | 'relaxed' = 'standard', now = 1_000_000): { state: WerewolfState; ctx: TestCtx } {
+  const ctx: TestCtx = {
     now,
     random: {
       nextInt: () => 0,
@@ -40,7 +40,7 @@ function startedLegacyTimelineNight(pace: 'fast' | 'standard' | 'relaxed' = 'sta
   return { state, ctx };
 }
 
-function advanceLegacyTimeline(state: WerewolfState, ctx: any): WerewolfState {
+function advanceLegacyTimeline(state: WerewolfState, ctx: TestCtx): WerewolfState {
   const cur = state.timelineState!.current;
   const token = state.timelineState!.activeTimerToken!;
   const endsAt = cur.endsAt!;

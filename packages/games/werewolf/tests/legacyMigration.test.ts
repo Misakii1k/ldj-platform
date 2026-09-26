@@ -35,7 +35,7 @@ test('legacy werewolf: v4 快照成功迁移至 v5，timelineState=null，保留
   const fresh = werewolfModule.createInitialState(DUMMY_CTX, PLAYERS, config);
 
   // 模拟一个处于 night 阶段的 v4 快照（无 timelineState）
-  const v4Snapshot: any = {
+  const v4Snapshot: Record<string, unknown> = {
     ...fresh,
     schemaVersion: 4,
     phase: 'night',

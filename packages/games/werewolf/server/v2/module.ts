@@ -33,8 +33,8 @@ const rawWerewolfV2Module: GameModuleV2<V2Config, V2State, V2Action, V2PlayerVie
   parseSpectatorView: (input) => v2PublicViewSchema.parse(input),
   assertInvariants: assertV2Invariants,
   snapshotMigrations: {
-    1: (snap: any) => ({
-      ...snap,
+    1: (snap: unknown) => ({
+      ...(snap as Record<string, unknown>),
       schemaVersion: 2,
       timelineState: null,
     }),

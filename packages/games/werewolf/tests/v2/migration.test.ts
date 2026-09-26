@@ -8,7 +8,7 @@ test('V2 snapshotMigration：schema 1 迁移至 schema 2，旧快照保持 timel
   const players = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'];
   const stateV1 = init(players, {}, IDENTITY_CTX);
   // 模拟旧版 schemaVersion 1 快照（无 timelineState）
-  const legacyV1Snapshot: any = {
+  const legacyV1Snapshot: Record<string, unknown> = {
     ...stateV1,
     schemaVersion: 1,
   };
@@ -18,7 +18,7 @@ test('V2 snapshotMigration：schema 1 迁移至 schema 2，旧快照保持 timel
   const migrator = werewolfV2Module.snapshotMigrations?.[1];
   assert.ok(migrator, 'snapshotMigrations[1] 必须已注册');
 
-  const migrated = migrator(legacyV1Snapshot) as any;
+  const migrated = migrator(legacyV1Snapshot) as { schemaVersion?: number; timelineState?: unknown };
   assert.equal(migrated.schemaVersion, 2);
   assert.equal(migrated.timelineState, null);
 
@@ -76,6 +76,6 @@ test('V2 view 解析兼容：旧局 timeline=null 与新局 timeline 均合法�
   const legacyNoTimeline = {
     ...pubView,
   };
-  delete (legacyNoTimeline as any).timeline;
+  delete (legacyNoTimeline as { timeline?: unknown }).timeline;
   assert.equal(v2PublicViewSchema.safeParse(legacyNoTimeline).success, true);
 });

@@ -7,7 +7,6 @@ import {
   applyChatSend,
   listChatAfter,
   canReadChat,
-  insertSystemChat,
 } from '../src/core/commands/chat.ts';
 import { CommandError, type TxContext } from '../src/core/executor.ts';
 
@@ -109,7 +108,7 @@ test('privateChat：101+ 条 B↔C 私聊后插入公共消息，A 按游标查�
   }
 
   // 插入 1 条公共消息
-  const pub = applyChatSend(tx, roomId, playerB, '重要的公共广播');
+  applyChatSend(tx, roomId, playerB, '重要的公共广播');
 
   // A 从 cursor=null 查询最近消息
   const recentA = listChatAfter(db, roomId, null, playerA);
@@ -132,7 +131,7 @@ test('privateChat：101+ 条 B↔C 私聊后插入公共消息，A 按游标查�
 test('privateChat：准入安全拦截（self/bot/不存在/已退出/跨房拒绝；离线保留可收件）', () => {
   const { db, tx } = createTestContext();
   const { roomId: room1, hostId: playerA } = seedRoom(db, { nickname: '玩家A' });
-  const { roomId: room2, hostId: otherRoomPlayer } = seedRoom(db, { nickname: '外房玩家' });
+  const { hostId: otherRoomPlayer } = seedRoom(db, { nickname: '外房玩家' });
 
   const botPlayer = 'bot-player';
   const kickedPlayer = 'kicked-player';

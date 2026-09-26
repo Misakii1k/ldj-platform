@@ -32,7 +32,7 @@ test('moderator: schemaVersion 升级至 2，新局初始化 manual/day/confirm�
   assert.equal(pub.timeline.mode, 'manual');
 
   // 旧快照迁移 1 -> 2
-  const v1Snapshot: any = {
+  const v1Snapshot: Record<string, unknown> = {
     schemaVersion: 1,
     moderatorPlayerId: 'mod',
     playerOrder: ['p1', 'p2', 'p3', 'p4', 'p5'],

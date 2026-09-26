@@ -2,8 +2,16 @@ import { getVoiceCueDurationMs } from '@ldj/shared';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { werewolfV2Module } from '../../server/v2/module.ts';
-import { init, apply, actor, system, makeCtx, reduce } from './helpers.ts';
+import { init, apply, actor, system } from './helpers.ts';
 import type { V2State } from '../../server/v2/types.ts';
+
+type V2TestCtx = {
+  now: number;
+  random: {
+    nextInt: () => number;
+    shuffle: <T>(items: readonly T[]) => T[];
+  };
+};
 
 const IDS = ['w1', 'w2', 's1', 'x1', 'g1', 'v1', 'v2', 'v3'];
 
@@ -11,8 +19,8 @@ function startedNightV2(
   pace: 'fast' | 'standard' | 'relaxed' = 'standard',
   now = 1_000_000,
   roles = { guard: true, hunter: false, idiot: false },
-): { state: V2State; ctx: any } {
-  const ctx = {
+): { state: V2State; ctx: V2TestCtx } {
+  const ctx: V2TestCtx = {
     now,
     random: {
       nextInt: () => 0,
@@ -27,7 +35,7 @@ function startedNightV2(
   return { state, ctx };
 }
 
-function advanceTimeline(state: V2State, ctx: any): V2State {
+function advanceTimeline(state: V2State, ctx: V2TestCtx): V2State {
   const cur = state.timelineState!.current;
   const token = state.timelineState!.activeTimerToken!;
   const endsAt = cur.endsAt!;

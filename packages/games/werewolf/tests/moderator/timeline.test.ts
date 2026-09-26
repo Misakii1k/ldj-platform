@@ -24,17 +24,14 @@ function createModGame(now = 1_000_000, pace: 'fast' | 'standard' | 'relaxed' = 
   return { state, ctx };
 }
 
-function applyMod(ctx: GameContext, state: ModeratorState, actor: Actor, action: WerewolfModeratorAction): {
-  nextState: ModeratorState;
-  effects: any[];
-} {
+function applyMod(ctx: GameContext, state: ModeratorState, actor: Actor, action: WerewolfModeratorAction) {
   const res = werewolfModeratorModule.reduce(ctx, state, actor, action);
   if (!res.ok) {
     assert.fail(`reduce failed: ${res.code} - ${res.message}`);
   }
   return {
-    nextState: (res as any).nextState,
-    effects: (res as any).effects ?? [],
+    nextState: res.nextState,
+    effects: res.effects ?? [],
   };
 }
 

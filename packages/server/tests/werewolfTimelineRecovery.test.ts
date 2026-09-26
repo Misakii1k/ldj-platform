@@ -590,16 +590,18 @@ test('T07c: 真实 3 客户端 WebSocket：公共 timeline 一致、视角保密
     assert.equal(ackChat.type, 'ack');
 
     // p3 收到私聊
+    type ChatBatchPayload = { messages?: Array<{ text?: string }> };
+    type GameStateView = { timeline?: { paused?: boolean } };
     const p3Batch = await cP3.waitFor(
-      (e) => e.type === 'chat_batch' && (e.payload as any)?.messages?.some((m: any) => m.text === '私密密谋'),
+      (e) => e.type === 'chat_batch' && Boolean((e.payload as ChatBatchPayload)?.messages?.some((m) => m.text === '私密密谋')),
       4000,
       'p3Batch',
     );
     assert.ok(p3Batch);
 
-    // 主持人及无关玩家绝不能收到该私聊
+    // 主持人及无关玩家绝逃不能收到该私聊
     const leakedToHost = cHost.allReceived.some(
-      (e) => e.type === 'chat_batch' && (e.payload as any)?.messages?.some((m: any) => m.text === '私密密谋'),
+      (e) => e.type === 'chat_batch' && Boolean((e.payload as ChatBatchPayload)?.messages?.some((m) => m.text === '私密密谋')),
     );
     assert.equal(leakedToHost, false);
 
@@ -607,7 +609,7 @@ test('T07c: 真实 3 客户端 WebSocket：公共 timeline 一致、视角保密
     cHost.close();
     // p2 与 p3 收到断线引起的 game_state 更新
     const p2StatePaused = await cP2.waitFor(
-      (e) => e.type === 'game_state' && (e.payload.view as any)?.timeline?.paused === true,
+      (e) => e.type === 'game_state' && (e.payload.view as GameStateView)?.timeline?.paused === true,
       4000,
       'p2StatePaused',
     );

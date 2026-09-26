@@ -89,12 +89,6 @@ export function getActiveSession(db: Db, roomId: string): SessionRow | undefined
     .get(roomId) as SessionRow | undefined;
 }
 
-function requireModule(moduleId: string): RegisteredGameModule {
-  const module = getGameModule(moduleId);
-  if (!module) throw new CommandError('INTERNAL_ERROR', `未注册的游戏模块：${moduleId}`);
-  return module;
-}
-
 /** D4-F1：会话级模块解析，以持久化 ruleset_id 为权威；缺失/未注册即失败关闭。 */
 function requireSessionModule(session: SessionRow): RegisteredGameModule {
   const module = getSessionGameModule(session);

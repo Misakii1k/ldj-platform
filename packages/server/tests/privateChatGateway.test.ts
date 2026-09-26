@@ -158,7 +158,7 @@ test('WS 私聊：A/B/C 三连接，A→B 私聊第三方原始 frame 绝不含�
     const clientC = await Client.connect(app);
     const ackC = await clientC.request('join_room', { roomCode: seeded.roomCode, nickname: '玩家C' });
     assert.equal(ackC.type, 'ack');
-    const playerCId = ackC.payload.playerId as string;
+    const _playerCId = ackC.payload.playerId as string;
 
     // 清理连接初期的系统消息等
     await delay(50);

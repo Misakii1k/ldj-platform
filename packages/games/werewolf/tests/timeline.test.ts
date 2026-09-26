@@ -7,7 +7,6 @@ import {
   pauseTimeline,
   resumeTimeline,
   setTimelineMode,
-  type TimelineStep,
 } from '../server/timeline.ts';
 import { werewolfTimelineSchema, getVoiceCueDurationMs } from '@ldj/shared';
 
@@ -83,7 +82,7 @@ test('buildNightPlan：pace 操作窗口时长严格匹配', () => {
 
 test('createInitialTimelineState 与 advanceTimelineStep：状态推进、单调 revision 与 token 校验', () => {
   const plan = buildNightPlan({ witch: true }, 1, 'standard');
-  let now = 1000000;
+  const now = 1000000;
   let state = createInitialTimelineState(plan, 1, 'auto', now);
 
   // 校验当前生成的 public timeline 严格符合 schema
@@ -135,7 +134,7 @@ test('createInitialTimelineState 与 advanceTimelineStep：状态推进、单调
 test('pauseTimeline 与 resumeTimeline：冻结剩余时间，作废旧 token，产生新 revision', () => {
   const plan = buildNightPlan({ witch: true }, 1, 'standard');
   const now = 1000000;
-  let state = createInitialTimelineState(plan, 1, 'auto', now);
+  const state = createInitialTimelineState(plan, 1, 'auto', now);
 
   // 在 intro 环节进行 1000ms 后暂停（总长 1700ms，剩余 700ms）
   const pauseNow = now + 1000;

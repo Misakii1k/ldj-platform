@@ -23,6 +23,11 @@ export default tseslint.config(
       'compliance/**',
       'test-results/**',
       'playwright-report/**',
+      // 临时工作树、外部代理目录与历史归档脚本，不参与主工程 lint
+      '.claude/**',
+      '.workbuddy-ai/**',
+      'output/**',
+      'scripts/archive/**',
     ],
   },
   js.configs.recommended,
@@ -69,12 +74,13 @@ export default tseslint.config(
   },
   {
     // 视觉审计脚本：含 Playwright page.evaluate 内运行的浏览器端代码
-    files: ['scripts/audit-*.mjs', 'scripts/capture-visual-audit.mjs'],
+    files: ['scripts/audit-*.mjs', 'scripts/verify-ingame-motion.mjs', 'scripts/capture-visual-audit.mjs'],
     languageOptions: {
       globals: {
         window: 'readonly',
         document: 'readonly',
         localStorage: 'readonly',
+        MutationObserver: 'readonly',
         Node: 'readonly',
         getComputedStyle: 'readonly',
       },
@@ -86,6 +92,62 @@ export default tseslint.config(
       globals: {
         console: 'readonly',
         Buffer: 'readonly',
+      },
+    },
+  },
+  {
+    // 设计预览原型：由 HTML 以 <script> 直接加载的普通浏览器 JS，无构建、不进产物。
+    // 若不声明浏览器全局，会被当成 Node 环境校验并产生大量 no-undef 噪声。
+    files: ['docs/ui-preview/**/*.js'],
+    languageOptions: {
+      globals: {
+        window: 'readonly',
+        document: 'readonly',
+        location: 'readonly',
+        parent: 'readonly',
+        console: 'readonly',
+        getComputedStyle: 'readonly',
+        addEventListener: 'readonly',
+        innerWidth: 'readonly',
+        innerHeight: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        requestAnimationFrame: 'readonly',
+        Event: 'readonly',
+        MouseEvent: 'readonly',
+        HTMLElement: 'readonly',
+        Option: 'readonly',
+        ResizeObserver: 'readonly',
+        URLSearchParams: 'readonly',
+      },
+    },
+  },
+  {
+    // 预览目录下的一次性 Playwright 复核脚本：Node 环境运行，
+    // 但其中 page.evaluate() 的回调会在浏览器里执行，因此同时需要浏览器全局
+    // （与上面 scripts/audit-*.mjs 的处理方式一致）。
+    files: ['docs/ui-preview/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        URL: 'readonly',
+        fetch: 'readonly',
+        window: 'readonly',
+        document: 'readonly',
+        location: 'readonly',
+        sessionStorage: 'readonly',
+        localStorage: 'readonly',
+        getComputedStyle: 'readonly',
+        innerWidth: 'readonly',
+        innerHeight: 'readonly',
+        Event: 'readonly',
+        MouseEvent: 'readonly',
+        HTMLElement: 'readonly',
+        ResizeObserver: 'readonly',
+        URLSearchParams: 'readonly',
       },
     },
   },
