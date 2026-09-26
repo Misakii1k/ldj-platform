@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>结算坞 · B 签到牌</title>
+<link rel="stylesheet" href="_dock.css">
+<style>
+/* B 签到牌：窄卡片悬浮在底部中央；每人一张小签到牌，准备 = 盖章翻正；顶上伸出一块倒计时吊牌 */
+.dock-host { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; padding: 0 18px 18px; }
+.dock-m { padding: 0 10px 12px; }
+.board {
+  position: relative; width: 100%; max-width: 620px;
+  padding: 16px 16px 14px; border-radius: 18px;
+  background: var(--dk-bg); color: var(--dk-text);
+  border: var(--dk-bw) solid var(--dk-line); box-shadow: var(--dk-shadow);
+  backdrop-filter: var(--dk-blur);
+  display: flex; flex-direction: column; gap: 12px;
+  animation: board-in 460ms cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes board-in { from { transform: translateY(60px) rotate(-2deg); opacity: 0; } }
+.skin-light .board { transform: rotate(-.6deg); }
+
+/* 顶部吊牌：状态文字；倒计时时变成大数字 */
+.tab {
+  position: absolute; left: 50%; bottom: calc(100% - 3px); transform: translateX(-50%);
+  padding: 8px 22px 6px; border-radius: 14px 14px 0 0; white-space: nowrap;
+  background: var(--dk-bg); border: var(--dk-bw) solid var(--dk-line); border-bottom: 0;
+  font-weight: 900; font-size: 15px; text-align: center;
+}
+.skin-dark .tab { background: #17140f; }
+.tab.is-cd { padding: 10px 30px 4px; }
+.tab .sub { display: block; font-size: 12px; font-weight: 700; color: var(--dk-muted); margin-top: 2px; }
+
+.slips { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.slip {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px 4px 6px; border-radius: 10px; min-width: 0;
+  border: var(--dk-bw-sm) dashed var(--dk-wait); color: var(--dk-muted);
+  transition: transform 200ms;
+}
+.slip .nm { font-size: 13px; font-weight: 800; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slip.is-ready { border-style: solid; border-color: var(--dk-ready); background: var(--dk-ready-soft); color: var(--dk-text); }
+.skin-light .slip.is-ready { box-shadow: 0 3px 0 var(--dk-ready); }
+.slip .stamp {
+  position: absolute; top: 4px; right: 4px; font-family: "Noto Serif SC", Georgia, serif;
+  font-size: 11px; font-weight: 900; color: var(--dk-ready); border: 1.5px solid currentColor; border-radius: 4px;
+  padding: 0 3px; transform: rotate(12deg);
+}
+.slip.is-fresh .stamp { animation: stamp 420ms cubic-bezier(.2,1.4,.4,1) both; }
+@keyframes stamp { 0% { transform: rotate(12deg) scale(2.6); opacity: 0; } 60% { transform: rotate(12deg) scale(.9); opacity: 1; } }
+.slip .av .tick { display: none; }
+.slip .me { font-size: 10px; font-weight: 900; color: var(--dk-muted); }
+
+.acts { display: flex; gap: 8px; }
+.acts .btn--cta, .acts .btn--ghost { flex: 1; }
+
+.dock-m .board { padding: 12px 10px 10px; gap: 10px; }
+.dock-m .slips { grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.dock-m .slip { padding: 6px 2px 4px; }
+.dock-m .slip .nm { font-size: 11px; }
+.dock-m .tab { font-size: 14px; padding: 7px 16px 5px; }
+.slips.n10 .slip { flex-direction: row; justify-content: flex-start; padding: 5px 6px; gap: 6px; }
+.slips.n10 .slip .stamp { top: 50%; transform: translateY(-50%) rotate(12deg); }
+.dock-m .slips.n10 .slip { flex-direction: column; align-items: center; padding: 5px 2px; gap: 2px; }
+.dock-m .slips.n10 .slip .stamp { top: 2px; right: 2px; transform: rotate(12deg); font-size: 9px; }
+</style>
+</head>
+<body>
+<header class="page-head">
+  <h1>B · 签到牌</h1>
+  <p><b>对标：</b>奶酪大盗「卡纸告示牌」+ Balatro 的盖章打击（C4 / C13）——坞像一块立在桌上的签到板。</p>
+  <p><b>与 A / C 的差别：</b>窄卡片悬浮居中，不占满底边；每人一张签到小牌，准备好时「备」章砸下去；倒计时数字长在顶上的吊牌里，比 A 更显眼。</p>
+  <p><a href="index.html">← 返回三稿入口</a></p>
+</header>
+<div class="controls" id="controls"></div>
+<section class="row"><div class="row-frames" id="frames"></div></section>
+<script src="_dock.js"></script>
+<script>
+window.DOCK = {
+  render(S, v, d) {
+    const K = DockKit;
+    const n10 = S.count === 10;
+    const size = v === 'm' ? (n10 ? 24 : 32) : (n10 ? 26 : 38);
+    const slips = d.ps.map((p) => `<div class="slip ${p.ready ? 'is-ready' : ''} ${S.fresh === p.i ? 'is-fresh' : ''}">
+        ${K.av(p, size)}<span class="nm">${p.isMe ? '我' : p.name}</span>${p.ready ? '<span class="stamp">备</span>' : ''}
+      </div>`).join('');
+    const tab = S.phase === 'countdown'
+      ? `<div class="tab is-cd">${K.digit(v === 'm' ? 50 : 60)}<span class="sub">${K.statusLine(d)}</span></div>`
+      : `<div class="tab">${K.statusLine(d)} <span style="font-family:'Noto Serif SC',Georgia,serif">· ${d.ready}/${d.total}</span></div>`;
+    return `<div class="board">
+      ${tab}
+      <div class="slips ${n10 ? 'n10' : ''}">${slips}</div>
+      <div class="acts">${K.actions(d)}</div>
+    </div>`;
+  },
+};
+</script>
+</body>
+</html>

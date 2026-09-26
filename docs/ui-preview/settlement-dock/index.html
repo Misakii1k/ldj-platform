@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>平台结算坞 · 第 1 轮方向稿</title>
+<link rel="stylesheet" href="_dock.css">
+<style>
+.list { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.item { display: block; padding: 16px; background: #fffaf0; border: 3px solid #292722; border-radius: 16px; box-shadow: 0 5px 0 #292722; color: inherit; text-decoration: none; }
+.item:hover { transform: translateY(-2px); }
+.item h2 { font-family: "Noto Serif SC", Georgia, serif; margin: 0 0 6px; font-size: 22px; }
+.item p { margin: 4px 0; font-size: 14px; color: #575147; }
+.item pre { font-size: 12px; background: #292722; color: #fff4df; padding: 10px; border-radius: 8px; overflow: auto; }
+.fixed { max-width: 1180px; margin: 20px auto 0; font-size: 14px; color: #575147; line-height: 1.7; }
+</style>
+</head>
+<body>
+<header class="page-head">
+  <h1>平台结算坞 · 第 1 轮方向稿</h1>
+  <p>三稿共用同一份假数据与控制条（表皮 / 人数 / 身份 / 状态），可逐一切换比较；背景是示意用的"游戏自己的结算画面"。</p>
+  <p><b>配套：</b><a href="transitions.html">开局转场三稿（替换现版绿色水波 + 彩条）→</a></p>
+</header>
+<div class="list">
+  <a class="item" href="A-bottom-tray.html">
+    <h2>A · 底部托盘</h2>
+    <p>贴底整条，左人右键，最矮最克制。</p>
+<pre>┌───────────────────────────────┐
+│ 3/5 还在等 2 人  [再来一局][⋯]│
+│ ●●●○○                         │
+└───────────────────────────────┘</pre>
+  </a>
+  <a class="item" href="B-signin-board.html">
+    <h2>B · 签到牌</h2>
+    <p>悬浮窄卡片 + 顶上吊牌；每人一张签到牌，准备盖「备」章。</p>
+<pre>      ┌ 就等 豆豆 了 · 4/5 ┐
+┌───────────────────────────┐
+│ [●备][●备][●备][○ ][●备]  │
+│ [   ✓ 已准备 · 取消   ][⋯]│
+└───────────────────────────┘</pre>
+  </a>
+  <a class="item" href="C-progress-capsule.html">
+    <h2>C · 进度胶囊</h2>
+    <p>一颗大按钮，底边分段条 = 准备进度；只点名还差谁。</p>
+<pre>   (○○ 还差 我、豆豆 · 3/5)
+┌─────────────────────────┐┌──┐
+│      ↻ 再来一局         ││⋯ │
+│ ▬▬▬ ▬▬▬ ▬▬▬ ─── ───     │└──┘
+└─────────────────────────┘</pre>
+  </a>
+</div>
+<div class="fixed">
+  <b>三稿共同遵守（已按你的回答定下）：</b>坞只管"下一步"，不重复游戏的胜负画面；浅色游戏 = 奶油卡纸 + 3px 墨边 + 硬投影，深色游戏 = 暗底 + 金色细边，自动切换；
+  只露一个黄色主按钮，返回大厅 / 暂离 / 退出收进「⋯」；全员就绪后衬线大数字 3→2→1 每秒砸入 + 滴答，归零轻屏震（≤4px）；狼人杀不自动开局，改为房主「开局」。
+</div>
+</body>
+</html>

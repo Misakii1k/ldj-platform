@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>开局转场 · 第 1 轮方向稿</title>
+<link rel="stylesheet" href="_dock.css">
+<style>
+.list { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.item { display: block; padding: 16px; background: #fffaf0; border: 3px solid #292722; border-radius: 16px; box-shadow: 0 5px 0 #292722; color: inherit; text-decoration: none; }
+.item:hover { transform: translateY(-2px); }
+.item h2 { font-family: "Noto Serif SC", Georgia, serif; margin: 0 0 6px; font-size: 22px; }
+.item p { margin: 4px 0; font-size: 14px; color: #575147; }
+.item pre { font-size: 12px; background: #292722; color: #fff4df; padding: 10px; border-radius: 8px; overflow: auto; }
+.fixed { max-width: 1180px; margin: 20px auto 0; font-size: 14px; color: #575147; line-height: 1.7; }
+</style>
+</head>
+<body>
+<header class="page-head">
+  <h1>开局转场 · 第 1 轮方向稿</h1>
+  <p>现版问题：坞数到 0 后，绿色胶囊又从底部同一位置炸开、再来一遍"牌局开启"，两段演出叠在一起、各说各话；彩条是固定红绿蓝黄，和每款游戏的世界无关。</p>
+  <p>三稿共同的衔接：<b>坞数到 1 就交棒</b>——坞不再显示"开局"，由转场接手；转场中央统一换成<b>该游戏的名牌</b>（图标 + 衬线大字 + 第几局），替代通用的"牌局开启 · 全力以赴"。</p>
+  <p><a href="index.html">← 结算坞三稿</a></p>
+</header>
+<div class="list">
+  <a class="item" href="T1-dock-sheet.html">
+    <h2>T1 · 坞即幕布</h2>
+    <p>坞自己长大铺满全屏 → 名牌砸下 → 一撕两半退场。</p>
+<pre>  [ 3 秒后开局 ]
+      ↓ 长大
+┌──────────────┐
+│   🧀 奶酪大盗  │
+├──────────────┤ ← 撕开
+└──────────────┘</pre>
+  </a>
+  <a class="item" href="T2-curtain.html">
+    <h2>T2 · 合幕开幕</h2>
+    <p>两扇幕从两侧合拢 → 接缝盖名牌 → 拉开露出新一局。</p>
+<pre>▐██████│██████▌
+▐█████ 🐺 █████▌
+▐████ 狼人杀 ███▌
+▐██████│██████▌
+  ←  拉开  →</pre>
+  </a>
+  <a class="item" href="T3-theme-stripes.html">
+    <h2>T3 · 主题色彩条</h2>
+    <p>保留现版斜彩条，改成游戏配色、条更少更粗，扫过再扫走。</p>
+<pre> ╱▔▔▔▔▔▔▔▔▔▔▔╱
+╱ 奶酪黄    ╱
+╱ 月夜紫 🧀 ╱
+╱ 奶油     ╱
+╱▁▁▁▁▁▁▁▁▁▁╱ →</pre>
+  </a>
+</div>
+<div class="fixed">
+  每稿都可切换：浅色（奶酪大盗）/ 深色（狼人杀）、起点是结算坞"再来一局"还是房间页首次开局、完整 / 减弱动效档。点「▶ 播放」看 3 秒倒计时接转场的完整过程；「只看转场」跳过倒计时。
+  时长：T1 约 1.4s、T2 约 1.6s、T3 约 1.7s（现版约 1.3s），减弱档乘 0.62；关闭档直接跳过（与现版一致）。
+</div>
+</body>
+</html>

@@ -1,0 +1,77 @@
+/* 开局转场方向稿 · 共用场景 */
+.t-scene { position: absolute; inset: 0; overflow: hidden; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
+.t-scene > * { position: absolute; inset: 0; }
+.t-after { z-index: 1; background: var(--g-bg); }
+.t-pre { z-index: 2; }
+.t-layer { z-index: 3; pointer-events: none; }
+.t-scene.is-reveal .t-pre { visibility: hidden; }
+.t-scene.is-done .t-layer { visibility: hidden; }
+
+/* 结束后的游戏画面（示意） */
+.t-after-tag { position: absolute; top: 12px; left: 12px; font-size: 12px; padding: 3px 8px; border-radius: 6px; background: rgba(0,0,0,.35); color: #fff; }
+.t-after-stage { position: absolute; left: 22%; right: 22%; top: 18%; bottom: 30%; border-radius: 24px; }
+.skin-light .t-after-stage { background: #fffaf0; border: 3px solid #292722; box-shadow: 0 7px 0 #292722; }
+.skin-dark .t-after-stage { background: radial-gradient(ellipse at 50% 30%, rgba(233,200,116,.18), transparent 70%), #22100f; border: 1.5px solid rgba(233,200,116,.5); }
+.t-after-seats { position: absolute; left: 10%; right: 10%; bottom: 8%; display: flex; justify-content: center; gap: 14px; }
+.t-after-seats i { width: 64px; height: 64px; border-radius: 14px; }
+.skin-light .t-after-seats i { background: #fffaf0; border: 3px solid #292722; box-shadow: 0 4px 0 #292722; }
+.skin-dark .t-after-seats i { background: #1c1712; border: 1.5px solid rgba(233,200,116,.45); }
+.v-m .t-after-stage { left: 8%; right: 8%; top: 16%; bottom: 34%; }
+.v-m .t-after-seats { gap: 8px; } .v-m .t-after-seats i { width: 44px; height: 44px; }
+
+/* 起点之前的画面：结算 or 房间 */
+.t-before { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; padding-top: 12%; gap: 28px; }
+.skin-light .t-before { background: linear-gradient(180deg, #ffe7a8, #f6c877); }
+.skin-dark .t-before { background: radial-gradient(ellipse at 50% 70%, #1f4a36, #07130e); }
+.t-before--room { background: #f3ede1 !important; }
+.t-placard { font-family: "Noto Serif SC", Georgia, serif; font-weight: 900; font-size: 52px; padding: 10px 30px; }
+.v-m .t-placard { font-size: 34px; }
+.skin-light .t-placard { background: #fffaf0; border: 3px solid #292722; box-shadow: 0 6px 0 #292722; transform: rotate(-2deg); }
+.skin-dark .t-placard { color: #e9c874; }
+.t-cards { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; padding: 0 16px; }
+.t-cards i { width: 90px; height: 116px; border-radius: 12px; }
+.v-m .t-cards i { width: 70px; height: 86px; }
+.skin-light .t-cards i { background: #fffaf0; border: 3px solid #292722; box-shadow: 0 4px 0 #292722; }
+.skin-dark .t-cards i { background: #16120d; border: 1.5px solid rgba(201,162,74,.55); }
+.t-room-title { font-family: "Noto Serif SC", Georgia, serif; font-weight: 900; font-size: 30px; color: #292722; }
+.t-room-list { display: grid; grid-template-columns: repeat(3, minmax(0, 200px)); gap: 10px; padding: 0 14px; }
+.v-m .t-room-list { grid-template-columns: repeat(2, 1fr); width: 100%; }
+.t-room-list div { display: flex; align-items: center; gap: 8px; padding: 10px; background: #fff; border: 2.5px solid #292722; border-radius: 12px; font-weight: 800; font-size: 14px; }
+.t-room-list b { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: #08715d; color: #fff; font-size: 13px; }
+.t-room-list span { margin-left: auto; font-size: 12px; color: #08715d; }
+
+/* 起点：坞里的倒计时（结算坞稿里定下的样子，简化） */
+.t-origin {
+  position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 14px; padding: 12px 26px; border-radius: 18px; white-space: nowrap;
+}
+.v-m .t-origin { bottom: 14px; }
+.skin-light .t-origin { background: #fffaf0; border: 3px solid #292722; box-shadow: 0 5px 0 #292722; color: #292722; }
+.skin-dark .t-origin { background: rgba(17,15,12,.94); border: 1.5px solid rgba(201,162,74,.6); color: #f3ead7; }
+.t-origin--room { background: #0c715d !important; color: #fff !important; border: 3px solid #29241f !important; border-radius: 999px; }
+.t-origin-lab { font-weight: 800; font-size: 16px; }
+.t-digit { font-family: "Noto Serif SC", Georgia, serif; font-weight: 900; font-size: 54px; line-height: 1; display: inline-block; }
+.skin-dark .t-digit { color: #e9c874; }
+.t-origin--room .t-digit { color: #f7c84b; font-size: 40px; }
+.t-digit.slam { animation: t-slam 520ms cubic-bezier(.2,1.4,.4,1) both; }
+@keyframes t-slam { 0% { transform: scale(2.3); opacity: 0; } 45% { transform: scale(.9); opacity: 1; } 100% { transform: scale(1); } }
+.t-scene.is-go .t-origin { transition: opacity 160ms; }
+
+/* 游戏名牌：转场高潮时出现（替代旧的「牌局开启 · 全力以赴」通用徽章） */
+.t-name {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 18px 40px 16px; white-space: nowrap; opacity: 0;
+}
+.t-name .ic { font-size: 44px; line-height: 1; }
+.t-name .nm { font-family: "Noto Serif SC", Georgia, "Songti SC", serif; font-weight: 900; font-size: 64px; line-height: 1.05; letter-spacing: .06em; }
+.t-name .sb { font-size: 15px; font-weight: 800; letter-spacing: .1em; opacity: .75; }
+.v-m .t-name { padding: 14px 26px 12px; }
+.v-m .t-name .nm { font-size: 44px; }
+.skin-light .t-name { background: #fffaf0; color: #292722; border: 3px solid #292722; box-shadow: 0 8px 0 #292722; border-radius: 18px; }
+.skin-dark .t-name { color: #e9c874; }
+.skin-dark .t-name .nm { text-shadow: 0 0 30px rgba(233,200,116,.35), 0 3px 0 rgba(0,0,0,.6); }
+
+.frame.shake, .t-scene.shake { animation: t-shake 260ms linear; }
+@keyframes t-shake { 25% { translate: -4px 2px; } 50% { translate: 4px -2px; } 75% { translate: -2px 2px; } }
+
+.controls .play { background: #f7c84b !important; }

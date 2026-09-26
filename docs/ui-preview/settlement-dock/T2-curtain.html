@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>开局转场 · T2 合幕开幕</title>
+<link rel="stylesheet" href="_dock.css">
+<link rel="stylesheet" href="_transition.css">
+<style>
+/* T2：左右两扇幕从屏幕两侧合拢（浅色 = 卡纸板带墨边；深色 = 红丝绒幕带金边）→ 名牌盖章在接缝上 → 两扇拉开露出游戏 */
+.t2-panel { position: absolute; top: 0; bottom: 0; width: 51%; }
+.t2-panel.l { left: 0; transform: translateX(-102%); }
+.t2-panel.r { right: 0; transform: translateX(102%); }
+.skin-light .t2-panel { background: repeating-linear-gradient(90deg, #fffaf0 0 46px, #fff4df 46px 92px); }
+.skin-light .t2-panel.l { border-right: 3px solid #292722; box-shadow: 6px 0 0 #292722; }
+.skin-light .t2-panel.r { border-left: 3px solid #292722; }
+.skin-dark .t2-panel { background: repeating-linear-gradient(90deg, #6d111c 0 34px, #4a0a13 34px 56px, #7a1420 56px 80px); }
+.skin-dark .t2-panel.l { border-right: 2px solid #e9c874; box-shadow: inset -30px 0 40px rgba(0,0,0,.45); }
+.skin-dark .t2-panel.r { border-left: 2px solid #e9c874; box-shadow: inset 30px 0 40px rgba(0,0,0,.45); }
+/* 幕边的一道主题色条：浅色用该游戏主色 */
+.skin-light .t2-panel::after { content: ''; position: absolute; top: 0; bottom: 0; width: 16px; background: var(--g-b); }
+.skin-light .t2-panel.l::after { right: 0; border-left: 3px solid #292722; }
+.skin-light .t2-panel.r::after { left: 0; border-right: 3px solid #292722; }
+/* 顶部帷幔（深色才有） */
+.t2-valance { position: absolute; left: 0; right: 0; top: 0; height: 12%; transform: translateY(-110%); }
+.skin-dark .t2-valance { background: radial-gradient(ellipse at 50% 0, #8a1a26 0 60%, transparent 61%) 0 0 / 120px 100% repeat-x, #5a0d17; border-bottom: 2px solid #e9c874; }
+
+.is-go .t-origin { opacity: 0; transition: opacity 120ms; }
+.is-close .t2-panel { animation: t2-close 360ms cubic-bezier(.55,0,.25,1.15) forwards; }
+.is-close .t2-valance { animation: t2-val 300ms cubic-bezier(.2,.8,.3,1) forwards; }
+@keyframes t2-close { to { transform: translateX(0); } }
+@keyframes t2-val { to { transform: translateY(0); } }
+
+.is-name .t-name { animation: t2-stamp 420ms cubic-bezier(.2,1.5,.4,1) forwards; }
+@keyframes t2-stamp { 0% { opacity: 0; transform: translate(-50%,-50%) scale(1.9); } 60% { opacity: 1; transform: translate(-50%,-50%) scale(.95); } 100% { opacity: 1; transform: translate(-50%,-50%) scale(1); } }
+.skin-dark .t-name { background: rgba(10,6,6,.55); border: 1.5px solid #e9c874; border-radius: 6px; padding: 16px 44px 14px; }
+
+.is-open .t-name { animation: t2-out 220ms ease-in forwards; }
+@keyframes t2-out { from { opacity: 1; transform: translate(-50%,-50%) scale(1); } to { opacity: 0; transform: translate(-50%,-50%) scale(1.08); } }
+.is-open .t2-panel.l { animation: t2-open-l 460ms 120ms cubic-bezier(.6,0,.2,1) both; }
+.is-open .t2-panel.r { animation: t2-open-r 460ms 120ms cubic-bezier(.6,0,.2,1) both; }
+.is-open .t2-valance { animation: none; transform: translateY(0); transition: transform 380ms 300ms; }
+.is-reveal .t2-valance { transform: translateY(-110%); }
+@keyframes t2-open-l { from { transform: translateX(0); } to { transform: translateX(-102%); } }
+@keyframes t2-open-r { from { transform: translateX(0); } to { transform: translateX(102%); } }
+/* 合拢瞬间之后，底下直接换成游戏画面（幕后换景） */
+.is-open .t-pre { visibility: hidden; }
+
+.is-motion-reduced .t2-panel { animation-duration: 220ms !important; }
+</style>
+</head>
+<body>
+<header class="page-head">
+  <h1>T2 · 合幕开幕</h1>
+  <p><b>对标：</b>狼人杀赤幕剧场（深色）+ 卡纸告示牌（浅色）（C4）——幕后换景：合上时还是结算，拉开就是新一局。</p>
+  <p><b>与 T1 / T3 的差别：</b>不从坞长出来，而是两扇幕从两侧合拢，接缝上盖游戏名牌，再拉开；浅深两套各有自己的幕（卡纸板 / 红丝绒），最有「换场」仪式感。</p>
+  <p><a href="transitions.html">← 返回转场三稿入口</a></p>
+</header>
+<div class="controls" id="controls"></div>
+<section class="row"><div class="row-frames" id="frames"></div></section>
+<script src="_transition.js"></script>
+<script>
+window.TRANS = {
+  markup: (g) => `<div class="t2-panel l"></div><div class="t2-panel r"></div><div class="t2-valance"></div>
+    <div class="t-name"><span class="ic">${g.icon}</span><span class="nm">${g.name}</span><span class="sb">${g.sub}</span></div>`,
+  steps: [
+    [0, 'is-go'],
+    [60, 'is-close', (t) => t(220, 0.3, 'sawtooth', 0.05)],
+    [420, 'is-name', (t) => { t(160, 0.22, 'square', 0.14); t(990, 0.3); document.querySelectorAll('.t-scene').forEach((s) => { s.classList.remove('shake'); void s.offsetWidth; s.classList.add('shake'); }); }],
+    [1050, 'is-open', (t) => t(440, 0.35, 'triangle', 0.06)],
+    [1150, 'is-reveal'],
+    [1640, 'is-end'],
+  ],
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>开局转场 · T3 主题色彩条</title>
+<link rel="stylesheet" href="_dock.css">
+<link rel="stylesheet" href="_transition.css">
+<style>
+/* T3：保留现版「斜彩条横扫」骨架，但彩条改成该游戏的配色（不再是红绿蓝黄），
+   条数减到 5、带墨边硬投影（深色改金细线）；彩条扫过去后从另一侧继续扫走露出游戏，而不是整层淡出 */
+.t3-wrap { position: absolute; inset: -30%; transform: rotate(-8deg); display: flex; flex-direction: column; }
+.t3-bar { flex: 1; transform: translateX(-130%); position: relative; }
+.skin-light .t3-bar { border-top: 3px solid #292722; border-bottom: 3px solid #292722; box-shadow: 0 10px 0 rgba(41,39,34,.9); }
+.skin-dark .t3-bar { border-top: 1.5px solid rgba(233,200,116,.7); }
+.t3-bar:nth-child(1) { background: var(--g-a); z-index: 5; }
+.t3-bar:nth-child(2) { background: var(--g-b); z-index: 4; }
+.t3-bar:nth-child(3) { background: var(--g-paper); z-index: 3; }
+.t3-bar:nth-child(4) { background: var(--g-c); z-index: 2; }
+.t3-bar:nth-child(5) { background: var(--g-d); z-index: 1; }
+.skin-dark .t3-bar:nth-child(4) { background: #2a1a10; }
+/* 条上压一行淡淡的游戏名，像包装盒的腰封 */
+.t3-bar::after {
+  content: attr(data-t); position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+  font-family: "Noto Serif SC", Georgia, serif; font-weight: 900; font-size: 60px; letter-spacing: .5em; white-space: nowrap;
+  opacity: .1; color: #292722; overflow: hidden;
+}
+.skin-dark .t3-bar::after { color: #e9c874; opacity: .12; }
+
+.is-go .t-origin { opacity: 0; transition: opacity 120ms; }
+.is-in .t3-bar { animation: t3-in 440ms cubic-bezier(.16,1,.3,1) forwards; }
+.is-in .t3-bar:nth-child(2) { animation-delay: 40ms; }
+.is-in .t3-bar:nth-child(3) { animation-delay: 80ms; }
+.is-in .t3-bar:nth-child(4) { animation-delay: 120ms; }
+.is-in .t3-bar:nth-child(5) { animation-delay: 160ms; }
+@keyframes t3-in { to { transform: translateX(0); } }
+
+.is-name .t-name { animation: t3-pop 420ms cubic-bezier(.34,1.56,.64,1) forwards; }
+@keyframes t3-pop { 0% { opacity: 0; transform: translate(-50%,-40%) scale(.7) rotate(-6deg); } 100% { opacity: 1; transform: translate(-50%,-50%) scale(1) rotate(-2deg); } }
+.skin-dark .t-name { background: #120f0c; border: 1.5px solid #e9c874; border-radius: 16px; box-shadow: 0 18px 40px rgba(0,0,0,.6); }
+.skin-dark.is-name .t-name { animation-name: t3-pop-d; }
+@keyframes t3-pop-d { 0% { opacity: 0; transform: translate(-50%,-40%) scale(.7); } 100% { opacity: 1; transform: translate(-50%,-50%) scale(1); } }
+
+.is-out .t-name { animation: t3-name-out 260ms ease-in forwards; }
+@keyframes t3-name-out { from { opacity: 1; transform: translate(-50%,-50%) scale(1) rotate(-2deg); } to { opacity: 0; transform: translate(-50%,-50%) scale(.85) rotate(-2deg); } }
+.skin-dark.is-out .t-name { animation: t3-name-out-d 260ms ease-in forwards; }
+@keyframes t3-name-out-d { from { opacity: 1; transform: translate(-50%,-50%) scale(1); } to { opacity: 0; transform: translate(-50%,-50%) scale(.85); } }
+.is-out .t3-bar { animation: t3-out 440ms cubic-bezier(.6,0,.4,1) forwards; transform: translateX(0); }
+.is-out .t3-bar:nth-child(1) { animation-delay: 160ms; }
+.is-out .t3-bar:nth-child(2) { animation-delay: 120ms; }
+.is-out .t3-bar:nth-child(3) { animation-delay: 80ms; }
+.is-out .t3-bar:nth-child(4) { animation-delay: 40ms; }
+@keyframes t3-out { from { transform: translateX(0); } to { transform: translateX(130%); } }
+.is-out .t-pre { visibility: hidden; }
+
+.is-motion-reduced .t3-bar { animation-duration: 260ms !important; animation-delay: 0ms !important; }
+</style>
+</head>
+<body>
+<header class="page-head">
+  <h1>T3 · 主题色彩条</h1>
+  <p><b>对标：</b>现版彩条（保留骨架）+ UNO 纸盒的粗墨边色块（C4）。</p>
+  <p><b>与 T1 / T2 的差别：</b>最接近你现在看到的——还是斜彩条横扫，但颜色跟着游戏走（奶酪大盗 = 月夜蓝紫 + 奶酪黄；狼人杀 = 酒红 + 金），条更少更粗，扫过去再从另一边扫走露出游戏，去掉绿色水波和"牌局开启 · 全力以赴"。</p>
+  <p><a href="transitions.html">← 返回转场三稿入口</a></p>
+</header>
+<div class="controls" id="controls"></div>
+<section class="row"><div class="row-frames" id="frames"></div></section>
+<script src="_transition.js"></script>
+<script>
+window.TRANS = {
+  markup: (g) => `<div class="t3-wrap">${[1, 2, 3, 4, 5].map(() => `<div class="t3-bar" data-t="${(g.name + ' ').repeat(12)}"></div>`).join('')}</div>
+    <div class="t-name"><span class="ic">${g.icon}</span><span class="nm">${g.name}</span><span class="sb">${g.sub}</span></div>`,
+  steps: [
+    [0, 'is-go'],
+    [40, 'is-in', (t) => t(260, 0.35, 'sawtooth', 0.05)],
+    [480, 'is-name', (t) => { t(990, 0.3); t(200, 0.2, 'square', 0.1); }],
+    [1080, 'is-out', (t) => t(500, 0.3, 'triangle', 0.06)],
+    [1180, 'is-reveal'],
+    [1720, 'is-end'],
+  ],
+};
+</script>
+</body>
+</html>

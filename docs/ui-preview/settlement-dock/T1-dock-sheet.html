@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>开局转场 · T1 坞即幕布</title>
+<link rel="stylesheet" href="_dock.css">
+<link rel="stylesheet" href="_transition.css">
+<style>
+/* T1：倒计时那块坞本身放大铺满全屏 → 游戏名牌砸下 → 整块从中间撕开向上下退场 */
+.t1-sheet {
+  position: absolute; left: 50%; bottom: 22px; width: 300px; height: 78px; transform: translateX(-50%);
+  border-radius: 18px; opacity: 0;
+}
+.v-m .t1-sheet { bottom: 14px; width: 250px; }
+.skin-light .t1-sheet { background: #fffaf0; border: 3px solid #292722; }
+.skin-dark .t1-sheet { background: #120f0c; border: 1.5px solid rgba(201,162,74,.6); }
+.src-room .t1-sheet { background: #0c715d !important; border-radius: 999px; }
+.is-go .t1-sheet { opacity: 1; animation: t1-grow 380ms cubic-bezier(.7,0,.2,1) forwards; }
+@keyframes t1-grow {
+  to { left: 0; bottom: 0; width: 100%; height: 100%; transform: none; border-radius: 0; }
+}
+.is-go .t-origin { opacity: 0; }
+/* 铺满后纸面上浮现该游戏的底纹：浅色 = 纸纹格；深色 = 暗金放射 */
+.t1-sheet::after { content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity 200ms; }
+.skin-light .t1-sheet::after { background: repeating-linear-gradient(45deg, transparent 0 22px, rgba(41,39,34,.05) 22px 24px), radial-gradient(ellipse at 50% 50%, var(--g-a) 0, transparent 60%); }
+.skin-dark .t1-sheet::after { background: radial-gradient(ellipse at 50% 50%, rgba(233,200,116,.18), transparent 60%); }
+.src-room .t1-sheet::after { background: radial-gradient(ellipse at 50% 50%, rgba(247,200,75,.5), transparent 60%); }
+.is-name .t1-sheet::after { opacity: 1; }
+
+.is-name .t-name { animation: t1-slam 460ms cubic-bezier(.2,1.4,.4,1) forwards; }
+@keyframes t1-slam { 0% { opacity: 0; transform: translate(-50%,-50%) scale(2.2) rotate(-4deg); } 55% { opacity: 1; transform: translate(-50%,-50%) scale(.94) rotate(-2deg); } 100% { opacity: 1; transform: translate(-50%,-50%) scale(1) rotate(-2deg); } }
+.skin-dark .t-name { rotate: 0deg; }
+
+/* 撕开：同一张纸分成上下两半退场 */
+.t1-half { position: absolute; left: 0; right: 0; height: 50%; overflow: hidden; visibility: hidden; }
+.t1-half.top { top: 0; } .t1-half.bot { bottom: 0; }
+.t1-half > div { position: absolute; left: 0; right: 0; height: 200%; }
+.t1-half.top > div { top: 0; } .t1-half.bot > div { bottom: 0; }
+.skin-light .t1-half > div { background: #fffaf0; }
+.skin-dark .t1-half > div { background: #120f0c; }
+.src-room .t1-half > div { background: #0c715d !important; }
+.t1-half.top { border-bottom: 3px solid var(--g-ink); }
+.t1-half.bot { border-top: 3px solid var(--g-ink); }
+.skin-dark .t1-half.top { border-bottom: 1.5px solid #e9c874; } .skin-dark .t1-half.bot { border-top: 1.5px solid #e9c874; }
+.is-reveal .t1-sheet, .is-reveal .t-name { visibility: hidden; }
+.is-reveal .t1-half { visibility: visible; }
+.is-reveal .t1-half.top { animation: t1-up 420ms cubic-bezier(.6,0,.2,1) forwards; }
+.is-reveal .t1-half.bot { animation: t1-down 420ms cubic-bezier(.6,0,.2,1) forwards; }
+@keyframes t1-up { to { transform: translateY(-104%); } }
+@keyframes t1-down { to { transform: translateY(104%); } }
+/* 名牌跟着两半纸一起被撕开带走（半张里的内层是整屏高，名牌仍居中） */
+.t1-half .t-name { opacity: 1; top: 50%; transform: translate(-50%,-50%) rotate(-2deg); animation: none; }
+.skin-dark .t1-half .t-name { transform: translate(-50%,-50%); }
+
+.is-motion-reduced.is-go .t1-sheet { animation-duration: 240ms; }
+.is-motion-reduced .t-name { animation: t-fade 200ms forwards !important; }
+@keyframes t-fade { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+<header class="page-head">
+  <h1>T1 · 坞即幕布</h1>
+  <p><b>对标：</b>Balatro 的「牌面放大接管全屏」+ 奶酪大盗卡纸告示牌（C4 / C13）。</p>
+  <p><b>与 T2 / T3 的差别：</b>不另起新图层——数到 1 的那块坞自己长大铺满全屏，名牌砸下后从中间一撕两半退场，衔接最连贯；最朴素。</p>
+  <p><a href="transitions.html">← 返回转场三稿入口</a></p>
+</header>
+<div class="controls" id="controls"></div>
+<section class="row"><div class="row-frames" id="frames"></div></section>
+<script src="_transition.js"></script>
+<script>
+const name = (g) => `<div class="t-name"><span class="ic">${g.icon}</span><span class="nm">${g.name}</span><span class="sb">${g.sub}</span></div>`;
+window.TRANS = {
+  markup: (g) => `<div class="t1-sheet"></div>${name(g)}
+    <div class="t1-half top"><div>${name(g)}</div></div><div class="t1-half bot"><div>${name(g)}</div></div>`,
+  // [时刻 ms, 加到场景上的 class, 音效]
+  steps: [
+    [0, 'is-go', (t) => t(330, 0.3, 'sawtooth', 0.06)],
+    [380, 'is-name', (t) => { t(180, 0.25, 'square', 0.12); t(990, 0.35); document.querySelectorAll('.t-scene').forEach((s) => { s.classList.remove('shake'); void s.offsetWidth; s.classList.add('shake'); }); }],
+    [1000, 'is-reveal', (t) => t(520, 0.2, 'triangle', 0.08)],
+    [1420, 'is-end'],
+  ],
+};
+</script>
+</body>
+</html>

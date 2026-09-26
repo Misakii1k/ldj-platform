@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>结算坞 · A 底部托盘</title>
+<link rel="stylesheet" href="_dock.css">
+<style>
+/* A 底部托盘：贴底一整条，左人右键；倒计时时左半段换成大数字 */
+.dock-host { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; padding: 0 18px 16px; }
+.dock-m { padding: 0 10px 12px; }
+.tray {
+  width: 100%; max-width: 900px; display: flex; align-items: center; gap: 18px;
+  padding: 12px 14px 12px 18px; border-radius: 20px;
+  background: var(--dk-bg); color: var(--dk-text);
+  border: var(--dk-bw) solid var(--dk-line); box-shadow: var(--dk-shadow);
+  backdrop-filter: var(--dk-blur);
+  animation: tray-in 420ms cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes tray-in { from { transform: translateY(40px); opacity: 0; } }
+.tray-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.tray-line { display: flex; align-items: baseline; gap: 10px; }
+.tray-count { font-family: "Noto Serif SC", Georgia, serif; font-weight: 900; font-size: 28px; line-height: 1; }
+.tray-count em { font-style: normal; font-size: 16px; color: var(--dk-muted); }
+.tray-status { font-size: 15px; font-weight: 800; }
+.tray-avs { display: flex; gap: 8px; flex-wrap: wrap; }
+.tray-acts { flex: none; display: flex; gap: 8px; align-items: center; }
+.tray-acts .btn--cta { min-width: 168px; }
+.tray-cd { display: flex; align-items: center; gap: 16px; }
+.tray-cd .lab { font-size: 15px; font-weight: 800; }
+.tray-cd .lab small { display: block; font-size: 12px; font-weight: 600; color: var(--dk-muted); }
+
+/* 手机：两行——上行人头 + 计数，下行按钮 */
+.dock-m .tray { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px; border-radius: 18px; }
+.dock-m .tray-count { font-size: 24px; }
+.dock-m .tray-status { font-size: 14px; }
+.dock-m .tray-avs { gap: 6px; }
+.dock-m .tray-acts .btn--cta, .dock-m .tray-acts .btn--ghost { flex: 1; min-width: 0; }
+.dock-m .tray-cd { justify-content: center; }
+</style>
+</head>
+<body>
+<header class="page-head">
+  <h1>A · 底部托盘</h1>
+  <p><b>对标：</b>榴莲底部操作区（C4）——贴底一条，和各游戏现有的底部操作区同一位置、同一手感。</p>
+  <p><b>与 B / C 的差别：</b>最克制、最矮（桌面约 96px）；人头平铺一排，一眼看全谁没准备；倒计时数字嵌在托盘左侧，不另起舞台。</p>
+  <p><a href="index.html">← 返回三稿入口</a></p>
+</header>
+<div class="controls" id="controls"></div>
+<section class="row"><div class="row-frames" id="frames"></div></section>
+<script src="_dock.js"></script>
+<script>
+window.DOCK = {
+  render(S, v, d) {
+    const K = DockKit;
+    const size = v === 'm' ? (S.count === 10 ? 28 : 34) : (S.count === 10 ? 34 : 40);
+    const avs = `<div class="tray-avs">${d.ps.map((p) => K.av(p, size)).join('')}</div>`;
+    let info;
+    if (S.phase === 'countdown') {
+      info = `<div class="tray-cd">${K.digit(v === 'm' ? 56 : 64)}<div class="lab">${K.statusLine(d)}<small>${d.isHost ? '不想等可以立即开局' : '想再聊两句？取消准备就会停下'}</small></div></div>`;
+    } else {
+      info = `<div class="tray-line"><span class="tray-count">${d.ready}<em> / ${d.total}</em></span><span class="tray-status">${K.statusLine(d)}</span></div>${avs}`;
+    }
+    return `<div class="tray">
+      <div class="tray-info">${info}</div>
+      <div class="tray-acts">${K.actions(d)}</div>
+    </div>`;
+  },
+};
+</script>
+</body>
+</html>

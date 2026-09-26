@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>结算坞 · C 进度胶囊</title>
+<link rel="stylesheet" href="_dock.css">
+<style>
+/* C 进度胶囊：整块坞 = 一颗大按钮；按钮底下就是分段进度条，每格一人；人头叠成一摞，只点名还没准备的人 */
+.dock-host { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; padding: 0 18px 20px; }
+.dock-m { padding: 0 10px 14px; }
+.cap {
+  width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 10px;
+  animation: cap-in 460ms cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes cap-in { from { transform: translateY(50px) scale(.94); opacity: 0; } }
+.who {
+  align-self: center; display: flex; align-items: center; gap: 10px;
+  padding: 6px 14px 6px 8px; border-radius: 999px;
+  background: var(--dk-bg); color: var(--dk-text);
+  border: var(--dk-bw-sm) solid var(--dk-line); box-shadow: var(--dk-shadow-sm);
+  backdrop-filter: var(--dk-blur); font-size: 14px; font-weight: 800; max-width: 100%;
+}
+.pile { display: flex; }
+.pile .av { margin-left: -9px; }
+.pile .av:first-child { margin-left: 0; }
+.pile .av .tick { display: none; }
+.who .txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.who .txt b { color: var(--dk-danger); }
+
+.bar-row { display: flex; gap: 8px; align-items: stretch; }
+.big {
+  position: relative; flex: 1; overflow: hidden; cursor: pointer; font: inherit;
+  min-height: 64px; border-radius: 16px; padding: 0 18px 12px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  font-size: 20px; font-weight: 900;
+  background: var(--dk-cta); color: var(--dk-cta-text);
+  border: var(--dk-bw) solid var(--dk-cta-line); box-shadow: var(--dk-shadow);
+}
+.skin-dark .big { box-shadow: 0 0 0 3px rgba(247,200,75,.12), 0 8px 26px rgba(247,200,75,.24); }
+.big:active { transform: translateY(3px); }
+.big.is-ghost { background: var(--dk-bg); color: var(--dk-text); border-color: var(--dk-line); backdrop-filter: var(--dk-blur); }
+.skin-dark .big.is-ghost { box-shadow: var(--dk-shadow); }
+.big .sub { font-size: 13px; font-weight: 700; opacity: .75; }
+.segs { position: absolute; left: 10px; right: 10px; bottom: 7px; display: flex; gap: 3px; }
+.seg { flex: 1; height: 5px; border-radius: 3px; background: rgba(41,39,34,.18); }
+.skin-dark .seg { background: rgba(243,234,215,.16); }
+.seg.on { background: var(--dk-ready); }
+.big:not(.is-ghost) .seg.on { background: #292722; }
+.seg.fresh { animation: seg 380ms cubic-bezier(.34,1.56,.64,1) both; }
+@keyframes seg { 0% { transform: scaleY(3); } 100% { transform: scaleY(1); } }
+.bar-row .btn--more { height: auto; width: 56px; border-radius: 16px; border-width: var(--dk-bw); backdrop-filter: var(--dk-blur); background: var(--dk-bg); }
+.bar-row .more-wrap { display: flex; }
+
+/* 倒计时：按钮里一格格走空；大数字压在按钮左侧 */
+.big.is-cd { justify-content: space-between; padding-left: 22px; }
+.big .cd-left { display: flex; align-items: center; gap: 12px; }
+.big .fill { position: absolute; inset: 0; background: rgba(255,255,255,.35); transform-origin: left; animation: drain 3s linear both; }
+@keyframes drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.big > *:not(.fill):not(.segs) { position: relative; }
+.big .side { font-size: 14px; font-weight: 800; padding: 8px 12px; border-radius: 10px; border: 2px solid currentColor; background: transparent; color: inherit; font-family: inherit; }
+.cd-cancel { align-self: center; font-size: 13px; color: var(--dk-muted); background: none; border: 0; font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; padding: 4px; }
+.skin-light .cd-cancel { color: #292722; }
+.skin-dark .cd-cancel { color: #d9cfb9; }
+
+.dock-m .big { min-height: 58px; font-size: 18px; }
+.dock-m .who { font-size: 13px; }
+</style>
+</head>
+<body>
+<header class="page-head">
+  <h1>C · 进度胶囊</h1>
+  <p><b>对标：</b>Balatro 的大按钮 + 计分条（C13）——整块坞就是一颗大按钮，按钮底边的分段条就是准备进度。</p>
+  <p><b>与 A / B 的差别：</b>没有人头平铺，只有一摞叠起的头像 + 点名「还差谁」；主按钮最大、最有按压感；倒计时 = 按钮一格格走空，数字压在按钮里。</p>
+  <p><a href="index.html">← 返回三稿入口</a></p>
+</header>
+<div class="controls" id="controls"></div>
+<section class="row"><div class="row-frames" id="frames"></div></section>
+<script src="_dock.js"></script>
+<script>
+window.DOCK = {
+  render(S, v, d) {
+    const K = DockKit;
+    const size = v === 'm' ? 26 : 30;
+    const segs = `<div class="segs">${d.ps.map((p) => `<span class="seg ${p.ready ? 'on' : ''} ${S.fresh === p.i ? 'fresh' : ''}"></span>`).join('')}</div>`;
+    const show = S.phase === 'countdown' || S.phase === 'noAuto' ? d.ps : d.waiting;
+    const pile = `<div class="pile">${show.slice(0, 6).map((p) => K.av(p, size)).join('')}</div>`;
+    let whoTxt;
+    if (S.phase === 'countdown' || S.phase === 'noAuto') whoTxt = K.statusLine(d);
+    else if (!d.waiting.length) whoTxt = '全员就绪';
+    else {
+      const names = d.waiting.map((p) => (p.isMe ? '你' : p.name));
+      whoTxt = `还差 <b>${names.slice(0, 2).join('、')}${names.length > 2 ? ` 等 ${names.length} 人` : ''}</b> · ${d.ready}/${d.total}`;
+    }
+    const who = `<div class="who">${pile}<span class="txt">${whoTxt}</span></div>`;
+
+    let big;
+    if (S.phase === 'countdown') {
+      big = `<button class="big is-cd" data-act="noop"><span class="fill"></span>
+        <span class="cd-left">${K.digit(v === 'm' ? 40 : 46)}<span>${S.tick > 0 ? '秒后开局' : ''}</span></span>
+        ${d.isHost ? '<span class="side">▶ 立即开局</span>' : ''}${segs}</button>`;
+    } else if (S.phase === 'noAuto') {
+      big = d.isHost
+        ? `<button class="big" data-act="noop">▶ 开局${segs}</button>`
+        : `<button class="big is-ghost" data-act="toggle">✓ 已准备<span class="sub">等房主开局 · 点此取消</span>${segs}</button>`;
+    } else if (d.isSpec) {
+      big = `<div class="big is-ghost" style="cursor:default">观战中<span class="sub">玩家准备好就开</span>${segs}</div>`;
+    } else if (d.meReady) {
+      big = `<button class="big is-ghost" data-act="toggle">✓ 已准备<span class="sub">点此取消</span>${segs}</button>`;
+    } else {
+      big = `<button class="big" data-act="toggle">↻ 再来一局${segs}</button>`;
+    }
+    const cancel = S.phase === 'countdown' && !d.isSpec ? '<button class="cd-cancel" data-act="toggle">等一下，取消准备</button>' : '';
+    return `<div class="cap">${who}<div class="bar-row">${big}${K.moreBtn(d)}</div>${cancel}</div>`;
+  },
+};
+</script>
+</body>
+</html>
