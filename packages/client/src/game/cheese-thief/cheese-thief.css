@@ -1,3 +1,1870 @@
+/* —�?奶酪大盗（月夜） —�?*/
+
+.cheese-hour__dice { display: flex; gap: 14px; justify-content: center; }
+
+.cheese-die { display: grid; width: 64px; height: 64px; place-items: center; border: 3.5px solid var(--game-line); border-radius: 14px; color: var(--game-ink); background: #fff; box-shadow: 0 6px 0 var(--game-line); font-size: 1.7rem; font-weight: 900; }
+
+.cheese-die::after { content: ''; }
+
+.cheese-night { position: relative; display: flex; width: 100%; flex-shrink: 0; flex-direction: column; align-items: center; gap: 10px; padding: 18px 20px 16px; overflow: hidden; border: 3.5px solid var(--game-line); border-radius: 18px; color: #fff; background: linear-gradient(160deg, #27355f 0%, #131b3c 70%); box-shadow: 0 6px 0 var(--game-line); }
+
+.cheese-night::after { position: absolute; width: 140px; height: 3px; top: 30px; left: -20px; content: ''; background: rgba(255, 235, 170, .12); box-shadow: 0 10px 0 rgba(255, 235, 170, .08), 0 -10px 0 rgba(255, 235, 170, .07); transform: rotate(-4deg); }
+
+.cheese-moon { position: absolute; top: -18px; right: -12px; width: clamp(48px, 18vw, 72px); height: clamp(48px, 18vw, 72px); border: 3px solid rgba(255, 235, 170, .5); border-radius: 50%; background: radial-gradient(circle at 34% 34%, #fff6d8 0%, #ffe9a3 60%, #f4d478 100%); box-shadow: 0 0 34px rgba(255, 230, 150, .45); transform: rotate(8deg); }
+
+.cheese-moon__glow { position: absolute; inset: 8px; border-radius: 50%; box-shadow: inset -8px -6px 0 rgba(160, 120, 40, .18); }
+
+.cheese-night__copy { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+
+.cheese-night__copy strong { font-size: 1.1rem; font-weight: 900; }
+
+.cheese-night__copy span { font-size: .74rem; font-weight: 700; opacity: .8; }
+
+.cheese-hours { position: relative; z-index: 1; display: flex; gap: 8px; margin: 4px 0 0; padding: 0; list-style: none; }
+
+.cheese-hours__dot { display: grid; width: 34px; height: 34px; place-items: center; border: 2.5px solid rgba(255, 235, 170, .55); border-radius: 50%; color: rgba(255, 240, 200, .75); background: rgba(255, 235, 170, .08); font-size: .8rem; font-weight: 900; }
+
+.cheese-hours__dot.is-done { border-color: rgba(255, 235, 170, .9); color: #1d2440; background: #ffe9a3; }
+
+.cheese-hours__dot.is-current { border-color: #fff; color: #fff; background: var(--game-coral); box-shadow: 0 0 0 4px rgba(239, 81, 61, .35); animation: state-breathe 1.4s ease-in-out infinite; }
+
+.cheese-tts-icon-btn,
+.cheese-tts-icon-btn:hover:not(:disabled),
+.cheese-tts-icon-btn:active:not(:disabled) {
+  --gp-chrome-line: var(--gp-chrome-line-inverse);
+  --gp-chrome-width: var(--gp-chrome-width-inverse);
+}
+
+.cheese-top-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.cheese-role-switch {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 2px;
+  background: #f5eedf;
+  border: 2px solid var(--home-ink, #312d28);
+  border-radius: 10px;
+  box-sizing: border-box;
+  gap: 2px;
+  box-shadow: 2px 2.5px 0 var(--home-ink, #312d28);
+  overflow: hidden;
+}
+
+.cheese-role-pill {
+  height: 100%;
+  padding: 0 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--home-muted, #6f665d);
+  font-size: 0.76rem;
+  font-weight: 850;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.cheese-role-pill:hover:not(.is-active) {
+  color: var(--home-ink, #312d28);
+  background: rgba(49, 45, 40, 0.08);
+}
+
+.cheese-role-pill.is-active {
+  background: var(--home-yellow, #ffd43b);
+  color: var(--home-ink, #312d28);
+  font-weight: 950;
+}
+
+.cheese-tts-icon-btn.is-active {
+  background: var(--home-yellow, #ffd43b);
+  color: var(--home-ink, #312d28);
+  font-weight: 950;
+}
+
+@media (max-width: 480px) {
+  .cheese-tts-icon-btn,
+  .tabletop-rules-btn .cheese-btn-text {
+    display: none;
+  }
+}
+
+/* ========================================================= */
+
+/* 奶酪大盗私密身份与掷骰卡�?(Cheese Secret Card)            */
+
+/* ========================================================= */
+
+.cheese-secret-card {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.cheese-secret-card__body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.cheese-secret-card--has-identity .cheese-secret-card__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .cheese-secret-card {
+    padding: 0;
+    gap: 6px;
+  }
+  .cheese-secret-card--has-identity .cheese-secret-card__body {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .cheese-dice-cup-container {
+    padding: 0;
+  }
+  .cheese-secret-card .identity-flip-container--compact {
+    max-width: 100%;
+  }
+}
+
+.cheese-dice-cup-container {
+  min-width: 0;
+  width: 100%;
+}
+
+.cheese-identity-card-container {
+  width: 100%;
+  min-width: 0;
+}
+
+.cheese-secret-role {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.cheese-secret-dice {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 14px;
+  border-radius: 12px;
+  background: rgba(245, 158, 11, 0.16);
+  border: 1.5px solid rgba(245, 158, 11, 0.45);
+}
+
+.cheese-secret-intel-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.cheese-intel-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.8rem;
+  color: #f1f5f9;
+}
+
+.cheese-intel-chip strong {
+  color: #fde047;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   奶酪大盗（Cheese Thief）模拟模式与 3D 骰盅系统
+   ════════════════════════════════════════════════════════════════ */
+
+/* ════════ 3D 拟真木质骰盅 (CheeseDiceCup3D) ════════ */
+
+.cheese-dice-cup-container {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.cheese-dice-cup-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  outline: none;
+}
+
+.cheese-dice-cup-scene {
+  position: relative;
+  width: 240px;
+  height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cheese-dice-cup-wrapper--compact .cheese-dice-cup-scene {
+  width: 140px;
+  height: 150px;
+}
+
+/* 绒布底座 */
+
+.cheese-cup-base {
+  position: absolute;
+  bottom: 10px;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #2d5a3f 0%, #173824 100%);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.15);
+  border: 3px solid #8b5a2b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cheese-dice-cup-wrapper--compact .cheese-cup-base {
+  width: 82px;
+  height: 82px;
+  bottom: 6px;
+  border-width: 2px;
+}
+
+.cheese-cup-mat {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 3D 骰子外观 */
+
+.cheese-die-3d {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.cheese-die-face {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  background: #ffffff;
+  border-radius: 10px;
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.35), inset 0 2px 4px rgba(255, 255, 255, 0.9);
+}
+
+.cheese-dice-cup-wrapper--compact .cheese-die-face {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+}
+
+.cheese-die-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1e293b;
+  transform: translate(-50%, -50%);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.cheese-die-dot--red {
+  background: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.5), inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.cheese-dice-cup-wrapper--compact .cheese-die-dot {
+  width: 7px;
+  height: 7px;
+}
+
+.cheese-die-number-badge {
+  font-size: 0.76rem;
+  font-weight: 900;
+  color: #fef08a;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+}
+
+.cheese-die-unknown {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 1.8rem;
+  font-weight: 900;
+}
+
+/* 3D 骰盅罩体与长按掀开动效 */
+
+.cheese-cup-dome {
+  position: absolute;
+  bottom: 12px;
+  width: 108px;
+  height: 112px;
+  background: linear-gradient(135deg, #a05a2c 0%, #683416 60%, #4a220b 100%);
+  border-radius: 48% 48% 16px 16px / 52% 52% 12px 12px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), inset 0 4px 6px rgba(255, 255, 255, 0.25), inset 0 -4px 8px rgba(0, 0, 0, 0.4);
+  border: 3px solid #3e1b09;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 4px 4px;
+  transform-origin: bottom center;
+  transition: transform 0.24s cubic-bezier(0.18, 0.89, 0.32, 1.28), box-shadow 0.24s ease;
+  z-index: 10;
+}
+
+.cheese-dice-cup-wrapper--compact .cheese-cup-dome {
+  width: 74px;
+  height: 78px;
+  bottom: 8px;
+  border-width: 2px;
+}
+
+/* 长按掀开状�?*/
+
+.cheese-cup-dome.is-lifted {
+  transform: translateY(-84px) rotateX(-24deg) scale(1.06);
+  box-shadow: 0 34px 40px rgba(0, 0, 0, 0.35), inset 0 4px 8px rgba(255, 255, 255, 0.3);
+}
+
+.cheese-dice-cup-wrapper--compact .cheese-cup-dome.is-lifted {
+  transform: translateY(-56px) rotateX(-22deg) scale(1.06);
+}
+
+.cheese-cup-dome__top {
+  width: 22px;
+  height: 14px;
+  border-radius: 50%;
+  background: #f59e0b;
+  border: 2px solid #78350f;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+.cheese-cup-dome__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.cheese-cup-dome__pattern {
+  font-size: 1.4rem;
+}
+
+.cheese-cup-dome__label {
+  font-size: 0.68rem;
+  font-weight: 900;
+  color: #fef3c7;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+}
+
+.cheese-cup-dome__rim {
+  width: 90%;
+  height: 6px;
+  background: #78350f;
+  border-radius: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* 骰盅下方说明 */
+
+.cheese-cup-info {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.cheese-cup-owner {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.cheese-cup-hint {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #94a3b8;
+}
+
+.cheese-hint-lifted {
+  color: #38bdf8;
+  font-weight: 900;
+}
+
+/* 独醒查看他人网格 */
+
+.cheese-peek-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.cheese-peek-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 2px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 18px;
+  transition: all 0.15s ease;
+}
+
+.cheese-peek-item.is-selected {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+}
+
+/* ════════ 桌面中央�?(CheeseTabletopArena) ════════ */
+
+.cheese-tabletop-arena {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 8px 4px;
+}
+
+/* 顶部夜间时刻�?*/
+
+.cheese-arena-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 10px 16px;
+  border-radius: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.cheese-hour-track {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cheese-hour-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+.cheese-hour-node.is-current {
+  background: #f59e0b;
+  border-color: #fef08a;
+  transform: scale(1.08);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.4);
+}
+
+.cheese-hour-node.is-current .cheese-hour-node__badge,
+.cheese-hour-node.is-current .cheese-hour-node__status {
+  color: #1e1b18;
+  font-weight: 900;
+}
+
+.cheese-hour-node.is-past {
+  opacity: 0.5;
+}
+
+.cheese-hour-node__badge {
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #f1f5f9;
+}
+
+.cheese-hour-node__status {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.cheese-tts-btn {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #0f766e;
+  color: #fff;
+  border: 2px solid #14b8a6;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cheese-tts-btn.is-active {
+  background: #10b981;
+  border-color: #34d399;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.35);
+}
+
+/* 中央大奶酪木盘案发区 */
+
+.cheese-center-table {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.cheese-wood-platter {
+  position: relative;
+  width: min(100%, 380px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, #9a572a 0%, #5c2f13 70%, #3e1b09 100%);
+  border: 10px solid #2b1206;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), inset 0 4px 12px rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.cheese-cloth {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f8fafc 0%, #cbd5e1 100%);
+  border: 3px dashed #94a3b8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: background 0.3s ease;
+}
+
+.cheese-cloth.is-stolen {
+  background: radial-gradient(circle, #fee2e2 0%, #fca5a5 100%);
+  border-color: #ef4444;
+}
+
+.cheese-night-stage,
+.cheese-stolen-stage,
+.cheese-safe-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.cheese-model-3d {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cheese-model-emoji {
+  font-size: clamp(4.5rem, 12vw, 6.5rem);
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.4));
+  animation: cheese-breathe 3s ease-in-out infinite;
+}
+
+@keyframes cheese-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.cheese-glow {
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* 静音偷取感应按钮 */
+
+.cheese-steal-silent-btn {
+  margin-top: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(30, 41, 59, 0.85);
+  border: 2px solid #f59e0b;
+  color: #fef08a;
+  font-size: 0.82rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: all 0.12s ease;
+}
+
+.cheese-steal-silent-btn.is-stolen-hidden {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: #10b981;
+  color: #a7f3d0;
+  opacity: 0.6;
+}
+
+.cheese-night-guide {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #475569;
+}
+
+.cheese-night-guide__rule {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #8a8378;
+  letter-spacing: 0.04em;
+}
+
+/* 桌面偷取交互：奶酪按钮与状态徽章 */
+
+.cheese-model-3d-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px 12px;
+  border: none;
+  border-radius: 18px;
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.cheese-model-3d-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.cheese-model-3d-btn:disabled {
+  cursor: default;
+}
+
+.cheese-model-3d-btn.is-submitting .cheese-model-emoji {
+  animation: none;
+  opacity: 0.7;
+}
+
+.cheese-model-3d-btn.is-stolen {
+  cursor: default;
+}
+
+.cheese-model-3d-btn.is-stolen .cheese-model-emoji {
+  filter: grayscale(0.35) drop-shadow(0 8px 12px rgba(0, 0, 0, 0.3));
+  animation: none;
+  opacity: 0.9;
+}
+
+.cheese-steal-status-badge {
+  min-height: 26px;
+  display: flex;
+  align-items: center;
+}
+
+@keyframes cheese-badge-breathe {
+  0%, 100% { box-shadow: 0 0 10px rgba(245, 158, 11, 0.28); }
+  50% { box-shadow: 0 0 18px rgba(245, 158, 11, 0.5); }
+}
+
+.cheese-stolen-crumbs {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.cheese-crime-alert {
+  font-size: 0.82rem;
+  color: #991b1b;
+  font-weight: 800;
+  text-align: center;
+  padding: 4px 12px;
+}
+
+/* 玩家环形座次雷达 */
+
+.cheese-players-ring {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.cheese-player-pod {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 8px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.cheese-player-pod.is-me {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.cheese-player-pod.is-winner {
+  border-color: #10b981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+}
+
+.cheese-pod-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: grid;
+  place-items: center;
+}
+
+.cheese-pod-avatar__emoji {
+  font-size: 1.5rem;
+}
+
+.cheese-pod-name {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #fff;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cheese-pod-dice-badge {
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: #fef08a;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+/* 终局大屏结算�?*/
+
+.cheese-table-settlement-card {
+  background: rgba(15, 23, 42, 0.85);
+  border: 2.5px solid #f59e0b;
+  border-radius: 20px;
+  padding: 16px 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.cheese-settlement-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 8px;
+}
+
+.cheese-settlement-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.cheese-settlement-tag {
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #fef08a;
+  background: rgba(245, 158, 11, 0.2);
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1.5px solid #f59e0b;
+}
+
+.cheese-settlement-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: #e2e8f0;
+}
+
+.cheese-settlement-row {
+  display: flex;
+  gap: 8px;
+}
+
+.cheese-settlement-peeks ul {
+  margin: 4px 0 0 18px;
+  padding: 0;
+  line-height: 1.6;
+}
+
+/* ════════ 奶酪大盗：白天倒计时与控制条 ════════ */
+
+.cheese-phase-countdown-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1.5px solid rgba(245, 158, 11, 0.35);
+  border-radius: 999px;
+  padding: 6px 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.cheese-phase-name-badge {
+  font-size: 0.92rem;
+  font-weight: 900;
+  color: #92400e;
+}
+
+.cheese-countdown-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fef3c7;
+  border: 1.5px solid #d97706;
+  border-radius: 999px;
+  padding: 3px 12px;
+  box-shadow: 0 2px 4px rgba(38, 30, 22, 0.08);
+}
+
+.cheese-countdown-pill__label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #92400e;
+}
+
+.cheese-countdown-pill__time {
+  font-size: 1.05rem;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+  color: #78350f;
+  letter-spacing: 0.05em;
+}
+
+.cheese-dawn-control-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #0f172a;
+  border: 2.5px solid #f59e0b;
+  border-radius: 20px;
+  padding: 16px 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(245, 158, 11, 0.25);
+  margin-bottom: 16px;
+}
+
+.cheese-dawn-info h4 {
+  margin: 0 0 4px;
+  font-size: 1.25rem;
+  font-weight: 950;
+  color: #fef08a;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.cheese-dawn-info p {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+/* 手机端偷取行动面板 */
+
+.cheese-steal-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #0f172a;
+  border: 2.5px solid #f59e0b;
+  border-radius: 20px;
+  padding: 18px 20px;
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.25);
+  animation: cheese-panel-pulse 2s ease-in-out infinite;
+}
+
+@keyframes cheese-panel-pulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); }
+  50% { box-shadow: 0 0 28px rgba(245, 158, 11, 0.45); }
+}
+
+.cheese-player-steal-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border: 2px solid #fef08a;
+  color: #1e1b18;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45);
+  transition: all 0.15s ease;
+}
+
+.cheese-player-steal-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+  box-shadow: 0 8px 26px rgba(245, 158, 11, 0.6);
+}
+
+.cheese-player-steal-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.cheese-icon-bounce {
+  font-size: 2.2rem;
+  animation: cheese-breathe 2s ease-in-out infinite;
+}
+
+.cheese-steal-btn-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.cheese-steal-btn-text strong {
+  font-size: 1.15rem;
+  font-weight: 950;
+  color: #1e1b18;
+}
+
+.cheese-steal-btn-text small {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: rgba(30, 27, 24, 0.8);
+}
+
+.cheese-skip-discussion-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border: 2px solid #fef08a;
+  border-radius: 999px;
+  color: #1e1b18;
+  font-weight: 950;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(245, 158, 11, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.cheese-skip-discussion-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.55);
+  background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+}
+
+.cheese-skip-discussion-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.cheese-skip-discussion-btn .btn-icon {
+  font-size: 1.25rem;
+}
+
+.cheese-skip-discussion-btn .btn-main-text {
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.cheese-skip-discussion-btn .btn-sub-text {
+  font-size: 0.76rem;
+  opacity: 0.85;
+}
+
+/* ════════ 奶酪大盗：桌面端实时计票大屏 ════════ */
+
+.cheese-table-vote-board {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 2px solid rgba(245, 158, 11, 0.4);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.cheese-vote-board-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cheese-vote-board-title-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cheese-vote-board-title-group h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.cheese-vote-progress-badge {
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1.5px solid rgba(16, 185, 129, 0.4);
+  padding: 3px 12px;
+  border-radius: 999px;
+}
+
+.cheese-vote-board-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.cheese-vote-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.cheese-vote-tally-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+.cheese-vote-tally-card.is-voted {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.6);
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.2);
+}
+
+.cheese-tally-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cheese-tally-name {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.cheese-tally-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 900;
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+}
+
+.cheese-tally-badge.is-active {
+  background: #f59e0b;
+  color: #1e1b18;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
+
+.cheese-tally-voters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 24px;
+  align-items: center;
+}
+
+.cheese-voter-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #7dd3fc;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.cheese-voter-chip--empty {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.cheese-abstain-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+}
+
+.cheese-abstain-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.cheese-abstain-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cheese-abstain-chip {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+/* ════════ 奶酪大盗：移动端弹出式投票窗口 ════════ */
+
+.cheese-mobile-vote-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: cheese-modal-fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cheese-modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.cheese-mobile-vote-modal {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background: #1e293b;
+  border: 2.5px solid #f59e0b;
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 20px rgba(245, 158, 11, 0.25);
+  overflow: hidden;
+  animation: cheese-modal-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cheese-modal-slide-up {
+  from { transform: translateY(24px) scale(0.96); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.cheese-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: rgba(15, 23, 42, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cheese-modal-title-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cheese-modal-title-box h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.cheese-modal-timer {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #fef08a;
+}
+
+.cheese-modal-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #94a3b8;
+  font-size: 1rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.15s ease;
+}
+
+.cheese-modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.cheese-modal-body {
+  padding: 18px 20px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cheese-vote-instruction {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #cbd5e1;
+  font-weight: 700;
+}
+
+.cheese-candidate-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cheese-vote-candidate-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cheese-vote-candidate-card:hover {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: #f59e0b;
+  transform: translateX(4px);
+}
+
+.cheese-vote-abstain-btn {
+  width: 100%;
+  padding: 11px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  color: #94a3b8;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cheese-vote-abstain-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* 确认面板 */
+
+.cheese-vote-confirm-pane {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  padding: 10px 0;
+}
+
+.cheese-vote-confirm-pane h4 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.cheese-confirm-target-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 14px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 2px solid #f59e0b;
+}
+
+.cheese-confirm-target-avatar {
+  font-size: 1.5rem;
+}
+
+.cheese-confirm-target-name {
+  font-size: 1.15rem;
+  font-weight: 950;
+  color: #fef08a;
+}
+
+.cheese-confirm-warning {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.cheese-vote-confirm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.cheese-confirm-btn {
+  width: 100%;
+  padding: 13px;
+  border-radius: 12px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cheese-confirm-btn.is-primary {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #1e1b18;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+}
+
+.cheese-confirm-btn.is-danger {
+  background: #dc2626;
+  color: #fff;
+}
+
+.cheese-confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cheese-cancel-btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cheese-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* 已投票状态展示 */
+
+.cheese-vote-submitted-pane {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  padding: 16px 0;
+}
+
+.cheese-submitted-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.15);
+  border: 2px solid #10b981;
+  color: #10b981;
+  font-size: 1.8rem;
+  display: grid;
+  place-items: center;
+}
+
+.cheese-voted-target-desc {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.cheese-vote-modal-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  width: 100%;
+}
+
+.cheese-vote-modal-progress span {
+  font-size: 0.88rem;
+  font-weight: 900;
+  color: #fef08a;
+}
+
+.cheese-vote-modal-sub {
+  margin: 0;
+  font-size: 0.76rem;
+  color: #94a3b8;
+}
+
+.cheese-vote-btn--done {
+  margin-top: 8px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* 重新打开投票窗口横幅 */
+
+.cheese-vote-reopen-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1.5px solid rgba(245, 158, 11, 0.5);
+  border-radius: 14px;
+  margin-bottom: 12px;
+}
+
+.cheese-vote-reopen-banner span {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #fef08a;
+}
+
+.cheese-reopen-vote-btn {
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #f59e0b;
+  border: none;
+  color: #1e1b18;
+  font-size: 0.8rem;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* ════════ 奶酪大盗：终局真相大揭秘全屏遮罩 (CheeseGameOverReveal) ════════ */
+
+.cheese-reopen-reveal-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 8px 0 16px;
+}
+
+.cheese-reopen-reveal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border: 2px solid #fef08a;
+  color: #1e1b18;
+  font-size: 0.95rem;
+  font-weight: 950;
+  box-shadow: 0 4px 18px rgba(245, 158, 11, 0.45);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cheese-reopen-reveal-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(245, 158, 11, 0.6);
+}
+
+.cheese-reveal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: 16px;
+  box-sizing: border-box;
+  animation: cheese-modal-slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.cheese-reveal-modal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: min(94vw, 680px);
+  max-height: min(90vh, 760px);
+  padding: 22px 24px 20px;
+  border-radius: 24px;
+  background: linear-gradient(145deg, #181c24 0%, #0d1117 100%);
+  border: 2.5px solid #f59e0b;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.9), 0 0 30px rgba(245, 158, 11, 0.2);
+  box-sizing: border-box;
+  overflow-y: auto;
+  color: #f8fafc;
+}
+
+.cheese-reveal__close-btn {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #cbd5e1;
+  font-size: 1rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.15s ease;
+  z-index: 10;
+}
+
+.cheese-reveal__close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+.cheese-reveal__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cheese-reveal__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.cheese-reveal__badge.is-no-thief {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+  border: 1.5px solid #10b981;
+}
+
+.cheese-reveal__badge.is-caught {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fef08a;
+  border: 1.5px solid #f59e0b;
+}
+
+.cheese-reveal__badge.is-escaped {
+  background: rgba(236, 72, 153, 0.2);
+  color: #f472b6;
+  border: 1.5px solid #ec4899;
+}
+
+.cheese-reveal__headline {
+  margin: 0;
+  font-size: clamp(1.3rem, 3.5vw, 1.7rem);
+  font-weight: 950;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.cheese-reveal__headline.is-no-thief {
+  color: #6ee7b7;
+}
+
+.cheese-reveal__headline.is-caught {
+  color: #fde047;
+}
+
+.cheese-reveal__headline.is-escaped {
+  color: #f472b6;
+}
+
+.cheese-reveal__desc {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #cbd5e1;
+  max-width: 500px;
+  line-height: 1.5;
+}
+
+.cheese-reveal__facts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1.5px solid rgba(245, 158, 11, 0.35);
+  border-radius: 16px;
+  padding: 12px 16px;
+}
+
+.cheese-reveal__fact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+.cheese-reveal__fact-item .fact-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.cheese-reveal__fact-item .fact-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cheese-reveal__fact-item .fact-content strong {
+  font-size: 0.92rem;
+  color: #fef08a;
+}
+
+.cheese-reveal__fact-item .fact-content span {
+  color: #e2e8f0;
+  line-height: 1.4;
+}
+
+.cheese-reveal__section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cheese-reveal__section-title {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #fef08a;
+}
+
+.cheese-reveal-players-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.cheese-reveal-player-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.15s ease;
+}
+
+.cheese-reveal-player-card.role-thief {
+  border-color: #ec4899;
+  background: rgba(236, 72, 153, 0.12);
+  box-shadow: 0 0 12px rgba(236, 72, 153, 0.2);
+}
+
+.cheese-reveal-player-card.role-accomplice {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.cheese-reveal-player-card.is-winner {
+  border-color: #10b981;
+}
+
+.cheese-reveal-peeks-list {
+  margin: 0;
+  padding: 8px 14px 8px 24px;
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  line-height: 1.6;
+}
+
+.cheese-reveal-votes-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cheese-vote-summary-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.82rem;
+  color: #e2e8f0;
+}
+
+.cheese-vote-summary-chip.hit-thief {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: #f59e0b;
+}
+
+.cheese-vote-summary-chip.is-abstain {
+  opacity: 0.7;
+}
+
+.cheese-vote-summary-chip .voter {
+  font-weight: 800;
+  color: #fff;
+}
+
+.cheese-vote-summary-chip .arrow {
+  color: #94a3b8;
+}
+
+.cheese-vote-summary-chip .target {
+  font-weight: 800;
+  color: #fef08a;
+}
+
+.cheese-vote-summary-chip .hit-badge {
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #f59e0b;
+  color: #1e1b18;
+}
+
+.cheese-reveal__footer {
+  display: flex;
+  justify-content: center;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cheese-reveal__dismiss-btn {
+  width: 100%;
+  padding: 12px 20px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(245, 158, 11, 0.4);
+  color: #fef08a;
+  font-size: 0.95rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cheese-reveal__dismiss-btn:hover {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: #f59e0b;
+  transform: translateY(-1px);
+}
+
+.cheese-tabletop-arena[data-phase="game_over"],
+.cheese-player-stage.cheese-phase--game_over {
+  padding-bottom: 160px;
+}
+
 /* 奶酪大盗：玩家端焦点式竞技场
    夜间时刻轨 / 偷取 / 查验 / 共犯 / 天亮 / 投票各成一块焦点板，选人走席位直选。 */
 .cheese-player-stage {
@@ -604,4 +2471,518 @@ html[data-motion-level='off'] .cheese-vignette {
   border-radius: 50%;
   background: var(--gp-yellow);
   box-shadow: 0 2px 0 var(--gp-ink);
+}
+
+/* ════════════════════════════════════════════════════════════════
+ * V04 · 夜里的房间（公共大屏 CheeseTabletopArena）
+ * 全宽三区：左老鼠席位环 / 中 three.js 奶酪 / 右六小时钟面。
+ * 月光 = 原 .cheese-vignette 暗角 + 本节 .ct-moonbeam 斜切光柱 + 静态星点。
+ * 动效只动 transform / opacity，不新增无限循环。
+ * ════════════════════════════════════════════════════════════════ */
+
+.ct-room {
+  /* 本局色板：夜 / 奶酪 / 木 / 墨，再导出给 --gp-* 配方类 */
+  --ct-night: #161b36;
+  --ct-night-deep: #0d1024;
+  --ct-cheese: #f7c84b;
+  --ct-wood: #7a4a24;
+  --ct-ink: #292722;
+  --ct-moon: #fff4df;
+  --ct-alert: #e0593a;
+  --ct-dial-idle: rgba(255, 244, 223, 0.1);
+  --ct-dial-past: rgba(247, 200, 75, 0.32);
+  --ct-dial-line: var(--ct-night-deep);
+  --gp-accent: var(--ct-cheese);
+  --gp-accent-glow: rgba(247, 200, 75, 0.35);
+  --gp-muted: rgba(255, 244, 223, 0.62);
+
+  position: relative;
+  isolation: isolate;
+  max-width: none;
+  margin: 0;
+  padding: 12px clamp(10px, 2vw, 24px) 16px;
+  border-radius: var(--gp-radius-lg);
+  background:
+    radial-gradient(ellipse at 50% 60%, rgba(122, 74, 36, 0.28) 0%, transparent 60%),
+    linear-gradient(180deg, var(--ct-night) 0%, var(--ct-night-deep) 100%);
+  color: var(--ct-moon);
+}
+
+.ct-room > .cheese-arena-header,
+.ct-room > .ct-room__zones {
+  position: relative;
+  z-index: 1;
+}
+
+/* 装饰层：月亮窗格走 .stage-art 的 12% 配方，这里只定颜色 */
+.ct-art {
+  color: var(--ct-moon);
+}
+
+/* 月光柱：右上斜切落向中央奶酪；夜里与拉同伙时亮起，其他阶段淡出，不循环 */
+.ct-moonbeam {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  clip-path: polygon(62% 0, 84% 0, 58% 100%, 30% 100%);
+  background: linear-gradient(
+    200deg,
+    rgba(255, 244, 223, 0.2) 0%,
+    rgba(255, 244, 223, 0.08) 55%,
+    rgba(255, 244, 223, 0) 100%
+  );
+  transition: opacity var(--gp-dur-phase) var(--gp-ease-standard);
+}
+
+/* 静态星点：8 个径向渐变点，无动画 */
+.ct-stars {
+  position: absolute;
+  inset: 0 0 45% 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 6% 14%, rgba(255, 244, 223, 0.9) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 17% 38%, rgba(255, 244, 223, 0.6) 0 1px, transparent 2px),
+    radial-gradient(circle at 29% 9%, rgba(255, 244, 223, 0.75) 0 1.2px, transparent 2.2px),
+    radial-gradient(circle at 44% 26%, rgba(255, 244, 223, 0.5) 0 1px, transparent 2px),
+    radial-gradient(circle at 71% 12%, rgba(255, 244, 223, 0.8) 0 1.4px, transparent 2.4px),
+    radial-gradient(circle at 82% 41%, rgba(255, 244, 223, 0.55) 0 1px, transparent 2px),
+    radial-gradient(circle at 91% 7%, rgba(255, 244, 223, 0.9) 0 1.6px, transparent 2.6px),
+    radial-gradient(circle at 96% 30%, rgba(255, 244, 223, 0.5) 0 1px, transparent 2px);
+  transition: opacity var(--gp-dur-phase) var(--gp-ease-standard);
+}
+
+.ct-room[data-phase='night'] .ct-moonbeam,
+.ct-room[data-phase='accomplice_select'] .ct-moonbeam,
+.ct-room[data-phase='night'] .ct-stars,
+.ct-room[data-phase='hour_choice'] .ct-stars,
+.ct-room[data-phase='accomplice_select'] .ct-stars {
+  opacity: 1;
+}
+
+.ct-room[data-phase='hour_choice'] .ct-moonbeam {
+  opacity: 0.45;
+}
+
+/* 顶栏在深色房间里改用奶酪色 / 月白字 */
+.ct-room .cheese-phase-name-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ct-cheese);
+  font-size: 1.05rem;
+}
+
+.ct-room .cheese-night-guide {
+  color: var(--gp-muted);
+}
+
+.ct-room .stage-eyebrow {
+  color: var(--gp-muted);
+}
+
+/* ── 三区网格 ── */
+.ct-room__zones {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr) minmax(0, 1fr);
+  grid-template-areas: 'left center right';
+  align-items: center;
+  gap: clamp(12px, 2vw, 32px);
+  min-width: 0;
+}
+
+.ct-room__left {
+  grid-area: left;
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.ct-room__center {
+  grid-area: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ct-room__right {
+  grid-area: right;
+  display: flex;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+/* 木盘随中区放大，不再卡 380px */
+.ct-room .cheese-center-table {
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+}
+
+.ct-room .cheese-wood-platter {
+  width: min(100%, clamp(260px, 30vw, 460px));
+}
+
+/* ── 左区：老鼠席位环 ── */
+.ct-ring {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(100%, 260px);
+}
+
+.ct-ring__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ct-seat {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px 6px 8px;
+  border: 1.5px solid rgba(255, 244, 223, 0.18);
+  border-radius: var(--gp-radius-md);
+  background: rgba(255, 244, 223, 0.06);
+  color: var(--ct-moon);
+  /* 弧形：中间的席位向奶酪凸出 */
+  transform: translateX(calc(var(--arc, 0) * 22px));
+  transition:
+    transform var(--gp-dur-standard) var(--gp-ease-standard),
+    opacity var(--gp-dur-standard) var(--gp-ease-standard);
+}
+
+.ct-seat[data-active='true'],
+.ct-seat[data-winner='true'] {
+  border-color: var(--ct-cheese);
+}
+
+.ct-seat[data-active='true'] {
+  background: rgba(247, 200, 75, 0.12);
+}
+
+.ct-seat[data-out='true'] {
+  border-color: rgba(224, 89, 58, 0.7);
+}
+
+.ct-seat__avatar {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+.ct-seat__sleep {
+  position: absolute;
+  right: -4px;
+  bottom: -3px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ct-night-deep);
+  color: var(--ct-cheese);
+  font-size: 11px;
+}
+
+.ct-seat__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ct-seat__name {
+  overflow: hidden;
+  font-size: 1rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ct-seat__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--gp-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.ct-seat__role {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(247, 200, 75, 0.18);
+  color: var(--ct-cheese);
+}
+
+.ct-seat__role[data-role='thief'],
+.ct-seat__role[data-role='accomplice'] {
+  background: rgba(224, 89, 58, 0.22);
+  color: #ffd9cf;
+}
+
+.ct-seat__votes {
+  min-width: 1.4em;
+  color: var(--ct-cheese);
+  font-size: 1.6rem;
+  text-align: right;
+}
+
+.ct-seat__crown {
+  color: var(--ct-cheese);
+}
+
+/* ── 右区：六小时钟面 ── */
+.ct-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.ct-dial {
+  position: relative;
+  width: clamp(150px, 17vw, 240px);
+  aspect-ratio: 1;
+}
+
+.ct-dial__face {
+  position: absolute;
+  inset: 0;
+  border: 3px solid rgba(255, 244, 223, 0.35);
+  border-radius: 50%;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+}
+
+.ct-dial__marks {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ct-dial__mark {
+  position: absolute;
+  inset: 0;
+  transform: rotate(var(--a));
+  color: var(--ct-moon);
+  font-size: clamp(14px, 1.6vw, 20px);
+}
+
+.ct-dial__mark > span {
+  position: absolute;
+  top: 7%;
+  left: 50%;
+  display: block;
+  transform: translateX(-50%) rotate(calc(var(--a) * -1));
+}
+
+.ct-dial__mark[data-state='past'] {
+  color: rgba(255, 244, 223, 0.55);
+}
+
+.ct-dial__mark[data-state='current'] {
+  color: var(--ct-ink);
+  font-weight: 800;
+}
+
+.ct-dial__mark[data-state='crime'] {
+  color: #fff;
+  font-weight: 800;
+}
+
+/* 指针：钟面外沿一枚奶酪色三角，只做 rotate 过渡 */
+.ct-dial__hand {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: transform var(--gp-dur-phase) var(--gp-ease-standard);
+}
+
+.ct-dial__hand::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  margin-left: -8px;
+  border-top: 12px solid var(--ct-cheese);
+  border-right: 8px solid transparent;
+  border-left: 8px solid transparent;
+}
+
+.ct-dial[data-phase='game_over'] .ct-dial__hand::before {
+  border-top-color: var(--ct-alert);
+}
+
+.ct-dial__hub {
+  position: absolute;
+  inset: 30%;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(255, 244, 223, 0.3);
+  border-radius: 50%;
+  background: var(--ct-night-deep);
+  color: var(--ct-cheese);
+}
+
+.ct-dial__numeral {
+  font-size: clamp(28px, 3.4vw, 46px);
+}
+
+.ct-dial__numeral--tally {
+  font-size: clamp(20px, 2.4vw, 32px);
+}
+
+.ct-dial__numeral--tally small {
+  color: var(--gp-muted);
+  font-size: 0.55em;
+}
+
+.ct-dial__glyph {
+  font-size: clamp(24px, 3vw, 40px);
+}
+
+.ct-dial__hub-icon {
+  position: absolute;
+  top: 12%;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.ct-clock__caption {
+  margin: 0;
+  color: var(--gp-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ── 图标：emoji 换成 currentColor SVG 后的统一基线 ── */
+.ct-icon {
+  display: inline-block;
+  flex: none;
+  vertical-align: -0.125em;
+}
+
+/* ── 断点 ── */
+@media (max-width: 1024px) {
+  .ct-room__zones {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.5fr) minmax(0, 0.8fr);
+  }
+
+  .ct-seat {
+    transform: translateX(calc(var(--arc, 0) * 12px));
+  }
+}
+
+@media (max-width: 768px) {
+  .ct-room__zones {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'center center'
+      'left right';
+    align-items: start;
+  }
+
+  .ct-room__left {
+    justify-content: flex-start;
+  }
+
+  .ct-ring {
+    width: 100%;
+  }
+
+  .ct-seat {
+    transform: none;
+  }
+
+  .ct-dial {
+    width: 140px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ct-room__zones {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'center'
+      'right'
+      'left';
+  }
+
+  .ct-room__right {
+    justify-content: center;
+  }
+
+  .ct-ring__list {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .ct-seat {
+    flex: 1 1 140px;
+  }
+}
+
+@media (max-height: 620px) {
+  .ct-room .stage-eyebrow {
+    display: none;
+  }
+
+  .ct-dial {
+    width: clamp(120px, 13vw, 170px);
+  }
+
+  .ct-ring__list {
+    gap: 5px;
+  }
+
+  .ct-seat {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+
+  .ct-room .cheese-wood-platter {
+    width: min(100%, clamp(220px, 26vw, 320px));
+  }
+}
+
+@media (max-height: 520px) {
+  .ct-clock__caption,
+  .ct-seat__status {
+    display: none;
+  }
+
+  .ct-dial {
+    width: 104px;
+  }
+
+  .ct-room .cheese-wood-platter {
+    width: min(100%, 220px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ct-moonbeam,
+  .ct-stars,
+  .ct-seat,
+  .ct-dial__hand {
+    transition: none;
+  }
 }

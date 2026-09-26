@@ -23,6 +23,8 @@ import { TabletopCountdownText } from '../../shared-ui/TabletopCountdownText.tsx
 import { TabletopVictoryBurst } from '../../shared-ui/TabletopVictoryBurst.tsx';
 import { usePhaseEventOverlay } from '../../shared-ui/usePhaseEventOverlay.tsx';
 import { UserAvatar } from '../../user/UserAvatar.tsx';
+import { BallotIcon, CatIcon, CheeseIcon, DieIcon, DogIcon, EyeIcon, FlagIcon, MouseIcon, ScreenIcon, ScrollIcon, SunIcon } from './stage/CheeseIcons.tsx';
+import { GameIcon } from '../../shared-ui/GameIcon.tsx';
 import { resolveMemberAvatar } from '../../user/avatar.ts';
 import type { CheeseThiefPlayerView, RoleCard } from './types.ts';
 
@@ -233,7 +235,7 @@ export function CheeseThiefGamePage({ view }: Props) {
     } else if (view.phase === 'night' && me && me.wakeHour === view.currentHour && !view.cheeseStolen && (me.coWakers ?? []).length === 0 && myId) {
       primary = {
         id: 'steal-cheese',
-        label: '🧀 伸手偷走奶酪（成为大盗）',
+        label: '伸手偷走奶酪（成为大盗）',
         disabled: busy,
         onAction: () => {
           void act({ type: 'steal_cheese', playerId: myId });
@@ -333,7 +335,7 @@ export function CheeseThiefGamePage({ view }: Props) {
     <div className="cheese-top-controls">
       {isSpectator && (
         <div className="cheese-screen-badge" title="当前设备为房间公共桌面大屏（纯净展示，不发手牌）">
-          <span>📺 公共大屏</span>
+          <ScreenIcon /><span>公共大屏</span>
         </div>
       )}
       <button
@@ -411,7 +413,7 @@ export function CheeseThiefGamePage({ view }: Props) {
         </p>
       )}
 
-      {/* 🖥️ 桌面端呈现。外面这层负责夜间暗角与飞行层的锚点测量宿主 */}
+      {/* 桌面端呈现。外面这层负责夜间暗角与飞行层的锚点测量宿主 */}
       <div
         className="cheese-stage"
         ref={stage.stageRef}
@@ -435,7 +437,7 @@ export function CheeseThiefGamePage({ view }: Props) {
           }}
         />
       ) : (
-        /* 📱 玩家端呈现 */
+        /* 玩家端呈现 */
         <div
           className={`sg-stage cheese-player-stage cheese-phase--${view.phase} is-${presentationState}`}
           data-cheese-phase={view.phase}
@@ -447,7 +449,7 @@ export function CheeseThiefGamePage({ view }: Props) {
             <ArenaBoard
               className="cheese-focal cheese-hour-choice-panel"
               tone="dark"
-              headline="🎲 掷出两枚骰子，自选醒来时刻"
+              headline={<><DieIcon /> 掷出两枚骰子，自选醒来时刻</>}
               hint={
                 me.wakeHour
                   ? `你已选定第 ${me.wakeHour} 时刻醒来，等待其他玩家…`
@@ -582,13 +584,13 @@ export function CheeseThiefGamePage({ view }: Props) {
                 <div className="cheese-secret-intel-row">
                   {me.isThief && me.knownAccomplices.length > 0 && (
                     <div className="cheese-intel-chip">
-                      <span className="intel-icon" aria-hidden="true">🐭</span>
+                      <span className="intel-icon" aria-hidden="true"><MouseIcon /></span>
                       <span>你的共犯：<strong>{me.knownAccomplices.map((id) => nameFor(members, id)).join('、')}</strong>（天亮请协助掩护）</span>
                     </div>
                   )}
                   {me.isAccomplice && me.knownAccomplices.length > 0 && (
                     <div className="cheese-intel-chip">
-                      <span className="intel-icon" aria-hidden="true">🧀</span>
+                      <span className="intel-icon" aria-hidden="true"><CheeseIcon /></span>
                       <span>
                         怪盗是：<strong>{nameFor(members, me.knownAccomplices[0])}</strong>
                         {me.knownAccomplices.length > 1 && (
@@ -599,13 +601,13 @@ export function CheeseThiefGamePage({ view }: Props) {
                   )}
                   {me.catPeekedHour && (
                     <div className="cheese-intel-chip">
-                      <span className="intel-icon" aria-hidden="true">🐱</span>
+                      <span className="intel-icon" aria-hidden="true"><CatIcon /></span>
                       <span>猫咪情报：<strong>{nameFor(members, me.catPeekedHour.target)}</strong> 是第 <strong>{me.catPeekedHour.hour}</strong> 时刻</span>
                     </div>
                   )}
                   {me.peekedHour && (
                     <div className="cheese-intel-chip">
-                      <span className="intel-icon" aria-hidden="true">🔍</span>
+                      <span className="intel-icon" aria-hidden="true"><EyeIcon /></span>
                       <span>独醒偷看：<strong>{nameFor(members, me.peekedHour.target)}</strong> 是第 <strong>{me.peekedHour.hour}</strong> 时刻</span>
                     </div>
                   )}
@@ -623,7 +625,7 @@ export function CheeseThiefGamePage({ view }: Props) {
             >
               <div className="cheese-opening-countdown-inner">
                 <div className="cheese-opening-countdown-left">
-                  <span className="cheese-opening-icon" aria-hidden="true">⏳</span>
+                  <GameIcon name="hourglass" size={20} className="cheese-opening-icon" alt="" aria-hidden="true" />
                   <span className="cheese-opening-title">
                     {view.phase === 'hour_choice' ? '选择醒来时刻' : '开局准备'}
                   </span>
@@ -641,7 +643,7 @@ export function CheeseThiefGamePage({ view }: Props) {
             <ArenaBoard
               className="cheese-focal cheese-steal-panel"
               tone="accent"
-              headline="🧀 轮到你的时刻且独醒！"
+              headline={<><CheeseIcon /> 轮到你的时刻且独醒！</>}
               hint="你是此刻唯一睁眼的老鼠，桌上的大奶酪就在你眼前——偷走它，你将成为本局怪盗"
               footer={(
                 <button
@@ -652,7 +654,7 @@ export function CheeseThiefGamePage({ view }: Props) {
                   }}
                   disabled={busy}
                 >
-                  <span className="cheese-icon-bounce">🧀</span>
+                  <span className="cheese-icon-bounce" aria-hidden="true"><CheeseIcon /></span>
                   <span className="cheese-steal-btn-text">
                     <strong>伸手偷走奶酪</strong>
                     <small>点击取走奶酪成为怪盗</small>
@@ -729,7 +731,7 @@ export function CheeseThiefGamePage({ view }: Props) {
                   <div className="cheese-scroll-rod cheese-scroll-rod--top" aria-hidden="true" />
                   <div className="cheese-dawn-header">
                     <div className="cheese-dawn-title-group">
-                      <span className="cheese-dawn-icon" aria-hidden="true">☀️</span>
+                      <span className="cheese-dawn-icon" aria-hidden="true"><SunIcon /></span>
                       <div>
                         <h3 className="cheese-dawn-title">天亮了！线下自由讨论</h3>
                         <p className="cheese-dawn-hint">
@@ -760,12 +762,12 @@ export function CheeseThiefGamePage({ view }: Props) {
                       <div className="sg-chip-row">
                         {view.revealedCat && (
                           <span className="sg-chip sg-chip--peek">
-                            🐱 {nameFor(members, view.revealedCat)} 是猫
+                            <CatIcon /> {nameFor(members, view.revealedCat)} 是猫
                           </span>
                         )}
                         {view.revealedDog && (
                           <span className="sg-chip sg-chip--peek">
-                            🐶 {nameFor(members, view.revealedDog)} 是狗 · 指定 {nameFor(members, view.dogFirstVoter ?? '')} 先投票
+                            <DogIcon /> {nameFor(members, view.revealedDog)} 是狗 · 指定 {nameFor(members, view.dogFirstVoter ?? '')} 先投票
                           </span>
                         )}
                       </div>
@@ -780,7 +782,7 @@ export function CheeseThiefGamePage({ view }: Props) {
                       disabled={busy}
                       title="提前结束讨论，全员弹出投票窗口"
                     >
-                      <span className="btn-icon" aria-hidden="true">🗳️</span>
+                      <span className="btn-icon" aria-hidden="true"><BallotIcon /></span>
                       <span className="btn-main-text">提前进入投票环节</span>
                     </button>
                   </div>
@@ -803,7 +805,7 @@ export function CheeseThiefGamePage({ view }: Props) {
                 aria-label="点击展开天亮讨论面板"
               >
                 <div className="cheese-dawn-bottom-bar__left">
-                  <span className="cheese-dawn-bottom-bar__icon" aria-hidden="true">📜</span>
+                  <span className="cheese-dawn-bottom-bar__icon" aria-hidden="true"><ScrollIcon /></span>
                   <span className="cheese-dawn-bottom-bar__status">线下自由讨论中</span>
                   {view.deadlineAt && (
                     <span className="cheese-countdown-pill cheese-countdown-pill--mini" aria-label="讨论倒计时">
@@ -845,7 +847,7 @@ export function CheeseThiefGamePage({ view }: Props) {
             >
               {voteModalDismissed && (
                 <div className="cheese-vote-reopen-banner">
-                  <span>🗳️ 投票进行中（已投 {totalVoted}/{view.players.length} 人）</span>
+                  <span><BallotIcon /> 投票进行中（已投 {totalVoted}/{view.players.length} 人）</span>
                   <button
                     type="button"
                     className="cheese-reopen-vote-btn"
@@ -886,7 +888,7 @@ export function CheeseThiefGamePage({ view }: Props) {
         </div>
       )}
 
-      {/* 📱 手机端专属弹出式投票窗口 */}
+      {/* 手机端专属弹出式投票窗口 */}
       {view.phase === 'vote' && myId && !isSimulatorTable && !voteModalDismissed && (
         <div
           className="cheese-mobile-vote-modal-backdrop"
@@ -902,7 +904,7 @@ export function CheeseThiefGamePage({ view }: Props) {
           <div className="cheese-mobile-vote-modal" onClick={(e) => e.stopPropagation()}>
             <div className="cheese-modal-header">
               <div className="cheese-modal-title-box">
-                <h3>🗳️ 指认奶酪大盗</h3>
+                <h3><BallotIcon /> 指认奶酪大盗</h3>
                 {view.deadlineAt && (
                   <span className="cheese-modal-timer">倒计时：<TabletopCountdownText secondsLeft={countdown.secondsLeft} format="clock" /></span>
                 )}
@@ -950,7 +952,7 @@ export function CheeseThiefGamePage({ view }: Props) {
                     } else if (isAbstain) {
                       return (
                         <div className="cheese-voted-target-card cheese-voted-target-card--abstain">
-                          <span className="cheese-confirm-target-emoji">🏳️</span>
+                          <span className="cheese-confirm-target-emoji" aria-hidden="true"><FlagIcon /></span>
                           <div className="cheese-voted-target-info">
                             <span className="cheese-voted-target-tag">选择弃票</span>
                             <strong className="cheese-voted-target-desc">未指认任何人</strong>
@@ -980,7 +982,7 @@ export function CheeseThiefGamePage({ view }: Props) {
                     <>
                       <h4>确认放弃本次指认？</h4>
                       <div className="cheese-confirm-target-box cheese-confirm-target-box--abstain">
-                        <span className="cheese-confirm-target-emoji">🏳️</span>
+                        <span className="cheese-confirm-target-emoji" aria-hidden="true"><FlagIcon /></span>
                         <div className="cheese-confirm-target-info">
                           <strong className="cheese-confirm-target-name">放弃指认</strong>
                           <span className="cheese-confirm-target-seat">本局不指认任何玩家</span>
