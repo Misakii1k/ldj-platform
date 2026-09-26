@@ -1,95 +1,79 @@
 /**
  * 情书 · 书信桌（3D 透视毡面）
  *
- * U08 由 styles.css 整体迁出。迁入部分内容未改，只是从全局表挪到本游戏表；
- * 文件末尾是本轮新增的 3D 毡面配色、飞行信封、淘汰与庇护演出。
+ * U08 由 styles.css 整体迁出；V03（2026-09-26）重写：
+ * - 中央从「两张 56×84 的小牌」改成宫廷桌面 .ll-court：牌库 | 弃牌堆 | 蜡封进度板
+ * - 手牌是真信封 .ll-envelope（3:2、翻盖三角、红蜡封写点数、插画从翻盖下露出）
+ * - 对手用 UserAvatar + 蜡封计数，弃牌统一成角色插画缩略
+ * - 记牌器 / 技能详情 / 查验记录全部走 GameDrawer，.ll-dialog 统一着信纸主题
  *
  * 这款没有服务端 timer（纯回合制），所以没有倒计时环。
+ * 布局量用局部 --ll-*，颜色走平台令牌；深紫毡面上的文字一律用纸色。
  */
 
-.loveletter-afc__rows { display: flex; flex-direction: column; gap: 8px; }
+.ll-board {
+  /* 书信桌：深紫绒面。catalog accent 是 violet，作桌布正合适 */
+  --stage-felt-a: var(--game-accent, #7960a5);
+  --stage-felt-b: var(--game-dark, #4e3777);
+  --stage-felt-rail: var(--gp-ink);
+  /* 牌面信息密集，倾角要小，否则正文会因透视变形而难读 */
+  --stage-felt-tilt: 8deg;
+  /* 舞台光：一点烛火般的暖黄打在桌面上方 */
+  --gp-accent: var(--gp-yellow);
+  --gp-accent-glow: rgba(247, 200, 75, 0.16);
 
-.loveletter-stage {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
-  max-width: 860px;
-  margin: 0 auto;
+  /* 牌与信封随视口缩放 */
+  --ll-card-w: clamp(72px, 8.6vw, 110px);
+  --ll-card-h: calc(var(--ll-card-w) * 1.45);
+  --ll-env-w: clamp(118px, 12vw, 156px);
+  --ll-env-h: calc(var(--ll-env-w) * 0.66);
+  --ll-on-felt: var(--gp-paper);
+  --ll-on-felt-muted: rgba(255, 244, 223, 0.72);
+  --ll-wax: var(--gp-coral);
+  --ll-wax-dark: var(--gp-coral-dark);
 }
 
-.loveletter-top-row {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 12px;
-  width: 100%;
-}
+/* ── 1. 书信桌根节点 ─────────────────────────────────────────── */
 
-  .loveletter-top-row {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-.loveletter-afc__row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 34px;
-  padding: 5px 10px;
-  border: 2.5px solid var(--game-line);
-  border-radius: 12px;
-  background: #fffaf0;
-  color: var(--game-ink, #292722);
-  font-weight: 800;
-}
-
-.loveletter-afc__row strong {
-  color: var(--game-ink, #292722);
-}
-
-.loveletter-afc__row.is-out { opacity: .5; }
-
-.loveletter-hearts { display: flex; gap: 4px; font-size: 1.05rem; line-height: 1; }
-
-.loveletter-hearts i { color: #ced4da; font-style: normal; text-shadow: 0 1px 0 rgba(0,0,0,0.05); }
-
-.loveletter-hearts i.is-lit { color: #fa5252; text-shadow: 0 0 8px rgba(250, 82, 82, 0.6); }
-
-.loveletter-removed { display: flex; flex-wrap: wrap; gap: 7px; }
-
-.loveletter-mini-card { padding: 5px 11px; border: 2.5px solid var(--game-line); border-radius: 8px; background: linear-gradient(150deg, #fff8ea 0%, #f0dfc0 100%); color: var(--game-ink, #292722); font-size: .78rem; font-weight: 800; box-shadow: 0 3px 0 var(--game-line); transform: none; }
-
-.loveletter-mini-card:nth-child(even) { transform: none; }
-
-.loveletter-hand__cards { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; padding: 8px 0; }
-
-.loveletter-immersive-board {
+.loveletter-immersive-board.ll-board {
   position: relative;
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   justify-content: space-between;
+  gap: var(--gp-dist-md);
   width: 100%;
-  max-width: min(100%, 1240px);
-  margin: 0 auto;
-  flex: 1 1 auto;
-  min-height: 0;
+  max-width: none;
   height: 100%;
-  background: radial-gradient(circle at center, rgba(61, 27, 42, 0.4) 0%, rgba(22, 8, 16, 0.8) 100%),
-              url('/assets/backgrounds/bg_loveletter_portrait.jpg') center/cover;
-  border-radius: 20px;
-  box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
+  margin: 0;
+  padding: var(--gp-dist-lg) clamp(10px, 2vw, 24px) var(--gp-dist-md);
   overflow: hidden;
-  padding: 16px 22px 10px;
   box-sizing: border-box;
+  color: var(--ll-on-felt);
+  /* 舞台光 → 深紫压暗 → 背景插画（约 18% 可见） → 毡面本色 */
+  background:
+    var(--gp-stage-light),
+    linear-gradient(180deg, rgba(40, 22, 66, 0.78) 0%, rgba(26, 12, 42, 0.86) 100%),
+    url('/assets/backgrounds/bg_loveletter_portrait.jpg') center / cover no-repeat,
+    radial-gradient(circle at 50% 30%, var(--stage-felt-a) 0%, var(--stage-felt-b) 100%);
 }
 
+.loveletter-immersive-board > :not(.stage-art) {
+  position: relative;
+  z-index: 1;
+}
+
+.ll-art {
+  color: var(--gp-yellow);
+}
+
+/* 选目标时全桌压暗，只留可选的对手、我的手牌区与猜身份面板 */
 .loveletter-immersive-board.is-selecting-target::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.6);
   z-index: 10;
+  background: rgba(10, 4, 18, 0.55);
   pointer-events: none;
 }
 
@@ -97,841 +81,808 @@
 .loveletter-immersive-board.is-selecting-target .ll-opponent.is-targetable,
 .loveletter-immersive-board.is-selecting-target .ll-role-picker {
   z-index: 11;
-  position: relative;
 }
+
+/* ── 2. 对手席 ───────────────────────────────────────────────── */
 
 .loveletter-opponents {
   display: flex;
-  justify-content: space-around;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: flex-start;
-  gap: clamp(12px, 2.5vw, 32px);
-  width: 100%;
-  max-width: 980px;
-  margin: 0 auto;
-  padding-top: 4px;
+  gap: clamp(10px, 2.4vw, 32px);
   flex-shrink: 0;
 }
 
 .ll-opponent {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  transition: transform 0.2s, filter 0.2s;
-  position: relative;
+  gap: 6px;
+  min-width: 0;
+  border-radius: var(--gp-radius-md);
+  outline: none;
+  transition: transform var(--gp-dur-fast) var(--gp-ease-standard),
+    opacity var(--gp-dur-fast) var(--gp-ease-standard);
 }
 
 .ll-opponent.is-out {
-  opacity: 0.4;
+  opacity: 0.55;
   filter: grayscale(1);
 }
 
 .ll-opponent.is-targetable {
   cursor: pointer;
-  filter: drop-shadow(0 0 8px rgba(250,200,100,0.8));
 }
 
-.ll-opponent.is-targetable:hover {
-  transform: scale(1.05);
+/* 选目标时整块席位都是目标：弃牌缩略不再拦截点击去开技能详情 */
+.ll-opponent.is-targetable .ll-opponent-discards {
+  pointer-events: none;
 }
 
-.ll-opponent.is-selected {
-  transform: scale(1.1);
-  filter: drop-shadow(0 0 12px rgba(250,82,82,0.9));
+.ll-opponent.is-targetable .ll-opponent-avatar {
+  border-color: var(--gp-yellow);
+  box-shadow: 0 0 0 3px rgba(247, 200, 75, 0.35), var(--gp-shadow-sticker-lift);
 }
 
+@media (hover: hover) {
+  .ll-opponent.is-targetable:hover {
+    transform: translateY(-3px);
+  }
+}
+
+.ll-opponent.is-targetable:focus-visible .ll-opponent-avatar {
+  outline: 3px solid var(--gp-yellow);
+  outline-offset: 3px;
+}
+
+.ll-opponent.is-selected .ll-opponent-avatar {
+  border-color: var(--gp-coral);
+  background: linear-gradient(160deg, rgba(194, 54, 22, 0.42), rgba(40, 18, 30, 0.92));
+  box-shadow: 0 0 0 3px var(--gp-coral), var(--gp-shadow-sticker-lift);
+}
+
+/* 席位牌：深色贴纸，头像 + 名字 / 状态 / 蜡封 */
 .ll-opponent-avatar {
-  background: #3e2825;
-  border: 2px solid #cfa358;
-  border-radius: 12px;
-  padding: 8px 12px;
-  text-align: center;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px 7px 9px;
+  border: 2px solid rgba(255, 244, 223, 0.28);
+  border-radius: var(--gp-radius-md);
+  background: linear-gradient(160deg, rgba(58, 34, 82, 0.94), rgba(28, 14, 40, 0.96));
+  box-shadow: var(--gp-shadow-sticker);
+  transition: border-color var(--gp-dur-fast) var(--gp-ease-standard),
+    box-shadow var(--gp-dur-fast) var(--gp-ease-standard);
+}
+
+.ll-opponent-face {
+  border: 2px solid var(--ll-on-felt);
+}
+
+.ll-opponent-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .ll-opponent-name {
-  color: #f7e1b5;
-  font-weight: 800;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ll-on-felt);
   font-size: 0.9rem;
-  display: block;
+  font-weight: 800;
+  line-height: 1.2;
 }
 
-.ll-shield-icon {
-  position: absolute;
-  top: -10px;
-  right: -10px;
-  font-size: 1.2rem;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+.ll-opponent.is-out .ll-opponent-name {
+  text-decoration: line-through;
+}
+
+.ll-opponent-status {
+  color: var(--ll-on-felt-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.ll-opponent.is-current-turn .ll-opponent-status {
+  color: var(--gp-yellow);
 }
 
 .ll-opponent-affection {
   display: flex;
-  gap: 4px;
-  justify-content: center;
-  margin-top: 4px;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 2px;
 }
 
-.ll-token-heart {
-  width: 12px;
-  height: 12px;
-  background: #555;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E") no-repeat center/contain;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E") no-repeat center/contain;
+/* 侍女庇护徽记：一枚压在席位牌右上角的蓝灰蜡封 + 盾形压印 */
+.ll-ward {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--gp-ink);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55) 0 12%, transparent 13%),
+    radial-gradient(circle at 50% 50%, var(--gp-surface) 0 70%, var(--gp-muted) 100%);
+  box-shadow: var(--gp-shadow-sticker);
 }
 
-.ll-token-heart.is-lit {
-  background: #fa5252;
-  filter: drop-shadow(0 0 4px #fa5252);
+.ll-ward::after {
+  content: '';
+  position: absolute;
+  inset: 5px 6px 4px;
+  background: var(--gp-purple);
+  clip-path: polygon(50% 0, 100% 18%, 88% 70%, 50% 100%, 12% 70%, 0 18%);
 }
 
+/* 对手手牌背 */
 .ll-opponent-hand {
   display: flex;
-  margin-top: -5px;
+  min-height: 42px;
 }
 
 .ll-card-back {
-  width: 40px;
-  height: 60px;
-  background: url('/assets/loveletter/card_back.png') center/contain no-repeat, linear-gradient(135deg, #7c2b33 0%, #4a131b 100%);
-  border: 1.5px solid #b88645;
+  width: 30px;
+  height: 42px;
+  margin-left: -12px;
+  border: 1.5px solid var(--gp-ink);
   border-radius: 4px;
-  box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
-  margin-left: -15px;
+  background: url('/assets/loveletter/card_back.png') center / cover no-repeat, var(--gp-purple);
+  box-shadow: 1px 2px 0 rgba(0, 0, 0, 0.35);
 }
 
-.ll-card-back:first-child { margin-left: 0; }
+.ll-card-back:first-child {
+  margin-left: 0;
+}
 
+/* 对手弃牌：角色插画缩略，从左到右按出牌顺序错开 */
+.ll-opponent-discards {
+  display: flex;
+  justify-content: center;
+  max-width: 220px;
+}
+
+.ll-discard-thumb {
+  position: relative;
+  width: 40px;
+  height: 56px;
+  margin-left: -14px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid var(--gp-ink);
+  border-radius: 5px;
+  background: var(--gp-paper);
+  box-shadow: 1px 2px 0 rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transform: rotate(calc((var(--i, 0) - 1) * 3deg));
+  transition: transform var(--gp-dur-fast) var(--gp-ease-standard);
+}
+
+.ll-discard-thumb:first-child {
+  margin-left: 0;
+}
+
+.ll-discard-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ll-discard-thumb__val {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 2px;
+  border-radius: 7px;
+  background: var(--gp-ink);
+  color: var(--gp-paper);
+  font-size: 0.62rem;
+  font-weight: 900;
+  line-height: 14px;
+  text-align: center;
+}
+
+@media (hover: hover) {
+  .ll-discard-thumb:hover {
+    z-index: 2;
+    transform: translateY(-4px) rotate(0deg);
+  }
+}
+
+.ll-discard-thumb:focus-visible {
+  outline: 3px solid var(--gp-yellow);
+  outline-offset: 2px;
+}
+
+/* 卫兵猜身份面板：挂在被选中的对手下方 */
 .ll-role-picker {
   position: absolute;
   top: 100%;
   left: 50%;
-  transform: translateX(-50%) translateY(10px);
-  background: #fdf5e6;
-  border: 3px solid #cfa358;
-  border-radius: 8px;
-  padding: 12px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.8);
-  width: 260px;
   z-index: 20;
+  width: 272px;
+  margin-top: 8px;
+  padding: 12px;
+  border: 3px solid var(--gp-ink);
+  border-radius: var(--gp-radius-md);
+  background: var(--gp-paper);
+  color: var(--gp-ink);
+  box-shadow: var(--gp-shadow), 0 16px 36px rgba(0, 0, 0, 0.55);
+  transform: translateX(-50%);
+  cursor: default;
 }
 
 .ll-role-picker h4 {
   margin: 0 0 10px;
-  color: #5c3a21;
+  padding-bottom: 6px;
+  border-bottom: 2px dashed rgba(41, 39, 34, 0.25);
+  font-family: var(--gp-font-display);
+  font-size: 1rem;
+  font-weight: 700;
   text-align: center;
-  font-weight: 900;
-  border-bottom: 1px dashed #cfa358;
-  padding-bottom: 5px;
 }
 
 .ll-role-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
 }
 
 .ll-role-btn {
-  background: #fff;
-  border: 1.5px solid #a87e43;
-  border-radius: 4px;
-  padding: 6px 0;
-  font-size: 0.8rem;
-  font-weight: bold;
-  color: #3e2825;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-height: var(--gp-touch);
+  padding: 4px 2px 5px;
+  border: 2px solid var(--gp-ink);
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  font-size: 0.74rem;
+  font-weight: 800;
   cursor: pointer;
+  box-shadow: 0 2px 0 var(--gp-ink);
 }
 
-.ll-role-btn:hover { background: #ffe4b5; }
+.ll-role-thumb {
+  width: 34px;
+  height: 44px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+@media (hover: hover) {
+  .ll-role-btn:hover {
+    background: var(--gp-paper);
+  }
+}
 
 .ll-role-btn.is-active {
-  background: #cfa358;
-  color: #fff;
+  background: var(--gp-yellow);
+  box-shadow: 0 0 0 2px var(--gp-ink), 0 2px 0 var(--gp-ink);
 }
 
-.loveletter-center-area {
+.ll-role-btn:focus-visible {
+  outline: 3px solid var(--gp-purple);
+  outline-offset: 2px;
+}
+
+/* ── 3. 宫廷桌面：牌库 | 弃牌堆 | 蜡封进度板 ─────────────────── */
+
+.ll-board .loveletter-center-area.ll-court {
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-}
-
-.ll-deck-zone {
-  position: relative;
-}
-
-.ll-deck-stack {
-  position: relative;
-  width: 56px;
-  height: 84px;
-}
-
-.ll-deck-stack .ll-card-back {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-}
-
-.ll-deck-stack .ll-card-back.shadow {
-  position: absolute;
-  transform: rotate(-5deg) translateX(-5px);
-  opacity: 0.8;
-}
-
-.ll-deck-stack .ll-card-back.top {
-  position: absolute;
-}
-
-.ll-deck-corner {
-  position: absolute;
-  top: 14px;
-  right: 18px;
-  z-index: 15;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: #fef08a;
-  background: rgba(30, 20, 16, 0.88);
-  border: 1px solid rgba(254, 240, 138, 0.35);
-  border-radius: 12px;
-  padding: 4px 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  pointer-events: none;
-}
-
-.ll-deck-corner__num {
-  font-size: 1.8rem;
-  font-weight: 900;
-  line-height: 1;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
-  animation: ll-deck-pop 0.35s ease-out;
-}
-
-.ll-deck-corner__label {
-  font-size: 0.68rem;
-  letter-spacing: 0.15em;
-  color: #fde68a;
-  font-weight: 800;
-  margin-top: 2px;
-}
-
-.ll-deck-corner.is-low .ll-deck-corner__num {
-  color: #fa5252;
-  animation: pulse 1.2s ease-in-out infinite;
-}
-
-.ll-feed {
-  position: absolute;
-  bottom: 108px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 16;
-  display: flex;
-  flex-direction: column-reverse;
-  align-items: center;
-  gap: 6px;
-  width: max-content;
-  max-width: 86%;
-  pointer-events: none;
-}
-
-.ll-feed__item {
-  padding: 5px 14px;
-  border-radius: 999px;
-  background: rgba(20, 8, 14, 0.88);
-  border: 1px solid rgba(207, 163, 88, 0.55);
-  color: #f7e1b5;
-  font-size: 0.88rem;
-  font-weight: 700;
-  white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
-  animation: ll-feed-in 0.3s ease-out;
-}
-
-.ll-feed__item--out {
-  border-color: rgba(250, 82, 82, 0.8);
-  color: #ffb3b3;
-}
-
-.ll-feed__item--protect {
-  border-color: rgba(116, 192, 252, 0.8);
-  color: #cde5ff;
-}
-
-.ll-feed__item--peek {
-  border-color: rgba(191, 144, 255, 0.8);
-  color: #e6d6ff;
-}
-
-.ll-round-banner {
-  position: absolute;
-  inset: 0;
-  z-index: 30;
-  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  background: rgba(10, 3, 7, 0.62);
-  animation: ll-banner-in 0.3s ease-out;
+  gap: clamp(14px, 3vw, 40px);
+  padding: var(--gp-dist-md) 0;
 }
 
-.ll-round-banner__card {
+.ll-court__piles {
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(14px, 2.6vw, 34px);
+}
+
+.ll-pile {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  background: #fdf5e6;
-  border: 3px solid #cfa358;
-  border-radius: 14px;
-  padding: 22px 34px;
-  box-shadow: 0 14px 40px rgba(0,0,0,0.85);
-  max-width: 86%;
+}
+
+.ll-pile__stack {
+  position: relative;
+  width: var(--ll-card-w);
+  height: var(--ll-card-h);
+}
+
+.ll-pile__empty {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border: 2px dashed rgba(255, 244, 223, 0.4);
+  border-radius: var(--gp-radius-sm);
+  color: var(--ll-on-felt-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
   text-align: center;
 }
 
-.ll-round-banner__round {
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  color: #8b5a2b;
-}
-
-.ll-round-banner__title {
-  font-size: 1.6rem;
-  font-weight: 900;
-  color: #5c3a21;
-}
-
-.ll-round-banner__reason {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #7a4a2b;
-}
-
-.ll-round-banner__progress {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #a87e43;
-  border-top: 1px dashed #cfa358;
-  padding-top: 8px;
-}
-
-.ll-round-banner.is-me-win .ll-round-banner__title { color: #c0392b; }
-
-.ll-round-banner.is-me-win .ll-round-banner__card {
-  border-color: #fa5252;
-  box-shadow: 0 0 34px rgba(250, 82, 82, 0.55), 0 14px 40px rgba(0,0,0,0.85);
-}
-
-.ll-round-banner.is-me-lose .ll-round-banner__title { color: #4a4a4a; }
-
-.ll-over-note {
-  font-size: 0.9rem;
-  color: #f7e1b5;
-  opacity: 0.85;
-  margin: 4px 0 0;
-}
-
-.ll-removed-zone {
-  background: rgba(0,0,0,0.3);
-  padding: 10px;
-  border-radius: 12px;
-  border: 1px solid rgba(207, 163, 88, 0.3);
-}
-
-.ll-removed-cards {
+.ll-pile__caption {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 34px;
 }
 
-.ll-mini-card {
-  background: #fdf5e6;
-  border: 2px solid #8b5a2b;
-  border-radius: 4px;
-  padding: 4px 8px;
+.ll-pile__caption .stage-eyebrow {
+  color: var(--ll-on-felt-muted);
+}
+
+.ll-pile__num {
+  color: var(--ll-on-felt);
+  font-size: 1.6rem;
+}
+
+.ll-pile--deck.is-low .ll-pile__num {
+  color: var(--gp-yellow);
+}
+
+.ll-pile__who {
+  max-width: calc(var(--ll-card-w) + 30px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ll-on-felt);
   font-size: 0.8rem;
   font-weight: 800;
-  color: #3e2825;
+}
+
+/* 桌上的牌：牌背按 --layer 错开堆叠，最上面一张正面朝上 */
+.ll-court-card {
+  position: absolute;
+  inset: 0;
+  border: 2.5px solid var(--gp-ink);
+  border-radius: var(--gp-radius-sm);
+  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.4);
+  box-sizing: border-box;
+}
+
+.ll-court-card--back {
+  background: url('/assets/loveletter/card_back.png') center / cover no-repeat, var(--gp-purple);
+  transform: translate(calc(var(--layer, 0) * -3px), calc(var(--layer, 0) * -3px));
+}
+
+.ll-court-card--under {
+  transform: translate(calc(var(--layer, 0) * 4px), calc(var(--layer, 0) * -2px))
+    rotate(calc(var(--layer, 0) * 4deg));
+}
+
+.ll-court-card--face {
+  z-index: 1;
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  background: var(--gp-paper);
+  cursor: pointer;
+  transform: rotate(-2deg);
+  transition: transform var(--gp-dur-fast) var(--gp-ease-standard);
+}
+
+.ll-court-card--face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (hover: hover) {
+  .ll-court-card--face:hover {
+    transform: rotate(0deg) translateY(-3px);
+  }
+}
+
+.ll-court-card--face:focus-visible {
+  outline: 3px solid var(--gp-yellow);
+  outline-offset: 3px;
+}
+
+.ll-court-card__value {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--gp-ink);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--gp-coral) 0%, var(--ll-wax-dark) 100%);
+  color: var(--gp-paper);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.ll-court-card__name {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 3px 4px;
+  background: rgba(41, 39, 34, 0.82);
+  color: var(--gp-paper);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* 两人局暗置移除的牌：小一号，斜放在弃牌堆旁 */
+.ll-removed-zone {
+  position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
+  gap: 6px;
+  width: calc(var(--ll-card-w) * 0.6);
+}
+
+.ll-court-card--removed {
+  position: relative;
+  width: 100%;
+  height: calc(var(--ll-card-h) * 0.6);
+  opacity: 0.8;
+  transform: rotate(8deg);
+}
+
+.ll-removed-zone .stage-eyebrow {
+  color: var(--ll-on-felt-muted);
+  white-space: nowrap;
+}
+
+/* 蜡封进度板：信纸色贴纸，每人一行蜡封 */
+.ll-ledger {
+  min-width: 220px;
+  max-width: 300px;
+  padding: 12px 14px;
+  border: 3px solid var(--gp-ink);
+  border-radius: var(--gp-radius-md);
+  background:
+    repeating-linear-gradient(180deg, transparent 0 23px, rgba(115, 88, 167, 0.12) 23px 24px),
+    var(--gp-paper);
+  color: var(--gp-ink);
+}
+
+.ll-ledger__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--gp-ink);
+}
+
+.ll-ledger__target {
+  display: flex;
+  align-items: baseline;
   gap: 4px;
 }
 
-.ll-mini-card--hidden {
-  background: #3e2825;
-  color: #f7e1b5;
+.ll-ledger__target-num {
+  color: var(--ll-wax);
+  font-size: 2rem;
 }
 
-.ll-mini-card--hidden .ll-mini-thumb,
-.ll-mini-card--hidden .ll-card-back {
-  width: 18px;
-  height: 26px;
-  border-radius: 3px;
-  flex-shrink: 0;
+.ll-ledger__target-label {
+  color: var(--gp-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
-.ll-mini-seal { display: block; }
+.ll-ledger__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
 
-.ll-mini-seal i {
+.ll-ledger__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 22px;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 10px;
+  border: 1.5px solid rgba(41, 39, 34, 0.25);
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-surface);
+  --gp-accent: var(--gp-coral);
+}
+
+.ll-ledger__row.is-me {
+  border-color: var(--gp-ink);
+  background: rgba(247, 200, 75, 0.28);
+}
+
+.ll-ledger__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.ll-ledger__seals {
+  display: flex;
+  gap: 3px;
+}
+
+.ll-ledger__points {
+  font-size: 1.15rem;
+  text-align: right;
+}
+
+/* 蜡封：点亮 = 红蜡 + 高光 + 压印星纹；未点亮 = 浅色蜡痕虚线圈 */
+.ll-seal {
+  position: relative;
   display: inline-block;
-  width: 10px;
-  height: 10px;
-  background: #c33;
+  flex-shrink: 0;
   border-radius: 50%;
+  border: 1.5px dashed rgba(41, 39, 34, 0.35);
+  background: rgba(255, 244, 223, 0.35);
 }
+
+.ll-seal--sm {
+  width: 13px;
+  height: 13px;
+}
+
+.ll-seal--md {
+  width: 20px;
+  height: 20px;
+}
+
+.ll-seal.is-lit {
+  border: 1.5px solid var(--ll-wax-dark);
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.7) 0 12%, transparent 14%),
+    radial-gradient(circle at 50% 55%, var(--ll-wax) 0%, var(--ll-wax-dark) 100%);
+}
+
+.ll-seal.is-lit::after {
+  content: '';
+  position: absolute;
+  inset: 26%;
+  background: rgba(255, 244, 223, 0.55);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+}
+
+.ll-opponent-affection .ll-seal:not(.is-lit) {
+  border-color: rgba(255, 244, 223, 0.45);
+  background: rgba(255, 244, 223, 0.1);
+}
+
+/* ── 4. 我的信封 ─────────────────────────────────────────────── */
 
 .loveletter-my-area {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding-bottom: 4px;
+  gap: var(--gp-dist-md);
   flex-shrink: 0;
+  padding-top: var(--gp-dist-lg);
 }
 
 .loveletter-my-hand {
   display: flex;
-  justify-content: center;
-  gap: clamp(12px, 2.5vw, 24px);
   align-items: flex-end;
+  justify-content: center;
+  gap: clamp(14px, 3vw, 32px);
+}
+
+/* 信封：自后向前 翻盖 → 露出的信纸（插画） → 正面口袋 → 蜡封 */
+.ll-envelope {
+  position: relative;
+  width: var(--ll-env-w);
+  height: var(--ll-env-h);
+  margin-top: calc(var(--ll-env-h) * 0.55);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--gp-ink);
+  cursor: pointer;
+  transition: transform var(--gp-dur-standard) var(--gp-ease-press);
+}
+
+/* 敞开的翻盖：信封背面的三角，朝上翻起 */
+.ll-envelope__flap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 46%;
+  margin-bottom: -2px;
+  background: var(--gp-ink);
+  clip-path: polygon(0 100%, 50% 0, 100% 100%);
+}
+
+.ll-envelope__flap::after {
+  content: '';
+  position: absolute;
+  inset: 3px 5px 0;
+  background: linear-gradient(0deg, var(--gp-paper) 0%, var(--gp-surface) 100%);
+  clip-path: polygon(0 100%, 50% 4px, 100% 100%);
+}
+
+/* 抽出一半的信纸：角色插画 */
+.ll-envelope__letter {
+  position: absolute;
+  left: 9%;
+  right: 9%;
+  bottom: 22%;
+  height: 128%;
+  overflow: hidden;
+  border: 2px solid var(--gp-ink);
+  border-radius: 4px 4px 0 0;
+  background: var(--gp-surface);
+  transition: transform var(--gp-dur-standard) var(--gp-ease-standard);
+}
+
+.ll-envelope__letter img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+}
+
+/* 信封正面：两道 V 形折边的口袋 */
+.ll-envelope__pocket {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 7px;
+  border: 2.5px solid var(--gp-ink);
+  border-radius: 4px 4px 8px 8px;
+  background:
+    linear-gradient(to top right, transparent calc(50% - 1px), rgba(41, 39, 34, 0.28) 50%, transparent calc(50% + 1px)) left bottom / 50% 100% no-repeat,
+    linear-gradient(to top left, transparent calc(50% - 1px), rgba(41, 39, 34, 0.28) 50%, transparent calc(50% + 1px)) right bottom / 50% 100% no-repeat,
+    linear-gradient(170deg, var(--gp-surface) 0%, var(--gp-paper) 100%);
+  box-shadow: 0 4px 0 var(--gp-ink);
+  box-sizing: border-box;
+}
+
+.ll-envelope__name {
+  padding: 1px 8px;
+  border-radius: var(--gp-radius-pill);
+  background: var(--gp-surface);
+  font-family: var(--gp-font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+/* 红蜡封：写着点数，压在口袋正中偏上 */
+.ll-envelope__seal {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin-left: -17px;
+  border: 2px solid var(--gp-ink);
+  border-radius: 46% 54% 50% 50% / 52% 48% 52% 48%;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.6) 0 10%, transparent 12%),
+    radial-gradient(circle at 50% 55%, var(--ll-wax) 0%, var(--ll-wax-dark) 100%);
+  color: var(--gp-paper);
+  font-size: 1.2rem;
+  font-weight: 700;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.ll-envelope__info {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--gp-ink);
+  border-radius: 50%;
+  background: var(--gp-surface);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+@media (hover: hover) {
+  .ll-envelope:hover .ll-envelope__letter {
+    transform: translateY(-6px);
+  }
+}
+
+.ll-envelope.is-selected {
+  transform: translateY(-12px);
+}
+
+.ll-envelope.is-selected .ll-envelope__pocket {
+  box-shadow: 0 0 0 3px var(--gp-yellow), 0 6px 0 var(--gp-ink);
+}
+
+.ll-envelope.is-selected .ll-envelope__letter {
+  transform: translateY(-10px);
+}
+
+.ll-envelope:focus-visible {
+  outline: 3px solid var(--gp-yellow);
+  outline-offset: 6px;
 }
 
 .ll-target-self-btn {
-  background: #2b1d1a;
-  border: 2px solid #cfa358;
-  color: #f7e1b5;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-weight: bold;
+  min-height: var(--gp-touch);
+  padding: 0 18px;
+  border: 2px solid var(--ll-on-felt);
+  border-radius: var(--gp-radius-pill);
+  background: rgba(28, 14, 40, 0.85);
+  color: var(--ll-on-felt);
+  font-weight: 800;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform var(--gp-dur-fast) var(--gp-ease-standard);
 }
-
-.ll-target-self-btn:hover { background: #3e2825; }
 
 .ll-target-self-btn.is-selected {
-  background: #cfa358;
-  color: #fff;
-  box-shadow: 0 0 10px #cfa358;
+  border-color: var(--gp-ink);
+  background: var(--gp-paper);
+  color: var(--gp-ink);
+  box-shadow: 0 0 0 3px var(--gp-coral);
 }
 
-.ll-history-notebook {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  z-index: 30;
+.ll-target-self-btn:focus-visible {
+  outline: 3px solid var(--gp-yellow);
+  outline-offset: 3px;
 }
 
-.ll-history-toggle {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: #fdf5e6;
-  border: 3px solid #8b5a2b;
-  color: #5c3a21;
-  font-weight: 900;
-  font-size: 0.75rem;
-  line-height: 1.1;
-  cursor: pointer;
-  box-shadow: 2px 4px 8px rgba(0,0,0,0.5);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.2s;
-}
-
-.ll-history-toggle:hover { transform: scale(1.1); }
-
-.ll-history-drawer {
-  position: absolute;
-  bottom: 60px;
-  right: 0;
-  width: 250px;
-  background: #fdf5e6;
-  border: 3px solid #8b5a2b;
-  border-radius: 8px;
-  padding: 16px;
-  box-shadow: -5px 5px 15px rgba(0,0,0,0.8);
-}
-
-.ll-history-drawer h4 {
-  margin: 0 0 12px;
-  color: #5c3a21;
-  border-bottom: 2px solid #cfa358;
-  padding-bottom: 4px;
-}
-
-.ll-history-drawer ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  font-size: 0.85rem;
-  color: #3e2825;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.ll-history-drawer li {
-  padding: 6px 0;
-  border-bottom: 1px dashed #dcb888;
-}
-
-.ll-history-drawer li:last-child { border: none; }
-
-.ll-history-drawer strong { color: #8b5a2b; }
-
-.ll-history-drawer span { font-weight: bold; color: #c33; }
-
-  .loveletter-immersive-board {
-    padding: 8px 10px 4px;
-    border-radius: 14px;
-    gap: 4px;
-  }
-
-  .loveletter-opponents {
-    gap: 6px;
-    width: 100%;
-    justify-content: space-around;
-  }
-
-  .ll-opponent {
-    gap: 3px;
-    min-width: 0;
-  }
-
-  .ll-opponent-avatar {
-    padding: 4px 6px;
-    border-radius: 8px;
-  }
-
-  .ll-opponent-name {
-    font-size: 0.74rem;
-    max-width: 76px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .ll-token-heart {
-    width: 9px;
-    height: 9px;
-  }
-
-  .ll-card-back {
-    width: 26px;
-    height: 38px;
-    margin-left: -10px;
-    border-radius: 3px;
-  }
-
-  .ll-role-picker {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: min(290px, 92vw);
-    box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.65), 0 12px 30px rgba(0, 0, 0, 0.85);
-    z-index: 100;
-  }
-
-  .ll-deck-corner {
-    top: 8px;
-    right: 10px;
-  }
-
-  .ll-deck-corner__num {
-    font-size: 1.5rem;
-  }
-
-  .loveletter-my-hand {
-    gap: 12px;
-  }
-
-  .ll-history-notebook {
-    bottom: 8px;
-    right: 8px;
-  }
-
-  .ll-history-toggle {
-    width: 42px;
-    height: 42px;
-    font-size: 0.68rem;
-  }
-
-  .loveletter-immersive-board {
-    padding: 6px 12px;
-    gap: 4px;
-    border-radius: 12px;
-  }
-
-  .loveletter-opponents {
-    height: auto;
-    gap: 8px;
-  }
-
-  .ll-opponent {
-    gap: 4px;
-  }
-
-  .ll-opponent-avatar {
-    padding: 3px 8px;
-    border-radius: 8px;
-  }
-
-  .ll-opponent-name {
-    font-size: 0.72rem;
-  }
-
-  .ll-token-heart {
-    width: 9px;
-    height: 9px;
-  }
-
-  .ll-card-back {
-    width: 24px;
-    height: 36px;
-    margin-left: -10px;
-    border-radius: 3px;
-  }
-
-  .loveletter-center-area {
-    gap: 6px;
-  }
-
-  .ll-deck-stack {
-    width: 36px;
-    height: 52px;
-  }
-
-  .ll-deck-corner {
-    top: 8px;
-    right: 10px;
-  }
-
-  .ll-deck-corner__num {
-    font-size: 1.4rem;
-  }
-
-  .ll-feed {
-    bottom: 96px;
-  }
-
-  .ll-feed__item {
-    font-size: 0.78rem;
-    padding: 4px 10px;
-  }
-
-  .ll-round-banner__card {
-    padding: 14px 18px;
-  }
-
-  .ll-round-banner__title {
-    font-size: 1.2rem;
-  }
-
-  .loveletter-my-area {
-    gap: 4px;
-    padding-bottom: 2px;
-  }
-
-  .loveletter-my-hand {
-    gap: 10px;
-  }
-
-.loveletter-card__art {
-  position: relative;
-  flex: 1 1 0;
-  min-height: 0;
-  width: 100%;
-  overflow: hidden;
-  border-radius: 6px;
-  border: 1.5px solid #cfa358;
-  background: radial-gradient(circle at 50% 48%, #441a20 0%, #200d11 68%, #120507 100%);
-  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.loveletter-card__img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  padding: 2px;
-  display: block;
-  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
-}
-
-.loveletter-card__info {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px 4px 1px;
-  gap: 6px;
-}
-
-.loveletter-card__info strong {
-  color: #3e2825;
-  font-size: clamp(0.85rem, 1.1vw, 1rem);
-  font-weight: 900;
-  text-align: center;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-}
-
-.loveletter-card__info .env-card__seal {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-}
-
-.loveletter-card__info .env-card__seal i {
-  width: 7px;
-  height: 7px;
-}
-
-.ll-role-thumb {
-  width: 24px;
-  height: 32px;
-  object-fit: contain;
-  background: #2a1618;
-  border-radius: 3px;
-  border: 1px solid #cfa358;
-  margin-right: 6px;
-  vertical-align: middle;
-}
-
-.ll-mini-thumb {
-  width: 18px;
-  height: 24px;
-  object-fit: contain;
-  background: #2a1618;
-  border-radius: 2px;
-  border: 1px solid #cfa358;
-  margin-right: 4px;
-}
-
-.ll-role-btn {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  padding: 4px 8px;
-}
-
-  .loveletter-card__info strong {
-    font-size: 0.72rem;
-  }
-
-  .loveletter-card__info .env-card__seal {
-    width: 16px;
-    height: 16px;
-  }
-
-  .loveletter-card__info .env-card__seal i {
-    width: 6px;
-    height: 6px;
-  }
-
-  .loveletter-card__info .env-card__value {
-    width: 20px;
-    height: 20px;
-    font-size: 0.8rem;
-  }
-
-.ll-tracker-toggle-btn {
-  background: linear-gradient(135deg, #4a2818 0%, #2b150c 100%) !important;
-  color: #ffdf70 !important;
-  border-color: #cfa358 !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
-}
-
-.ll-tracker-toggle-btn.is-active {
-  background: linear-gradient(135deg, #7a3e1d 0%, #4a2410 100%) !important;
-  border-color: #ffd700 !important;
-  box-shadow: 0 0 12px rgba(255, 215, 0, 0.6) !important;
-}
-
-.ll-card-info-badge {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: rgba(35, 20, 15, 0.85);
-  border: 1px solid #d4af37;
-  color: #ffdf70;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  cursor: pointer;
-  z-index: 12;
-  transition: transform 0.15s ease, background 0.15s ease;
-  backdrop-filter: blur(4px);
-}
-
-.ll-card-info-badge:hover {
-  transform: scale(1.18);
-  background: rgba(80, 45, 25, 0.95);
-  color: #fff;
-}
-
-.ll-opponent-discards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 6px;
-  max-width: 130px;
-}
-
-.ll-discard-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 1px 5px;
-  border-radius: 10px;
-  background: rgba(28, 16, 12, 0.85);
-  border: 1px solid rgba(207, 163, 88, 0.5);
-  color: #f7e7c4;
-  font-size: 0.72rem;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.ll-discard-pill:hover {
-  background: rgba(60, 32, 20, 0.95);
-  border-color: #ffd700;
-  color: #fff;
-}
-
-.ll-discard-pill__val {
-  font-weight: 800;
-  color: #ffcf40;
-}
+/* ── 5. 桌面浮层：技能预览 / 战报 / 轮次结算 ──────────────────── */
 
 .ll-hover-ability-popover {
-  position: fixed;
-  bottom: 210px;
+  position: absolute;
   left: 50%;
-  transform: translateX(-50%);
-  width: min(92vw, 420px);
-  background: linear-gradient(170deg, rgba(38, 22, 16, 0.96) 0%, rgba(20, 10, 8, 0.98) 100%);
-  border: 2px solid #d4af37;
-  border-radius: 12px;
+  bottom: calc(var(--ll-env-h) * 1.7 + 24px);
+  z-index: 16;
+  width: min(92%, 400px);
   padding: 12px 14px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8), 0 0 16px rgba(212, 175, 55, 0.3);
-  color: #fcebd0;
-  z-index: 1000;
+  border: 3px solid var(--gp-ink);
+  border-radius: var(--gp-radius-md);
+  background: var(--gp-paper);
+  color: var(--gp-ink);
+  box-shadow: var(--gp-shadow), 0 14px 30px rgba(0, 0, 0, 0.45);
+  transform: translateX(-50%);
   pointer-events: none;
-  animation: popoverFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  backdrop-filter: blur(8px);
+  animation: ll-popover-in var(--gp-dur-standard) var(--gp-ease-decelerate);
+}
+
+@keyframes ll-popover-in {
+  from { opacity: 0; transform: translate(-50%, var(--gp-dist-md)); }
+  to { opacity: 1; transform: translate(-50%, 0); }
 }
 
 .ll-hover-ability-popover__header {
@@ -940,160 +891,230 @@
   gap: 8px;
   margin-bottom: 6px;
   padding-bottom: 6px;
-  border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+  border-bottom: 2px dashed rgba(41, 39, 34, 0.25);
 }
 
 .ll-hover-ability-popover__badge {
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: #cfa358;
-  color: #1e1008;
-  font-weight: 900;
-  font-size: 0.78rem;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--gp-ink);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 55%, var(--ll-wax) 0%, var(--ll-wax-dark) 100%);
+  color: var(--gp-paper);
+  font-size: 1rem;
 }
 
 .ll-hover-ability-popover__header strong {
-  font-size: 1.05rem;
-  color: #ffd700;
   flex: 1;
+  font-family: var(--gp-font-display);
+  font-size: 1.1rem;
 }
 
 .ll-hover-ability-popover__count {
-  font-size: 0.75rem;
-  color: #c9b197;
+  color: var(--gp-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
 }
 
 .ll-hover-ability-popover__desc {
   margin: 0 0 6px;
   font-size: 0.88rem;
-  line-height: 1.45;
-  color: #f7e8d0;
+  line-height: 1.5;
 }
 
 .ll-hover-ability-popover__tip {
   display: block;
-  font-size: 0.78rem;
-  color: #e2be82;
-  background: rgba(0, 0, 0, 0.3);
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--gp-radius-sm);
+  background: rgba(115, 88, 167, 0.12);
+  color: var(--gp-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
-.ll-tracker-backdrop, .ll-ability-detail-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(6px);
+.ll-feed {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--ll-env-h) * 1.7 + 24px);
+  z-index: 15;
   display: flex;
+  flex-direction: column-reverse;
   align-items: center;
-  justify-content: center;
-  z-index: 1200;
-  padding: 16px;
-  animation: fadeIn 0.2s ease;
+  gap: 6px;
+  max-width: 88%;
+  transform: translateX(-50%);
+  pointer-events: none;
 }
 
-.ll-tracker-modal {
-  width: min(94vw, 680px);
-  max-height: min(88dvh, 720px);
-  background: linear-gradient(175deg, #2b1812 0%, #170d0a 100%);
-  border: 2px solid #cfa358;
-  border-radius: 16px;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.9), 0 0 24px rgba(207, 163, 88, 0.35);
+.ll-feed__item {
+  padding: 5px 14px;
+  border: 2px solid var(--gp-ink);
+  border-radius: var(--gp-radius-pill);
+  background: var(--gp-paper);
+  color: var(--gp-ink);
+  font-size: 0.86rem;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: var(--gp-shadow-sm);
+  animation: ll-feed-in var(--gp-dur-emphasis) var(--gp-ease-decelerate);
+}
+
+/* 除颜色外左侧再加一枚形状记号 */
+.ll-feed__item::before {
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.ll-feed__item--out {
+  background: var(--gp-coral);
+  color: var(--gp-paper);
+}
+
+.ll-feed__item--out::before {
+  content: '✕';
+}
+
+.ll-feed__item--protect::before {
+  content: '◆';
+  color: var(--gp-purple);
+}
+
+.ll-feed__item--peek {
+  background: var(--gp-purple);
+  color: var(--gp-paper);
+}
+
+.ll-feed__item--peek::before {
+  content: '◉';
+}
+
+@keyframes ll-feed-in {
+  from { opacity: 0; transform: translateY(var(--gp-dist-md)); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ll-round-banner {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: rgba(14, 6, 24, 0.66);
+  animation: ll-banner-in var(--gp-dur-emphasis) var(--gp-ease-decelerate);
+}
+
+.ll-round-banner__card {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  color: #f7e7c4;
-}
-
-.ll-tracker-modal__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px;
-  background: rgba(0, 0, 0, 0.35);
-  border-bottom: 1.5px solid rgba(207, 163, 88, 0.4);
-}
-
-.ll-tracker-modal__title {
-  display: flex;
   align-items: center;
   gap: 8px;
+  max-width: 88%;
+  padding: 22px 34px 18px;
+  border: 3px solid var(--gp-ink);
+  border-radius: var(--gp-radius-lg);
+  background: var(--gp-paper);
+  color: var(--gp-ink);
+  box-shadow: var(--gp-shadow-lg);
+  text-align: center;
 }
 
-.ll-tracker-modal__title h3 {
-  margin: 0;
-  font-size: 1.15rem;
-  color: #ffdf70;
-  letter-spacing: 0.05em;
+.ll-round-banner__title {
+  font-size: clamp(1.4rem, 3.2vw, 2rem);
 }
 
-.ll-tracker-modal__close, .ll-ability-detail-close {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(207, 163, 88, 0.4);
-  color: #ffdf70;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.15s;
+.ll-round-banner__reason {
+  color: var(--gp-muted);
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
-.ll-tracker-modal__close:hover, .ll-ability-detail-close:hover {
-  background: rgba(207, 163, 88, 0.3);
-  color: #fff;
-  transform: scale(1.08);
+.ll-round-banner__progress {
+  padding-top: 8px;
+  border-top: 2px dashed rgba(41, 39, 34, 0.25);
+  font-size: 0.86rem;
+  font-weight: 800;
 }
 
+.ll-round-banner.is-me-win .ll-round-banner__card {
+  box-shadow: 0 0 0 4px var(--gp-yellow), var(--gp-shadow-lg);
+}
+
+.ll-round-banner.is-me-win .ll-round-banner__title {
+  color: var(--ll-wax);
+}
+
+@keyframes ll-banner-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.loveletter-over {
+  background: linear-gradient(160deg, var(--game-accent, #7960a5), var(--game-dark, #4e3777));
+}
+
+.ll-over-note {
+  position: relative;
+  z-index: 1;
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+  opacity: 0.88;
+}
+
+/* ── 6. 弹窗：记牌器 / 技能详情 / 查验记录 统一信纸主题 ───────── */
+
+.ll-dialog .tabletop-drawer {
+  border-color: var(--gp-ink);
+  background:
+    repeating-linear-gradient(180deg, transparent 0 27px, rgba(115, 88, 167, 0.08) 27px 28px),
+    var(--gp-paper);
+  color: var(--gp-ink);
+}
+
+.ll-dialog .tabletop-drawer header {
+  border-bottom: 2px solid var(--gp-ink);
+}
+
+.ll-dialog .tabletop-drawer h2 {
+  font-family: var(--gp-font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.ll-dialog .tabletop-drawer__content p {
+  margin: 0 0 10px;
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+/* 记牌器分页 */
 .ll-tracker-tabs {
   display: flex;
-  background: rgba(0, 0, 0, 0.4);
-  border-bottom: 1px solid rgba(207, 163, 88, 0.25);
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 4px;
+  border: 2px solid var(--gp-ink);
+  border-radius: var(--gp-radius-pill);
+  background: var(--gp-surface);
 }
 
 .ll-tracker-tab {
   flex: 1;
-  padding: 10px 12px;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: #c9b197;
-  font-size: 0.92rem;
-  font-weight: 700;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--gp-radius-pill);
+  background: transparent;
+  color: var(--gp-muted);
+  font-size: 0.82rem;
+  font-weight: 800;
   cursor: pointer;
-  transition: all 0.15s;
 }
 
 .ll-tracker-tab.is-active {
-  color: #ffd700;
-  border-bottom-color: #ffd700;
-  background: rgba(207, 163, 88, 0.12);
-}
-
-.ll-tracker-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-}
-
-.ll-tracker-table {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.ll-tracker-table__header {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1.6fr 1.4fr 2.4fr;
-  padding: 6px 10px;
-  font-size: 0.78rem;
-  color: #b89874;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid rgba(207, 163, 88, 0.2);
+  background: var(--gp-ink);
+  color: var(--gp-paper);
 }
 
 .ll-tracker-table__rows {
@@ -1104,204 +1125,192 @@
 
 .ll-tracker-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1.6fr 1.4fr 2.4fr;
+  grid-template-columns: 28px 36px minmax(64px, 0.9fr) minmax(0, 1.6fr) 44px;
   align-items: center;
-  padding: 8px 10px;
-  background: rgba(45, 25, 18, 0.6);
-  border: 1px solid rgba(207, 163, 88, 0.3);
-  border-radius: 8px;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 2px solid var(--gp-ink);
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  text-align: left;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  box-shadow: 0 2px 0 var(--gp-ink);
 }
 
-.ll-tracker-row:hover {
-  background: rgba(65, 38, 28, 0.85);
-  border-color: #ffd700;
+@media (hover: hover) {
+  .ll-tracker-row:hover {
+    background: var(--gp-paper);
+  }
+}
+
+.ll-tracker-row:focus-visible {
+  outline: 3px solid var(--gp-purple);
+  outline-offset: 2px;
 }
 
 .ll-tracker-row.is-exhausted {
+  border-style: dashed;
+  box-shadow: none;
   opacity: 0.6;
-  background: rgba(25, 15, 12, 0.4);
+}
+
+.ll-tracker-row__val {
+  color: var(--ll-wax, var(--gp-coral));
+  font-size: 1.4rem;
+  text-align: center;
+}
+
+.ll-tracker-row__thumb {
+  width: 36px;
+  height: 48px;
+  border: 1.5px solid var(--gp-ink);
+  border-radius: 4px;
+  object-fit: cover;
 }
 
 .ll-tracker-row__name {
   display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.ll-tracker-row__val {
-  width: 22px;
-  height: 22px;
-  border-radius: 4px;
-  background: #cfa358;
-  color: #170d0a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 900;
-  font-size: 0.82rem;
-}
-
-.ll-tracker-row__thumb {
-  width: 26px;
-  height: 34px;
-  border-radius: 3px;
-  object-fit: contain;
-  background: #2a1618;
-  border: 1px solid #cfa358;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .ll-tracker-row__name strong {
-  display: block;
-  font-size: 0.88rem;
-  color: #ffdf70;
+  font-size: 0.9rem;
 }
 
 .ll-tracker-row__name small {
-  display: block;
-  font-size: 0.72rem;
-  color: #b89874;
-}
-
-.ll-tracker-row__total {
+  color: var(--gp-muted);
+  font-size: 0.68rem;
   font-weight: 700;
-  font-size: 0.85rem;
-  color: #e2be82;
 }
 
 .ll-tracker-row__known {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-}
-
-.ll-tracker-row__known-num {
-  font-size: 0.82rem;
-  color: #f7e7c4;
+  gap: 4px;
+  min-width: 0;
 }
 
 .ll-tracker-row__bar {
-  width: 90%;
-  height: 5px;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 3px;
+  display: block;
+  height: 6px;
   overflow: hidden;
+  border-radius: var(--gp-radius-pill);
+  background: rgba(41, 39, 34, 0.12);
 }
 
 .ll-tracker-row__bar-fill {
+  display: block;
   height: 100%;
-  background: linear-gradient(90deg, #cfa358, #ffd700);
-  border-radius: 3px;
-  transition: width 0.3s ease;
-}
-
-.ll-tracker-row__remain {
-  font-weight: 800;
-  font-size: 0.9rem;
-  color: #ffd700;
-}
-
-.ll-tracker-row__remain.is-zero {
-  color: #4ade80;
-  font-size: 0.82rem;
+  background: var(--gp-purple);
 }
 
 .ll-tracker-row__who {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 3px;
 }
 
 .ll-tracker-player-tag {
-  font-size: 0.72rem;
-  padding: 1px 5px;
+  padding: 0 5px;
+  border: 1px solid rgba(41, 39, 34, 0.35);
   border-radius: 4px;
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(207, 163, 88, 0.4);
-  color: #f7e7c4;
-}
-
-.ll-tracker-player-tag.is-removed {
-  border-color: #f87171;
-  color: #fca5a5;
+  background: var(--gp-paper);
+  font-size: 0.68rem;
+  font-weight: 700;
 }
 
 .ll-tracker-player-tag.is-hand {
-  border-color: #60a5fa;
-  color: #93c5fd;
+  border-color: var(--gp-purple);
+  color: var(--gp-purple);
 }
 
+.ll-tracker-row__remain {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: right;
+}
+
+.ll-tracker-row__remain .stage-numeral {
+  font-size: 1.3rem;
+}
+
+.ll-tracker-row__remain small {
+  color: var(--gp-muted);
+}
+
+.ll-tracker-row__remain.is-zero {
+  color: var(--gp-muted);
+  text-decoration: line-through;
+}
+
+/* 出牌记录 */
 .ll-history-rounds-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .ll-history-round-card {
-  background: rgba(38, 22, 16, 0.75);
-  border: 1.5px solid rgba(207, 163, 88, 0.35);
-  border-radius: 10px;
-  padding: 12px;
+  padding: 10px 12px;
+  border: 2px solid var(--gp-ink);
+  border-radius: var(--gp-radius-md);
+  background: var(--gp-surface);
 }
 
 .ll-history-round-card.is-current {
-  border-color: #ffd700;
-  background: rgba(55, 30, 20, 0.85);
+  box-shadow: inset 4px 0 0 var(--gp-purple);
 }
 
 .ll-history-round-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid rgba(207, 163, 88, 0.2);
+  gap: 8px;
+  margin-bottom: 6px;
+  font-family: var(--gp-font-display);
 }
 
-.ll-history-round-card__header strong {
-  font-size: 0.95rem;
-  color: #ffd700;
+.ll-history-round-badge,
+.ll-history-round-winner {
+  padding: 1px 8px;
+  border-radius: var(--gp-radius-pill);
+  font-family: var(--gp-font);
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 .ll-history-round-badge {
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: #3b82f6;
-  color: #fff;
-  font-size: 0.72rem;
-  font-weight: 700;
+  background: var(--gp-purple);
+  color: var(--gp-paper);
 }
 
 .ll-history-round-winner {
-  font-size: 0.82rem;
-  color: #4ade80;
-  font-weight: 700;
-}
-
-.ll-history-round-card__discards {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  background: rgba(247, 200, 75, 0.4);
 }
 
 .ll-history-player-line {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
-  font-size: 0.85rem;
+  padding: 3px 0;
+  border-top: 1px dashed rgba(41, 39, 34, 0.2);
 }
 
 .ll-history-player-name {
-  color: #cfa358;
-  font-weight: 700;
-  min-width: 60px;
+  flex: 0 0 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  font-weight: 800;
 }
 
 .ll-history-empty {
-  font-size: 0.78rem;
-  color: #887462;
-  font-style: italic;
+  color: var(--gp-muted);
+  font-size: 0.76rem;
 }
 
 .ll-history-cards-flow {
@@ -1311,113 +1320,127 @@
 }
 
 .ll-history-card-tag {
-  padding: 1px 6px;
+  padding: 0 6px;
+  border: 1.5px solid var(--gp-ink);
   border-radius: 4px;
-  background: rgba(207, 163, 88, 0.2);
-  border: 1px solid #cfa358;
-  color: #fff;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: all 0.15s;
+  background: var(--gp-paper);
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
-.ll-history-card-tag:hover {
-  background: rgba(255, 215, 0, 0.4);
-  border-color: #ffd700;
-}
-
-.ll-ability-detail-modal {
-  width: min(92vw, 480px);
-  background: linear-gradient(175deg, #2b1812 0%, #150b08 100%);
-  border: 2px solid #ffd700;
-  border-radius: 16px;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.95), 0 0 28px rgba(255, 215, 0, 0.4);
-  position: relative;
-  overflow: hidden;
-  color: #f7e7c4;
-}
-
-.ll-ability-detail-close {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 10;
-}
-
+/* 技能详情 */
 .ll-ability-detail-banner {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 16px 18px;
-  background: linear-gradient(90deg, rgba(0,0,0,0.5), rgba(70,35,20,0.6));
-  border-bottom: 1.5px solid rgba(207, 163, 88, 0.4);
+  gap: 16px;
+  margin-bottom: 14px;
 }
 
 .ll-ability-detail-img {
-  width: 58px;
-  height: 78px;
-  object-fit: contain;
-  background: radial-gradient(circle at 50% 48%, #441a20 0%, #1a0a0d 100%);
-  border-radius: 6px;
-  border: 2px solid #ffd700;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
-  padding: 3px;
+  width: 96px;
+  height: 134px;
+  flex-shrink: 0;
+  border: 3px solid var(--gp-ink);
+  border-radius: var(--gp-radius-sm);
+  object-fit: cover;
+  box-shadow: var(--gp-shadow-sm);
+  transform: rotate(-2deg);
 }
 
-.ll-ability-detail-meta h3 {
-  margin: 2px 0 4px;
-  font-size: 1.25rem;
-  color: #ffd700;
+.ll-ability-detail-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .ll-ability-detail-value {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: #cfa358;
-  color: #170d0a;
-  font-weight: 900;
-  font-size: 0.85rem;
+  color: var(--gp-coral);
+  font-size: 3rem;
 }
 
 .ll-ability-detail-tag {
-  display: block;
+  color: var(--gp-muted);
   font-size: 0.8rem;
-  color: #c9b197;
+  font-weight: 700;
 }
 
-.ll-ability-detail-body {
-  padding: 16px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.ll-ability-detail-section h4 {
-  margin: 0 0 4px;
-  font-size: 0.92rem;
-  color: #ffdf70;
+.ll-ability-detail-section {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 2px solid var(--gp-ink);
+  border-radius: var(--gp-radius-md);
+  background: var(--gp-surface);
 }
 
 .ll-ability-detail-section p {
+  margin: 4px 0 0;
+}
+
+/* 查验记录 */
+.ll-inspection-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  color: #f7e8d0;
+  padding: 0;
+  list-style: none;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
- * U08 新增：3D 书信桌、飞行信封、淘汰翻牌、庇护盾牌
- * ═══════════════════════════════════════════════════════════════════ */
-
-.ll-board {
-  /* 书信桌：深紫绒面。catalog accent 是 violet，作桌布正合适 */
-  --stage-felt-a: var(--game-accent, #7960a5);
-  --stage-felt-b: var(--game-dark, #4e3777);
-  --stage-felt-rail: var(--gp-ink);
-  /* 牌面信息密集，倾角要小，否则正文会因透视变形而难读 */
-  --stage-felt-tilt: 8deg;
+.ll-inspection-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 2px solid var(--gp-ink);
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-surface);
+  font-size: 0.88rem;
 }
+
+.ll-inspection-list img {
+  width: 36px;
+  height: 48px;
+  border: 1.5px solid var(--gp-ink);
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+/* ── 7. 顶栏开关按钮 ─────────────────────────────────────────── */
+
+.ll-tracker-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 10px;
+  border: 2px solid var(--gp-ink);
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  font-size: 0.78rem;
+  font-weight: 900;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  cursor: pointer;
+  box-shadow: 2px 2.5px 0 var(--gp-ink);
+  transition: transform var(--gp-dur-fast) var(--gp-ease-standard);
+}
+
+@media (hover: hover) {
+  .ll-tracker-toggle-btn:hover:not(:disabled) {
+    background: var(--gp-paper);
+    transform: translateY(-1px);
+  }
+}
+
+.ll-tracker-toggle-btn:active:not(:disabled) {
+  transform: translate(1px, 2px);
+  box-shadow: 1px 1px 0 var(--gp-ink);
+}
+
+/* ── 8. 演出：飞行信封 / 淘汰 / 庇护 ──────────────────────────── */
 
 /* 飞行中的信封：蜡封那一点红是唯一装饰 */
 .ll-flight-envelope {
@@ -1427,7 +1450,7 @@
   height: 100%;
   border: 2.5px solid var(--gp-ink);
   border-radius: 5px;
-  background: linear-gradient(160deg, #fffdf7 0%, #f2e6cf 100%);
+  background: linear-gradient(160deg, var(--gp-surface) 0%, var(--gp-paper) 100%);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.38);
 }
 
@@ -1439,7 +1462,7 @@
   height: 46%;
   border-bottom: 2.5px solid var(--gp-ink);
   border-radius: 3px 3px 40% 40%;
-  background: linear-gradient(170deg, #f7efdd 0%, #e5d6bb 100%);
+  background: var(--gp-paper);
 }
 
 /* 蜡封 */
@@ -1453,7 +1476,7 @@
   margin-left: -6px;
   border: 2px solid var(--gp-ink);
   border-radius: 50%;
-  background: var(--game-coral);
+  background: var(--gp-coral);
 }
 
 /* 淘汰：席位翻出手牌并压暗。这是「谁出局、手里是什么」的结果信息，
@@ -1468,27 +1491,173 @@
   100% { transform: rotateY(0deg); }
 }
 
-/* 侍女庇护：盾牌外圈亮一下 */
-.ll-opponent[data-shielding='true'] {
-  animation: ll-shield var(--gp-dur-slow) var(--gp-ease-standard);
+/* 侍女庇护：徽记从小弹到正常，外圈亮一下 */
+.ll-opponent[data-shielding='true'] .ll-ward {
+  animation: ll-shield var(--gp-dur-slow) var(--gp-ease-press);
 }
 
 @keyframes ll-shield {
-  0%, 100% { box-shadow: none; }
-  40% { box-shadow: 0 0 0 4px var(--gp-yellow); }
+  0% { opacity: 0; transform: scale(0.4); }
+  60% { opacity: 1; transform: scale(1.3); }
+  100% { transform: scale(1); }
 }
 
 html[data-motion-level='minimal'] .ll-opponent[data-eliminating='true'],
 html[data-motion-level='off'] .ll-opponent[data-eliminating='true'],
-html[data-motion-level='minimal'] .ll-opponent[data-shielding='true'],
-html[data-motion-level='off'] .ll-opponent[data-shielding='true'] {
+html[data-motion-level='minimal'] .ll-opponent[data-shielding='true'] .ll-ward,
+html[data-motion-level='off'] .ll-opponent[data-shielding='true'] .ll-ward,
+html[data-motion-level='off'] .ll-hover-ability-popover,
+html[data-motion-level='off'] .ll-feed__item,
+html[data-motion-level='off'] .ll-round-banner {
   animation: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ll-opponent[data-eliminating='true'],
-  .ll-opponent[data-shielding='true'] {
+  .ll-opponent[data-shielding='true'] .ll-ward,
+  .ll-hover-ability-popover,
+  .ll-feed__item,
+  .ll-round-banner {
     animation: none;
+  }
+
+  .ll-envelope,
+  .ll-envelope__letter {
+    transition: none;
+  }
+}
+
+/* ── 9. 断点减法 ─────────────────────────────────────────────── */
+
+/* 平板竖屏：进度板挪到牌堆下方，桌面变两层 */
+@media (max-width: 768px) {
+  .ll-board .loveletter-center-area.ll-court {
+    flex-direction: column;
+    gap: var(--gp-dist-lg);
+  }
+
+  .ll-ledger {
+    width: min(100%, 340px);
+    max-width: none;
+    padding: 8px 12px;
+  }
+
+  .ll-ledger__head {
+    margin-bottom: 6px;
+  }
+
+  .ll-ledger__target-num {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .ll-board {
+    --ll-card-w: 62px;
+    --ll-env-w: 112px;
+  }
+
+  .loveletter-immersive-board.ll-board {
+    padding: var(--gp-dist-md) var(--gp-dist-md) var(--gp-dist-sm);
+    gap: var(--gp-dist-sm);
+  }
+
+  .loveletter-opponents {
+    gap: 8px;
+  }
+
+  .ll-opponent-avatar {
+    gap: 6px;
+    padding: 5px 8px 5px 6px;
+  }
+
+  .ll-opponent-name {
+    max-width: 72px;
+    font-size: 0.78rem;
+  }
+
+  .ll-opponent-status {
+    display: none;
+  }
+
+  .ll-opponent-hand {
+    min-height: 30px;
+  }
+
+  .ll-card-back {
+    width: 22px;
+    height: 30px;
+    margin-left: -10px;
+  }
+
+  .ll-discard-thumb {
+    width: 28px;
+    height: 40px;
+    margin-left: -12px;
+  }
+
+  .ll-pile__num {
+    font-size: 1.25rem;
+  }
+
+  .ll-pile__caption {
+    min-height: 0;
+  }
+
+  .ll-court-card__value {
+    width: 20px;
+    height: 20px;
+    font-size: 0.75rem;
+  }
+
+  .ll-court-card__name {
+    font-size: 0.62rem;
+  }
+
+  .ll-ledger__row {
+    padding: 2px 6px 2px 8px;
+  }
+
+  .ll-envelope__seal {
+    width: 28px;
+    height: 28px;
+    margin-left: -14px;
+    font-size: 1rem;
+  }
+
+  .ll-envelope__name {
+    font-size: 0.82rem;
+  }
+
+  /* 手机上猜身份面板改为居中浮层，避免被对手行宽度截断 */
+  .ll-role-picker {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    z-index: 100;
+    width: min(300px, 92vw);
+    margin-top: 0;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 100vmax rgba(10, 4, 18, 0.6), var(--gp-shadow);
+  }
+
+  .ll-hover-ability-popover,
+  .ll-feed {
+    bottom: calc(var(--ll-env-h) * 1.7 + 16px);
+  }
+
+  .ll-tracker-row {
+    grid-template-columns: 22px 30px minmax(0, 1fr) 40px;
+  }
+
+  .ll-tracker-row__known {
+    grid-column: 3 / 5;
+    grid-row: 2;
+  }
+
+  .ll-tracker-row__thumb {
+    width: 30px;
+    height: 40px;
   }
 }
 
@@ -1496,55 +1665,88 @@ html[data-motion-level='off'] .ll-opponent[data-shielding='true'] {
   .ll-board {
     --stage-felt-tilt: 5deg;
   }
+
+  .ll-ledger__seals .ll-seal--sm {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+@media (max-width: 380px) {
+  .ll-board {
+    --ll-card-w: 54px;
+    --ll-env-w: 100px;
+  }
+
+  .ll-opponent-affection {
+    display: none;
+  }
+}
+
+/* 横屏矮视口：桌面压扁，进度板回到牌堆右侧 */
+@media (max-height: 620px) {
+  .ll-board {
+    --ll-card-w: 60px;
+    --ll-env-w: 108px;
+  }
+
+  .ll-board .loveletter-center-area.ll-court {
+    flex-direction: row;
+    padding: 0;
+  }
+
+  .ll-ledger {
+    width: auto;
+    min-width: 200px;
+  }
+
+  .ll-pile__caption .stage-eyebrow {
+    display: none;
+  }
 }
 
 @media (orientation: landscape) and (max-height: 520px) {
   .ll-board {
     --stage-felt-tilt: 4deg;
+    --ll-card-w: 48px;
+    --ll-env-w: 96px;
+  }
+
+  .ll-opponent-hand,
+  .ll-opponent-status,
+  .ll-ledger__head {
+    display: none;
+  }
+
+  /* 纵向只剩不到 200px：改左右两栏——左侧宫廷桌面，右侧对手在上、我的信封在下 */
+  .loveletter-immersive-board.ll-board {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: var(--gp-dist-xl);
+  }
+
+  .loveletter-opponents {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .ll-board .loveletter-center-area.ll-court {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    flex-wrap: nowrap;
+    height: 100%;
+  }
+
+  .loveletter-my-area {
+    grid-column: 2;
+    grid-row: 2;
+    padding-top: 0;
+  }
+
+  .ll-ledger {
+    min-width: 180px;
+    padding: 6px 10px;
   }
 }
-
-/* U11 补搬：记牌器开关按钮（原先因带伪类选择器被迁移脚本跳过）。 */
-
-.ll-tracker-toggle-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  height: 32px;
-  padding: 0 10px;
-  border-radius: 10px;
-  border: 2px solid var(--home-ink, #312d28);
-  background: #fffaf1;
-  color: var(--home-ink, #312d28);
-  font-size: 0.78rem;
-  font-weight: 900;
-  cursor: pointer;
-  transition: transform 120ms ease, box-shadow 120ms ease, background 200ms ease, color 200ms ease, border-color 200ms ease;
-  white-space: nowrap;
-  flex-shrink: 0;
-  box-sizing: border-box;
-  box-shadow: 2px 2.5px 0 var(--home-ink, #312d28);
-}
-
-.ll-tracker-toggle-btn:hover:not(:disabled) {
-  background: #ffeac2;
-  transform: translateY(-1px);
-  box-shadow: 2px 3.5px 0 var(--home-ink, #312d28);
-}
-
-.ll-tracker-toggle-btn:active:not(:disabled) {
-  transform: translate(1px, 2px);
-  box-shadow: 1px 1px 0 var(--home-ink, #312d28);
-}
-
-.ll-tracker-toggle-btn,
-  .tabletop-orient-btn,
-  .game-leave__button {
-    height: 32px !important;
-    min-width: 32px !important;
-    padding: 0 8px !important;
-    font-size: 0.72rem !important;
-    border-radius: 10px !important;
-    box-shadow: 2px 2.5px 0 var(--home-ink, #312d28) !important;
-  }

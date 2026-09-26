@@ -59,7 +59,6 @@
 .card-fan-item > *,
 .landlord-hand-card > *,
 .loveletter-card,
-.ll-mini-card,
 .echo-topic-card,
 .testimony-topic-card,
 .testimony-crime-btn,
@@ -172,7 +171,6 @@ html[data-motion-level='full'] .cheese-hour-node.is-current {
 .bell-discard-wrap > .ding-uno-card--top,
 .uno-house-discard > .uno-house-card-img,
 .ll-opponent-discards > :last-child,
-.ll-discard-pill:last-child,
 .landlord-drop-cards > :last-child,
 .cheese-stolen-badge,
 .goose-history-result:last-child {
@@ -295,7 +293,6 @@ html[data-motion-level='off'] .landlord-hand-card > * {
   .card-fan-item > *,
   .landlord-hand-card > *,
   .loveletter-card,
-  .ll-mini-card,
   .echo-topic-card,
   .testimony-topic-card,
   .testimony-crime-btn,
@@ -356,7 +353,6 @@ html[data-motion-level='off'] .landlord-hand-card > * {
 .nt-expose-modal__sub,
 .nt-expose-modal__desc,
 .uno-opponent-score,
-.ll-deck-corner__label,
 .ll-opponent-name,
 .hint-press,
 .hint-lifted {

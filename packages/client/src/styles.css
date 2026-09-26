@@ -4737,15 +4737,6 @@ p { margin: 0.5rem 0; }
   color: var(--game-muted, #716b61);
 }
 
-.env-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; width: 132px; min-height: 150px; padding: 16px 12px 12px; overflow: hidden; border: 3.5px solid var(--game-line); border-radius: 6px 16px 16px 16px; color: var(--game-ink); background: linear-gradient(150deg, #fffdf4 0%, #f3e8ce 100%); box-shadow: 0 7px 0 var(--game-line); cursor: pointer; transition: transform .16s ease, box-shadow .16s ease; transform: none; }
-.env-card::after { position: absolute; top: 0; right: 0; width: 30px; height: 30px; content: ''; border: 3px solid var(--game-line); border-top: 0; border-right: 0; border-radius: 0 0 0 12px; background: var(--game-line); }
-.env-card:hover { transform: translateY(-3px); box-shadow: 0 10px 0 var(--game-line); }
-.env-card:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--game-line); }
-.env-card strong { font-size: 1.05rem; font-weight: 900; }
-.env-card__seal { position: relative; display: grid; width: 36px; height: 36px; place-items: center; border: 2.5px solid var(--game-line); border-radius: 50%; color: #fff; background: var(--game-coral); box-shadow: 0 3px 0 rgba(41,39,34,.4); }
-.env-card__seal i { width: 14px; height: 14px; border: 2.5px solid currentColor; border-radius: 50%; }
-.env-card__value { display: grid; width: 46px; height: 46px; place-items: center; border: 2.5px solid var(--game-line); border-radius: 9px; background: var(--game-yellow); font-size: 1.32rem; font-weight: 900; box-shadow: 0 3px 0 rgba(41,39,34,.35); }
-.env-card.is-selected { border-color: var(--game-purple); background: linear-gradient(150deg, #fff7ef 0%, #efe0ee 100%); box-shadow: 0 8px 0 var(--game-purple); transform: translateY(-4px) rotate(-1.6deg); }
 
 /* 共享小游戏舞台组件基础样式（情书/以鹅传鹅/奶酪大盗/铃铛/伪人等通用） */
 .sg-hint {
@@ -11267,6 +11258,16 @@ html[data-motion-level="off"] *::after {
   .tabletop-sound-btn,
   .tabletop-rules-btn,
   .cheese-tts-icon-btn,
+  .ll-tracker-toggle-btn,
+  .tabletop-orient-btn,
+  .game-leave__button {
+    height: 32px !important;
+    min-width: 32px !important;
+    padding: 0 8px !important;
+    font-size: 0.72rem !important;
+    border-radius: 10px !important;
+    box-shadow: 2px 2.5px 0 var(--home-ink, #312d28) !important;
+  }
   .tabletop-sound-btn__label,
   .tabletop-rules-btn .cheese-btn-text {
     display: none;
@@ -16023,259 +16024,6 @@ html[data-motion-level='off'] .tabletop-shell *::after {
   }
 
 }
-
-
-/* === 新版情书沉浸式牌桌样式 === */
-
-/* 目标选择时的压暗滤镜 */
-
-/* 对手区域 */
-
-
-/* 悬浮角色选择盘 */
-
-/* 中央区域 */
-/* 牌库剩余张数：棋盘右上角暗区徽章 */
-@keyframes ll-deck-pop {
-  from { transform: scale(1.5); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-/* 本步操作战报：底部居中悬浮条 */
-@keyframes ll-feed-in {
-  from { transform: translateY(10px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-/* 轮次结算横幅：谁赢、怎么赢、好感进度 */
-@keyframes ll-banner-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* 终局页最终轮备注 */
-
-
-
-
-/* 自己手牌区域 */
-
-/* 查验记录抽屉 */
-
-
-
-/* ==========================================================================
-   移动端竖屏（Portrait / max-width: 600px）情书流式适配
-   ========================================================================== */
-@media (max-width: 640px) {
-  .env-card.loveletter-card {
-    width: clamp(94px, 38vw, 130px);
-    height: clamp(130px, 22vh, 175px);
-    padding: 4px 4px 6px;
-  }
-}
-
-
-/* ==========================================================================
-   超紧凑高度（小屏横屏 / max-height: 620px）情书流式适配
-   ========================================================================== */
-@media (max-height: 620px) {
-  .env-card.loveletter-card {
-    width: 82px;
-    min-height: 90px;
-    padding: 6px 4px;
-    gap: 3px;
-    border-width: 2.5px;
-    border-radius: 4px 10px 10px 10px;
-    box-shadow: 0 4px 0 var(--game-line);
-  }
-  .env-card.loveletter-card strong {
-    font-size: 0.8rem;
-  }
-  .env-card.loveletter-card .env-card__seal {
-    width: 22px;
-    height: 22px;
-  }
-  .env-card.loveletter-card .env-card__seal i {
-    width: 8px;
-    height: 8px;
-  }
-  .env-card.loveletter-card .env-card__value {
-    width: 24px;
-    height: 24px;
-    font-size: 0.88rem;
-    border-radius: 6px;
-  }
-  .tabletop-bottom-bar {
-    padding: 4px 8px;
-  }
-}
-
-
-/* ==========================================================================
-   情书卡牌生图与华丽立绘卡面样式
-   ========================================================================== */
-.env-card.loveletter-card {
-  width: clamp(100px, 13.5vw, 142px);
-  height: clamp(140px, 25vh, 195px);
-  min-height: 0;
-  padding: 5px 5px 6px;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: space-between;
-  gap: 4px;
-  background: linear-gradient(160deg, #fffdf8 0%, #f6ecd5 100%);
-  border: 3px solid #b88645;
-  border-radius: 10px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.45), 0 4px 0 #7a4f21;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
-}
-
-.env-card.loveletter-card:hover {
-  transform: translateY(-6px) scale(1.03);
-  box-shadow: 0 14px 24px rgba(0, 0, 0, 0.6), 0 6px 0 #7a4f21;
-}
-
-.env-card.loveletter-card.is-selected {
-  transform: translateY(-10px) scale(1.05);
-  border-color: #ffd700;
-  box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 6px 0 #b88645;
-}
-
-
-
-/* 卡牌右上角黑色区域的点数数字 */
-.env-card.loveletter-card .loveletter-card__corner-value {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffdf70;
-  font-size: 1.15rem;
-  font-weight: 900;
-  font-family: 'Cinzel', 'Noto Serif SC', serif, Georgia;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
-  pointer-events: none;
-  z-index: 10;
-  line-height: 1;
-}
-
-
-
-
-
-/* 缩略图样式（角色选择轮盘与移出区） */
-
-
-
-@media (max-height: 620px) {
-  .env-card.loveletter-card {
-    width: 95px;
-    min-height: 120px;
-    padding: 4px;
-    gap: 3px;
-  }
-}
-
-/* ==========================================================================
-   情书卡牌能力浮层、实时记牌器与出牌历史记录
-   ========================================================================== */
-
-.tabletop-btn-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-
-
-/* 卡牌左上角快捷信息徽章 */
-
-
-/* 对手打出的弃牌胶囊 */
-
-
-
-
-/* 悬浮技能卡片 (Hover Popover) */
-
-@keyframes popoverFadeIn {
-  from { opacity: 0; transform: translate(-50%, 8px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
-}
-
-
-
-
-
-
-
-/* 记牌器模态弹窗 */
-
-
-
-
-
-
-
-
-
-
-
-/* 记牌器表格 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* 历史出牌记录列表 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* 卡牌能力详细模态弹窗 */
-
-
-
-
-
-
-
-
 
 
 /* ———— APP 身份门控（仅原生 APP） ———— */
