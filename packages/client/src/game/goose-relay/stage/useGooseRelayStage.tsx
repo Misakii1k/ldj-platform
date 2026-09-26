@@ -10,6 +10,7 @@ import {
   type StageEvent,
 } from './deriveStageEvents.ts';
 import { playCueFor, vibrateMyTurn } from './audioCues.ts';
+import { gooseAvatarFor } from './PastureProps.tsx';
 
 /** 鹅卡沿轨道飞到下一棒的时长 */
 const PASS_FLIGHT_MS = 560;
@@ -17,6 +18,12 @@ const PASS_FLIGHT_MS = 560;
 const GLOW_MS = 700;
 /** 终局鹅群列队：每只错峰 */
 const PARADE_LEG_MS = 180;
+/** 飞行鹅卡：320×440 原图等比缩到 72px 宽 */
+const PASS_CARD_W = 72;
+const PASS_CARD_H = Math.round((PASS_CARD_W * 440) / 320);
+/** 终局列队的鹅小一号 */
+const PARADE_CARD_W = 40;
+const PARADE_CARD_H = Math.round((PARADE_CARD_W * 440) / 320);
 
 export interface GooseStageApi {
   readonly stageRef: React.RefObject<HTMLDivElement | null>;
@@ -35,7 +42,11 @@ export interface GooseStageApi {
  * 三条规则由 shared-ui/stage/useStageMachine 保证：只有服务端差分驱动演出、
  * 一次性演出开播即写记忆、时长收敛在 deadlineAt 内。这里只描述演什么。
  */
-export function useGooseRelayStage(view: GooseRelayPlayerView): GooseStageApi {
+export function useGooseRelayStage(
+  view: GooseRelayPlayerView,
+  /** 玩家 → 鹅卡头像；与牧场跑道同一份分配，飞出去的就是跑道上那只鹅 */
+  avatarOf: (playerId: string) => string = gooseAvatarFor,
+): GooseStageApi {
   const [flights, setFlights] = useState<readonly StageFlight[]>([]);
   const [receivingId, setReceivingId] = useState<string | null>(null);
   const [stamp, setStamp] = useState<{ seq: number; correct: boolean } | null>(null);
@@ -45,11 +56,20 @@ export function useGooseRelayStage(view: GooseRelayPlayerView): GooseStageApi {
   viewRef.current = view;
   const deadlineRef = useRef<number | null>(null);
   deadlineRef.current = view.deadlineAt;
+  const avatarRef = useRef(avatarOf);
+  avatarRef.current = avatarOf;
 
-  /** 席位矩形：席位环由外壳渲染，不在舞台子树内，只能从 document 取。 */
+  /**
+   * 席位矩形：优先取牧场跑道上的鹅卡（鹅沿跑道弧线传）；
+   * 跑道不在场的阶段退回外壳席位环——它不在舞台子树内，只能从 document 取。
+   */
   const seatRect = useCallback((playerId: string): Rect | null => {
     if (typeof document === 'undefined') return null;
-    return measure(document.querySelector(`[data-player-id="${CSS.escape(playerId)}"]`));
+    const id = CSS.escape(playerId);
+    return (
+      measure(document.querySelector(`[data-gr-seat="${id}"]`)) ??
+      measure(document.querySelector(`[data-player-id="${id}"]`))
+    );
   }, []);
 
   const playEvent = useCallback(
@@ -80,11 +100,20 @@ export function useGooseRelayStage(view: GooseRelayPlayerView): GooseStageApi {
                   pieces: [
                     {
                       key: `pass-${event.toIndex}`,
-                      width: 40,
-                      height: 52,
+                      width: PASS_CARD_W,
+                      height: PASS_CARD_H,
                       // 鹅卡是硬卡片，不做钞票那种翻面压暗
                       paper: false,
-                      node: <span className="gr-pass-token" aria-hidden="true" />,
+                      // 飞的是上一棒自己那只鹅：从哪张卡起飞就是哪张卡的样子
+                      node: (
+                        <img
+                          className="gr-pass-token"
+                          src={avatarRef.current(fromId ?? toId)}
+                          alt=""
+                          aria-hidden="true"
+                          draggable={false}
+                        />
+                      ),
                     },
                   ],
                 },
@@ -143,10 +172,19 @@ export function useGooseRelayStage(view: GooseRelayPlayerView): GooseStageApi {
               pieces: [
                 {
                   key: `parade-${id}`,
-                  width: 34,
-                  height: 44,
+                  width: PARADE_CARD_W,
+                  height: PARADE_CARD_H,
                   paper: false,
-                  node: <span className="gr-pass-token" data-parade="true" aria-hidden="true" />,
+                  node: (
+                    <img
+                      className="gr-pass-token"
+                      data-parade="true"
+                      src={avatarRef.current(id)}
+                      alt=""
+                      aria-hidden="true"
+                      draggable={false}
+                    />
+                  ),
                 },
               ],
             });

@@ -1,25 +1,366 @@
-/* 以鹅传鹅：焦点式竞技场
-   接力轨升为中央焦点（ArenaRail），卡牌坞与投票板走 ArenaBoard，指认记录只保留一份。 */
-.goose-game-stage {
+/* ═══════════════════════════════════════════════════════════════════
+ * 以鹅传鹅 · 牧场跑道
+ *
+ * 契约：3D 毡面（G0-3，有飞行道具）；accent 取 catalog 的 mint；
+ * 毡面上文字一律白色，纸底面板走 ink / muted。
+ *
+ * V05（2026-09-26）：「牧场上真的有鹅在跑」——
+ * - 接力轨改牧场跑道 .gr-track：弧形草径 + 每个席位一枚鹅卡缩略（80 张按
+ *   playerId 哈希派发），当前持棒者放大 1.15 + 静态光晕；
+ * - 飞行道具 .gr-pass-token 从渐变色块换成真正的鹅卡（72px 宽）；
+ * - 纸板降到 88% 不透明 + 4px 毛玻璃，毡面倾角恢复 16°；
+ * - 装饰层篱笆 + 云朵剪影；颜色收敛到 --gr-* 主题变量。
+ * ═══════════════════════════════════════════════════════════════════ */
+
+/* 主题变量：卡牌遮罩走 portal 挂在 body 上，不在外壳子树内，所以一并声明 */
+.tabletop-shell[data-game-id='goose-relay'],
+.goose-card-modal-backdrop {
+  /* 草地 / 天空 / 篱笆 / 墨色 —— 牧场四原色 */
+  --gr-grass: var(--game-accent, #287b66);
+  --gr-grass-dark: var(--game-dark, #155946);
+  --gr-grass-blade: #3f9a63;
+  --gr-sky: #e4f4ef;
+  --gr-fence: #b98247;
+  --gr-fence-dark: #7a4f24;
+  --gr-ink: #312d28;
+  /* 纸面 */
+  --gr-cream: #fffdf5;
+  --gr-cream-deep: #fdf4e0;
+  --gr-straw: #fce790;
+  --gr-beak: #d97706;
+  --gr-meadow-soft: #e6f0c2;
+  /* 案情语义色：凶手 / 受害 */
+  --gr-murder: #d9383a;
+  --gr-murder-deep: #b71c1c;
+  --gr-murder-soft: #fff1f0;
+  --gr-victim: #2b78e4;
+  --gr-victim-deep: #1565c0;
+  --gr-victim-soft: #eff6ff;
+  /* 结果：对 / 错 */
+  --gr-ok: #43a047;
+  --gr-ok-deep: #2e7d32;
+  --gr-ok-soft: #edf7ed;
+  --gr-bad-soft: #ffebee;
+  /* 遮罩底色 */
+  --gr-night: rgba(14, 22, 18, 0.88);
+}
+
+/* ── 舞台 ──────────────────────────────────────────────────── */
+
+.gr-stage {
+  /* 草地：共享 .stage-felt-3d 的三个配色变量 */
+  --stage-felt-a: var(--gr-grass);
+  --stage-felt-b: var(--gr-grass-dark);
+  --stage-felt-rail: var(--gp-ink);
+  /* 纸板已降透明，正文不再被透视压扁，倾角恢复全平台默认 16° */
+  --stage-felt-tilt: 16deg;
+
+  position: relative;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+}
+
+/* 装饰层：篱笆 + 云朵剪影，天空色在深绿毡面上 12% 恰好若隐若现；
+   剪影贴底（篱笆落在毡面下沿），两级类名压过后加载的 .stage-art 居中 */
+.stage-art.gr-art {
+  color: var(--gr-sky);
+  place-items: end center;
+}
+
+/* 倒计时环浮在右上角，不占布局流 */
+.gr-countdown {
+  position: absolute;
+  top: -4px;
+  right: 2px;
+  z-index: 5;
+}
+
+/* 舞台平面：统一倾角；压在装饰层之上 */
+.gr-stage__plane {
+  transform-origin: 50% 20%;
+}
+
+.goose-game-stage {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 880px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   gap: 10px;
+  padding: 4px 10px 24px;
+  box-sizing: border-box;
 }
 
 .goose-focal {
   width: 100%;
 }
 
+/* 纸板：88% 纸色 + 毛玻璃，草地从纸底隐约透上来。
+   两级类名是为了压过后加载的 game-ui.css 里 .arena-board 的实底。 */
+.gr-stage .arena-board--paper,
+.gr-stage .goose-accusations-history {
+  background: color-mix(in srgb, var(--gp-paper) 88%, transparent);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
 .goose-claim-hero-cta {
   font-size: 0.82rem;
   font-weight: 800;
-  color: #78350f;
+  color: var(--gr-fence-dark);
 }
 
-.goose-track-rail {
-  justify-content: center;
-  flex-wrap: wrap;
+/* ── 牧场跑道 ──────────────────────────────────────────────── */
+
+/* 跑道宽度按容器算：席位卡随人数（5–9）与板宽一起缩放 */
+.goose-track-board .arena-board__body {
+  container-type: inline-size;
 }
+
+.gr-track {
+  /* 卡宽：板宽均分后留 8px 呼吸，夹在 30–72px；卡高按鹅卡原图 320×440 */
+  --gr-card-w: clamp(30px, calc(100cqw / var(--gr-n, 5) - 8px), 72px);
+  --gr-card-h: calc(var(--gr-card-w) * 1.375);
+  /* 弧顶到两端的落差 */
+  --gr-lift: clamp(14px, 6cqw, 40px);
+
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  margin: 0;
+  padding: 6px 0 2px;
+  list-style: none;
+}
+
+/* 草径：一段半椭圆拱，端点与首末两张卡的中心对齐，
+   mask 挖成环带；草纹用两层斜向 repeating-linear-gradient 交叉 */
+.gr-track::before {
+  content: '';
+  position: absolute;
+  top: calc(6px + var(--gr-card-h) / 2);
+  left: calc(100% / (2 * var(--gr-n, 5)));
+  right: calc(100% / (2 * var(--gr-n, 5)));
+  height: var(--gr-lift);
+  background:
+    repeating-linear-gradient(72deg, var(--gr-grass-blade) 0 2px, transparent 2px 6px),
+    repeating-linear-gradient(-64deg, var(--gr-grass-dark) 0 1px, transparent 1px 7px),
+    var(--gr-grass);
+  -webkit-mask: radial-gradient(farthest-side at 50% 100%, transparent 72%, #000 73%, #000 99%, transparent 100%);
+  mask: radial-gradient(farthest-side at 50% 100%, transparent 72%, #000 73%, #000 99%, transparent 100%);
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+/* 指认阶段倒着走：草径压暗一档，读作「回头路」 */
+.gr-track[data-direction='reverse']::before {
+  opacity: 0.55;
+}
+
+.gr-track__seat {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  /* 落在拱上：--gr-arc 由 TSX 逐个下发（中间 1、两端 0） */
+  margin-top: calc((1 - var(--gr-arc, 1)) * var(--gr-lift));
+}
+
+.gr-track__card {
+  position: relative;
+  display: block;
+  width: var(--gr-card-w);
+  height: var(--gr-card-h);
+  border: 2px solid var(--gp-ink);
+  border-radius: 7px;
+  background: var(--gr-cream);
+  box-shadow: 0 3px 0 var(--gp-ink);
+  transform-origin: 50% 100%;
+  transition:
+    transform var(--gp-dur-standard) var(--gp-ease-press),
+    box-shadow var(--gp-dur-standard) var(--gp-ease-standard);
+}
+
+.gr-track__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 5px;
+  object-fit: cover;
+  user-select: none;
+}
+
+/* 卡角徽标：棒次 / 头鹅 / ✓ */
+.gr-track__badge {
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  min-width: 18px;
+  padding: 0 5px;
+  border: 1.5px solid var(--gp-ink);
+  border-radius: var(--gp-radius-pill);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 15px;
+  text-align: center;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.gr-track__name {
+  max-width: 100%;
+  margin-top: 6px;
+  overflow: hidden;
+  color: var(--gp-ink);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 当前持棒者：放大 1.15 + 静态光晕（不循环）。尺寸 + 光 + 名字加粗，三重信号 */
+.gr-track__seat[data-state='active'] {
+  z-index: 2;
+}
+
+.gr-track__seat[data-state='active'] .gr-track__card {
+  transform: scale(1.15);
+  box-shadow:
+    0 3px 0 var(--gp-ink),
+    0 0 0 3px var(--gp-yellow),
+    0 0 18px 4px color-mix(in srgb, var(--gp-yellow) 55%, transparent);
+}
+
+.gr-track__seat[data-state='active'] .gr-track__badge {
+  background: var(--gp-yellow);
+}
+
+.gr-track__seat[data-state='active'] .gr-track__name {
+  font-weight: 900;
+  text-decoration: underline 2px var(--gp-yellow);
+  text-underline-offset: 3px;
+}
+
+/* 已传完：压暗 + ✓ 徽标转绿 */
+.gr-track__seat[data-state='done'] .gr-track__img {
+  opacity: 0.55;
+  filter: grayscale(0.5);
+}
+
+.gr-track__seat[data-state='done'] .gr-track__badge {
+  background: var(--gp-green);
+  color: var(--gp-surface);
+}
+
+.gr-track__seat[data-head] .gr-track__badge {
+  background: var(--gr-straw);
+  color: var(--gp-ink);
+}
+
+.gr-track__seat[data-me] .gr-track__card {
+  border-style: double;
+  border-width: 3px;
+}
+
+/* ── 指认印章 ──────────────────────────────────────────────── */
+
+/* 整个平面闪一次对/错的色环，不额外加一层遮罩 */
+.gr-stage__plane[data-stamp='correct'] {
+  animation: gr-stamp-ok var(--gp-dur-slow) var(--gp-ease-standard);
+}
+
+.gr-stage__plane[data-stamp='wrong'] {
+  animation: gr-stamp-bad var(--gp-dur-slow) var(--gp-ease-standard);
+}
+
+@keyframes gr-stamp-ok {
+  0%, 100% { box-shadow: none; }
+  30% { box-shadow: 0 0 0 4px var(--gp-green-dark); }
+}
+
+@keyframes gr-stamp-bad {
+  0%, 100% { box-shadow: none; }
+  30% { box-shadow: 0 0 0 4px var(--game-coral); }
+}
+
+/* 印章是「指对没指对」的结果信息，reduced 档保留；无动画档去掉 */
+html[data-motion-level='minimal'] .gr-stage__plane[data-stamp],
+html[data-motion-level='off'] .gr-stage__plane[data-stamp] {
+  animation: none;
+}
+
+html[data-motion-level='minimal'] .gr-track__card,
+html[data-motion-level='off'] .gr-track__card {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gr-stage__plane[data-stamp] {
+    animation: none;
+  }
+  .gr-track__card {
+    transition: none;
+  }
+}
+
+/* ── 飞行中的鹅卡 ─────────────────────────────────────────── */
+
+/* 真正的鹅卡：跑道上那只鹅的原图，72px 宽，沿弧飞到下一棒 */
+.gr-pass-token {
+  display: block;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 2.5px solid var(--gp-ink);
+  border-radius: 7px;
+  background: var(--gr-cream, var(--gp-surface));
+  object-fit: cover;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.38);
+  user-select: none;
+}
+
+/* 终局列队的鹅小一号，边也细一点 */
+.gr-pass-token[data-parade='true'] {
+  border-width: 2px;
+  border-radius: 6px;
+}
+
+/* ── 断点 ──────────────────────────────────────────────────── */
+
+/* 窄屏：透视稍压，给面板让出垂直空间；≤380 与横屏矮视口由 game-ui.css 统一接管 */
+@media (max-width: 480px) {
+  .gr-stage {
+    --stage-felt-tilt: 12deg;
+  }
+  .gr-track__name {
+    font-size: 0.6rem;
+  }
+}
+
+/* 矮视口（横屏手机）：跑道压扁，卡更小、拱更平 */
+@media (max-height: 520px) {
+  .gr-track {
+    --gr-card-w: clamp(24px, calc(100cqw / var(--gr-n, 5) - 8px), 40px);
+    --gr-lift: 10px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+ * 由 styles.css 整体迁入（U05），V05 起颜色改走 --gr-* 变量。
+ * 后续如需改造需先核对 e2e 断言（goose-relay-tabletop.spec.ts）。
+ * ═══════════════════════════════════════════════════════════════════ */
 
 .goose-accusations-history {
   padding: 10px 12px;
@@ -50,143 +391,37 @@
   color: var(--gp-muted);
 }
 
-/* ═══════════════════════════════════════════════════════════════════
- * U05 演出层：草地牧场毡面（3D）、传递轨道、指认印章
- *
- * 契约：3D（G0-3，有飞行道具）；accent 取 catalog 的 mint；
- * 毡面上文字一律白色，纸底面板仍走 ink / muted。
- * ═══════════════════════════════════════════════════════════════════ */
-
-.gr-stage {
-  /* 草地：共享 .stage-felt-3d 的三个配色变量 */
-  --stage-felt-a: var(--game-accent, #287b66);
-  --stage-felt-b: var(--game-dark, #155946);
-  --stage-felt-rail: var(--gp-ink);
-  /* 牧场比牌桌平，倾角小一点 */
-  --stage-felt-tilt: 10deg;
-
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-/* 倒计时环浮在右上角，不占布局流 */
-.gr-countdown {
-  position: absolute;
-  top: -4px;
-  right: 2px;
-  z-index: 5;
-}
-
-/* 舞台平面：统一倾角。内容仍是纸底面板，所以倾角要小，
-   否则面板上的正文会因透视变形而难读。 */
-.gr-stage__plane {
-  transform-origin: 50% 20%;
-}
-
-/* 指认印章：整个平面闪一次对/错的色环，不额外加一层遮罩 */
-.gr-stage__plane[data-stamp='correct'] {
-  animation: gr-stamp-ok var(--gp-dur-slow) var(--gp-ease-standard);
-}
-
-.gr-stage__plane[data-stamp='wrong'] {
-  animation: gr-stamp-bad var(--gp-dur-slow) var(--gp-ease-standard);
-}
-
-@keyframes gr-stamp-ok {
-  0%, 100% { box-shadow: none; }
-  30% { box-shadow: 0 0 0 4px var(--gp-green-dark); }
-}
-
-@keyframes gr-stamp-bad {
-  0%, 100% { box-shadow: none; }
-  30% { box-shadow: 0 0 0 4px var(--game-coral); }
-}
-
-/* 印章是「指对没指对」的结果信息，reduced 档保留；无动画档去掉 */
-html[data-motion-level='minimal'] .gr-stage__plane[data-stamp],
-html[data-motion-level='off'] .gr-stage__plane[data-stamp] {
-  animation: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .gr-stage__plane[data-stamp] {
-    animation: none;
-  }
-}
-
-/* 飞行中的鹅卡 */
-.gr-pass-token {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border: 2.5px solid var(--gp-ink);
-  border-radius: 6px;
-  background:
-    radial-gradient(circle at 50% 34%, #fffdf7 0 32%, transparent 33%),
-    linear-gradient(160deg, var(--game-accent, #287b66) 0%, var(--game-dark, #155946) 100%);
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.38);
-}
-
-/* 终局列队的鹅小一号 */
-.gr-pass-token[data-parade='true'] {
-  border-radius: 50% 50% 6px 6px;
-}
-
-/* 窄屏与横屏矮视口：压平透视，给面板让出垂直空间 */
-@media (max-width: 480px) {
-  .gr-stage {
-    --stage-felt-tilt: 7deg;
-  }
-}
-
-@media (orientation: landscape) and (max-height: 520px) {
-  .gr-stage {
-    --stage-felt-tilt: 5deg;
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════════
- * 由 styles.css 整体迁入（U05）。内容未改，只是从全局表挪到本游戏表。
- * 后续如需改造需先核对 e2e 断言（goose-relay-tabletop.spec.ts）。
- * ═══════════════════════════════════════════════════════════════════ */
-
-.goose-role-tag { display: inline-flex; gap: 8px; align-items: center; padding: 6px 14px; border: 3px solid var(--game-line); border-radius: 999px; color: var(--game-ink); background: #e6f0c2; box-shadow: 0 4px 0 var(--game-line); font-size: .8rem; font-weight: 900; }
+.goose-role-tag { display: inline-flex; gap: 8px; align-items: center; padding: 6px 14px; border: 3px solid var(--game-line); border-radius: 999px; color: var(--game-ink); background: var(--gr-meadow-soft); box-shadow: 0 4px 0 var(--game-line); font-size: .8rem; font-weight: 900; }
 
 .goose-role-tag__dot { width: 10px; height: 10px; border: 2px solid var(--game-line); border-radius: 50%; background: var(--game-green); }
 
-.goose-role-tag--head { color: var(--game-ink); background: #fce790; }
+.goose-role-tag--head { color: var(--game-ink); background: var(--gr-straw); }
 
-.goose-role-tag--head .goose-role-tag__dot { background: #d97706; }
+.goose-role-tag--head .goose-role-tag__dot { background: var(--gr-beak); }
 
-.goose-role-tag--evil { color: #fff; background: var(--game-coral); }
+.goose-role-tag--evil { color: var(--gp-surface); background: var(--game-coral); }
 
 .goose-role-tag--evil .goose-role-tag__dot { background: var(--game-yellow); }
 
-.goose-head-secret-panel { background: #fffdf5; border-color: #e69138; }
+.goose-head-secret-panel { background: var(--gr-cream); border-color: var(--gr-beak); }
 
-.goose-peek-btn { padding: 4px 12px; border: 2px solid var(--game-line); border-radius: 999px; background: #fff; color: var(--game-ink); font-weight: 800; font-size: .8rem; cursor: pointer; box-shadow: 0 2px 0 var(--game-line); }
+.goose-peek-btn { padding: 4px 12px; border: 2px solid var(--game-line); border-radius: 999px; background: var(--gp-surface); color: var(--game-ink); font-weight: 800; font-size: .8rem; cursor: pointer; box-shadow: 0 2px 0 var(--game-line); }
 
-.goose-peek-btn:hover { background: #fdf5e6; }
+.goose-peek-btn:hover { background: var(--gr-cream-deep); }
 
 .goose-secret-cards-row { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 8px; flex-wrap: wrap; }
 
-.goose-secret-card-item { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; border: 3px solid var(--game-line); border-radius: 16px; background: #fff; box-shadow: 0 4px 0 var(--game-line); min-width: 120px; }
+.goose-secret-card-item { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; border: 3px solid var(--game-line); border-radius: 16px; background: var(--gp-surface); box-shadow: 0 4px 0 var(--game-line); min-width: 120px; }
 
-.goose-secret-card--murderer { border-color: var(--game-coral); background: #fff5f5; }
+.goose-secret-card--murderer { border-color: var(--game-coral); background: var(--gr-murder-soft); }
 
-.goose-secret-card--victim { border-color: #2b78e4; background: #f0f7ff; }
+.goose-secret-card--victim { border-color: var(--gr-victim); background: var(--gr-victim-soft); }
 
-.goose-secret-card-img { width: 100px; height: 138px; object-fit: contain; border-radius: 10px; background: #881b21; }
-
-.goose-secret-badge { font-size: .75rem; font-weight: 900; }
+.goose-secret-card-img { width: 100px; height: 138px; object-fit: contain; border-radius: 10px; background: var(--gr-fence-dark); }
 
 .goose-secret-hint { margin: 0; font-size: .82rem; color: var(--game-muted); text-align: center; }
 
-.goose-case-arrow { font-size: 1rem; font-weight: 900; color: var(--game-line); }
-
-.goose-card-dock-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: #fffdf7; border: 2.5px solid var(--game-line); border-radius: 14px; box-shadow: 0 4px 0 var(--game-line); }
+.goose-card-dock-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: var(--gr-cream); border: 2.5px solid var(--game-line); border-radius: 14px; box-shadow: 0 4px 0 var(--game-line); }
 
 .goose-card-dock-title { display: flex; align-items: center; gap: 6px; font-size: .88rem; font-weight: 900; color: var(--game-ink); }
 
@@ -194,51 +429,39 @@ html[data-motion-level='off'] .gr-stage__plane[data-stamp] {
 
 .goose-dock-tag { font-size: .74rem; font-weight: 900; padding: 2px 8px; border-radius: 999px; border: 1.5px solid var(--game-line); }
 
-.goose-dock-tag--m { background: #ffe4e4; color: #b71c1c; border-color: #ef5350; }
+.goose-dock-tag--m { background: var(--gr-murder-soft); color: var(--gr-murder-deep); border-color: var(--gr-murder); }
 
-.goose-dock-tag--v { background: #e3f2fd; color: #1565c0; border-color: #42a5f5; }
+.goose-dock-tag--v { background: var(--gr-victim-soft); color: var(--gr-victim-deep); border-color: var(--gr-victim); }
 
 .goose-dock-hint { font-size: .76rem; font-weight: 700; color: var(--game-muted); }
 
-.goose-card-dock-btn { padding: 6px 14px; border: 2px solid var(--game-line); border-radius: 12px; background: #fdf6e2; color: var(--game-ink); font-size: .82rem; font-weight: 900; cursor: pointer; box-shadow: 0 3px 0 var(--game-line); transition: all .12s ease; white-space: nowrap; }
+.goose-card-dock-btn { padding: 6px 14px; border: 2px solid var(--game-line); border-radius: 12px; background: var(--gr-cream-deep); color: var(--game-ink); font-size: .82rem; font-weight: 900; cursor: pointer; box-shadow: 0 3px 0 var(--game-line); transition: transform var(--gp-dur-fast) var(--gp-ease-standard), box-shadow var(--gp-dur-fast) var(--gp-ease-standard); white-space: nowrap; }
 
-.goose-card-dock-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 0 var(--game-line); background: #fff; }
+.goose-card-dock-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 0 var(--game-line); background: var(--gp-surface); }
 
-.goose-card-dock-btn.is-highlight { background: var(--game-coral); color: #fff; border-color: #b71c1c; box-shadow: 0 3px 0 #7f1d1d; animation: state-breathe 1.5s ease-in-out infinite; }
+.goose-card-dock-btn.is-highlight { background: var(--game-coral); color: var(--gp-surface); border-color: var(--gr-murder-deep); box-shadow: 0 3px 0 var(--gr-murder-deep); animation: state-breathe 1.5s ease-in-out infinite; }
 
-.goose-card-modal-backdrop { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: clamp(6px, 1.5vw, 16px); background: rgba(14, 22, 18, 0.88); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); animation: modal-backdrop-in 0.2s ease-out; box-sizing: border-box; }
+/* ── 卡牌遮罩（九宫格） ─────────────────────────────────────── */
 
-.goose-card-modal-dialog { position: relative; display: flex; flex-direction: column; width: min(96vw, 1020px); height: auto; max-height: min(95vh, 95dvh); background: #fffdf5; border: 3.5px solid var(--game-line); border-radius: 22px; box-shadow: 0 20px 60px rgba(0,0,0,.7), 0 8px 0 var(--game-line); overflow: hidden; box-sizing: border-box; }
+.goose-card-modal-backdrop { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: clamp(6px, 1.5vw, 16px); background: var(--gr-night); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); animation: modal-backdrop-in 0.2s ease-out; box-sizing: border-box; }
 
-.goose-card-modal-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 18px 8px; border-bottom: 2.5px solid var(--game-line); background: #fef7e6; flex-shrink: 0; }
+.goose-card-modal-dialog { position: relative; display: flex; flex-direction: column; width: min(96vw, 1020px); height: auto; max-height: min(95vh, 95dvh); background: var(--gr-cream); border: 3.5px solid var(--game-line); border-radius: 22px; box-shadow: 0 20px 60px rgba(0,0,0,.7), 0 8px 0 var(--game-line); overflow: hidden; box-sizing: border-box; }
+
+.goose-card-modal-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 18px 8px; border-bottom: 2.5px solid var(--game-line); background: var(--gr-cream-deep); flex-shrink: 0; }
 
 .goose-card-modal-title { margin: 0; font-size: 1.05rem; font-weight: 900; color: var(--game-ink); }
 
 .goose-card-modal-desc { margin: 2px 0 0; font-size: .76rem; font-weight: 700; color: var(--game-muted); }
 
-.goose-card-modal-close { display: grid; place-items: center; width: 32px; height: 32px; min-width: 32px; min-height: 32px; padding: 0; border: 2px solid var(--game-line); border-radius: 50%; background: #fff; color: var(--game-ink); cursor: pointer; box-shadow: 0 2px 0 var(--game-line); transition: transform .12s ease, background-color .12s ease; flex-shrink: 0; }
+.goose-card-modal-close { display: grid; place-items: center; width: 32px; height: 32px; min-width: 32px; min-height: 32px; padding: 0; border: 2px solid var(--game-line); border-radius: 50%; background: var(--gp-surface); color: var(--game-ink); cursor: pointer; box-shadow: 0 2px 0 var(--game-line); transition: transform .12s ease, background-color .12s ease; flex-shrink: 0; }
 
-.goose-card-modal-close:hover { transform: scale(1.08); background: #ffebee; }
+.goose-card-modal-close:hover { transform: scale(1.08); background: var(--gr-bad-soft); }
 
-.goose-modal-selection-bar { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 12px; background: #fff3db; border-bottom: 2px dashed #d5c3aa; flex-shrink: 0; flex-wrap: wrap; }
+.goose-modal-selection-bar { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 12px; background: var(--gr-cream-deep); border-bottom: 2px dashed color-mix(in srgb, var(--gr-fence) 50%, transparent); flex-shrink: 0; flex-wrap: wrap; }
 
-.goose-select-slot { display: flex; align-items: center; gap: 4px; padding: 3px 10px; border: 2px solid var(--game-line); border-radius: 999px; background: #fff; font-size: .78rem; font-weight: 800; }
+.goose-select-slot { display: flex; align-items: center; gap: 4px; padding: 3px 10px; border: 2px solid var(--game-line); border-radius: 999px; background: var(--gp-surface); font-size: .78rem; font-weight: 800; }
 
-.goose-select-slot.is-picked { background: #f0fdf4; border-color: #22c55e; }
-
-.goose-game-stage {
-  width: 100%;
-  max-width: 880px;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 10px;
-  padding: 4px 10px 24px;
-  box-sizing: border-box;
-}
+.goose-select-slot.is-picked { background: var(--gr-ok-soft); border-color: var(--gr-ok); }
 
 .goose-modal-cards-grid {
   display: flex;
@@ -264,7 +487,7 @@ html[data-motion-level='off'] .gr-stage__plane[data-stamp] {
   padding: 3px;
   border: 2.5px solid var(--game-line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--gp-surface);
   box-shadow: 0 3px 0 var(--game-line);
   cursor: default;
   transition: transform .12s ease, box-shadow .12s ease;
@@ -272,6 +495,10 @@ html[data-motion-level='off'] .gr-stage__plane[data-stamp] {
   box-sizing: border-box;
 }
 
+/* 竖屏窄视口：九宫格改 3×3 网格，彻底杜绝滚动与截断。
+   这段原本在 styles.css 里就包着 @media (max-width: 640px)（见 0f8136c 迁移前的原文），
+   U05 迁表时把 @media 外壳留在了 styles.css、体搬了过来，成了无条件生效的孤儿块。 */
+@media (max-width: 640px) {
   .goose-modal-cards-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -286,26 +513,31 @@ html[data-motion-level='off'] .gr-stage__plane[data-stamp] {
     aspect-ratio: 320 / 440;
     max-height: min(28dvh, 150px);
   }
+}
 
 .goose-modal-card-item.is-clickable { cursor: pointer; }
 
-.goose-modal-card-item.is-clickable:hover { transform: translateY(-3px); box-shadow: 0 6px 0 var(--game-line); }
+/* 卡片被拿起：歪一点 + 硬阴影往右下拉开。只给真有悬停的指针设备，
+   触屏上 :hover 会粘住，点完一张卡它会一直歪着。 */
+@media (hover: hover) {
+  .goose-modal-card-item.is-clickable:hover { transform: translateY(-4px) rotate(-2deg); box-shadow: 4px 7px 0 var(--game-line); }
+}
 
 .goose-modal-card-item.is-clickable:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--game-line); }
 
-.goose-modal-card-item.is-murderer { border-color: #d9383a; background: #fff1f0; box-shadow: 0 4px 0 #d9383a; }
+.goose-modal-card-item.is-murderer { border-color: var(--gr-murder); background: var(--gr-murder-soft); box-shadow: 0 4px 0 var(--gr-murder); }
 
-.goose-modal-card-item.is-victim { border-color: #2b78e4; background: #eff6ff; box-shadow: 0 4px 0 #2b78e4; }
+.goose-modal-card-item.is-victim { border-color: var(--gr-victim); background: var(--gr-victim-soft); box-shadow: 0 4px 0 var(--gr-victim); }
 
-.goose-modal-card-tag { position: absolute; top: -6px; right: -4px; padding: 2px 8px; border-radius: 999px; font-size: .72rem; font-weight: 900; border: 1.5px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,.25); z-index: 2; }
+.goose-modal-card-tag { position: absolute; top: -6px; right: -4px; padding: 2px 8px; border-radius: 999px; font-size: .72rem; font-weight: 900; border: 1.5px solid var(--gp-surface); box-shadow: 0 2px 4px rgba(0,0,0,.25); z-index: 2; }
 
-.goose-modal-card-tag--m { background: #d9383a; color: #fff; }
+.goose-modal-card-tag--m { background: var(--gr-murder); color: var(--gp-surface); }
 
-.goose-modal-card-tag--v { background: #2b78e4; color: #fff; }
+.goose-modal-card-tag--v { background: var(--gr-victim); color: var(--gp-surface); }
 
 .goose-modal-card-img { width: 100%; height: 100%; aspect-ratio: 320 / 440; object-fit: contain; border-radius: 10px; background: transparent; }
 
-.goose-card-modal-footer { display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 8px 18px; border-top: 2.5px solid var(--game-line); background: #fdf6e6; flex-shrink: 0; }
+.goose-card-modal-footer { display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 8px 18px; border-top: 2.5px solid var(--game-line); background: var(--gr-cream-deep); flex-shrink: 0; }
 
 .goose-modal-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 16px; border: 2.5px solid var(--game-line); border-radius: 12px; font-size: .86rem; font-weight: 900; cursor: pointer; box-shadow: 0 3px 0 var(--game-line); transition: transform .12s ease; }
 
@@ -315,58 +547,60 @@ html[data-motion-level='off'] .gr-stage__plane[data-stamp] {
 
 .goose-modal-btn:disabled { opacity: .55; cursor: not-allowed; }
 
-.goose-modal-btn--primary { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; border-color: #047857; box-shadow: 0 3px 0 #065f46; }
+.goose-modal-btn--primary { background: linear-gradient(135deg, var(--gr-grass) 0%, var(--gr-grass-dark) 100%); color: var(--gp-surface); border-color: var(--gr-grass-dark); box-shadow: 0 3px 0 var(--gp-ink); }
 
-.goose-modal-btn--secondary { background: #fff; color: var(--game-ink); }
+.goose-modal-btn--secondary { background: var(--gp-surface); color: var(--game-ink); }
+
+/* ── 指认记录 / 投票 / 终局 ─────────────────────────────────── */
 
 .goose-history-list { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 0; padding: 0; list-style: none; }
 
 .goose-history-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border: 2.5px solid var(--game-line); border-radius: 12px; font-size: .84rem; font-weight: 800; }
 
-.goose-history-item.is-correct { background: #edf7ed; border-color: #4caf50; color: #2e7d32; }
+.goose-history-item.is-correct { background: var(--gr-ok-soft); border-color: var(--gr-ok); color: var(--gr-ok-deep); }
 
-.goose-history-item.is-wrong { background: #fff5f5; border-color: #ef5350; color: #c62828; }
+.goose-history-item.is-wrong { background: var(--gr-murder-soft); border-color: var(--gr-murder); color: var(--gr-murder-deep); }
 
-.goose-vote-target-btn.is-selected { background: #fff1f0; border-color: var(--game-coral); box-shadow: 0 4px 0 var(--game-coral); }
+.goose-vote-target-btn.is-selected { background: var(--gr-murder-soft); border-color: var(--game-coral); box-shadow: 0 4px 0 var(--game-coral); }
 
 .goose-game-over-banner { margin-bottom: 16px; }
 
 .goose-result-card { padding: 16px; border: 3.5px solid var(--game-line); border-radius: 18px; text-align: center; }
 
-.goose-result-card--white { background: #e8f5e9; border-color: #43a047; box-shadow: 0 6px 0 #2e7d32; color: #1b5e20; }
+.goose-result-card--white { background: var(--gr-ok-soft); border-color: var(--gr-ok); box-shadow: 0 6px 0 var(--gr-ok-deep); color: var(--gr-ok-deep); }
 
-.goose-result-card--evil { background: #ffebee; border-color: #e53935; box-shadow: 0 6px 0 #b71c1c; color: #b71c1c; }
+.goose-result-card--evil { background: var(--gr-bad-soft); border-color: var(--gr-murder); box-shadow: 0 6px 0 var(--gr-murder-deep); color: var(--gr-murder-deep); }
 
-.goose-result-card h2 { margin: 0 0 6px; font-size: 1.4rem; font-weight: 900; }
+.goose-result-card h2 { margin: 0 0 6px; font-family: var(--gp-font-display); font-size: 1.4rem; font-weight: 900; }
 
 .goose-result-card p { margin: 0; font-size: .88rem; font-weight: 700; opacity: .9; }
 
-.goose-reveal-case-box, .goose-reveal-identity-box, .goose-reveal-votes-box { margin-top: 14px; padding: 12px; border: 2.5px solid var(--game-line); border-radius: 14px; background: #fffdf7; color: var(--game-ink); }
+.goose-reveal-case-box, .goose-reveal-identity-box, .goose-reveal-votes-box { margin-top: 14px; padding: 12px; border: 2.5px solid var(--game-line); border-radius: 14px; background: var(--gr-cream); color: var(--game-ink); }
 
-.goose-reveal-case-box h3, .goose-reveal-identity-box h3, .goose-reveal-votes-box h3 { margin: 0 0 10px; font-size: .98rem; font-weight: 900; color: #312d28 !important; }
+.goose-reveal-case-box h3, .goose-reveal-identity-box h3, .goose-reveal-votes-box h3 { margin: 0 0 10px; font-size: .98rem; font-weight: 900; color: var(--gr-ink) !important; }
 
 .goose-reveal-cards-row { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
 
-.goose-reveal-card-item { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; border: 3px solid var(--game-line); border-radius: 16px; background: #fff; min-width: 120px; box-shadow: 0 4px 0 var(--game-line); color: #312d28; }
+.goose-reveal-card-item { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; border: 3px solid var(--game-line); border-radius: 16px; background: var(--gp-surface); min-width: 120px; box-shadow: 0 4px 0 var(--game-line); color: var(--gr-ink); }
 
-.goose-reveal-card-img { width: 110px; height: 151px; object-fit: contain; border-radius: 10px; background: #faf3e6; }
+.goose-reveal-card-img { width: 110px; height: 151px; object-fit: contain; border-radius: 10px; background: var(--gr-cream-deep); }
 
-.goose-reveal-tag { font-size: .78rem; font-weight: 900; color: #312d28; }
+.goose-reveal-tag { font-size: .78rem; font-weight: 900; color: var(--gr-ink); }
 
-.goose-reveal-tag--m { color: #b91c1c !important; }
+.goose-reveal-tag--m { color: var(--gr-murder-deep) !important; }
 
-.goose-reveal-tag--v { color: #1d4ed8 !important; }
+.goose-reveal-tag--v { color: var(--gr-victim-deep) !important; }
 
-.goose-reveal-arrow { font-size: 1.05rem; font-weight: 900; color: #312d28 !important; }
+.goose-reveal-arrow { font-size: 1.05rem; font-weight: 900; color: var(--gr-ink) !important; }
 
-.goose-case-arrow { font-size: 1.02rem; font-weight: 900; color: #312d28 !important; }
+.goose-case-arrow { font-size: 1.02rem; font-weight: 900; color: var(--gr-ink) !important; }
 
-.goose-secret-badge { font-size: .78rem; font-weight: 900; color: #312d28 !important; }
+.goose-secret-badge { font-size: .78rem; font-weight: 900; color: var(--gr-ink) !important; }
 
 .goose-evil-names-list { display: flex; gap: 8px; flex-wrap: wrap; }
 
-.goose-evil-player-badge { padding: 6px 14px; border: 2.5px solid #d32f2f; border-radius: 999px; background: #ffebee; color: #c62828; font-weight: 900; font-size: .88rem; }
+.goose-evil-player-badge { padding: 6px 14px; border: 2.5px solid var(--gr-murder); border-radius: 999px; background: var(--gr-bad-soft); color: var(--gr-murder-deep); font-weight: 900; font-size: .88rem; }
 
 .goose-votes-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
 
-.goose-vote-stat-item { display: flex; justify-content: space-between; padding: 6px 10px; border-radius: 8px; background: #f5f5f5; font-size: .84rem; font-weight: 800; }
+.goose-vote-stat-item { display: flex; justify-content: space-between; padding: 6px 10px; border-radius: 8px; background: color-mix(in srgb, var(--gr-ink) 6%, var(--gp-surface)); font-size: .84rem; font-weight: 800; }
