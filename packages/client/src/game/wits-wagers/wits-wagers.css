@@ -1264,90 +1264,81 @@ html[data-motion-level="off"] .ww-answer-card[role="button"]:hover {
   filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.42));
 }
 
-/* ===== 桌面模拟模式（wits_wagers_sim_v1）专属补充：骨架走共享 .sim-* ===== */
+/* ===== 桌面模拟模式（wits_wagers_sim_v1）专属补充 =====
+ * 骨架走共享 shared-ui/sim-stage.css 的三栏 .sim-board；中央不套共享毡面，
+ * 直接放完整版的 WitsTableStage（自带 .ww-felt 3D 毡面、钞箱、倒计时环）。
+ * 选择器一律带 .ww-sim 前缀，压过共享层的同级规则，不依赖懒加载样式表的注入顺序。 */
 
-.ww-sim__question-row {
+.ww-sim .ww-sim__table {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  overflow: visible;
+}
+
+/* 桌脚：答案牌 + 筹码分布，贴在毡面下方 */
+.ww-sim .ww-sim__foot {
+  display: flex;
   align-items: flex-start;
   gap: 16px;
 }
 
-.ww-sim__prompt {
-  flex: 1 1 200px;
+.ww-sim .ww-sim__answer-card {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.ww-sim .ww-sim__answer-card .ww-answer-card {
+  --ww-card-w: 76px;
+  --ww-card-h: 106px;
+}
+
+.ww-sim .ww-sim__chip-area {
+  flex: 1 1 auto;
   min-width: 0;
 }
 
-.ww-sim__prompt-text {
-  margin: 0 0 4px;
-  font-size: 1.05rem;
-  font-weight: 800;
-  line-height: 1.4;
-}
-
-.ww-sim__answer-card {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  width: 92px;
-}
-
-.ww-sim__answer-card .ww-answer-card {
-  width: 90px;
-  height: 126px;
-}
-
-.ww-sim__board {
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  padding: 6px 0;
-}
-
-.ww-sim__board .ww-answer-card {
-  width: 90px;
-  height: 126px;
-  flex: 0 0 auto;
-}
-
-/* 版图上牌自带 children 槽，筹码堆在牌脚 */
-.ww-sim__chips {
+.ww-sim .ww-sim__chips {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 4px;
-  margin-top: 4px;
+  gap: 8px;
 }
 
-.ww-sim__chip {
+.ww-sim .ww-sim__chip {
   display: inline-flex;
-  flex-direction: column;
   align-items: center;
-  gap: 1px;
-  font-size: 0.6rem;
-  line-height: 1;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
-.ww-sim__chip small {
-  max-width: 44px;
+.ww-sim .ww-sim__chip small {
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .ww-sim .sim-tool__btn.is-active {
-  background: var(--ww-gold, #f7c84b);
+  background: var(--gp-yellow);
   transform: translateY(1px);
-  box-shadow: 0 1px 0 var(--gp-line, #292722);
+  box-shadow: var(--gp-shadow-press);
 }
 
-.ww-sim__me-row {
-  align-items: stretch;
-  gap: 14px;
+.ww-sim .ww-sim__me-row .sim-tool {
+  flex: 1 1 auto;
 }
 
-.ww-sim__me-row .sim-tool {
-  flex: 1 1 180px;
+/* 输入框 + 交卷按钮：输入框吃满剩余宽度，别被工具栏的 2×2 网格切成两半 */
+.ww-sim .sim-board__tools .ww-sim__guess-row,
+.ww-sim .ww-sim__guess-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  width: 100%;
 }
 
 .ww-sim__guess-input {
@@ -1355,15 +1346,31 @@ html[data-motion-level="off"] .ww-answer-card[role="button"]:hover {
   min-width: 0;
   padding: 6px 10px;
   border-radius: 8px;
-  border: 2px solid var(--gp-line, #292722);
+  border: 2px solid var(--gp-line);
   font: inherit;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 
-.ww-sim__money {
+.ww-sim .ww-sim__money {
   display: flex;
   align-items: center;
   gap: 10px;
   min-height: 48px;
+}
+
+.ww-sim .ww-sim__money .sim-tool__value {
+  font-size: 1.25rem;
+}
+
+/* 768 以下：桌脚上下排，答案牌居中 */
+@media (max-width: 768px) {
+  .ww-sim .ww-sim__foot {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ww-sim .ww-sim__answer-card {
+    align-self: center;
+  }
 }

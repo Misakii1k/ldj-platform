@@ -8,12 +8,27 @@ import { useEffect, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
 import { nameFor, useGameAction } from '../useGameAction.ts';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
+import { SimBoard, SimPanelHead, SimToolsPanel, useSimTimerDeadline } from '../tabletop/SimBoard.tsx';
 import { webAudio } from '../../shared-ui/WebAudioManager.ts';
 import { WitsAnswerCard } from './stage/WitsAnswerCard.tsx';
 import { WitsNoteStack } from './stage/WitsNoteStack.tsx';
-import { formatMoney, MAX_GUESS, MIN_GUESS, targetLabel, type ChipId, type TargetId } from './types.ts';
+import { WitsTableStage } from './stage/WitsTableStage.tsx';
+import { formatMoney, MAX_GUESS, MIN_GUESS, targetLabel, type BetPairView, type BoardTargetView, type ChipId, type TargetId } from './types.ts';
 import type { WitsWagersSimPlayerView } from './simTypes.ts';
 import './wits-wagers.css';
+
+/**
+ * 版图上离答案最近的牌（与服务端 board.ts 的 pickWinningTargets 同一口径）：
+ * 答案低于全部猜测 → 「更低」；否则取绝对差最小者，等距两张都算。
+ * sim 不判胜负，这里只用来给桌面高亮一个提示。
+ */
+function pickClosestTargets(board: readonly BoardTargetView[], answer: number): TargetId[] {
+  const valued = board.filter((t): t is BoardTargetView & { value: number } => t.value !== null);
+  if (valued.length === 0) return [];
+  if (answer < Math.min(...valued.map((t) => t.value))) return board.some((t) => t.id === 'lower') ? ['lower'] : [];
+  const best = Math.min(...valued.map((t) => Math.abs(t.value - answer)));
+  return valued.filter((t) => Math.abs(t.value - answer) === best).map((t) => t.id);
+}
 
 interface Props {
   view: WitsWagersSimPlayerView;
@@ -56,7 +71,6 @@ export function WitsWagersSimStage({ view }: Props) {
   }));
 
   const logs = [...view.activityLogs].slice(-6).reverse();
-  const { dice, bell, timer } = view.props;
   const question = view.question;
   const myChips = myId ? view.chips[myId] : undefined;
   const myMoney = myId ? view.money[myId] ?? 0 : 0;
@@ -82,14 +96,27 @@ export function WitsWagersSimStage({ view }: Props) {
     void act({ type: 'sim:adjust_money', playerId: myId, delta });
   };
 
-  /** 每张牌上有谁的哪枚筹码 */
-  const chipsOn = (targetId: TargetId) => {
-    const out: Array<{ playerId: string; chipId: ChipId }> = [];
-    for (const [pid, pair] of Object.entries(view.chips)) {
-      for (const c of pair) if (c.targetId === targetId) out.push({ playerId: pid, chipId: c.chipId });
-    }
-    return out;
-  };
+  /** 桌上所有已摆出的筹码（谁的哪枚、押在哪张牌），桌脚按人列出 */
+  const placedChips: Array<{ playerId: string; chipId: ChipId; targetId: TargetId }> = [];
+  for (const [pid, pair] of Object.entries(view.chips)) {
+    for (const c of pair) if (c.targetId) placedChips.push({ playerId: pid, chipId: c.chipId, targetId: c.targetId });
+  }
+
+  /** 我的两枚筹码折成完整版的下注形状，桌面上就能画出同款钞票堆（sim 不押附加注） */
+  const myBets: BetPairView | null = myChips
+    ? [
+        { chipId: myChips[0].chipId, targetId: myChips[0].targetId, extraStake: 0 },
+        { chipId: myChips[1].chipId, targetId: myChips[1].targetId, extraStake: 0 },
+      ]
+    : null;
+
+  // 答案翻开后，在版图上高亮最接近的牌——纯展示提示，不结算
+  const winningTargetIds = view.revealed && view.answerRevealed && question?.answer !== undefined
+    ? pickClosestTargets(view.board, question.answer)
+    : [];
+
+  // sim 计时器 → 桌上的倒计时环
+  const timerDeadline = useSimTimerDeadline(view.props.timer);
 
   const answerTarget = question && view.answerRevealed && question.answer !== undefined
     ? { id: `g:${question.answer}` as TargetId, value: question.answer, slot: 'C' as const, odds: 0, authors: [] }
@@ -131,186 +158,128 @@ export function WitsWagersSimStage({ view }: Props) {
         </div>
       }
     >
-      <div className="sim-board ww-sim">
-        {/* 题目 + 答案牌 */}
-        <section className="sim-panel">
-          <div className="sim-panel__head">
-            <span>❓</span>
-            <h3>第 {view.questionNumber} 题</h3>
-          </div>
-          <div className="sim-board__row ww-sim__question-row">
-            <div className="ww-sim__prompt">
-              {question ? (
-                <>
-                  <p className="ww-sim__prompt-text">{question.prompt}</p>
-                  <small className="sim-hint">单位：{question.unit}</small>
-                </>
-              ) : <span className="sim-empty">还没有题目</span>}
-            </div>
-            <div className="ww-sim__answer-card">
-              <WitsAnswerCard target={answerTarget} faceUp={answerTarget !== null} />
-              <small className="sim-hint">{view.answerRevealed ? '标准答案' : '答案背面'}</small>
-            </div>
-          </div>
-        </section>
-
-        {/* 版图 */}
-        <section className="sim-panel">
-          <div className="sim-panel__head">
-            <span>🃏</span>
-            <h3>{view.revealed ? '版图 · 点牌摆筹码' : `版图 · 已交 ${view.submittedIds.length}/${view.players.length}`}</h3>
-            {view.revealed && me && myChips && (
-              <div className="sim-tool__row" role="radiogroup" aria-label="选择要摆的筹码">
-                {myChips.map((c) => (
-                  <button
-                    key={c.chipId}
-                    type="button"
-                    role="radio"
-                    aria-checked={activeChip === c.chipId}
-                    className={`sim-tool__btn ${activeChip === c.chipId ? 'is-active' : ''}`}
-                    onClick={() => setActiveChip(c.chipId)}
-                  >
-                    筹码 {c.chipId}{c.targetId ? ` · 在 ${targetLabel(view.board.find((t) => t.id === c.targetId))}` : ' · 在手'}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          {view.revealed ? (
-            <div className="sim-board__row ww-sim__board">
-              {view.board.map((target, idx) => {
-                const placed = chipsOn(target.id);
-                const mine = placed.some((p) => p.playerId === myId);
-                return (
-                  <WitsAnswerCard
-                    key={target.id}
-                    target={target}
-                    members={members}
-                    faceUp
-                    revealIndex={idx}
-                    isSelected={mine}
-                    interactive={!isSpectator && !busy}
-                    onActivate={() => placeChip(target.id)}
-                  >
-                    {placed.length > 0 && (
-                      <div className="ww-sim__chips">
-                        {placed.map((p) => (
-                          <span key={`${p.playerId}:${p.chipId}`} className="ww-sim__chip" title={`${nameFor(members, p.playerId)} 的筹码 ${p.chipId}`}>
-                            <WitsNoteStack badge={p.chipId} noteWidth={22} />
-                            <small>{nameFor(members, p.playerId)}</small>
-                          </span>
-                        ))}
+      <SimBoard
+        className="ww-sim"
+        felt={false}
+        logs={logs}
+        tools={
+          <>
+            {/* 我的猜测 + 我的钱：只有在座玩家才有 */}
+            {me && (
+              <section className="sim-panel">
+                <SimPanelHead icon="pointer" title="我的猜测与钞票" />
+                <div className="sim-board__row sim-tools ww-sim__me-row">
+                  <div className="sim-tool">
+                    <span className="stage-eyebrow">我的猜测</span>
+                    {view.revealed ? (
+                      <span className="sim-tool__value stage-numeral">{me.myGuess === null ? '本题未交' : me.myGuess.toLocaleString('zh-CN')}</span>
+                    ) : (
+                      <div className="sim-tool__row ww-sim__guess-row">
+                        <input
+                          className="ww-sim__guess-input"
+                          type="number"
+                          inputMode="numeric"
+                          min={MIN_GUESS}
+                          max={MAX_GUESS}
+                          placeholder={me.myGuess === null ? '写一个正整数' : String(me.myGuess)}
+                          value={guessInput}
+                          onChange={(e) => setGuessInput(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') submitGuess(); }}
+                          aria-label="我的猜测"
+                        />
+                        <button type="button" className="sim-tool__btn" disabled={busy || !guessValid} onClick={submitGuess}>
+                          {me.myGuess === null ? '交卷' : '改一下'}
+                        </button>
                       </div>
                     )}
-                  </WitsAnswerCard>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="sim-hint">大家写完数字后点「亮牌排版图」，系统会去重、升序并按查表给出赔率。</p>
-          )}
-        </section>
-
-        {/* 我的猜测 + 我的钱 */}
-        {me && (
-          <section className="sim-panel">
-            <div className="sim-panel__head">
-              <span>✍️</span>
-              <h3>我的猜测与钞票</h3>
-            </div>
-            <div className="sim-board__row ww-sim__me-row">
-              <div className="sim-tool">
-                {view.revealed ? (
-                  <span className="sim-tool__value">{me.myGuess === null ? '本题未交' : me.myGuess.toLocaleString('zh-CN')}</span>
-                ) : (
-                  <div className="sim-tool__row">
-                    <input
-                      className="ww-sim__guess-input"
-                      type="number"
-                      inputMode="numeric"
-                      min={MIN_GUESS}
-                      max={MAX_GUESS}
-                      placeholder={me.myGuess === null ? '写一个正整数' : String(me.myGuess)}
-                      value={guessInput}
-                      onChange={(e) => setGuessInput(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') submitGuess(); }}
-                      aria-label="我的猜测"
-                    />
-                    <button type="button" className="sim-tool__btn" disabled={busy || !guessValid} onClick={submitGuess}>
-                      {me.myGuess === null ? '交卷' : '改一下'}
-                    </button>
+                    <small className="sim-hint">{view.revealed ? '已亮牌，本题不能再改' : me.myGuess === null ? '只有自己能看到' : `已交：${me.myGuess.toLocaleString('zh-CN')}，亮牌前可改`}</small>
                   </div>
+                  <div className="sim-tool">
+                    <span className="stage-eyebrow">我的钞票</span>
+                    <div className="ww-sim__money">
+                      <WitsNoteStack extraStake={myMoney} noteWidth={34} />
+                      <span className="sim-tool__value stage-numeral">{formatMoney(myMoney)}</span>
+                    </div>
+                    <div className="sim-tool__row">
+                      <button type="button" className="sim-tool__btn" disabled={busy || myMoney < 5} onClick={() => adjustMoney(-5)}>−5</button>
+                      <button type="button" className="sim-tool__btn" disabled={busy || myMoney < 1} onClick={() => adjustMoney(-1)}>−1</button>
+                      <button type="button" className="sim-tool__btn" disabled={busy} onClick={() => adjustMoney(1)}>+1</button>
+                      <button type="button" className="sim-tool__btn" disabled={busy} onClick={() => adjustMoney(5)}>+5</button>
+                    </div>
+                    <small className="sim-hint">1 分 = ¥100，输赢自己算自己记</small>
+                  </div>
+                </div>
+              </section>
+            )}
+            <SimToolsPanel props={view.props} members={members} myId={myId} busy={busy} act={act} timerPreset={30} />
+          </>
+        }
+      >
+        {/* 中央桌面：直接复用完整版的 3D 毡面牌桌（钞箱 + 倒计时环 + 题目卡 + 版图 / 背面悬念行） */}
+        <div className="ww-game ww-sim__table" data-ww-theme="felt-green">
+          <WitsTableStage
+            phase={view.revealed ? 'betting' : 'answering'}
+            question={question ? { prompt: question.prompt, unit: question.unit } : null}
+            board={view.revealed ? view.board : []}
+            members={members}
+            faceDownCount={view.players.length}
+            submittedCount={view.submittedIds.length}
+            winningTargetIds={winningTargetIds}
+            myAcceptedBets={myBets}
+            activeChipId={view.revealed && me ? activeChip : null}
+            onSelectTarget={placeChip}
+            interactive={view.revealed && !isSpectator && !busy}
+            deadlineAt={timerDeadline.deadlineAt}
+            phaseKey={`sim-timer:${timerDeadline.epoch}`}
+          >
+            {/* 桌脚：标准答案牌 + 筹码分布 */}
+            <section className="sim-panel ww-sim__foot">
+              <div className="ww-sim__answer-card">
+                <span className="stage-eyebrow">{view.answerRevealed ? '标准答案' : '答案背面'}</span>
+                <WitsAnswerCard target={answerTarget} faceUp={answerTarget !== null} />
+              </div>
+
+              <div className="ww-sim__chip-area">
+                <SimPanelHead
+                  icon="cards_deck"
+                  title={view.revealed ? '版图 · 点牌摆筹码' : <>第 <span className="stage-numeral">{view.questionNumber}</span> 题 · 已交 {view.submittedIds.length}/{view.players.length}</>}
+                >
+                  {view.revealed && me && myChips && (
+                    <div className="sim-tool__row" role="radiogroup" aria-label="选择要摆的筹码">
+                      {myChips.map((c) => (
+                        <button
+                          key={c.chipId}
+                          type="button"
+                          role="radio"
+                          aria-checked={activeChip === c.chipId}
+                          className={`sim-tool__btn ${activeChip === c.chipId ? 'is-active' : ''}`}
+                          onClick={() => setActiveChip(c.chipId)}
+                        >
+                          筹码 {c.chipId}{c.targetId ? ` · 在 ${targetLabel(view.board.find((t) => t.id === c.targetId))}` : ' · 在手'}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </SimPanelHead>
+                {view.revealed ? (
+                  placedChips.length > 0 ? (
+                    <div className="ww-sim__chips">
+                      {placedChips.map((p) => (
+                        <span key={`${p.playerId}:${p.chipId}`} className="ww-sim__chip" title={`${nameFor(members, p.playerId)} 的筹码 ${p.chipId}`}>
+                          <WitsNoteStack badge={p.chipId} noteWidth={22} />
+                          <small>{nameFor(members, p.playerId)} → {targetLabel(view.board.find((t) => t.id === p.targetId))}</small>
+                        </span>
+                      ))}
+                    </div>
+                  ) : <p className="sim-hint">还没有人摆筹码。先选 A 或 B，再点桌上的牌；再点一次收回。</p>
+                ) : (
+                  <p className="sim-hint">大家写完数字后点「亮牌排版图」，系统会去重、升序并按查表给出赔率。</p>
                 )}
-                <small className="sim-hint">{view.revealed ? '已亮牌，本题不能再改' : me.myGuess === null ? '只有自己能看到' : `已交：${me.myGuess.toLocaleString('zh-CN')}，亮牌前可改`}</small>
               </div>
-              <div className="sim-tool">
-                <div className="ww-sim__money">
-                  <WitsNoteStack extraStake={myMoney} noteWidth={34} />
-                  <span className="sim-tool__value">{formatMoney(myMoney)}</span>
-                </div>
-                <div className="sim-tool__row">
-                  <button type="button" className="sim-tool__btn" disabled={busy || myMoney < 5} onClick={() => adjustMoney(-5)}>−5</button>
-                  <button type="button" className="sim-tool__btn" disabled={busy || myMoney < 1} onClick={() => adjustMoney(-1)}>−1</button>
-                  <button type="button" className="sim-tool__btn" disabled={busy} onClick={() => adjustMoney(1)}>+1</button>
-                  <button type="button" className="sim-tool__btn" disabled={busy} onClick={() => adjustMoney(5)}>+5</button>
-                </div>
-                <small className="sim-hint">1 分 = ¥100，输赢自己算自己记</small>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* 道具 */}
-        <section className="sim-panel">
-          <div className="sim-panel__head"><h3>自由道具</h3></div>
-          <div className="sim-board__row sim-tools">
-            <div className="sim-tool">
-              <button type="button" className="sim-tool__btn" disabled={busy || isSpectator}
-                onClick={() => myId && (webAudio.playDiceShake(), void act({ type: 'sim:roll_dice', playerId: myId }))}>
-                掷骰
-              </button>
-              <span className="sim-tool__value">{dice?.values.length ? dice.values.join(' · ') : '—'}</span>
-              {dice?.lastRollBy && <small>{nameFor(members, dice.lastRollBy)} 掷</small>}
-            </div>
-            <div className="sim-tool">
-              <div className="sim-tool__row">
-                <button type="button" className="sim-tool__btn" disabled={busy || isSpectator || timer?.isRunning}
-                  onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'start' })}>开始</button>
-                <button type="button" className="sim-tool__btn" disabled={busy || isSpectator || !timer?.isRunning}
-                  onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'pause' })}>暂停</button>
-                <button type="button" className="sim-tool__btn" disabled={busy || isSpectator}
-                  onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'reset' })}>重置</button>
-                <button type="button" className="sim-tool__btn" disabled={busy || isSpectator}
-                  onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'set', durationSeconds: 30 })}>30s</button>
-              </div>
-              <span className={`sim-tool__value ${timer?.isExploded ? 'is-exploded' : ''}`}>
-                {timer ? (timer.isExploded ? '到点！' : `${timer.remainingSeconds}s`) : '未启用'}
-              </span>
-            </div>
-            <button
-              type="button"
-              className={`sim-bell-btn ${bell?.rungBy ? 'sim-bell-btn--rung' : ''}`}
-              disabled={busy || isSpectator}
-              onClick={() => myId && (webAudio.playUnoShout(), void act({ type: 'sim:ring_bell', playerId: myId }))}
-              title={`拍铃（首响：${bell?.rungBy ? nameFor(members, bell.rungBy) : '无人'} · 共 ${bell?.ringCount ?? 0} 次）`}
-            >
-              按铃
-              {bell?.rungBy && <small>{nameFor(members, bell.rungBy)} 首响</small>}
-            </button>
-          </div>
-        </section>
-
-        {/* 活动日志 */}
-        <section className="sim-panel">
-          <div className="sim-panel__head"><h3>活动记录</h3></div>
-          <ul className="sim-logs">
-            {logs.map((log, i) => (
-              <li key={i} className="sim-logs__item">{log.text}</li>
-            ))}
-            {logs.length === 0 && <li className="sim-logs__item sim-empty">暂无记录</li>}
-          </ul>
-        </section>
-      </div>
+            </section>
+          </WitsTableStage>
+        </div>
+      </SimBoard>
 
       {rulesOpen && (
         <div className="sim-rules" role="dialog" aria-label="模拟模式说明">
