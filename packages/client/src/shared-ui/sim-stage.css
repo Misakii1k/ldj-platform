@@ -1,0 +1,514 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   桌面模拟模式（*_sim_v1）共享舞台 —— 从 styles.css 整段迁出（V06）
+
+   sim 也是一张桌，只是没有裁判：
+   - 左栏「工具栏」：骰子 / 按铃 / 计时器，实体贴纸卡 + 衬线大数字
+   - 中央「桌面」：共享 .stage-felt-3d 毡面，各游戏把桌案内容放在这里
+   - 右栏「活动日志」
+   三栏 grid 铺满舞台（220px 1fr 260px），768 以下折成上下三段。
+
+   约束：全部走 --gp-* 令牌，不写裸 hex；动效只动 transform / opacity。
+   main.tsx 在 game-ui.css 之后引入，令牌与 §10 配方工具类都已就绪。
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── 1. 三栏骨架 ─────────────────────────────────────────────────────────── */
+
+.sim-board {
+  --sim-col-tools: 220px;
+  --sim-col-log: 260px;
+  --sim-gap: var(--gp-dist-lg);
+
+  display: grid;
+  grid-template-columns: var(--sim-col-tools) minmax(0, 1fr) var(--sim-col-log);
+  grid-template-rows: minmax(0, 1fr);
+  gap: var(--sim-gap);
+  width: 100%;
+  height: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--gp-dist-md);
+  box-sizing: border-box;
+}
+
+.sim-board__tools,
+.sim-board__log,
+.sim-board__table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sim-gap);
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
+}
+
+.sim-board__log .sim-panel--log {
+  flex: 1 1 auto;
+}
+
+/* 中央毡面：沿用共享 3D 毡面的配色与桌沿，但桌上是可读面板而不是道具，
+   所以改为纵向排布、内部滚动，不再做水平居中滚动条。 */
+.sim-board__table--felt {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: var(--sim-gap);
+  padding: var(--gp-dist-lg);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* 毡面上的面板：纸板略透，让毡纹从边上透出来 */
+.sim-board__table--felt > .sim-panel {
+  background: color-mix(in srgb, var(--gp-surface) 94%, transparent);
+}
+
+/* 1024 以下：侧栏收窄，把宽度让给桌面 */
+@media (max-width: 1024px) {
+  .sim-board {
+    --sim-col-tools: 184px;
+    --sim-col-log: 200px;
+    --sim-gap: var(--gp-dist-md);
+  }
+}
+
+/* 768 以下：折成上下三段——桌面在最上，其次工具，最后日志；整块纵向滚动 */
+@media (max-width: 768px) {
+  .sim-board {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    grid-auto-rows: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: var(--gp-dist-sm);
+  }
+
+  .sim-board__table {
+    order: 1;
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+
+  .sim-board__tools {
+    order: 2;
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+
+  .sim-board__log {
+    order: 3;
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+
+  .sim-board__table--felt {
+    padding: var(--gp-dist-md);
+  }
+
+  /* 竖排后工具卡横向铺开，省纵向空间 */
+  .sim-board__tools .sim-tools {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .sim-board__tools .sim-tool {
+    flex: 1 1 140px;
+  }
+}
+
+/* 横屏矮视口：侧栏再收一点，毡面内边距压小 */
+@media (orientation: landscape) and (max-height: 520px) {
+  .sim-board {
+    --sim-col-tools: 176px;
+    --sim-col-log: 184px;
+    --sim-gap: var(--gp-dist-sm);
+    padding: var(--gp-dist-sm);
+  }
+
+  .sim-board__table--felt {
+    padding: var(--gp-dist-sm);
+  }
+}
+
+/* ─── 2. 面板 ─────────────────────────────────────────────────────────────── */
+
+.sim-panel {
+  background: var(--gp-surface);
+  border: var(--gp-border-sm);
+  border-radius: var(--gp-radius-md);
+  box-shadow: var(--gp-shadow-sm);
+  color: var(--gp-ink);
+  padding: 14px 16px;
+}
+
+.sim-panel__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.sim-panel__head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 850;
+  color: var(--gp-ink);
+}
+
+.sim-panel__icon {
+  flex: 0 0 auto;
+}
+
+.sim-board__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+/* 工具栏与日志栏在窄列里：内边距收紧 */
+.sim-board__tools .sim-panel,
+.sim-board__log .sim-panel {
+  padding: 12px;
+}
+
+/* ─── 3. 底部操作条 ───────────────────────────────────────────────────────── */
+
+.sim-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.sim-toolbar__btn {
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 2px solid var(--gp-line);
+  background: var(--gp-surface);
+  box-shadow: 0 3px 0 var(--gp-line);
+  color: var(--gp-ink);
+  font-weight: 800;
+  font-size: 0.84rem;
+  cursor: pointer;
+  transition: transform var(--gp-dur-fast) var(--gp-ease-standard),
+    box-shadow var(--gp-dur-fast) var(--gp-ease-standard);
+}
+
+.sim-toolbar__btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0 var(--gp-line);
+}
+
+.sim-toolbar__btn:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: var(--gp-shadow-press);
+}
+
+.sim-toolbar__btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.sim-toolbar__btn--primary {
+  background: var(--gp-green);
+  color: var(--gp-surface);
+}
+
+.sim-hand {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ─── 4. 自由道具卡：虚线框 → 实体贴纸卡 ───────────────────────────────────── */
+
+.sim-tools {
+  align-items: stretch;
+}
+
+/* 左栏里三张卡竖排 */
+.sim-board__tools .sim-tools {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: var(--gp-dist-md);
+}
+
+.sim-tool {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  min-width: 120px;
+  padding: 10px 12px;
+  border: 2px solid var(--gp-line);
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-surface-strong);
+  box-shadow: var(--gp-shadow-sticker);
+}
+
+.sim-tool__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* 窄列里计时器四个按钮排成 2×2，别挤成一行 */
+.sim-board__tools .sim-tool__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+}
+
+.sim-tool__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 2px solid var(--gp-line);
+  background: var(--gp-surface);
+  box-shadow: 0 2px 0 var(--gp-line);
+  color: var(--gp-ink);
+  font-weight: 800;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: transform var(--gp-dur-fast) var(--gp-ease-standard),
+    box-shadow var(--gp-dur-fast) var(--gp-ease-standard);
+}
+
+.sim-board__tools .sim-tool > .sim-tool__btn {
+  align-self: stretch;
+}
+
+.sim-tool__btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 0 var(--gp-line);
+}
+
+.sim-tool__btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: var(--gp-shadow-press);
+}
+
+.sim-tool__btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.sim-tool__btn--bell {
+  background: color-mix(in srgb, var(--gp-yellow) 30%, var(--gp-surface));
+}
+
+/* 数值：配合 .stage-numeral 的衬线等宽数字，放大到一眼可读 */
+.sim-tool__value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--gp-ink);
+  line-height: 1.1;
+}
+
+/* 纯文字的状态值（如「某某 首响」）不用大号衬线 */
+.sim-tool__value--text {
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.sim-tool__meta {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--gp-muted);
+}
+
+/* 到点脉冲：原样从 styles.css 迁来，已登记在 ambientMotion 门控清单（.sim-tool__value） */
+.sim-tool__value.is-exploded {
+  color: var(--gp-danger);
+  animation: sim-pulse 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes sim-pulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.08); }
+}
+
+/* ─── 5. 活动日志 ─────────────────────────────────────────────────────────── */
+
+.sim-logs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sim-logs__item {
+  font-size: 0.82rem;
+  color: var(--gp-ink);
+  opacity: 0.9;
+}
+
+/* 日志栏：每条之间一根细分隔线，像一本流水账 */
+.sim-board__log .sim-logs__item {
+  padding: 6px 0;
+  border-bottom: 1px dashed color-mix(in srgb, var(--gp-line) 25%, transparent);
+  line-height: 1.45;
+}
+
+.sim-board__log .sim-logs__item:last-child {
+  border-bottom: none;
+}
+
+.sim-empty { opacity: 0.6; font-size: 0.85rem; }
+
+/* ─── 6. 各游戏共用的桌面小件（原样迁移，色值改令牌） ─────────────────────── */
+
+.sim-secret-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px;
+  border: 2px solid var(--gp-line);
+  border-radius: 14px;
+  background: var(--gp-paper);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.sim-secret-card__label { font-size: 0.75rem; font-weight: 750; color: var(--gp-muted); }
+
+.sim-secret-card__word {
+  font-family: var(--gp-font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--gp-ink);
+}
+
+.sim-secret-card__word--warden { color: var(--gp-warning); }
+.sim-secret-card__word--role { font-size: 1.1rem; }
+
+.sim-topic-card {
+  border: 2px solid var(--gp-line);
+  border-left: 5px solid var(--gp-coral);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: var(--gp-surface);
+  box-shadow: 0 3px 0 var(--gp-line);
+  color: var(--gp-ink);
+}
+
+.sim-topic-card__category { font-size: 0.74rem; font-weight: 750; color: var(--gp-muted); }
+.sim-topic-card__text { margin: 6px 0; font-size: 1.02rem; font-weight: 800; line-height: 1.5; color: var(--gp-ink); }
+
+.sim-hint { font-size: 0.82rem; font-weight: 700; color: var(--gp-muted); margin: 10px 0 0; }
+
+.sim-case {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.sim-case__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.sim-case__img { width: 84px; height: 84px; border: 2px solid var(--gp-line); border-radius: 12px; object-fit: cover; box-shadow: 0 3px 0 var(--gp-line); }
+.sim-case__role { font-size: 0.78rem; font-weight: 850; color: var(--gp-ink); }
+.sim-case__name { font-size: 0.8rem; font-weight: 750; color: var(--gp-ink); }
+
+.sim-goose-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 8px;
+}
+
+.sim-goose-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 4px;
+  border: 2px solid var(--gp-line);
+  border-radius: 10px;
+  background: var(--gp-surface);
+  box-shadow: 0 2px 0 var(--gp-line);
+}
+
+.sim-goose-card__img { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; }
+.sim-goose-card__name { font-size: 0.72rem; font-weight: 800; text-align: center; color: var(--gp-ink); }
+
+.sim-bell-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 10px 18px;
+  border-radius: 14px;
+  border: 2.5px solid var(--gp-line);
+  background: color-mix(in srgb, var(--gp-yellow) 30%, var(--gp-surface));
+  box-shadow: 0 4px 0 var(--gp-line);
+  color: var(--gp-ink);
+  font-weight: 900;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform var(--gp-dur-fast) var(--gp-ease-standard),
+    box-shadow var(--gp-dur-fast) var(--gp-ease-standard);
+}
+
+.sim-bell-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--gp-line);
+}
+
+.sim-bell-btn:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: var(--gp-shadow-press);
+}
+
+.sim-bell-btn--rung { border-color: var(--gp-line); background: var(--gp-yellow); box-shadow: 0 4px 0 var(--gp-line); }
+.sim-bell-btn small { font-size: 0.72rem; font-weight: 750; color: var(--gp-muted); }
+
+/* ─── 7. 模拟说明弹层 ─────────────────────────────────────────────────────── */
+
+.sim-rules {
+  position: fixed;
+  inset: 0;
+  z-index: 60000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 440px;
+  margin: auto;
+  padding: 24px;
+  background: var(--gp-surface);
+  border: 3px solid var(--gp-line);
+  border-radius: 18px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  color: var(--gp-ink);
+}
+
+.sim-rules__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  border: 2px solid var(--gp-line);
+  border-radius: 8px;
+  background: var(--gp-surface);
+  box-shadow: 0 2px 0 var(--gp-line);
+  color: var(--gp-ink);
+  font-size: 0.95rem;
+  font-weight: 900;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.sim-rules h4 { margin-top: 0; font-family: var(--gp-font-display); font-size: 1.15rem; font-weight: 700; color: var(--gp-ink); }
+.sim-rules p { line-height: 1.6; font-size: 0.9rem; color: var(--gp-ink); }
+.sim-rules ul { padding-left: 18px; font-size: 0.86rem; line-height: 1.7; color: var(--gp-ink); }

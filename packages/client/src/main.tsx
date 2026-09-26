@@ -23,6 +23,7 @@ import './game/werewolf/werewolf.css';
 import './game/landlord/landlord.css';
 import './shared-ui/GameMotion.css';
 import './shared-ui/game-ui.css';
+import './shared-ui/sim-stage.css';
 // 主题层：必须排在 game-ui.css 之后，才能压过归一化层给出各自的主题变量与外壳。
 import './game/werewolf/theatre.css';
 import './game/durian/fruit-party.css';

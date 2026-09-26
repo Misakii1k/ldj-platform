@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
 import { nameFor, useGameAction } from '../useGameAction.ts';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
-import { webAudio } from '../../shared-ui/WebAudioManager.ts';
+import { SimBoard, SimPanelHead, SimToolsPanel } from '../tabletop/SimBoard.tsx';
 import type { EchoJudgeSimPlayerView } from './simTypes.ts';
 
 interface Props {
@@ -39,9 +39,6 @@ export function EchoJudgeSimStage({ view }: Props) {
   }, [view.props.timer?.isRunning, view.props.timer?.remainingSeconds, act]);
 
   const logs = [...view.activityLogs].slice(-6).reverse();
-  const dice = view.props.dice;
-  const bell = view.props.bell;
-  const timer = view.props.timer;
 
   return (
     <TabletopShell
@@ -66,14 +63,14 @@ export function EchoJudgeSimStage({ view }: Props) {
         </div>
       }
     >
-      <div className="sim-board">
+      <SimBoard
+        logs={logs}
+        tools={<SimToolsPanel props={view.props} members={members} myId={myId} busy={busy} act={act} />}
+      >
         {/* 我的私密触发词 */}
         {me && (
           <section className="sim-panel">
-            <div className="sim-panel__head">
-              
-              <h3>我的秘密触发词（仅自己可见）</h3>
-            </div>
+            <SimPanelHead icon="pointer" title={<>我的秘密触发词（仅自己可见）</>} />
             <div className="sim-secret-card">
               {me.triggerWord ? (
                 <>
@@ -89,10 +86,7 @@ export function EchoJudgeSimStage({ view }: Props) {
 
         {/* 题卡展示区 */}
         <section className="sim-panel">
-          <div className="sim-panel__head">
-            
-            <h3>题卡区（已抽 {view.usedTopicCount} 张）</h3>
-          </div>
+          <SimPanelHead icon="cards_deck" title={<>题卡区（已抽 {view.usedTopicCount} 张）</>} />
           {view.topicArea ? (
             <div className="sim-topic-card">
               <span className="sim-topic-card__category">{view.topicArea.card.categoryLabel}</span>
@@ -103,48 +97,7 @@ export function EchoJudgeSimStage({ view }: Props) {
             <span className="sim-empty">点击「抽题卡」随机抽一张主题题卡</span>
           )}
         </section>
-
-        {/* 自由道具 */}
-        <section className="sim-panel">
-          <div className="sim-panel__head"><h3>自由道具</h3></div>
-          <div className="sim-board__row sim-tools">
-            <div className="sim-tool">
-              <button type="button" className="sim-tool__btn" disabled={busy}
-                onClick={() => myId && (webAudio.playDiceShake(), void act({ type: 'sim:roll_dice', playerId: myId }))}>掷骰</button>
-              <span className="sim-tool__value">{dice?.values.length ? dice.values.join(' · ') : '—'}</span>
-            </div>
-            <div className="sim-tool">
-              <button type="button" className="sim-tool__btn sim-tool__btn--bell" disabled={busy}
-                onClick={() => myId && (webAudio.playUnoShout(), void act({ type: 'sim:ring_bell', playerId: myId }))}>按铃</button>
-              <span className="sim-tool__value">{bell?.rungBy ? `${nameFor(members, bell.rungBy)} 首响 · ${bell.ringCount} 次` : '未按'}</span>
-            </div>
-            <div className="sim-tool">
-              <div className="sim-tool__row">
-                <button type="button" className="sim-tool__btn" disabled={busy || timer?.isRunning}
-                  onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'start' })}>▶</button>
-                <button type="button" className="sim-tool__btn" disabled={busy || !timer?.isRunning}
-                  onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'pause' })}>⏸</button>
-                <button type="button" className="sim-tool__btn" disabled={busy}
-                  onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'reset' })}>↺</button>
-                <button type="button" className="sim-tool__btn" disabled={busy}
-                  onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'set', durationSeconds: 60 })}>60s</button>
-              </div>
-              <span className={`sim-tool__value ${timer?.isExploded ? 'is-exploded' : ''}`}>
-                {timer ? (timer.isExploded ? '到点！' : `${timer.remainingSeconds}s`) : '未启用'}
-              </span>
-            </div>
-          </div>
-        </section>
-
-        {/* 活动日志 */}
-        <section className="sim-panel">
-          <div className="sim-panel__head"><h3>活动记录</h3></div>
-          <ul className="sim-logs">
-            {logs.map((log, i) => <li key={i} className="sim-logs__item">{log.text}</li>)}
-            {logs.length === 0 && <li className="sim-logs__item sim-empty">暂无记录</li>}
-          </ul>
-        </section>
-      </div>
+      </SimBoard>
 
       {rulesOpen && (
         <div className="sim-rules" role="dialog" aria-label="模拟模式说明">

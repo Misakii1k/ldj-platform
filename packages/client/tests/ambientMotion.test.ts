@@ -27,6 +27,7 @@ const GAME_CSS_FILES = [
   '../src/game/landlord/landlord.css',
   '../src/game/wits-wagers/wits-wagers.css',
   '../src/game/werewolf/werewolf.css',
+  '../src/shared-ui/sim-stage.css',
 ] as const;
 
 const STYLES_CSS = GAME_CSS_FILES.map((rel) =>

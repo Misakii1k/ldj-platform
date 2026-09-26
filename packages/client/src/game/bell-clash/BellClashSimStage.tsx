@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
 import { nameFor, useGameAction } from '../useGameAction.ts';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
+import { SimBoard, SimPanelHead, SimToolsPanel } from '../tabletop/SimBoard.tsx';
 import { webAudio } from '../../shared-ui/WebAudioManager.ts';
 import type { BellClashSimPlayerView, SimCard } from './simTypes.ts';
 
@@ -76,9 +77,7 @@ export function BellClashSimStage({ view }: Props) {
   }, [view.props.timer?.isRunning, view.props.timer?.remainingSeconds, act]);
 
   const logs = [...view.activityLogs].slice(-6).reverse();
-  const dice = view.props.dice;
   const bell = view.props.bell;
-  const timer = view.props.timer;
 
   const handlePlay = (index: number) => {
     setSelectedIndex(index);
@@ -116,12 +115,12 @@ export function BellClashSimStage({ view }: Props) {
       }
     >
       {/* 桌案：摸牌堆 + 翻牌区 + 桌面出牌 */}
-      <div className="sim-board">
+      <SimBoard
+        logs={logs}
+        tools={<SimToolsPanel props={view.props} members={members} myId={myId} busy={busy} act={act} showBell={false} />}
+      >
         <section className="sim-panel">
-          <div className="sim-panel__head">
-            <span>🎴</span>
-            <h3>桌案 · 抽牌堆剩 {view.drawCount} 张</h3>
-          </div>
+          <SimPanelHead icon="cards_deck" title={<>桌案 · 抽牌堆剩 <span className="stage-numeral">{view.drawCount}</span> 张</>} />
           <div className="sim-board__row">
             <button
               type="button"
@@ -169,52 +168,7 @@ export function BellClashSimStage({ view }: Props) {
             </div>
           </section>
         )}
-
-        {/* 道具：骰子 + 计时器 */}
-        <section className="sim-panel">
-          <div className="sim-panel__head"><h3>自由道具</h3></div>
-          <div className="sim-board__row sim-tools">
-            <div className="sim-tool">
-              <button
-                type="button"
-                className="sim-tool__btn"
-                disabled={busy}
-                onClick={() => myId && (webAudio.playDiceShake(), void act({ type: 'sim:roll_dice', playerId: myId }))}
-              >
-                掷骰
-              </button>
-              <span className="sim-tool__value">{dice?.values.length ? dice.values.join(' · ') : '—'}</span>
-              {dice?.lastRollBy && <small>{nameFor(members, dice.lastRollBy)} 掷</small>}
-            </div>
-            <div className="sim-tool">
-              <div className="sim-tool__row">
-                <button type="button" className="sim-tool__btn" disabled={busy || timer?.isRunning}
-                  onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'start' })}>开始</button>
-                <button type="button" className="sim-tool__btn" disabled={busy || !timer?.isRunning}
-                  onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'pause' })}>暂停</button>
-                <button type="button" className="sim-tool__btn" disabled={busy}
-                  onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'reset' })}>重置</button>
-                <button type="button" className="sim-tool__btn" disabled={busy}
-                  onClick={() => myId && void act({ type: 'sim:operate_timer', playerId: myId, op: 'set', durationSeconds: 60 })}>60s</button>
-              </div>
-              <span className={`sim-tool__value ${timer?.isExploded ? 'is-exploded' : ''}`}>
-                {timer ? (timer.isExploded ? '到点！' : `${timer.remainingSeconds}s`) : '未启用'}
-              </span>
-            </div>
-          </div>
-        </section>
-
-        {/* 活动日志 */}
-        <section className="sim-panel">
-          <div className="sim-panel__head"><h3>活动记录</h3></div>
-          <ul className="sim-logs">
-            {logs.map((log, i) => (
-              <li key={i} className="sim-logs__item">{log.text}</li>
-            ))}
-            {logs.length === 0 && <li className="sim-logs__item sim-empty">暂无记录</li>}
-          </ul>
-        </section>
-      </div>
+      </SimBoard>
 
       {rulesOpen && (
         <div className="sim-rules" role="dialog" aria-label="模拟模式说明">
