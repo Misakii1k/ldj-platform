@@ -4,6 +4,8 @@ import type { CheeseThiefPlayerView, CheeseThiefPublicView } from './types.ts';
 import { UserAvatar } from '../../user/UserAvatar.tsx';
 import { resolveMemberAvatar } from '../../user/avatar.ts';
 import { nameFor, type MemberLike } from '../useGameAction.ts';
+import { GameIcon } from '../../shared-ui/GameIcon.tsx';
+import { BallotIcon, CheeseIcon, DieIcon, EyeIcon, MouseIcon, ScrollIcon } from './stage/CheeseIcons.tsx';
 
 interface CheeseGameOverRevealProps {
   view: CheeseThiefPlayerView | CheeseThiefPublicView;
@@ -21,19 +23,19 @@ export function CheeseGameOverReveal({ view, members, myId }: CheeseGameOverReve
   const isThiefCaught = view.thiefCaught === true;
 
   // 终局标题与副标题判定
-  let outcomeBadge = '🧀 奶酪完好';
+  let outcomeBadge = '奶酪完好';
   let outcomeClass = 'is-no-thief';
   let outcomeTitle = '奶酪安然无恙 · 全员获胜！';
   let outcomeDesc = '整夜无人单独醒来偷窃奶酪，大奶酪完好无损，所有老鼠共同胜利！';
 
   if (hasThief) {
     if (isThiefCaught) {
-      outcomeBadge = '🏆 抓捕归案';
+      outcomeBadge = '抓捕归案';
       outcomeClass = 'is-caught';
       outcomeTitle = '大盗落网 · 好人胜利！';
       outcomeDesc = '机敏的村民成功指认出怪盗，奶酪小镇的正义得到伸张！';
     } else {
-      outcomeBadge = '😈 盗匪得逞';
+      outcomeBadge = '盗匪得逞';
       outcomeClass = 'is-escaped';
       outcomeTitle = '大盗得逞 · 盗匪胜利！';
       outcomeDesc = '怪盗老鼠瞒天过海逃避制裁，成功将大奶酪占为己有！';
@@ -56,7 +58,7 @@ export function CheeseGameOverReveal({ view, members, myId }: CheeseGameOverReve
           onClick={() => setClosed(false)}
           title="点击重新打开终局复盘遮罩"
         >
-          <span className="cheese-reopen-reveal-btn__icon" aria-hidden="true">📜</span>
+          <span className="cheese-reopen-reveal-btn__icon" aria-hidden="true"><ScrollIcon /></span>
           <span>查看终局真相复盘（点击打开）</span>
         </button>
       </div>
@@ -71,7 +73,7 @@ export function CheeseGameOverReveal({ view, members, myId }: CheeseGameOverReve
           className="cheese-reopen-reveal-btn"
           onClick={() => setClosed(false)}
         >
-          <span className="cheese-reopen-reveal-btn__icon" aria-hidden="true">📜</span>
+          <span className="cheese-reopen-reveal-btn__icon" aria-hidden="true"><ScrollIcon /></span>
           <span>查看终局真相复盘</span>
         </button>
       </div>
@@ -110,7 +112,7 @@ export function CheeseGameOverReveal({ view, members, myId }: CheeseGameOverReve
               {hasThief ? (
                 <>
                   <div className="cheese-reveal__fact-item">
-                    <span className="fact-icon" aria-hidden="true">🧀</span>
+                    <span className="fact-icon" aria-hidden="true"><CheeseIcon /></span>
                     <div className="fact-content">
                       <strong>真凶怪盗</strong>
                       <span>
@@ -119,7 +121,7 @@ export function CheeseGameOverReveal({ view, members, myId }: CheeseGameOverReve
                     </div>
                   </div>
                   <div className="cheese-reveal__fact-item">
-                    <span className="fact-icon" aria-hidden="true">👥</span>
+                    <span className="fact-icon" aria-hidden="true"><MouseIcon /></span>
                     <div className="fact-content">
                       <strong>同谋共犯</strong>
                       <span>
@@ -132,7 +134,7 @@ export function CheeseGameOverReveal({ view, members, myId }: CheeseGameOverReve
                 </>
               ) : (
                 <div className="cheese-reveal__fact-item">
-                  <span className="fact-icon" aria-hidden="true">🧀</span>
+                  <span className="fact-icon" aria-hidden="true"><CheeseIcon /></span>
                   <div className="fact-content">
                     <strong>案发现场</strong>
                     <span>整夜所有时刻均为 0 人或 2 人以上醒来，大奶酪安然无恙，全员老鼠皆大欢喜！</span>
@@ -144,7 +146,7 @@ export function CheeseGameOverReveal({ view, members, myId }: CheeseGameOverReve
             {/* 全员苏醒时刻与身份揭秘网格 */}
             <div className="cheese-reveal__section">
               <h3 className="cheese-reveal__section-title">
-                <span>📋</span> 全员苏醒时刻与身份揭秘
+                <ScrollIcon /> 全员苏醒时刻与身份揭秘
               </h3>
               <div className="cheese-reveal-players-grid">
                 {view.players.map((id) => {
@@ -172,15 +174,15 @@ export function CheeseGameOverReveal({ view, members, myId }: CheeseGameOverReve
                           {pName} {id === myId ? <span className="player-tag--me">我</span> : null}
                         </div>
                         <div className="player-card__hour">
-                          🎲 <strong>{wakeHour !== undefined ? `${wakeHour} 点醒来` : '未知'}</strong>
+                          <DieIcon /> <strong>{wakeHour !== undefined ? `${wakeHour} 点醒来` : '未知'}</strong>
                         </div>
                       </div>
                       <div className="player-card__badges">
                         <span className={`player-role-tag ${isThief ? 'tag-thief' : isAcc ? 'tag-acc' : 'tag-villager'}`}>
-                          {isThief ? '🧀 怪盗' : isAcc ? '👥 共犯' : '🧑 村民'}
+                          {isThief ? '怪盗' : isAcc ? '共犯' : '村民'}
                         </span>
                         <span className={`player-win-tag ${isWin ? 'tag-win' : 'tag-lose'}`}>
-                          {isWin ? '👑 胜利' : '落败'}
+                          {isWin ? <><GameIcon name="crown" size={14} alt="" /> 胜利</> : '落败'}
                         </span>
                       </div>
                     </div>
@@ -193,7 +195,7 @@ export function CheeseGameOverReveal({ view, members, myId }: CheeseGameOverReve
             {peeks.length > 0 && (
               <div className="cheese-reveal__section">
                 <h3 className="cheese-reveal__section-title">
-                  <span>🔍</span> 独醒偷看目击记录
+                  <EyeIcon /> 独醒偷看目击记录
                 </h3>
                 <ul className="cheese-reveal-peeks-list">
                   {peeks.map((p, idx) => (
@@ -209,7 +211,7 @@ export function CheeseGameOverReveal({ view, members, myId }: CheeseGameOverReve
             {Object.keys(votes).length > 0 && (
               <div className="cheese-reveal__section">
                 <h3 className="cheese-reveal__section-title">
-                  <span>🗳️</span> 投票指认记录
+                  <BallotIcon /> 投票指认记录
                 </h3>
                 <div className="cheese-reveal-votes-grid">
                   {Object.entries(votes).map(([voterId, vote]) => {
@@ -222,7 +224,7 @@ export function CheeseGameOverReveal({ view, members, myId }: CheeseGameOverReve
                           <span className="voter">{voterName}</span>
                           <span className="arrow">➔</span>
                           <span className="target">指认【{targetName}】</span>
-                          {isThiefTarget && <span className="hit-badge">🎯 命中怪盗</span>}
+                          {isThiefTarget && <span className="hit-badge">命中怪盗</span>}
                         </div>
                       );
                     }
