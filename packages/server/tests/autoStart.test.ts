@@ -10,7 +10,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { canAutoStart, resolveAutoStartRuleset, type AutoStartRoomRow } from '../src/gateway/ws.ts';
-import { GAME_CATALOG } from '@ldj/shared';
+import { GAME_CATALOG, isSimRulesetId } from '@ldj/shared';
 import { getGameModule, resolveRulesetForStart } from '../src/core/game/registry.ts';
 
 function row(over: Partial<AutoStartRoomRow> = {}): AutoStartRoomRow {
@@ -87,10 +87,48 @@ test('autoStart: 目录里每个可玩规则集的人数下限都能触发倒计
       assert.ok(module, `${game.id}/${rs.id} 模块应可解析`);
       const min = module.manifest.minPlayers;
       const config_json = JSON.stringify({ gameConfig: { rulesetId: rs.id } });
-      const at = canAutoStart(row({ game_id: game.id, config_json, online: min, ready_online: min }));
+      const isSim = isSimRulesetId(resolved);
+      const at = canAutoStart(
+        row({
+          game_id: game.id,
+          config_json,
+          online: min,
+          ready_online: min,
+          spectators_online: isSim ? 1 : 0,
+        }),
+      );
       // 主持人版是唯一的例外：它靠主持人手动开局
       const expected = resolved !== 'werewolf_moderator_v1';
       assert.equal(at, expected, `${game.id}/${rs.id} 在 ${min} 人时的自动开局准入应为 ${expected}`);
     }
   }
 });
+
+test('autoStart: 桌面模拟规则集（*_sim_v1）在没有公共大屏时不触发倒计时，有大屏时放行', () => {
+  const simGames = GAME_CATALOG.flatMap((g) =>
+    g.rulesets.filter((r) => isSimRulesetId(r.id)).map((r) => ({ gameId: g.id, rulesetId: r.id })),
+  );
+  assert.ok(simGames.length > 0, '应存在至少一个 sim 规则集');
+
+  for (const { gameId, rulesetId } of simGames) {
+    const module = getGameModule(gameId, rulesetId);
+    assert.ok(module, `${gameId}/${rulesetId} 模块应可解析`);
+    const min = module.manifest.minPlayers;
+    const config_json = JSON.stringify({ gameConfig: { rulesetId } });
+
+    // 无公共大屏：即使全员就绪也严禁自动开局
+    assert.equal(
+      canAutoStart(row({ game_id: gameId, config_json, online: min, ready_online: min, spectators_online: 0 })),
+      false,
+      `${gameId}/${rulesetId} 无公共大屏时不应自动开局`,
+    );
+
+    // 有公共大屏：全员就绪即可触发倒计时
+    assert.equal(
+      canAutoStart(row({ game_id: gameId, config_json, online: min, ready_online: min, spectators_online: 1 })),
+      true,
+      `${gameId}/${rulesetId} 有公共大屏且全员就绪时应触发倒计时`,
+    );
+  }
+});
+

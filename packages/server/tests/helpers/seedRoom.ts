@@ -7,6 +7,7 @@ import {
   newRoomCode,
   newRoomId,
 } from '../../src/core/ids.ts';
+import { isSimRulesetId } from '@ldj/shared';
 
 export interface SeedRoomOptions {
   nickname?: string;
@@ -14,6 +15,7 @@ export interface SeedRoomOptions {
   password?: string;
   ready?: boolean;
   config?: Record<string, unknown>;
+  seedSpectator?: boolean;
 }
 
 export interface SeededRoom {
@@ -21,6 +23,8 @@ export interface SeededRoom {
   roomCode: string;
   hostId: string;
   hostResumeToken: string;
+  spectatorId?: string;
+  spectatorResumeToken?: string;
 }
 
 function unusedRoomCode(db: Db): string {
@@ -73,5 +77,26 @@ export function seedRoom(db: Db, options: SeedRoomOptions = {}): SeededRoom {
     options.ready === true ? 1 : 0,
   );
 
-  return { roomId, roomCode, hostId, hostResumeToken };
+  const resolvedRuleset = (options.config as { gameConfig?: { rulesetId?: string } } | undefined)?.gameConfig?.rulesetId;
+  const shouldSeedSpectator = options.seedSpectator ?? (typeof resolvedRuleset === 'string' && isSimRulesetId(resolvedRuleset));
+  let spectatorId: string | undefined;
+  let spectatorResumeToken: string | undefined;
+
+  if (shouldSeedSpectator) {
+    spectatorId = newPlayerId();
+    spectatorResumeToken = newResumeToken();
+    db.prepare(
+      `INSERT INTO room_members
+         (room_id, player_id, identity_id, nickname, seat_role, seat, connection_status,
+          resume_token_hash, reserved_until, joined_at, is_bot, bot_kind, ready)
+       VALUES (?, ?, NULL, '公共大屏', 'spectator', NULL, 'CONNECTED', ?, NULL, ?, 0, NULL, 0)`,
+    ).run(
+      roomId,
+      spectatorId,
+      hashResumeToken(spectatorResumeToken),
+      now,
+    );
+  }
+
+  return { roomId, roomCode, hostId, hostResumeToken, spectatorId, spectatorResumeToken };
 }
