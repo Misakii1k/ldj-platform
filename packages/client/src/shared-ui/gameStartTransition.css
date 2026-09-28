@@ -1,0 +1,647 @@
+/* 平台开局转场震撼动效 (GameStartTransition) - T1坞即幕布 / T2合幕开幕 / T3主题色彩条 */
+
+.gst-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  user-select: none;
+}
+
+/* ---------- 屏震动效 (≤4px，T1/T2 在 name 时刻触发) ---------- */
+.gst-layer.gst-shake {
+  animation: gst-shake-anim 260ms linear;
+}
+
+@keyframes gst-shake-anim {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-3px, 1px); }
+  50% { transform: translate(3px, -2px); }
+  75% { transform: translate(-2px, 2px); }
+}
+
+/* ---------- 游戏名牌 (统一高潮居中徽章) ---------- */
+.gst-name {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 18px 40px 16px;
+  white-space: nowrap;
+  opacity: 0;
+  box-sizing: border-box;
+  z-index: 20;
+}
+
+.gst-name-ic {
+  font-size: 44px;
+  line-height: 1;
+}
+
+.gst-name-nm {
+  font-family: var(--gp-font-display, "Noto Serif SC", Georgia, "Songti SC", serif);
+  font-weight: 900;
+  font-size: 64px;
+  line-height: 1.05;
+  letter-spacing: 0.06em;
+}
+
+.gst-name-sb {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  opacity: 0.75;
+}
+
+/* 名牌表皮 */
+.gst-layer[data-skin="light"] .gst-name {
+  background: #fffaf0;
+  color: #292722;
+  border: 3px solid #292722;
+  box-shadow: 0 8px 0 #292722;
+  border-radius: 18px;
+}
+
+.gst-layer[data-skin="dark"] .gst-name {
+  color: #e9c874;
+}
+
+.gst-layer[data-skin="dark"] .gst-name .gst-name-nm {
+  text-shadow: 0 0 30px rgba(233, 200, 116, 0.35), 0 3px 0 rgba(0, 0, 0, 0.6);
+}
+
+@media (max-width: 640px) {
+  .gst-name {
+    padding: 14px 26px 12px;
+  }
+  .gst-name-nm {
+    font-size: 44px;
+  }
+}
+
+/* =========================================================================
+   T1: 坞即幕布 (Sheet)
+   ========================================================================= */
+.gst-sheet-bg {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  z-index: 10;
+}
+
+.gst-layer[data-kind="sheet"][data-skin="light"] .gst-sheet-bg {
+  background: #fffaf0;
+}
+
+.gst-layer[data-kind="sheet"][data-skin="dark"] .gst-sheet-bg {
+  background: #120f0c;
+}
+
+.gst-layer[data-kind="sheet"][data-origin="room"] .gst-sheet-bg {
+  background: #0c715d;
+}
+
+/* 铺满生长动画 */
+.gst-layer[data-kind="sheet"].phase-go .gst-sheet-bg,
+.gst-layer[data-kind="sheet"].phase-name .gst-sheet-bg {
+  opacity: 1;
+  animation: gst-t1-grow 380ms cubic-bezier(0.7, 0, 0.2, 1) forwards;
+}
+
+@keyframes gst-t1-grow {
+  0% {
+    clip-path: inset(calc(100% - 100px) 35% 20px 35% round 18px);
+  }
+  100% {
+    clip-path: inset(0 0 0 0 round 0);
+  }
+}
+
+/* 铺满后纸面纹理 */
+.gst-sheet-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.gst-layer[data-kind="sheet"][data-skin="light"] .gst-sheet-bg::after {
+  background: repeating-linear-gradient(45deg, transparent 0 22px, rgba(41, 39, 34, 0.05) 22px 24px),
+    radial-gradient(ellipse at 50% 50%, var(--gst-a, #f7c84b) 0, transparent 60%);
+}
+
+.gst-layer[data-kind="sheet"][data-skin="dark"] .gst-sheet-bg::after {
+  background: radial-gradient(ellipse at 50% 50%, rgba(233, 200, 116, 0.18), transparent 60%);
+}
+
+.gst-layer[data-kind="sheet"][data-origin="room"] .gst-sheet-bg::after {
+  background: radial-gradient(ellipse at 50% 50%, rgba(247, 200, 75, 0.5), transparent 60%);
+}
+
+.gst-layer[data-kind="sheet"].phase-name .gst-sheet-bg::after {
+  opacity: 1;
+}
+
+/* T1 名牌砸下 */
+.gst-layer[data-kind="sheet"].phase-name .gst-name {
+  animation: gst-t1-slam 460ms cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+}
+
+@keyframes gst-t1-slam {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.2) rotate(-4deg);
+  }
+  55% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.94) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(-2deg);
+  }
+}
+
+.gst-layer[data-kind="sheet"][data-skin="dark"].phase-name .gst-name {
+  animation-name: gst-t1-slam-dark;
+}
+
+@keyframes gst-t1-slam-dark {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.2);
+  }
+  55% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* T1 撕开退场 */
+.gst-sheet-half {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50%;
+  overflow: hidden;
+  visibility: hidden;
+  z-index: 15;
+}
+
+.gst-sheet-half.top {
+  top: 0;
+  border-bottom: 3px solid #292722;
+}
+
+.gst-sheet-half.bot {
+  bottom: 0;
+  border-top: 3px solid #292722;
+}
+
+.gst-layer[data-skin="dark"] .gst-sheet-half.top {
+  border-bottom: 1.5px solid #e9c874;
+}
+
+.gst-layer[data-skin="dark"] .gst-sheet-half.bot {
+  border-top: 1.5px solid #e9c874;
+}
+
+.gst-sheet-half > .gst-half-inner {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 200%;
+}
+
+.gst-sheet-half.top > .gst-half-inner {
+  top: 0;
+}
+
+.gst-sheet-half.bot > .gst-half-inner {
+  bottom: 0;
+}
+
+.gst-layer[data-skin="light"] .gst-sheet-half > .gst-half-inner {
+  background: #fffaf0;
+}
+
+.gst-layer[data-skin="dark"] .gst-sheet-half > .gst-half-inner {
+  background: #120f0c;
+}
+
+.gst-layer[data-origin="room"] .gst-sheet-half > .gst-half-inner {
+  background: #0c715d !important;
+}
+
+.gst-layer[data-kind="sheet"].phase-reveal .gst-sheet-bg,
+.gst-layer[data-kind="sheet"].phase-reveal > .gst-name {
+  visibility: hidden;
+}
+
+.gst-layer[data-kind="sheet"].phase-reveal .gst-sheet-half {
+  visibility: visible;
+}
+
+.gst-layer[data-kind="sheet"].phase-reveal .gst-sheet-half.top {
+  animation: gst-t1-up 420ms cubic-bezier(0.6, 0, 0.2, 1) forwards;
+}
+
+.gst-layer[data-kind="sheet"].phase-reveal .gst-sheet-half.bot {
+  animation: gst-t1-down 420ms cubic-bezier(0.6, 0, 0.2, 1) forwards;
+}
+
+@keyframes gst-t1-up {
+  to {
+    transform: translateY(-104%);
+  }
+}
+
+@keyframes gst-t1-down {
+  to {
+    transform: translateY(104%);
+  }
+}
+
+.gst-sheet-half .gst-name {
+  opacity: 1;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-2deg);
+  animation: none;
+}
+
+.gst-layer[data-skin="dark"] .gst-sheet-half .gst-name {
+  transform: translate(-50%, -50%);
+}
+
+/* =========================================================================
+   T2: 合幕开幕 (Curtain)
+   ========================================================================= */
+.gst-curtain-panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 51%;
+  z-index: 10;
+}
+
+.gst-curtain-panel.l {
+  left: 0;
+  transform: translateX(-102%);
+}
+
+.gst-curtain-panel.r {
+  right: 0;
+  transform: translateX(102%);
+}
+
+/* 浅色卡纸门 */
+.gst-layer[data-kind="curtain"][data-skin="light"] .gst-curtain-panel {
+  background: repeating-linear-gradient(90deg, #fffaf0 0 46px, #fff4df 46px 92px);
+}
+
+.gst-layer[data-kind="curtain"][data-skin="light"] .gst-curtain-panel.l {
+  border-right: 3px solid #292722;
+  box-shadow: 6px 0 0 #292722;
+}
+
+.gst-layer[data-kind="curtain"][data-skin="light"] .gst-curtain-panel.r {
+  border-left: 3px solid #292722;
+}
+
+.gst-layer[data-kind="curtain"][data-skin="light"] .gst-curtain-panel::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 16px;
+  background: var(--gst-b, #08715d);
+}
+
+.gst-layer[data-kind="curtain"][data-skin="light"] .gst-curtain-panel.l::after {
+  right: 0;
+  border-left: 3px solid #292722;
+}
+
+.gst-layer[data-kind="curtain"][data-skin="light"] .gst-curtain-panel.r::after {
+  left: 0;
+  border-right: 3px solid #292722;
+}
+
+/* 深色红丝绒幕布 */
+.gst-layer[data-kind="curtain"][data-skin="dark"] .gst-curtain-panel {
+  background: repeating-linear-gradient(90deg, #6d111c 0 34px, #4a0a13 34px 56px, #7a1420 56px 80px);
+}
+
+.gst-layer[data-kind="curtain"][data-skin="dark"] .gst-curtain-panel.l {
+  border-right: 2px solid #e9c874;
+  box-shadow: inset -30px 0 40px rgba(0, 0, 0, 0.45);
+}
+
+.gst-layer[data-kind="curtain"][data-skin="dark"] .gst-curtain-panel.r {
+  border-left: 2px solid #e9c874;
+  box-shadow: inset 30px 0 40px rgba(0, 0, 0, 0.45);
+}
+
+/* 顶部帷幔 */
+.gst-curtain-valance {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 12%;
+  transform: translateY(-110%);
+  z-index: 12;
+}
+
+.gst-layer[data-kind="curtain"][data-skin="dark"] .gst-curtain-valance {
+  background: radial-gradient(ellipse at 50% 0, #8a1a26 0 60%, transparent 61%) 0 0 / 120px 100% repeat-x, #5a0d17;
+  border-bottom: 2px solid #e9c874;
+}
+
+/* 合拢 */
+.gst-layer[data-kind="curtain"].phase-close .gst-curtain-panel,
+.gst-layer[data-kind="curtain"].phase-name .gst-curtain-panel {
+  animation: gst-t2-close 360ms cubic-bezier(0.55, 0, 0.25, 1.15) forwards;
+}
+
+.gst-layer[data-kind="curtain"].phase-close .gst-curtain-valance,
+.gst-layer[data-kind="curtain"].phase-name .gst-curtain-valance {
+  animation: gst-t2-valance 300ms cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes gst-t2-close {
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes gst-t2-valance {
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* 名牌盖章在幕缝上 */
+.gst-layer[data-kind="curtain"].phase-name .gst-name {
+  animation: gst-t2-stamp 420ms cubic-bezier(0.2, 1.5, 0.4, 1) forwards;
+}
+
+@keyframes gst-t2-stamp {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.9);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.gst-layer[data-kind="curtain"][data-skin="dark"] .gst-name {
+  background: rgba(10, 6, 6, 0.7);
+  border: 1.5px solid #e9c874;
+  border-radius: 8px;
+}
+
+/* 拉开 */
+.gst-layer[data-kind="curtain"].phase-open .gst-name {
+  animation: gst-t2-out 220ms ease-in forwards;
+}
+
+@keyframes gst-t2-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+}
+
+.gst-layer[data-kind="curtain"].phase-open .gst-curtain-panel.l {
+  animation: gst-t2-open-l 460ms 120ms cubic-bezier(0.6, 0, 0.2, 1) both;
+}
+
+.gst-layer[data-kind="curtain"].phase-open .gst-curtain-panel.r {
+  animation: gst-t2-open-r 460ms 120ms cubic-bezier(0.6, 0, 0.2, 1) both;
+}
+
+.gst-layer[data-kind="curtain"].phase-open .gst-curtain-valance {
+  animation: none;
+  transform: translateY(0);
+  transition: transform 380ms 300ms ease;
+}
+
+@keyframes gst-t2-open-l {
+  from { transform: translateX(0); }
+  to { transform: translateX(-102%); }
+}
+
+@keyframes gst-t2-open-r {
+  from { transform: translateX(0); }
+  to { transform: translateX(102%); }
+}
+
+/* =========================================================================
+   T3: 主题色彩条 (Theme Stripes)
+   ========================================================================= */
+.gst-stripes-wrap {
+  position: absolute;
+  inset: -30%;
+  transform: rotate(-8deg);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+
+.gst-stripes-bar {
+  flex: 1;
+  transform: translateX(-130%);
+  position: relative;
+}
+
+.gst-layer[data-kind="stripes"][data-skin="light"] .gst-stripes-bar {
+  border-top: 3px solid #292722;
+  border-bottom: 3px solid #292722;
+  box-shadow: 0 10px 0 rgba(41, 39, 34, 0.9);
+}
+
+.gst-layer[data-kind="stripes"][data-skin="dark"] .gst-stripes-bar {
+  border-top: 1.5px solid rgba(233, 200, 116, 0.7);
+}
+
+.gst-stripes-bar:nth-child(1) { background: var(--gst-a, #f7c84b); z-index: 5; }
+.gst-stripes-bar:nth-child(2) { background: var(--gst-b, #08715d); z-index: 4; }
+.gst-stripes-bar:nth-child(3) { background: #fffaf0; z-index: 3; }
+.gst-stripes-bar:nth-child(4) { background: var(--gst-c, #c23616); z-index: 2; }
+.gst-stripes-bar:nth-child(5) { background: var(--gst-d, #7358a7); z-index: 1; }
+
+.gst-layer[data-kind="stripes"][data-skin="dark"] .gst-stripes-bar:nth-child(3) {
+  background: #1c1712;
+}
+
+.gst-layer[data-kind="stripes"][data-skin="dark"] .gst-stripes-bar:nth-child(4) {
+  background: #2a1a10;
+}
+
+.gst-stripes-bar::after {
+  content: attr(data-title);
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--gp-font-display, "Noto Serif SC", Georgia, serif);
+  font-weight: 900;
+  font-size: 60px;
+  letter-spacing: 0.5em;
+  white-space: nowrap;
+  opacity: 0.1;
+  color: #292722;
+  overflow: hidden;
+}
+
+.gst-layer[data-kind="stripes"][data-skin="dark"] .gst-stripes-bar::after {
+  color: #e9c874;
+  opacity: 0.12;
+}
+
+/* 扫入 */
+.gst-layer[data-kind="stripes"].phase-in .gst-stripes-bar,
+.gst-layer[data-kind="stripes"].phase-name .gst-stripes-bar {
+  animation: gst-t3-in 440ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.gst-layer[data-kind="stripes"].phase-in .gst-stripes-bar:nth-child(2),
+.gst-layer[data-kind="stripes"].phase-name .gst-stripes-bar:nth-child(2) { animation-delay: 40ms; }
+.gst-layer[data-kind="stripes"].phase-in .gst-stripes-bar:nth-child(3),
+.gst-layer[data-kind="stripes"].phase-name .gst-stripes-bar:nth-child(3) { animation-delay: 80ms; }
+.gst-layer[data-kind="stripes"].phase-in .gst-stripes-bar:nth-child(4),
+.gst-layer[data-kind="stripes"].phase-name .gst-stripes-bar:nth-child(4) { animation-delay: 120ms; }
+.gst-layer[data-kind="stripes"].phase-in .gst-stripes-bar:nth-child(5),
+.gst-layer[data-kind="stripes"].phase-name .gst-stripes-bar:nth-child(5) { animation-delay: 160ms; }
+
+@keyframes gst-t3-in {
+  to { transform: translateX(0); }
+}
+
+/* T3 名牌弹入 */
+.gst-layer[data-kind="stripes"].phase-name .gst-name {
+  animation: gst-t3-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes gst-t3-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -40%) scale(0.7) rotate(-6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(-2deg);
+  }
+}
+
+.gst-layer[data-kind="stripes"][data-skin="dark"].phase-name .gst-name {
+  background: #120f0c;
+  border: 1.5px solid #e9c874;
+  border-radius: 16px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+  animation-name: gst-t3-pop-d;
+}
+
+@keyframes gst-t3-pop-d {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -40%) scale(0.7);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* 扫走 */
+.gst-layer[data-kind="stripes"].phase-out .gst-name {
+  animation: gst-t3-name-out 260ms ease-in forwards;
+}
+
+@keyframes gst-t3-name-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(-2deg);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.85) rotate(-2deg);
+  }
+}
+
+.gst-layer[data-kind="stripes"][data-skin="dark"].phase-out .gst-name {
+  animation-name: gst-t3-name-out-d;
+}
+
+@keyframes gst-t3-name-out-d {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.85);
+  }
+}
+
+.gst-layer[data-kind="stripes"].phase-out .gst-stripes-bar {
+  animation: gst-t3-out 440ms cubic-bezier(0.6, 0, 0.4, 1) forwards;
+  transform: translateX(0);
+}
+
+.gst-layer[data-kind="stripes"].phase-out .gst-stripes-bar:nth-child(1) { animation-delay: 160ms; }
+.gst-layer[data-kind="stripes"].phase-out .gst-stripes-bar:nth-child(2) { animation-delay: 120ms; }
+.gst-layer[data-kind="stripes"].phase-out .gst-stripes-bar:nth-child(3) { animation-delay: 80ms; }
+.gst-layer[data-kind="stripes"].phase-out .gst-stripes-bar:nth-child(4) { animation-delay: 40ms; }
+
+@keyframes gst-t3-out {
+  from { transform: translateX(0); }
+  to { transform: translateX(130%); }
+}
+
+/* ---------- 动效分档降级规范 ---------- */
+html[data-motion-level="reduced"] .gst-layer.gst-shake {
+  animation: none;
+}
+
+html[data-motion-level="reduced"] .gst-sheet-bg {
+  animation-duration: 240ms !important;
+}
+
+html[data-motion-level="reduced"] .gst-curtain-panel {
+  animation-duration: 220ms !important;
+}
+
+html[data-motion-level="reduced"] .gst-stripes-bar {
+  animation-duration: 260ms !important;
+  animation-delay: 0ms !important;
+}
+
+html[data-motion-level="minimal"] .gst-layer *,
+html[data-motion-level="off"] .gst-layer * {
+  animation: none !important;
+  transition: none !important;
+}

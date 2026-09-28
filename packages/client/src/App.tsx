@@ -37,6 +37,7 @@ function Router() {
   const { connState, room, game, isRefreshing, isRecovering } = state;
   const { showToast } = useToast();
   const [inGameTransition, setInGameTransition] = useState(false);
+  const [transitionOrigin, setTransitionOrigin] = useState<'dock' | 'room'>('dock');
   const prevRoomStatusRef = useRef<string | null>(null);
 
   // 原生 APP：连接类停留页提供身份/服务器切换逃生口
@@ -50,6 +51,7 @@ function Router() {
     prevRoomStatusRef.current = current;
 
     if (prev && prev !== 'IN_GAME' && current === 'IN_GAME') {
+      setTransitionOrigin(prev === 'POST_GAME' ? 'dock' : 'room');
       webAudio.playDealCards();
       setInGameTransition(true);
     }
@@ -152,7 +154,13 @@ function Router() {
 
   return (
     <>
-      <GameStartTransition active={inGameTransition} onComplete={() => setInGameTransition(false)} />
+      <GameStartTransition
+        active={inGameTransition}
+        onComplete={() => setInGameTransition(false)}
+        gameId={room?.gameId}
+        origin={transitionOrigin}
+        playerCount={room?.members?.filter((m) => m.seatRole === 'player').length ?? 1}
+      />
       {showBanner && <TabletopStatusBanner state={state} />}
       {view}
     </>

@@ -1,0 +1,510 @@
+/* 平台通用对局结算操作坞 (TabletopSettlementDock) - B 签到牌 */
+
+.settlement-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 800;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+  padding: 0 clamp(10px, 2vw, 18px) max(env(safe-area-inset-bottom, 0px), clamp(8px, 1.8vh, 18px));
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+
+/* ---------- 浅色 / 深色表皮令牌 ---------- */
+.settlement-dock[data-dock-skin="light"] {
+  --dk-bg: #fffaf0;
+  --dk-bg-2: #fff4df;
+  --dk-text: #292722;
+  --dk-muted: #575147;
+  --dk-line: #292722;
+  --dk-bw: 3px;
+  --dk-bw-sm: 2.5px;
+  --dk-shadow: 0 5px 0 #292722;
+  --dk-shadow-sm: 0 3px 0 #292722;
+  --dk-shadow-press: 0 1px 0 #292722;
+  --dk-ready: #08715d;
+  --dk-ready-soft: #d9efe6;
+  --dk-wait: #c9bfae;
+  --dk-cta: #f7c84b;
+  --dk-cta-text: #292722;
+  --dk-cta-line: #292722;
+  --dk-danger: #c23616;
+  --dk-digit: #292722;
+  --dk-glow: rgba(247, 200, 75, 0);
+  --dk-blur: none;
+}
+
+.settlement-dock[data-dock-skin="dark"] {
+  --dk-bg: rgba(17, 15, 12, 0.94);
+  --dk-bg-2: rgba(255, 255, 255, 0.05);
+  --dk-text: #f3ead7;
+  --dk-muted: #a89f8c;
+  --dk-line: rgba(201, 162, 74, 0.6);
+  --dk-bw: 1.5px;
+  --dk-bw-sm: 1.5px;
+  --dk-shadow: 0 2px 0 rgba(0, 0, 0, 0.35), 0 14px 34px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --dk-shadow-sm: 0 2px 0 rgba(0, 0, 0, 0.3);
+  --dk-shadow-press: 0 0 0 rgba(0, 0, 0, 0.3);
+  --dk-ready: #e9c874;
+  --dk-ready-soft: rgba(233, 200, 116, 0.14);
+  --dk-wait: rgba(243, 234, 215, 0.22);
+  --dk-cta: #f7c84b;
+  --dk-cta-text: #1b160e;
+  --dk-cta-line: #e9c874;
+  --dk-danger: #f08a73;
+  --dk-digit: #e9c874;
+  --dk-glow: rgba(233, 200, 116, 0.28);
+  --dk-blur: blur(12px);
+}
+
+/* ---------- 签到板主体 ---------- */
+.settlement-dock__board {
+  pointer-events: auto;
+  position: relative;
+  width: 100%;
+  max-width: 620px;
+  padding: 16px 16px 14px;
+  border-radius: 18px;
+  background: var(--dk-bg);
+  color: var(--dk-text);
+  border: var(--dk-bw) solid var(--dk-line);
+  box-shadow: var(--dk-shadow);
+  backdrop-filter: var(--dk-blur);
+  -webkit-backdrop-filter: var(--dk-blur);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: settlement-board-in 460ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  box-sizing: border-box;
+}
+
+@keyframes settlement-board-in {
+  from {
+    transform: translateY(60px) rotate(-2deg);
+    opacity: 0;
+  }
+}
+
+.settlement-dock[data-dock-skin="light"] .settlement-dock__board {
+  transform: rotate(-0.6deg);
+}
+
+/* ---------- 顶部吊牌 (Tab) ---------- */
+.settlement-dock__tab {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% - 3px);
+  transform: translateX(-50%);
+  padding: 8px 22px 6px;
+  border-radius: 14px 14px 0 0;
+  white-space: nowrap;
+  background: var(--dk-bg);
+  border: var(--dk-bw) solid var(--dk-line);
+  border-bottom: 0;
+  font-weight: 900;
+  font-size: 15px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.settlement-dock[data-dock-skin="dark"] .settlement-dock__tab {
+  background: #17140f;
+}
+
+.settlement-dock__tab.is-countdown {
+  padding: 10px 30px 4px;
+}
+
+.settlement-dock__tab-sub {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dk-muted);
+  margin-top: 2px;
+}
+
+.settlement-dock__tab-ratio {
+  font-family: var(--gp-font-display, "Noto Serif SC", Georgia, serif);
+  margin-left: 2px;
+}
+
+/* 倒计时数字（衬线大数字） */
+.settlement-dock__digit {
+  font-family: var(--gp-font-display, "Noto Serif SC", Georgia, "Songti SC", serif);
+  font-weight: 900;
+  color: var(--dk-digit);
+  line-height: 1;
+  display: inline-block;
+  font-size: 60px;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 24px var(--dk-glow);
+}
+
+.settlement-dock__digit.slam {
+  animation: settlement-digit-slam 520ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+@keyframes settlement-digit-slam {
+  0% {
+    transform: scale(2.3);
+    opacity: 0;
+  }
+  45% {
+    transform: scale(0.9);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ---------- 签到小牌网格 (Slips) ---------- */
+.settlement-dock__slips {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.settlement-dock__slip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px 6px;
+  border-radius: 10px;
+  min-width: 0;
+  border: var(--dk-bw-sm) dashed var(--dk-wait);
+  color: var(--dk-muted);
+  transition: transform 200ms, border-color 200ms, background 200ms;
+  box-sizing: border-box;
+}
+
+.settlement-dock__slip-name {
+  font-size: 13px;
+  font-weight: 800;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settlement-dock__slip.is-ready {
+  border-style: solid;
+  border-color: var(--dk-ready);
+  background: var(--dk-ready-soft);
+  color: var(--dk-text);
+}
+
+.settlement-dock[data-dock-skin="light"] .settlement-dock__slip.is-ready {
+  box-shadow: 0 3px 0 var(--dk-ready);
+}
+
+/* 备字盖章 */
+.settlement-dock__stamp {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-family: var(--gp-font-display, "Noto Serif SC", Georgia, serif);
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--dk-ready);
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+  padding: 0 3px;
+  line-height: 1.1;
+  transform: rotate(12deg);
+}
+
+.settlement-dock__slip.is-fresh .settlement-dock__stamp {
+  animation: settlement-stamp 420ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+@keyframes settlement-stamp {
+  0% {
+    transform: rotate(12deg) scale(2.6);
+    opacity: 0;
+  }
+  60% {
+    transform: rotate(12deg) scale(0.9);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(12deg) scale(1);
+  }
+}
+
+.settlement-dock__avatar-wrap {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+}
+
+.settlement-dock__host-crown {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  line-height: 1;
+  z-index: 2;
+}
+
+/* 人数多于 5 人（如 10 人局）排版 */
+.settlement-dock__slips.n10 .settlement-dock__slip {
+  flex-direction: row;
+  justify-content: flex-start;
+  padding: 5px 6px;
+  gap: 6px;
+}
+
+.settlement-dock__slips.n10 .settlement-dock__slip .settlement-dock__stamp {
+  top: 50%;
+  transform: translateY(-50%) rotate(12deg);
+}
+
+/* ---------- 按钮操作行 (Acts) ---------- */
+.settlement-dock__acts {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  align-items: center;
+}
+
+.settlement-dock__btn {
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 12px;
+  transition: transform 120ms, box-shadow 120ms, background 120ms;
+  box-sizing: border-box;
+}
+
+.settlement-dock__btn:active:not(:disabled) {
+  transform: translateY(2px);
+}
+
+.settlement-dock__btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.settlement-dock__btn--cta {
+  flex: 1;
+  background: var(--dk-cta);
+  color: var(--dk-cta-text);
+  border: var(--dk-bw) solid var(--dk-cta-line);
+  box-shadow: var(--dk-shadow-sm);
+  font-size: 17px;
+}
+
+.settlement-dock[data-dock-skin="dark"] .settlement-dock__btn--cta {
+  box-shadow: 0 0 0 3px rgba(247, 200, 75, 0.12), 0 6px 20px rgba(247, 200, 75, 0.22);
+}
+
+.settlement-dock__btn--ghost {
+  flex: 1;
+  background: transparent;
+  color: var(--dk-text);
+  border: var(--dk-bw-sm) solid var(--dk-line);
+  font-size: 15px;
+}
+
+.settlement-dock__btn--ghost.is-ready-state {
+  color: var(--dk-ready);
+  border-color: var(--dk-ready);
+  background: var(--dk-ready-soft);
+}
+
+.settlement-dock__more-wrap {
+  position: relative;
+  flex: none;
+}
+
+.settlement-dock__btn--more {
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 20px;
+  letter-spacing: 1px;
+  background: var(--dk-bg-2);
+  color: var(--dk-text);
+  border: var(--dk-bw-sm) solid var(--dk-line);
+}
+
+.settlement-dock__btn--more.is-active {
+  background: var(--dk-text);
+  color: var(--dk-bg);
+}
+
+.settlement-dock[data-dock-skin="dark"] .settlement-dock__btn--more.is-active {
+  background: #e9c874;
+  color: #1b160e;
+}
+
+/* 更多下拉菜单 */
+.settlement-dock__more-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  min-width: 200px;
+  padding: 6px;
+  background: var(--dk-bg);
+  border: var(--dk-bw) solid var(--dk-line);
+  border-radius: 14px;
+  box-shadow: var(--dk-shadow);
+  backdrop-filter: var(--dk-blur);
+  -webkit-backdrop-filter: var(--dk-blur);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 10;
+  animation: settlement-menu-pop 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes settlement-menu-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+.settlement-dock__menu-item {
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 9px;
+  border: 0;
+  background: transparent;
+  color: var(--dk-text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.settlement-dock__menu-item small {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dk-muted);
+  margin-top: 1px;
+}
+
+.settlement-dock__menu-item:hover {
+  background: var(--dk-bg-2);
+}
+
+.settlement-dock__menu-divider {
+  border: 0;
+  border-top: 1.5px dashed var(--dk-wait);
+  margin: 4px 6px;
+}
+
+.settlement-dock__menu-item--danger {
+  color: var(--dk-danger);
+}
+
+.settlement-dock__error {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--dk-danger);
+  text-align: center;
+}
+
+/* ---------- 移动端适配 (390x844 等视口) ---------- */
+@media (max-width: 640px) {
+  .settlement-dock {
+    padding: 0 10px max(env(safe-area-inset-bottom, 0px), 10px);
+  }
+
+  .settlement-dock__board {
+    padding: 12px 10px 10px;
+    gap: 10px;
+  }
+
+  .settlement-dock__slips {
+    gap: 6px;
+  }
+
+  .settlement-dock__slip {
+    padding: 6px 2px 4px;
+  }
+
+  .settlement-dock__slip-name {
+    font-size: 11px;
+  }
+
+  .settlement-dock__tab {
+    font-size: 14px;
+    padding: 7px 16px 5px;
+  }
+
+  .settlement-dock__digit {
+    font-size: 50px;
+  }
+
+  .settlement-dock__slips.n10 .settlement-dock__slip {
+    flex-direction: column;
+    align-items: center;
+    padding: 5px 2px;
+    gap: 2px;
+  }
+
+  .settlement-dock__slips.n10 .settlement-dock__slip .settlement-dock__stamp {
+    top: 2px;
+    right: 2px;
+    transform: rotate(12deg);
+    font-size: 9px;
+  }
+}
+
+/* ---------- 动效分档降级规范 (design-spec §3.2) ---------- */
+html[data-motion-level="reduced"] .settlement-dock__board {
+  animation-duration: 280ms;
+}
+
+html[data-motion-level="reduced"] .settlement-dock__digit.slam {
+  animation-duration: 320ms;
+}
+
+html[data-motion-level="reduced"] .settlement-dock__slip.is-fresh .settlement-dock__stamp {
+  animation-duration: 260ms;
+}
+
+html[data-motion-level="minimal"] .settlement-dock__board,
+html[data-motion-level="off"] .settlement-dock__board {
+  animation: none;
+}
+
+html[data-motion-level="minimal"] .settlement-dock__digit.slam,
+html[data-motion-level="off"] .settlement-dock__digit.slam {
+  animation: none;
+}
+
+html[data-motion-level="minimal"] .settlement-dock__slip.is-fresh .settlement-dock__stamp,
+html[data-motion-level="off"] .settlement-dock__slip.is-fresh .settlement-dock__stamp {
+  animation: none;
+}

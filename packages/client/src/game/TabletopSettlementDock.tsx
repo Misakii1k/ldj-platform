@@ -1,19 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Clock, Gamepad2, Home, LogOut, Play, RotateCcw } from 'lucide-react';
 import { useConnection } from '../connection/useConnection.ts';
 import { UserAvatar } from '../user/UserAvatar.tsx';
 import { useUserProfile } from '../user/UserProfileContext.tsx';
 import { resolveMemberAvatar } from '../user/avatar.ts';
 import { nameFor } from './useGameAction.ts';
-import { RollingNumber } from '../shared-ui/RollingNumber.tsx';
+import { plateFor } from '../shared-ui/platformSkin.ts';
+import { webAudio } from '../shared-ui/WebAudioManager.ts';
+import {
+  computeSettlementDockModel,
+  type SettlementDockPlayer,
+} from './settlementDockModel.ts';
+import './settlementDock.css';
 
 export function TabletopSettlementDock() {
   const { state, me, send, clearMe, setViewingHome } = useConnection();
   const { profile } = useUserProfile();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [countdown, setCountdown] = useState<number>(3);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement | null>(null);
 
   const room = state.room;
   const isPostGame = Boolean(room && room.status === 'POST_GAME');
@@ -30,17 +37,33 @@ export function TabletopSettlementDock() {
   const isAllReady = totalPlayers > 0 && readyCount === totalPlayers;
 
   const isWerewolf = room?.gameId === 'werewolf';
+  const skin = plateFor(room?.gameId).skin;
 
-  // 全员就绪 3 秒倒计时逻辑（狼人杀等深度长时推理游戏禁用自动开局，保留充足大复盘交流时间）
+  // 上一帧 ready 的玩家 ID 集合，用于触发刚准备好的盖章动效
+  const prevReadyIdsRef = useRef<Set<string>>(new Set());
+  const freshReadyIdsRef = useRef<Set<string>>(new Set());
+
+  const currentReadyIds = new Set(playerMembers.filter((m) => m.ready).map((m) => m.playerId));
+  const newFresh = new Set<string>();
+  for (const id of currentReadyIds) {
+    if (!prevReadyIdsRef.current.has(id)) {
+      newFresh.add(id);
+    }
+  }
+  freshReadyIdsRef.current = newFresh;
+  prevReadyIdsRef.current = currentReadyIds;
+
+  // 全员就绪 3 秒倒计时逻辑（狼人杀等长时推理游戏禁用自动开局）
   // D-FIX：useEffect 必须在 early return 之前调用，否则违反 React Hooks 规则
   useEffect(() => {
     if (!isPostGame || !isAllReady || isWerewolf) {
-      setCountdown(3);
+      setCountdown(null);
       return;
     }
     setCountdown(3);
     const interval = setInterval(() => {
       setCountdown((prev) => {
+        if (prev === null) return 3;
         if (prev <= 1) {
           clearInterval(interval);
           if (isHost) {
@@ -55,10 +78,60 @@ export function TabletopSettlementDock() {
     return () => clearInterval(interval);
   }, [isPostGame, isAllReady, isWerewolf, isHost, send]);
 
+  // 倒计时数字变化触发滴答音效
+  const prevCountdownRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (countdown !== null && countdown !== prevCountdownRef.current && countdown > 0) {
+      webAudio.playTick();
+    }
+    prevCountdownRef.current = countdown;
+  }, [countdown]);
+
+  // 点击外部或按 Esc 关闭更多菜单
+  useEffect(() => {
+    if (!moreOpen) return;
+    const handlePointerDown = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setMoreOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMoreOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [moreOpen]);
+
   // 仅在房间处于 POST_GAME 结算阶段时展示
   if (!isPostGame) {
     return null;
   }
+
+  // 构建结算坞模型数据
+  const dockPlayers: SettlementDockPlayer[] = playerMembers.map((m) => ({
+    playerId: m.playerId,
+    nickname: m.playerId === me?.playerId ? '我' : nameFor(members, m.playerId),
+    avatar: resolveMemberAvatar(m, { isMe: m.playerId === me?.playerId, myAvatar: profile.avatar }),
+    ready: Boolean(m.ready),
+    isMe: m.playerId === me?.playerId,
+    isHost: Boolean(m.isHost),
+  }));
+
+  const model = computeSettlementDockModel({
+    players: dockPlayers,
+    isHost,
+    isSpectator,
+    meReady: isMeReady,
+    allReady: isAllReady,
+    isWerewolf,
+    countdown,
+  });
 
   // 准备 / 取消准备
   const handleToggleReady = async () => {
@@ -99,6 +172,7 @@ export function TabletopSettlementDock() {
       setError(err instanceof Error ? err.message : '返回大厅失败');
     } finally {
       setBusy(false);
+      setMoreOpen(false);
     }
   };
 
@@ -110,134 +184,194 @@ export function TabletopSettlementDock() {
     try {
       await send('leave_room', {});
     } catch {
-      // 忽略离开房间网络异常，前端无论如何都清理本地状态退出
+      // 忽略网络异常，前端无论如何都清理本地状态退出
     } finally {
       clearMe();
       setBusy(false);
+      setMoreOpen(false);
     }
   };
 
   const portalTheme = isWerewolf
-    ? (typeof document !== 'undefined' ? document.getElementById('werewolf-portal-root')?.getAttribute('data-ww-theme') : null) ?? 'woodcut-day'
+    ? (typeof document !== 'undefined' ? document.getElementById('werewolf-portal-root')?.getAttribute('data-ww-theme') : null) ?? 'theater-night'
     : undefined;
 
-  return createPortal(
-    <aside className="tabletop-settlement-dock" data-ww-theme={portalTheme} role="region" aria-label="对局结算与再来一局操作坞">
-      {/* 顶部玩家准备状态卡片条 */}
-      <div className="settlement-dock-strip">
-        <div className="settlement-dock-status">
-          <div className="settlement-dock-title">
-            {isAllReady ? (
-              <>
-                <Clock size={15} strokeWidth={2.4} aria-hidden="true" />
-                <span>{isWerewolf ? '全员已就绪 · 由房主点击立即开局' : <>全员已就绪，{countdown > 0 ? <>{<RollingNumber value={countdown} />} 秒后</> : '正在'}自动开局</>}</span>
-              </>
-            ) : (
-              <>
-                <Gamepad2 size={15} strokeWidth={2.4} aria-hidden="true" />
-                <span>对局已结算 · 已准备 <RollingNumber value={readyCount} /> / <RollingNumber value={totalPlayers} /></span>
-              </>
-            )}
-          </div>
-          <div className="settlement-dock-players" aria-label="玩家准备进度">
-            {playerMembers.map((m) => {
-              const isSelf = m.playerId === me?.playerId;
-              const avatar = resolveMemberAvatar(m, { isMe: isSelf, myAvatar: profile.avatar });
-              const name = isSelf ? '我' : nameFor(members, m.playerId);
-              const isReady = Boolean(m.ready);
+  const inCountdown = countdown !== null;
+  // countdown 到 0 时继续显示「1」，不显示「开局」「正在」字样，交棒给转场
+  const displayDigit = inCountdown ? (countdown > 0 ? countdown : 1) : null;
+  const isDense = dockPlayers.length > 5;
 
-              return (
-                <div
-                  key={m.playerId}
-                  className={`settlement-player-chip ${isReady ? 'is-ready' : 'is-waiting'}`}
-                  title={`${name}：${isReady ? '已准备再来一局' : '思考中/待准备'}`}
-                >
-                  <div className="settlement-avatar-wrap">
-                    <UserAvatar avatar={avatar} nickname={name} size={28} />
-                    <span className={`settlement-badge ${isReady ? 'badge--ready' : 'badge--waiting'}`}>
-                      {isReady ? '✓' : '…'}
-                    </span>
-                  </div>
-                  <span className="settlement-player-name">{name}</span>
-                </div>
-              );
-            })}
-          </div>
+  return createPortal(
+    <aside
+      className="settlement-dock"
+      data-dock-skin={skin}
+      data-ww-theme={portalTheme}
+      role="region"
+      aria-label="对局结算与再来一局操作坞"
+    >
+      <div className="settlement-dock__board">
+        {/* 顶部吊牌 (Tab) */}
+        <div className={`settlement-dock__tab ${inCountdown ? 'is-countdown' : ''}`}>
+          {inCountdown ? (
+            <>
+              <span key={displayDigit} className="settlement-dock__digit slam">
+                {displayDigit}
+              </span>
+              <span className="settlement-dock__tab-sub">{model.statusLine}</span>
+            </>
+          ) : (
+            <>
+              <span>{model.statusLine}</span>
+              <span className="settlement-dock__tab-ratio">
+                · {model.readyCount}/{model.totalCount}
+              </span>
+            </>
+          )}
         </div>
 
-        {/* 核心操作按钮组 */}
-        <div className="settlement-dock-actions">
-          {!isSpectator && (
+        {/* 签到牌网格 (Slips) */}
+        <div className={`settlement-dock__slips ${isDense ? 'n10' : ''}`} aria-label="玩家准备进度">
+          {dockPlayers.map((p) => {
+            const isFresh = freshReadyIdsRef.current.has(p.playerId);
+            const avatarSize = isDense ? 26 : 38;
+
+            return (
+              <div
+                key={p.playerId}
+                className={`settlement-dock__slip ${p.ready ? 'is-ready' : ''} ${isFresh ? 'is-fresh' : ''}`}
+                title={`${p.nickname}：${p.ready ? '已准备' : '思考中/待准备'}`}
+              >
+                <div className="settlement-dock__avatar-wrap">
+                  <UserAvatar avatar={p.avatar} nickname={p.nickname} size={avatarSize} />
+                  {p.isHost && (
+                    <span className="settlement-dock__host-crown" title="房主" aria-label="房主">
+                      👑
+                    </span>
+                  )}
+                </div>
+                <span className="settlement-dock__slip-name">{p.nickname}</span>
+                {p.ready && <span className="settlement-dock__stamp">备</span>}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 操作按钮组 (Acts) */}
+        <div className="settlement-dock__acts">
+          {model.primary === 'again' && (
             <button
               type="button"
-              className={`settlement-btn settlement-btn--primary ${isMeReady ? 'is-ready-state' : ''}`}
+              className="settlement-dock__btn settlement-dock__btn--cta"
               onClick={handleToggleReady}
               disabled={busy}
             >
-              {isMeReady ? (
-                <>
-                  <RotateCcw size={16} strokeWidth={2.5} aria-hidden="true" />
-                  <span>{isAllReady && !isWerewolf ? `已准备 (${countdown}s)` : '已准备 (取消)'}</span>
-                </>
-              ) : (
-                <>
-                  <RotateCcw size={16} strokeWidth={2.5} aria-hidden="true" />
-                  <span>再来一局</span>
-                </>
-              )}
+              ↻ 再来一局
             </button>
           )}
 
-          {isHost && isAllReady && (
+          {model.primary === 'start' && (
             <button
               type="button"
-              className="settlement-btn settlement-btn--fast-start"
+              className="settlement-dock__btn settlement-dock__btn--cta"
               onClick={handleStartImmediately}
               disabled={busy}
-              title="跳过倒计时立即开始对局"
             >
-              <Play size={16} strokeWidth={2.5} aria-hidden="true" />
-              <span>立即开局</span>
+              {inCountdown ? '▶ 立即开局' : '▶ 开局'}
             </button>
           )}
 
-          {isHost && (
+          {model.secondary === 'readyCancel' && (
             <button
               type="button"
-              className="settlement-btn settlement-btn--secondary"
-              onClick={handleReturnToLobby}
+              className="settlement-dock__btn settlement-dock__btn--ghost is-ready-state"
+              onClick={handleToggleReady}
               disabled={busy}
-              title="房主将所有成员带回房间大厅（可切换游戏或调整配置）"
             >
-              <span>返回大厅</span>
+              ✓ 已准备 · 取消
             </button>
           )}
 
-          <button
-            type="button"
-            className="settlement-btn settlement-btn--secondary"
-            onClick={() => setViewingHome(true)}
-            disabled={busy}
-            title="暂离返回主页，可在主页随时返回或自由体验其他游戏"
-          >
-            <Home size={16} strokeWidth={2.2} aria-hidden="true" />
-            <span>暂离返回首页</span>
-          </button>
+          {model.secondary === 'cancelReady' && (
+            <button
+              type="button"
+              className="settlement-dock__btn settlement-dock__btn--ghost"
+              onClick={handleToggleReady}
+              disabled={busy}
+            >
+              取消准备
+            </button>
+          )}
 
-          <button
-            type="button"
-            className="settlement-btn settlement-btn--danger"
-            onClick={handleLeaveRoom}
-            disabled={busy}
-            title="退出当前房间并释放席位"
-          >
-            <LogOut size={16} strokeWidth={2.2} aria-hidden="true" />
-            <span>退出房间</span>
-          </button>
+          {/* 「⋯」更多菜单 */}
+          <div className="settlement-dock__more-wrap" ref={moreRef}>
+            <button
+              type="button"
+              className={`settlement-dock__btn settlement-dock__btn--more ${moreOpen ? 'is-active' : ''}`}
+              onClick={() => setMoreOpen((prev) => !prev)}
+              aria-label="更多操作"
+              aria-expanded={moreOpen}
+            >
+              ⋯
+            </button>
+
+            {moreOpen && (
+              <div className="settlement-dock__more-menu" role="menu">
+                {isHost && (
+                  <button
+                    type="button"
+                    className="settlement-dock__menu-item"
+                    role="menuitem"
+                    onClick={handleReturnToLobby}
+                    disabled={busy}
+                  >
+                    <span>🏠</span>
+                    <div>
+                      <span>返回房间大厅</span>
+                      <small>带全员回房间，可换游戏</small>
+                    </div>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="settlement-dock__menu-item"
+                  role="menuitem"
+                  onClick={() => {
+                    setViewingHome(true);
+                    setMoreOpen(false);
+                  }}
+                  disabled={busy}
+                >
+                  <span>↩</span>
+                  <div>
+                    <span>暂离回首页</span>
+                    <small>席位保留，随时回来</small>
+                  </div>
+                </button>
+                <div className="settlement-dock__menu-divider" />
+                <button
+                  type="button"
+                  className="settlement-dock__menu-item settlement-dock__menu-item--danger"
+                  role="menuitem"
+                  onClick={handleLeaveRoom}
+                  disabled={busy}
+                >
+                  <span>⏻</span>
+                  <div>
+                    <span>退出房间</span>
+                    <small>释放你的席位</small>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
-      {error && <div className="settlement-dock-error" role="alert">{error}</div>}
+        {error && (
+          <div className="settlement-dock__error" role="alert">
+            {error}
+          </div>
+        )}
+      </div>
     </aside>,
     document.body
   );
