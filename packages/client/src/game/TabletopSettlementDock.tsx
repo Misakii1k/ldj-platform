@@ -13,6 +13,23 @@ import {
 } from './settlementDockModel.ts';
 import './settlementDock.css';
 
+/** 窄屏手机视口判定：≤640px 时签到牌头像缩小（对齐方向稿 .dock-m 的 32/24 规格） */
+function useNarrowViewport(): boolean {
+  const [narrow, setNarrow] = useState(() => (
+    typeof window === 'undefined' ? false : window.matchMedia('(max-width: 640px)').matches
+  ));
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 640px)');
+    const update = () => setNarrow(mediaQuery.matches);
+    update();
+    mediaQuery.addEventListener('change', update);
+    return () => mediaQuery.removeEventListener('change', update);
+  }, []);
+
+  return narrow;
+}
+
 export function TabletopSettlementDock() {
   const { state, me, send, clearMe, setViewingHome } = useConnection();
   const { profile } = useUserProfile();
@@ -38,6 +55,7 @@ export function TabletopSettlementDock() {
 
   const isWerewolf = room?.gameId === 'werewolf';
   const skin = plateFor(room?.gameId).skin;
+  const isNarrow = useNarrowViewport();
 
   // 上一帧 ready 的玩家 ID 集合，用于触发刚准备好的盖章动效
   const prevReadyIdsRef = useRef<Set<string>>(new Set());
@@ -233,7 +251,8 @@ export function TabletopSettlementDock() {
         <div className={`settlement-dock__slips ${isDense ? 'n10' : ''}`} aria-label="玩家准备进度">
           {dockPlayers.map((p) => {
             const isFresh = freshReadyIdsRef.current.has(p.playerId);
-            const avatarSize = isDense ? 26 : 38;
+            // 对齐方向稿：桌面 38/密排26，窄屏手机 32/密排24
+            const avatarSize = isDense ? (isNarrow ? 24 : 26) : (isNarrow ? 32 : 38);
 
             return (
               <div

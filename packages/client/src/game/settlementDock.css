@@ -335,6 +335,8 @@
 .settlement-dock__more-wrap {
   position: relative;
   flex: none;
+  /* 「⋯」按钮永远贴按钮行最右：没有主/次按钮时（观战者）也不漂到左侧 */
+  margin-left: auto;
 }
 
 .settlement-dock__btn--more {
@@ -478,6 +480,29 @@
     right: 2px;
     transform: rotate(12deg);
     font-size: 9px;
+  }
+}
+
+/* ---------- 超窄屏 (≤380px) 吊牌防溢出 ---------- */
+@media (max-width: 380px) {
+  .settlement-dock__tab {
+    font-size: 13px;
+    padding: 7px 12px 5px;
+    max-width: calc(100vw - 56px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
+  }
+
+  .settlement-dock__tab.is-countdown {
+    padding: 8px 18px 4px;
+    max-width: none;
+    overflow: visible;
+  }
+
+  .settlement-dock__tab-sub {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
