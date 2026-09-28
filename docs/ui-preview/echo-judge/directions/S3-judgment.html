@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>伪人测试 · 定稿 B · ③ 审判（指认）</title>
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="B-courtroom.css">
+<style>
+  /* ③ 审判：全员说完，审判长在旁听席上点人指认（可多选，也可判全员是人类），30 秒。旁听席只能看着审判长举槌犹豫。
+     规则约束：指认提交前谁被点了，只有审判长自己看得到。 */
+  .dossier { grid-template-rows: auto auto 1fr auto; }
+  .q { font-size: 22px; align-self: start; }
+  .tally { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font: 800 14px var(--sans); }
+  .tally .numeral { font-size: 34px; color: var(--coral); }
+  .tally .names { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tally .names b { padding: 2px 10px; font: 700 15px var(--serif); background: #fde0c6; border: 2.5px solid var(--ink); border-radius: 8px; animation: pop 300ms cubic-bezier(.34,1.56,.64,1); }
+  .tally .none { color: var(--muted); font-weight: 700; }
+  .hint { font: 700 13px var(--sans); color: var(--muted); }
+
+  /* 可指认的席位 */
+  [data-view="judge"] .pew .seat { cursor: pointer; }
+  [data-view="judge"] .pew .seat:hover { transform: translateY(-3px); box-shadow: 0 6px 0 var(--ink); }
+  .seat.accused { background: #fde0c6; box-shadow: 0 5px 0 var(--ink); transform: translateY(-3px) rotate(-1deg); }
+  .seat.accused::after {
+    content: "指认"; position: absolute; right: -10px; top: -12px; padding: 1px 8px; font: 900 13px var(--serif); color: #fff;
+    background: var(--coral); border: 2.5px solid var(--ink); border-radius: 6px; rotate: 8deg; animation: pop 280ms cubic-bezier(.34,1.56,.64,1);
+  }
+  .seat.accused .st { color: var(--coral); }
+
+  /* 旁听席视角：审判长举槌犹豫 */
+  .gavel.raise { animation: raise 1.6s ease-in-out infinite; }
+  @keyframes raise { 0%, 100% { rotate: -24deg; } 50% { rotate: -44deg; } }
+  .ponder { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #3b3a36; color: #fff; border: 3px solid var(--ink); border-radius: 12px; font: 800 14px var(--sans); }
+  .ponder .dots i { display: inline-block; width: 8px; height: 8px; margin-right: 4px; border-radius: 50%; background: var(--yellow); animation: pulse 1s ease-in-out infinite; }
+  .ponder .dots i:nth-child(2) { animation-delay: .2s; } .ponder .dots i:nth-child(3) { animation-delay: .4s; }
+
+  /* 进入审判时，法庭四角压暗 */
+  .device::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 60% 70% at 50% 48%, transparent 55%, rgba(41,39,34,.28)); z-index: 5; }
+
+  .btn-verdict { background: var(--yellow); }
+  .btn-verdict:disabled { opacity: .45; }
+  [data-view="judge"] .only-player, [data-view="player"] .only-judge { display: none !important; }
+
+  @container (max-width: 600px) {
+    .q { font-size: 15px; }
+    .tally .numeral { font-size: 24px; }
+    .tally { font-size: 12px; gap: 6px; }
+    .tally .names b { font-size: 12px; padding: 1px 6px; }
+    .hint { font-size: 11px; }
+    .ponder { padding: 8px 10px; font-size: 12px; }
+    .seat.accused::after { font-size: 10px; right: -6px; top: -10px; padding: 0 5px; }
+    .dock .btn { flex: 1 1 calc(50% - 5px); }
+    .dock .info { flex-basis: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>伪人测试 · 定稿 B · ③ 审判</strong>
+  <span class="tb-note">审判长点旁听席上的人指认（可多选）｜ 旁听席只看得到审判长在犹豫 ｜ 30 秒，超时按「没人是伪人」结算</span>
+  <div class="group"><button data-param="v" data-value="judge">你是审判长</button><button data-param="v" data-value="player">你在旁听席</button></div>
+  <div class="group"><button data-param="size" data-value="desktop">桌面 1280×800</button><button data-param="size" data-value="mobile">手机 390×844</button></div>
+  <div class="group"><button data-param="n" data-value="6">6 人</button><button data-param="n" data-value="9">9 人</button></div>
+  <div class="group"><button id="act-hurry">跳到最后 10 秒</button><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device">
+  <div class="floor"></div>
+  <svg class="stage-art" viewBox="0 0 100 90" fill="none" stroke="#292722" stroke-width="4" stroke-linecap="round" aria-hidden="true">
+    <path d="M50 8v70M30 82h40M14 24h72"/><path d="M14 24l-10 26h20z"/><path d="M86 24l-10 26h20z"/><circle cx="50" cy="8" r="4"/>
+  </svg>
+  <div class="head">
+    <h1 class="title">伪人测试</h1>
+    <div class="eyebrow">第 2 / <span data-bind="rounds"></span> 轮 · 审判</div>
+  </div>
+  <div class="ring-box"><div class="ring" data-ring><span></span></div></div>
+
+  <div class="bench">
+    <div class="judge-card" data-seats="judge"></div>
+    <span class="plate">审 判 席</span>
+    <svg class="gavel" id="gavel" viewBox="0 0 80 60" aria-hidden="true">
+      <rect x="6" y="6" width="44" height="24" rx="6" fill="#9a5f2e" stroke="#292722" stroke-width="4"/>
+      <rect x="14" y="4" width="6" height="28" fill="#c98a4f" stroke="#292722" stroke-width="3"/>
+      <rect x="36" y="4" width="6" height="28" fill="#c98a4f" stroke="#292722" stroke-width="3"/>
+      <path d="M44 22 L76 52" stroke="#292722" stroke-width="10" stroke-linecap="round"/><path d="M44 22 L76 52" stroke="#c98a4f" stroke-width="4" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="pew left" data-seats="oleft"></div>
+  <div class="pew right" data-seats="oright"></div>
+
+  <section class="witness">
+    <div class="dossier">
+      <div class="label">卷宗 · 第 2 案 · 全员已口述</div>
+      <p class="q">童年时期你最害怕、但现在觉得荒诞好笑的一件事或一个物品是什么？</p>
+      <div class="tally only-judge"><span>已指认</span><span class="numeral" data-bind="picked">0</span><span>人</span><span class="names" id="names"></span></div>
+      <div class="ponder only-player"><span class="dots"><i></i><i></i><i></i></span><span>审判长 老王 正在斟酌……谁被点了你看不到</span></div>
+      <div class="hint only-judge">点旁听席上的人来指认，再点一次取消。抓对一个伪人 +1，冤枉一个人类 −1。</div>
+    </div>
+    <div class="progress"><span class="numeral"><span data-bind="total"></span>/<span data-bind="total"></span></span><span>已口述</span><div class="pips" data-pips></div></div>
+  </section>
+
+  <div class="dock">
+    <div class="secret only-player" data-secret title="点击遮挡 / 显示">
+      <div><div class="tag">你是伪人</div><small>点击遮挡</small></div>
+      <span class="word">暗号「雨伞」</span>
+    </div>
+    <div class="info"><strong data-bind="dock-title"></strong><span data-bind="dock-sub"></span></div>
+    <button class="btn only-judge" id="act-none">没人是伪人</button>
+    <button class="btn btn-verdict only-judge" id="act-verdict" disabled>宣判</button>
+  </div>
+</div></div>
+<script src="_kit.js"></script>
+<script>
+  const { players, order, judge, view } = KIT;
+  const picked = new Set();
+  KIT.status = (p) => (p.judge ? (view === 'judge' ? '审判长 · 你' : '审判长 · 斟酌中') : view === 'judge' && picked.has(p) ? '被指认' : '已口述');
+  KIT.decorate = (el, p) => {
+    if (view === 'judge' && picked.has(p)) el.classList.add('accused');
+    if (!p.judge && view === 'judge') el.onclick = () => toggle(p);
+  };
+  KIT.ring(30, 24);
+  KIT.bind('rounds', String(players.length));
+  KIT.bind('total', String(order.length));
+  document.querySelectorAll('[data-pips]').forEach((b) => (b.innerHTML = order.map((p) => `<span class="pip done" style="--seat-c:${p.c}"></span>`).join('')));
+  if (view === 'player') document.getElementById('gavel').classList.add('raise');
+
+  function toggle(p) {
+    picked.has(p) ? picked.delete(p) : picked.add(p);
+    KIT.render(); text();
+  }
+  function text() {
+    KIT.bind('picked', String(picked.size));
+    document.getElementById('names').innerHTML = picked.size ? [...picked].map((p) => `<b>${p.name}</b>`).join('') : '<span class="none">还没点人</span>';
+    const v = document.getElementById('act-verdict');
+    v.disabled = picked.size === 0;
+    v.textContent = picked.size ? `宣判 · 指认 ${picked.size} 人` : '宣判';
+    if (view === 'judge') {
+      KIT.bind('dock-title', '全员说完了，谁在硬塞词？');
+      KIT.bind('dock-sub', '可以多选；觉得都是人类就点「没人是伪人」');
+    } else {
+      KIT.bind('dock-title', '等审判长宣判');
+      KIT.bind('dock-sub', '你硬塞了「雨伞」，希望他没听出来');
+    }
+  }
+  const go = (c) => { const u = new URLSearchParams(location.search); u.set('case', c); location.href = 'S4-verdict.html?' + u; };
+  document.getElementById('act-verdict').addEventListener('click', () => { KIT.gavel(); KIT.shake(); setTimeout(() => go('mixed'), 420); });
+  document.getElementById('act-none').addEventListener('click', () => go('none'));
+  KIT.render();
+  text();
+</script>
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>伪人测试 · 定稿 B · ① 立案（选题 / 选身份）</title>
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="B-courtroom.css">
+<style>
+  /* ① 立案：审判长从 3 份卷宗里挑 1 份立案；其余人在旁听席自选身份（人类 / 伪人），伪人拿到暗号。本阶段不计时。 */
+  .witness { grid-template-rows: auto 1fr; }
+  .witness .label { font: 800 13px var(--sans); letter-spacing: .16em; color: var(--muted); }
+
+  /* 审判长视角：三份卷宗 */
+  .files3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: stretch; padding-top: 30px; }
+  .case {
+    position: relative; display: grid; grid-template-rows: auto 1fr auto; gap: 10px; padding: 18px 16px 14px; text-align: left; cursor: pointer;
+    font: inherit; color: var(--ink); background: #fffaf0; border: 3px solid var(--ink); border-radius: 6px 14px 14px 14px; box-shadow: 0 5px 0 var(--ink);
+    transition: transform 160ms cubic-bezier(.34,1.56,.64,1), box-shadow 160ms;
+  }
+  .case:nth-child(1) { rotate: -2deg; } .case:nth-child(3) { rotate: 2deg; }
+  .case::before { content: attr(data-tab); position: absolute; left: -3px; top: -28px; padding: 4px 12px; font: 900 12px var(--sans); background: var(--tab, #fde0c6); border: 3px solid var(--ink); border-bottom: 0; border-radius: 10px 10px 0 0; }
+  .case:hover { transform: translateY(-6px); box-shadow: 0 11px 0 var(--ink); }
+  .case .cat { font: 800 11px var(--sans); letter-spacing: .14em; color: var(--muted); }
+  .case .txt { font: 700 18px/1.5 var(--serif); }
+  .case .pick { justify-self: end; font: 900 13px var(--sans); color: var(--accent); }
+  .case.gone { opacity: 0; transform: translateY(20px) scale(.9); pointer-events: none; }
+  .dossier.opened { animation: pop 420ms cubic-bezier(.34,1.56,.64,1); }
+  .filed { position: absolute; right: 22px; bottom: 18px; padding: 4px 12px; font: 900 18px var(--serif); color: var(--coral); border: 3px solid var(--coral); border-radius: 8px; rotate: -10deg; animation: stamp 380ms cubic-bezier(.34,1.56,.64,1) both; }
+  @keyframes stamp { 0% { transform: scale(2.2); opacity: 0; } 60% { transform: scale(.92); opacity: 1; } 100% { transform: none; } }
+
+  /* 旁听席视角：身份二选一 */
+  .sealed { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: #fffaf0; border: 3px dashed var(--muted); border-radius: 10px; font: 800 14px var(--sans); color: var(--muted); }
+  .sealed .seal { width: 34px; height: 34px; border-radius: 50%; background: var(--coral); border: 3px solid var(--ink); display: grid; place-items: center; color: #fff; font: 900 14px var(--serif); flex: none; }
+  .roles { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; padding-top: 14px; }
+  .role {
+    position: relative; display: grid; grid-template-rows: auto auto 1fr; justify-items: center; align-content: center; gap: 8px; padding: 18px 14px; cursor: pointer;
+    font: inherit; color: var(--ink); background: var(--card); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 5px 0 var(--ink);
+    transition: transform 180ms cubic-bezier(.34,1.56,.64,1), box-shadow 180ms, background 180ms;
+  }
+  .role:hover { transform: translateY(-4px); box-shadow: 0 9px 0 var(--ink); }
+  .role .av { width: 64px; color: #cfc6b4; }
+  .role strong { font: 700 24px var(--serif); }
+  .role span { font-size: 13px; color: var(--muted); font-weight: 700; line-height: 1.5; text-align: center; }
+  .role[aria-pressed="true"] { outline: 4px solid var(--yellow); outline-offset: 3px; }
+  .role.human[aria-pressed="true"] .av { color: #8fd3b6; }
+  .role.impostor[aria-pressed="true"] { background: #3b3a36; color: #fff; }
+  .role.impostor[aria-pressed="true"] span { color: #c9c0ae; }
+  .role.impostor[aria-pressed="true"] .av { color: #e5484d; }
+  .role .word-card { display: none; margin-top: 4px; padding: 6px 16px; font: 700 22px var(--serif); color: var(--ink); background: var(--yellow); border: 3px solid var(--ink); border-radius: 10px; rotate: -3deg; }
+  .role.impostor[aria-pressed="true"] .word-card { display: block; animation: pop 380ms cubic-bezier(.34,1.56,.64,1); }
+  .role.flip { animation: flip 360ms ease-in-out; }
+  @keyframes flip { 50% { transform: rotateY(90deg); } }
+
+  [data-view="judge"] .only-player, [data-view="player"] .only-judge { display: none !important; }
+  .seat.me-judge { outline: 4px solid var(--yellow); outline-offset: 3px; }
+
+  @container (max-width: 600px) {
+    .witness { top: 300px; bottom: 262px; }
+    .files3 { grid-template-columns: 1fr; gap: 8px; padding-top: 4px; }
+    .case, .case:nth-child(1), .case:nth-child(3) { rotate: 0deg; grid-template-rows: auto; grid-template-columns: auto 1fr; padding: 8px 10px; border-radius: 10px; }
+    .case::before { display: none; }
+    .case .cat { grid-row: span 2; writing-mode: vertical-rl; letter-spacing: .06em; font-size: 10px; }
+    .case .txt { font-size: 13px; line-height: 1.35; }
+    .case .pick { display: none; }
+    .sealed { padding: 6px 10px; font-size: 12px; gap: 8px; }
+    .sealed .seal { width: 24px; height: 24px; font-size: 11px; }
+    .roles { gap: 10px; padding-top: 8px; }
+    .role { padding: 10px 8px; gap: 4px; }
+    .role .av { width: 40px; }
+    .role strong { font-size: 18px; }
+    .role span { font-size: 11px; }
+    .role .word-card { font-size: 17px; padding: 3px 10px; }
+    .witness .label { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>伪人测试 · 定稿 B · ① 立案</strong>
+  <span class="tb-note">审判长 3 选 1 卷宗 ｜ 其余人自选人类 / 伪人（开庭前随时可改）｜ 本阶段不计时</span>
+  <div class="group"><button data-param="v" data-value="judge">你是审判长</button><button data-param="v" data-value="player">你在旁听席</button></div>
+  <div class="group"><button data-param="size" data-value="desktop">桌面 1280×800</button><button data-param="size" data-value="mobile">手机 390×844</button></div>
+  <div class="group"><button data-param="n" data-value="6">6 人</button><button data-param="n" data-value="9">9 人</button></div>
+  <div class="group"><button id="act-bot">模拟审判长选题</button><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device">
+  <div class="floor"></div>
+  <svg class="stage-art" viewBox="0 0 100 90" fill="none" stroke="#292722" stroke-width="4" stroke-linecap="round" aria-hidden="true">
+    <path d="M50 8v70M30 82h40M14 24h72"/><path d="M14 24l-10 26h20z"/><path d="M86 24l-10 26h20z"/><circle cx="50" cy="8" r="4"/>
+  </svg>
+  <div class="head">
+    <h1 class="title">伪人测试</h1>
+    <div class="eyebrow">第 2 / <span data-bind="rounds"></span> 轮 · 立案</div>
+  </div>
+  <div class="ring-box"><div class="ring" data-ring><span></span></div></div>
+
+  <div class="bench">
+    <div class="judge-card" data-seats="judge"></div>
+    <span class="plate">审 判 席</span>
+    <svg class="gavel" id="gavel" viewBox="0 0 80 60" aria-hidden="true">
+      <rect x="6" y="6" width="44" height="24" rx="6" fill="#9a5f2e" stroke="#292722" stroke-width="4"/>
+      <rect x="14" y="4" width="6" height="28" fill="#c98a4f" stroke="#292722" stroke-width="3"/>
+      <rect x="36" y="4" width="6" height="28" fill="#c98a4f" stroke="#292722" stroke-width="3"/>
+      <path d="M44 22 L76 52" stroke="#292722" stroke-width="10" stroke-linecap="round"/><path d="M44 22 L76 52" stroke="#c98a4f" stroke-width="4" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="pew left" data-seats="oleft"></div>
+  <div class="pew right" data-seats="oright"></div>
+
+  <section class="witness">
+    <!-- 审判长：挑卷宗 -->
+    <div class="label only-judge" id="judge-label">挑一份卷宗立案 · 翻开后全员开始轮流口述</div>
+    <div class="files3 only-judge" id="cases"></div>
+    <!-- 旁听席：选身份 -->
+    <div class="sealed only-player" id="sealed"><span class="seal">封</span><span id="sealed-text">审判长 老王 正在挑卷宗…… 开庭前你可以随时改身份</span></div>
+    <div class="roles only-player">
+      <button class="role human" data-role="human" aria-pressed="true">
+        <div class="av"></div><strong>当人类</strong><span>如实回答就好<br>审判长抓错你，他扣分</span>
+      </button>
+      <button class="role impostor" data-role="impostor" aria-pressed="false">
+        <div class="av"></div><strong>当伪人</strong><span>把暗号自然地说进回答里<br>没被抓 +2，被抓 −1</span>
+        <em class="word-card">暗号「雨伞」</em>
+      </button>
+    </div>
+  </section>
+
+  <div class="dock">
+    <div class="secret only-player" data-secret title="点击遮挡 / 显示">
+      <div><div class="tag" data-bind="role-tag"></div><small>点击遮挡</small></div>
+      <span class="word" data-bind="role-word"></span>
+    </div>
+    <div class="info"><strong data-bind="dock-title"></strong><span data-bind="dock-sub"></span></div>
+    <button class="btn only-judge" id="act-custom">自己出题</button>
+  </div>
+</div></div>
+<script src="_kit.js"></script>
+<script>
+  const { players, judge, me, view } = KIT;
+  const CARDS = [
+    { cat: '生活经历', tab: '卷宗 · 甲', text: '分享一件你曾做过最冲动或至今想起来仍然觉得奇妙的决定。' },
+    { cat: '情感记忆', tab: '卷宗 · 乙', text: '童年时期你最害怕、但现在觉得荒诞好笑的一件事或一个物品是什么？' },
+    { cat: '怪诞假设', tab: '卷宗 · 丙', text: '如果世界末日还有最后 24 小时，你会如何度过这最后的时光？' },
+  ];
+  let myRole = 'human';
+  let filed = null;
+
+  KIT.status = (p) => (p.judge ? (filed ? '已立案' : '选题中') : p.me ? (myRole === 'impostor' ? '伪人（仅你可见）' : '人类（仅你可见）') : '候审');
+  KIT.decorate = (el, p) => { if (p.me && p.judge) el.classList.add('me-judge'); };
+  KIT.ring(null); // 出题阶段不计时
+
+  document.querySelectorAll('.role .av').forEach((a) => (a.innerHTML = KIT.BUST));
+  KIT.bind('rounds', String(players.length));
+
+  function renderCases() {
+    const box = document.getElementById('cases');
+    box.innerHTML = CARDS.map((c, i) => `<button class="case" data-i="${i}" data-tab="${c.tab}" style="--tab:${['#fde0c6', '#dfe9d6', '#e6ddf2'][i]}">
+      <span class="cat">${c.cat}</span><span class="txt">${c.text}</span><span class="pick">立这一案 →</span></button>`).join('');
+    box.querySelectorAll('.case').forEach((b) => b.addEventListener('click', () => file(Number(b.dataset.i), b)));
+  }
+  async function file(i, btn) {
+    if (filed != null) return;
+    filed = i;
+    const box = document.getElementById('cases');
+    box.querySelectorAll('.case').forEach((b) => b !== btn && b.classList.add('gone'));
+    await KIT.wait(260);
+    // 选中的卷宗在原地放大摊开，盖「立案」章，木槌落下
+    box.style.gridTemplateColumns = '1fr';
+    box.innerHTML = `<div class="dossier opened" style="rotate:.6deg"><div class="label">审判长 ${judge.name} 的考题 · ${CARDS[i].cat}</div>
+      <p class="q">${CARDS[i].text}</p><div class="speaker-line">第一位发言：<b>${KIT.order[0].name}</b></div></div>`;
+    document.getElementById('judge-label').textContent = '已立案 · 马上开庭';
+    await KIT.wait(300);
+    box.querySelector('.dossier').insertAdjacentHTML('beforeend', '<span class="filed">立 案</span>');
+    KIT.gavel(); KIT.shake();
+    KIT.render(); text();
+  }
+  document.querySelectorAll('.role').forEach((b) =>
+    b.addEventListener('click', () => {
+      if (b.dataset.role === myRole) return;
+      myRole = b.dataset.role;
+      document.querySelectorAll('.role').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      b.classList.remove('flip'); void b.offsetWidth; b.classList.add('flip');
+      KIT.render(); text();
+    }),
+  );
+  document.getElementById('act-bot').addEventListener('click', async () => {
+    if (view === 'judge') return document.querySelector('.case[data-i="1"]')?.click();
+    if (filed != null) return;
+    filed = 1;
+    document.getElementById('sealed-text').textContent = '已立案：卷宗 · 乙（情感记忆）—— 身份已锁定，马上开庭';
+    document.querySelectorAll('.role').forEach((b) => (b.disabled = true));
+    KIT.gavel(); KIT.shake(); KIT.render(); text();
+  });
+  document.getElementById('act-custom').addEventListener('click', () => alert('（演示）弹出输入框：自己写一道题，最多 200 字。'));
+
+  function text() {
+    if (view === 'judge') {
+      KIT.bind('dock-title', filed == null ? '你是本轮审判长' : '已立案');
+      KIT.bind('dock-sub', filed == null ? '挑一份卷宗，或自己出题；旁听席的人正在偷偷选身份，你看不到' : `${KIT.order[0].name} 先口述，全员说完后由你指认伪人`);
+      document.getElementById('act-custom').hidden = filed != null;
+    } else {
+      KIT.bind('role-tag', myRole === 'impostor' ? '你是伪人' : '你是人类');
+      KIT.bind('role-word', myRole === 'impostor' ? '暗号「雨伞」' : '如实作答');
+      KIT.bind('dock-title', filed == null ? '选好身份，等审判长立案' : '身份已锁定');
+      KIT.bind('dock-sub', filed == null ? '立案前随时可以改；别人选了什么你看不到' : myRole === 'impostor' ? '轮到你时，把「雨伞」自然地说进回答' : '如实作答，留意谁在硬塞词');
+    }
+  }
+  renderCases();
+  KIT.render();
+  text();
+</script>
+</body>
+</html>

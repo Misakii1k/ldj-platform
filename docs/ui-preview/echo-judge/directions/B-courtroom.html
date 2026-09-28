@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>伪人测试 · 方向 B · 老式法庭</title>
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="B-courtroom.css">
+</head>
+<body>
+<div class="toolbar">
+  <strong>方向 B · 老式法庭（浅色粗墨边，现状加强版）</strong>
+  <span class="tb-note">构图：顶部高审判席 + 中央证人席卷宗 + 两排旁听长椅　对标：榴莲的奶油纸感 · 狼人杀左右席位</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile" aria-pressed="false">手机 390×844</button></div>
+  <div class="group"><button data-set-count="6">6 人</button><button data-set-count="9">9 人</button></div>
+  <div class="group"><button id="act-next">下一位发言（演示）</button><button id="act-hurry">跳到最后 10 秒</button><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="floor"></div>
+  <svg class="stage-art" viewBox="0 0 100 90" fill="none" stroke="#292722" stroke-width="4" stroke-linecap="round" aria-hidden="true">
+    <path d="M50 8v70M30 82h40M14 24h72"/><path d="M14 24l-10 26h20z"/><path d="M86 24l-10 26h20z"/><circle cx="50" cy="8" r="4"/>
+  </svg>
+
+  <div class="head">
+    <h1 class="title">伪人测试</h1>
+    <div class="eyebrow">第 <span data-bind="round"></span> / <span data-bind="rounds"></span> 轮 · 轮流作答</div>
+  </div>
+  <div class="ring-box"><div class="ring" data-ring><span></span></div></div>
+
+  <div class="bench">
+    <div class="judge-card" data-seats="judge"></div>
+    <span class="plate">审 判 席</span>
+    <svg class="gavel" id="gavel" viewBox="0 0 80 60" aria-hidden="true">
+      <rect x="6" y="6" width="44" height="24" rx="6" fill="#9a5f2e" stroke="#292722" stroke-width="4"/>
+      <rect x="14" y="4" width="6" height="28" fill="#c98a4f" stroke="#292722" stroke-width="3"/>
+      <rect x="36" y="4" width="6" height="28" fill="#c98a4f" stroke="#292722" stroke-width="3"/>
+      <path d="M44 22 L76 52" stroke="#292722" stroke-width="10" stroke-linecap="round"/><path d="M44 22 L76 52" stroke="#c98a4f" stroke-width="4" stroke-linecap="round"/>
+    </svg>
+  </div>
+
+  <div class="pew left" data-seats="oleft"></div>
+  <div class="pew right" data-seats="oright"></div>
+
+  <section class="witness">
+    <div class="dossier">
+      <div class="label">审判长 <span data-bind="judge"></span> 的考题</div>
+      <p class="q" data-bind="question"></p>
+      <div class="speaker-line">证人席：<b data-bind="speaker"></b></div>
+      <span class="stamp">口 述</span>
+    </div>
+    <div class="progress"><span class="numeral"><span data-bind="answered"></span>/<span data-bind="total"></span></span><span>已作答</span><div class="pips" data-pips></div></div>
+  </section>
+
+  <div class="dock">
+    <div class="secret" data-secret title="点击遮挡 / 显示">
+      <div><div class="tag">你是伪人</div><small>点击遮挡</small></div>
+      <span class="word">暗号「<span data-bind="trigger"></span>」</span>
+    </div>
+    <div class="info"><strong data-bind="dock-title"></strong><span data-bind="dock-sub"></span></div>
+    <button id="act-done" class="btn btn-primary">我说完了</button>
+  </div>
+
+  <template id="token"><div class="token">🎙</div></template>
+</div></div>
+<script src="_shared.js"></script>
+<script>
+  // 交棒时审判长敲一下木槌
+  document.addEventListener('handoff', () => {
+    const g = document.getElementById('gavel');
+    g.classList.remove('hit'); void g.getBoundingClientRect(); g.classList.add('hit');
+  });
+</script>
+</body>
+</html>

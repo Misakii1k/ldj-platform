@@ -6,7 +6,7 @@
 import { test, expect, type Browser as _Browser, type Page } from '@playwright/test';
 import { seedRoom } from './helpers/dbClient.ts';
 import { RoomDriver } from './helpers/wsClient.ts';
-import { BASE_URL, DB_PATH, WS_URL } from './helpers/serverEnv.ts';
+import { BASE_URL, DB_PATH, WS_URL, skipPcHostConsole } from './helpers/serverEnv.ts';
 
 const ECHO_CONFIG = { rulesetId: 'echo_judge_v1', answerSeconds: 1, judgmentSeconds: 1 };
 
@@ -86,6 +86,7 @@ test.describe('G2-B echo-judge 完整局', () => {
         const context = await browser.newContext();
         const page: Page = await context.newPage();
         await page.setViewportSize({ width: 390, height: 844 });
+        await skipPcHostConsole(page);
         await page.goto(`${BASE_URL}/?room=${seeded.roomCode}`);
         await page.waitForTimeout(2500);
         const bodyText = await page.evaluate(() => document.body.innerText).catch(() => '');

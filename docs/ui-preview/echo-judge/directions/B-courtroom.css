@@ -1,0 +1,141 @@
+/* 已选定世界的表皮：问答画面与后续补画的各阶段画面共用。只服务于静态预览，不进生产。 */
+  /* 方向 B：浅色粗墨边。世界 = 木质老法庭；顶部是高高的审判席（审判长坐在上面），中央是证人席上摊开的卷宗考题，其余人坐在两排旁听长椅上。 */
+  :root {
+    --card: #fffdf7;
+    --accent: #c9562a;
+    --wood: #c98a4f;
+    --wood-d: #9a5f2e;
+    --wall: #efe2c6;
+  }
+  .device {
+    background:
+      linear-gradient(transparent 76%, rgba(0,0,0,.05) 76% 77%, transparent 77%),
+      repeating-linear-gradient(90deg, #eadbbd 0 118px, #e3d2b1 118px 120px),
+      var(--wall);
+  }
+  /* 地板 */
+  .floor { position: absolute; left: 0; right: 0; bottom: 0; height: 190px; background: repeating-linear-gradient(90deg, #b9804a 0 90px, #ad7641 90px 92px); border-top: 3px solid var(--ink); }
+  /* 墙上的天平徽章剪影 */
+  .stage-art { position: absolute; left: 50%; top: 40px; width: 150px; translate: -50% 0; opacity: .14; pointer-events: none; }
+
+  .head { position: absolute; left: 32px; top: 24px; }
+  .head .title {
+    display: inline-block; font-size: 38px; padding: 8px 20px 10px; background: var(--card);
+    border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 5px 0 var(--ink); rotate: -2deg;
+  }
+  .head .eyebrow { color: var(--muted); margin: 10px 0 0 6px; }
+  .ring-box { position: absolute; right: 32px; top: 24px; }
+  .ring { width: 72px; height: 72px; border: 3px solid var(--ink); box-shadow: 0 4px 0 var(--ink); --ring-bg: #f1e3c4; }
+  .ring > span { font-size: 18px; }
+
+  /* 审判席 */
+  .bench {
+    position: absolute; left: 50%; top: 96px; translate: -50% 0; width: 440px; height: 92px;
+    background: linear-gradient(var(--wood), var(--wood-d)); border: 3px solid var(--ink); border-radius: 14px 14px 6px 6px;
+    box-shadow: 0 6px 0 var(--ink); display: grid; place-items: center;
+  }
+  .bench::before { content: ""; position: absolute; left: 16px; right: 16px; top: 12px; bottom: 12px; border: 2px solid rgba(41,39,34,.35); border-radius: 8px; }
+  .bench .judge-card { position: absolute; top: -58px; left: 50%; translate: -50% 0; }
+  .bench .judge-card .seat { grid-template-columns: 44px auto; padding: 6px 16px 6px 8px; background: #3b3a36; color: #fff; }
+  .bench .judge-card .seat .sc, .bench .judge-card .seat .no { display: none; }
+  .bench .judge-card .seat .st { color: var(--yellow); }
+  .bench .plate { position: relative; font: 900 17px var(--serif); color: #fff6e0; letter-spacing: .3em; text-shadow: 0 2px 0 rgba(41,39,34,.5); }
+  .gavel { position: absolute; right: 26px; top: -30px; width: 74px; rotate: -24deg; transform-origin: 80% 80%; filter: drop-shadow(0 4px 0 var(--ink)); }
+  .gavel.hit { animation: hit 360ms cubic-bezier(.34,1.56,.64,1); }
+  @keyframes hit { 0% { rotate: -24deg; } 40% { rotate: 18deg; } 100% { rotate: -24deg; } }
+
+  /* 证人席 + 卷宗 */
+  .witness { position: absolute; left: 290px; right: 290px; top: 212px; bottom: 132px; display: grid; grid-template-rows: 1fr auto; gap: 14px; }
+  .dossier {
+    position: relative; padding: 26px 32px 22px; background: #fffaf0;
+    border: 3px solid var(--ink); border-radius: 6px 18px 18px 18px; box-shadow: 0 7px 0 var(--ink);
+    display: grid; grid-template-rows: auto 1fr auto; gap: 14px; rotate: .6deg;
+  }
+  .dossier::before { /* 卷宗页签 */
+    content: "卷宗 · 第 2 案"; position: absolute; left: -3px; top: -32px; padding: 6px 16px; font: 900 13px var(--sans);
+    background: #fde0c6; border: 3px solid var(--ink); border-bottom: 0; border-radius: 10px 10px 0 0;
+  }
+  .dossier .label { font: 800 12px var(--sans); letter-spacing: .18em; color: var(--muted); }
+  .q { font-family: var(--serif); font-size: 30px; line-height: 1.45; margin: 0; align-self: center; }
+  .q::before { content: "「"; color: var(--accent); }
+  .q::after { content: "」"; color: var(--accent); }
+  .stamp {
+    position: absolute; right: 22px; bottom: 18px; padding: 4px 12px; font: 900 15px var(--serif); color: var(--coral);
+    border: 3px solid var(--coral); border-radius: 8px; rotate: -8deg; opacity: .8;
+  }
+  .progress { display: flex; align-items: center; gap: 12px; font: 800 14px var(--sans); }
+  .progress .numeral { font-size: 30px; }
+  .pips { display: flex; gap: 8px; flex: 1; }
+  .pip { flex: 1; height: 14px; border: 2.5px solid var(--ink); border-radius: 999px; background: var(--card); }
+  .pip.done { background: var(--seat-c); }
+  .pip.now { background: var(--yellow); animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 50% { transform: scaleY(1.35); } }
+  .speaker-line { font: 800 16px var(--sans); }
+  .speaker-line b { font-family: var(--serif); font-size: 22px; background: #fde0c6; padding: 0 8px; border: 2.5px solid var(--ink); border-radius: 8px; }
+
+  /* 旁听长椅 */
+  .pew { position: absolute; top: 212px; display: grid; gap: 12px; width: 232px; }
+  .pew.left { left: 32px; }
+  .pew.right { right: 32px; }
+  .seat { border-radius: 12px; }
+  .seat.speaking { outline: 4px solid var(--yellow); outline-offset: 3px; box-shadow: 0 6px 0 var(--ink); }
+  .seat.speaking .st { color: var(--ink); }
+  .seat.speaking .st::after { content: " 🎙"; }
+
+  .dock {
+    position: absolute; left: 32px; right: 32px; bottom: 20px; display: flex; align-items: center; gap: 16px;
+    padding: 12px 14px 12px 16px; background: var(--card); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 5px 0 var(--ink);
+  }
+  .dock .info { flex: 1; min-width: 0; }
+  .dock .info strong { display: block; font-size: 17px; }
+  .dock .info span { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .secret { display: flex; align-items: center; gap: 10px; padding: 6px 14px; background: #3b3a36; color: #fff; border: 3px solid var(--ink); border-radius: 12px; rotate: -1.5deg; }
+  .secret .tag { font: 900 12px var(--sans); color: var(--yellow); }
+  .secret .word { font: 700 22px var(--serif); }
+  .secret small { display: block; font-size: 11px; color: #c9c0ae; }
+
+  .token { width: 44px; height: 44px; display: grid; place-items: center; font-size: 24px; background: var(--yellow); border: 3px solid var(--ink); border-radius: 50%; box-shadow: 0 4px 0 var(--ink); }
+
+  @container (max-width: 600px) {
+    .floor { height: 250px; }
+    .stage-art { display: none; }
+    .head { left: 14px; top: 14px; }
+    .head .title { font-size: 24px; padding: 4px 12px 6px; }
+    .head .eyebrow { margin-top: 6px; font-size: 10px; }
+    .ring-box { right: 14px; top: 14px; }
+    .ring { width: 58px; height: 58px; }
+    .ring > span { font-size: 14px; }
+    .bench { top: 132px; width: calc(100% - 28px); height: 50px; }
+    .bench .plate { font-size: 13px; }
+    .bench .judge-card { top: -44px; }
+    .bench .judge-card .seat { grid-template-columns: 30px auto; padding: 4px 12px 4px 6px; }
+    .bench .judge-card .seat .av { width: 30px; }
+    .gavel { width: 46px; right: 10px; top: -22px; }
+    .pew { width: auto; left: 12px !important; right: 12px !important; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .pew.left { top: 200px; }
+    .pew.right { top: auto; bottom: 170px; }
+    .seat { grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 8px 4px 6px; gap: 0; border-width: 2.5px; }
+    .seat .av { width: 30px; grid-row: auto; }
+    .seat .nm { font-size: 12px; max-width: 100%; }
+    .seat .nm .you { display: none; }
+    .seat.me { background: #fff1bf; }
+    .seat .st { font-size: 10px; }
+    .seat.speaking .st::after { content: ""; }
+    .seat .sc { position: absolute; right: 5px; top: 4px; font-size: 13px; grid-row: auto; }
+    .seat .no { width: 18px; height: 18px; font-size: 10px; left: -6px; top: -6px; }
+    .witness { left: 12px; right: 12px; top: 300px; bottom: 272px; gap: 8px; }
+    .dossier { padding: 14px 16px 12px; gap: 6px; }
+    .dossier::before { font-size: 11px; top: -26px; padding: 4px 10px; }
+    .q { font-size: 18px; }
+    .stamp { display: none; }
+    .progress .numeral { font-size: 20px; }
+    .pip { height: 10px; }
+    .speaker-line { font-size: 13px; }
+    .speaker-line b { font-size: 16px; }
+    .dock { left: 12px; right: 12px; bottom: 14px; flex-wrap: wrap; gap: 10px; padding: 12px; }
+    .dock .info { flex-basis: calc(100% - 150px); }
+    .dock .info strong { font-size: 15px; }
+    .dock .info span { font-size: 12px; }
+    .secret .word { font-size: 18px; }
+    .dock .btn { flex: 1; }
+  }

@@ -10,6 +10,17 @@ export interface TopicCardView {
   categoryLabel: string;
 }
 
+/** 上轮判决快照（T0）：中途宣判演出的唯一数据源，不含身份与触发词 */
+export interface EchoJudgeLastVerdict {
+  round: number;
+  judgeId: string;
+  accusations: string[];
+  caught: string[];
+  wrong: string[];
+  escaped: string[];
+  scoreDelta: Record<string, number>;
+}
+
 export interface EchoJudgeReveal {
   round: number;
   judgeId: string;
@@ -45,6 +56,7 @@ export interface EchoJudgePublicView {
   /** 当前阶段截止时刻；出题阶段与终局为 null */
   deadlineAt: number | null;
   reveal: EchoJudgeReveal | null;
+  lastVerdict: EchoJudgeLastVerdict | null;
 }
 
 export interface EchoJudgePlayerView extends EchoJudgePublicView {
@@ -63,7 +75,7 @@ const PUBLIC_KEYS = [
   'gameId', 'rulesetId', 'schemaVersion', 'phase', 'players', 'round',
   'judgeId', 'question', 'topicCardId', 'currentSpeakerId', 'allAnswered', 'answeredCount',
   'accusations', 'caughtImpostors', 'escapedImpostors',
-  'scores', 'winners', 'deadlineAt', 'reveal',
+  'scores', 'winners', 'deadlineAt', 'reveal', 'lastVerdict',
 ] as const;
 const ME_KEYS = ['playerId', 'isJudge', 'role', 'triggerWord', 'pendingTopicChoices', 'myTurn', 'isCurrentSpeaker'] as const;
 
@@ -134,6 +146,24 @@ function parseReveal(value: unknown): EchoJudgeReveal | null {
   };
 }
 
+function parseLastVerdict(value: unknown): EchoJudgeLastVerdict | null {
+  if (value === null) return null;
+  if (!isObject(value) || !hasExactKeys(value, ['round', 'judgeId', 'accusations', 'caught', 'wrong', 'escaped', 'scoreDelta'])) return null;
+  if (!isNonNegativeInteger(value.round) || (value.round as number) < 1 || !isPlayerId(value.judgeId)) return null;
+  if (!isPlayerIds(value.accusations) || !isPlayerIds(value.caught) || !isPlayerIds(value.wrong) || !isPlayerIds(value.escaped)) return null;
+  const scoreDelta = parseRecord(value.scoreDelta, (v): v is number => typeof v === 'number' && Number.isInteger(v));
+  if (scoreDelta === null) return null;
+  return {
+    round: value.round as number,
+    judgeId: value.judgeId,
+    accusations: [...value.accusations],
+    caught: [...value.caught],
+    wrong: [...value.wrong],
+    escaped: [...value.escaped],
+    scoreDelta,
+  };
+}
+
 function parseTopicCards(value: unknown): TopicCardView[] | null {
   if (value === null) return null;
   if (!Array.isArray(value)) return null;
@@ -168,6 +198,8 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): EchoJudgePub
   if (scores === null || !isPlayerIds(view.winners)) return null;
   const reveal = parseReveal(view.reveal);
   if (reveal === null && view.reveal !== null) return null;
+  const lastVerdict = parseLastVerdict(view.lastVerdict);
+  if (lastVerdict === null && view.lastVerdict !== null) return null;
   if (view.deadlineAt !== null && typeof view.deadlineAt !== 'number') return null;
   return {
     gameId: 'echo-judge',
@@ -189,6 +221,7 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): EchoJudgePub
     winners: [...view.winners],
     deadlineAt: view.deadlineAt as number | null,
     reveal,
+    lastVerdict,
   };
 }
 

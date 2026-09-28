@@ -18,6 +18,19 @@ const topicCardViewSchema = z
   })
   .strict();
 
+/** 上轮判决快照：只含指认/抓捕/分差，绝不含身份与触发词 */
+const echoJudgeLastVerdictSchema = z
+  .object({
+    round: z.number().int().positive(),
+    judgeId: pid,
+    accusations: z.array(pid),
+    caught: z.array(pid),
+    wrong: z.array(pid),
+    escaped: z.array(pid),
+    scoreDelta: z.record(pid, z.number().int()),
+  })
+  .strict();
+
 const echoJudgeRevealSchema = z
   .object({
     round: z.number().int().positive(),
@@ -56,6 +69,7 @@ const echoJudgePublicViewSchema = z
     /** 当前阶段截止时刻；出题阶段与终局为 null */
     deadlineAt: z.number().nullable(),
     reveal: echoJudgeRevealSchema.nullable(),
+    lastVerdict: echoJudgeLastVerdictSchema.nullable(),
   })
   .strict();
 
@@ -129,6 +143,18 @@ function buildPublicView(state: EchoJudgeState): EchoJudgePublicView {
             scores: { ...(state.scores ?? {}) },
           }
         : null,
+    // 老存档没有该字段，兜底 null；快照深拷贝，避免视图与 state 共享引用
+    lastVerdict: state.lastVerdict
+      ? {
+          round: state.lastVerdict.round,
+          judgeId: state.lastVerdict.judgeId,
+          accusations: [...state.lastVerdict.accusations],
+          caught: [...state.lastVerdict.caught],
+          wrong: [...state.lastVerdict.wrong],
+          escaped: [...state.lastVerdict.escaped],
+          scoreDelta: { ...state.lastVerdict.scoreDelta },
+        }
+      : null,
   };
 }
 

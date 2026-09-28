@@ -1,0 +1,119 @@
+[
+  {
+    "shot": "setup-judge-1280x800",
+    "horizontalOverflow": false,
+    "courtVisible": true,
+    "witnessOverlapsLeft": false,
+    "witnessOverlapsRight": false,
+    "benchOverlapsWitness": false,
+    "seatsCount": 6
+  },
+  {
+    "shot": "setup-judge-390x844",
+    "horizontalOverflow": false,
+    "courtVisible": true,
+    "witnessOverlapsLeft": false,
+    "witnessOverlapsRight": false,
+    "benchOverlapsWitness": false,
+    "seatsCount": 6
+  },
+  {
+    "shot": "setup-player-1280x800",
+    "horizontalOverflow": false,
+    "courtVisible": true,
+    "witnessOverlapsLeft": false,
+    "witnessOverlapsRight": false,
+    "benchOverlapsWitness": false,
+    "seatsCount": 6
+  },
+  {
+    "shot": "setup-player-390x844",
+    "horizontalOverflow": false,
+    "courtVisible": true,
+    "witnessOverlapsLeft": false,
+    "witnessOverlapsRight": false,
+    "benchOverlapsWitness": false,
+    "seatsCount": 6
+  },
+  {
+    "shot": "answering-1280x800",
+    "horizontalOverflow": false,
+    "courtVisible": true,
+    "witnessOverlapsLeft": false,
+    "witnessOverlapsRight": false,
+    "benchOverlapsWitness": false,
+    "seatsCount": 6
+  },
+  {
+    "shot": "answering-390x844",
+    "horizontalOverflow": false,
+    "courtVisible": true,
+    "witnessOverlapsLeft": false,
+    "witnessOverlapsRight": false,
+    "benchOverlapsWitness": false,
+    "seatsCount": 6
+  },
+  {
+    "shot": "judgment-judge-1280x800",
+    "horizontalOverflow": false,
+    "courtVisible": true,
+    "witnessOverlapsLeft": false,
+    "witnessOverlapsRight": false,
+    "benchOverlapsWitness": false,
+    "seatsCount": 6
+  },
+  {
+    "shot": "judgment-judge-390x844",
+    "horizontalOverflow": false,
+    "courtVisible": true,
+    "witnessOverlapsLeft": false,
+    "witnessOverlapsRight": false,
+    "benchOverlapsWitness": false,
+    "seatsCount": 6
+  },
+  {
+    "shot": "judgment-player-390x844",
+    "horizontalOverflow": false,
+    "courtVisible": true,
+    "witnessOverlapsLeft": false,
+    "witnessOverlapsRight": false,
+    "benchOverlapsWitness": false,
+    "seatsCount": 6
+  },
+  {
+    "shot": "verdict-390x844",
+    "horizontalOverflow": false,
+    "courtVisible": true,
+    "witnessOverlapsLeft": false,
+    "witnessOverlapsRight": false,
+    "benchOverlapsWitness": false,
+    "seatsCount": 6
+  },
+  {
+    "shot": "game-over-1280x800",
+    "horizontalOverflow": false,
+    "courtVisible": true,
+    "witnessOverlapsLeft": false,
+    "witnessOverlapsRight": false,
+    "benchOverlapsWitness": false,
+    "seatsCount": 6
+  },
+  {
+    "shot": "game-over-390x844",
+    "horizontalOverflow": false,
+    "courtVisible": true,
+    "witnessOverlapsLeft": false,
+    "witnessOverlapsRight": false,
+    "benchOverlapsWitness": false,
+    "seatsCount": 6
+  },
+  {
+    "shot": "answering-9p-1280x800",
+    "horizontalOverflow": false,
+    "courtVisible": true,
+    "witnessOverlapsLeft": false,
+    "witnessOverlapsRight": false,
+    "benchOverlapsWitness": false,
+    "seatsCount": 9
+  }
+]

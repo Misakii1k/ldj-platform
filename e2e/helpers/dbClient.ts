@@ -58,6 +58,8 @@ export interface SeedOptions {
   gameId?: string;
   count?: number;
   nickname?: string;
+  /** 逐个席位指定昵称（长度须 ≥ count；优先级高于 nickname） */
+  nicknames?: string[];
   ready?: boolean;
   /** 建房时携带的 gameConfig（含 rulesetId）；开局时由模块 parseConfig 校验 */
   config?: Record<string, unknown>;
@@ -115,7 +117,8 @@ export function seedRoom(dbPath: string, options: SeedOptions = {}): SeededRoom 
       ).run(
         roomId,
         player.playerId,
-        player.seat === 1 ? (options.nickname ?? '房主') : `玩家${player.seat}`,
+        options.nicknames?.[player.seat - 1]
+          ?? (player.seat === 1 ? (options.nickname ?? '房主') : `玩家${player.seat}`),
         player.seat,
         hashResumeToken(player.resumeToken),
         now,

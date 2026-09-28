@@ -83,6 +83,8 @@ export interface EchoJudgeState {
    * 客户端据此渲染倒计时进度环；出题阶段与终局为 null。
    */
   deadlineAt: number | null;
+  /** 上轮判决快照（T0）；开局前与老存档为 null */
+  lastVerdict: EchoJudgeLastVerdict | null;
 }
 
 export type EchoJudgeAction =
@@ -111,6 +113,23 @@ export type EchoJudgeEvent =
 export type EchoJudgeReduceResult =
   | { ok: false; code: 'ACTION_NOT_ALLOWED'; message: string }
   | { ok: true; nextState: EchoJudgeState; events: EchoJudgeEvent[]; effects: GameEffect[] };
+
+/**
+ * 一轮宣判的结果快照（T0 新增）。
+ * 宣判后一直保留到下一次 settleRound 覆盖——中途轮次 accuse 后阶段立刻进入
+ * 下一轮 judge_setup，accusations/caught/escaped 在公开视图里被隐藏，
+ * 客户端的中途宣判演出只能从这里取数据。
+ * 只含「谁被指认/谁被抓/谁被冤枉/谁逃脱/分差」，不含身份与触发词。
+ */
+export interface EchoJudgeLastVerdict {
+  round: number;
+  judgeId: string;
+  accusations: string[];
+  caught: string[];
+  wrong: string[];
+  escaped: string[];
+  scoreDelta: Record<string, number>;
+}
 
 export interface EchoJudgeReveal {
   round: number;
@@ -150,6 +169,8 @@ export interface EchoJudgePublicView {
   /** 当前阶段截止时刻；出题阶段与终局为 null */
   deadlineAt: number | null;
   reveal: EchoJudgeReveal | null;
+  /** 上轮判决快照（中途宣判的唯一数据源；不含身份与触发词） */
+  lastVerdict: EchoJudgeLastVerdict | null;
 }
 
 export interface EchoJudgePlayerView extends EchoJudgePublicView {

@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>伪人测试 · 定稿 B · ④ 宣判</title>
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="B-courtroom.css">
+<style>
+  /* ④ 宣判：木槌落下 → 被指认者的身份牌依次翻面（抓对 = 红「伪人」章，冤枉 = 蓝「人类」章）→ 没被指认的伪人从旁听席里「浮出」（逃脱章）→ 分数滚动。
+     规则：抓到伪人 −1 / 逃脱伪人 +2 / 审判长每抓对 +1、每冤枉 −1；场上 0 伪人且没指认任何人，审判长 +1。
+     中途轮次结算后直接进下一轮立案（服务端不留展示窗口），所以演出必须 ≤ 2.4 秒、可跳过；终局才停留在本画面。 */
+  .verdict { position: absolute; left: 50%; top: 212px; translate: -50% 0; width: 640px; display: grid; gap: 14px; justify-items: center; z-index: 6; }
+  .banner {
+    padding: 10px 30px 12px; font: 700 40px var(--serif); background: var(--card); border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 6px 0 var(--ink);
+    rotate: -2deg; opacity: 0;
+  }
+  .banner.show { animation: stamp 420ms cubic-bezier(.34,1.56,.64,1) both; }
+  .banner.caught { color: var(--coral); }
+  .banner.escaped { color: #2f5d8a; }
+  .banner small { display: block; font: 800 14px var(--sans); color: var(--muted); text-align: center; margin-top: 4px; }
+  .ledger { width: 100%; padding: 16px 20px; background: #fffaf0; border: 3px solid var(--ink); border-radius: 6px 16px 16px 16px; box-shadow: 0 6px 0 var(--ink); display: grid; gap: 8px; opacity: 0; }
+  .ledger.show { animation: rise 320ms ease-out both; }
+  .ledger .row { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; font: 800 15px var(--sans); }
+  .ledger .row .why { color: var(--muted); font-weight: 700; font-size: 13px; }
+  .ledger .row .d { font: 700 24px var(--serif); min-width: 48px; text-align: right; }
+  .ledger .row .d.plus { color: #2f7a4f; } .ledger .row .d.minus { color: var(--coral); }
+  @keyframes stamp { 0% { transform: scale(2.2); opacity: 0; } 60% { transform: scale(.92); opacity: 1; } 100% { transform: none; opacity: 1; } }
+
+  .witness { opacity: .0; pointer-events: none; }
+
+  /* 身份章 */
+  .seat .idstamp { position: absolute; right: -8px; top: -14px; padding: 1px 8px; font: 900 14px var(--serif); border: 3px solid currentColor; border-radius: 6px; background: var(--card); animation: stamp 340ms cubic-bezier(.34,1.56,.64,1) both; z-index: 2; }
+  .seat.is-caught { background: #fde0c6; }
+  .seat.is-caught .idstamp { color: var(--coral); rotate: -10deg; }
+  .seat.is-wrong .idstamp { color: #2f5d8a; rotate: 8deg; }
+  .seat.is-escaped { background: #3b3a36; color: #fff; }
+  .seat.is-escaped .st { color: var(--yellow); }
+  .seat.is-escaped .idstamp { color: #2f5d8a; rotate: -6deg; }
+  .seat.flip { animation: flip 360ms ease-in-out; }
+  @keyframes flip { 50% { transform: rotateY(90deg); } }
+  .seat .delta { position: absolute; right: 8px; bottom: -14px; font: 700 18px var(--serif); padding: 0 6px; background: var(--card); border: 2.5px solid var(--ink); border-radius: 8px; animation: pop 300ms cubic-bezier(.34,1.56,.64,1) both; }
+  .seat .delta.plus { color: #2f7a4f; } .seat .delta.minus { color: var(--coral); }
+  .seat .sc.roll { animation: pop 360ms cubic-bezier(.34,1.56,.64,1); }
+
+  .dock .skip { margin-left: auto; }
+  .next-note { font: 700 13px var(--sans); color: var(--muted); }
+
+  @container (max-width: 600px) {
+    .verdict { left: 12px; right: 12px; width: auto; translate: none; top: 312px; gap: 8px; }
+    .banner { font-size: 26px; padding: 6px 16px 8px; }
+    .banner small { font-size: 11px; }
+    .ledger { padding: 8px 10px; gap: 4px; }
+    .ledger .row { font-size: 12px; gap: 6px; }
+    .ledger .row .why { font-size: 10px; }
+    .ledger .row .d { font-size: 16px; min-width: 32px; }
+    .seat .idstamp { font-size: 10px; padding: 0 4px; right: -4px; top: -10px; border-width: 2px; }
+    .seat .delta { font-size: 12px; bottom: -10px; right: 2px; }
+    .dock .info { flex-basis: 100%; }
+    .dock .btn { flex: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>伪人测试 · 定稿 B · ④ 宣判</strong>
+  <span class="tb-note">木槌落 → 被指认者翻身份 → 漏网伪人浮出 → 分数滚动（≤ 2.4 秒）</span>
+  <div class="group"><button data-param="case" data-value="mixed">抓对 1 + 冤枉 1</button><button data-param="case" data-value="all">全抓到</button><button data-param="case" data-value="none">没指认，全逃脱</button></div>
+  <div class="group"><button data-param="size" data-value="desktop">桌面 1280×800</button><button data-param="size" data-value="mobile">手机 390×844</button></div>
+  <div class="group"><button data-param="n" data-value="6">6 人</button><button data-param="n" data-value="9">9 人</button></div>
+  <div class="group"><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device">
+  <div class="floor"></div>
+  <svg class="stage-art" viewBox="0 0 100 90" fill="none" stroke="#292722" stroke-width="4" stroke-linecap="round" aria-hidden="true">
+    <path d="M50 8v70M30 82h40M14 24h72"/><path d="M14 24l-10 26h20z"/><path d="M86 24l-10 26h20z"/><circle cx="50" cy="8" r="4"/>
+  </svg>
+  <div class="head">
+    <h1 class="title">伪人测试</h1>
+    <div class="eyebrow">第 2 / <span data-bind="rounds"></span> 轮 · 宣判</div>
+  </div>
+
+  <div class="bench">
+    <div class="judge-card" data-seats="judge"></div>
+    <span class="plate">审 判 席</span>
+    <svg class="gavel" id="gavel" viewBox="0 0 80 60" aria-hidden="true">
+      <rect x="6" y="6" width="44" height="24" rx="6" fill="#9a5f2e" stroke="#292722" stroke-width="4"/>
+      <rect x="14" y="4" width="6" height="28" fill="#c98a4f" stroke="#292722" stroke-width="3"/>
+      <rect x="36" y="4" width="6" height="28" fill="#c98a4f" stroke="#292722" stroke-width="3"/>
+      <path d="M44 22 L76 52" stroke="#292722" stroke-width="10" stroke-linecap="round"/><path d="M44 22 L76 52" stroke="#c98a4f" stroke-width="4" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="pew left" data-seats="oleft"></div>
+  <div class="pew right" data-seats="oright"></div>
+
+  <div class="verdict">
+    <div class="banner" id="banner"></div>
+    <div class="ledger" id="ledger"></div>
+  </div>
+
+  <div class="dock">
+    <div class="info"><strong data-bind="dock-title">宣判中……</strong><span class="next-note" data-bind="dock-sub"></span></div>
+    <button class="btn skip" id="act-skip">跳过</button>
+  </div>
+</div></div>
+<script src="_kit.js"></script>
+<script>
+  const { players, order, judge, params } = KIT;
+  KIT.bind('rounds', String(players.length));
+  const mode = params.get('case') || 'mixed';
+  const impostors = order.filter((p) => p.role === 'impostor');
+  const humans = order.filter((p) => p.role === 'human');
+  const accused = mode === 'all' ? impostors : mode === 'none' ? [] : [impostors[0], humans[humans.length - 1]];
+  const caught = accused.filter((p) => p.role === 'impostor');
+  const wrong = accused.filter((p) => p.role === 'human');
+  const escaped = impostors.filter((p) => !accused.includes(p));
+
+  const delta = new Map();
+  const add = (p, d) => delta.set(p, (delta.get(p) || 0) + d);
+  if (impostors.length === 0 && accused.length === 0) add(judge, 1);
+  else { caught.forEach(() => add(judge, 1)); wrong.forEach(() => add(judge, -1)); }
+  caught.forEach((p) => add(p, -1));
+  escaped.forEach((p) => add(p, 2));
+
+  const shown = new Map(); // p -> 'caught' | 'wrong' | 'escaped'
+  let scored = false;
+  KIT.status = (p) => {
+    const s = shown.get(p);
+    if (p.judge) return '审判长';
+    if (s === 'caught') return '伪人 · 被抓'; // 暗号终局才公开，中途宣判不显示
+    if (s === 'wrong') return '人类 · 被冤枉';
+    if (s === 'escaped') return '漏网伪人';
+    return accused.includes(p) ? '被指认' : '';
+  };
+  KIT.score = (p) => p.score + (scored ? delta.get(p) || 0 : 0);
+  KIT.decorate = (el, p) => {
+    const s = shown.get(p);
+    if (s) {
+      el.classList.add('is-' + s);
+      el.insertAdjacentHTML('beforeend', `<span class="idstamp">${s === 'caught' ? '伪 人' : s === 'wrong' ? '人 类' : '逃 脱'}</span>`);
+    }
+    const d = delta.get(p);
+    if (scored && d) el.insertAdjacentHTML('beforeend', `<span class="delta ${d > 0 ? 'plus' : 'minus'}">${d > 0 ? '+' : '−'}${Math.abs(d)}</span>`);
+  };
+
+  function bannerText() {
+    if (caught.length && !escaped.length) return ['caught', '伪人全部落网！', `抓到 ${caught.map((p) => p.name).join('、')}`];
+    if (caught.length) return ['caught', `抓到 ${caught.length} 个伪人`, `还有 ${escaped.length} 个伪人漏网${wrong.length ? ` · 冤枉了 ${wrong.length} 个人类` : ''}`];
+    if (impostors.length === 0 && !accused.length) return ['caught', '明察秋毫', '场上本来就没有伪人'];
+    return ['escaped', '伪人全员潜伏成功', wrong.length ? `冤枉了 ${wrong.map((p) => p.name).join('、')}` : '审判长谁也没指认'];
+  }
+  function ledger() {
+    const rows = [];
+    const j = delta.get(judge) || 0;
+    rows.push([`${judge.name}（审判长）`, `抓对 ${caught.length} · 冤枉 ${wrong.length}`, j]);
+    caught.forEach((p) => rows.push([p.name, '伪人被抓', -1]));
+    escaped.forEach((p) => rows.push([p.name, '伪人逃脱', 2]));
+    return rows.map(([n, why, d]) => `<div class="row"><span>${n}</span><span class="why">${why}</span><span class="d ${d > 0 ? 'plus' : d < 0 ? 'minus' : ''}">${d > 0 ? '+' : d < 0 ? '−' : '±'}${Math.abs(d)}</span></div>`).join('');
+  }
+
+  let skipped = false;
+  const step = (ms) => (skipped ? Promise.resolve() : KIT.wait(ms));
+  function flipSeat(p, kind) {
+    shown.set(p, kind);
+    KIT.render();
+    KIT.seatOf(p)?.classList.add('flip');
+  }
+  async function play() {
+    KIT.render();
+    await step(240);
+    KIT.gavel(); KIT.shake(); // 1. 木槌（0–360ms）
+    await step(380);
+    for (const p of accused) { flipSeat(p, p.role === 'impostor' ? 'caught' : 'wrong'); await step(260); } // 2. 被指认者依次翻面
+    for (const p of escaped) { flipSeat(p, 'escaped'); await step(200); } // 3. 漏网伪人浮出
+    const [k, t, s] = bannerText();
+    const b = document.getElementById('banner');
+    b.className = 'banner show ' + k;
+    b.innerHTML = `${t}<small>${s}</small>`;
+    await step(320);
+    scored = true; // 4. 分数滚动
+    KIT.render();
+    document.querySelectorAll('.seat .sc').forEach((x) => x.classList.add('roll'));
+    const l = document.getElementById('ledger');
+    l.innerHTML = ledger(); l.classList.add('show');
+    KIT.bind('dock-title', '本轮结束');
+    KIT.bind('dock-sub', '下一轮由 可可 当审判长 · 马上进入立案');
+    document.getElementById('act-skip').hidden = true;
+  }
+  document.getElementById('act-skip').addEventListener('click', () => {
+    skipped = true;
+    accused.forEach((p) => shown.set(p, p.role === 'impostor' ? 'caught' : 'wrong'));
+    escaped.forEach((p) => shown.set(p, 'escaped'));
+  });
+  play();
+</script>
+</body>
+</html>

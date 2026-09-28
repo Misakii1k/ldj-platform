@@ -129,6 +129,7 @@ export function createEchoJudgeState(
     scores: Object.fromEntries(players.map((id) => [id, 0])),
     winners: [],
     deadlineAt: null,
+    lastVerdict: null,
   };
   assertEchoJudgeInvariants(state);
   return state;
@@ -180,6 +181,21 @@ function settleRound(
   for (const id of escaped) {
     state.scores[id] = (state.scores[id] ?? 0) + 2;
   }
+
+  // 4. 记录本轮判决快照（T0）：中途轮次 accuse 后阶段立刻切走，
+  //    accusations/caught/escaped 在公开视图里被隐藏，客户端宣判演出以此为唯一数据源。
+  const scoreDelta: Record<string, number> = { [state.judgeId]: judgeScoreDelta };
+  for (const id of caught) scoreDelta[id] = (scoreDelta[id] ?? 0) - 1;
+  for (const id of escaped) scoreDelta[id] = (scoreDelta[id] ?? 0) + 2;
+  state.lastVerdict = {
+    round: state.round,
+    judgeId: state.judgeId,
+    accusations: [...targetIds],
+    caught: [...caught],
+    wrong: [...wrong],
+    escaped: [...escaped],
+    scoreDelta,
+  };
 
   events.push({
     type: 'accused',
@@ -330,6 +346,10 @@ export function reduceEchoJudgeState(
           next.phase = 'judgment';
           next.currentSpeakerId = null;
           next.accusations = [];
+          // 进入新一轮审判时清空上轮判决残留（否则客户端会晚一整轮显示上轮结果）
+          next.caughtImpostors = [];
+          next.wrongAccusations = [];
+          next.escapedImpostors = [];
           events.push({ type: 'judgment_started' });
           effects.push(system('发言者退出，所有剩余玩家已作答，审判长请指认伪人'));
           effects.push(scheduleJudgmentTimeout(next, ctx.now));
@@ -443,6 +463,10 @@ export function reduceEchoJudgeState(
       next.phase = 'judgment';
       next.currentSpeakerId = null;
       next.accusations = [];
+      // 进入新一轮审判时清空上轮判决残留（否则客户端会晚一整轮显示上轮结果）
+      next.caughtImpostors = [];
+      next.wrongAccusations = [];
+      next.escapedImpostors = [];
       events.push({ type: 'judgment_started' });
       effects.push(system('全部发言完毕，审判长请指认潜伏的伪人（可多选）'));
       effects.push(scheduleJudgmentTimeout(next, ctx.now));
@@ -472,6 +496,10 @@ export function reduceEchoJudgeState(
       next.phase = 'judgment';
       next.currentSpeakerId = null;
       next.accusations = [];
+      // 进入新一轮审判时清空上轮判决残留（否则客户端会晚一整轮显示上轮结果）
+      next.caughtImpostors = [];
+      next.wrongAccusations = [];
+      next.escapedImpostors = [];
       events.push({ type: 'judgment_started' });
       effects.push(system('全部回答完毕，审判长请指认伪人'));
       effects.push(scheduleJudgmentTimeout(next, ctx.now));

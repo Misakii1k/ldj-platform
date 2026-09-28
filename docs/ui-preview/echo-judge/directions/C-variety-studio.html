@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>伪人测试 · 方向 C · 综艺录影棚</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  /* 方向 C：浅色粗墨边。世界 = 周末综艺录影棚；审判长是主持台后的主持人，考题打在灯泡边框的大屏上，其余人站在一排弧形答题台后面（席位在下方，不在左右）。 */
+  :root {
+    --card: #fffdf7;
+    --accent: #ff5c8a;
+    --stage: #ffd9e4;
+    --studio: #6c5ce7;
+  }
+  .device {
+    background:
+      radial-gradient(ellipse 70% 60% at 50% 30%, #fff5d9 0 30%, transparent 70%),
+      repeating-conic-gradient(from 0deg at 50% 38%, #ffe7ee 0 8deg, #ffd4e0 8deg 16deg);
+  }
+  /* 舞台地面 */
+  .deck { position: absolute; left: -10%; right: -10%; bottom: 0; height: 300px; background: #7b6cf0; border-top: 4px solid var(--ink); border-radius: 50% 50% 0 0 / 60px 60px 0 0; }
+  .deck::before { content: ""; position: absolute; inset: 18px 12% auto; height: 6px; border-radius: 3px; background: repeating-linear-gradient(90deg, #fff5b8 0 10px, transparent 10px 26px); opacity: .8; }
+  /* 两侧聚光灯剪影 */
+  .spot { position: absolute; top: 0; width: 360px; height: 560px; background: linear-gradient(rgba(255,255,255,.55), transparent 80%); pointer-events: none; }
+  .spot.l { left: 40px; clip-path: polygon(20% 0, 34% 0, 100% 100%, 50% 100%); }
+  .spot.r { right: 40px; clip-path: polygon(66% 0, 80% 0, 50% 100%, 0 100%); }
+
+  .head { position: absolute; left: 28px; top: 22px; }
+  .logo {
+    display: inline-flex; align-items: center; gap: 10px; padding: 8px 18px 10px; font: 900 34px var(--serif);
+    background: var(--ink); color: #fff; border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 5px 0 var(--accent); rotate: -3deg;
+  }
+  .logo i { font-style: normal; color: var(--accent); }
+  .head .eyebrow { color: var(--ink); margin: 12px 0 0 6px; }
+  .ring-box { position: absolute; right: 28px; top: 22px; }
+  .ring { width: 76px; height: 76px; border: 3px solid var(--ink); box-shadow: 0 4px 0 var(--ink); --ring-bg: #fff; }
+  .ring > span { font-size: 19px; }
+
+  /* 大屏 */
+  .screen {
+    position: absolute; left: 50%; top: 58px; translate: -50% 0; width: 700px; height: 300px; padding: 16px;
+    background: #fff; border: 4px solid var(--ink); border-radius: 26px; box-shadow: 0 8px 0 var(--ink);
+  }
+  .bulbs { position: absolute; inset: 5px; border-radius: 22px; pointer-events: none;
+    background:
+      radial-gradient(circle, #ffc93c 0 4px, transparent 5px) 0 0 / 26px 26px repeat-x,
+      radial-gradient(circle, #ffc93c 0 4px, transparent 5px) 0 100% / 26px 26px repeat-x;
+    animation: chase 1.2s steps(2) infinite;
+  }
+  @keyframes chase { 50% { background-position: 13px 0, 13px 100%; } }
+  .panel {
+    position: relative; height: 100%; display: grid; grid-template-rows: auto 1fr auto; gap: 8px; padding: 18px 28px;
+    background: #22205a; color: #fff; border: 3px solid var(--ink); border-radius: 16px; text-align: center;
+  }
+  .panel .tag { justify-self: center; padding: 3px 14px; font: 900 13px var(--sans); color: var(--ink); background: #fff; border: 2.5px solid var(--ink); border-radius: 999px; }
+  .q { font-family: var(--serif); font-size: 29px; line-height: 1.45; margin: 0; align-self: center; }
+  .panel .now { font: 800 15px var(--sans); color: #c9c4ff; }
+  .panel .now b { font: 700 24px var(--serif); color: #fff; margin: 0 4px; }
+  .screen.flash .panel { animation: tv 380ms steps(3); }
+  @keyframes tv { 0% { filter: brightness(2.2) saturate(0); } 50% { filter: brightness(.6); } }
+
+  /* 主持台（审判长） */
+  .host { position: absolute; left: 50%; top: 380px; translate: -50% 0; display: flex; align-items: center; gap: 10px; }
+  .host .podium { padding: 6px 16px 6px 8px; background: var(--accent); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink); }
+  .host .podium .seat { all: unset; display: flex; align-items: center; gap: 8px; color: #fff; font-weight: 900; }
+  .host .podium .seat .av { width: 36px; color: #fff; }
+  .host .podium .seat .no, .host .podium .seat .sc, .host .podium .seat .st { display: none; }
+  .host .lab { font: 900 13px var(--sans); background: #fff; padding: 4px 10px; border: 2.5px solid var(--ink); border-radius: 999px; }
+  .progress { display: flex; align-items: center; gap: 8px; margin-left: 16px; }
+  .progress .numeral { font-size: 30px; }
+  .pips { display: flex; gap: 6px; }
+  .pip { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid var(--ink); background: #fff; }
+  .pip.done { background: var(--seat-c); }
+  .pip.now { background: #fff; box-shadow: 0 0 0 4px var(--accent); animation: pop 900ms ease-in-out infinite; }
+
+  /* 弧形答题台 */
+  .podiums { position: absolute; left: 36px; right: 36px; top: 470px; display: flex; justify-content: center; align-items: flex-end; gap: 14px; }
+  .podiums .seat {
+    width: 150px; grid-template-columns: 1fr; justify-items: center; text-align: center; gap: 2px; padding: 34px 8px 10px;
+    border-radius: 16px 16px 8px 8px; background: #fff; box-shadow: 0 5px 0 var(--ink);
+  }
+  .podiums .seat:nth-child(1), .podiums .seat:nth-last-child(1) { translate: 0 -18px; }
+  .podiums .seat:nth-child(2), .podiums .seat:nth-last-child(2) { translate: 0 -6px; }
+  .podiums .seat .av { position: absolute; top: -34px; left: 50%; translate: -50% 0; width: 58px; grid-row: auto; }
+  .podiums .seat .nm { font-size: 15px; max-width: 100%; }
+  .podiums .seat .sc { grid-row: auto; font-size: 30px; padding: 2px 14px; background: #22205a; color: #7dffcb; border: 2.5px solid var(--ink); border-radius: 10px; }
+  .podiums .seat .no { left: 8px; top: 8px; }
+  .podiums .seat.speaking { background: #fff3a8; outline: none; transform: translateY(-14px) scale(1.06); box-shadow: 0 5px 0 var(--ink), 0 0 0 6px var(--accent); }
+  .podiums .seat.speaking .st { color: var(--accent); font-weight: 900; }
+  .podiums .seat.speaking::after { content: "ON AIR"; position: absolute; top: -52px; right: -8px; font: 900 11px var(--sans); color: #fff; background: var(--accent); padding: 3px 8px; border: 2.5px solid var(--ink); border-radius: 999px; rotate: 10deg; }
+
+  .dock {
+    position: absolute; left: 28px; right: 28px; bottom: 18px; display: flex; align-items: center; gap: 16px;
+    padding: 12px 14px 12px 16px; background: var(--card); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 5px 0 var(--ink);
+  }
+  .dock .info { flex: 1; min-width: 0; }
+  .dock .info strong { display: block; font-size: 17px; }
+  .dock .info span { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .secret { display: flex; align-items: center; gap: 10px; padding: 6px 14px; background: var(--accent); color: #fff; border: 3px solid var(--ink); border-radius: 12px; rotate: -2deg; }
+  .secret .tag { font: 900 12px var(--sans); }
+  .secret .word { font: 700 22px var(--serif); }
+  .secret small { display: block; font-size: 11px; opacity: .85; }
+
+  .token { padding: 6px 12px; font: 900 13px var(--sans); color: #fff; background: var(--accent); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink); white-space: nowrap; }
+
+  /* 9 人时答题台收窄 */
+  [data-count="9"] .podiums { gap: 8px; }
+  [data-count="9"] .podiums .seat { width: 128px; }
+
+  @container (max-width: 600px) {
+    .spot { display: none; }
+    .deck { height: 380px; border-radius: 50% 50% 0 0 / 40px 40px 0 0; }
+    .head { left: 14px; top: 14px; }
+    .logo { font-size: 22px; padding: 4px 12px 6px; }
+    .head .eyebrow { font-size: 10px; margin-top: 8px; }
+    .ring-box { right: 14px; top: 14px; }
+    .ring { width: 60px; height: 60px; }
+    .ring > span { font-size: 14px; }
+    .screen { top: 92px; width: calc(100% - 24px); height: 250px; padding: 10px; border-radius: 20px; }
+    .panel { padding: 12px 14px; }
+    .q { font-size: 19px; }
+    .panel .now b { font-size: 18px; }
+    .host { top: 362px; width: calc(100% - 24px); justify-content: space-between; }
+    .host .podium .seat .av { width: 28px; }
+    .host .lab { display: none; }
+    .progress { margin-left: 0; }
+    .progress .numeral { font-size: 20px; }
+    .pip { width: 12px; height: 12px; border-width: 2px; }
+    .podiums { left: 10px; right: 10px; top: 460px; flex-wrap: wrap; gap: 36px 8px; }
+    .podiums .seat, [data-count="9"] .podiums .seat { width: calc(25% - 6px); padding: 22px 4px 6px; translate: none !important; }
+    .podiums .seat .av { width: 38px; top: -24px; }
+    .podiums .seat .nm { font-size: 12px; }
+    .podiums .seat .nm .you { display: none; }
+    .podiums .seat.me { background: #fff1bf; }
+    .podiums .seat .st { font-size: 10px; }
+    .podiums .seat .sc { font-size: 15px; padding: 0 8px; }
+    .podiums .seat .no { width: 18px; height: 18px; font-size: 10px; left: 3px; top: 3px; }
+    .podiums .seat.speaking { transform: translateY(-6px) scale(1.05); }
+    .podiums .seat.speaking::after { top: -36px; right: -4px; font-size: 9px; padding: 2px 5px; }
+    .dock { left: 12px; right: 12px; bottom: 14px; flex-wrap: wrap; gap: 10px; padding: 12px; }
+    .dock .info { flex-basis: calc(100% - 150px); }
+    .dock .info strong { font-size: 15px; }
+    .dock .info span { font-size: 12px; }
+    .secret .word { font-size: 18px; }
+    .dock .btn { flex: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>方向 C · 综艺录影棚（浅色粗墨边）</strong>
+  <span class="note">构图：顶部灯泡大屏 + 中间主持台 + 下方一排弧形答题台（席位在下，不在左右）　对标：Balatro 的道具即界面 · 榴莲的派对感</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile" aria-pressed="false">手机 390×844</button></div>
+  <div class="group"><button data-set-count="6">6 人</button><button data-set-count="9">9 人</button></div>
+  <div class="group"><button id="act-next">下一位发言（演示）</button><button id="act-hurry">跳到最后 10 秒</button><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="spot l"></div><div class="spot r"></div>
+  <div class="deck"></div>
+
+  <div class="head">
+    <div class="logo">伪人<i>?</i>测试</div>
+    <div class="eyebrow">第 <span data-bind="round"></span> / <span data-bind="rounds"></span> 期 · 轮流作答</div>
+  </div>
+  <div class="ring-box"><div class="ring" data-ring><span></span></div></div>
+
+  <div class="screen" id="screen">
+    <div class="bulbs"></div>
+    <div class="panel">
+      <span class="tag">本期考题 · 主持人 <span data-bind="judge"></span></span>
+      <p class="q" data-bind="question"></p>
+      <div class="now">▶ 有请<b data-bind="speaker"></b>作答</div>
+    </div>
+  </div>
+
+  <div class="host">
+    <div class="podium" data-seats="judge"></div><span class="lab">主持人 = 审判长</span>
+    <div class="progress"><span class="numeral"><span data-bind="answered"></span>/<span data-bind="total"></span></span><div class="pips" data-pips></div></div>
+  </div>
+
+  <div class="podiums" data-seats="others"></div>
+
+  <div class="dock">
+    <div class="secret" data-secret title="点击遮挡 / 显示">
+      <div><div class="tag">你是伪人</div><small>点击遮挡</small></div>
+      <span class="word">暗号「<span data-bind="trigger"></span>」</span>
+    </div>
+    <div class="info"><strong data-bind="dock-title"></strong><span data-bind="dock-sub"></span></div>
+    <button id="act-done" class="btn btn-primary">我说完了</button>
+  </div>
+
+  <template id="token"><div class="token">🎤 ON AIR</div></template>
+</div></div>
+<script src="_shared.js"></script>
+<script>
+  document.querySelector('.device').dataset.count = String(window.EJ.count);
+  document.addEventListener('handoff', () => {
+    const s = document.getElementById('screen');
+    s.classList.remove('flash'); void s.offsetWidth; s.classList.add('flash');
+  });
+</script>
+</body>
+</html>

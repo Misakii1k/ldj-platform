@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>伪人测试 · 方向 A · 测谎实验室</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  /* 方向 A：深色细边。世界 = 深夜测谎实验室；中央一台大测谎仪显示屏，受测者分坐两侧舱位，审判长在顶部玻璃观察室。 */
+  :root {
+    --line: rgba(120, 230, 210, .38);
+    --bw: 1.5px;
+    --card: #121820;
+    --card-text: #e6f4f1;
+    --card-muted: #7f9a96;
+    --shadow: 0 10px 24px rgba(0,0,0,.45);
+    --shadow-sm: 0 6px 16px rgba(0,0,0,.4);
+    --accent: #5ff0d0;
+    --alarm: #ff5a6a;
+    --bust-line: #0b0f14;
+  }
+  .device {
+    background:
+      radial-gradient(ellipse 60% 55% at 50% 48%, rgba(95,240,208,.16), transparent 70%),
+      linear-gradient(rgba(95,240,208,.05) 1px, transparent 1px) 0 0 / 100% 32px,
+      linear-gradient(90deg, rgba(95,240,208,.05) 1px, transparent 1px) 0 0 / 32px 100%,
+      #080c11;
+    color: var(--card-text);
+  }
+  /* 墙上的巨型指纹剪影（12% 透明，撑留白） */
+  .stage-art { position: absolute; left: 50%; top: 52%; width: 760px; translate: -50% -50%; opacity: .06; pointer-events: none; }
+
+  .head { position: absolute; left: 32px; top: 26px; }
+  .head .eyebrow { color: var(--accent); }
+  .head .title { font-size: 34px; color: #f2fffb; margin-top: 6px; letter-spacing: .04em; }
+  .head .title small { font: 700 15px var(--sans); color: var(--card-muted); margin-left: 10px; letter-spacing: 0; }
+  .ring-box { position: absolute; right: 32px; top: 22px; }
+  .ring { --ring-bg: rgba(95,240,208,.14); width: 70px; height: 70px; box-shadow: 0 0 24px rgba(95,240,208,.25); }
+  .ring > span { background: #0d1318; color: #f2fffb; }
+
+  /* 审判长观察室 */
+  .booth {
+    position: absolute; left: 50%; top: 20px; translate: -50% 0; width: 300px;
+    display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 10px;
+    padding: 10px 14px; border: 1.5px solid rgba(255,90,106,.55); border-radius: 14px;
+    background: linear-gradient(180deg, rgba(255,90,106,.10), rgba(18,24,32,.9));
+    box-shadow: 0 0 0 4px rgba(255,90,106,.06), var(--shadow-sm);
+  }
+  .booth [data-seats] .seat { all: unset; display: contents; }
+  .booth .seat .no, .booth .seat .sc, .booth .seat .mic-slot { display: none; }
+  .booth .seat .av { width: 40px; color: #ff9aa4; }
+  .booth .seat .nm { font-weight: 800; font-size: 15px; }
+  .booth .seat .st { display: none; }
+  .booth .lab { font: 800 11px var(--sans); letter-spacing: .2em; color: var(--alarm); }
+  .booth .rec { width: 10px; height: 10px; border-radius: 50%; background: var(--alarm); box-shadow: 0 0 10px var(--alarm); animation: blink 1.4s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: .2; } }
+
+  /* 两侧受测舱 */
+  .col { position: absolute; top: 132px; display: grid; gap: 12px; width: 248px; }
+  .col.left { left: 32px; }
+  .col.right { right: 32px; }
+  .seat { border-radius: 12px; }
+  .seat .no { background: #0d1318; color: var(--accent); border-color: var(--line); }
+  .seat.speaking { outline: 1.5px solid var(--accent); outline-offset: 3px; box-shadow: 0 0 0 6px rgba(95,240,208,.12), 0 0 30px rgba(95,240,208,.35); }
+  .seat.speaking .st { color: var(--accent); }
+  .seat.speaking .st::before { content: "● "; animation: blink 1s steps(1) infinite; }
+  .seat .sc { color: #f2fffb; }
+  .seat .you { background: var(--yellow); }
+
+  /* 中央测谎仪 */
+  .monitor {
+    position: absolute; left: 304px; right: 304px; top: 110px; bottom: 124px;
+    display: grid; grid-template-rows: auto auto 1fr auto; gap: 14px; padding: 22px 26px 20px;
+    border: 1.5px solid rgba(95,240,208,.55); border-radius: 22px;
+    background: linear-gradient(180deg, rgba(14,24,28,.92), rgba(8,14,18,.96));
+    box-shadow: 0 0 0 8px rgba(95,240,208,.05), 0 0 60px rgba(95,240,208,.18), inset 0 0 60px rgba(95,240,208,.06);
+    overflow: hidden;
+  }
+  .monitor::after { /* 扫描线 */
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(180deg, rgba(255,255,255,.025) 0 2px, transparent 2px 4px);
+  }
+  .m-top { display: flex; justify-content: space-between; align-items: center; font: 800 12px var(--sans); letter-spacing: .16em; color: var(--card-muted); }
+  .m-top b { color: var(--accent); }
+  .q { font-family: var(--serif); font-size: 27px; line-height: 1.45; color: #f2fffb; margin: 0; }
+  .q::before { content: "Q."; color: var(--accent); margin-right: 8px; }
+  .wave-box { position: relative; min-height: 120px; border-top: 1px dashed rgba(95,240,208,.25); border-bottom: 1px dashed rgba(95,240,208,.25); }
+  .wave-box svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .wave-box .who {
+    position: absolute; left: 0; top: 10px; font: 800 13px var(--sans); color: #0b0f14; background: var(--accent);
+    padding: 4px 10px; border-radius: 999px; z-index: 1;
+  }
+  .wave-box .read { position: absolute; right: 0; top: 10px; font: 700 26px var(--serif); color: var(--accent); z-index: 1; }
+  .wave-box .read small { font: 700 11px var(--sans); color: var(--card-muted); margin-left: 4px; }
+  .m-foot { display: flex; align-items: center; gap: 12px; font: 700 13px var(--sans); color: var(--card-muted); }
+  .pips { display: flex; gap: 6px; }
+  .pip { width: 22px; height: 8px; border-radius: 4px; background: rgba(95,240,208,.14); }
+  .pip.done { background: rgba(95,240,208,.55); }
+  .pip.now { background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: blink 1s steps(1) infinite; }
+  .m-foot .numeral { font-size: 22px; color: #f2fffb; }
+  .monitor.flash { animation: flash 420ms ease-out; }
+  @keyframes flash { 0% { box-shadow: 0 0 0 8px rgba(95,240,208,.4), 0 0 90px rgba(95,240,208,.6); } }
+
+  /* 底部操作坞 */
+  .dock {
+    position: absolute; left: 32px; right: 32px; bottom: 22px; display: flex; align-items: center; gap: 16px;
+    padding: 12px 14px 12px 18px; border: 1.5px solid var(--line); border-radius: 18px; background: rgba(13,19,24,.95); box-shadow: var(--shadow);
+  }
+  .dock .info { flex: 1; min-width: 0; }
+  .dock .info strong { display: block; font-size: 17px; color: #f2fffb; }
+  .dock .info span { font-size: 13px; color: var(--card-muted); font-weight: 600; }
+  .secret {
+    display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: 12px;
+    border: 1.5px solid rgba(255,90,106,.6); background: rgba(255,90,106,.08);
+  }
+  .secret .tag { font: 800 12px var(--sans); color: var(--alarm); letter-spacing: .12em; }
+  .secret .word { font: 700 22px var(--serif); color: #fff; }
+  .secret small { font-size: 11px; color: var(--card-muted); }
+  .btn { border-color: transparent; box-shadow: 0 4px 0 #a07a14; }
+  .btn:active:not(:disabled) { box-shadow: 0 1px 0 #a07a14; }
+  .btn-ghost { background: transparent; color: var(--card-text); border: 1.5px solid var(--line); box-shadow: none; }
+
+  /* 交棒令牌 */
+  .token { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #0b0f14; font-weight: 900; box-shadow: 0 0 24px var(--accent); }
+
+  /* ---------- 手机 390×844 ---------- */
+  @container (max-width: 600px) {
+    .stage-art { width: 420px; top: 46%; }
+    .head { left: 16px; top: 16px; }
+    .head .title { font-size: 24px; }
+    .head .title small { display: block; margin: 2px 0 0; font-size: 12px; }
+    .ring-box { right: 16px; top: 14px; }
+    .ring { width: 56px; height: 56px; }
+    .ring > span { font-size: 14px; }
+    .booth { top: 86px; left: 16px; right: 16px; width: auto; translate: none; padding: 6px 12px; grid-template-columns: 30px 1fr auto; }
+    .booth .seat .av { width: 30px; }
+    .col { width: auto; left: 12px !important; right: 12px !important; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .col.left { top: 158px; }
+    .col.right { top: auto; bottom: 170px; }
+    .seat { grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 8px 4px 6px; gap: 0; }
+    .seat .av { width: 30px; grid-row: auto; }
+    .seat .nm { font-size: 12px; max-width: 100%; }
+    .seat .nm .you { display: none; }
+    .seat.me .nm { color: var(--yellow); }
+    .seat .st { font-size: 10px; }
+    .seat .sc { position: absolute; right: 5px; top: 5px; font-size: 13px; grid-row: auto; }
+    .seat .no { width: 18px; height: 18px; font-size: 10px; left: -5px; top: -5px; }
+    .monitor { left: 12px; right: 12px; top: 248px; bottom: 272px; padding: 14px 16px 12px; gap: 8px; border-radius: 18px; }
+    .q { font-size: 18px; line-height: 1.4; }
+    .wave-box { min-height: 70px; }
+    .wave-box .read { font-size: 18px; }
+    .m-top { font-size: 10px; }
+    .m-foot .numeral { font-size: 17px; }
+    .pip { width: 14px; }
+    .dock { left: 12px; right: 12px; bottom: 14px; flex-wrap: wrap; gap: 10px; padding: 12px; }
+    .dock .info { flex-basis: calc(100% - 140px); }
+    .dock .info strong { font-size: 15px; }
+    .dock .info span { font-size: 12px; }
+    .secret { padding: 6px 10px; }
+    .secret .word { font-size: 18px; }
+    .dock .btn { flex: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>方向 A · 赛博测谎实验室（深色细边）</strong>
+  <span class="note">构图：中央大测谎仪 + 两侧受测舱 + 顶部审判长观察室　对标：狼人杀左右席位 · Balatro 计分屏</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile" aria-pressed="false">手机 390×844</button></div>
+  <div class="group"><button data-set-count="6">6 人</button><button data-set-count="9">9 人</button></div>
+  <div class="group"><button id="act-next">下一位发言（演示）</button><button id="act-hurry">跳到最后 10 秒</button><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <svg class="stage-art" viewBox="0 0 200 200" fill="none" stroke="#5ff0d0" stroke-width="4" aria-hidden="true">
+    <path d="M100 20c44 0 80 36 80 80"/><path d="M100 40c33 0 60 27 60 60v20"/><path d="M100 60c22 0 40 18 40 40v30c0 14-4 28-12 40"/>
+    <path d="M100 80c11 0 20 9 20 20v40c0 18-6 34-16 46"/><path d="M80 100c0-11 9-20 20-20"/><path d="M60 100c0-22 18-40 40-40"/>
+    <path d="M40 100c0-33 27-60 60-60"/><path d="M100 100v44c0 16-5 30-14 42"/><path d="M80 110v30c0 12-3 24-9 34"/><path d="M60 118v18c0 10-2 20-6 28"/>
+  </svg>
+
+  <div class="head">
+    <div class="eyebrow">POLYGRAPH · ROUND <span data-bind="round"></span>/<span data-bind="rounds"></span></div>
+    <h1 class="title">伪人测试<small>轮流作答中</small></h1>
+  </div>
+  <div class="ring-box"><div class="ring" data-ring><span></span></div></div>
+
+  <div class="booth"><span class="rec"></span><div data-seats="judge"></div><span class="lab">测谎官</span></div>
+
+  <div class="col left" data-seats="oleft"></div>
+  <div class="col right" data-seats="oright"></div>
+
+  <section class="monitor" id="monitor">
+    <div class="m-top"><span>SUBJECT FEED · <b>LIVE</b></span><span>审判长 <b data-bind="judge"></b> 出题</span></div>
+    <p class="q" data-bind="question"></p>
+    <div class="wave-box">
+      <span class="who">● 正在检测：<span data-bind="speaker"></span></span>
+      <span class="read numeral" id="bpm">88<small>BPM</small></span>
+      <svg viewBox="0 0 600 120" preserveAspectRatio="none"><polyline id="wave" fill="none" stroke="#5ff0d0" stroke-width="2.5" stroke-linejoin="round" points=""/></svg>
+    </div>
+    <div class="m-foot"><span class="numeral"><span data-bind="answered"></span>/<span data-bind="total"></span></span><span>已作答</span><div class="pips" data-pips></div></div>
+  </section>
+
+  <div class="dock">
+    <div class="secret" data-secret title="点击遮挡 / 显示">
+      <div><div class="tag">你是伪人</div><small>点击遮挡</small></div>
+      <span class="word">暗号「<span data-bind="trigger"></span>」</span>
+    </div>
+    <div class="info"><strong data-bind="dock-title"></strong><span data-bind="dock-sub"></span></div>
+    <button id="act-done" class="btn btn-primary">我说完了</button>
+  </div>
+
+  <template id="token"><div class="token">◉</div></template>
+</div></div>
+<script src="_shared.js"></script>
+<script>
+  // 实时波形：发言人切换时剧烈抖动一下
+  const wave = document.getElementById('wave');
+  const bpm = document.getElementById('bpm');
+  let amp = 1, t = 0;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function draw() {
+    const pts = [];
+    for (let x = 0; x <= 600; x += 6) {
+      const k = x / 600;
+      const spike = Math.exp(-Math.pow((k - ((t * 0.12) % 1)) * 18, 2)) * 42 * amp;
+      const y = 60 + Math.sin(x * 0.05 + t) * 10 * amp + Math.sin(x * 0.13 - t * 1.7) * 5 - spike * Math.sin(x * 0.9);
+      pts.push(x + ',' + y.toFixed(1));
+    }
+    wave.setAttribute('points', pts.join(' '));
+    t += 0.08;
+    amp += (1 - amp) * 0.04;
+    if (!reduce) requestAnimationFrame(draw);
+  }
+  draw();
+  setInterval(() => (bpm.firstChild.textContent = String(Math.round(84 + Math.random() * 10 * amp))), 700);
+  document.addEventListener('handoff', () => {
+    amp = 2.6;
+    const m = document.getElementById('monitor');
+    m.classList.remove('flash'); void m.offsetWidth; m.classList.add('flash');
+  });
+  document.querySelector('.device').dataset.count = String(window.EJ.count);
+</script>
+</body>
+</html>
