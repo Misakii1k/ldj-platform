@@ -506,9 +506,22 @@
   }
 }
 
+/* ---------- 与对局聊天入口的层叠协调 ---------- */
+/* 结算坞经 portal 挂在 body 下。坞出现时把右下角聊天触发按钮抬到坞上方：
+   抬升量 = 坞实测占位高度（含吊牌，组件写入 --settlement-dock-h），
+   10 人双行签到牌等更高坞也能正确避让。沿用 .tabletop-bottom-bar 的既有协调模式。 */
+body:has(.settlement-dock) .game-chat-trigger {
+  bottom: calc(var(--safe-bottom, 0px) + var(--settlement-dock-h, 216px));
+}
+
+/* 坞的「⋯」菜单展开时，聊天按钮让位（菜单向上展开，会盖住聊天按钮所在区域） */
+body:has(.settlement-dock__more-menu) .game-chat-trigger {
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ---------- 动效分档降级规范 (design-spec §3.2) ---------- */
-html[data-motion-level="reduced"] .settlement-dock__board {
-  animation-duration: 280ms;
+html[data-motion-level="reduced"] .settlement-dock__board {  animation-duration: 280ms;
 }
 
 html[data-motion-level="reduced"] .settlement-dock__digit.slam {

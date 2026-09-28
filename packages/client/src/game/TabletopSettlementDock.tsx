@@ -38,6 +38,7 @@ export function TabletopSettlementDock() {
   const [countdown, setCountdown] = useState<number | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement | null>(null);
+  const dockRef = useRef<HTMLElement | null>(null);
 
   const room = state.room;
   const isPostGame = Boolean(room && room.status === 'POST_GAME');
@@ -125,6 +126,26 @@ export function TabletopSettlementDock() {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [moreOpen]);
+
+  // 坞实际占位高度（含顶部吊牌）同步到 body CSS 变量，
+  // 供 styles 里「坞出现时抬高聊天入口按钮」规则使用（10 人双行签到牌时坞更高）。
+  useEffect(() => {
+    if (!isPostGame) return undefined;
+    const update = () => {
+      const aside = dockRef.current;
+      if (!aside) return;
+      const tab = aside.querySelector('.settlement-dock__tab');
+      const top = tab ? tab.getBoundingClientRect().top : aside.getBoundingClientRect().top;
+      const clearance = Math.max(120, Math.ceil(window.innerHeight - top) + 8);
+      document.body.style.setProperty('--settlement-dock-h', `${clearance}px`);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      document.body.style.removeProperty('--settlement-dock-h');
+    };
+  }, [isPostGame, playerMembers.length, isAllReady, countdown]);
 
   // 仅在房间处于 POST_GAME 结算阶段时展示
   if (!isPostGame) {
@@ -221,6 +242,7 @@ export function TabletopSettlementDock() {
 
   return createPortal(
     <aside
+      ref={dockRef}
       className="settlement-dock"
       data-dock-skin={skin}
       data-ww-theme={portalTheme}
