@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>谁是狱警 · 定稿 C · ③ 开票（拆档案袋）</title>
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="C-kraft-archive.css">
+<style>
+  /* ③ 开票：已投的选票逐张落进票箱（服务端只公开「谁投了」和「被抽出的是谁」，不公开票数与投向，所以画面上不出现任何票数） → 票最多的档案袋被抽到桌面中央、封条撕开、里面的证件滑出。
+     两种结局：抽出来的是囚犯证（没抓到狱警）→ 狱警当场独胜，他的档案袋自己翻开；抽出来的是狱警工作证 → 进入狱警猜罪翻盘。
+     平票规则：服务端取第一个达到最高票的人（按投票先后），画面上不需要单独表现平票。 */
+  .stack { display: none; }
+  .table-center { position: absolute; left: 50%; top: 96px; translate: -50% 0; width: 520px; display: grid; justify-items: center; gap: 14px; z-index: 3; }
+  .tallies { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .tally { display: grid; justify-items: center; gap: 2px; padding: 6px 10px; min-width: 72px; background: #fffaf0; border: 3px solid var(--ink); border-radius: 4px; box-shadow: 0 3px 0 var(--ink); opacity: 0; }
+  .tally.show { animation: rise 260ms ease-out both; }
+  .tally b { font: 700 18px var(--serif); color: var(--coral); }
+  .tally { border-top: 8px solid var(--seat-c); }
+  .tally span { font: 800 11px var(--sans); max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .pulled { position: relative; width: 360px; height: 230px; opacity: 0; }
+  .pulled.show { opacity: 1; animation: pull 460ms cubic-bezier(.34,1.56,.64,1) both; }
+  @keyframes pull { 0% { transform: translateY(260px) scale(.6) rotate(8deg); } 100% { transform: none; } }
+  .folder { position: absolute; inset: 0; background: linear-gradient(var(--kraft), #cfa46b); border: 3px solid var(--ink); border-radius: 4px 14px 4px 4px; box-shadow: 0 7px 0 var(--ink); }
+  .folder::before { content: attr(data-name); position: absolute; left: -3px; top: -30px; padding: 4px 14px; font: 900 14px var(--sans); background: var(--kraft); border: 3px solid var(--ink); border-bottom: 0; border-radius: 10px 10px 0 0; }
+  .tape { position: absolute; left: -14px; right: -14px; top: 44%; height: 34px; display: grid; place-items: center; font: 900 18px var(--serif); letter-spacing: .3em; color: #fff; background: var(--coral); border: 3px solid var(--ink); rotate: -8deg; transition: transform 380ms cubic-bezier(.5,-0.4,.7,1), opacity 380ms; z-index: 2; }
+  .pulled.torn .tape { transform: translate(260px, -80px) rotate(30deg); opacity: 0; }
+  .idcard { position: absolute; left: 30px; right: 30px; top: 24px; height: 170px; display: grid; grid-template-columns: 96px 1fr; gap: 6px 16px; align-items: center; padding: 14px 18px; background: #fffaf0; border: 3px solid var(--ink); border-radius: 8px; transition: transform 420ms cubic-bezier(.34,1.56,.64,1); z-index: 1; }
+  .pulled.torn .idcard { transform: translateY(-90px) rotate(-3deg); }
+  .table-center.torn .tallies { opacity: 0; transition: opacity 200ms; } /* 证件滑出时票数退场，给证件让位 */
+  .idcard .av { width: 90px; grid-row: span 3; background: #fff; border: 3px solid var(--ink); border-radius: 4px; padding: 4px 4px 0; color: var(--seat-c); }
+  .idcard .k { font: 800 11px var(--sans); letter-spacing: .18em; color: var(--muted); }
+  .idcard .v { font: 700 28px var(--serif); }
+  .idcard .x { font: 700 13px "Courier New", monospace; color: var(--muted); }
+  .idcard.warden { background: #2e3440; color: #fff; }
+  .idcard.warden .k, .idcard.warden .x { color: #c9c0ae; }
+  .idcard.warden .v { color: var(--yellow); }
+  .result { padding: 8px 26px 10px; font: 700 34px var(--serif); background: var(--card); border: 3px solid var(--ink); border-radius: 10px; box-shadow: 0 6px 0 var(--ink); rotate: -2deg; opacity: 0; text-align: center; }
+  .result.show { animation: stamp 420ms cubic-bezier(.34,1.56,.64,1) both; }
+  .result small { display: block; font: 800 14px var(--sans); color: var(--muted); margin-top: 2px; }
+  .result.warden-win { color: #2e3440; }
+  .result.to-guess { color: var(--coral); }
+
+  .files .seat.revealed-warden { background: linear-gradient(#4b5263, #2e3440); color: #fff; }
+  .files .seat.revealed-warden .st { color: var(--yellow); }
+  .files .seat.pulled-out { opacity: .3; }
+
+  .btn-next { background: var(--yellow); }
+  .tape-fly { width: 120px; height: 26px; background: var(--coral); border: 3px solid var(--ink); }
+
+  @container (max-width: 600px) {
+    .table-center { left: 12px; right: 12px; width: auto; translate: none; top: 96px; gap: 10px; }
+    .tally { min-width: 56px; padding: 4px 6px; }
+    .tally b { font-size: 13px; }
+    .tally span { font-size: 9px; max-width: 58px; }
+    .pulled { width: 280px; height: 170px; }
+    .idcard { left: 16px; right: 16px; top: 14px; height: 130px; grid-template-columns: 64px 1fr; padding: 10px; }
+    .idcard .av { width: 60px; }
+    .idcard .v { font-size: 20px; }
+    .pulled.torn .idcard { transform: translateY(-60px) rotate(-3deg); }
+    .result { font-size: 22px; padding: 6px 14px 8px; }
+    .result small { font-size: 11px; }
+    .dock .info { flex-basis: 100%; }
+    .dock .btn { flex: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>谁是狱警 · 定稿 C · ③ 开票</strong>
+  <span class="tb-note">选票落下 → 抽出最高票档案袋（不显示票数） → 撕封条、证件滑出 ｜ 抓错 = 狱警当场独胜；抓对 = 狱警猜罪翻盘</span>
+  <div class="group"><button data-param="case" data-value="caught">抓到狱警</button><button data-param="case" data-value="wrong">抓错人</button></div>
+  <div class="group"><button data-param="size" data-value="desktop">桌面 1280×800</button><button data-param="size" data-value="mobile">手机 390×844</button></div>
+  <div class="group"><button data-param="n" data-value="5">5 人</button><button data-param="n" data-value="6">6 人</button></div>
+  <div class="group"><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device">
+  <div class="head">
+    <h1 class="title">谁是狱警？</h1>
+    <div class="eyebrow">开票</div>
+  </div>
+
+  <section class="table-center">
+    <div class="tallies" id="tallies"></div>
+    <div class="pulled" id="pulled"><div class="folder" id="folder"></div><div class="idcard" id="idcard"></div><div class="tape">嫌 疑</div></div>
+    <div class="result" id="result"></div>
+  </section>
+
+  <div class="files" data-seats="all"></div>
+
+  <div class="dock">
+    <div class="info"><strong data-bind="dock-title">开票中……</strong><span data-bind="dock-sub"></span></div>
+    <button class="btn btn-next" id="act-next" hidden>进入猜罪 →</button>
+  </div>
+</div></div>
+<script src="_kit.js"></script>
+<script>
+  const { players, params, count, CRIMES, warden } = KIT;
+  const mode = params.get('case') || 'caught';
+  KIT.byName('小鱼干').me = true;
+  const accused = mode === 'caught' ? warden : KIT.byName('可可');
+  let pulledOut = false;
+  let wardenShown = false;
+  KIT.status = (p) => (wardenShown && p.warden ? '狱警' : pulledOut && p === accused ? '被抽出' : '囚犯?');
+  KIT.decorate = (el, p) => {
+    if (pulledOut && p === accused) el.classList.add('pulled-out');
+    if (wardenShown && p.warden) el.classList.add('revealed-warden');
+  };
+
+  const tallies = document.getElementById('tallies');
+  // 选票只写投票人名字（投向保密）
+  tallies.innerHTML = players.map((p) => `<div class="tally" style="--seat-c:${p.c}"><b>票</b><span>${p.name}</span></div>`).join('');
+
+  function card(p) {
+    const c = document.getElementById('idcard');
+    c.style.setProperty('--seat-c', p.c);
+    if (p.warden) {
+      c.className = 'idcard warden';
+      c.innerHTML = `<div class="av">${KIT.BUST}</div><span class="k">监狱工作证</span><span class="v">狱警 · ${p.name}</span><span class="x">No.${p.no} · 潜伏在囚犯里</span>`;
+    } else {
+      c.className = 'idcard';
+      c.innerHTML = `<div class="av">${KIT.BUST}</div><span class="k">囚犯档案</span><span class="v">${p.name} · ${CRIMES[p.crime]}</span><span class="x">#${p.no} · 不是狱警</span>`;
+    }
+  }
+  async function play() {
+    KIT.render();
+    await KIT.wait(300);
+    for (const el of tallies.children) { el.classList.add('show'); await KIT.wait(240); } // 1. 全员选票依次落下（顺序 = 座次）
+    await KIT.wait(300);
+    // 2. 最高票档案袋被抽到桌面中央
+    document.getElementById('folder').dataset.name = `${accused.name} 的档案`;
+    card(accused);
+    const pulled = document.getElementById('pulled');
+    await KIT.fly(KIT.seatOf(accused), pulled, Object.assign(document.createElement('div'), { className: 'tape-fly' }), { arc: 60, dur: 420 });
+    pulledOut = true; KIT.render();
+    pulled.classList.add('show');
+    await KIT.wait(620);
+    // 3. 撕封条、证件滑出
+    pulled.classList.add('torn'); pulled.parentElement.classList.add('torn'); KIT.shake();
+    await KIT.wait(520);
+    const r = document.getElementById('result');
+    if (accused.warden) {
+      wardenShown = true; KIT.render();
+      r.className = 'result show to-guess';
+      r.innerHTML = '抓到狱警了！<small>但他还有一次翻盘：猜中全部囚犯的罪行就反杀</small>';
+      KIT.bind('dock-title', '狱警 老王 被揪出');
+      KIT.bind('dock-sub', '进入猜罪：狱警要给每只档案袋填上罪行');
+      document.getElementById('act-next').hidden = false;
+    } else {
+      // 抓错人：狱警的档案袋自己翻开
+      await KIT.wait(300);
+      wardenShown = true; KIT.render();
+      KIT.seatOf(warden).animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-16px) rotate(-3deg)' }, { transform: 'translateY(-8px)' }], { duration: 420, easing: 'cubic-bezier(.34,1.56,.64,1)', fill: 'forwards' });
+      r.className = 'result show warden-win';
+      r.innerHTML = `狱警 ${warden.name} 独胜<small>你们抓的是 ${accused.name}（${CRIMES[accused.crime]}）</small>`;
+      KIT.bind('dock-title', '游戏结束 · 狱警胜');
+      KIT.bind('dock-sub', '再来一局？（终局结算面板沿用 settlement-dock）');
+    }
+  }
+  document.getElementById('act-next').addEventListener('click', () => { location.href = 'S4-guess.html?n=' + count; });
+  play();
+</script>
+</body>
+</html>

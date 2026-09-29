@@ -26,7 +26,7 @@ test('uno_platform_house_v1 注册：server/index.ts 导出 unoHouseModule 且�
   assert.equal(unoHouseModule.defaultRulesetId, 'uno_platform_house_v1');
   assert.deepEqual(
     UNO_HOUSE_VERSIONED_IDENTITY,
-    { engineContractVersion: 2, rulesetId: 'uno_platform_house_v1', viewVersion: 1 },
+    { engineContractVersion: 2, rulesetId: 'uno_platform_house_v1', viewVersion: 2 },
   );
   // 平台变体清单：只能并行走平台变体，不得覆盖 legacy。
   assert.equal(unoHouseModule.manifest.id, 'uno');

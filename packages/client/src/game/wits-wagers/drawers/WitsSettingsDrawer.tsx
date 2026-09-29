@@ -24,8 +24,8 @@ const THEME_OPTIONS: ReadonlyArray<{ id: WitsTheme; name: string; desc: string }
 
 const MOTION_OPTIONS: ReadonlyArray<{ id: MotionPreference; name: string; desc: string }> = [
   { id: 'auto', name: '自动', desc: '按设备性能与系统偏好自动调节' },
-  { id: 'full', name: '完整演出', desc: '钞票飞行、翻牌、收付全部播放' },
-  { id: 'reduced', name: '精简', desc: '保留淡入淡出与翻牌，去掉钞票飞行' },
+  { id: 'full', name: '完整演出', desc: '筹码飞行、翻牌、收付全部播放' },
+  { id: 'reduced', name: '精简', desc: '保留淡入淡出与翻牌，去掉筹码飞行' },
   { id: 'off', name: '关闭', desc: '直接显示结果，无任何过渡' },
 ];
 

@@ -11,6 +11,7 @@ import { UndercoverTableStage } from './undercover/stage/classic/UndercoverTable
 import { TabletopOvalShell } from '../shared-ui/TabletopOvalShell.tsx';
 import { TabletopSettlementDock } from './TabletopSettlementDock.tsx';
 import { GameChatDrawer } from './GameChatDrawer.tsx';
+import { GameSessionControls } from './GameSessionControls.tsx';
 import { nameFor } from './useGameAction.ts';
 import { setAppImmersiveMode } from '../native/immersive.ts';
 
@@ -42,6 +43,22 @@ type ActiveGame = NonNullable<ReturnType<typeof useConnection>['state']['game']>
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
+
+/** 悬浮控制坞展示的游戏名（用于设置抽屉标题）。 */
+const GAME_TITLES: Record<string, string> = {
+  uno: 'UNO',
+  landlord: '斗地主',
+  werewolf: '狼人杀',
+  undercover: '谁是卧底',
+  durian: '榴莲',
+  loveletter: '情书',
+  'cheese-thief': '奶酪大盗',
+  'goose-relay': '以鹅传鹅',
+  'night-testimony': '囚徒之夜',
+  'bell-clash': 'Ding',
+  'echo-judge': '伪人测试',
+  'wits-wagers': '一智千金',
+};
 
 function GameLoadingCard({ children }: { children: React.ReactNode }) {
   const { send, clearMe, resync, state } = useConnection();
@@ -202,6 +219,8 @@ export function GamePage() {
 
   if (game === null) return <GameLoadingCard>等待对局数据…</GameLoadingCard>;
 
+  // 悬浮控制坞：默认认为外壳自带设置入口；仅无统一入口的缺口游戏置为 false，令坞常驻「设置」。
+  let sessionHasOwnMenu = true;
   let content;
   switch (game.moduleId) {
     case 'uno': {
@@ -217,6 +236,8 @@ export function GamePage() {
       break;
     }
     case 'landlord': {
+      // 斗地主自定义茶馆外壳无统一设置入口：由悬浮坞常驻「设置」。
+      sessionHasOwnMenu = false;
       const parsed = parseGameView(game);
       if (!parsed.ok) {
         if (isRecord(game.view) && typeof game.view.phase === 'string') {
@@ -237,7 +258,10 @@ export function GamePage() {
         break;
       }
       const v = parsed.view;
-      content = isRecord(v) && v.rulesetId === 'werewolf_moderator_v1'
+      const isModerator = isRecord(v) && v.rulesetId === 'werewolf_moderator_v1';
+      // 真人主持台为自定义工作台外壳、无统一设置入口：由悬浮坞常驻「设置」。
+      sessionHasOwnMenu = !isModerator;
+      content = isModerator
         ? <WerewolfModeratorPage view={v as unknown as import('@ldj/shared').WerewolfModeratorView} />
         : <WerewolfGamePage view={parsed.view} />;
       break;
@@ -315,7 +339,10 @@ export function GamePage() {
         break;
       }
       const v = parsed.view;
-      content = isRecord(v) && v.rulesetId === 'bell_clash_sim_v1'
+      const isBellSim = isRecord(v) && v.rulesetId === 'bell_clash_sim_v1';
+      // 单机演示版走共享牌桌外壳（自带菜单）；真实联机版为自定义外壳、无统一设置入口。
+      sessionHasOwnMenu = isBellSim;
+      content = isBellSim
         ? <BellClashSimStage view={v as unknown as import('./bell-clash/simTypes.ts').BellClashSimPlayerView} />
         : <BellClashGamePage view={parsed.view as import('./bell-clash/types.ts').BellClashPlayerView} />;
       break;
@@ -351,6 +378,7 @@ export function GamePage() {
     <Suspense fallback={<GameLoadingCard>正在布置游戏桌…</GameLoadingCard>}>
       <div className="game-session-root">
         {content}
+        <GameSessionControls gameTitle={GAME_TITLES[game.moduleId]} hasOwnMenu={sessionHasOwnMenu} />
         <TabletopSettlementDock />
         <GameChatDrawer />
       </div>

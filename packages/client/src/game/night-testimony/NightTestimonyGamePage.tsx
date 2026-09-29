@@ -1,42 +1,44 @@
 /**
- * night_testimony_v1 客户端主页面（线下桌游辅助与卡牌/标记道具模拟形态）。
+ * night_testimony_v1 客户端主页面（C 牛皮纸档案室 · 视觉落地）。
  * 只消费严格解析后的囚徒之夜视角（night-testimony/types.ts）。
  *
- * 视觉：审讯室长桌。中央是常驻的「证词板」，每道题答完后写成便签钉上板，
- * YES 数用红色图钉表示；投票与猜罪阶段压下暗角，审讯灯只照桌中央。
- * 详见 docs/plans/2026-09-22-game-ui-uplift/contracts/night-testimony.md
+ * 视觉：监狱档案室的办公桌（俯视）——中央夹板审讯单、右上旧审讯单一叠、
+ * 底部一排牛皮纸档案袋席位；回答 = 盖章，投票 = 贴封条，开票 = 拆档案袋。
+ * 像素参照：docs/ui-preview/night-testimony/directions/（C-kraft-archive 定稿 + S1–S4）
+ * 交接计划：docs/plans/2026-09-26-night-testimony-visual/README.md
  */
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
 import { nameFor, useGameAction } from '../useGameAction.ts';
-import { ActionDock } from '../tabletop/ActionDock.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
-import { IdentityFlipCard } from '../../shared-ui/IdentityFlipCard.tsx';
-import { ArenaRail } from '../../shared-ui/ArenaRail.tsx';
-import { SeatTargetPicker } from '../../shared-ui/SeatTargetPicker.tsx';
 import { StageCountdownRing } from '../../shared-ui/stage/StageCountdownRing.tsx';
-import { FlightLayer } from '../../shared-ui/stage/FlightLayer.tsx';
+import { FlightLayer, type StageFlight } from '../../shared-ui/stage/FlightLayer.tsx';
+import { measure, type Rect } from '../../shared-ui/stage/flip.ts';
 import { TestimonyBoard } from './stage/TestimonyBoard.tsx';
 import { TestimonyNote } from './stage/TestimonyNote.tsx';
+import { ArchiveFiles, publicWardenId } from './stage/ArchiveFiles.tsx';
+import {
+  buildAnswerCells,
+  buildGuessBoard,
+  crimeLabel,
+  NoticeBoard,
+  seatColor,
+} from './stage/ArchiveProps.tsx';
 import { useNightTestimonyStage } from './stage/useNightTestimonyStage.tsx';
 import { CRIME_META } from './types.ts';
-import type { CrimeId, NightTestimonyPlayerView, QuestionCardView } from './types.ts';
+import type { CrimeId, NightTestimonyPlayerView } from './types.ts';
 import { TabletopVictoryBurst } from '../../shared-ui/TabletopVictoryBurst.tsx';
 import { usePhaseEventOverlay } from '../../shared-ui/usePhaseEventOverlay.tsx';
 
-/**
- * 阶段标签。
- *
- * 'deduction' 在服务端从未被赋值（rules.ts 只写 'vote' 与 'game_over'），
- * 所以不为它准备文案——留着只会让人以为有这个阶段。
- */
-function phaseLabel(phase: NightTestimonyPlayerView['phase']): string {
-  switch (phase) {
-    case 'question': return '审讯盘问';
+/** 阶段标签（deduction 是死值：服务端 rules.ts 从未赋过它）。 */
+function phaseLabel(view: NightTestimonyPlayerView): string {
+  if (view.guessingInProgress) return '狱警猜罪';
+  switch (view.phase) {
+    case 'question': return '审讯问答';
     case 'vote': return '票选狱警';
     case 'game_over': return '对局结束';
-    default: return phase;
+    default: return view.phase;
   }
 }
 
@@ -51,320 +53,452 @@ export function NightTestimonyGamePage({ view }: Props) {
   const me = view.me;
   const myId = me?.playerId ?? null;
   const isSpectator = me === null;
-  const rulesRef = useRef<HTMLButtonElement | null>(null);
-  const [rulesOpen, setRulesOpen] = useState(false);
-
-  // 移动端身份折叠展开
-  const [identityExpandedMobile, setIdentityExpandedMobile] = useState(false);
-
-  // 自告身份游戏内确认弹窗状态
-  const [exposeConfirmOpen, setExposeConfirmOpen] = useState(false);
-
-  // 选卡提问状态
-  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
-
-  // 投票状态
-  const [voteTarget, setVoteTarget] = useState<string | null>(null);
-  const [hasVoted, setHasVoted] = useState(false);
-
-  // 狱警猜罪状态
-  const [guessTarget, setGuessTarget] = useState<string | null>(null);
-  const [guesses, setGuesses] = useState<Record<string, CrimeId>>({});
 
   const stage = useNightTestimonyStage(view);
 
-  const hasSelfExposed = Boolean(myId && view.revealedIdentities[myId]);
-  const isMyTurnToPickCard = view.phase === 'question' && view.currentQuestion === null && view.currentQuestionerId === myId && !hasSelfExposed;
-  const isQuestionActive = view.phase === 'question' && view.currentQuestion !== null;
+  // ── 本地交互状态（都不是游戏事实：事实一律以服务端视角为准） ──
+  const [rulesOpen, setRulesOpen] = useState(false);
+  const rulesRef = useRef<HTMLButtonElement | null>(null);
+  const [exposeConfirmOpen, setExposeConfirmOpen] = useState(false);
+  const [secretHidden, setSecretHidden] = useState(false);
+  const [pickingCardId, setPickingCardId] = useState<string | null>(null);
+  const [voteTarget, setVoteTarget] = useState<string | null>(null);
+  /** 我自己贴出去的封条（只有我自己的屏幕看得见） */
+  const [mySealTargetId, setMySealTargetId] = useState<string | null>(null);
+  const [guesses, setGuesses] = useState<Record<string, CrimeId>>({});
+  const [chosenCrime, setChosenCrime] = useState<CrimeId | null>(null);
+  const [guessFocusId, setGuessFocusId] = useState<string | null>(null);
+  const [localFlights, setLocalFlights] = useState<readonly StageFlight[]>([]);
 
-  // 阶段切换全屏盖印：推理 / 投票 / 猜罪
+  // 阶段切换时清掉上一阶段的本地交互残留
+  useEffect(() => {
+    setVoteTarget(null);
+    setMySealTargetId(null);
+    setGuesses({});
+    setChosenCrime(null);
+    setGuessFocusId(null);
+    setPickingCardId(null);
+  }, [view.phase, view.guessingInProgress]);
+
+  // 屏震：shakeTick 变化时抖一下桌面（≤4px，240ms）
+  useEffect(() => {
+    if (stage.shakeTick === 0) return;
+    stage.stageRef.current?.animate(
+      [{ translate: '0 0' }, { translate: '-4px 2px' }, { translate: '3px -2px' }, { translate: '0 0' }],
+      { duration: 240 },
+    );
+  }, [stage.shakeTick, stage.stageRef]);
+
+  /** 本地操作反馈飞行（自己盖章 / 贴封条 / 贴标签）：不等服务端确认的先手反馈。 */
+  const flyLocal = useCallback((flight: StageFlight) => {
+    setLocalFlights((fs) => [...fs, flight]);
+    window.setTimeout(
+      () => setLocalFlights((fs) => fs.filter((f) => f.id !== flight.id)),
+      flight.durationMs + flight.delayMs + 150,
+    );
+  }, []);
+
+  const rectOf = useCallback((selector: string): Rect | null => {
+    if (typeof document === 'undefined') return null;
+    return measure(document.querySelector(selector));
+  }, []);
+
+  const flyBetween = useCallback(
+    (fromSel: string, toSel: string, piece: StageFlight['pieces'][number], id: string, arc: number, durationMs: number) => {
+      const from = rectOf(fromSel);
+      const to = rectOf(toSel);
+      if (!from || !to) return;
+      flyLocal({ id, from, to, arc, durationMs, delayMs: 0, motion: 'toss', pieces: [piece] });
+    },
+    [flyLocal, rectOf],
+  );
+
+  // ── 派生状态 ──
+  const hasSelfExposed = Boolean(myId && view.revealedIdentities[myId]);
+  const isMyTurnToPickCard =
+    view.phase === 'question' && view.currentQuestion === null && view.currentQuestionerId === myId && !hasSelfExposed;
+  const isQuestionActive = view.phase === 'question' && view.currentQuestion !== null;
+  const wardenId = publicWardenId(view);
+  const hasVoted = (me?.hasVoted ?? false) || mySealTargetId !== null;
+  const slipNo = view.currentQuestion?.questionIndex ?? Math.min(view.history.length + 1, view.questionLimit);
+
+  // YES 余量只从已归档的 history 推导：作答期间 playerYesCounts 实时下发，
+  // 直接渲染会把「谁刚用了 YES」泄露给所有人（隐私红线）。归档时才进 pip，
+  // 恰好与红章飞回档案袋的演出台点一致。
+  const archivedYesCounts: Record<string, number> = {};
+  for (const record of view.history) {
+    for (const [pid, ans] of Object.entries(record.answers)) {
+      if (ans === 'yes') archivedYesCounts[pid] = (archivedYesCounts[pid] ?? 0) + 1;
+    }
+  }
+
+  // 阶段切换全屏盖印：投票 / 猜罪
   const { overlay: phaseOverlay } = usePhaseEventOverlay(
     `${view.phase}:${view.guessingInProgress ? 'guessing' : 'normal'}`,
     (key) => {
-      if (key.startsWith('deduction')) return { label: '审讯结束', sublabel: '进入推理讨论', variant: 'stamp' };
       if (key.startsWith('vote:normal')) return { label: '投票指认狱警', variant: 'warning' };
       if (key.endsWith(':guessing')) return { label: '狱警猜罪', sublabel: '猜中全部罪行即可翻盘', variant: 'reveal' };
       return null;
     },
   );
 
-  const players = view.players.map((playerId) => {
-    let status = '';
-    const yesCount = view.playerYesCounts[playerId] ?? 0;
-    const exposed = view.revealedIdentities[playerId];
-
-    if (view.phase === 'game_over') {
-      status = (view.winners ?? []).includes(playerId) ? '获胜' : '失败';
-    } else if (exposed) {
-      if (exposed === 'warden') {
-        status = '已自曝狱警';
-      } else {
-        const meta = CRIME_META[exposed];
-        status = `已自告: ${meta?.name ?? exposed}`;
-      }
-    } else if (view.phase === 'question' && playerId === view.currentQuestionerId) {
-      status = `当前出题 · ${yesCount}/3 是`;
-    } else {
-      status = `${yesCount}/3 是`;
-    }
-
-    const isActive =
-      !exposed &&
-      ((view.phase === 'question' && view.currentQuestion === null && playerId === view.currentQuestionerId) ||
-      (view.phase === 'question' && view.currentQuestion !== null && view.currentQuestion.answers[playerId] === undefined));
-
-    return {
-      id: playerId,
-      name: nameFor(members, playerId),
-      status,
-      active: isActive,
-      // 出题人在广播提问时发言，驱动席位发言波纹
-      isSpeaking: view.phase === 'question' && view.currentQuestion === null && playerId === view.currentQuestionerId,
-    };
-  });
-
-  // 主导动作
-  let primary: Parameters<typeof ActionDock>[0]['primary'] | null = null;
-  let secondary: Parameters<typeof ActionDock>[0]['secondary'] = [];
-
-  if (view.phase === 'question' && myId) {
-    if (hasSelfExposed) {
-      primary = {
-        id: 'exposed-info',
-        label: '你已自告身份排除嫌疑，不参与本轮提问作答',
-        disabled: true,
-        onAction: () => {},
-      };
-    } else if (isMyTurnToPickCard) {
-      primary = {
-        id: 'pick-card',
-        label: selectedCardId ? '确定向全员提出该审讯问题' : '请在上方 3 张问题卡中选择 1 张',
-        disabled: !selectedCardId,
-        onAction: () => {
-          if (!selectedCardId) return;
-          void act({
-            type: 'pick_question_card',
-            playerId: myId,
-            cardId: selectedCardId,
-          });
-          setSelectedCardId(null);
-        },
-      };
-    } else if (isQuestionActive && !me?.hasAnsweredCurrent) {
-      // 二选一无主次：两个按钮并排，都不做黄色主 CTA
-      primary = {
-        id: 'answer-yes',
-        label: '回答「是」(YES)',
-        disabled: false,
-        onAction: () => void act({ type: 'answer_question', playerId: myId, answer: 'yes' }),
-      };
-      secondary = [
-        {
-          id: 'answer-no',
-          label: '回答「否」(NO)',
-          disabled: false,
-          onAction: () => void act({ type: 'answer_question', playerId: myId, answer: 'no' }),
-        },
-      ];
-    }
-  } else if (view.phase === 'vote' && myId) {
-    if (hasVoted) {
-      primary = {
-        id: 'has-voted',
-        label: voteTarget ? `已票选 ${nameFor(members, voteTarget)}` : '已投票，等待开票…',
-        disabled: true,
-        onAction: () => {},
-      };
-    } else {
-      primary = voteTarget
-        ? {
-            id: 'confirm-vote',
-            label: `票选 ${nameFor(members, voteTarget)}`,
-            disabled: false,
-            onAction: () => {
-              void act({ type: 'cast_vote', playerId: myId, targetPlayerId: voteTarget });
-              setHasVoted(true);
-            },
-          }
-        : { id: 'wait', label: '请点选你怀疑的狱警', disabled: true, onAction: () => {} };
-    }
-  } else if (view.guessingInProgress && me?.isWarden && myId) {
-    const inmates = view.players.filter((id) => id !== myId);
-    const guessComplete = inmates.every((id) => guesses[id] !== undefined);
-    primary = {
-      id: 'submit-guesses',
-      label: guessComplete
-        ? '提交终局猜罪'
-        : `请为每名囚犯匹配罪行（已配对 ${Object.keys(guesses).length}/${inmates.length}）`,
-      disabled: !guessComplete,
-      onAction: () => {
-        if (!guessComplete) return;
-        const payload: Record<string, CrimeId> = {};
-        for (const id of inmates) payload[id] = guesses[id]!;
-        void act({ type: 'submit_guesses', playerId: myId, guesses: payload });
-      },
-    };
-  }
-
-  // 随时自告操作（若尚未自告）
-  if (myId && !hasSelfExposed && view.phase !== 'game_over' && !view.guessingInProgress) {
-    secondary = [
-      ...secondary,
-      {
-        id: 'self-expose',
-        label: me?.isWarden
-          ? '自告身份（狱警自曝进猜罪）'
-          : me?.crime
-            ? `自告身份（出示罪名【${CRIME_META[me.crime]?.name}】）`
-            : '自告身份（揭露自身罪名）',
-        disabled: false,
-        onAction: () => {
-          setExposeConfirmOpen(true);
-        },
-      },
-    ];
-  }
-
-  const waitingReason =
-    view.phase === 'game_over'
-      ? null
-      : view.phase === 'question'
-        ? isMyTurnToPickCard
-          ? '轮到你出题：请从 3 张问题卡中挑选 1 张向全员提问'
-          : isQuestionActive
-            ? me?.hasAnsweredCurrent
-              ? `你已作答，等待其他玩家提交作答（${Object.keys(view.currentQuestion?.answers ?? {}).length}/${view.players.length}）…`
-              : '当前题目正在全员审讯，请提交你的「是」或「否」！'
-            : `等待 ${nameFor(members, view.currentQuestionerId)} 挑选下一道审讯卡…`
-        : hasVoted
-          ? '你已完成投票，等待其他玩家投票…'
-          : '票选阶段——选出你怀疑的潜伏狱警';
-
-  const guessInmate =
-    view.guessingInProgress && me?.isWarden
-      ? guessTarget ??
-        view.players.find((id) => id !== myId && guesses[id] === undefined) ??
-        view.players.find((id) => id !== myId) ??
-        null
-      : null;
-
-  /** 已归档的便签：钉在板上，最新的在最后。 */
-  const pinnedNotes = view.history.map((record) => {
-    const yesCount = Object.values(record.answers).filter((a) => a === 'yes').length;
-    return (
-      <TestimonyNote
-        key={record.questionIndex}
-        index={record.questionIndex}
-        question={record.question}
-        yesCount={yesCount}
-        total={view.players.length}
-        pinning={stage.pinningIndex === record.questionIndex}
-      >
-        <div className="nt-note__answers">
-          {view.players.map((pid) => (
-            <span
-              key={pid}
-              className="nt-note__ans"
-              data-yes={record.answers[pid] === 'yes' ? 'true' : undefined}
-            >
-              {nameFor(members, pid)}
-            </span>
-          ))}
-        </div>
-      </TestimonyNote>
+  // ── 操作 ──
+  const answer = (ans: 'yes' | 'no') => {
+    if (!myId || busy) return;
+    flyBetween(
+      `[data-player-id="${CSS.escape(myId)}"]`,
+      `[data-nt-chip="${CSS.escape(myId)}"]`,
+      { key: 'my-stamp', width: 90, height: 64, paper: false, className: 'nt-chip-ghost', node: <span className={`nt-chip-fly nt-chip-fly--${ans}`} aria-hidden="true" /> },
+      `my-stamp:${view.currentQuestion?.questionIndex ?? 0}`,
+      90,
+      520,
     );
-  });
+    void act({ type: 'answer_question', playerId: myId, answer: ans });
+  };
 
-  /**
-   * 焦点区：同一时刻只有一种内容，但容器常驻（便签的 FLIP 需要稳定的起终点）。
-   * 顺序即优先级——猜罪 > 投票 > 当前题 > 选卡 > 等待。
-   */
-  const focusContent = (() => {
-    if (view.guessingInProgress && me?.isWarden && guessInmate) {
+  const pickCard = (cardId: string) => {
+    if (!myId || busy || pickingCardId) return;
+    setPickingCardId(cardId);
+    void act({ type: 'pick_question_card', playerId: myId, cardId });
+  };
+
+  const castVote = () => {
+    if (!myId || !voteTarget || busy || hasVoted) return;
+    const target = voteTarget;
+    flyBetween(
+      `[data-player-id="${CSS.escape(myId)}"]`,
+      `[data-player-id="${CSS.escape(target)}"]`,
+      { key: 'my-tape', width: 120, height: 26, paper: false, className: 'nt-tape-ghost', node: <span className="nt-tape-fly" aria-hidden="true" /> },
+      `my-tape:${target}`,
+      140,
+      560,
+    );
+    setMySealTargetId(target);
+    void act({ type: 'cast_vote', playerId: myId, targetPlayerId: target });
+  };
+
+  const placeCrime = useCallback(
+    (folderId: string, crime: CrimeId) => {
+      flyBetween(
+        `[data-nt-label="${CSS.escape(crime)}"]`,
+        `[data-player-id="${CSS.escape(folderId)}"]`,
+        { key: 'label', width: 96, height: 36, paper: false, className: 'nt-label-ghost', node: <span className="nt-label-fly">{crimeLabel(crime)}</span> },
+        `label:${folderId}:${crime}`,
+        70,
+        440,
+      );
+      setGuesses((prev) => ({ ...prev, [folderId]: crime }));
+      setChosenCrime(null);
+      setGuessFocusId(null);
+    },
+    [flyBetween],
+  );
+
+  const pickLabel = (crime: CrimeId) => {
+    if (chosenCrime === crime) {
+      setChosenCrime(null);
+      return;
+    }
+    setChosenCrime(crime);
+    if (guessFocusId) placeCrime(guessFocusId, crime);
+  };
+
+  const pickFolder = (folderId: string) => {
+    if (chosenCrime) {
+      placeCrime(folderId, chosenCrime);
+    } else {
+      setGuessFocusId((prev) => (prev === folderId ? null : folderId));
+    }
+  };
+
+  // ── 猜罪模型（纯函数，隐私红线在里面） ──
+  const guessBoard = buildGuessBoard(view, wardenId, guesses, stage.checkProgress, Boolean(me?.isWarden));
+  const guessComplete = guessBoard.filledCount >= guessBoard.inmateCount && guessBoard.inmateCount > 0;
+
+  const submitGuesses = () => {
+    if (!myId || busy || !guessComplete) return;
+    const payload: Record<string, CrimeId> = {};
+    for (const id of view.players) {
+      if (id === wardenId) continue;
+      const locked = view.revealedIdentities[id];
+      const crime = locked && locked !== 'warden' ? locked : guesses[id];
+      if (crime) payload[id] = crime;
+    }
+    void act({ type: 'submit_guesses', playerId: myId, guesses: payload });
+  };
+
+  // ── 底栏文案 ──
+  const myCrimeName = me?.crime ? CRIME_META[me.crime]?.name ?? '' : '';
+  const dockText = ((): { title: string; sub: string } => {
+    if (stage.revealPlay) return { title: '开票中……', sub: '' };
+    if (view.guessingInProgress) {
+      return me?.isWarden
+        ? { title: '最后的翻盘机会', sub: '先点标签再点档案袋；点已贴的袋子可以换' }
+        : { title: `等狱警猜罪`, sub: '你的罪行只有你自己知道——希望你答题时没暴露太多' };
+    }
+    if (view.phase === 'vote') {
+      return hasVoted
+        ? { title: `已投 · ${view.votedPlayerIds.length} / ${view.players.length}`, sub: '只有你知道投了谁；全员投完立刻开票' }
+        : { title: '点一只档案袋，指认狱警', sub: '狱警没有罪行，只能靠猜答题——找出 YES 最不像真话的人' };
+    }
+    if (view.phase === 'game_over') {
+      return { title: '游戏结束', sub: '案卷已定，真相大白' };
+    }
+    if (isMyTurnToPickCard) {
+      return { title: '轮到你出题', sub: '挑一个能让狱警露馅的问题——他没有罪行，只能靠猜着答' };
+    }
+    if (isQuestionActive) {
+      if (hasSelfExposed) return { title: '你已自告，排除嫌疑', sub: '本轮无需作答，等其他人盖章' };
+      if (me?.hasAnsweredCurrent) return { title: '已作答，等其他人亮牌', sub: '所有人答完会同时翻牌' };
+      return {
+        title: '轮到你回答',
+        sub: me?.isWarden ? '你是潜伏狱警，回答可真可假' : `你是囚犯，罪行「${myCrimeName}」——按你的理解作答即可`,
+      };
+    }
+    return { title: `${nameFor(members, view.currentQuestionerId)} 在出题`, sub: '等审讯单下来，按你的罪行如实回答' };
+  })();
+
+  // ── 底栏按钮 ──
+  const dockButtons: ReactNode = (() => {
+    // 注意：猜罪期间 phase 已是 game_over（guessingInProgress=true），不能在这里拦掉
+    if (isSpectator || (view.phase === 'game_over' && !view.guessingInProgress)) return null;
+    if (stage.revealPlay) return null; // 开票演出中不出按钮
+    const exposeBtn = !hasSelfExposed && !view.guessingInProgress && myId && (
+      <button
+        key="expose"
+        type="button"
+        className="nt-btn nt-btn--expose"
+        disabled={busy}
+        onClick={() => setExposeConfirmOpen(true)}
+      >
+        自告罪行<span className="nt-btn__long">（排除嫌疑）</span>
+      </button>
+    );
+    if (view.guessingInProgress) {
+      if (!me?.isWarden) return null;
       return (
-        <div className="nt-focus nt-focus--guess">
-          <h3 className="nt-focus__title">狱警终局翻盘 · 猜出全员罪行</h3>
-          <p className="nt-focus__hint">先点选囚犯，再为他指定罪行。全对则独享胜利。</p>
-          <SeatTargetPicker
-            label="选择要指认的囚犯"
-            selectedIds={guessInmate ? [guessInmate] : []}
-            onSelect={(ids) => setGuessTarget(ids[0] ?? null)}
-            options={view.players.filter((id) => id !== myId).map((id) => ({
-              id,
-              name: nameFor(members, id),
-              hint: guesses[id] ? CRIME_META[guesses[id]!].name : '未指定',
-            }))}
-          />
-          <div className="nt-crime-grid">
-            {(view.availableGuessCrimes ?? (Object.keys(CRIME_META) as CrimeId[])).map((crime) => (
-              <button
-                key={crime}
-                type="button"
-                className="nt-crime-btn"
-                data-active={guesses[guessInmate] === crime ? 'true' : undefined}
-                onClick={() => setGuesses((prev) => ({ ...prev, [guessInmate]: crime }))}
-              >
-                {CRIME_META[crime].name}
-              </button>
-            ))}
-          </div>
-        </div>
+        <button
+          type="button"
+          className="nt-btn nt-btn--primary"
+          disabled={busy || !guessComplete}
+          onClick={submitGuesses}
+        >
+          {busy ? '提交中…' : `提交猜罪（${guessBoard.filledCount}/${guessBoard.inmateCount}）`}
+        </button>
       );
     }
-
     if (view.phase === 'vote' && myId) {
       return (
-        <div className="nt-focus nt-focus--vote">
-          <h3 className="nt-focus__title">{hasVoted ? '你的投票已提交' : '谁是狱警？'}</h3>
-          <p className="nt-focus__hint">
-            {hasVoted ? '等待其他玩家完成投票…' : '点选你怀疑的嫌疑人；已自告的囚犯自动排除'}
-          </p>
-          <SeatTargetPicker
-            label="选择你怀疑的狱警"
-            selectedIds={voteTarget ? [voteTarget] : []}
-            onSelect={(ids) => setVoteTarget(ids[0] ?? null)}
-            disabled={hasVoted}
-            options={view.players.filter((id) => id !== myId).map((id) => {
-              const exposed = view.revealedIdentities[id];
-              const isExposedCriminal = Boolean(exposed && exposed !== 'warden');
-              return {
-                id,
-                name: nameFor(members, id),
-                disabled: isExposedCriminal,
-                hint: exposed
-                  ? (exposed === 'warden' ? '狱警' : `${CRIME_META[exposed]?.name ?? exposed} · 已排除`)
-                  : undefined,
-              };
-            })}
-          />
+        <>
+          {exposeBtn}
+          <button
+            type="button"
+            className="nt-btn nt-btn--coral"
+            disabled={busy || hasVoted || !voteTarget}
+            onClick={castVote}
+          >
+            {hasVoted ? '已贴封条' : voteTarget ? `给 ${nameFor(members, voteTarget)} 贴封条` : '贴封条'}
+          </button>
+        </>
+      );
+    }
+    if (view.phase === 'question' && isQuestionActive && me && !me.hasAnsweredCurrent && !hasSelfExposed) {
+      return (
+        <>
+          {exposeBtn}
+          <button type="button" className="nt-btn nt-btn--no" disabled={busy} onClick={() => answer('no')}>
+            盖 NO
+          </button>
+          <button type="button" className="nt-btn nt-btn--yes" disabled={busy} onClick={() => answer('yes')}>
+            盖 YES
+          </button>
+        </>
+      );
+    }
+    if (view.phase === 'question' && !isQuestionActive) {
+      // 出题等待期仍允许自告
+      return exposeBtn;
+    }
+    return exposeBtn;
+  })();
+
+  /** 三张问题卡便签 */
+  const renderSlips = () => (
+    <div className="nt-slips">
+      {me?.pendingCardChoices?.map((card, index) => (
+        <button
+          key={card.id}
+          type="button"
+          className={`nt-slip${pickingCardId === card.id ? ' nt-slip--picked' : ''}${pickingCardId && pickingCardId !== card.id ? ' nt-slip--gone' : ''}`}
+          disabled={busy || pickingCardId !== null}
+          onClick={() => pickCard(card.id)}
+        >
+          <span className="nt-slip__cat">{card.categoryLabel}</span>
+          <span className="nt-slip__txt">{card.text}</span>
+          <span className="nt-slip__no">
+            No.{String(slipNo).padStart(3, '0')}-{'ABC'[index] ?? index}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+
+  // ── 中央内容（同一时刻只有一种） ──
+  const centerContent = ((): ReactNode => {
+    // 1. 全员答完：翻开演出（答案此刻已随归档公开）
+    if (stage.flipRecord) {
+      const record = stage.flipRecord;
+      return (
+        <TestimonyBoard
+          no={record.questionIndex}
+          askerName={nameFor(members, record.questionerId)}
+          question={record.question}
+          cells={buildAnswerCells(view, record)}
+          members={members}
+          maxYes={view.maxYesPerPlayer}
+          flipping
+        />
+      );
+    }
+
+    // 2. 开票演出
+    if (stage.revealPlay) {
+      const rp = stage.revealPlay;
+      const torn = rp.step === 'torn' || rp.step === 'result';
+      const showPulled = rp.accusedId !== null && rp.step !== 'ballots';
+      const accusedName = rp.accusedId ? nameFor(members, rp.accusedId) : '';
+      const wardenName = rp.wardenId ? nameFor(members, rp.wardenId) : '';
+      const accusedCrime =
+        rp.accusedId && view.phase === 'game_over' ? view.reveal?.crimes[rp.accusedId] : undefined;
+      return (
+        <div className="nt-table-center" data-step={rp.step}>
+          {rp.reason === 'vote' && (
+            <div className="nt-tallies">
+              {rp.voterIds.map((id, i) => (
+                <div
+                  key={id}
+                  className="nt-tally"
+                  style={{ '--seat-c': seatColor(view.players.indexOf(id)), '--d': `${i * 240}ms` } as CSSProperties}
+                >
+                  <b>票</b>
+                  <span>{nameFor(members, id)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {showPulled && (
+            <div className={`nt-pulled${torn ? ' nt-pulled--torn' : ''}`}>
+              <div className="nt-folder" data-name={`${accusedName} 的档案`} />
+              <div className={`nt-idcard${rp.isWarden ? ' nt-idcard--warden' : ''}`}>
+                <span className="nt-idcard__k">{rp.isWarden ? '监狱工作证' : '囚犯档案'}</span>
+                <span className="nt-idcard__v">
+                  {rp.isWarden ? `狱警 · ${accusedName}` : `${accusedName} · ${accusedCrime ? crimeLabel(accusedCrime) : ''}`}
+                </span>
+                <span className="nt-idcard__x">{rp.isWarden ? '潜伏在囚犯里' : '不是狱警'}</span>
+              </div>
+              {/* 前袋：盖住证件下半截，读出"从袋里抽出来"的层次 */}
+              <div className="nt-folder__front" aria-hidden="true" />
+              <span className="nt-pulled__tape">嫌 疑</span>
+            </div>
+          )}
+          {rp.step === 'result' && (
+            rp.reason === 'self-expose' ? (
+              <NoticeBoard tone="danger" title={`狱警 ${wardenName} 自曝！`} sub="进入猜罪：他要猜中全部囚犯的罪行才能翻盘" />
+            ) : rp.reason === 'timeout' ? (
+              <NoticeBoard tone="warden" title={`狱警 ${wardenName} 独胜`} sub="无人投票，潜伏到底" />
+            ) : rp.isWarden ? (
+              <NoticeBoard tone="danger" title="抓到狱警了！" sub="但他还有一次翻盘：猜中全部囚犯的罪行就反杀" />
+            ) : (
+              <NoticeBoard tone="warden" title={`狱警 ${wardenName} 独胜`} sub={`你们抓的是 ${accusedName}（${accusedCrime ? crimeLabel(accusedCrime) : '囚犯'}）`} />
+            )
+          )}
         </div>
       );
     }
 
-    if (isQuestionActive && view.currentQuestion) {
-      const answered = Object.keys(view.currentQuestion.answers).length;
+    // 3. 猜罪（狱警操作 / 囚犯围观）
+    if (view.guessingInProgress) {
+      if (me?.isWarden) {
+        return (
+          <section className="nt-labels-area">
+            <NoticeBoard title="给每只档案袋贴上罪行" sub="全贴对你就翻盘独胜；有一张是多出来的干扰项" />
+            <div className="nt-labels">
+              {guessBoard.pool.map((crime) => (
+                <button
+                  key={crime}
+                  type="button"
+                  className="nt-label"
+                  data-nt-label={crime}
+                  aria-pressed={chosenCrime === crime}
+                  disabled={busy || guessBoard.used.has(crime)}
+                  onClick={() => pickLabel(crime)}
+                >
+                  {crimeLabel(crime)}
+                </button>
+              ))}
+            </div>
+          </section>
+        );
+      }
       return (
-        <div className="nt-focus nt-focus--ask">
-          <TestimonyNote index={null} question={view.currentQuestion.text} yesCount={null} focus>
-            <p className="nt-note__role-tip">
-              {me?.hasAnsweredCurrent
-                ? `你已提交回答：${view.currentQuestion.answers[myId!] === 'yes' ? '是 (YES)' : '否 (NO)'}`
-                : me?.isWarden
-                  ? '你是潜伏狱警，可以撒谎'
-                  : '你是囚犯，必须如实回答'}
-            </p>
-          </TestimonyNote>
+        <section className="nt-labels-area">
+          <div className="nt-watch">
+            狱警 {nameFor(members, wardenId)} 正在给大家的档案袋贴罪行……只要他贴错一张，囚犯就赢
+          </div>
+        </section>
+      );
+    }
 
-          <div className="nt-progress" aria-label={`作答进度 ${answered} / ${view.players.length}`}>
-            {view.players.map((id) => {
-              const ans = view.currentQuestion?.answers[id];
+    // 4. 终局（开票演出已毕）
+    if (view.phase === 'game_over' && view.reveal) {
+      const reveal = view.reveal;
+      const wardenWon = !reveal.wardenRevealed || reveal.crimesAllGuessed;
+      const wrongCount = reveal.wardenGuesses
+        ? view.players.filter((id) => id !== reveal.wardenId && reveal.wardenGuesses?.[id] !== reveal.crimes[id]).length
+        : 0;
+      return (
+        <div className="nt-over">
+          <NoticeBoard
+            tone={wardenWon ? 'warden' : 'ok'}
+            title={wardenWon ? `狱警 ${nameFor(members, reveal.wardenId)} ${reveal.wardenRevealed ? '翻盘独胜！' : '独胜'}` : '囚犯联盟胜！'}
+            sub={
+              reveal.wardenGuesses
+                ? wardenWon
+                  ? '每一只档案袋都贴对了'
+                  : `狱警贴错了 ${wrongCount} 张`
+                : reveal.wardenRevealed
+                  ? '猜罪环节落幕'
+                  : '狱警潜伏到了最后一刻'
+            }
+          />
+          <div className="testimony-dossier-grid nt-over__grid">
+            {view.players.map((playerId) => {
+              const isWarden = playerId === reveal.wardenId;
+              const crime = isWarden ? null : reveal.crimes[playerId];
+              const wardenGuess = reveal.wardenGuesses?.[playerId];
+              const isGuessCorrect = Boolean(wardenGuess && crime && wardenGuess === crime);
               return (
-                <span key={id} className="nt-progress__chip" data-answered={ans ? 'true' : undefined}>
-                  <span className="nt-progress__name">{nameFor(members, id)}</span>
-                  <span className="nt-progress__mark" data-answer={ans ?? undefined}>
-                    {ans ? (ans === 'yes' ? 'YES' : 'NO') : '作答中'}
-                  </span>
-                </span>
+                <div key={playerId} className={`testimony-dossier-card ${isWarden ? 'is-warden' : ''}`}>
+                  <div className="testimony-dossier-card__head">
+                    <strong>{nameFor(members, playerId)}</strong>
+                    <span className={`nt-dossier-tag ${isWarden ? 'nt-dossier-tag--warden' : ''}`}>
+                      {isWarden ? '狱警' : '囚犯'}
+                    </span>
+                  </div>
+                  {!isWarden && crime && (
+                    <div className="testimony-dossier-card__crime">
+                      <span>真实罪行：</span>
+                      <strong>{crimeLabel(crime)}</strong>
+                    </div>
+                  )}
+                  {!isWarden && wardenGuess && (
+                    <div className={`testimony-dossier-card__guess ${isGuessCorrect ? 'is-correct' : 'is-wrong'}`}>
+                      <span>狱警猜测：</span>
+                      <strong>{crimeLabel(wardenGuess)}</strong>
+                      <span>{isGuessCorrect ? '✔ 对' : '✘ 错'}</span>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
@@ -372,67 +506,164 @@ export function NightTestimonyGamePage({ view }: Props) {
       );
     }
 
+    // 5. 投票：结案汇总表
+    if (view.phase === 'vote') {
+      return (
+        <section className="nt-board-summary" data-stage-anchor="board">
+          <div className="nt-summary">
+            <div className="nt-summary__row">
+              <span>结案汇总 · {view.history.length} 份审讯单</span>
+              <span>YES 满 {view.maxYesPerPlayer} 章 → 提前结束</span>
+            </div>
+            <h2>谁的 YES 和罪行对不上？</h2>
+            <div className="nt-summary__scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>问题</th>
+                    {view.players.map((id) => {
+                      const n = nameFor(members, id);
+                      return <th key={id} className="c">{n.length > 4 ? `${n.slice(0, 3)}…` : n}</th>;
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {view.history.map((record) => (
+                    <tr key={record.questionIndex}>
+                      <td>Q{record.questionIndex}</td>
+                      <td className="nt-summary__qcol">{record.question}</td>
+                      {view.players.map((id) => (
+                        <td key={id} className={record.answers[id] === 'yes' ? 'y' : 'n'}>
+                          {record.answers[id] === 'yes' ? 'YES' : 'NO'}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    // 6. 问答盖章（主画面）
+    if (isQuestionActive && view.currentQuestion) {
+      return (
+        <TestimonyBoard
+          no={view.currentQuestion.questionIndex}
+          askerName={nameFor(members, view.currentQuestion.questionerId)}
+          question={view.currentQuestion.text}
+          cells={buildAnswerCells(view, null)}
+          members={members}
+          maxYes={view.maxYesPerPlayer}
+        />
+      );
+    }
+
+    // 7. 出题
     if (isMyTurnToPickCard && me?.pendingCardChoices) {
       return (
-        <div className="nt-focus nt-focus--pick">
-          <h3 className="nt-focus__title">轮到你出题</h3>
-          <p className="nt-focus__hint">抽选 1 张问题卡，向全员广播</p>
-          <div className="nt-card-choices" role="radiogroup" aria-label="3 张候选问题卡">
-            {me.pendingCardChoices.map((card: QuestionCardView, index: number) => (
-              <button
-                key={card.id}
-                type="button"
-                className="nt-topic-card"
-                style={{ ['--i' as string]: index }}
-                data-selected={selectedCardId === card.id ? 'true' : undefined}
-                onClick={() => setSelectedCardId(card.id)}
-                aria-checked={selectedCardId === card.id}
-                role="radio"
-              >
-                <span className="nt-topic-card__tag">{card.categoryLabel}</span>
-                <p className="nt-topic-card__text">「{card.text}」</p>
-              </button>
-            ))}
-          </div>
-        </div>
+        <section className="nt-picker">
+          <h2>挑一张审讯单 · 全员按各自理解作答 YES / NO</h2>
+          {renderSlips()}
+        </section>
       );
     }
 
     return (
-      <div className="nt-focus nt-focus--wait">
-        <p className="nt-focus__waiting">
-          等待 {nameFor(members, view.currentQuestionerId)} 挑选第 {view.questionIndex + 1} 题…
-        </p>
-      </div>
+      <section className="nt-picker">
+        <div className="nt-waiting">
+          <div className="nt-waiting__pen" aria-hidden="true" />
+          <div>
+            <b>{nameFor(members, view.currentQuestionerId)}</b> 正在挑审讯单……
+          </div>
+        </div>
+      </section>
     );
   })();
 
+  // 旧审讯单一叠：翻开演出期间，正在翻的那张先不进叠（演出结束落进去）
+  const stackRecords = stage.flipRecord
+    ? view.history.filter((h) => h.questionIndex !== stage.flipRecord!.questionIndex)
+    : view.history;
+  const newestIndex = stackRecords.length > 0 ? stackRecords[stackRecords.length - 1]!.questionIndex : null;
+  const showStack = view.phase === 'question' || (view.phase === 'game_over' && !stage.revealPlay && !view.guessingInProgress);
+
+  // 档案袋的演出状态透传
+  const revealUi = stage.revealPlay
+    ? {
+        pulledId: stage.revealPlay.accusedId,
+        wardenShownId:
+          stage.revealPlay.step === 'result'
+            ? stage.revealPlay.isWarden
+              ? stage.revealPlay.accusedId ?? stage.revealPlay.wardenId
+              : stage.revealPlay.wardenId
+            : null,
+      }
+    : null;
+  // 开票演出期间不进入猜罪 UI（标签位/标签池等开票告示牌落定后再出现）
+  const guessUi = !stage.revealPlay && (view.guessingInProgress || (view.phase === 'game_over' && view.reveal?.wardenGuesses))
+    ? {
+        slots: guessBoard.slots,
+        focusId: guessFocusId,
+        interactive: Boolean(view.guessingInProgress && me?.isWarden && !busy),
+        onPickFolder: pickFolder,
+      }
+    : null;
+
+  const eyebrow = view.guessingInProgress
+    ? '狱警猜罪 · 翻盘'
+    : view.phase === 'vote'
+      ? '审讯结束 · 指认狱警'
+      : view.phase === 'game_over'
+        ? '结案'
+        : `第 ${slipNo} / ${view.questionLimit} 份审讯单${view.currentQuestion === null ? ' · 出题' : ''}`;
+
   return (
     <TabletopShell
-      title="囚徒之夜"
-      phase={phaseLabel(view.phase)}
+      title="谁是狱警？"
+      phase={phaseLabel(view)}
       gameId="night-testimony"
       phaseKey={`${view.phase}:${view.currentQuestionerId}:${view.questionIndex}:${view.phase === 'game_over' ? view.winners.join(',') || 'no-winner' : view.guessingInProgress ? 'guessing' : isQuestionActive ? 'answering' : 'picking'}`}
       spectator={isSpectator}
-      players={players}
+      players={[]}
+      hideSeats
       theme="mystery"
       rulesButton={(
         <button ref={rulesRef} type="button" className="tabletop-rules-btn" onClick={() => setRulesOpen(true)}>
           审讯规则
         </button>
       )}
-      actions={
-        <ActionDock
-          primary={primary ?? { id: 'wait', label: '等待阶段推进', disabled: true, onAction: () => {} }}
-          secondary={secondary}
-          busy={busy}
-          waitingReason={waitingReason ?? undefined}
-        />
-      }
+      actions={(
+        <div className="nt-dock">
+          {me && (
+            /* 类名 testimony-private 被 e2e 断言（night-testimony-tabletop.spec.ts），不要改 */
+            <button
+              type="button"
+              className={`testimony-private nt-secret${secretHidden ? ' nt-secret--hidden' : ''}`}
+              title="点击遮挡 / 显示"
+              onClick={() => setSecretHidden((v) => !v)}
+            >
+              <span className="nt-secret__lead">
+                <span className="nt-secret__tag">{me.isWarden ? '你的身份' : '你的罪行'}</span>
+                <span className="nt-secret__hint">点击遮挡</span>
+              </span>
+              <span className="nt-secret__word">{me.isWarden ? '你是狱警' : myCrimeName || '囚犯'}</span>
+            </button>
+          )}
+          <div className="nt-dock__info">
+            <strong>{dockText.title}</strong>
+            <span>{dockText.sub}</span>
+          </div>
+          {dockButtons}
+        </div>
+      )}
       drawer={rulesOpen && (
-        <GameDrawer kind="rules" title="囚徒之夜 · 案卷规则" triggerRef={rulesRef} onClose={() => setRulesOpen(false)}>
+        <GameDrawer kind="rules" title="谁是狱警 · 案卷规则" triggerRef={rulesRef} onClose={() => setRulesOpen(false)}>
           <h4>核心机制</h4>
-          <p>1. <strong>狱警潜伏</strong>：一名狱警伪装成囚犯潜伏其中，可撒谎；其余囚犯各有专属罪行卡，必须如实回答。</p>
+          <p>1. <strong>狱警潜伏</strong>：一名狱警伪装成囚犯潜伏其中，回答可真可假；其余囚犯各有专属罪行卡，按各自对罪行的理解作答即可，系统不评判对错。</p>
           <p>2. <strong>广播提问与全员作答</strong>：顺时针轮流 3 选 1 挑题向全场提问，全员（含出题者与狱警）共同提交「是」或「否」。</p>
           <p>3. <strong>停止提问条件</strong>：任意一人累计回答 <strong>3 个「是」</strong> 或 <strong>全局提满 5 题</strong>后，立即停止询问，进入投票！</p>
           <p>4. <strong>自告/自曝机制</strong>：囚犯自告可公开罪行排除狱警嫌疑；狱警自告则直接进入终局猜罪！</p>
@@ -442,160 +673,63 @@ export function NightTestimonyGamePage({ view }: Props) {
     >
       {error && <p className="game-error" role="alert" aria-live="assertive" aria-atomic="true">{error}</p>}
 
-      {view.phase !== 'game_over' ? (
-        <div className="nt-game" data-phase={view.phase} data-guessing={view.guessingInProgress ? 'true' : undefined}>
-          {/* 移动端快捷身份卡展开/收起横条 */}
-          {me && (
-            <button
-              type="button"
-              className="nt-identity-toggle"
-              onClick={() => setIdentityExpandedMobile((prev) => !prev)}
-            >
-              <span>
-                {me.isWarden
-                  ? '我的私密身份：潜伏狱警'
-                  : me.crime
-                    ? `我的私密罪名：${CRIME_META[me.crime].name}`
-                    : '我的私密罪证'}
-              </span>
-              <span>{identityExpandedMobile ? '▲ 收起' : '▼ 点击展开防窥卡'}</span>
-            </button>
-          )}
+      <div
+        className="nt-desk"
+        ref={stage.stageRef}
+        data-phase={view.phase}
+        data-count={view.players.length}
+        data-guessing={view.guessingInProgress ? 'true' : undefined}
+        data-vignette={stage.vignette ? 'true' : undefined}
+      >
+        <header className="nt-head">
+          <h1 className="nt-head__title">谁是狱警？</h1>
+          <p className="nt-head__eyebrow">{eyebrow}</p>
+        </header>
 
-          <div className="nt-rail">
-            {me && (
-              /* 类名 testimony-private 被 e2e 断言（night-testimony-tabletop.spec.ts），不要改 */
-              <section
-                className={`sg-panel testimony-private nt-private ${!identityExpandedMobile ? 'is-collapsed-mobile' : ''}`}
-                aria-label="我的私密身份"
-              >
-                <IdentityFlipCard
-                  theme="prison"
-                  variant="compact"
-                  roleName={me.isWarden ? '狱警（潜伏卧底）' : me.crime ? CRIME_META[me.crime].name : '囚犯'}
-                  roleSubtitle={me.isWarden ? '卧底潜伏 · 可撒谎误导' : '嫌疑囚犯 · 须如实应答'}
-                  roleCamp={me.isWarden ? 'evil' : 'good'}
-                  secretHints={[]}
-                />
-              </section>
-            )}
-
-            {/* 只在需要玩家行动的阶段催时间；选卡阶段不催 */}
-            <StageCountdownRing
-              deadlineAt={view.deadlineAt}
-              phaseKey={`${view.phase}:${view.questionIndex}`}
-              active={isQuestionActive || view.phase === 'vote'}
-              className="nt-countdown"
-            />
-
-            <ArenaRail
-              label="全员累计是票"
-              className="nt-yes-rail"
-              items={view.players.map((id) => {
-                const yesCount = view.playerYesCounts[id] ?? 0;
-                const isSelf = id === myId;
-                const exposed = view.revealedIdentities[id];
-                return {
-                  key: id,
-                  label: `${nameFor(members, id)}${isSelf ? '（我）' : ''}${exposed ? ` · ${exposed === 'warden' ? '狱警' : CRIME_META[exposed].name}` : ''}`,
-                  value: `${yesCount}/3`,
-                  state: yesCount >= 3
-                    ? 'done'
-                    : yesCount === 2
-                      ? 'warning'
-                      : (view.phase === 'question' && id === view.currentQuestionerId ? 'active' : 'idle'),
-                };
-              })}
-            />
-          </div>
-
-          <TestimonyBoard
-            stageRef={stage.stageRef}
-            vignette={stage.vignette}
-            pins={pinnedNotes}
-            focus={focusContent}
-            badge={
-              <span className="nt-board__badge">
-                已审讯 {view.history.length} / {view.questionLimit} 题
-              </span>
-            }
+        <div className="nt-ring">
+          <StageCountdownRing
+            deadlineAt={view.deadlineAt}
+            phaseKey={`${view.phase}:${view.questionIndex}`}
+            active={!view.guessingInProgress && view.phase !== 'game_over'}
+            className="nt-countdown"
           />
         </div>
-      ) : (
-        /* 终局结算复盘大殿 */
-        view.reveal && (() => {
-          const reveal = view.reveal;
-          const isWardenVictory = !reveal.wardenRevealed || (reveal.wardenRevealed && reveal.crimesAllGuessed);
 
-          return (
-            <div className="sg-stage testimony-over-stage">
-              <div className={`winner-hero ${isWardenVictory ? 'winner-hero--warden' : 'winner-hero--inmates'}`}>
-                <span className="winner-rays" aria-hidden="true" />
-                <h2 className="winner-title">
-                  {!reveal.wardenRevealed
-                    ? '狱警成功潜伏，未被票出！'
-                    : reveal.crimesAllGuessed
-                      ? '狱警猜中了全部囚犯罪行，惊天翻盘！'
-                      : '狱警猜罪失败，囚犯联盟赢得胜利！'}
-                </h2>
-                <p className="winner-names">
-                  {isWardenVictory
-                    ? `潜伏狱警 ${nameFor(members, reveal.wardenId)} 独享胜利！`
-                    : `囚犯联盟（${(view.winners ?? []).map((id) => nameFor(members, id)).join('、')}）获胜！`}
-                </p>
-              </div>
+        {showStack && stackRecords.length > 0 && (
+          <aside className="nt-stack" aria-label="已归档审讯单">
+            <h3>已归档</h3>
+            {stackRecords.map((record) => (
+              <TestimonyNote
+                key={record.questionIndex}
+                record={record}
+                members={members}
+                players={view.players}
+                newest={record.questionIndex === newestIndex}
+              />
+            ))}
+          </aside>
+        )}
 
-              <section className="sg-panel testimony-dossier-reveal">
-                <div className="sg-panel__head">
-                  <div className="sg-panel__title-group">
-                    <h3>本局全员真实案卷与猜测对照</h3>
-                  </div>
-                  <span className="sg-badge">真相大白</span>
-                </div>
+        <div className="nt-center">{centerContent}</div>
 
-                <div className="testimony-dossier-grid">
-                  {view.players.map((playerId, dossierIndex) => {
-                    const isWarden = playerId === reveal.wardenId;
-                    const crime = isWarden ? null : reveal.crimes[playerId];
-                    const wardenGuess = reveal.wardenGuesses?.[playerId];
-                    const isGuessCorrect = wardenGuess && crime && wardenGuess === crime;
-
-                    return (
-                      <div key={playerId} className={`testimony-dossier-card ${isWarden ? 'is-warden' : ''}`} style={{ ['--i' as string]: dossierIndex }}>
-                        <div className="testimony-dossier-card__head">
-                          <strong>{nameFor(members, playerId)}</strong>
-                          <span className={`sg-tag ${isWarden ? 'sg-tag--warden' : 'sg-tag--prisoner'}`}>
-                            {isWarden ? '狱警' : '囚犯'}
-                          </span>
-                        </div>
-
-                        {!isWarden && crime && (
-                          <div className="testimony-dossier-card__crime">
-                            <span>真实罪行：</span>
-                            <strong>{CRIME_META[crime].name}</strong>
-                          </div>
-                        )}
-
-                        {!isWarden && wardenGuess && (
-                          <div className={`testimony-dossier-card__guess ${isGuessCorrect ? 'is-correct' : 'is-wrong'}`}>
-                            <span>狱警猜测：</span>
-                            <strong>{CRIME_META[wardenGuess].name}</strong>
-                            <span>{isGuessCorrect ? '✓ 对' : '✗ 错'}</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            </div>
-          );
-        })()
-      )}
+        <ArchiveFiles
+          view={view}
+          members={members}
+          myId={myId}
+          yesCounts={archivedYesCounts}
+          flipYesIds={stage.flipYesIds}
+          vote={view.phase === 'vote' && myId && !view.guessingInProgress
+            ? { targetId: voteTarget, mySealTargetId, onPick: (id) => setVoteTarget((prev) => (prev === id ? null : id)) }
+            : null}
+          guess={guessUi}
+          reveal={revealUi}
+          over={view.phase === 'game_over' && !view.guessingInProgress && stage.revealDone && !stage.revealPlay}
+        />
+      </div>
 
       {/* 飞行层必须挂在舞台之外：舞台内若有 transform 祖先，
           position:fixed 会退化为相对定位，实测的屏幕坐标会全部失效。 */}
-      <FlightLayer flights={stage.flights} simplified={stage.simplifiedFlights} />
+      <FlightLayer flights={[...stage.flights, ...localFlights]} simplified={stage.simplifiedFlights} />
 
       {/* 游戏内风格自告身份确认弹窗 */}
       {exposeConfirmOpen && (
@@ -616,9 +750,7 @@ export function NightTestimonyGamePage({ view }: Props) {
             <div className="nt-expose-modal__body">
               {me?.isWarden ? (
                 <div className="nt-expose-modal__desc">
-                  <p>
-                    确定要<strong>主动自曝潜伏狱警身份</strong>吗？
-                  </p>
+                  <p>确定要<strong>主动自曝潜伏狱警身份</strong>吗？</p>
                   <p>
                     自曝后将立即中断问答与投票流程，<strong>直接开启全员终局猜罪大舞台</strong>！若你能猜对场上全部囚犯与罪行的对应关系，你将<strong>直接独享胜利</strong>！
                   </p>
@@ -626,7 +758,7 @@ export function NightTestimonyGamePage({ view }: Props) {
               ) : (
                 <div className="nt-expose-modal__desc">
                   <p>
-                    确定要向全场公开你身为囚犯的真实罪名【<strong>{me?.crime ? CRIME_META[me.crime]?.name : ''}</strong>】吗？
+                    确定要向全场公开你身为囚犯的真实罪名【<strong>{myCrimeName}</strong>】吗？
                   </p>
                   <p>
                     公开后你的罪名将公之于众，全场玩家将<strong>100% 确信你是真实囚犯</strong>并彻底洗清狱警嫌疑，为囚犯阵营排除干扰！
@@ -661,7 +793,7 @@ export function NightTestimonyGamePage({ view }: Props) {
       )}
       {phaseOverlay}
       <TabletopVictoryBurst
-        gameOver={view.phase === 'game_over'}
+        gameOver={view.phase === 'game_over' && !view.guessingInProgress}
         isWinner={myId ? (view.winners ?? []).includes(myId) : null}
         label={view.reveal && (!view.reveal.wardenRevealed || view.reveal.crimesAllGuessed) ? '狱警胜利' : '囚犯联盟胜利'}
         sublabel={`获胜玩家：${(view.winners ?? []).map((id) => nameFor(members, id)).join('、')}`}

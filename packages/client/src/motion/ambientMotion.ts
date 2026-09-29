@@ -45,7 +45,9 @@ export const AMBIENT_MOTION_SELECTORS = [
   '.werewolf-spotlight__img',
   '.winner-rays',
   '.goose-modal-card-item',
-  '.bc-bell-btn',
+  '.bc-bell__dome',
+  '.th-lantern',
+  '.th-rotate-hint__phone',
 ] as const;
 
 /** reduced 档位下仍必须保留动效的必要反馈（只降时长，不关闭）。 */
@@ -56,7 +58,6 @@ export const ESSENTIAL_FEEDBACK_SELECTORS = [
   '.countdown.urgent',
   '.moon-header__timer.is-urgent',
   '.testimony-meter-card.is-warning',
-  '.uno-house-draw-pile.is-my-turn-playable',
   '.ding-uno-card.is-playable',
   '.bell-draw-pile.is-playable',
 ] as const;

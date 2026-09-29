@@ -10,6 +10,7 @@ import type {
   UnoHouseCard,
   UnoHouseConfig,
   UnoHouseEvent,
+  UnoHouseLastRoundSummary,
   UnoHouseMatchRankingEntry,
   UnoHousePendingPenalty,
   UnoHousePlayerView,
@@ -138,6 +139,7 @@ export const unoHouseRoundResultSchema: z.ZodType<UnoHouseRoundResult> = z.objec
   teamTotals: z.array(z.number().int().nonnegative()).nullable(),
   winnerPlayerIds: z.array(z.string().min(1)),
   teamWinnerIds: z.array(z.string().min(1)).nullable(),
+  remainingHands: z.array(z.array(unoHouseCardSchema)).optional(),
 }).strict();
 
 const unoHouseMatchStateSchema = z.object({
@@ -203,6 +205,12 @@ const unoHouseClockInfoSchema = z.object({
   windowDeadlineAt: z.number().int().nonnegative().nullable(),
 }).strict();
 
+const unoHouseLastRoundSummarySchema: z.ZodType<UnoHouseLastRoundSummary> = z.object({
+  roundNumber: z.number().int().positive(),
+  finisherPlayerId: z.string().min(1),
+  remainingHands: z.array(z.array(unoHouseCardSchema)),
+}).strict();
+
 const unoHousePublicViewObjectSchema = z.object({
   gameId: z.literal('uno'),
   rulesetId: z.literal('uno_platform_house_v1'),
@@ -223,6 +231,7 @@ const unoHousePublicViewObjectSchema = z.object({
   cumulativeScores: z.array(z.number().int().nonnegative()),
   matchRanking: z.array(unoHouseMatchRankingEntrySchema).nullable(),
   clockInfo: unoHouseClockInfoSchema,
+  lastRound: unoHouseLastRoundSummarySchema.nullable(),
 }).strict();
 export const unoHousePublicViewSchema: z.ZodType<UnoHousePublicView> = unoHousePublicViewObjectSchema;
 export const unoHousePlayerViewSchema: z.ZodType<UnoHousePlayerView> = unoHousePublicViewObjectSchema.extend({

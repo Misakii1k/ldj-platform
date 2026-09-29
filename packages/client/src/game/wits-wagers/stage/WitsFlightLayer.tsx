@@ -1,6 +1,7 @@
 import { FlightLayer, type StageFlight } from '../../../shared-ui/stage/FlightLayer.tsx';
-import { WitsBanknote, NOTE_ASPECT } from './WitsBanknote.tsx';
-import { WitsAnswerCard } from './WitsAnswerCard.tsx';
+import { PLAYER_COLORS } from '../seats.ts';
+import { WitsPokerCard } from './WitsPokerCard.tsx';
+import { WitsChip } from './WitsChip.tsx';
 import type { FlightSpec } from './useWitsWagersStage.ts';
 
 export interface WitsFlightLayerProps {
@@ -13,10 +14,10 @@ export interface WitsFlightLayerProps {
  * 一智千金的飞行层适配器。
  *
  * 几何、节拍与 3D 都由 shared-ui/stage/FlightLayer 负责；这里只把本游戏的
- * FlightSpec 翻译成通用的 StageFlight，并提供钞票 / 答案牌两种节点。
+ * FlightSpec 翻译成通用的 StageFlight，并提供筹码 / 扑克牌两种节点。
  *
  * 牌就是普通放置：直线到位 + 轻微落位缩放（motion='slide'），不翻转不飘动不做景深。
- * 纸张飘动只属于钞票——一张牌在桌上被推过去时不会打旋。
+ * 筹码是厚重圆片：toss 抛飞但不做纸张翻飘（paper: false）。
  */
 export function WitsFlightLayer({ flights, simplified = false }: WitsFlightLayerProps) {
   const stageFlights: StageFlight[] = flights.map((flight) => {
@@ -33,17 +34,18 @@ export function WitsFlightLayer({ flights, simplified = false }: WitsFlightLayer
           {
             key: `${flight.id}-card`,
             width: flight.from.width || 64,
-            height: flight.from.height || 44,
+            height: flight.from.height || 90,
             paper: false,
             className: 'ww-flight__ghost--card',
             // 交牌演出：背面朝上，DOM 里不含任何数值
-            node: <WitsAnswerCard target={null} faceUp={false} />,
+            node: <WitsPokerCard target={null} />,
           },
         ],
       };
     }
 
-    const width = flight.noteWidth ?? 56;
+    const chip = flight.chip ?? { color: PLAYER_COLORS[0], label: flight.badge ?? '', extraStake: 0 };
+    const size = flight.noteWidth ?? 46;
     return {
       id: flight.id,
       motion: 'toss' as const,
@@ -53,19 +55,17 @@ export function WitsFlightLayer({ flights, simplified = false }: WitsFlightLayer
       durationMs: flight.durationMs,
       delayMs: flight.delayMs,
       budgetMs: flight.budgetMs,
-      pieces: (flight.notes ?? []).map((denom, index) => ({
-        key: `${flight.id}-${index}`,
-        width,
-        height: Math.round(width * NOTE_ASPECT),
-        paper: true,
-        node: (
-          <WitsBanknote
-            denomination={denom}
-            width={width}
-            badge={index === 0 ? flight.badge ?? null : null}
-          />
-        ),
-      })),
+      pieces: [
+        {
+          key: `${flight.id}-chip`,
+          width: size,
+          height: size,
+          paper: false,
+          node: (
+            <WitsChip color={chip.color} label={chip.label} extraStake={chip.extraStake} size={size} />
+          ),
+        },
+      ],
     };
   });
 

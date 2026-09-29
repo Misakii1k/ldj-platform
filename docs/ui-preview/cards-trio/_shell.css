@@ -1,0 +1,142 @@
+/* 方向稿公用外壳：预览工具条、设备画框、按钮、牌框。只服务于静态预览，不进生产。 */
+:root {
+  --ink: #292722;
+  --muted: #575147;
+  --cream: #fffdf7;
+  --paper: #fff4df;
+  --yellow: #f7c84b;
+  --coral: #c23616;
+  --serif: "Noto Serif SC", Georgia, "Songti SC", "STSong", serif;
+  --sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --border: 3px solid var(--ink);
+  --shadow: 0 5px 0 var(--ink);
+  --shadow-sm: 0 3px 0 var(--ink);
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --out: cubic-bezier(.22, 1, .36, 1);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: #3a3833; font-family: var(--sans); color: var(--ink); overflow: hidden; }
+
+/* ---------- 预览工具条（不属于设计） ---------- */
+.toolbar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px 16px; background: #22211e; color: #f1eadc; font-size: 13px;
+}
+.toolbar strong { font-size: 15px; }
+.toolbar .note { color: #c9c0ae; }
+.toolbar .group { display: flex; gap: 4px; margin-left: auto; }
+.toolbar .group + .group { margin-left: 0; }
+.toolbar button, .toolbar a {
+  font: inherit; color: #f1eadc; background: #3a3833; border: 1px solid #6b665c; text-decoration: none;
+  border-radius: 8px; padding: 6px 12px; cursor: pointer; min-height: 32px; display: inline-flex; align-items: center;
+}
+.toolbar button[aria-pressed="true"] { background: #f7c84b; color: #292722; border-color: #f7c84b; font-weight: 800; }
+.stage-wrap { display: grid; place-items: start center; padding: 16px; }
+
+/* ---------- 设备画框 ---------- */
+.device {
+  position: relative; overflow: hidden; transform-origin: top center;
+  border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,.45);
+}
+.fly-layer { position: absolute; inset: 0; pointer-events: none; z-index: 80; }
+
+/* ---------- 文案 ---------- */
+.serif { font-family: var(--serif); }
+.numeral { font-family: var(--serif); font-variant-numeric: tabular-nums lining-nums; line-height: 1; }
+
+/* ---------- 按钮 ---------- */
+.btn {
+  font: 900 16px var(--sans); color: var(--ink); background: var(--cream);
+  border: var(--border); border-radius: 14px; box-shadow: var(--shadow-sm);
+  min-height: 50px; padding: 8px 22px; cursor: pointer; white-space: nowrap;
+  transition: transform 140ms var(--spring), box-shadow 140ms;
+}
+.btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow); }
+.btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn-primary { background: var(--yellow); }
+
+/* ---------- 扑克牌（斗地主） ---------- */
+.pk {
+  --w: 64px; width: var(--w); height: calc(var(--w) * 1.42); flex: none;
+  position: relative; background: var(--cream); border: var(--border); border-radius: 10px;
+  box-shadow: 0 3px 0 var(--ink); color: var(--ink);
+  font-family: var(--serif); font-weight: 700; user-select: none;
+}
+.pk.red { color: #c23616; }
+.pk .r { position: absolute; left: 6px; top: 4px; font-size: calc(var(--w) * .36); line-height: 1; }
+.pk .s { position: absolute; left: 7px; top: calc(var(--w) * .42); font-size: calc(var(--w) * .26); line-height: 1; }
+.pk .big { position: absolute; right: 6px; bottom: 4px; font-size: calc(var(--w) * .5); line-height: 1; }
+.pk.joker .r { writing-mode: vertical-rl; font-size: calc(var(--w) * .2); letter-spacing: -.05em; }
+.pk.joker .big { font-size: calc(var(--w) * .46); }
+.pk.back {
+  background:
+    repeating-linear-gradient(45deg, transparent 0 6px, rgba(255,253,247,.22) 6px 8px),
+    #b8431f;
+}
+.pk.back::after {
+  content: ""; position: absolute; inset: 6px; border: 2px solid rgba(255,253,247,.7); border-radius: 6px;
+}
+
+/* ---------- UNO 牌（UNO / Ding 共用牌框） ---------- */
+.uc {
+  --w: 70px; --c: #e8483b; width: var(--w); height: calc(var(--w) * 1.48); flex: none;
+  position: relative; border: var(--border); border-radius: 12px; background: var(--c);
+  box-shadow: 0 4px 0 var(--ink); color: var(--cream); user-select: none; overflow: hidden;
+}
+.uc::before {
+  content: ""; position: absolute; left: 12%; right: 12%; top: 16%; bottom: 16%;
+  background: var(--cream); border: 2.5px solid var(--ink); border-radius: 50%; transform: rotate(-24deg);
+}
+.uc .v {
+  position: absolute; inset: 0; display: grid; place-items: center; z-index: 1;
+  font: 900 calc(var(--w) * .5)/1 var(--serif); color: var(--c);
+  -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill;
+}
+.uc .c1, .uc .c2 { position: absolute; font: 900 calc(var(--w) * .2)/1 var(--serif); z-index: 1; color: var(--cream); -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; }
+.uc .c1 { left: 6px; top: 5px; }
+.uc .c2 { right: 6px; bottom: 5px; transform: rotate(180deg); }
+.uc.red { --c: #e8483b; } .uc.yellow { --c: #f7c84b; } .uc.green { --c: #3fb57a; } .uc.blue { --c: #3d8fe0; }
+.uc.wild { --c: #292722; }
+.uc.wild::before {
+  background: conic-gradient(#e8483b 0 25%, #f7c84b 0 50%, #3fb57a 0 75%, #3d8fe0 0);
+}
+.uc.wild .v { color: var(--cream); }
+.uc.back { --c: #292722; }
+.uc.back::before { background: #e8483b; border-color: var(--cream); }
+.uc.back .v { color: var(--yellow); font-size: calc(var(--w) * .26); -webkit-text-stroke: 1.5px var(--ink); transform: rotate(-18deg); }
+/* 短语卡：数字位换成一句话 */
+.uc.phrase::before { left: 8%; right: 8%; top: 22%; bottom: 22%; border-radius: 14px; transform: rotate(-6deg); }
+.uc.phrase .v { font: 900 calc(var(--w) * .15)/1.25 var(--sans); color: var(--ink); -webkit-text-stroke: 0; padding: 0 16%; text-align: center; transform: rotate(-6deg); }
+
+/* ---------- 手牌扇：悬停倾斜上浮、相邻联动 ---------- */
+.fan { display: flex; justify-content: center; align-items: flex-end; }
+.fan > * {
+  margin-left: calc(var(--overlap, -24px)); transition: transform 180ms var(--spring), box-shadow 180ms;
+  transform: translateY(0) rotate(calc((var(--i) - var(--mid)) * var(--tilt, 2deg)));
+  transform-origin: 50% 120%; cursor: pointer;
+}
+.fan > *:first-child { margin-left: 0; }
+.fan > *:hover { transform: translateY(-14px) rotate(calc((var(--i) - var(--mid)) * var(--tilt, 2deg) - 3deg)); z-index: 5; }
+.fan > *.sel { transform: translateY(-26px) rotate(calc((var(--i) - var(--mid)) * var(--tilt, 2deg))); box-shadow: 0 0 0 4px var(--yellow), 0 7px 0 var(--ink); }
+
+/* ---------- 冲屏字 ---------- */
+.slam {
+  position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 90;
+  opacity: 0;
+}
+.slam.run { animation: slam 900ms var(--out) forwards; }
+@keyframes slam {
+  0% { opacity: 0; transform: scale(2.4) rotate(-8deg); }
+  22% { opacity: 1; transform: scale(.94) rotate(-4deg); }
+  32% { transform: scale(1.04) rotate(-4deg); }
+  75% { opacity: 1; transform: scale(1) rotate(-4deg); }
+  100% { opacity: 0; transform: scale(1.02) rotate(-4deg); }
+}
+@keyframes pop { 0% { transform: scale(.4); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+@keyframes flipIn { from { transform: rotateY(90deg); } to { transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; transition: none !important; }
+}

@@ -4,6 +4,8 @@
 
 **执行铁律**：后续所有新建页面、设置面板、模态弹窗、控制台与交互组件，必须严格无条件执行本规范。严禁在 JSX/TSX 中混入随意字面量样式、冷灰扁平框或未对齐的内联暗黑样式。
 
+**设计任务的统一流程（2026-09-26 起对所有 design 生效）**：先读 **[`docs/DESIGN-DIRECTION.md`](DESIGN-DIRECTION.md)（设计基调：要做成什么样）**，再按本文档（用什么令牌和组件做）实现。任何涉及画面的任务——新游戏舞台、既有游戏打磨、大厅/房间/设置页改版、组件新增——都按 **§11 设计交付与视觉验收标准** 走：`HTML 方向稿让用户挑 → 视觉契约 → 实现 → 固定截图组 → 用户看图判定`。机器门通过不等于视觉通过；没有用户看图结论的画面，状态只能是「待用户看图」。这一条与 `AGENTS.md`「视觉验收规范」同源，本文档负责给出设计侧的具体交付物与模板。
+
 ---
 
 ## 1. 核心视觉哲学：实体复古纸质桌游 (Tactile Retro-Party Style)
@@ -13,7 +15,7 @@
 
 ### 1.1 核心隐喻与设计基因
 - **温暖羊皮纸基底 (Warm Parchment Paper)**：全平台以柔和温暖的纸质色调为底，营造如实体派对桌游说明书和游戏卡牌般的自然亲和力。
-- **粗墨黑实体轮廓 (Heavy Solid Inking)**：所有卡片、容器、控件均采用高辨识度的纯墨黑实体描边（`3px / 2.5px`），呈现经典美漫与实体木盒桌游的硬派印制风格。
+- **粗墨黑实体轮廓 (Heavy Solid Inking)**：卡片、容器、控件采用高辨识度的纯墨黑实体描边（`3px / 2.5px`），呈现经典美漫与实体木盒桌游的硬派印制风格。**适用范围（2026-09-26 用户确认）**：平台页与浅色派对表皮游戏的"物件"（牌、席位牌、按钮、弹窗）；深色悬疑表皮游戏改用暗色/金色细边 + 贴纸阴影，见 `DESIGN-DIRECTION.md` §3。游戏内**不得**整页铺奶油底 + 粗墨边 + 大面积黄色（用户已否定）。
 - **实体硬下沉投影 (Tactile Drop-Flat Shadow)**：放弃模糊柔和的现代发散投影，全面采用硬切角实体偏移投影（`0 5px 0` / `0 3px 0`）。
 - **按压实体物理回馈 (Mechanical Tactile Feedback)**：按钮与可点卡片在悬浮（Hover）时轻盈上浮并拉长投影，按下（Active）时物理下沉并收敛阴影至 `1px`，如实体机械按键般扎实清脆。
 
@@ -97,6 +99,41 @@
   --gp-font: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
 }
 ```
+
+### 2.4 舞台层令牌与工具类 (Stage Recipe · 2026-09-26 起为游戏页面必选)
+
+从狼人杀 / 榴莲 / 一智千金三款标杆抽出的共性，已落地在 `game-ui.css` `:root` 与 §9/§10。**新建或打磨任何游戏页面，必须使用这一层，而不是只用 §2.1–2.3 的通用卡片令牌**——只用通用令牌做出来的页面就是被用户反复驳回的「一张卡片居中、四周空白、不像游戏」。
+
+```css
+:root {
+  /* 展示字：仅用于 ≥20px 的标题与数字；正文仍用 --gp-font */
+  --gp-font-display: "Noto Serif SC", Georgia, "Songti SC", "STSong", "SimSun", "Times New Roman", serif;
+
+  /* 舞台光：径向、偏心、8%~12% 强度；各游戏在根节点覆盖 --gp-accent-glow 为 accent + 14 透明度 */
+  --gp-accent-glow: rgba(255, 255, 255, 0.08);
+  --gp-stage-light: radial-gradient(ellipse at 50% 35%, var(--gp-accent-glow), transparent 65%);
+
+  /* 贴纸阴影：硬偏移 + 顶部一线高光，用于席位卡、筹码、道具 */
+  --gp-shadow-sticker: 0 2px 0 rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --gp-shadow-sticker-lift: 0 3px 0 rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  /* 装饰艺术层透明度 */
+  --gp-art-opacity: 0.12;
+}
+```
+
+| 工具类 | 作用 | 何时必用 |
+|---|---|---|
+| `.stage-native-page` | 全屏根节点（`position: fixed; inset: 0; 100dvh`），页面自己占满视口再向下分配 | 每个游戏页面的根，替代「卡片居中在壳里」 |
+| `.stage-eyebrow` / `--accent` | 全大写宽字距 10px 小标题，压在中文标题上方 | 阶段名、区块名 |
+| `.stage-title` / `.stage-numeral` | 衬线展示标题 / 等宽衬线大数字 | 阶段标题、倒计时、分数、赔率 |
+| `.stage-art` | 舞台中央 `currentColor` SVG 或纯 CSS 图形，12% 透明、不接事件、短屏递减 | 每个游戏至少一张专属剪影（大铃、月亮、奶酪、鹅…），这是「填满空白」的那一层 |
+| `.stage-sticker` / `--lift` | 贴纸阴影 + 按压下沉 | 席位卡、筹码、手牌 |
+| `.stage-felt-3d` + `__plane` | 透视毡面（`perspective 900px / rotateX 16deg`，短屏 12°/8°，`off` 档归零），配色由游戏给 `--stage-felt-a/-b/-rail` | 有实体道具在桌面上移动的游戏（G0-3 标 3D 的） |
+| `.stage-flight-layer` | 元素从 A 席飞到 B 处的幽灵层，挂在 `preserve-3d` 子树之外 | 出牌、传递、飞筹码 |
+| `.stage-countdown` | SVG 进度环倒计时（首次见 `deadlineAt` 测满格；10s 紧张态、5s 滴答） | 所有有截止时间的阶段，替代纯文字倒计时 |
+
+**约束**：局部 `--<prefix>-*` 变量只允许布局量，颜色一律走 `--gp-*` / `--game-*`；每款一个 accent，只作描边 / ≥24px 大字，纸底正文禁用 accent。
 
 ---
 
@@ -281,7 +318,7 @@ flowchart LR
   min-height: var(--gp-touch);
   padding: 8px 24px;
   border: var(--gp-border-sm);
-  border-radius: var(--gp-radius-pill);
+  border-radius: var(--gp-radius-md);   /* 2026-09-26 定夺：与 game-ui.css 实现及跨游戏配方断言一致，不用胶囊 */
   background: var(--gp-surface);
   color: var(--gp-ink);
   font-family: var(--gp-font);
@@ -412,7 +449,67 @@ flowchart LR
 
 ---
 
-## 8. 底层舞台与引擎规范索引 (Tabletop Engine Index)
+### 7.5 数字滚动 (`RollingNumber`)
+
+**组件**：`shared-ui/RollingNumber.tsx` ｜ **样式**：`game-ui.css` §6
+
+全平台**所有会变化的数字**（倒计时、积分、就绪人数、结算分数）统一使用该组件，禁止直接渲染裸数字。
+
+```tsx
+<RollingNumber value={score} />                    // 基础
+<RollingNumber value={total} group />              // 千分位 12,480
+<RollingNumber value={sec} padTo={2} />            // 补零 09
+<RollingNumber value={score} suffix="分" />         // 带后缀
+<TabletopCountdownText secondsLeft={n} />          // 倒计时 30s（内置）
+<TabletopCountdownText secondsLeft={n} format="clock" />  // 倒计时 01:30
+```
+
+**动效机制**（iOS 26 风格）：
+
+- **逐位独立**：每位数字独立容器，旧字沿变化反方向滑出、新字同向滑入。**未变化的位完全静止**，这是区别于整体翻牌的关键。
+- **方向感知**：数值增大新字从下方入（`up`），减小从上方入（`down`）。
+- **模糊滑入**：位移同时叠加 `blur(2.5px)` 与透明度过渡。
+- **边缘淡出**：`mask-image` 渐变遮罩，滑入滑出不硬切。
+- **整体呼吸**：变化瞬间 `scale(1.06)`。
+- **时长**：`--rn-dur` → `--gp-dur-phase`；缓动 `--gp-ease-standard`。
+
+**降级契约**（跟随 `html[data-motion-level]`）：
+
+| 档位 | 位移 | 模糊 | 呼吸 |
+|---|---|---|---|
+| `full` | ✅ | ✅ | ✅ |
+| `reduced` | ✅ 时长压缩 | ❌ | ❌ |
+| `minimal` / `off` | ❌ 直接切换 | ❌ | ❌ |
+
+`prefers-reduced-motion: reduce` 同步降级。
+
+---
+
+## 8. 令牌治理记录与遗留项 (Token Governance Log)
+
+### 8.1 已完成清理（2026-09-21）
+
+对 `packages/client/src/styles.css` 执行了一轮令牌收敛，消除文档规范与代码实现之间的漂移：
+
+| 项 | 问题 | 处理 | 验证结果 |
+|---|---|---|---|
+| 1 | `.primary-btn` / `.danger-btn` / `.submit-btn` / `.leave-btn` 使用遗留 `--color-primary: #4f46e5` 靛蓝扁平样式，并继承 `button` 基类的 `1px` 细边与 `8px` 圆角，与本规范 §1 实体复古哲学完全背离 | 迁移至 `--gp-*` 配方：`--gp-yellow` 底 / `--gp-ink` 字 / `--gp-border-sm` 墨边 / `--gp-shadow-sm` 硬投影 / 字重 `900`，并补齐 hover 上浮 `2px`、active 回沉压缩阴影三态 | 浏览器实测 `rgb(247,200,75)`、`box-shadow: 0 3px 0`、`font-weight: 900` |
+| 2 | `--home-yellow` 存在 `#f8c822` / `#ffd43b` 两种 fallback，与权威 `--gp-yellow: #f7c84b` 三值分叉 | 18 处 fallback 全部移除 | 实测解析为 `#f7c84b` |
+| 3 | 墨色 `#312d28` / `#1f1b13` / `#292722` 三值并存：`.game-home-page`、`.room-page`、`.room-page.game-home-page` 各自局部硬编码 `--home-*` / `--room-*`，优先级压过 `:root` | 三处局部定义改为引用权威令牌（`--room-*` 保留为语义别名，指向 `--gp-*`） | 实测 `--home-ink` / `--room-ink` / `--game-ink` 均为 `#292722` |
+| 4 | 245 处 `var(--home-*, #xxx)` / `var(--game-*, #xxx)` 死代码 fallback（仅 `--home-ink` 就有四种不同值），在 `game-ui.css` 于 `:root` 定义令牌后已永不生效，留存徒增误导 | 批量移除 | 剩余 0 处 |
+
+保留的**有效** fallback：`var(--game-accent, #e76835)` —— `--game-accent` 仅在 `.game-card--*` 局部定义，`:root` 无定义，该 fallback 是真实兜底。
+
+### 8.2 遗留项
+
+| 项 | 说明 | 建议 |
+|---|---|---|
+| A | **遗留 `--color-*` 令牌仍与 `--gp-*` 并存于 `:root`**（[styles.css:20-33](../packages/client/src/styles.css#L20)）：靛蓝 `#4f46e5`、中性灰系 `--color-border` / `--color-surface` / `--color-text` 等。`button` 基类仍在引用它们，是 §8.1 第 1 项的根源 | 波及整个客户端，建议单独排期并配合完整视觉基线回归 |
+| B | ~~§7.1 与实现存在圆角分歧~~ **已定夺（2026-09-26）**：主 CTA 采用 `--gp-radius-md`（14px），与 `game-ui.css` 的 `.gp-btn` 实现及斗地主等跨游戏配方一致断言保持一致；§7.1 文档已修订。`--gp-radius-pill` 保留给 Chip / 状态胶囊 | 已关闭 |
+
+---
+
+## 9. 底层舞台与引擎规范索引 (Tabletop Engine Index)
 
 为了保证主设计规范的清晰凝练，涉及游戏舞台的物理仿真力学、三维渲染管线与核心手牌展开算法，统一索引并委托至专精子规范：
 
@@ -437,7 +534,7 @@ flowchart LR
 
 ---
 
-## 9. 规范实施 Do's and Don'ts 总结速查表
+## 10. 规范实施 Do's and Don'ts 总结速查表
 
 | 维度 | ✅ 强烈提倡 (DO) | ❌ 严厉禁止 (DON'T) |
 |---|---|---|
@@ -448,3 +545,79 @@ flowchart LR
 | **前端状态** | 互斥覆盖 loading / empty / error；唯一主导按钮；局部最小忙碌 | 严禁全屏打断式 Loading 遮罩；严禁伪保存按钮；严禁多个并列刺眼主操作 |
 | **响应式适配** | 严格对齐 380/480/640/768/1024/1280px 与 520/620px 白名单断点 | 严禁在 CSS 中随意写入 500px、900px 等非标准魔数断点 |
 | **视口与滚动** | 外层单屏沉浸，零横向溢出；局部内部长内容使用 5px 美学细滑块 | 严禁页面级出现双重滚动条或手机端横向被撑开横滑 |
+| **游戏舞台** | 根节点 `.stage-native-page`；至少一张 `.stage-art` 专属剪影；标题/数字走 `--gp-font-display`；有截止的阶段用 `.stage-countdown` | 严禁只用 `.gp-panel` 居中一张卡片当游戏页；严禁纯文字倒计时；严禁局部变量定义颜色 |
+| **视觉验收** | 先写契约再实现；每轮固定截图组 + 对照物 + 绝对路径；视觉项只写「待用户看图 / 已确认 / 驳回」 | 严禁 AI 自评 PASS / 已就绪 / 已对齐标杆；严禁凭 DOM 或代码量推断画面；严禁自动接受新基线 |
+
+---
+
+## 11. 设计交付与视觉验收标准 (Design Delivery & Visual Acceptance)
+
+本章是所有 design 任务的**统一工作流**，与 `AGENTS.md`「视觉验收规范」同源：AGENTS.md 规定「不许做什么」，本章规定「每一步交付什么」。2026-09-26 起，新游戏、既有游戏打磨、平台页改版、组件新增一律按此执行；不按此流程产出的画面不进入任何「完成」统计。
+
+### 11.1 四步流程
+
+```
+⓪ HTML 方向稿 ──► ① 视觉契约 ──► ② 实现 ──► ③ 固定截图组 ──► ④ 用户看图判定
+ (2–3 个让用户挑)   (写清要长什么样)   (机器门全绿)   (关键时刻两档视口)   (唯一的视觉通过来源)
+        ▲                                                                   │
+        └──────────── 驳回：记原话，回到⓪或①，下一轮给 before/after ─────────┘
+```
+
+| 步骤 | 交付物 | 通过条件 | 不合格时 |
+|---|---|---|---|
+| ⓪ HTML 方向稿 | `docs/ui-preview/<game>/directions/*.html`，按 `DESIGN-DIRECTION.md` §6–§7 | 用户挑定一个方向 | 不写契约、不动正式代码 |
+| ① 视觉契约 | `docs/plans/<计划>/contracts/<页面或游戏>.md`，按 §11.2 模板 | 用户确认过契约方向（哪怕一句「按这个做」） | 只能做基线勘察与不依赖契约的重构，不进实现 |
+| ② 实现 | 代码 + 机器门：`npm run typecheck`、断点/裸色契约单测、`e2e/game-viewport-contract.spec.ts`、`e2e/motion-contract.spec.ts`、`npm run build` | 全部退出码 0 | 修到全绿再进 ③；不得跳过 ③ 直接报完成 |
+| ③ 固定截图组 | 按 §11.3 采集，落固定目录，报告列绝对路径与对照物 | 每张都有关键时刻、有真实数据、有对照物 | 缺任何一项视为未交付 |
+| ④ 用户看图判定 | 用户原话记入报告/STATUS，状态更新为 `用户已确认（日期）` 或 `用户驳回（原话）` | 用户明确说合格 | 按 §11.5 迭代 |
+
+### 11.2 视觉契约模板（步骤 ①）
+
+每份契约必须包含以下六节，缺一节不算契约（参照 `docs/plans/2026-09-22-game-ui-uplift/contracts/bell-clash.md` 与 `docs/plans/2026-09-20-wits-wagers/03-visual-contract.md`）：
+
+1. **设计方向**：一句话隐喻（"派对牌桌"、"审讯室长桌"、"宫廷书信桌"）+ 3D/平面档位 + 对标的标杆游戏（狼人杀 / 榴莲 / 一智千金之一）。
+2. **状态模型**：驱动画面的服务端字段列表，每个字段对应哪些画面变化；有 `deadlineAt` 的阶段必须标注。
+3. **色值**：只列 `--gp-*` / `--game-*` 令牌及本游戏 accent；3D 毡面给 `--stage-felt-a/-b/-rail` 三值；不得出现新字面量色。
+4. **三张关键画面**：文字描述每张画面在 `1280x800` 与 `390x844` 下的布局——中央是什么、席位怎么排、主 CTA 在哪、`.stage-art` 用什么剪影、数字用什么字号。这三张就是步骤 ③ 必须截到的画面。
+5. **动效与音效**：关键时刻演出（飞行、翻转、震动）各自在 `default / reduced / minimal / off` 四档的行为。
+6. **验收矩阵**：截图视口清单、fixture 说明（人数、昵称、牌面/分数）、对照物路径。
+
+### 11.3 固定截图组规范（步骤 ③）
+
+- **视口**：至少 `1280x800` 与 `390x844`；契约另有横屏/矮屏要求时追加 `844x390`。
+- **画面**：契约 §4 的三张关键画面每张一套，共 ≥6 张；只有空房间、大厅、加载态的截图不计数。
+- **数据**：席位数 ≥ 规则最低人数，固定 fixture（真实昵称、牌面、分数），动画静止后采集，倒计时/随机名可 mask 但不得整屏 mask。
+- **目录**：本计划 README 约定的固定目录（当前 UI 打磨为 `docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/`，大富翁为 `output/richman-research/review/<轮次>/`），文件名 `<game>-<画面>-<宽x高>.png`。
+- **对照物**：每张截图旁写明比对目标——契约 §4 对应段落，或标杆游戏同视口截图的路径。
+- **描述**：AI 只做事实性描述（"中央木托盘大铃，左侧 5 个席位，底部 1 个黄色 CTA"），不写评价词。
+
+### 11.4 报告模板（步骤 ③ 产出，步骤 ④ 回填）
+
+```markdown
+## 机器门
+| 项 | 结果 | 命令 / 退出码 |
+| typecheck | PASS | ... |
+| viewport-contract | PASS 20/20 | ... |
+
+## 视觉判定（状态：待用户看图）
+| 画面 | 截图绝对路径 | 对照物 | 事实描述 | 用户结论 |
+| 答题 1280x800 | D:\项目\...\wits-answering-1280x800.png | 03-visual-contract.md §4.1 | 中央题板、8 席位环、底部黄色提交钮 | （空，等用户） |
+
+## 用户看图记录
+- 2026-09-26 用户：「...原话...」 → 状态改为 用户驳回 / 用户已确认
+```
+
+机器门表与视觉判定表**不得合并**；视觉判定表的「用户结论」列在用户回话前保持为空，不得由 AI 填写。
+
+### 11.5 驳回后的迭代规则（步骤 ④）
+
+- 用户原话逐字记入报告「用户看图记录」与计划 STATUS。
+- 下一轮同一画面必须给 **before / after 同视口两张**并列，不得只给 after。
+- 连续两轮同一画面被驳回且无进展，停止盲试，回到步骤 ① 修契约并请用户重新确认方向。
+- 完成度以用户最近一次看图评价为准；AI 自估与用户评价相差 >30 个百分点时以用户为准。
+
+### 11.6 与既有计划的对接
+
+- `docs/plans/2026-09-22-game-ui-uplift/`：`contracts/` 只有 P1 三款（bell-clash / echo-judge / night-testimony）的契约，六节齐全但尚未经用户确认；loveletter / cheese-thief / goose-relay / uno / undercover / landlord 与 V01–V06 打磨**没有契约，属于先实现后补契约的欠账**，下一轮打磨前先按 §11.2 补齐并请用户确认。V07 报告 §4 状态为「待用户看图」。
+- `docs/plans/2026-09-20-wits-wagers/`：`03-visual-contract.md` 即契约，G3 门即步骤 ④。
+- 大富翁 `docs/plans/2026-09-25-richman/03-quality-plan.md`：截图组目录已约定，报告按 §11.4 模板。

@@ -11,9 +11,11 @@ const bellClashConfigSchema = z
     rulesetId: z.literal('bell_clash_v1').optional(),
     handSize: z.number().int().min(1).max(12).default(8),
     turnSeconds: seconds.default(30),
-    bellSeconds: seconds.default(10),
+    challengeSeconds: z.number().int().min(1).max(30).default(3),
+    bellSeconds: z.number().optional(), // 兼容旧房间配置，忽略不报错
   })
-  .passthrough();
+  .passthrough()
+  .transform(({ bellSeconds: _ignored, ...rest }) => rest as ResolvedBellClashConfig);
 
 const bellClashActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('begin') }).strict('动作 字段无效'),
@@ -21,14 +23,13 @@ const bellClashActionSchema = z.discriminatedUnion('type', [
     .object({ type: z.literal('play_card'), playerId: pid, cardIndex: z.number().int().nonnegative() })
     .strict('动作 字段无效'),
   z.object({ type: z.literal('draw_card'), playerId: pid }).strict('动作 字段无效'),
-  z.object({ type: z.literal('ring_bell'), playerId: pid }).strict('动作 字段无效'),
   z
-    .object({
-      type: z.literal('resolve_bell'),
-      // 空字符串表示无人拍铃（哨兵）；非空必须是合法玩家 ID
-      claimantId: z.string().max(64),
-    })
+    .object({ type: z.literal('ring_bell'), playerId: pid, cardIndex: z.number().int().nonnegative() })
     .strict('动作 字段无效'),
+  z
+    .object({ type: z.literal('challenge_vote'), playerId: pid, doubt: z.boolean() })
+    .strict('动作 字段无效'),
+  z.object({ type: z.literal('challenge_timeout') }).strict('动作 字段无效'),
   z.object({ type: z.literal('turn_timeout'), playerId: pid }).strict('动作 字段无效'),
   z
     .object({

@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>以鹅传鹅 · C 深夜案情墙</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  /* C 深夜案情墙（深色悬疑表皮）：鹅村警局的深夜，一面软木案情墙。
+     每只鹅是一张钉在墙上的拍立得，红线按接力顺序把它们串起来；
+     正在表演的那张被台灯照亮、放大取下，正中央是一张盖着"绝密"的案情卡背面（没人能看）。
+     细金边 + 贴纸阴影，不上粗黑边（C2）。 */
+  :root {
+    --night: #15161c; --night-2: #1f2029;
+    --cork: #6b4a31; --cork-2: #5a3d28;
+    --gold: #d9b35c; --gold-soft: rgba(217,179,92,.35);
+    --paper: #efe6d2; --paper-ink: #2b2620;
+    --thread: #c9423a;
+    --dim: rgba(239,230,210,.6);
+    --sticker: 0 6px 16px rgba(0,0,0,.45), 0 1px 0 rgba(0,0,0,.4);
+  }
+
+  /* ---------- 场景 ---------- */
+  .device { background: var(--night); color: var(--paper); }
+  .wall {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 55% at 50% 44%, rgba(255,214,140,.22), transparent 70%),
+      radial-gradient(circle at 20% 30%, rgba(0,0,0,.18) 0 1.5px, transparent 2px) 0 0/14px 12px,
+      radial-gradient(circle at 70% 70%, rgba(255,255,255,.05) 0 1.5px, transparent 2px) 0 0/18px 16px,
+      linear-gradient(var(--cork), var(--cork-2));
+  }
+  .frame { position: absolute; inset: 18px 18px 110px; border: 1.5px solid var(--gold-soft); border-radius: 6px; box-shadow: inset 0 0 80px rgba(0,0,0,.55); }
+  .vignette { position: absolute; inset: 0; background: radial-gradient(ellipse 75% 70% at 50% 45%, transparent 55%, rgba(0,0,0,.6)); pointer-events: none; }
+  .floor { position: absolute; left: 0; right: 0; bottom: 0; height: 110px; background: linear-gradient(#2a2421, #17130f); border-top: 1.5px solid var(--gold-soft); }
+  .lamp {
+    position: absolute; left: 50%; top: -30px; translate: -50% 0; width: 180px; height: 70px;
+    background: #2c2d36; border: 1.5px solid var(--gold); border-radius: 0 0 90px 90px; z-index: 1;
+  }
+  .lamp::after { content: ""; position: absolute; left: 50%; bottom: -8px; translate: -50% 0; width: 60px; height: 14px; border-radius: 50%; background: #ffe7a8; box-shadow: 0 0 40px 12px rgba(255,220,140,.5); }
+  .scrawl { position: absolute; font: 700 18px var(--serif); color: rgba(239,230,210,.18); rotate: -6deg; letter-spacing: .1em; }
+
+  /* ---------- 红线 ---------- */
+  .links path { fill: none; stroke-linecap: round; }
+  .links path[data-layer="thread"] { stroke: var(--thread); stroke-width: 2.5; opacity: .45; }
+  .links path.done[data-layer="thread"] { opacity: 1; }
+  .links path.next[data-layer="thread"] { opacity: 1; stroke-width: 3.5; stroke-dasharray: 8 7; animation: march 700ms linear infinite; filter: drop-shadow(0 0 4px rgba(201,66,58,.8)); }
+
+  /* ---------- 席位：拍立得 ---------- */
+  .polaroid {
+    position: relative; width: 104px; padding: 6px 6px 8px; background: var(--paper); color: var(--paper-ink);
+    border: 1px solid rgba(217,179,92,.6); border-radius: 3px; box-shadow: var(--sticker); rotate: var(--r, 0deg);
+    transition: transform 220ms cubic-bezier(.34,1.56,.64,1), filter 220ms, opacity 220ms;
+  }
+  .polaroid .pic { height: 92px; overflow: hidden; background: #222; border-radius: 1px; }
+  .polaroid .pic img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 28%; display: block; }
+  .polaroid .name { margin-top: 5px; font: 700 14px/1.2 var(--serif); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .polaroid .pin {
+    position: absolute; left: 50%; top: -7px; translate: -50% 0; width: 14px; height: 14px; border-radius: 50%; z-index: 2;
+    background: radial-gradient(circle at 35% 35%, #ff8a7a, var(--thread) 60%, #7a1f1a); box-shadow: 0 2px 3px rgba(0,0,0,.5);
+  }
+  .polaroid .no {
+    position: absolute; right: -8px; top: -8px; min-width: 26px; height: 26px; padding: 0 6px; display: grid; place-items: center; z-index: 2;
+    background: var(--night-2); color: var(--gold); border: 1px solid var(--gold); border-radius: 999px; font: 700 13px var(--serif);
+  }
+  .polaroid .stamp {
+    position: absolute; left: 50%; top: 42%; translate: -50% -50%; rotate: -14deg; display: none; z-index: 3;
+    padding: 2px 8px; border: 2px solid var(--thread); color: var(--thread); font: 900 14px var(--serif); letter-spacing: .2em; background: rgba(239,230,210,.85);
+  }
+  .polaroid.is-me .name::after { content: " · 你"; color: var(--thread); }
+  .polaroid.is-head .no { background: var(--gold); color: var(--night); }
+  .polaroid.is-done { filter: grayscale(.85) brightness(.75); }
+  .polaroid.is-done .stamp { display: block; }
+  .polaroid.is-done .stamp::before { content: "已传"; }
+  .polaroid.is-active { transform: scale(1.12); box-shadow: 0 0 0 2px var(--gold), 0 0 26px 6px rgba(255,214,140,.45), var(--sticker); z-index: 5; }
+  .polaroid.is-next { box-shadow: 0 0 0 1.5px var(--gold), var(--sticker); }
+  .polaroid.is-next::after {
+    content: "盯着看"; position: absolute; left: 50%; bottom: -14px; translate: -50% 0; white-space: nowrap;
+    padding: 2px 8px; background: var(--night-2); color: var(--gold); border: 1px solid var(--gold); border-radius: 999px; font: 700 11px var(--sans);
+  }
+  .polaroid.is-me.is-next::after { content: "你在看"; }
+  .polaroid:not(.is-done):not(.is-active):hover { transform: translateY(-6px) rotate(-2deg); }
+  [data-size="mobile"] .polaroid { width: 64px; padding: 4px 4px 5px; }
+  [data-size="mobile"] .polaroid .pic { height: 54px; }
+  [data-size="mobile"] .polaroid .name { font-size: 11px; margin-top: 3px; }
+  [data-size="mobile"] .polaroid .no { min-width: 20px; height: 20px; font-size: 11px; right: -6px; top: -6px; padding: 0 4px; }
+  [data-size="mobile"] .polaroid .stamp { font-size: 10px; padding: 1px 4px; letter-spacing: .1em; }
+  [data-size="mobile"] .polaroid.is-me .name::after { content: ""; }
+  [data-size="mobile"] .polaroid.is-me { box-shadow: 0 0 0 2px var(--thread), var(--sticker); }
+  [data-size="mobile"] .polaroid.is-next::after { font-size: 9px; padding: 1px 5px; bottom: -11px; }
+
+  /* ---------- 中央：台灯下的表演者 + 绝密案情 ---------- */
+  .center {
+    position: absolute; left: 50%; top: 214px; translate: -50% 0; width: 440px; display: grid; justify-items: center; z-index: 4;
+  }
+  .kicker { font: 700 13px var(--sans); letter-spacing: .3em; color: var(--gold); }
+  .center .title { margin-top: 6px; font-size: 40px; color: var(--paper); text-shadow: 0 2px 12px rgba(0,0,0,.6); white-space: nowrap; }
+  .center .hint { margin-top: 6px; font-size: 15px; color: var(--dim); font-weight: 600; text-align: center; }
+  .spotlit { margin-top: 20px; display: flex; align-items: flex-end; gap: 22px; }
+  .hero {
+    position: relative; width: 200px; padding: 9px 9px 36px; background: var(--paper); color: var(--paper-ink);
+    border: 1px solid var(--gold); border-radius: 3px; box-shadow: 0 0 0 1px rgba(0,0,0,.4), 0 18px 40px rgba(0,0,0,.6); rotate: -3deg;
+  }
+  .hero .pic { height: 210px; overflow: hidden; background: #222; }
+  .hero .pic img { width: 100%; height: 100%; object-fit: cover; display: block; animation: sway 1.1s ease-in-out infinite; transform-origin: 50% 100%; }
+  .hero .cap { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font: 700 17px var(--serif); }
+  .hero .tape { position: absolute; top: -12px; left: 50%; translate: -50% 0; rotate: 3deg; width: 90px; height: 24px; background: rgba(239,230,210,.55); border: 1px solid rgba(217,179,92,.4); }
+  .secret {
+    position: relative; width: 132px; height: 184px; border-radius: 8px; rotate: 5deg; display: grid; place-items: center; text-align: center;
+    background: repeating-linear-gradient(135deg, #25262f 0 10px, #2c2d38 10px 20px); border: 1px solid var(--gold); box-shadow: var(--sticker);
+  }
+  .secret .seal { font: 900 22px var(--serif); color: var(--thread); border: 2px solid var(--thread); padding: 4px 10px; rotate: -10deg; letter-spacing: .2em; }
+  .secret small { position: absolute; bottom: 12px; left: 0; right: 0; font: 600 12px var(--sans); color: var(--dim); }
+  .hero.empty { display: grid; place-items: center; height: 300px; }
+  .hero.empty span { font: 700 26px var(--serif); }
+
+  .progress { position: absolute; left: 44px; top: 38px; z-index: 4; }
+  .progress .numeral { font-size: 48px; color: var(--gold); }
+  .progress .of { font: 700 20px var(--serif); color: var(--dim); }
+  .progress small { display: block; margin-top: 4px; font: 700 12px var(--sans); letter-spacing: .24em; color: var(--dim); }
+
+  .countdown { background: rgba(21,22,28,.85); border-radius: 50%; }
+  .countdown .ring-bg { stroke: rgba(239,230,210,.14); } .countdown .ring-fg { stroke: var(--gold); }
+  .countdown .num { color: var(--paper); }
+  .countdown.last10 .ring-fg { stroke: var(--thread); }
+  #cd { right: 44px; top: 34px; }
+
+  /* ---------- 操作坞 ---------- */
+  .dock {
+    position: absolute; left: 50%; bottom: 24px; translate: -50% 0; width: 780px; z-index: 6;
+    display: flex; align-items: center; gap: 14px; padding: 10px 12px 10px 18px;
+    background: rgba(31,32,41,.92); border: 1px solid var(--gold-soft); border-radius: 16px; box-shadow: var(--sticker);
+  }
+  .dock .role { font: 700 14px var(--sans); color: var(--dim); }
+  .dock .role b { color: var(--paper); font-family: var(--serif); font-size: 17px; margin-left: 4px; }
+  .dock .info { flex: 1; font: 600 13px var(--sans); color: var(--dim); }
+  .dock .btn { border: 1px solid var(--gold); box-shadow: 0 3px 0 rgba(0,0,0,.5); }
+  .dock .btn:disabled { background: transparent; color: var(--dim); border-color: var(--gold-soft); box-shadow: none; }
+  .dock .btn-primary:not(:disabled) { color: var(--night); }
+  .dock .btn-primary:not(:disabled):hover { transform: translateY(-2px); }
+  .dock .btn-primary:not(:disabled):active { transform: translateY(2px); box-shadow: none; }
+
+  .clip { width: 38px; height: 38px; }
+
+  /* ---------- 手机 ---------- */
+  [data-size="mobile"] .frame { inset: 10px 10px 120px; }
+  [data-size="mobile"] .floor { height: 120px; }
+  [data-size="mobile"] .lamp { width: 120px; height: 50px; top: 262px; display: none; }
+  [data-size="mobile"] .scrawl { display: none; }
+  [data-size="mobile"] .center { top: 322px; width: 370px; }
+  [data-size="mobile"] .kicker { font-size: 11px; }
+  [data-size="mobile"] .center .title { font-size: 30px; }
+  [data-size="mobile"] .center .hint { font-size: 13px; padding: 0 8px; }
+  [data-size="mobile"] .spotlit { margin-top: 14px; gap: 14px; }
+  [data-size="mobile"] .hero { width: 150px; padding: 6px 6px 28px; }
+  [data-size="mobile"] .hero .pic { height: 168px; }
+  [data-size="mobile"] .hero .cap { font-size: 14px; bottom: 6px; }
+  [data-size="mobile"] .hero.empty { height: 210px; }
+  [data-size="mobile"] .secret { width: 96px; height: 134px; }
+  [data-size="mobile"] .secret .seal { font-size: 16px; padding: 3px 6px; }
+  [data-size="mobile"] .secret small { font-size: 10px; bottom: 8px; }
+  [data-size="mobile"] .progress { left: 20px; top: 22px; }
+  [data-size="mobile"] .progress .numeral { font-size: 34px; }
+  [data-size="mobile"] .progress .of { font-size: 15px; }
+  [data-size="mobile"] #cd { right: 20px; top: 18px; width: 64px; height: 64px; }
+  [data-size="mobile"] #cd .num { font-size: 24px; }
+  [data-size="mobile"] .dock { width: 366px; bottom: 14px; flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
+  [data-size="mobile"] .dock .info { display: none; }
+  [data-size="mobile"] .dock .btn { flex: 1 0 100%; }
+
+  @keyframes march { to { stroke-dashoffset: -30; } }
+  @keyframes sway { 0%, 100% { rotate: -3deg; } 50% { rotate: 3deg; } }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>C · 深夜案情墙</strong>
+  <span class="note">深色悬疑 ｜ 对标：狼人杀（暗场景 + 舞台光 + 细金边） ｜ 区别：鹅是钉在软木墙上的拍立得，红线串起接力顺序；台灯下放大表演者，旁边是谁都不能看的绝密案情</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile" aria-pressed="false">手机 390×844</button></div>
+  <div class="group"><button data-set-count="5">5 人</button><button data-set-count="7">7 人</button><button data-set-count="9">9 人</button></div>
+  <div class="group"><button data-act="next">下一棒 ▶</button><button data-act="myturn">跳到我</button><button data-act="last5">最后 5 秒</button><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="wall"></div>
+  <div class="frame"></div>
+  <div class="floor"></div>
+  <span class="scrawl" style="left:120px;top:560px">凶手是谁？</span>
+  <span class="scrawl" style="right:130px;top:590px;rotate:5deg">谁在说谎……</span>
+  <div class="lamp"></div>
+
+  <svg class="links" aria-hidden="true"></svg>
+  <div class="seats"></div>
+
+  <div class="progress" data-box="progress"><span class="numeral" id="prog"></span><span class="of" id="of"></span><small>静默传递</small></div>
+  <div class="countdown" id="cd" data-box="countdown">
+    <svg viewBox="0 0 84 84"><circle class="ring-bg" cx="42" cy="42" r="34"/><circle class="ring-fg" cx="42" cy="42" r="34"/></svg>
+    <span class="num numeral">30</span>
+  </div>
+
+  <div class="center" data-box="center">
+    <div class="kicker">RELAY · 只许比划，不许说字</div>
+    <h1 class="title" id="headline"></h1>
+    <div class="hint" id="hint"></div>
+    <div class="spotlit" id="spot"></div>
+  </div>
+
+  <div class="dock" data-box="dock">
+    <div class="role">你的身份<b>白鹅</b></div>
+    <div class="info">恶鹅藏在队伍里，会故意演歪</div>
+    <button class="btn btn-primary" id="act-pass"></button>
+  </div>
+</div></div>
+
+<script>
+  const CLIP = `<svg class="clip" viewBox="0 0 38 38" aria-hidden="true">
+    <circle cx="19" cy="19" r="14" fill="#c9423a" stroke="#d9b35c" stroke-width="2"/>
+    <circle cx="14" cy="14" r="4" fill="#ff9c8f"/>
+  </svg>`;
+  const ROT = [-4, 3, -2, 5, -3, 2, -5, 4, -1];
+
+  window.DESIGN = {
+    linkLayers: ['thread'],
+    seat: (p) => `<div class="polaroid" style="--r:${ROT[p.i]}deg">
+      <span class="pin"></span><span class="no">${p.head ? '头鹅' : p.seatNo}</span>
+      <div class="pic"><img src="${p.img}" alt="${p.goose}"></div>
+      <div class="name">${p.name}</div><span class="stamp"></span></div>`,
+    layout(size, n, w, h) {
+      if (size === 'desktop') {
+        // 左列自下而上 → 顶排左到右 → 右列自上而下：一个倒 U 串起整面墙
+        const pts = GR.ellipsePoints(640, 420, 540, 324, n, Math.PI * 0.86, Math.PI * 2.14);
+        return pts.map((p) => ({ x: p.x, y: Math.min(p.y, 560) }));
+      }
+      const top = Math.ceil(n / 2), rest = n - top;
+      const row = (k, count, y, rtl) => {
+        const x = count === 1 ? w / 2 : 44 + (302 * k) / (count - 1);
+        return { x: rtl ? w - x : x, y };
+      };
+      return Array.from({ length: n }, (_, i) => (i < top ? row(i, top, 136, false) : row(i - top, rest, 240, true)));
+    },
+    linkPath(a, b) {
+      // 红线从图钉到图钉，自然下垂
+      const ay = a.y - (document.querySelector('.device').dataset.size === 'mobile' ? 44 : 60);
+      const by = b.y - (document.querySelector('.device').dataset.size === 'mobile' ? 44 : 60);
+      const sag = Math.min(40, Math.hypot(b.x - a.x, by - ay) * 0.18);
+      return `M${a.x} ${ay} Q${(a.x + b.x) / 2} ${(ay + by) / 2 + sag} ${b.x} ${by}`;
+    },
+    batonSelector: '.pic',
+    baton: () => CLIP,
+    onState(c) {
+      document.getElementById('headline').textContent = c.headline;
+      document.getElementById('hint').textContent = c.hint;
+      document.getElementById('prog').textContent = c.finished ? c.n : c.state.cur + 1;
+      document.getElementById('of').textContent = ` / ${c.n}`;
+      const spot = document.getElementById('spot');
+      if (c.finished) {
+        spot.innerHTML = `<div class="hero empty" data-swap><span>链条已完整</span></div>`;
+        return;
+      }
+      const p = c.performer;
+      spot.innerHTML = `<div class="hero" data-swap><span class="tape"></span>
+          <div class="pic"><img src="${p.img}" alt="${p.goose}"></div>
+          <div class="cap">${p.me ? '你' : p.name} · 表演中</div></div>
+        <div class="secret"><span class="seal">绝密</span><small>${p.head ? '只有头鹅看过' : '案情卡 · 无人可看'}</small></div>`;
+    },
+  };
+</script>
+<script src="_shared.js"></script>
+</body>
+</html>

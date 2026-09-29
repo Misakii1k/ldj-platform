@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>以鹅传鹅 · D 案情墙手牌（B + C 融合稿）</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  /* D 案情墙手牌（深色悬疑表皮）= C 的世界 + B 的构图。
+     世界：鹅村警局深夜的软木墙，台灯一束顶光；物件是细金边拍立得 + 红色图钉 + 红线（C2 深色细边）。
+     构图：全员拍立得沿墙底钉成一排"手牌"，红线按接力顺序穿过图钉；传完的变灰盖"已传"。
+           正在演的和正在看的两张被"取下"放大到中央面对面，中间是谁都不能看的绝密案情卡，红线从演的牵到看的。 */
+  :root {
+    --night: #15161c; --night-2: #1f2029;
+    --cork: #6b4a31; --cork-2: #5a3d28;
+    --gold: #d9b35c; --gold-soft: rgba(217,179,92,.35);
+    --paper: #efe6d2; --paper-ink: #2b2620;
+    --thread: #c9423a;
+    --dim: rgba(239,230,210,.62);
+    --sticker: 0 6px 16px rgba(0,0,0,.45), 0 1px 0 rgba(0,0,0,.4);
+  }
+
+  /* ---------- 场景 ---------- */
+  .device { background: var(--night); color: var(--paper); }
+  .wall {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 52% 50% at 50% 42%, rgba(255,214,140,.26), transparent 72%),
+      radial-gradient(circle at 20% 30%, rgba(0,0,0,.18) 0 1.5px, transparent 2px) 0 0/14px 12px,
+      radial-gradient(circle at 70% 70%, rgba(255,255,255,.05) 0 1.5px, transparent 2px) 0 0/18px 16px,
+      linear-gradient(var(--cork), var(--cork-2));
+  }
+  .frame { position: absolute; inset: 18px 18px 96px; border: 1.5px solid var(--gold-soft); border-radius: 6px; box-shadow: inset 0 0 90px rgba(0,0,0,.6); pointer-events: none; }
+  .floor { position: absolute; left: 0; right: 0; bottom: 0; height: 96px; background: linear-gradient(#2a2421, #17130f); border-top: 1.5px solid var(--gold-soft); }
+  .lamp {
+    position: absolute; left: 50%; top: -34px; translate: -50% 0; width: 170px; height: 64px;
+    background: #2c2d36; border: 1.5px solid var(--gold); border-radius: 0 0 90px 90px; z-index: 1;
+  }
+  .lamp::after { content: ""; position: absolute; left: 50%; bottom: -8px; translate: -50% 0; width: 56px; height: 12px; border-radius: 50%; background: #ffe7a8; box-shadow: 0 0 40px 12px rgba(255,220,140,.5); }
+  .scrawl { position: absolute; font: 700 18px var(--serif); color: rgba(239,230,210,.16); rotate: -6deg; letter-spacing: .1em; }
+  .note-pin {
+    position: absolute; width: 120px; padding: 10px 10px 12px; background: #e9d98a; color: var(--paper-ink); rotate: 4deg;
+    font: 700 13px/1.4 var(--serif); box-shadow: var(--sticker); opacity: .55;
+  }
+
+  /* ---------- 手牌红线：穿过每张拍立得的图钉 ---------- */
+  .links path { fill: none; stroke-linecap: round; }
+  .links path[data-layer="thread"] { stroke: var(--thread); stroke-width: 2.5; opacity: .4; }
+  .links path.done[data-layer="thread"] { opacity: 1; }
+  .links path.next[data-layer="thread"] { opacity: 1; stroke-width: 3.5; stroke-dasharray: 8 7; animation: march 700ms linear infinite; filter: drop-shadow(0 0 4px rgba(201,66,58,.8)); }
+
+  /* ---------- 手牌：钉在墙底的拍立得 ---------- */
+  .polaroid {
+    position: relative; width: 100px; padding: 6px 6px 8px; background: var(--paper); color: var(--paper-ink);
+    border: 1px solid rgba(217,179,92,.6); border-radius: 3px; box-shadow: var(--sticker); rotate: var(--r, 0deg);
+    transition: transform 220ms cubic-bezier(.34,1.56,.64,1), filter 220ms, box-shadow 220ms;
+  }
+  .polaroid .pic { height: 84px; overflow: hidden; background: #222; border-radius: 1px; }
+  .polaroid .pic img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 28%; display: block; }
+  .polaroid .name { margin-top: 5px; font: 700 14px/1.2 var(--serif); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .polaroid .pin {
+    position: absolute; left: 50%; top: -7px; translate: -50% 0; width: 14px; height: 14px; border-radius: 50%; z-index: 2;
+    background: radial-gradient(circle at 35% 35%, #ff8a7a, var(--thread) 60%, #7a1f1a); box-shadow: 0 2px 3px rgba(0,0,0,.5);
+  }
+  .polaroid .no {
+    position: absolute; left: -8px; top: -8px; min-width: 26px; height: 26px; padding: 0 6px; display: grid; place-items: center; z-index: 2;
+    background: var(--night-2); color: var(--gold); border: 1px solid var(--gold); border-radius: 999px; font: 700 13px var(--serif);
+  }
+  .polaroid .stamp {
+    position: absolute; left: 50%; top: 40%; translate: -50% -50%; rotate: -14deg; display: none; z-index: 3;
+    padding: 2px 8px; border: 2px solid var(--thread); color: var(--thread); font: 900 14px var(--serif); letter-spacing: .2em; background: rgba(239,230,210,.85);
+  }
+  .polaroid .flag {
+    position: absolute; left: 50%; bottom: -13px; translate: -50% 0; display: none; white-space: nowrap; z-index: 3;
+    padding: 2px 8px; background: var(--night-2); color: var(--gold); border: 1px solid var(--gold); border-radius: 999px; font: 700 11px var(--sans);
+  }
+  .polaroid.is-me { box-shadow: 0 0 0 2px var(--thread), var(--sticker); }
+  .polaroid.is-me .name::after { content: " · 你"; color: var(--thread); }
+  .polaroid.is-head .no { background: var(--gold); color: var(--night); }
+  .polaroid.is-done { filter: grayscale(.85) brightness(.72); transform: translateY(8px); }
+  .polaroid.is-done .stamp { display: block; }
+  .polaroid.is-done .stamp::before { content: "已传"; }
+  /* 被"取下"到中央的两张：手牌里原位变成虚线空位，照片淡出 */
+  .polaroid.is-active, .polaroid.is-next { transform: translateY(-14px); box-shadow: 0 0 0 1.5px var(--gold), 0 0 22px 4px rgba(255,214,140,.35), var(--sticker); }
+  .polaroid.is-active .flag, .polaroid.is-next .flag { display: block; }
+  .polaroid.is-active .flag::before { content: "表演中 ↑"; }
+  .polaroid.is-next .flag::before { content: "在看 ↑"; }
+  .polaroid.is-me.is-next .flag::before { content: "你在看 ↑"; }
+  .polaroid.is-me.is-active .flag::before { content: "你在演 ↑"; }
+  .polaroid:not(.is-done):not(.is-active):not(.is-next):hover { transform: translateY(-10px) rotate(-2deg); }
+  [data-size="mobile"] .polaroid { width: 62px; padding: 4px 4px 5px; }
+  [data-size="mobile"] .polaroid .pic { height: 50px; }
+  [data-size="mobile"] .polaroid .name { font-size: 11px; margin-top: 3px; }
+  [data-size="mobile"] .polaroid .no { min-width: 20px; height: 20px; font-size: 11px; left: -6px; top: -6px; padding: 0 4px; }
+  [data-size="mobile"] .polaroid .stamp { font-size: 10px; padding: 1px 4px; letter-spacing: .1em; }
+  [data-size="mobile"] .polaroid.is-me .name::after { content: ""; }
+  [data-size="mobile"] .polaroid .flag { font-size: 9px; padding: 1px 5px; bottom: -11px; }
+  [data-size="mobile"] .polaroid.is-active, [data-size="mobile"] .polaroid.is-next { transform: translateY(-8px); }
+
+  /* ---------- 顶部：标题 ---------- */
+  .head { position: absolute; left: 50%; top: 44px; translate: -50% 0; width: 700px; text-align: center; z-index: 4; }
+  .kicker { font: 700 13px var(--sans); letter-spacing: .3em; color: var(--gold); }
+  .head .title { margin-top: 6px; font-size: 42px; color: var(--paper); text-shadow: 0 2px 12px rgba(0,0,0,.6); }
+  .head .hint { margin-top: 6px; font-size: 15px; color: var(--dim); font-weight: 600; }
+
+  /* ---------- 中央：演的 · 绝密卡 · 看的 ---------- */
+  .duo {
+    position: absolute; left: 50%; top: 190px; translate: -50% 0; width: 820px; height: 320px; z-index: 4;
+    display: grid; grid-template-columns: 1fr 200px 1fr; align-items: center; justify-items: center;
+  }
+  .duo-thread { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: -1; }
+  .duo-thread path { fill: none; stroke: var(--thread); stroke-width: 3; stroke-dasharray: 9 7; animation: march 700ms linear infinite; filter: drop-shadow(0 0 4px rgba(201,66,58,.7)); }
+  .big {
+    position: relative; width: 208px; padding: 9px 9px 38px; background: var(--paper); color: var(--paper-ink);
+    border: 1px solid var(--gold); border-radius: 3px; box-shadow: 0 0 0 1px rgba(0,0,0,.4), 0 18px 40px rgba(0,0,0,.6);
+  }
+  .big .pic { height: 236px; overflow: hidden; background: #222; }
+  .big .pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .big .cap { position: absolute; left: 0; right: 0; bottom: 9px; text-align: center; font: 700 17px var(--serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 8px; }
+  .big .tape { position: absolute; top: -12px; left: 50%; translate: -50% 0; width: 88px; height: 24px; background: rgba(239,230,210,.55); border: 1px solid rgba(217,179,92,.4); }
+  .big .role {
+    position: absolute; top: -14px; padding: 3px 10px; white-space: nowrap; z-index: 2;
+    background: var(--night-2); border: 1px solid var(--gold); border-radius: 999px; font: 700 12px var(--sans); color: var(--gold);
+  }
+  .big.performer { rotate: -4deg; }
+  .big.performer .role { left: -12px; background: var(--gold); color: var(--night); }
+  .big.performer .pic img { animation: sway 1.1s ease-in-out infinite; transform-origin: 50% 100%; }
+  .big.performer::after { content: ""; position: absolute; inset: -14px; border-radius: 8px; box-shadow: 0 0 60px 10px rgba(255,214,140,.28); pointer-events: none; }
+  .big.watcher { rotate: 4deg; }
+  .big.watcher .role { right: -12px; }
+  .big.watcher .eyes { position: absolute; left: 50%; top: 44%; translate: -50% -50%; font-size: 30px; animation: bob 1.4s ease-in-out infinite; filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
+  .big.empty { display: grid; place-items: center; height: 320px; background: rgba(239,230,210,.08); border-style: dashed; box-shadow: none; color: var(--dim); }
+  .big.empty span { font: 700 24px/1.4 var(--serif); text-align: center; }
+  .secret {
+    position: relative; width: 138px; height: 192px; border-radius: 8px; display: grid; place-items: center; text-align: center;
+    background: repeating-linear-gradient(135deg, #25262f 0 10px, #2c2d38 10px 20px); border: 1px solid var(--gold); box-shadow: var(--sticker);
+  }
+  .secret .seal { font: 900 22px var(--serif); color: var(--thread); border: 2px solid var(--thread); padding: 4px 10px; rotate: -10deg; letter-spacing: .2em; background: rgba(21,22,28,.6); }
+  .secret small { position: absolute; bottom: 12px; left: 0; right: 0; font: 600 12px var(--sans); color: var(--dim); }
+  .rule { position: absolute; left: 50%; bottom: -34px; translate: -50% 0; white-space: nowrap; font: 700 13px var(--sans); color: var(--dim); letter-spacing: .1em; }
+
+  /* ---------- 角落：进度 + 倒计时 ---------- */
+  .progress { position: absolute; left: 48px; top: 40px; z-index: 4; }
+  .progress .numeral { font-size: 48px; color: var(--gold); }
+  .progress .of { font: 700 20px var(--serif); color: var(--dim); }
+  .progress small { display: block; margin-top: 4px; font: 700 12px var(--sans); letter-spacing: .24em; color: var(--dim); }
+  .countdown { background: rgba(21,22,28,.85); border-radius: 50%; }
+  .countdown .ring-bg { stroke: rgba(239,230,210,.14); } .countdown .ring-fg { stroke: var(--gold); }
+  .countdown .num { color: var(--paper); }
+  .countdown.last10 .ring-fg { stroke: var(--thread); }
+  #cd { right: 48px; top: 38px; }
+
+  /* ---------- 操作坞：贴在地板上 ---------- */
+  .dock {
+    position: absolute; left: 50%; bottom: 18px; translate: -50% 0; width: 780px; z-index: 6;
+    display: flex; align-items: center; gap: 14px; padding: 8px 10px 8px 18px;
+    background: rgba(31,32,41,.94); border: 1px solid var(--gold-soft); border-radius: 16px; box-shadow: var(--sticker);
+  }
+  .dock .role { font: 700 14px var(--sans); color: var(--dim); white-space: nowrap; }
+  .dock .role b { color: var(--paper); font-family: var(--serif); font-size: 17px; margin-left: 4px; }
+  .dock .info { flex: 1; font: 600 13px var(--sans); color: var(--dim); }
+  .dock .btn { border: 1px solid var(--gold); box-shadow: 0 3px 0 rgba(0,0,0,.5); min-height: 48px; }
+  .dock .btn:disabled { background: transparent; color: var(--dim); border-color: var(--gold-soft); box-shadow: none; }
+  .dock .btn-primary:not(:disabled) { color: var(--night); }
+  .dock .btn-primary:not(:disabled):hover { transform: translateY(-2px); }
+  .dock .btn-primary:not(:disabled):active { transform: translateY(2px); box-shadow: none; }
+
+  .clip { width: 38px; height: 38px; }
+
+  /* ---------- 手机 ---------- */
+  [data-size="mobile"] .frame { inset: 10px 10px 88px; }
+  [data-size="mobile"] .floor { height: 88px; }
+  [data-size="mobile"] .lamp { width: 110px; height: 44px; top: -22px; }
+  [data-size="mobile"] .scrawl, [data-size="mobile"] .note-pin { display: none; }
+  [data-size="mobile"] .head { top: 96px; width: 360px; }
+  [data-size="mobile"] .kicker { font-size: 11px; letter-spacing: .2em; }
+  [data-size="mobile"] .head .title { font-size: 30px; }
+  [data-size="mobile"] .head .hint { font-size: 13px; }
+  [data-size="mobile"] .duo { top: 232px; width: 380px; height: 268px; grid-template-columns: 1fr 76px 1fr; }
+  [data-size="mobile"] .big { width: 136px; padding: 6px 6px 28px; }
+  [data-size="mobile"] .big .pic { height: 160px; }
+  [data-size="mobile"] .big .cap { font-size: 13px; bottom: 6px; }
+  [data-size="mobile"] .big .role { font-size: 10px; padding: 2px 7px; top: -11px; }
+  [data-size="mobile"] .big .tape { width: 60px; height: 18px; top: -9px; }
+  [data-size="mobile"] .big.watcher .eyes { font-size: 22px; }
+  [data-size="mobile"] .big.empty { height: 200px; }
+  [data-size="mobile"] .big.empty span { font-size: 17px; }
+  [data-size="mobile"] .secret { width: 70px; height: 100px; }
+  [data-size="mobile"] .secret .seal { font-size: 13px; padding: 2px 4px; letter-spacing: .1em; }
+  [data-size="mobile"] .secret small { display: none; }
+  [data-size="mobile"] .rule { font-size: 11px; bottom: -26px; letter-spacing: 0; }
+  [data-size="mobile"] .progress { left: 22px; top: 24px; }
+  [data-size="mobile"] .progress .numeral { font-size: 34px; }
+  [data-size="mobile"] .progress .of { font-size: 15px; }
+  [data-size="mobile"] .progress small { font-size: 10px; }
+  [data-size="mobile"] #cd { right: 22px; top: 20px; width: 64px; height: 64px; }
+  [data-size="mobile"] #cd .num { font-size: 24px; }
+  [data-size="mobile"] .dock { width: 366px; bottom: 14px; padding: 8px 10px; }
+  [data-size="mobile"] .dock .info, [data-size="mobile"] .dock .role { display: none; }
+  [data-size="mobile"] .dock .btn { flex: 1; }
+
+  @keyframes march { to { stroke-dashoffset: -32; } }
+  @keyframes sway { 0%, 100% { rotate: -3deg; } 50% { rotate: 3deg; } }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>D · 案情墙手牌（B + C 融合）</strong>
+  <span class="note">深色悬疑 ｜ 世界取 C：深夜软木墙、台灯、细金边拍立得、红线 ｜ 构图取 B：全员是墙底一排手牌，演的和看的两张被取下放大到中央面对面</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile" aria-pressed="false">手机 390×844</button></div>
+  <div class="group"><button data-set-count="5">5 人</button><button data-set-count="7">7 人</button><button data-set-count="9">9 人</button></div>
+  <div class="group"><button data-act="next">下一棒 ▶</button><button data-act="myturn">跳到我</button><button data-act="last5">最后 5 秒</button><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="wall"></div>
+  <div class="frame"></div>
+  <div class="floor"></div>
+  <div class="lamp"></div>
+  <span class="scrawl" style="left:70px;top:210px">凶手是谁？</span>
+  <span class="scrawl" style="right:74px;top:240px;rotate:5deg">谁在说谎……</span>
+  <div class="note-pin" style="left:64px;top:300px;rotate:-5deg">案发现场<br>有鹅毛</div>
+  <div class="note-pin" style="right:64px;top:320px">恶鹅<br>不止一只？</div>
+
+  <div class="progress" data-box="progress"><span class="numeral" id="prog"></span><span class="of" id="of"></span><small>静默传递</small></div>
+  <div class="countdown" id="cd" data-box="countdown">
+    <svg viewBox="0 0 84 84"><circle class="ring-bg" cx="42" cy="42" r="34"/><circle class="ring-fg" cx="42" cy="42" r="34"/></svg>
+    <span class="num numeral">30</span>
+  </div>
+
+  <div class="head" data-box="head">
+    <div class="kicker">RELAY · 只许比划 · 可以鹅叫 · 不许说字</div>
+    <h1 class="title" id="headline"></h1>
+    <div class="hint" id="hint"></div>
+  </div>
+
+  <div class="duo" data-box="duo">
+    <svg class="duo-thread" viewBox="0 0 820 330" preserveAspectRatio="none" aria-hidden="true" id="duo-thread">
+      <path d="M200 70 Q410 150 620 70"/>
+    </svg>
+    <div id="left"></div>
+    <div class="secret" id="secret"><span class="seal">绝密</span><small>案情卡 · 无人可看</small></div>
+    <div id="right"></div>
+  </div>
+
+  <svg class="links" aria-hidden="true"></svg>
+  <div class="seats"></div>
+
+  <div class="dock" data-box="dock">
+    <div class="role">你的身份<b>白鹅</b></div>
+    <div class="info">恶鹅藏在队伍里，会故意演歪</div>
+    <button class="btn btn-primary" id="act-pass"></button>
+  </div>
+</div></div>
+
+<script>
+  const CLIP = `<svg class="clip" viewBox="0 0 38 38" aria-hidden="true">
+    <circle cx="19" cy="19" r="14" fill="#c9423a" stroke="#d9b35c" stroke-width="2"/>
+    <circle cx="14" cy="14" r="4" fill="#ff9c8f"/>
+  </svg>`;
+  const ROT = [-3, 2, -2, 3, -1, 2, -3, 1, -2];
+  const big = (p, cls, role, extra = '') => `<div class="big ${cls}" data-swap>
+      <span class="tape"></span><span class="role">${role}</span>
+      <div class="pic"><img src="${p.img}" alt="${p.goose}"></div>${extra}
+      <div class="cap">${p.me ? '你' : p.name}</div></div>`;
+  const isMobile = () => document.querySelector('.device').dataset.size === 'mobile';
+
+  window.DESIGN = {
+    linkLayers: ['thread'],
+    seat: (p) => `<div class="polaroid" style="--r:${ROT[p.i]}deg">
+      <span class="pin"></span><span class="no">${p.head ? '头鹅' : p.seatNo}</span>
+      <div class="pic"><img src="${p.img}" alt="${p.goose}"></div>
+      <div class="name">${p.name}</div><span class="stamp"></span><span class="flag"></span></div>`,
+    layout(size, n, w, h) {
+      if (size === 'mobile') {
+        // 手机：5 人一排；6 人以上两排，第一排左→右、第二排右→左（红线蛇形）
+        if (n <= 5) {
+          const span = (n - 1) * 72;
+          return Array.from({ length: n }, (_, i) => ({ x: w / 2 - span / 2 + i * 72, y: h - 196 }));
+        }
+        const top = Math.ceil(n / 2), rest = n - top;
+        return Array.from({ length: n }, (_, i) => {
+          const row = i < top ? 0 : 1, k = row ? i - top : i, count = row ? rest : top;
+          const span = (count - 1) * 72, x = w / 2 - span / 2 + k * 72;
+          return { x: row ? w - x : x, y: row ? h - 146 : h - 246 };
+        });
+      }
+      // 桌面：墙底一排，两端略下垂
+      const span = Math.min(1060, (n - 1) * 124);
+      return Array.from({ length: n }, (_, i) => {
+        const t = n === 1 ? 0 : i / (n - 1) - 0.5;
+        return { x: w / 2 + t * span, y: h - 204 + t * t * 40 };
+      });
+    },
+    linkPath(a, b) {
+      // 红线从图钉到图钉，自然下垂
+      const off = isMobile() ? 34 : 56;
+      const ay = a.y - off, by = b.y - off;
+      if (Math.abs(ay - by) > 30) return `M${a.x} ${ay} C${a.x + 60} ${ay}, ${b.x + 60} ${by}, ${b.x} ${by}`;
+      const sag = Math.min(24, Math.abs(b.x - a.x) * 0.2);
+      return `M${a.x} ${ay} Q${(a.x + b.x) / 2} ${(ay + by) / 2 + sag} ${b.x} ${by}`;
+    },
+    batonSelector: '.pic',
+    baton: () => CLIP,
+    onState(c) {
+      document.getElementById('headline').textContent = c.headline;
+      document.getElementById('hint').textContent = c.hint;
+      document.getElementById('prog').textContent = c.finished ? c.n : c.state.cur + 1;
+      document.getElementById('of').textContent = ` / ${c.n}`;
+      const L = document.getElementById('left'), R = document.getElementById('right');
+      const secret = document.getElementById('secret');
+      document.getElementById('duo-thread').style.visibility = c.finished || !c.watcher ? 'hidden' : '';
+      if (c.finished) {
+        L.innerHTML = `<div class="big empty"><span>链条<br>已完整</span></div>`;
+        R.innerHTML = `<div class="big empty"><span>全员<br>讨论</span></div>`;
+        secret.querySelector('small').textContent = '讨论后指认';
+        return;
+      }
+      const p = c.performer;
+      secret.querySelector('small').textContent = p.head ? '只有头鹅看过' : '案情卡 · 无人可看';
+      L.innerHTML = big(p, 'performer', p.head ? '头鹅 · 照案情演' : p.me ? '你在演' : '表演中');
+      R.innerHTML = c.watcher
+        ? big(c.watcher, 'watcher', c.watcher.me ? '你在看' : '在看', '<span class="eyes">👀</span>')
+        : `<div class="big empty"><span>末棒<br>无人接</span></div>`;
+    },
+  };
+</script>
+<script src="_shared.js"></script>
+</body>
+</html>

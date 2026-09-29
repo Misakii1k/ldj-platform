@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UNO · B 整屏色块</title>
+<link rel="stylesheet" href="_shell.css">
+<link rel="stylesheet" href="_uno.css">
+<style>
+  /* ── 场景：当前颜色就是整张桌布；纸板圆盘在中央，对手贴纸环绕一圈 ── */
+  .device {
+    background:
+      repeating-linear-gradient(-45deg, rgba(255,255,255,.14) 0 34px, transparent 34px 68px),
+      var(--floor, var(--red));
+  }
+  .wipe { position: absolute; inset: 0; z-index: 0; pointer-events: none; background: repeating-linear-gradient(-45deg, rgba(255,255,255,.14) 0 34px, transparent 34px 68px), var(--cur); clip-path: circle(0 at 50% 44%); }
+  .wipe.run { animation: wipe 520ms var(--out) forwards; }
+  @keyframes wipe { to { clip-path: circle(120% at 50% 44%); } }
+  .disc {
+    position: absolute; left: 50%; top: 44%; translate: -50% -50%; width: 440px; height: 440px; border-radius: 50%; z-index: 1;
+    border: 5px solid var(--ink); box-shadow: 0 10px 0 var(--ink), inset 0 0 0 14px var(--kraft-dark), inset 0 0 0 17px var(--ink);
+  }
+  .dir-ring { left: 50%; top: 44%; width: 520px; height: 520px; translate: -50% -50%; z-index: 1; }
+  .dir-ring svg path, .dir-ring svg circle { stroke: var(--cream); }
+  .dir-ring svg path { fill: var(--cream); }
+  .core { position: absolute; left: 50%; top: 44%; translate: -50% -50%; display: flex; gap: 40px; align-items: center; z-index: 3; }
+  .ring-seats .sticker { position: absolute; z-index: 4; translate: -50% -50%; }
+  .hud { position: absolute; left: 50%; top: 44%; translate: -50% 150px; z-index: 4; display: flex; gap: 12px; align-items: center; }
+  .phase-word {
+    position: absolute; left: 50%; top: 44%; translate: -50% -210px; z-index: 4; padding: 8px 18px; background: var(--cream);
+    border: var(--border); border-radius: 12px; box-shadow: var(--shadow-sm); font: 700 26px/1 var(--serif); rotate: -2deg;
+  }
+  .me-zone { position: absolute; left: 0; right: 0; bottom: 0; z-index: 7; display: grid; justify-items: center; gap: 12px; padding-bottom: 16px; }
+  .me-tag { position: absolute; left: 40px; bottom: 26px; }
+
+  .device[data-size="mobile"] .disc, .device[data-size="mobile"] .core, .device[data-size="mobile"] .dir-ring, .device[data-size="mobile"] .hud, .device[data-size="mobile"] .phase-word { top: 40%; }
+  .device[data-size="mobile"] .wipe { clip-path: circle(0 at 50% 40%); }
+  .device[data-size="mobile"] .disc { width: 220px; height: 220px; box-shadow: 0 7px 0 var(--ink), inset 0 0 0 9px var(--kraft-dark), inset 0 0 0 12px var(--ink); }
+  .device[data-size="mobile"] .dir-ring { width: 300px; height: 300px; }
+  .device[data-size="mobile"] .core { gap: 20px; }
+  .device[data-size="mobile"] .hud { translate: -50% 96px; }
+  .device[data-size="mobile"] .phase-word { translate: -50% -150px; font-size: 18px; padding: 6px 12px; }
+  .device[data-size="mobile"] .color-chip { font-size: 13px; padding: 4px 10px 4px 4px; }
+  .device[data-size="mobile"] .color-chip i { width: 20px; height: 20px; }
+  .device[data-size="mobile"] .turn-ring { width: 44px; height: 44px; }
+  .device[data-size="mobile"] .me-tag { position: static; }
+  .device[data-size="mobile"] .me-zone { gap: 8px; padding-bottom: 12px; }
+  .device[data-size="mobile"] .ring-seats .sticker .avatar { display: none; }
+  .device[data-size="mobile"] .ring-seats .sticker { grid-template-columns: auto auto; gap: 0 6px; padding: 5px 10px; }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>UNO · B 整屏色块</strong>
+  <span class="note">对标：Balatro 的"打击感" ｜ 与 A/C 的差别：当前颜色就是整张桌布，换色时整屏从牌堆向外泼开；纸板圆盘居中，对手贴纸环绕一圈</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile">手机 390×844</button></div>
+  <div class="group"><button id="reset">重播</button><a href="index.html">返回目录</a></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="wipe"></div>
+  <div class="disc kraft"></div>
+  <div class="dir-ring"><svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="92" fill="none" stroke-width="4" stroke-dasharray="14 12"/><path d="M100 4 l12 8 -12 8 z"/><path d="M100 196 l-12 -8 12 -8 z"/></svg></div>
+  <div class="phase-word" data-box="phase">轮到你</div>
+  <div class="core">
+    <div class="deck" data-box="deck"><div class="uc back"><span class="v">UNO</span></div></div>
+    <div class="discard" data-box="discard"></div>
+  </div>
+  <div class="hud" data-box="hud">
+    <span class="color-chip"><i></i>当前：<span data-color-name></span></span>
+    <div class="turn-ring"><svg viewBox="0 0 60 60"><circle class="track" cx="30" cy="30" r="26"/><circle class="bar" cx="30" cy="30" r="26"/></svg><span class="ring-num"></span></div>
+  </div>
+  <div class="ring-seats">
+    <div class="sticker active" data-box="s1"><div class="avatar" style="background:#f29a7a">杰</div><b>阿杰</b><span class="n">9<small>张</small></span></div>
+    <div class="sticker uno-warn" data-box="s2"><div class="avatar" style="background:#8fd3b6">可</div><b>可可</b><span class="n">1<small>张</small></span></div>
+    <div class="sticker" data-box="s3"><div class="avatar" style="background:#b9a4e6">王</div><b>老王</b><span class="n">5<small>张</small></span></div>
+    <div class="sticker uno-warn" data-box="s4"><div class="avatar" style="background:#9cc7f0">糯</div><b>糯米</b><span class="n">1<small>张</small></span></div>
+    <div class="sticker" data-box="s5"><div class="avatar" style="background:#f6b7cf">M</div><b>Momo</b><span class="n">3<small>张</small></span></div>
+  </div>
+
+  <div class="me-zone">
+    <div class="sticker me-tag" data-box="me"><div class="avatar" style="background:#f7c84b">鱼</div><b>小鱼干（你）</b><span class="n"><span data-me-count>7</span><small>张</small></span></div>
+    <div class="fan my-hand" data-box="hand"></div>
+    <div class="dock" data-box="dock">
+      <button class="btn" id="btn-draw">摸牌</button>
+      <button class="btn btn-primary" id="btn-uno">UNO!</button>
+    </div>
+  </div>
+
+  <div class="picker"><div class="pad"><p>选一个颜色</p><button data-pick="red" style="background:var(--red)">红</button><button data-pick="yellow" style="background:var(--yellow)">黄</button><button data-pick="green" style="background:var(--green)">绿</button><button data-pick="blue" style="background:var(--blue)">蓝</button></div></div>
+  <div class="slam slam-fx"><span class="word"></span></div>
+</div></div>
+<script src="_uno-data.js"></script>
+<script src="_shell.js"></script>
+<script src="_uno.js"></script>
+<script>
+  (function () {
+    const device = document.querySelector('.device');
+    const seats = [...document.querySelectorAll('.ring-seats .sticker')];
+    function place() {
+      const m = device.dataset.size === 'mobile';
+      const cx = m ? 195 : 640, cy = m ? 844 * 0.4 : 800 * 0.44;
+      const rx = m ? 150 : 380, ry = m ? 230 : 275;
+      const angles = m ? [-70, -35, 0, 35, 70] : [-100, -55, 0, 55, 100];
+      seats.forEach((s, k) => {
+        let a = angles[k] * Math.PI / 180;
+        s.style.left = cx + Math.sin(a) * rx + 'px';
+        s.style.top = cy - Math.cos(a) * ry + 'px';
+        s.style.setProperty('--rot', (Math.sin(a * 3) * 3).toFixed(1) + 'deg');
+      });
+    }
+    // 对手沿上半圈排开（12 点方向为 0°），下半圈留给你的手牌；手机上收窄角度，避开圆盘
+    place();
+    document.querySelectorAll('[data-set-size]').forEach((b) => b.addEventListener('click', place));
+
+    // 换色时整屏从牌堆位置泼开：新颜色先画在 .wipe 上扩散，泼满后再写回桌布
+    const wipe = document.querySelector('.wipe');
+    const commit = () => device.style.setProperty('--floor', `var(--${device.dataset.color})`);
+    commit();
+    wipe.addEventListener('animationend', () => { commit(); wipe.classList.remove('run'); });
+    const obs = new MutationObserver(() => {
+      if (Preview.reduce) return commit();
+      wipe.classList.remove('run');
+      void wipe.offsetWidth;
+      wipe.classList.add('run');
+    });
+    obs.observe(device, { attributes: true, attributeFilter: ['data-color'] });
+  })();
+  Preview.countdown(document.querySelector('.turn-ring'), 15);
+</script>
+</body>
+</html>

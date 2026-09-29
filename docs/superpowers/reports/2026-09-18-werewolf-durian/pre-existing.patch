@@ -1,0 +1,3492 @@
+diff --git a/packages/client/public/version.json b/packages/client/public/version.json
+index 84f8eaa..85aff9f 100644
+--- a/packages/client/public/version.json
++++ b/packages/client/public/version.json
+@@ -1,9 +1,9 @@
+ {
+   "version": "0.4.0",
+   "versionCode": 400,
+-  "releaseDate": "2026-09-15",
++  "releaseDate": "2026-09-17",
+   "downloadUrl": "/api/download?tag=v0.4.0",
+-  "fileSize": 410130761,
+-  "sha256": "b4b383bd54eb8ddedb02e2f0e3cfc3c9d1d59ad76f4a1d2bc3b64b44376963d0",
++  "fileSize": 478085245,
++  "sha256": "b0f4a92ac7dc394e95ff7438d63f41365c99c9304a6aae2c07d8031863545721",
+   "releaseNotes": "聚乐桌游 v0.4.0 发布：支持谁是卧底、囚徒之夜等多款桌游与局域网极速联机"
+ }
+diff --git a/packages/client/src/app/GameHomePage.tsx b/packages/client/src/app/GameHomePage.tsx
+index b189233..b1fff63 100644
+--- a/packages/client/src/app/GameHomePage.tsx
++++ b/packages/client/src/app/GameHomePage.tsx
+@@ -93,22 +93,22 @@ export function GameHomePage() {
+               >
+                 <span className="home-header__host-dot" aria-hidden="true" />
+                 <Radio size={16} strokeWidth={2.4} aria-hidden="true" />
+-                <span className="home-header__host-text">主机大屏</span>
++                <span className="home-header__button-text home-header__host-text">主机大屏</span>
+               </button>
+             )}
+             <UserProfileBadge onClick={() => setActiveSheet('profile')} />
+             <button
+               type="button"
+-              className="home-header__button"
++              className="home-header__button home-header__button--settings"
+               onClick={() => setActiveSheet('settings')}
+               aria-label={hasNewUpdate ? '打开设置（有可用更新）' : '打开设置'}
+               title="设置"
+             >
+-              <span className="home-header__button-icon-wrap">
+-                <Settings size={18} strokeWidth={2.4} aria-hidden="true" />
+-                {hasNewUpdate && <span className="home-header__badge-dot" aria-hidden="true" />}
++              <span className="home-header__button-icon-wrap" aria-hidden="true">
++                <Settings size={18} strokeWidth={2.4} />
++                {hasNewUpdate && <span className="home-header__badge-dot" />}
+               </span>
+-              <span>设置</span>
++              <span className="home-header__button-text">设置</span>
+             </button>
+           </div>
+         </header>
+diff --git a/packages/client/src/app/about-update.css b/packages/client/src/app/about-update.css
+index c186284..e678b0c 100644
+--- a/packages/client/src/app/about-update.css
++++ b/packages/client/src/app/about-update.css
+@@ -321,6 +321,13 @@
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
++  flex-shrink: 0;
++  line-height: 1;
++}
++
++.home-header__button-icon-wrap > svg {
++  display: block;
++  flex-shrink: 0;
+ }
+ 
+ .home-header__badge-dot {
+diff --git a/packages/client/src/app/update/updateService.ts b/packages/client/src/app/update/updateService.ts
+index c717ddb..6390bff 100644
+--- a/packages/client/src/app/update/updateService.ts
++++ b/packages/client/src/app/update/updateService.ts
+@@ -13,7 +13,7 @@ export function computeVersionCode(version: string): number {
+ }
+ 
+ export const LOCAL_APP_VERSION_CODE = computeVersionCode(LOCAL_APP_VERSION);
+-export const DEFAULT_CLOUD_ORIGIN = 'https://tabletop.pages.dev';
++export const DEFAULT_CLOUD_ORIGIN = 'https://ldj-platform.pages.dev';
+ 
+ export interface AppUpdatePlugin {
+   getInstalledVersion(): Promise<{ versionName: string; versionCode: number; packageName: string }>;
+diff --git a/packages/client/src/game/cheese-thief/CheeseTabletopArena.tsx b/packages/client/src/game/cheese-thief/CheeseTabletopArena.tsx
+index 9687a05..f343c4a 100644
+--- a/packages/client/src/game/cheese-thief/CheeseTabletopArena.tsx
++++ b/packages/client/src/game/cheese-thief/CheeseTabletopArena.tsx
+@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
+ import { useCountdown } from '../../shared-ui/useCountdown.ts';
+ import type { CheeseThiefPlayerView, CheeseThiefPublicView } from './types.ts';
+ import { CheeseGameOverReveal } from './CheeseGameOverReveal.tsx';
++import { CheeseModel3DCanvas } from './CheeseModel3DCanvas.tsx';
+ 
+ interface RoomMemberInfo {
+   playerId: string;
+@@ -129,7 +130,7 @@ export function CheeseTabletopArena({
+         <div className="cheese-dawn-control-banner">
+           <div className="cheese-dawn-info">
+             <h4>白天自由讨论中</h4>
+-            <p>讨论时间到将自动进入投票，也可由桌面端提前开启投票。</p>
++            <p>讨论时间到将自动进入投票，也可在大屏点击提前开启投票。</p>
+           </div>
+           {onSkipDiscussion && (
+             <button
+@@ -154,7 +155,7 @@ export function CheeseTabletopArena({
+               <h3>全员投票指认大盗</h3>
+               <span className="cheese-vote-progress-badge">已投票 {totalVoted} / {view.players.length} 人</span>
+             </div>
+-            <p className="cheese-vote-board-hint">玩家在手机端弹出窗口投票，桌面端实时统计并公开票数及投票人</p>
++            <p className="cheese-vote-board-hint">玩家在个人手机端投票，公共大屏实时统计并公开票数及投票人</p>
+           </div>
+ 
+           <div className="cheese-vote-card-grid">
+@@ -206,11 +207,9 @@ export function CheeseTabletopArena({
+               {isNight ? (
+                 <div className="cheese-night-stage">
+                   {cheeseGone ? (
+-                    /* 偷取成功：空盘展示并保持到天亮（不可放回、不可重复偷） */
++                    /* 偷取成功：3D空盘碎屑展示并保持到天亮（不可放回、不可重复偷） */
+                     <div className="cheese-model-3d-btn is-stolen" aria-live="polite">
+-                      <div className="cheese-model-3d">
+-                        <span className="cheese-model-emoji" aria-hidden="true"></span>
+-                      </div>
++                      <CheeseModel3DCanvas isStolen={true} />
+                       <div className="cheese-steal-status-badge">
+                         <span className="badge-stolen">✓ 奶酪已被悄悄取走</span>
+                       </div>
+@@ -223,10 +222,12 @@ export function CheeseTabletopArena({
+                       disabled={stealSubmitting}
+                       title="【桌面交互】大盗在自己醒来的时刻点击偷走奶酪"
+                     >
+-                      <div className="cheese-model-3d">
+-                        <span className="cheese-model-emoji" aria-hidden="true">🧀</span>
+-                        <div className="cheese-glow" />
+-                      </div>
++                      <CheeseModel3DCanvas
++                        isStolen={false}
++                        interactive={true}
++                        disabled={stealSubmitting}
++                        onSteal={handleSteal}
++                      />
+                       <div className="cheese-steal-status-badge">
+                         <span className="badge-ready">触摸/点击偷走奶酪</span>
+                       </div>
+@@ -239,9 +240,9 @@ export function CheeseTabletopArena({
+                 </div>
+               ) : showStolenScene ? (
+                 <div className="cheese-stolen-stage">
++                  <CheeseModel3DCanvas isStolen={true} />
+                   <div className="cheese-stolen-crumbs">
+-                    <span className="crumbs-emoji">🍽️</span>
+-                    <span className="crumbs-warning">奶酪不见了！</span>
++                    <span className="crumbs-warning">⚠️ 奶酪不见了！</span>
+                   </div>
+                   <div className="cheese-crime-alert">
+                     <strong>案发现场：</strong>桌上的大奶酪已被大盗偷吃！请找出真凶！
+@@ -249,8 +250,8 @@ export function CheeseTabletopArena({
+                 </div>
+               ) : (
+                 <div className="cheese-safe-stage">
+-                  <span className="cheese-model-emoji">🧀</span>
+-                  <p className="cheese-safe-text">奶酪安然无恙（无人偷窃）</p>
++                  <CheeseModel3DCanvas isStolen={false} />
++                  <p className="cheese-safe-text">🧀 奶酪安然无恙（无人偷窃）</p>
+                 </div>
+               )}
+             </div>
+diff --git a/packages/client/src/game/cheese-thief/CheeseThiefGamePage.tsx b/packages/client/src/game/cheese-thief/CheeseThiefGamePage.tsx
+index e253d0f..223198b 100644
+--- a/packages/client/src/game/cheese-thief/CheeseThiefGamePage.tsx
++++ b/packages/client/src/game/cheese-thief/CheeseThiefGamePage.tsx
+@@ -4,7 +4,6 @@
+  */
+ import { useEffect, useRef, useState } from 'react';
+ import { useConnection } from '../../connection/useConnection.ts';
+-import { resolveInitialDeviceRole } from '../../app/appMode.ts';
+ import { nameFor, useGameAction } from '../useGameAction.ts';
+ import { ActionDock } from '../tabletop/ActionDock.tsx';
+ import { GameDrawer } from '../tabletop/GameDrawer.tsx';
+@@ -18,6 +17,8 @@ import { ArenaRail } from '../../shared-ui/ArenaRail.tsx';
+ import { SeatTargetPicker } from '../../shared-ui/SeatTargetPicker.tsx';
+ import { useCheeseTTS } from './useCheeseTTS.ts';
+ import { useCountdown } from '../../shared-ui/useCountdown.ts';
++import { UserAvatar } from '../../user/UserAvatar.tsx';
++import { resolveMemberAvatar } from '../../user/avatar.ts';
+ import type { CheeseThiefPlayerView, RoleCard } from './types.ts';
+ 
+ const ROLE_LABELS: Record<RoleCard, string> = {
+@@ -44,12 +45,13 @@ interface Props {
+ }
+ 
+ export function CheeseThiefGamePage({ view }: Props) {
+-  const { state } = useConnection();
++  const { state, me: connMe } = useConnection();
+   const members = state.room?.members ?? [];
+   const { act, busy, error, clearError } = useGameAction();
+   const me = view.me;
+   const myId = me?.playerId ?? null;
+-  const isSpectator = me === null;
++  const myMember = state.room?.members.find((m) => m.playerId === (connMe?.playerId ?? me?.playerId ?? myId));
++  const isSpectator = view.me === null || myMember?.seatRole === 'spectator' || state.game?.role === 'spectator';
+   const rulesRef = useRef<HTMLButtonElement | null>(null);
+   const [rulesOpen, setRulesOpen] = useState(false);
+   const [peekTarget, setPeekTarget] = useState<string | null>(null);
+@@ -78,25 +80,15 @@ export function CheeseThiefGamePage({ view }: Props) {
+     clearError();
+   }, [view.phase, view.currentHour, clearError]);
+ 
+-  // 模拟模式设备角色：'table' 桌面中央大屏，'player' 玩家手牌端
++  // 席位驱动设备角色：
++  // 若在房间中是 spectator，或无 me 个人视图，则锁定为纯正公共大屏（不发手牌、不参与个人操作）；
++  // 若是参局玩家，则为玩家端手持体验。
+   const isSimulator = view.mode === 'simulator';
+-  const [deviceRole, setDeviceRole] = useState<'player' | 'table'>(
+-    () => resolveInitialDeviceRole('ldj_cheese_device_role'),
+-  );
+-
+-  const selectDeviceRole = (role: 'player' | 'table') => {
+-    setDeviceRole(role);
+-    try {
+-      localStorage.setItem('ldj_cheese_device_role', role);
+-    } catch {
+-      // Ignore localStorage errors
+-    }
+-  };
+-
+-  const isSimulatorTable = deviceRole === 'table';
++  const isTableScreen = isSpectator;
++  const isSimulatorTable = isTableScreen;
+ 
+-  // 开局准备阶段判定（两骰自选或夜间第 0 时刻）
+-  const isOpening = view.phase === 'hour_choice' || (view.phase === 'night' && view.currentHour === 0);
++  // 开局准备阶段判定（两骰自选或夜间第 0 时刻）——仅对非大屏且有个人身份的玩家展示
++  const isOpening = !isTableScreen && view.me !== null && (view.phase === 'hour_choice' || (view.phase === 'night' && view.currentHour === 0));
+   const [identityCardVisible, setIdentityCardVisible] = useState(isOpening);
+   const [identityCardExiting, setIdentityCardExiting] = useState(false);
+   const prevOpeningRef = useRef(isOpening);
+@@ -167,125 +159,139 @@ export function CheeseThiefGamePage({ view }: Props) {
+     return { id: playerId, name: nameFor(members, playerId), status, active: false };
+   });
+ 
+-  // 主操作
++  // 主操作（仅在非大屏的参局玩家设备上生成；公共大屏设备绝对不生成或触发任何个人动作）
+   let primary: Parameters<typeof ActionDock>[0]['primary'] | null = null;
+   let secondary: Parameters<typeof ActionDock>[0]['secondary'] = [];
+ 
+-  if (view.phase === 'hour_choice' && me?.hourChoices && myId) {
+-    const hasChosen = typeof me.wakeHour === 'number' && me.wakeHour > 0;
+-    if (hasChosen) {
++  if (!isTableScreen && !isSpectator) {
++    if (view.phase === 'hour_choice' && me?.hourChoices && myId) {
++      const hasChosen = typeof me.wakeHour === 'number' && me.wakeHour > 0;
++      if (hasChosen) {
++        primary = {
++          id: 'hour-chosen',
++          label: `已选定第 ${me.wakeHour} 时刻醒来（等待其他玩家）`,
++          disabled: true,
++          onAction: () => {},
++        };
++        secondary = [];
++      } else {
++        const [h1, h2] = me.hourChoices;
++        primary = {
++          id: `choose-${h1}`,
++          label: `选定 ${h1} 点醒来`,
++          disabled: busy,
++          onAction: () => {
++            void act({ type: 'choose_hour', playerId: myId, hour: h1 });
++          },
++        };
++        secondary = [
++          {
++            id: `choose-${h2}`,
++            label: `选定 ${h2} 点醒来`,
++            disabled: busy,
++            onAction: () => {
++              void act({ type: 'choose_hour', playerId: myId, hour: h2 });
++            },
++          },
++        ];
++      }
++    } else if (myTurnAccomplice && myId) {
++      const selected = accomplicePicks;
++      const ready = selected.length === accompliceCount;
+       primary = {
+-        id: 'hour-chosen',
+-        label: `已选定第 ${me.wakeHour} 时刻醒来（等待其他玩家）`,
+-        disabled: true,
+-        onAction: () => {},
++        id: 'confirm-accomplice',
++        label: ready ? `确认共犯（${selected.map((id) => nameFor(members, id)).join('、')}）` : `已选 ${selected.length}/${accompliceCount}`,
++        disabled: !ready,
++        onAction: () => {
++          if (!ready) return;
++          void act({ type: 'select_accomplice', playerId: myId, accompliceIds: selected });
++        },
+       };
+-      secondary = [];
+-    } else {
+-      const [h1, h2] = me.hourChoices;
++    } else if (view.phase === 'night' && me && me.wakeHour === view.currentHour && !view.cheeseStolen && (me.coWakers ?? []).length === 0 && myId) {
+       primary = {
+-        id: `choose-${h1}`,
+-        label: `选定 ${h1} 点醒来`,
++        id: 'steal-cheese',
++        label: '🧀 伸手偷走奶酪（成为大盗）',
+         disabled: busy,
+         onAction: () => {
+-          void act({ type: 'choose_hour', playerId: myId, hour: h1 });
++          void act({ type: 'steal_cheese', playerId: myId });
+         },
+       };
+-      secondary = [
+-        {
+-          id: `choose-${h2}`,
+-          label: `选定 ${h2} 点醒来`,
+-          disabled: busy,
+-          onAction: () => {
+-            void act({ type: 'choose_hour', playerId: myId, hour: h2 });
+-          },
+-        },
+-      ];
+-    }
+-  } else if (myTurnAccomplice && myId) {
+-    const selected = accomplicePicks;
+-    const ready = selected.length === accompliceCount;
+-    primary = {
+-      id: 'confirm-accomplice',
+-      label: ready ? `确认共犯（${selected.map((id) => nameFor(members, id)).join('、')}）` : `已选 ${selected.length}/${accompliceCount}`,
+-      disabled: !ready,
+-      onAction: () => {
+-        if (!ready) return;
+-        void act({ type: 'select_accomplice', playerId: myId, accompliceIds: selected });
+-      },
+-    };
+-  } else if (view.phase === 'night' && me && me.wakeHour === view.currentHour && !view.cheeseStolen && (me.coWakers ?? []).length === 0 && myId) {
+-    primary = {
+-      id: 'steal-cheese',
+-      label: '🧀 伸手偷走奶酪（成为大盗）',
+-      disabled: busy,
+-      onAction: () => {
+-        void act({ type: 'steal_cheese', playerId: myId });
+-      },
+-    };
+-  } else if (view.phase === 'night' && me?.canPeek && myId) {
+-    primary = peekTarget
+-      ? { id: 'confirm-peek', label: `查看 ${nameFor(members, peekTarget)} 的骰子`, disabled: false, onAction: () => { void act({ type: 'peek_die', playerId: myId, targetPlayerId: peekTarget }); } }
+-      : { id: 'skip-peek', label: '不查看（跳过）', disabled: false, onAction: () => void act({ type: 'skip_peek', playerId: myId }) };
+-  } else if (view.phase === 'dawn' && me?.roleCard === 'cat' && myId && view.revealedCat === null) {
+-    primary = { id: 'reveal-cat', label: '展示猫身份并查看骰子', disabled: false, onAction: () => {} };
+-    secondary = view.players
+-      .filter((id) => id !== myId)
+-      .map((id) => ({
+-        id: `cat-${id}`,
+-        label: `查看 ${nameFor(members, id)}`,
+-        disabled: false,
+-        onAction: () => void act({ type: 'reveal_cat', playerId: myId, targetPlayerId: id }),
+-      }));
+-  } else if (view.phase === 'dawn' && me?.roleCard === 'dog' && myId && view.revealedDog === null) {
+-    primary = { id: 'reveal-dog', label: '展示狗身份并指定先投票', disabled: false, onAction: () => {} };
+-    secondary = view.players
+-      .filter((id) => id !== myId)
+-      .map((id) => ({
+-        id: `dog-${id}`,
+-        label: `指定 ${nameFor(members, id)} 先投票`,
+-        disabled: false,
+-        onAction: () => void act({ type: 'reveal_dog', playerId: myId, firstVoterId: id }),
+-      }));
+-  } else if (view.phase === 'vote' && myId) {
+-    if (me?.hasVoted) {
+-      primary = {
+-        id: 'has-voted',
+-        label: voteTarget ? `已指认 ${nameFor(members, voteTarget)}（已投票）` : '已完成投票，等待开票…',
+-        disabled: true,
+-        onAction: () => {},
+-      };
+-      secondary = [];
+-    } else {
+-      primary = voteTarget
+-        ? { id: 'confirm-vote', label: `指认 ${nameFor(members, voteTarget)}`, disabled: false, onAction: () => { void act({ type: 'cast_vote', playerId: myId, targetPlayerId: voteTarget }); } }
+-        : { id: 'abstain', label: '弃票', disabled: false, onAction: () => void act({ type: 'cast_abstention', playerId: myId }) };
++    } else if (view.phase === 'night' && me?.canPeek && myId) {
++      primary = peekTarget
++        ? { id: 'confirm-peek', label: `查看 ${nameFor(members, peekTarget)} 的骰子`, disabled: false, onAction: () => { void act({ type: 'peek_die', playerId: myId, targetPlayerId: peekTarget }); } }
++        : { id: 'skip-peek', label: '不查看（跳过）', disabled: false, onAction: () => void act({ type: 'skip_peek', playerId: myId }) };
++    } else if (view.phase === 'dawn' && me?.roleCard === 'cat' && myId && view.revealedCat === null) {
++      primary = { id: 'reveal-cat', label: '展示猫身份并查看骰子', disabled: false, onAction: () => {} };
++      secondary = view.players
++        .filter((id) => id !== myId)
++        .map((id) => ({
++          id: `cat-${id}`,
++          label: `查看 ${nameFor(members, id)}`,
++          disabled: false,
++          onAction: () => void act({ type: 'reveal_cat', playerId: myId, targetPlayerId: id }),
++        }));
++    } else if (view.phase === 'dawn' && me?.roleCard === 'dog' && myId && view.revealedDog === null) {
++      primary = { id: 'reveal-dog', label: '展示狗身份并指定先投票', disabled: false, onAction: () => {} };
++      secondary = view.players
++        .filter((id) => id !== myId)
++        .map((id) => ({
++          id: `dog-${id}`,
++          label: `指定 ${nameFor(members, id)} 先投票`,
++          disabled: false,
++          onAction: () => void act({ type: 'reveal_dog', playerId: myId, firstVoterId: id }),
++        }));
++    } else if (view.phase === 'vote' && myId) {
++      if (me?.hasVoted) {
++        primary = {
++          id: 'has-voted',
++          label: voteTarget ? `已指认 ${nameFor(members, voteTarget)}（已投票）` : '已完成投票，等待开票…',
++          disabled: true,
++          onAction: () => {},
++        };
++        secondary = [];
++      } else {
++        primary = voteTarget
++          ? { id: 'confirm-vote', label: `指认 ${nameFor(members, voteTarget)}`, disabled: false, onAction: () => { void act({ type: 'cast_vote', playerId: myId, targetPlayerId: voteTarget }); } }
++          : { id: 'abstain', label: '弃票', disabled: false, onAction: () => void act({ type: 'cast_abstention', playerId: myId }) };
++      }
+     }
+   }
+ 
+-  const waitingReason = view.phase === 'game_over'
+-    ? null
+-    : view.phase === 'hour_choice'
+-      ? me?.wakeHour
+-        ? `你已选定第 ${me.wakeHour} 时刻，等待其他玩家完成选择…`
+-        : '你掷出了两枚骰子，请在下方选择你的醒来时刻'
+-      : view.phase === 'night'
+-        ? me?.wakeHour === view.currentHour
+-          ? !view.cheeseStolen && (me.coWakers ?? []).length === 0
+-            ? '轮到你的时刻且独醒！奶酪就在桌上，点击偷走奶酪成为怪盗'
+-            : me.canPeek
+-              ? '轮到你的时刻且独醒：按住目标玩家骰盅偷看其点数，或直接跳过'
+-              : (me.coWakers ?? []).length > 0
+-                ? '轮到你的时刻：有其他人同时醒来，互相目击'
+-                : '轮到你的时刻推进中'
+-          : '夜间进行中——闭眼装睡，轮到你的时刻才睁眼'
+-        : view.phase === 'accomplice_select'
+-          ? '大盗正在秘密挑选共犯（限时 17 秒）…'
+-          : view.phase === 'dawn'
+-            ? '天亮讨论中——线下自由发言，讨论结束自动进入投票'
+-            : me?.hasVoted
+-              ? '你已完成投票，等待其他玩家完成投票…'
+-              : '请选择你怀疑的大盗，或在下方操作栏弃票';
++  const waitingReason = isTableScreen
++    ? view.phase === 'game_over'
++      ? null
++      : view.phase === 'hour_choice'
++        ? '玩家正在选择各自的醒来时刻…'
++        : view.phase === 'night'
++          ? `夜间进行中 · 第 ${Math.max(1, view.currentHour)} 时刻`
++          : view.phase === 'accomplice_select'
++            ? '大盗正在秘密挑选共犯…'
++            : view.phase === 'dawn'
++              ? '天亮讨论中 · 自由发言，讨论结束进入投票'
++              : '指认投票中 · 请参局玩家在手机上完成指认投票'
++    : view.phase === 'game_over'
++      ? null
++      : view.phase === 'hour_choice'
++        ? me?.wakeHour
++          ? `你已选定第 ${me.wakeHour} 时刻，等待其他玩家完成选择…`
++          : '你掷出了两枚骰子，请在下方选择你的醒来时刻'
++        : view.phase === 'night'
++          ? me?.wakeHour === view.currentHour
++            ? !view.cheeseStolen && (me.coWakers ?? []).length === 0
++              ? '轮到你的时刻且独醒！奶酪就在桌上，点击偷走奶酪成为怪盗'
++              : me.canPeek
++                ? '轮到你的时刻且独醒：按住目标玩家骰盅偷看其点数，或直接跳过'
++                : (me.coWakers ?? []).length > 0
++                  ? '轮到你的时刻：有其他人同时醒来，互相目击'
++                  : '轮到你的时刻推进中'
++            : '夜间进行中——闭眼装睡，轮到你的时刻才睁眼'
++          : view.phase === 'accomplice_select'
++            ? '大盗正在秘密挑选共犯（限时 17 秒）…'
++            : view.phase === 'dawn'
++              ? '天亮讨论中——线下自由发言，讨论结束自动进入投票'
++              : me?.hasVoted
++                ? '你已完成投票，等待其他玩家完成投票…'
++                : '请选择你怀疑的大盗，或在下方操作栏弃票';
+ 
+   const presentationState = error
+     ? 'error'
+@@ -302,28 +308,11 @@ export function CheeseThiefGamePage({ view }: Props) {
+ 
+   const headerControls = (
+     <div className="cheese-top-controls">
+-      <div className="cheese-role-switch" role="group" aria-label="设备用途选择">
+-        <button
+-          type="button"
+-          className={`cheese-role-pill ${deviceRole === 'player' ? 'is-active' : ''}`}
+-          onClick={() => selectDeviceRole('player')}
+-          aria-pressed={deviceRole === 'player'}
+-          title="作为玩家个人手牌设备使用（持在手中）"
+-        >
+-          
+-          <span className="cheese-btn-text">玩家端</span>
+-        </button>
+-        <button
+-          type="button"
+-          className={`cheese-role-pill ${deviceRole === 'table' ? 'is-active' : ''}`}
+-          onClick={() => selectDeviceRole('table')}
+-          aria-pressed={deviceRole === 'table'}
+-          title="作为桌面中央公共案发大屏使用（平放于桌面正中）"
+-        >
+-          
+-          <span className="cheese-btn-text">桌面端</span>
+-        </button>
+-      </div>
++      {isSpectator && (
++        <div className="cheese-screen-badge" title="当前设备为房间公共桌面大屏（纯净展示，不发手牌）">
++          <span>📺 公共大屏</span>
++        </div>
++      )}
+       <button
+         type="button"
+         className={`cheese-tts-icon-btn ${ttsEnabled ? 'is-active' : ''}`}
+@@ -350,7 +339,7 @@ export function CheeseThiefGamePage({ view }: Props) {
+       rulesButton={headerControls}
+       stageFit="arena"
+       actions={
+-        primary ? (
++        !isTableScreen && primary ? (
+           <ActionDock
+             primary={primary}
+             secondary={secondary}
+@@ -904,19 +893,43 @@ export function CheeseThiefGamePage({ view }: Props) {
+                 <div className="cheese-vote-submitted-pane">
+                   <div className="cheese-submitted-icon">✓</div>
+                   <h3>投票已成功提交！</h3>
+-                  <p className="cheese-voted-target-desc">
+-                    {(() => {
+-                      const myVote = view.votes?.[myId];
+-                      if (myVote?.kind === 'accuse') {
+-                        return `你已指认【${nameFor(members, myVote.targetPlayerId)}】为奶酪大盗`;
+-                      } else if (myVote?.kind === 'abstain') {
+-                        return '你已选择【弃票】';
+-                      } else if (voteTarget) {
+-                        return `你已指认【${nameFor(members, voteTarget)}】为奶酪大盗`;
+-                      }
+-                      return '你的投票已记录完成';
+-                    })()}
+-                  </p>
++                  {(() => {
++                    const myVote = view.votes?.[myId];
++                    const targetId = myVote?.kind === 'accuse' ? myVote.targetPlayerId : voteTarget;
++                    const isAbstain = myVote?.kind === 'abstain' || (!targetId && myVote);
++
++                    if (targetId) {
++                      const targetMember = members.find((m) => m.playerId === targetId);
++                      const targetAvatar = resolveMemberAvatar(targetMember, {
++                        playerId: targetId,
++                        isMe: targetId === myId,
++                      });
++                      const targetName = nameFor(members, targetId);
++
++                      return (
++                        <div className="cheese-voted-target-card">
++                          <UserAvatar avatar={targetAvatar} nickname={targetName} size={40} />
++                          <div className="cheese-voted-target-info">
++                            <span className="cheese-voted-target-tag">怀疑目标</span>
++                            <strong className="cheese-voted-target-desc">
++                              {targetName}
++                            </strong>
++                          </div>
++                        </div>
++                      );
++                    } else if (isAbstain) {
++                      return (
++                        <div className="cheese-voted-target-card cheese-voted-target-card--abstain">
++                          <span className="cheese-confirm-target-emoji">🏳️</span>
++                          <div className="cheese-voted-target-info">
++                            <span className="cheese-voted-target-tag">选择弃票</span>
++                            <strong className="cheese-voted-target-desc">未指认任何人</strong>
++                          </div>
++                        </div>
++                      );
++                    }
++                    return <p className="cheese-voted-target-desc">你的投票已记录完成</p>;
++                  })()}
+                   <div className="cheese-vote-modal-progress">
+                     <span>全场已投票：{totalVoted} / {view.players.length} 人</span>
+                     <p className="cheese-vote-modal-sub">
+@@ -935,8 +948,15 @@ export function CheeseThiefGamePage({ view }: Props) {
+                 <div className="cheese-vote-confirm-pane">
+                   {voteConfirmCandidate === 'abstain' ? (
+                     <>
+-                      <h4>确认放弃本次投票？</h4>
+-                      <p className="cheese-confirm-warning">弃票后，本局将不计入你对任何人的指认。</p>
++                      <h4>确认放弃本次指认？</h4>
++                      <div className="cheese-confirm-target-box cheese-confirm-target-box--abstain">
++                        <span className="cheese-confirm-target-emoji">🏳️</span>
++                        <div className="cheese-confirm-target-info">
++                          <strong className="cheese-confirm-target-name">放弃指认</strong>
++                          <span className="cheese-confirm-target-seat">本局不指认任何玩家</span>
++                        </div>
++                      </div>
++                      <p className="cheese-confirm-warning">弃票后，本局将不计入你对任何人的怀疑票。</p>
+                       <div className="cheese-vote-confirm-actions">
+                         <button
+                           type="button"
+@@ -957,44 +977,54 @@ export function CheeseThiefGamePage({ view }: Props) {
+                         </button>
+                       </div>
+                     </>
+-                  ) : (
+-                    <>
+-                      <h4>确认指认该玩家？</h4>
+-                      <div className="cheese-confirm-target-box">
+-                        <span className="cheese-confirm-target-avatar">🧀</span>
+-                        <strong className="cheese-confirm-target-name">
+-                          {nameFor(members, voteConfirmCandidate)}
+-                        </strong>
+-                      </div>
+-                      <p className="cheese-confirm-warning">
+-                        提交后不可更改，桌面端将同步公开投票结果。
+-                      </p>
+-                      <div className="cheese-vote-confirm-actions">
+-                        <button
+-                          type="button"
+-                          className="cheese-confirm-btn is-primary"
+-                          disabled={busy}
+-                          onClick={() => {
+-                            setVoteTarget(voteConfirmCandidate);
+-                            void act({
+-                              type: 'cast_vote',
+-                              playerId: myId,
+-                              targetPlayerId: voteConfirmCandidate,
+-                            });
+-                          }}
+-                        >
+-                          确认指认【{nameFor(members, voteConfirmCandidate)}】
+-                        </button>
+-                        <button
+-                          type="button"
+-                          className="cheese-cancel-btn"
+-                          onClick={() => setVoteConfirmCandidate(null)}
+-                        >
+-                          返回重选其他玩家
+-                        </button>
+-                      </div>
+-                    </>
+-                  )}
++                  ) : (() => {
++                    const targetMember = members.find((m) => m.playerId === voteConfirmCandidate);
++                    const targetAvatar = resolveMemberAvatar(targetMember, {
++                      playerId: voteConfirmCandidate,
++                      isMe: voteConfirmCandidate === myId,
++                    });
++                    const targetName = nameFor(members, voteConfirmCandidate);
++
++                    return (
++                      <>
++                        <h4>确认指认该玩家为大盗？</h4>
++                        <div className="cheese-confirm-target-box">
++                          <UserAvatar avatar={targetAvatar} nickname={targetName} size={48} />
++                          <div className="cheese-confirm-target-info">
++                            <strong className="cheese-confirm-target-name">{targetName}</strong>
++                            <span className="cheese-confirm-target-seat">指认怀疑对象</span>
++                          </div>
++                        </div>
++                        <p className="cheese-confirm-warning">
++                          提交后不可更改，倒计时结束后将公开全场投票结果。
++                        </p>
++                        <div className="cheese-vote-confirm-actions">
++                          <button
++                            type="button"
++                            className="cheese-confirm-btn is-primary"
++                            disabled={busy}
++                            onClick={() => {
++                              setVoteTarget(voteConfirmCandidate);
++                              void act({
++                                type: 'cast_vote',
++                                playerId: myId,
++                                targetPlayerId: voteConfirmCandidate,
++                              });
++                            }}
++                          >
++                            确认指认【{targetName}】
++                          </button>
++                          <button
++                            type="button"
++                            className="cheese-cancel-btn"
++                            onClick={() => setVoteConfirmCandidate(null)}
++                          >
++                            返回重选其他玩家
++                          </button>
++                        </div>
++                      </>
++                    );
++                  })()}
+                 </div>
+               ) : (
+                 <>
+@@ -1002,18 +1032,29 @@ export function CheeseThiefGamePage({ view }: Props) {
+                   <div className="cheese-candidate-stack">
+                     {view.players
+                       .filter((id) => id !== myId)
+-                      .map((id) => (
+-                        <button
+-                          key={id}
+-                          type="button"
+-                          className="cheese-vote-candidate-card"
+-                          onClick={() => setVoteConfirmCandidate(id)}
+-                        >
+-                          <span className="candidate-avatar">👤</span>
+-                          <strong className="candidate-name">{nameFor(members, id)}</strong>
+-                          <span className="candidate-action">指认TA →</span>
+-                        </button>
+-                      ))}
++                      .map((id) => {
++                        const member = members.find((m) => m.playerId === id);
++                        const avatar = resolveMemberAvatar(member, {
++                          playerId: id,
++                          isMe: id === myId,
++                        });
++                        const candidateName = nameFor(members, id);
++
++                        return (
++                          <button
++                            key={id}
++                            type="button"
++                            className="cheese-vote-candidate-card"
++                            onClick={() => setVoteConfirmCandidate(id)}
++                          >
++                            <div className="candidate-avatar">
++                              <UserAvatar avatar={avatar} nickname={candidateName} size={38} />
++                            </div>
++                            <strong className="candidate-name" title={candidateName}>{candidateName}</strong>
++                            <span className="candidate-action">指认TA →</span>
++                          </button>
++                        );
++                      })}
+                   </div>
+                   <button
+                     type="button"
+diff --git a/packages/client/src/game/durian/DurianGamePage.tsx b/packages/client/src/game/durian/DurianGamePage.tsx
+index 6025945..032d1d3 100644
+--- a/packages/client/src/game/durian/DurianGamePage.tsx
++++ b/packages/client/src/game/durian/DurianGamePage.tsx
+@@ -1,6 +1,5 @@
+ import { useEffect, useRef, useState } from 'react';
+ import { useConnection } from '../../connection/useConnection.ts';
+-import { resolveInitialDeviceRole } from '../../app/appMode.ts';
+ import { nameFor, useGameAction } from '../useGameAction.ts';
+ import { ActionDock } from '../tabletop/ActionDock.tsx';
+ import { GameDrawer } from '../tabletop/GameDrawer.tsx';
+@@ -72,8 +71,6 @@ function phaseLabel(phase: DurianPlayerView['phase']): string {
+   }
+ }
+ 
+-type DeviceRole = 'table' | 'player';
+-
+ interface Props {
+   view: DurianPlayerView;
+ }
+@@ -118,35 +115,24 @@ function RollingNumber({ value, delay = 0 }: { value: number; delay?: number })
+ }
+ 
+ export function DurianGamePage({ view }: Props) {
+-  const { state } = useConnection();
++  const { state, me: connMe } = useConnection();
+   const members = state.room?.members ?? [];
+   const { act, busy, error } = useGameAction();
+   const me = view.me;
+   const myId = me?.playerId ?? null;
+-  const isSpectator = me === null;
++  const myMember = state.room?.members.find((m) => m.playerId === (connMe?.playerId ?? myId));
++  const isSpectator = me === null || myMember?.seatRole === 'spectator' || state.game?.role === 'spectator';
+   const rulesRef = useRef<HTMLButtonElement | null>(null);
+   const [rulesOpen, setRulesOpen] = useState(false);
+ 
+-  const [deviceRole, setDeviceRole] = useState<DeviceRole>(
+-    () => resolveInitialDeviceRole('ldj_durian_device_role'),
+-  );
+-
+-  const selectDeviceRole = (role: DeviceRole) => {
+-    setDeviceRole(role);
+-    try {
+-      localStorage.setItem('ldj_durian_device_role', role);
+-    } catch {
+-      // ignore
+-    }
+-  };
+-
+   const isMyTurn = view.currentPlayerId === myId;
+   const currentActorName = nameFor(members, view.currentPlayerId);
+   const prevActorName = nameFor(members, view.previousPlayerId);
+ 
+   const isSimulator = view.mode === 'simulator';
+-  const isSimulatorTable = isSimulator && deviceRole === 'table';
+-  const isSimulatorPlayer = isSimulator && deviceRole === 'player';
++  const isTableScreen = isSpectator;
++  const isSimulatorTable = isTableScreen;
++  const isSimulatorPlayer = !isTableScreen && isSimulator;
+ 
+   // 轮到玩家行动时触发清脆“叮”提示音和轻微触感震动
+   const prevTurnRef = useRef<boolean>(false);
+@@ -164,7 +150,7 @@ export function DurianGamePage({ view }: Props) {
+     return () => document.removeEventListener('pointerdown', unlock);
+   }, []);
+ 
+-  // 模拟器玩家端操作非法时，用低频提示音 + 震动反馈（桌面端不弹错误提示）
++  // 模拟器玩家端操作非法时，用低频提示音 + 震动反馈（公共大屏端不弹错误提示）
+   const prevErrorRef = useRef<string | null>(null);
+   useEffect(() => {
+     if (error && error !== prevErrorRef.current && isSimulatorPlayer) {
+@@ -365,30 +351,12 @@ export function DurianGamePage({ view }: Props) {
+ 
+   const headerControls = (
+     <div className="durian-top-controls">
+-      {view.mode === 'simulator' && (
+-        <div className="durian-role-switch" role="group" aria-label="设备用途选择">
+-          <button
+-            type="button"
+-            className={`durian-role-pill ${deviceRole === 'player' ? 'is-active' : ''}`}
+-            onClick={() => selectDeviceRole('player')}
+-            title="作为玩家个人设备使用（持在手中/置于面前）"
+-          >
+-            
+-            <span className="durian-btn-text">玩家端</span>
+-          </button>
+-          <button
+-            type="button"
+-            className={`durian-role-pill ${deviceRole === 'table' ? 'is-active' : ''}`}
+-            onClick={() => selectDeviceRole('table')}
+-            title="作为桌面中央公共设备使用（平放于桌面正中）"
+-          >
+-            
+-            <span className="durian-btn-text">桌面端</span>
+-          </button>
++      {isSpectator && (
++        <div className="tabletop-screen-badge" title="当前设备为房间公共大屏（纯净展示，不发手牌）">
++          <span>📺 公共大屏</span>
+         </div>
+       )}
+       <button ref={rulesRef} type="button" className="tabletop-rules-btn" onClick={() => setRulesOpen(true)}>
+-        
+         <span className="durian-btn-text">本局规则</span>
+       </button>
+     </div>
+@@ -399,9 +367,7 @@ export function DurianGamePage({ view }: Props) {
+   return (
+     <TabletopShell
+       title="DURING"
+-      phase={`第 ${view.round}/${view.maxRounds} 轮 · ${phaseLabel(view.phase)}${
+-        isSimulator ? (deviceRole === 'table' ? ' · 桌面端' : ' · 玩家端') : ''
+-      }`}
++      phase={`第 ${view.round}/${view.maxRounds} 轮 · ${phaseLabel(view.phase)}`}
+       gameId="durian"
+       phaseKey={`${view.phase}:${view.round}:${view.currentPlayerId ?? view.previousPlayerId ?? 'idle'}:${view.lastChallenge ? `${view.lastChallenge.challengerId}:${view.lastChallenge.loserId}` : view.phase === 'game_over' ? view.winners.join(',') || 'no-winner' : 'active'}`}
+       spectator={isSpectator}
+diff --git a/packages/client/src/room/RoomPage.tsx b/packages/client/src/room/RoomPage.tsx
+index ba12ffa..f551880 100644
+--- a/packages/client/src/room/RoomPage.tsx
++++ b/packages/client/src/room/RoomPage.tsx
+@@ -39,6 +39,11 @@ function statusText(status: string): string {
+ }
+ 
+ function memberStatusBadge(m: RoomMemberView): { label: string; cls: string } {
++  if (m.seatRole === 'spectator') {
++    return m.connectionStatus === 'CONNECTED'
++      ? { label: '大屏展示', cls: 'table-screen' }
++      : { label: '已断开', cls: 'expired' };
++  }
+   switch (m.connectionStatus) {
+     case 'CONNECTED':
+       return m.ready ? { label: '已就绪', cls: 'online ready' } : { label: '待准备', cls: 'online' };
+@@ -89,6 +94,7 @@ export function RoomPage() {
+   const chatInputRef = useRef<HTMLInputElement | null>(null);
+   const roomCommandInFlightRef = useRef(false);
+   const [gameConfig, setGameConfig] = useState<SetupConfig>({});
++  const [chatExpanded, setChatExpanded] = useState(false);
+ 
+   const synced = state.connState === 'synced';
+   const isHost = me !== null && room !== null && room.members.some(
+@@ -96,6 +102,7 @@ export function RoomPage() {
+   );
+   const myPlayerId = me?.playerId ?? null;
+   const myMember = room?.members.find((m) => m.playerId === myPlayerId);
++  const isScreen = myMember?.seatRole === 'spectator';
+ 
+   // P1-9：成员昵称索引（聊天渲染共用）
+   const memberNames = useMemo(() => {
+@@ -103,9 +110,22 @@ export function RoomPage() {
+     return new Map(entries);
+   }, [room]);
+ 
+-  const onlinePlayers = room?.members.filter(
+-    (m) => m.seatRole === 'player' && m.connectionStatus === 'CONNECTED',
+-  ) ?? [];
++  const playerMembers = useMemo(() => {
++    return (room?.members ?? [])
++      .filter((m) => m.seatRole === 'player' && m.connectionStatus !== 'KICKED')
++      .sort((a, b) => (a.seat ?? 999) - (b.seat ?? 999));
++  }, [room?.members]);
++
++  const onlinePlayerMembers = useMemo(() => {
++    return playerMembers.filter((m) => m.connectionStatus === 'CONNECTED');
++  }, [playerMembers]);
++
++  const spectatorMembers = useMemo(() => {
++    return (room?.members ?? [])
++      .filter((m) => m.seatRole === 'spectator' && m.connectionStatus !== 'KICKED');
++  }, [room?.members]);
++
++  const onlinePlayers = onlinePlayerMembers;
+ 
+   const selectedGame = getGameCatalogEntry(room?.gameId);
+ 
+@@ -221,6 +241,13 @@ export function RoomPage() {
+     void doRoomCommand({ command: 'ready', ready: !ready }, ready ? '取消准备' : '准备');
+   }
+ 
++  function handleSwitchSeatRole(playerId: string, role: 'player' | 'spectator') {
++    void doRoomCommand(
++      { command: 'switch_seat_role', role, targetPlayerId: playerId },
++      role === 'spectator' ? '设为公共大屏' : '加入游戏席位',
++    );
++  }
++
+   function handleKick(playerId: string, name: string) {
+     setConfirmState({ kind: 'kick', targetPlayerId: playerId, name });
+   }
+@@ -292,9 +319,8 @@ export function RoomPage() {
+   const minimumPlayersToStart = isWerewolfModerator ? 6 : roomGame.minPlayers;
+   const maximumPlayers = roomGame.maxPlayers;
+   const notReadyCount = onlinePlayers.filter((p) => !p.ready).length;
+-  // 自己是否还没准备：机器人加入即就绪，最容易出现"人数够了但卡在 1 人未准备"的就是房主本人
+-  const meNotReady = me !== null && room !== null
+-    && (room.members.find((m) => m.playerId === me.playerId)?.ready === false);
++  // 自己是否还没准备：仅当前作为参局玩家（player）且未准备时才阻断开局；公共大屏无需准备
++  const meNotReady = myMember?.seatRole === 'player' && myMember.ready === false;
+ 
+   const cardPlayerCount = isWerewolfModerator ? Math.max(0, onlinePlayers.length - 1) : onlinePlayers.length;
+   const werewolfDist = roomGame.id === 'werewolf'
+@@ -319,7 +345,7 @@ export function RoomPage() {
+     ? isWerewolfInvalid
+       ? (werewolfDist?.error ?? '狼人杀阵营配置不平衡（需平民保底 2 人），请调整配置后再开局')
+       : meNotReady
+-        ? '你还未准备：先点击成员列表中自己（我）的「准备」按钮'
++        ? '你还未准备：请点击下方「点击准备」按钮'
+         : onlinePlayers.length < minimumPlayersToStart
+           ? isWerewolfModerator
+             ? `需要 1 名主持人 + 5–12 名抽卡玩家（当前共 ${onlinePlayers.length} 人）`
+@@ -356,10 +382,94 @@ export function RoomPage() {
+     !isWerewolfInvalid &&
+     room.members.every((m) => m.connectionStatus === 'CONNECTED');
+ 
+-  const sortedMembers = [...room.members].sort((a, b) => {
+-    if (a.seatRole !== b.seatRole) return a.seatRole === 'player' ? -1 : 1;
+-    return (a.seat ?? 999) - (b.seat ?? 999);
+-  });
++  const renderMemberCard = (m: RoomMemberView) => {
++    const badge = memberStatusBadge(m);
++    const isMe = m.playerId === myPlayerId;
++    const hasActions =
++      isHost &&
++      (room.status === 'LOBBY' || room.status === 'POST_GAME') &&
++      ((!isMe && m.botKind === null) || m.botKind !== null);
++
++    return (
++      <li key={m.playerId} className={'member ' + badge.cls + (hasActions ? ' has-actions' : '')}>
++        <span className="member-seat">
++          {m.seatRole === 'player' ? '#' + (m.seat !== undefined && m.seat !== null ? m.seat + 1 : '?') : '📺'}
++        </span>
++        <UserAvatar
++          avatar={resolveMemberAvatar(m, { isMe, myAvatar: profile.avatar })}
++          nickname={m.nickname}
++          size={32}
++          style={{ marginRight: '6px' }}
++        />
++        <span className="member-name">
++          {m.nickname}
++          {m.isHost && (
++            <span className="host-icon" title="房主">
++              <GameIcon name="crown" size={15} style={{ marginLeft: '4px' }} />
++            </span>
++          )}
++          {isMe && <span className="me-tag">（我）</span>}
++          {m.botKind === 'llm' && <span className="bot-tag bot-tag--llm" title="由大模型决策">AI</span>}
++          {m.botKind === 'rule' && <span className="bot-tag" title="随机合法出牌">机器人</span>}
++        </span>
++        <span className={'member-status ' + badge.cls}>{badge.label}</span>
++        {hasActions && (
++          <div className="member-actions member-manage-group">
++            {!isMe && m.botKind === null && (
++              <>
++                <button
++                  type="button"
++                  className="mini-btn mini-btn--seat"
++                  aria-label={m.seatRole === 'spectator' ? '加入玩家席' : '设为公共大屏'}
++                  title={m.seatRole === 'spectator' ? '将该成员加入玩家席位' : '将该设备设为公共大屏'}
++                  onClick={() => handleSwitchSeatRole(m.playerId, m.seatRole === 'spectator' ? 'player' : 'spectator')}
++                  disabled={busy || !synced}
++                >
++                  {m.seatRole === 'spectator' ? '入席' : '设为公屏'}
++                </button>
++                {m.connectionStatus === 'CONNECTED' && (
++                  <>
++                    <button
++                      type="button"
++                      className="mini-btn mini-btn--transfer"
++                      aria-label={'转让房主给 ' + m.nickname}
++                      title="将房主移交给该玩家"
++                      onClick={() => handleTransfer(m.playerId, m.nickname)}
++                      disabled={busy || !synced || room.status === 'CLOSED'}
++                    >
++                      转让
++                    </button>
++                    <button
++                      type="button"
++                      className="mini-btn mini-btn--danger"
++                      aria-label={'踢出玩家 ' + m.nickname}
++                      title="将该玩家移出房间"
++                      onClick={() => handleKick(m.playerId, m.nickname)}
++                      disabled={busy || !synced || room.status === 'CLOSED'}
++                    >
++                      踢出
++                    </button>
++                  </>
++                )}
++              </>
++            )}
++            {m.botKind !== null && (
++              <button
++                type="button"
++                className="mini-btn mini-btn--danger"
++                aria-label={'移除 ' + m.nickname}
++                title="移除该机器人"
++                onClick={() => handleRemoveBot(m.playerId)}
++                disabled={busy || !synced}
++              >
++                移除
++              </button>
++            )}
++          </div>
++        )}
++      </li>
++    );
++  };
+ 
+   return (
+     <main className="room-page game-home-page" data-game-id={roomGame.id}>
+@@ -377,6 +487,11 @@ export function RoomPage() {
+               <span className="room-status-badge__dot" />
+               {statusText(room.status)}
+             </span>
++            {isScreen && (
++              <span className="room-status-badge room-status-badge--screen" title="当前设备为公共大屏（免准备，纯展示）">
++                📺 公共大屏
++              </span>
++            )}
+           </div>
+           <div className="home-header__actions room-header__actions">
+             {isHost && room.status !== 'IN_GAME' && (
+@@ -442,74 +557,54 @@ export function RoomPage() {
+         )}
+ 
+         <div className="room-content-grid">
+-          <section className="room-panel room-players-panel members-section">
+-            <div className="room-panel__head">
+-              <div>
+-                <h2 className="room-panel__title">成员（{onlinePlayers.length}/{maximumPlayers}）</h2>
++          <div className="room-members-column">
++            {/* 区块 1：参局玩家 */}
++            <section className="room-panel room-players-panel members-section" aria-labelledby="players-heading">
++              <div className="room-panel__head">
++                <div>
++                  <h2 id="players-heading" className="room-panel__title">
++                    🎮 参局玩家（{onlinePlayerMembers.length}/{maximumPlayers}）
++                  </h2>
++                </div>
++                {playerMembers.some((m) => m.connectionStatus !== 'CONNECTED' && m.connectionStatus !== 'KICKED') && (
++                  <span className="members-hint room-panel__hint">含断线保留</span>
++                )}
+               </div>
+-              {room.members.some((m) => m.connectionStatus !== 'CONNECTED' && m.connectionStatus !== 'KICKED') && <span className="members-hint room-panel__hint">含断线保留</span>}
+-            </div>
+-            <ul className="members-list room-members-list" aria-label="房间成员列表">
+-              {sortedMembers.map((m) => {
+-                const badge = memberStatusBadge(m);
+-                const isMe = m.playerId === myPlayerId;
+-                return (
+-                  <li key={m.playerId} className={'member ' + badge.cls}>
+-                    <span className="member-seat">{m.seatRole === 'player' ? '#' + (m.seat !== undefined && m.seat !== null ? m.seat : '?') : '观'}</span>
+-                    <UserAvatar
+-                      avatar={resolveMemberAvatar(m, { isMe, myAvatar: profile.avatar })}
+-                      nickname={m.nickname}
+-                      size={32}
+-                      style={{ marginRight: '6px' }}
+-                    />
+-                    <span className="member-name">
+-                      {m.nickname}
+-                      {m.isHost && (
+-                        <span className="host-icon" title="房主">
+-                          <GameIcon name="crown" size={15} style={{ marginLeft: '4px' }} />
+-                        </span>
+-                      )}
+-                      {isMe && <span className="me-tag">（我）</span>}
+-                      {m.botKind === 'llm' && <span className="bot-tag bot-tag--llm" title="由大模型决策">AI</span>}
+-                      {m.botKind === 'rule' && <span className="bot-tag" title="随机合法出牌">机器人</span>}
+-                    </span>
+-                    <span className={'member-status ' + badge.cls}>{badge.label}</span>
+-                    {/* 我自己的准备/取消准备（非机器人；机器人自动就绪） */}
+-                    {isMe && m.botKind === null && (room.status === 'LOBBY' || room.status === 'POST_GAME') && (
+-                      <span className="member-actions">
+-                        <button
+-                          type="button"
+-                          className="mini-btn"
+-                          aria-label={m.ready ? '取消准备' : '准备'}
+-                          onClick={() => handleToggleReady(m.ready)}
+-                          disabled={busy || !synced}
+-                        >
+-                          {m.ready ? '取消准备' : '准备'}
+-                        </button>
+-                      </span>
+-                    )}
+-                    {/* 机器人不能当房主、也不叫"踢出"，只给一个移除入口 */}
+-                    {isHost && m.botKind !== null && (room.status === 'LOBBY' || room.status === 'POST_GAME') && (
+-                      <span className="member-actions">
+-                        <button type="button" className="mini-btn" aria-label={'移除 ' + m.nickname} onClick={() => handleRemoveBot(m.playerId)} disabled={busy || !synced}>移除</button>
+-                      </span>
+-                    )}
+-                    {isHost && m.botKind === null && m.playerId !== myPlayerId && m.connectionStatus === 'CONNECTED' && (
+-                      <span className="member-actions">
+-                        <button type="button" className="mini-btn" aria-label={'踢出玩家 ' + m.nickname} onClick={() => handleKick(m.playerId, m.nickname)} disabled={busy || !synced || room.status === 'CLOSED'}>踢出</button>
+-                        <button type="button" className="mini-btn" aria-label={'转让房主给 ' + m.nickname} onClick={() => handleTransfer(m.playerId, m.nickname)} disabled={busy || !synced || room.status === 'CLOSED'}>转让房主</button>
+-                      </span>
+-                    )}
+-                  </li>
+-                );
+-              })}
+-            </ul>
+-          </section>
++              <ul className="members-list room-members-list" aria-label="参局玩家列表">
++                {playerMembers.map((m) => renderMemberCard(m))}
++              </ul>
++            </section>
++
++            {/* 区块 2：公共大屏 / 观战 */}
++            <section className="room-panel room-spectators-panel members-section" aria-labelledby="spectators-heading">
++              <div className="room-panel__head">
++                <div>
++                  <h2 id="spectators-heading" className="room-panel__title">
++                    📺 公共大屏 / 观战（{spectatorMembers.length}）
++                  </h2>
++                  <span className="spectators-subtitle">不占用玩家席位 · 纯净展示</span>
++                </div>
++              </div>
++              {spectatorMembers.length === 0 ? (
++                <div className="spectator-empty-card">
++                  <span className="spectator-empty-card__icon" aria-hidden="true">📺</span>
++                  <div className="spectator-empty-card__text">
++                    <strong>暂无公共大屏设备</strong>
++                    <p>可将备用手机、平板或电视置于桌面中央，设为公屏纯净展示计票板与公共天象。</p>
++                  </div>
++                </div>
++              ) : (
++                <ul className="members-list room-members-list" aria-label="公共大屏与观战列表">
++                  {spectatorMembers.map((m) => renderMemberCard(m))}
++                </ul>
++              )}
++            </section>
++          </div>
+ 
+-          <section className="room-panel room-chat-panel chat-section">
++          <section className="room-panel room-chat-panel chat-section" aria-labelledby="chat-heading">
+             <div className="room-panel__head">
+               <div>
+-                <h2 className="room-panel__title">聊天</h2>
++                <h2 id="chat-heading" className="room-panel__title">聊天</h2>
+               </div>
+               <span className="room-panel__glyph" aria-hidden="true">✦</span>
+             </div>
+@@ -518,26 +613,71 @@ export function RoomPage() {
+                 <ChatMessageList messages={state.chat} myPlayerId={myPlayerId} memberNames={memberNames} />
+               )}
+             </div>
+-            <form className="chat-input-row" onSubmit={handleSendChat}>
+-              <input ref={chatInputRef} type="text" value={chatDraft} onChange={(e) => setChatDraft(e.target.value.slice(0, 300))} placeholder={synced ? '输入消息…' : '同步中…暂不能发送'} maxLength={300} disabled={!synced} aria-label="聊天输入" />
+-              <button type="submit" className="game-card__action room-inline-btn" aria-label="发送消息" disabled={!synced || !chatDraft.trim() || busy}>发送</button>
+-            </form>
++            {isScreen && !chatExpanded ? (
++              <button
++                type="button"
++                className="chat-screen-fold-bar"
++                onClick={() => setChatExpanded(true)}
++                title="展开聊天输入框"
++              >
++                <span>📺 公屏模式已收起输入栏（点击展开）</span>
++              </button>
++            ) : (
++              <form className={`chat-input-row ${isScreen ? 'has-fold-btn' : ''}`} onSubmit={handleSendChat}>
++                <input
++                  ref={chatInputRef}
++                  type="text"
++                  value={chatDraft}
++                  onChange={(e) => setChatDraft(e.target.value.slice(0, 300))}
++                  placeholder={synced ? '输入消息…' : '同步中…暂不能发送'}
++                  maxLength={300}
++                  disabled={!synced}
++                  aria-label="聊天输入"
++                />
++                <button type="submit" className="game-card__action room-inline-btn" aria-label="发送消息" disabled={!synced || !chatDraft.trim() || busy}>发送</button>
++                {isScreen && (
++                  <button
++                    type="button"
++                    className="chat-fold-toggle-btn"
++                    onClick={() => setChatExpanded(false)}
++                    title="收起聊天输入栏"
++                  >
++                    收起
++                  </button>
++                )}
++              </form>
++            )}
+           </section>
+         </div>
+ 
+         <section className="home-join-callout room-share-note room-console" aria-labelledby="room-actions-title">
+           <div className="room-console__head">
+-            <span className="home-join-callout__icon" aria-hidden="true">♟</span>
+-            <div>
+-              <h2 id="room-actions-title" className="room-console__title">{(room.status === 'LOBBY' || room.status === 'POST_GAME') ? '对局准备中' : '当前状态：' + statusText(room.status)}</h2>
+-            </div>
+-            {(room.status === 'LOBBY' || room.status === 'POST_GAME') && (
+-              <div className="room-console__ready" role="status" aria-label="就绪进度">
+-                <span className="room-console__ready-label">已就绪 {onlinePlayers.filter((p) => p.ready).length} / {onlinePlayers.length}</span>
+-                <div className="room-console__ready-track">
+-                  <span style={{ width: `${onlinePlayers.length > 0 ? (onlinePlayers.filter((p) => p.ready).length / onlinePlayers.length) * 100 : 0}%` }} />
++            {isScreen ? (
++              <div className="room-console__screen-banner" role="status">
++                <div className="room-console__screen-title">
++                  <span className="screen-icon" aria-hidden="true">📺</span>
++                  <h2 id="room-actions-title" className="room-console__title">当前设备为公共大屏</h2>
++                  <span className="screen-tag">免准备 · 纯展示</span>
+                 </div>
++                <p className="room-console__screen-desc">
++                  本屏幕将展示全局天象、中央果摊与公共计票板，不占用玩家对局席位。
++                </p>
+               </div>
++            ) : (
++              <>
++                <span className="home-join-callout__icon" aria-hidden="true">♟</span>
++                <div>
++                  <h2 id="room-actions-title" className="room-console__title">{(room.status === 'LOBBY' || room.status === 'POST_GAME') ? '对局准备中' : '当前状态：' + statusText(room.status)}</h2>
++                </div>
++                {(room.status === 'LOBBY' || room.status === 'POST_GAME') && (
++                  <div className="room-console__ready" role="status" aria-label="就绪进度">
++                    <span className="room-console__ready-label">已就绪 {onlinePlayers.filter((p) => p.ready).length} / {onlinePlayers.length}</span>
++                    <div className="room-console__ready-track">
++                      <span style={{ width: `${onlinePlayers.length > 0 ? (onlinePlayers.filter((p) => p.ready).length / onlinePlayers.length) * 100 : 0}%` }} />
++                    </div>
++                  </div>
++                )}
++              </>
+             )}
+           </div>
+           <div className="action-bar room-console__actions">
+@@ -553,6 +693,30 @@ export function RoomPage() {
+                 <span>{myMember.ready ? '已准备 (取消)' : '点击准备'}</span>
+               </button>
+             )}
++            {myMember && myMember.seatRole === 'spectator' && (room.status === 'LOBBY' || room.status === 'POST_GAME') && (
++              <button
++                type="button"
++                className="room-console__btn room-console__btn--switch-back"
++                onClick={() => handleSwitchSeatRole(myMember.playerId, 'player')}
++                disabled={busy || !synced || seatsFull}
++                title={seatsFull ? `玩家席位已满（上限 ${maximumPlayers} 人）` : '当前设备为公共大屏。点击加入玩家席位亲自参局'}
++              >
++                <GameIcon name="cards_deck" size={18} />
++                <span>{seatsFull ? '玩家席已满' : '加入玩家席'}</span>
++              </button>
++            )}
++            {myMember && myMember.seatRole === 'player' && myMember.botKind === null && (room.status === 'LOBBY' || room.status === 'POST_GAME') && (
++              <button
++                type="button"
++                className="room-console__btn room-console__btn--secondary"
++                onClick={() => handleSwitchSeatRole(myMember.playerId, 'spectator')}
++                disabled={busy || !synced}
++                title="将此设备设为公共大屏（不占用人数，纯净展示全场）"
++              >
++                <span style={{ fontSize: '1.05rem', lineHeight: 1 }} aria-hidden="true">📺</span>
++                <span>设为公屏</span>
++              </button>
++            )}
+             <button type="button" className="room-console__btn room-console__btn--leave" onClick={handleLeaveRoom} disabled={busy}>
+               <GameIcon name="door_exit" size={18} />
+               <span>离开房间</span>
+diff --git a/packages/client/src/shared-ui/DiceCup.tsx b/packages/client/src/shared-ui/DiceCup.tsx
+index 56cf27f..9506035 100644
+--- a/packages/client/src/shared-ui/DiceCup.tsx
++++ b/packages/client/src/shared-ui/DiceCup.tsx
+@@ -34,6 +34,7 @@ export interface DiceCupProps {
+ export type DiceCupAction =
+   | { type: 'lift_down'; canInteract: boolean }
+   | { type: 'lift_up' }
++  | { type: 'lift_toggle'; canInteract: boolean }
+   | { type: 'lift_cancel' }
+   | { type: 'emergency_hide' }
+   | { type: 'shake_start'; canInteract: boolean; allowShake: boolean }
+@@ -67,6 +68,9 @@ export function reduceDiceCupState(
+     case 'lift_down':
+       if (!action.canInteract) return state;
+       return { ...state, isLifted: true };
++    case 'lift_toggle':
++      if (!action.canInteract) return state;
++      return { ...state, isLifted: !state.isLifted };
+     case 'lift_up':
+     case 'lift_cancel':
+     case 'emergency_hide':
+@@ -100,6 +104,11 @@ export function DiceCup({
+   // 归一化点数数组
+   const normalizedValues = normalizeDiceValues(diceValues);
+ 
++  // 双模交互计时器与按压追踪
++  const downTimeRef = React.useRef<number>(0);
++  const longPressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
++  const isHoldModeRef = React.useRef<boolean>(false);
++
+   // 环境级安全防窥：切换后台或失焦时自动扣盖
+   useEffect(() => {
+     const hide = () => {
+@@ -117,37 +126,85 @@ export function DiceCup({
+     return () => {
+       document.removeEventListener('visibilitychange', onVisibility);
+       window.removeEventListener('blur', hide);
++      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+     };
+   }, [isLifted, onInspectCommit]);
+ 
++  const triggerReveal = useCallback(() => {
++    webAudio.playDiceReveal();
++    try {
++      if (typeof navigator !== 'undefined' && navigator.vibrate) {
++        navigator.vibrate(12);
++      }
++    } catch {
++      // Ignore vibration error on unsupported platforms
++    }
++  }, []);
++
+   const handlePointerDown = useCallback(
+     (e: React.PointerEvent) => {
+       if (!canInteract) return;
+       e.preventDefault();
+-      setIsLifted(true);
+-      webAudio.playDiceReveal();
+-      try {
+-        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+-          navigator.vibrate(10);
+-        }
+-      } catch {
+-        // Ignore vibration error on unsupported platforms
++      downTimeRef.current = performance.now();
++      isHoldModeRef.current = false;
++
++      // 如果当前已经是定格掀开状态，准备在 PointerUp 时识别为点击扣盖
++      if (isLifted) {
++        return;
+       }
++
++      // 启动 220ms 长按判定：若按住不放则进入长按偷看模式并立即掀开
++      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
++      longPressTimerRef.current = setTimeout(() => {
++        isHoldModeRef.current = true;
++        setIsLifted(true);
++        triggerReveal();
++      }, 220);
+     },
+-    [canInteract]
++    [canInteract, isLifted, triggerReveal]
+   );
+ 
+   const handlePointerUp = useCallback(
+     (e: React.PointerEvent) => {
+-      if (!isLifted) return;
++      if (!canInteract) return;
+       e.preventDefault();
+-      setIsLifted(false);
+-      onInspectCommit?.();
++      if (longPressTimerRef.current) {
++        clearTimeout(longPressTimerRef.current);
++        longPressTimerRef.current = null;
++      }
++
++      const pressDuration = performance.now() - downTimeRef.current;
++
++      if (isHoldModeRef.current) {
++        // 长按偷看结束：松手立即扣盖防窥
++        isHoldModeRef.current = false;
++        setIsLifted(false);
++        onInspectCommit?.();
++        return;
++      }
++
++      // 短按（单击）：点击切换掀开定格/扣盖
++      if (pressDuration < 280) {
++        setIsLifted((prev) => {
++          const next = !prev;
++          if (next) {
++            triggerReveal();
++          } else {
++            onInspectCommit?.();
++          }
++          return next;
++        });
++      }
+     },
+-    [isLifted, onInspectCommit]
++    [canInteract, onInspectCommit, triggerReveal]
+   );
+ 
+   const handlePointerCancel = useCallback(() => {
++    if (longPressTimerRef.current) {
++      clearTimeout(longPressTimerRef.current);
++      longPressTimerRef.current = null;
++    }
++    isHoldModeRef.current = false;
+     if (isLifted) {
+       setIsLifted(false);
+       onInspectCommit?.();
+@@ -216,7 +273,7 @@ export function DiceCup({
+           {canInteract ? (
+             isLifted ? (
+               <span className="hint-lifted">
+-                松开手指自动扣盖防窥{' '}
++                点击或松开扣盖防窥{' '}
+                 {normalizedValues.length === 1
+                   ? `（${normalizedValues[0]} 点）`
+                   : normalizedValues.length > 1
+@@ -224,7 +281,7 @@ export function DiceCup({
+                     : ''}
+               </span>
+             ) : (
+-              <span className="hint-press">{hint || '按住掀开 3D 骰盅查看'}</span>
++              <span className="hint-press">{hint || '点击掀开大图或按住偷看'}</span>
+             )
+           ) : (
+             <span className="hint-disabled">{hint || '骰盅已扣紧'}</span>
+diff --git a/packages/client/src/shared-ui/ThreeDiceCupCanvas.tsx b/packages/client/src/shared-ui/ThreeDiceCupCanvas.tsx
+index 0af1cdd..9ce5c63 100644
+--- a/packages/client/src/shared-ui/ThreeDiceCupCanvas.tsx
++++ b/packages/client/src/shared-ui/ThreeDiceCupCanvas.tsx
+@@ -1,5 +1,6 @@
+ import React, { useEffect, useRef } from 'react';
+ import * as THREE from 'three';
++import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+ import { useMotion } from '../motion/MotionContext.tsx';
+ import type { MotionLevel } from '../motion/motionPolicy.ts';
+ import { webAudio } from './WebAudioManager.ts';
+@@ -151,62 +152,63 @@ function createDiceFaceTexture(value: number, size: number): THREE.CanvasTexture
+   canvas.width = size;
+   canvas.height = size;
+   const ctx = canvas.getContext('2d')!;
+-  const s = size / 256; // 相对 256 基准的缩放系数
++  const s = size / 256;
+ 
+-  // 1. 象牙白微渐变底色
++  // 1. 象牙白温润微渐变底色
+   const bgGrad = ctx.createRadialGradient(
+-    size / 2, size / 2, 10 * s,
+-    size / 2, size / 2, size * 0.7
++    size / 2, size / 2, 18 * s,
++    size / 2, size / 2, size * 0.75
+   );
+   bgGrad.addColorStop(0, '#ffffff');
+-  bgGrad.addColorStop(0.85, '#f8fafc');
+-  bgGrad.addColorStop(1, '#e2e8f0');
++  bgGrad.addColorStop(0.7, '#faf7f2');
++  bgGrad.addColorStop(1, '#eee6da');
+   ctx.fillStyle = bgGrad;
+   ctx.fillRect(0, 0, size, size);
+ 
+-  // 2. 边缘微圆角反光暗角
+-  ctx.lineWidth = 14 * s;
+-  ctx.strokeStyle = 'rgba(203, 213, 225, 0.4)';
+-  ctx.strokeRect(7 * s, 7 * s, size - 14 * s, size - 14 * s);
++  // 2. 边缘象牙微圆润暗角
++  ctx.lineWidth = 10 * s;
++  ctx.strokeStyle = 'rgba(215, 200, 180, 0.45)';
++  ctx.strokeRect(5 * s, 5 * s, size - 10 * s, size - 10 * s);
+ 
+-  // 3. 点位坐标与色彩
++  // 3. 点位坐标与立体阴刻色彩
+   const isRed = value === 1 || value === 4;
+-  const dotColor = isRed ? '#dc2626' : '#1e293b';
++  const dotColor = isRed ? '#dc2626' : '#0f172a';
+   const dotGlow = isRed ? '#ef4444' : '#334155';
++  const dotDeep = isRed ? '#7f1d1d' : '#020617';
+ 
+   const drawDot = (xPct: number, yPct: number, radius: number) => {
+     const x = (xPct / 100) * size;
+     const y = (yPct / 100) * size;
+ 
+-    // 内凹阴影
++    // 内凹立体阴刻阴影
+     ctx.save();
+     ctx.beginPath();
+     ctx.arc(x, y, radius, 0, Math.PI * 2);
+     const grad = ctx.createRadialGradient(
+-      x - radius * 0.3, y - radius * 0.3, 1,
++      x - radius * 0.35, y - radius * 0.35, 1,
+       x, y, radius
+     );
+     grad.addColorStop(0, dotGlow);
+-    grad.addColorStop(0.8, dotColor);
+-    grad.addColorStop(1, isRed ? '#991b1b' : '#0f172a');
++    grad.addColorStop(0.75, dotColor);
++    grad.addColorStop(1, dotDeep);
+     ctx.fillStyle = grad;
+-    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+-    ctx.shadowBlur = 6 * s;
+-    ctx.shadowOffsetX = 1 * s;
+-    ctx.shadowOffsetY = 2 * s;
++    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
++    ctx.shadowBlur = 7 * s;
++    ctx.shadowOffsetX = 1.2 * s;
++    ctx.shadowOffsetY = 2.2 * s;
+     ctx.fill();
+ 
+-    // 内部高光小点
++    // 烤漆高光球
+     ctx.beginPath();
+-    ctx.arc(x - radius * 0.35, y - radius * 0.35, radius * 0.22, 0, Math.PI * 2);
+-    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
++    ctx.arc(x - radius * 0.36, y - radius * 0.36, radius * 0.24, 0, Math.PI * 2);
++    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+     ctx.shadowColor = 'transparent';
+     ctx.fill();
+     ctx.restore();
+   };
+ 
+-  const bigR = 36 * s;
+-  const normalR = 22 * s;
++  const bigR = 38 * s;
++  const normalR = 23 * s;
+ 
+   if (value === 1) {
+     drawDot(50, 50, bigR);
+@@ -245,6 +247,7 @@ function createDiceFaceTexture(value: number, size: number): THREE.CanvasTexture
+ interface ThemedTextures {
+   cupMap: THREE.CanvasTexture;
+   matMap: THREE.CanvasTexture;
++  bumpMap: THREE.CanvasTexture | null;
+   roughnessMap: THREE.CanvasTexture | null;
+ }
+ 
+@@ -265,8 +268,7 @@ function sprayNoise(
+ }
+ 
+ /**
+- * 主题化程序化贴图：杯体 map / 底盘毡面 map（灰度×材质色）/ 金属拉丝 roughnessMap。
+- * 全部 Canvas 生成，无外部静态资产，离线可用。
++ * 主题化程序化贴图：杯体 map / 底盘毡面 map / 木质或金属 bumpMap 与 roughnessMap。
+  */
+ function createThemedTextures(theme: ThreeDiceCupTheme, size: number): ThemedTextures {
+   // ── 杯体贴图 ──
+@@ -274,26 +276,80 @@ function createThemedTextures(theme: ThreeDiceCupTheme, size: number): ThemedTex
+   cupCanvas.width = cupCanvas.height = size;
+   const cc = cupCanvas.getContext('2d')!;
+ 
++  let bumpMap: THREE.CanvasTexture | null = null;
++  let roughnessMap: THREE.CanvasTexture | null = null;
++
+   if (theme === 'wood') {
+-    // 竖向木纹：基底 + 正弦扰动条纹 + 噪点
++    // 暖色黑胡桃木/花梨木：温润底色 + 真实自然年轮流动 + 导管微孔
+     const base = cc.createLinearGradient(0, 0, size, 0);
+-    base.addColorStop(0, '#8a4a1d');
+-    base.addColorStop(0.5, '#9a5a28');
+-    base.addColorStop(1, '#7a3f16');
++    base.addColorStop(0, '#5a2b16');
++    base.addColorStop(0.28, '#70371d');
++    base.addColorStop(0.55, '#5d2c16');
++    base.addColorStop(0.82, '#763b20');
++    base.addColorStop(1, '#4a2211');
+     cc.fillStyle = base;
+     cc.fillRect(0, 0, size, size);
++
++    const bCanvas = document.createElement('canvas');
++    bCanvas.width = bCanvas.height = size;
++    const bc = bCanvas.getContext('2d')!;
++    bc.fillStyle = '#808080';
++    bc.fillRect(0, 0, size, size);
++
++    const rCanvas = document.createElement('canvas');
++    rCanvas.width = rCanvas.height = size;
++    const rc = rCanvas.getContext('2d')!;
++    rc.fillStyle = '#555555';
++    rc.fillRect(0, 0, size, size);
++
+     for (let x = 0; x < size; x += 2) {
+-      const alpha = 0.05 + 0.11 * Math.abs(Math.sin(x * 0.09 + Math.sin(x * 0.021) * 2));
+-      cc.strokeStyle = `rgba(52, 26, 7, ${alpha})`;
+-      cc.lineWidth = x % 9 === 0 ? 2 : 1;
++      const wave1 = Math.sin(x * 0.016) * 14;
++      const wave2 = Math.sin(x * 0.045 + 1.2) * 6;
++      const intensity = Math.abs(Math.sin(x * 0.03 + wave1 * 0.12)) * 0.38 + 0.06;
++
++      cc.strokeStyle = `rgba(35, 14, 5, ${intensity})`;
++      cc.lineWidth = x % 6 === 0 ? 2.5 : 1;
+       cc.beginPath();
+-      cc.moveTo(x + Math.sin(x * 0.12) * 4, 0);
+-      for (let y = 0; y <= size; y += 8) {
+-        cc.lineTo(x + Math.sin(y * 0.045 + x * 0.02) * 5, y);
++      cc.moveTo(x + wave1, 0);
++      for (let y = 0; y <= size; y += 14) {
++        const wobble = Math.sin(y * 0.014 + x * 0.018) * 4.5;
++        cc.lineTo(x + wave1 + wave2 + wobble, y);
+       }
+       cc.stroke();
++
++      // 金棕高光年轮微纹
++      if (x % 14 === 0) {
++        cc.strokeStyle = `rgba(230, 160, 110, ${intensity * 0.22})`;
++        cc.lineWidth = 1;
++        cc.beginPath();
++        cc.moveTo(x + wave1 + 1, 0);
++        for (let y = 0; y <= size; y += 14) {
++          const wobble = Math.sin(y * 0.014 + x * 0.018) * 4.5;
++          cc.lineTo(x + wave1 + wave2 + wobble + 1, y);
++        }
++        cc.stroke();
++      }
++
++      bc.strokeStyle = `rgba(0, 0, 0, ${intensity * 0.6})`;
++      bc.lineWidth = 1.5;
++      bc.stroke();
++    }
++
++    // 导管微孔噪点（Wood pores）
++    for (let i = 0; i < size * 4; i++) {
++      const px = Math.random() * size;
++      const py = Math.random() * size;
++      const len = 3 + Math.random() * 8;
++      cc.fillStyle = 'rgba(25, 10, 3, 0.45)';
++      cc.fillRect(px, py, 1.2, len);
++      bc.fillStyle = 'rgba(40, 40, 40, 0.5)';
++      bc.fillRect(px, py, 1.2, len);
++      rc.fillStyle = 'rgba(170, 170, 170, 0.3)';
++      rc.fillRect(px, py, 1.2, len);
+     }
+-    sprayNoise(cc, size, size * 3, 0.05);
++
++    bumpMap = new THREE.CanvasTexture(bCanvas);
++    roughnessMap = new THREE.CanvasTexture(rCanvas);
+   } else if (theme === 'metal') {
+     // 深灰金属基底 + 竖向微渐变（拉丝交给 roughnessMap）
+     const grad = cc.createLinearGradient(0, 0, size, 0);
+@@ -303,6 +359,18 @@ function createThemedTextures(theme: ThreeDiceCupTheme, size: number): ThemedTex
+     cc.fillStyle = grad;
+     cc.fillRect(0, 0, size, size);
+     sprayNoise(cc, size, size * 2, 0.04);
++
++    const rc = document.createElement('canvas');
++    rc.width = rc.height = size;
++    const r2 = rc.getContext('2d')!;
++    r2.fillStyle = '#4d4d4d';
++    r2.fillRect(0, 0, size, size);
++    for (let y = 0; y < size; y += 1) {
++      const lum = 60 + Math.floor(Math.random() * 70);
++      r2.fillStyle = `rgb(${lum},${lum},${lum})`;
++      r2.fillRect(0, y, size, 1);
++    }
++    roughnessMap = new THREE.CanvasTexture(rc);
+   } else {
+     // felt 绒布：深绛红高频织物噪点
+     cc.fillStyle = '#7c1d43';
+@@ -324,23 +392,7 @@ function createThemedTextures(theme: ThreeDiceCupTheme, size: number): ThemedTex
+   const matMap = new THREE.CanvasTexture(matCanvas);
+   matMap.colorSpace = THREE.SRGBColorSpace;
+ 
+-  // ── 金属拉丝 roughnessMap ──
+-  let roughnessMap: THREE.CanvasTexture | null = null;
+-  if (theme === 'metal') {
+-    const rc = document.createElement('canvas');
+-    rc.width = rc.height = size;
+-    const r2 = rc.getContext('2d')!;
+-    r2.fillStyle = '#4d4d4d';
+-    r2.fillRect(0, 0, size, size);
+-    for (let y = 0; y < size; y += 1) {
+-      const lum = 60 + Math.floor(Math.random() * 70);
+-      r2.fillStyle = `rgb(${lum},${lum},${lum})`;
+-      r2.fillRect(0, y, size, 1);
+-    }
+-    roughnessMap = new THREE.CanvasTexture(rc);
+-  }
+-
+-  return { cupMap, matMap, roughnessMap };
++  return { cupMap, matMap, bumpMap, roughnessMap };
+ }
+ 
+ /* ══════════════════════ 布局 ══════════════════════ */
+@@ -382,17 +434,45 @@ interface DieState {
+   };
+ }
+ 
+-// 掀盖 = 升起并挪向右后方（真实玩家的"掀开挪到一边"），完全让出骰子顶面视线：
+-// 杯口半径 1.7 远大于骰子，若仅垂直上浮，任何相机视角下杯口下沿都会遮挡骰面后侧。
+-const CUP_LIFT_Y = 1.4;
+-const CUP_LIFT_X = 1.2;
+-const CUP_LIFT_Z = -1.5;
+-const CUP_LIFT_TILT = -0.12;
+-const CUP_LIFT_LEAN = 0.25;
++// 掀盖 = 升起并挪向后侧（配合相机微距推进，完全让出顶视线）
++const CUP_LIFT_Y = 3.8;
++const CUP_LIFT_X = 1.8;
++const CUP_LIFT_Z = -3.0;
++const CUP_LIFT_TILT = -0.32;
++const CUP_LIFT_LEAN = 0.38;
+ const GRAVITY = 26;
+ const SETTLE_DURATION = 0.5;
+ const KNOCK_MIN_INTERVAL_MS = 60;
+ 
++const DEFAULT_CAM_POS = new THREE.Vector3(0, 5.4, 8.4);
++const DEFAULT_LOOK_AT = new THREE.Vector3(0, 0.6, 0);
++
++function getZoomCameraTarget(count: number, isCompact: boolean): {
++  pos: THREE.Vector3;
++  lookAt: THREE.Vector3;
++  fov: number;
++} {
++  if (count <= 1) {
++    return {
++      pos: new THREE.Vector3(0, isCompact ? 3.0 : 2.7, 0.38),
++      lookAt: new THREE.Vector3(0, 0.45, 0),
++      fov: isCompact ? 42 : 38,
++    };
++  }
++  if (count <= 3) {
++    return {
++      pos: new THREE.Vector3(0, isCompact ? 3.4 : 3.15, 0.44),
++      lookAt: new THREE.Vector3(0, 0.44, 0),
++      fov: isCompact ? 44 : 40,
++    };
++  }
++  return {
++    pos: new THREE.Vector3(0, isCompact ? 4.0 : 3.65, 0.52),
++    lookAt: new THREE.Vector3(0, 0.42, 0),
++    fov: isCompact ? 46 : 42,
++  };
++}
++
+ export function ThreeDiceCupCanvas({
+   diceValues = [4],
+   isLifted,
+@@ -440,11 +520,11 @@ export function ThreeDiceCupCanvas({
+       return res;
+     };
+ 
+-    // 1. Scene & Camera（留出充裕的安全边距，确保底座与掀开时不裁切）
++    // 1. Scene & Camera
+     const scene = new THREE.Scene();
+     const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+-    camera.position.set(0, 5.2, 8.2);
+-    camera.lookAt(0, 0.6, 0);
++    camera.position.copy(DEFAULT_CAM_POS);
++    camera.lookAt(DEFAULT_LOOK_AT);
+ 
+     // 2. WebGL Renderer
+     const renderer = track(
+@@ -457,36 +537,41 @@ export function ThreeDiceCupCanvas({
+     renderer.setSize(width, height);
+     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelRatioCap));
+     renderer.shadowMap.enabled = shadowsEnabled;
+-    renderer.shadowMap.type = THREE.PCFShadowMap;
++    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+     renderer.toneMapping = THREE.ACESFilmicToneMapping;
+-    renderer.toneMappingExposure = 1.15;
++    renderer.toneMappingExposure = 1.25;
+     container.appendChild(renderer.domElement);
+ 
+     // 3. Lighting
+-    scene.add(new THREE.AmbientLight(0xffffff, 0.55));
++    scene.add(new THREE.AmbientLight(0xfff7ed, 0.85));
+ 
+-    const mainLight = new THREE.DirectionalLight(0xfff5e6, 2.2);
+-    mainLight.position.set(4, 9, 5);
++    const mainLight = new THREE.DirectionalLight(0xfffbeb, 2.6);
++    mainLight.position.set(3.8, 9, 4.2);
+     mainLight.castShadow = shadowsEnabled;
+     mainLight.shadow.mapSize.set(shadowMapSize, shadowMapSize);
+-    mainLight.shadow.camera.left = -4;
+-    mainLight.shadow.camera.right = 4;
+-    mainLight.shadow.camera.top = 4;
+-    mainLight.shadow.camera.bottom = -4;
+-    mainLight.shadow.camera.near = 2;
+-    mainLight.shadow.camera.far = 20;
+-    mainLight.shadow.bias = -0.0008;
++    const shadowCam = mainLight.shadow.camera as THREE.OrthographicCamera;
++    shadowCam.left = -4;
++    shadowCam.right = 4;
++    shadowCam.top = 4;
++    shadowCam.bottom = -4;
++    shadowCam.near = 2;
++    shadowCam.far = 20;
++    mainLight.shadow.bias = -0.0005;
+     scene.add(mainLight);
+ 
++    const softFill = new THREE.DirectionalLight(0xffedd5, 0.7);
++    softFill.position.set(0, 8, -4);
++    scene.add(softFill);
++
+     const fillLight = new THREE.DirectionalLight(0x93c5fd, 0.8);
+     fillLight.position.set(-5, 6, -3);
+     scene.add(fillLight);
+ 
+-    const rimLight = new THREE.PointLight(0xfef08a, 1.2, 10);
+-    rimLight.position.set(0, 6, 2);
++    const rimLight = new THREE.PointLight(0xfef08a, 1.4, 12);
++    rimLight.position.set(0, 6, 2.5);
+     scene.add(rimLight);
+ 
+-    // 4. 环境反射（PMREM + 手写简易灯箱场景，不依赖 addons）
++    // 4. 环境反射
+     {
+       const pmrem = track(new THREE.PMREMGenerator(renderer));
+       const envScene = new THREE.Scene();
+@@ -502,29 +587,30 @@ export function ThreeDiceCupCanvas({
+         mesh.lookAt(0, 0, 0);
+         envScene.add(mesh);
+       };
+-      panel(7, 3, 0xfff2df, 3.2, 0, 6, 2); // 顶部暖光
+-      panel(5, 2, 0xdceaff, 1.8, -5, 2, -3); // 侧冷光
+-      panel(4, 3, 0xffe9b8, 1.5, 5, 1, -4); // 背光
++      panel(7, 3, 0xfff2df, 3.2, 0, 6, 2);
++      panel(5, 2, 0xdceaff, 1.8, -5, 2, -3);
++      panel(4, 3, 0xffe9b8, 1.5, 5, 1, -4);
+       const envRT = track(pmrem.fromScene(envScene, 0.04));
+       scene.environment = envRT.texture;
+     }
+ 
+-    // 5. Table Mat & Rim Base（天鹅绒底盘 + 主题毡面 + 木质外框）
++    // 5. Table Mat & Rim Base（天鹅绒底盘 + 主题毡面 + 木质托盘外框）
+     const themed = createThemedTextures(theme, texSize);
+     track(themed.cupMap);
+     track(themed.matMap);
++    if (themed.bumpMap) track(themed.bumpMap);
+     if (themed.roughnessMap) track(themed.roughnessMap);
+ 
+     const baseGroup = new THREE.Group();
+     scene.add(baseGroup);
+ 
+-    const matColor = theme === 'felt' ? 0x700c36 : theme === 'metal' ? 0x1e293b : 0x164e2b;
++    const matColor = theme === 'felt' ? 0x700c36 : theme === 'metal' ? 0x1e293b : 0x0f3822;
+     const matGeo = track(new THREE.CylinderGeometry(2.1, 2.1, 0.12, 48));
+     const matMat = track(
+       new THREE.MeshStandardMaterial({
+         color: matColor,
+         map: themed.matMap,
+-        roughness: 0.92,
++        roughness: 0.9,
+         metalness: 0.02,
+       })
+     );
+@@ -533,13 +619,13 @@ export function ThreeDiceCupCanvas({
+     matMesh.receiveShadow = true;
+     baseGroup.add(matMesh);
+ 
+-    const rimWoodColor = theme === 'felt' ? 0x4a0422 : theme === 'metal' ? 0x334155 : 0x542c13;
++    const rimWoodColor = theme === 'felt' ? 0x4a0422 : theme === 'metal' ? 0x334155 : 0x2e1408;
+     const rimGeo = track(new THREE.TorusGeometry(2.12, 0.12, 16, 48));
+     const rimMat = track(
+       new THREE.MeshStandardMaterial({
+         color: rimWoodColor,
+-        roughness: 0.35,
+-        metalness: 0.25,
++        roughness: 0.38,
++        metalness: 0.18,
+       })
+     );
+     const rimMesh = new THREE.Mesh(rimGeo, rimMat);
+@@ -548,8 +634,7 @@ export function ThreeDiceCupCanvas({
+     rimMesh.receiveShadow = true;
+     baseGroup.add(rimMesh);
+ 
+-    // 6. Dice（单位立方体 + scale，支持数量动态增减）
+-    // 各向异性过滤：斜视角下骰面贴图保持锐利（清晰度关键）
++    // 6. Dice（RoundedBoxGeometry 象牙圆角骰子，支持动态增减与点数自适应）
+     const maxAnisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+     const faceTextures = [1, 2, 3, 4, 5, 6].map((num) => {
+       const tex = track(createDiceFaceTexture(num, texSize));
+@@ -564,15 +649,15 @@ export function ThreeDiceCupCanvas({
+         track(
+           new THREE.MeshPhysicalMaterial({
+             map,
+-            roughness: 0.22,
+-            metalness: 0.02,
+-            clearcoat: 0.55,
+-            clearcoatRoughness: 0.28,
++            roughness: 0.16,
++            metalness: 0.01,
++            clearcoat: 0.85,
++            clearcoatRoughness: 0.18,
+           })
+         )
+     );
+ 
+-    const dieGeo = track(new THREE.BoxGeometry(1, 1, 1));
++    const dieGeo = track(new RoundedBoxGeometry(1, 1, 1, 6, 0.12));
+     const diceGroup = new THREE.Group();
+     scene.add(diceGroup);
+ 
+@@ -649,40 +734,44 @@ export function ThreeDiceCupCanvas({
+     syncDice(initialValues, true);
+     lastValuesKey = initialValues.join(',');
+ 
+-    // 7. 3D Cup（Lathe 车削钟形杯体 + 金环 + 葫芦顶钮）
++    // 7. 3D Cup（S型流线收腰钟形杯壁 + 鎏金环圈 + 宝珠顶钮）
+     const cupGroup = new THREE.Group();
+     scene.add(cupGroup);
+ 
+     const cupBodyMat = track(
+-      new THREE.MeshStandardMaterial({
++      new THREE.MeshPhysicalMaterial({
+         color: 0xffffff,
+         map: themed.cupMap,
++        ...(themed.bumpMap ? { bumpMap: themed.bumpMap, bumpScale: 0.015 } : {}),
+         ...(themed.roughnessMap ? { roughnessMap: themed.roughnessMap } : {}),
+-        metalness: theme === 'metal' ? 0.7 : 0.12,
+-        roughness: theme === 'metal' ? 0.34 : theme === 'felt' ? 0.8 : 0.5,
++        metalness: theme === 'metal' ? 0.75 : 0.04,
++        roughness: theme === 'metal' ? 0.32 : theme === 'felt' ? 0.8 : 0.32,
++        clearcoat: theme === 'wood' ? 0.65 : 0.1,
++        clearcoatRoughness: 0.14,
+         side: THREE.DoubleSide,
+       })
+     );
+ 
+     const goldMat = track(
+-      new THREE.MeshStandardMaterial({
+-        color: 0xf59e0b,
+-        metalness: 0.9,
+-        roughness: 0.2,
++      new THREE.MeshPhysicalMaterial({
++        color: 0xfbbf24,
++        metalness: 0.98,
++        roughness: 0.08,
++        clearcoat: 0.9,
++        clearcoatRoughness: 0.1,
+       })
+     );
+ 
+-    // 钟形杯壁（底部 r1.70 → 收腰 → 顶部 r1.18，杯口内折呈薄壁）
++    // S型流线钟形截面
+     const cupProfile = [
+-      [1.7, 0.0],
+-      [1.62, 0.22],
+-      [1.48, 0.6],
+-      [1.34, 1.05],
+-      [1.26, 1.55],
+-      [1.22, 2.0],
+-      [1.18, 2.3],
+-      [1.1, 2.3],
+-      [1.08, 2.2],
++      [1.82, 0.0],
++      [1.78, 0.3],
++      [1.70, 0.7],
++      [1.54, 1.2],
++      [1.36, 1.7],
++      [1.26, 2.15],
++      [1.24, 2.45],
++      [1.15, 2.45],
+     ].map(([x, y]) => new THREE.Vector2(x, y));
+     const cupBodyGeo = track(new THREE.LatheGeometry(cupProfile, 48));
+     const cupBodyMesh = new THREE.Mesh(cupBodyGeo, cupBodyMat);
+@@ -690,38 +779,44 @@ export function ThreeDiceCupCanvas({
+     cupGroup.add(cupBodyMesh);
+ 
+     // 杯顶盖
+-    const cupTopGeo = track(new THREE.CylinderGeometry(1.17, 1.17, 0.09, 48));
++    const cupTopGeo = track(new THREE.CylinderGeometry(1.22, 1.22, 0.08, 48));
+     const cupTopMesh = new THREE.Mesh(cupTopGeo, cupBodyMat);
+-    cupTopMesh.position.y = 2.345;
++    cupTopMesh.position.y = 2.48;
+     cupGroup.add(cupTopMesh);
+ 
+-    // 葫芦顶钮：环托 + 球
+-    const knobRingGeo = track(new THREE.TorusGeometry(0.15, 0.045, 12, 32));
+-    const knobRingMesh = new THREE.Mesh(knobRingGeo, goldMat);
+-    knobRingMesh.rotation.x = Math.PI / 2;
+-    knobRingMesh.position.y = 2.45;
+-    cupGroup.add(knobRingMesh);
++    // 鎏金口沿（底口金环）
++    const bottomRingGeo = track(new THREE.TorusGeometry(1.82, 0.06, 16, 48));
++    const bottomRingMesh = new THREE.Mesh(bottomRingGeo, goldMat);
++    bottomRingMesh.rotation.x = Math.PI / 2;
++    bottomRingMesh.position.y = 0.03;
++    cupGroup.add(bottomRingMesh);
+ 
+-    const knobGeo = track(new THREE.SphereGeometry(0.24, 24, 24));
+-    const knobMesh = new THREE.Mesh(knobGeo, goldMat);
+-    knobMesh.position.y = 2.62;
+-    knobMesh.castShadow = true;
+-    cupGroup.add(knobMesh);
++    // 腰线鎏金饰带
++    const waistBandGeo = track(new THREE.CylinderGeometry(1.52, 1.54, 0.07, 48));
++    const waistBandMesh = new THREE.Mesh(waistBandGeo, goldMat);
++    waistBandMesh.position.y = 1.25;
++    cupGroup.add(waistBandMesh);
+ 
+-    // 金质边缘饰环（顶口 / 底口）
+-    const topRingGeo = track(new THREE.TorusGeometry(1.2, 0.05, 12, 48));
++    // 顶口鎏金饰环
++    const topRingGeo = track(new THREE.TorusGeometry(1.24, 0.05, 16, 48));
+     const topRingMesh = new THREE.Mesh(topRingGeo, goldMat);
+     topRingMesh.rotation.x = Math.PI / 2;
+-    topRingMesh.position.y = 2.39;
++    topRingMesh.position.y = 2.49;
+     cupGroup.add(topRingMesh);
+ 
+-    const bottomRingGeo = track(new THREE.TorusGeometry(1.7, 0.06, 12, 48));
+-    const bottomRingMesh = new THREE.Mesh(bottomRingGeo, goldMat);
+-    bottomRingMesh.rotation.x = Math.PI / 2;
+-    bottomRingMesh.position.y = 0.05;
+-    cupGroup.add(bottomRingMesh);
++    // 宫廷宝珠顶钮（双层座 + 椭球珠顶）
++    const knobBaseGeo = track(new THREE.CylinderGeometry(0.35, 0.45, 0.12, 24));
++    const knobBaseMesh = new THREE.Mesh(knobBaseGeo, goldMat);
++    knobBaseMesh.position.y = 2.58;
++    cupGroup.add(knobBaseMesh);
+ 
+-    // 8. 动画与物理循环（按需渲染）
++    const knobGeo = track(new THREE.SphereGeometry(0.26, 24, 24));
++    const knobMesh = new THREE.Mesh(knobGeo, goldMat);
++    knobMesh.position.y = 2.82;
++    knobMesh.castShadow = true;
++    cupGroup.add(knobMesh);
++
++    // 8. 动画与物理循环（按需渲染 + 电影级相机微距推进）
+     let lastTime = performance.now();
+     let rafId = 0;
+     let running = false;
+@@ -729,7 +824,12 @@ export function ThreeDiceCupCanvas({
+     let elementVisible = typeof IntersectionObserver === 'undefined';
+     let visibilityObserver: IntersectionObserver | null = null;
+ 
+-    // 杯体弹簧状态（欠阻尼 → 轻微过冲回弹）：位置 XYZ + 转角 XZ 全弹簧驱动
++    // 相机微距推镜插值进度（0 = 全景扣盖，1 = 微距特写）
++    let camProgress = 0;
++    const currentCamPos = DEFAULT_CAM_POS.clone();
++    const currentLookAt = DEFAULT_LOOK_AT.clone();
++
++    // 杯体弹簧状态：位置 XYZ + 转角 XZ 全弹簧驱动
+     let cupX = 0;
+     let cupVelX = 0;
+     let cupY = 0;
+@@ -740,7 +840,7 @@ export function ThreeDiceCupCanvas({
+     let cupRotVelX = 0;
+     let cupRotZ = 0;
+     let cupRotVelZ = 0;
+-    // 摇晃抖动偏移（叠加在弹簧姿态之上）
++    // 摇晃抖动偏移
+     let wobX = 0;
+     let wobZ = 0;
+     let wobRotZ = 0;
+@@ -764,8 +864,32 @@ export function ThreeDiceCupCanvas({
+         syncDice(st.diceValues, st.motionLevel === 'off');
+       }
+ 
+-      // 杯体弹簧：掀盖 → 升起并挪向右后方；扣盖 → 回正
++      // ── 相机微距推镜插值 ──
+       const lifted = st.isLifted;
++      const targetCamProgress = lifted ? 1 : 0;
++      if (st.motionLevel === 'off') {
++        camProgress = targetCamProgress;
++      } else {
++        const camSpeed = lifted ? 8.0 : 9.5;
++        const diff = targetCamProgress - camProgress;
++        if (Math.abs(diff) > 1e-4) {
++          camProgress += diff * Math.min(1, dt * camSpeed);
++        } else {
++          camProgress = targetCamProgress;
++        }
++      }
++
++      // 平滑余弦缓动运镜
++      const p = 0.5 - 0.5 * Math.cos(camProgress * Math.PI);
++      const zoomTarget = getZoomCameraTarget(dice.length, isCompact);
++      currentCamPos.lerpVectors(DEFAULT_CAM_POS, zoomTarget.pos, p);
++      currentLookAt.lerpVectors(DEFAULT_LOOK_AT, zoomTarget.lookAt, p);
++      camera.position.copy(currentCamPos);
++      camera.lookAt(currentLookAt);
++      camera.fov = THREE.MathUtils.lerp(40, zoomTarget.fov, p);
++      camera.updateProjectionMatrix();
++
++      // ── 杯体弹簧：掀盖顺畅飞出让出视野；扣盖回正 ──
+       const targetY = lifted ? CUP_LIFT_Y : 0;
+       const targetX = lifted ? CUP_LIFT_X : 0;
+       const targetZ = lifted ? CUP_LIFT_Z : 0;
+@@ -786,10 +910,10 @@ export function ThreeDiceCupCanvas({
+         wobZ = 0;
+         wobRotZ = 0;
+       } else {
+-        [cupY, cupVelY] = spring(cupY, cupVelY, targetY, dt, 90, 11);
+-        [cupX, cupVelX] = spring(cupX, cupVelX, targetX, dt, 70, 10);
+-        [cupZ, cupVelZ] = spring(cupZ, cupVelZ, targetZ, dt, 70, 10);
+-        [cupRotX, cupRotVelX] = spring(cupRotX, cupRotVelX, targetRotX, dt, 70, 10);
++        [cupY, cupVelY] = spring(cupY, cupVelY, targetY, dt, 80, 11);
++        [cupX, cupVelX] = spring(cupX, cupVelX, targetX, dt, 65, 10);
++        [cupZ, cupVelZ] = spring(cupZ, cupVelZ, targetZ, dt, 65, 10);
++        [cupRotX, cupRotVelX] = spring(cupRotX, cupRotVelX, targetRotX, dt, 65, 10);
+         [cupRotZ, cupRotVelZ] = spring(cupRotZ, cupRotVelZ, targetRotZ, dt, 60, 9);
+       }
+ 
+@@ -809,7 +933,6 @@ export function ThreeDiceCupCanvas({
+         const maxR = Math.max(0.1, 1.15 - half * 0.9);
+         for (const d of dice) {
+           d.settle = null;
+-          // 惯性力 + 重力
+           d.vel.x += ax * dt * 1.7;
+           d.vel.z += az * dt * 1.7;
+           d.vel.y -= GRAVITY * dt;
+@@ -817,7 +940,6 @@ export function ThreeDiceCupCanvas({
+           d.mesh.position.y += d.vel.y * dt;
+           d.mesh.position.z += d.vel.z * dt;
+ 
+-          // 底盘碰撞
+           if (d.mesh.position.y <= half) {
+             d.mesh.position.y = half;
+             if (Math.abs(d.vel.y) > 0.9) {
+@@ -833,7 +955,6 @@ export function ThreeDiceCupCanvas({
+             d.vel.z *= 0.72;
+           }
+ 
+-          // 杯壁径向碰撞
+           const r = Math.hypot(d.mesh.position.x, d.mesh.position.z);
+           if (r > maxR && r > 1e-4) {
+             const nx = d.mesh.position.x / r;
+@@ -853,19 +974,16 @@ export function ThreeDiceCupCanvas({
+             }
+           }
+ 
+-          // 翻滚积分
+           d.mesh.rotation.x += d.angVel.x * dt;
+           d.mesh.rotation.y += d.angVel.y * dt;
+           d.mesh.rotation.z += d.angVel.z * dt;
+         }
+       } else {
+-        // 摇骰结束沿 → 全部骰子进入落定动画
+         if (wasShaking) {
+           for (const d of dice) startSettle(d);
+         }
+         shakeT = 0;
+ 
+-        // 摇晃抖动衰减回零
+         const decay = Math.min(1, dt * 8);
+         wobX += (0 - wobX) * decay;
+         wobZ += (0 - wobZ) * decay;
+@@ -874,18 +992,17 @@ export function ThreeDiceCupCanvas({
+         for (const d of dice) {
+           if (d.settle) {
+             d.settle.t += dt;
+-            const p = Math.min(1, d.settle.t / d.settle.duration);
++            const sp = Math.min(1, d.settle.t / d.settle.duration);
+             d.mesh.quaternion.slerpQuaternions(
+               d.settle.fromQuat,
+               d.settle.toQuat,
+-              easeOutBack(p)
++              easeOutBack(sp)
+             );
+             const half = dieSize / 2;
+             d.mesh.position.y =
+-              d.settle.fromY + (half - d.settle.fromY) * easeOutBounce(p);
+-            if (p >= 1) d.settle = null;
++              d.settle.fromY + (half - d.settle.fromY) * easeOutBounce(sp);
++            if (sp >= 1) d.settle = null;
+           } else {
+-            // 残余角速度衰减
+             d.angVel.multiplyScalar(Math.max(0, 1 - dt * 10));
+             if (d.angVel.lengthSq() > 1e-4) {
+               d.mesh.rotation.x += d.angVel.x * dt;
+@@ -895,14 +1012,12 @@ export function ThreeDiceCupCanvas({
+             const half = dieSize / 2;
+             d.mesh.position.y += (half - d.mesh.position.y) * Math.min(1, dt * 10);
+           }
+-          // 水平位置渐近布局点
+           const lerpXz = Math.min(1, dt * 6);
+           d.mesh.position.x += (d.targetX - d.mesh.position.x) * lerpXz;
+           d.mesh.position.z += (d.targetZ - d.mesh.position.z) * lerpXz;
+         }
+       }
+ 
+-      // 应用杯体组合姿态：弹簧（掀盖/扣盖）+ 抖动（摇骰）
+       cupGroup.position.set(cupX + wobX, cupY, cupZ + wobZ);
+       cupGroup.rotation.set(cupRotX, 0, cupRotZ + wobRotZ);
+ 
+@@ -913,6 +1028,7 @@ export function ThreeDiceCupCanvas({
+     const isAnimating = (): boolean => {
+       const st = stateRef.current;
+       if (st.isShaking && st.motionLevel !== 'off') return true;
++      if (Math.abs(camProgress - (st.isLifted ? 1 : 0)) > 1e-3) return true;
+       const lifted = st.isLifted;
+       const targetY = lifted ? CUP_LIFT_Y : 0;
+       if (Math.abs(cupY - targetY) > 1e-3 || Math.abs(cupVelY) > 2e-2) return true;
+diff --git a/packages/client/src/styles.css b/packages/client/src/styles.css
+index 4f488ba..6d18936 100644
+--- a/packages/client/src/styles.css
++++ b/packages/client/src/styles.css
+@@ -3169,6 +3169,12 @@ p { margin: 0.5rem 0; }
+   color: var(--room-coral);
+ }
+ 
++.bot-tag--screen {
++  border-color: #3b82f6;
++  color: #1e40af;
++  background: #eff6ff;
++}
++
+ .member-status {
+   flex: 0 0 auto;
+   min-height: 26px;
+@@ -3186,6 +3192,7 @@ p { margin: 0.5rem 0; }
+ .member-status.reserved { color: #866000; background: #fff2bd; }
+ .member-status.expired { color: var(--room-muted); background: #eee8dd; }
+ .member-status.kicked { color: #9a2418; background: #ffe2dc; }
++.member-status.table-screen { color: #1e40af; background: #dbeafe; border-color: #3b82f6; }
+ 
+ .member-actions {
+   flex: 0 0 auto;
+@@ -3221,6 +3228,33 @@ p { margin: 0.5rem 0; }
+   box-shadow: 1px 1px 0 var(--room-ink);
+ }
+ 
++.mini-btn--danger {
++  color: #9a2418;
++}
++
++.mini-btn--danger:hover:not(:disabled) {
++  border-color: #9a2418;
++  background: #ffe2dc;
++}
++
++.mini-btn--seat {
++  color: #1e40af;
++}
++
++.mini-btn--seat:hover:not(:disabled) {
++  border-color: #3b82f6;
++  background: #eff6ff;
++}
++
++.mini-btn--transfer {
++  color: #92400e;
++}
++
++.mini-btn--transfer:hover:not(:disabled) {
++  border-color: #d97706;
++  background: #fef3c7;
++}
++
+ .chat-box {
+   height: 300px;
+   margin-bottom: 12px;
+@@ -9162,7 +9196,7 @@ p { margin: 0.5rem 0; }
+   font-family: monospace;
+   font-size: 1.2rem;
+   font-weight: 900;
+-  color: var(--home-coral, #ea4335);
++  color: var(--gp-coral, #c23616);
+   letter-spacing: 0.06em;
+ }
+ 
+@@ -9382,6 +9416,57 @@ p { margin: 0.5rem 0; }
+   gap: 6px;
+ }
+ 
++.room-members-column {
++  display: flex;
++  flex-direction: column;
++  gap: 16px;
++  min-width: 0;
++}
++
++.room-spectators-panel h2::before {
++  background: #3b82f6;
++}
++
++.spectators-subtitle {
++  display: block;
++  margin-top: 2px;
++  color: var(--home-muted, #5c564c);
++  font-size: 0.76rem;
++  font-weight: 700;
++  letter-spacing: 0.02em;
++}
++
++.spectator-empty-card {
++  display: flex;
++  align-items: center;
++  gap: 12px;
++  padding: 12px 14px;
++  border: 1.5px dashed rgba(49, 45, 40, 0.28);
++  border-radius: 12px;
++  background: rgba(255, 253, 248, 0.5);
++}
++
++.spectator-empty-card__icon {
++  font-size: 1.5rem;
++  line-height: 1;
++  flex-shrink: 0;
++}
++
++.spectator-empty-card__text strong {
++  display: block;
++  color: var(--home-ink, #292722);
++  font-size: 0.86rem;
++  font-weight: 800;
++  margin-bottom: 2px;
++}
++
++.spectator-empty-card__text p {
++  margin: 0;
++  color: var(--home-muted, #5c564c);
++  font-size: 0.76rem;
++  line-height: 1.35;
++}
++
+ .room-layout .chat-box {
+   min-height: 200px;
+   background: rgba(255, 253, 248, .72);
+@@ -9394,6 +9479,49 @@ p { margin: 0.5rem 0; }
+   white-space: nowrap;
+ }
+ 
++.chat-screen-fold-bar {
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  width: 100%;
++  padding: 8px 12px;
++  border: 1.5px dashed rgba(49, 45, 40, 0.35);
++  border-radius: 10px;
++  background: rgba(255, 253, 248, 0.6);
++  color: var(--room-ink, #292722);
++  font-size: 0.78rem;
++  font-weight: 800;
++  cursor: pointer;
++  transition: background 150ms ease, border-color 150ms ease;
++}
++
++.chat-screen-fold-bar:hover {
++  background: #fff;
++  border-color: #3b82f6;
++  color: #1e40af;
++}
++
++.chat-fold-toggle-btn {
++  padding: 4px 10px;
++  border: 2px solid var(--room-ink, #292722);
++  border-radius: 9px;
++  background: #fff;
++  color: var(--room-ink, #292722);
++  font-size: 0.74rem;
++  font-weight: 800;
++  cursor: pointer;
++  white-space: nowrap;
++}
++
++.chat-fold-toggle-btn:hover {
++  border-color: var(--room-coral);
++  color: var(--room-coral);
++}
++
++.room-layout .chat-input-row.has-fold-btn {
++  grid-template-columns: minmax(0, 1fr) auto auto;
++}
++
+ /* 房主操作�?*/
+ .room-console {
+   grid-template-columns: 1fr;
+@@ -9465,6 +9593,56 @@ p { margin: 0.5rem 0; }
+   text-align: center;
+ }
+ 
++.room-console__screen-banner {
++  display: flex;
++  flex-direction: column;
++  gap: 4px;
++  width: 100%;
++}
++
++.room-console__screen-title {
++  display: flex;
++  align-items: center;
++  flex-wrap: wrap;
++  gap: 8px;
++}
++
++.room-console__screen-title .screen-icon {
++  font-size: 1.35rem;
++  line-height: 1;
++}
++
++.room-console__screen-title .screen-tag {
++  display: inline-flex;
++  align-items: center;
++  padding: 2px 8px;
++  border-radius: 999px;
++  border: 1.5px solid #3b82f6;
++  background: #dbeafe;
++  color: #1e40af;
++  font-size: 0.72rem;
++  font-weight: 900;
++}
++
++.room-console__screen-desc {
++  margin: 0;
++  color: var(--home-muted, #5c564c);
++  font-size: 0.82rem;
++  font-weight: 700;
++}
++
++.room-console__btn--switch-back {
++  background: #f0fdf4;
++  border-color: var(--room-green, #0c715d);
++  color: var(--room-green, #0c715d);
++  font-weight: 900;
++}
++
++.room-console__btn--switch-back:hover:not(:disabled) {
++  background: var(--room-green, #0c715d);
++  color: #ffffff;
++}
++
+ .room-inline-btn {
+   width: auto;
+   min-height: 44px;
+@@ -9593,12 +9771,50 @@ p { margin: 0.5rem 0; }
+   }
+ 
+   .room-content-grid .member {
+-    grid-template-columns: auto minmax(0, 1fr) auto;
++    display: grid;
++    grid-template-columns: 34px 34px minmax(0, 1fr) auto;
++    grid-template-areas: "seat avatar name status";
++    row-gap: 8px;
++    column-gap: 8px;
++    align-items: center;
++    padding: 10px 12px;
++  }
++
++  .room-content-grid .member.has-actions {
++    grid-template-areas:
++      "seat avatar name status"
++      "manage manage manage manage";
+   }
+ 
+-  .room-content-grid .member-actions {
+-    grid-column: 2 / -1;
++  .room-content-grid .member-seat {
++    grid-area: seat;
++  }
++
++  .room-content-grid .member .user-avatar {
++    grid-area: avatar;
++    margin-right: 0 !important;
++  }
++
++  .room-content-grid .member-name {
++    grid-area: name;
++  }
++
++  .room-content-grid .member-status {
++    grid-area: status;
++    justify-self: end;
++  }
++
++  .room-content-grid .member-actions,
++  .room-content-grid .member-manage-group {
++    grid-area: manage;
++    display: flex;
++    align-items: center;
+     justify-content: flex-end;
++    gap: 6px;
++    width: 100%;
++    margin-left: 0;
++    padding-top: 6px;
++    border-top: 1px dashed rgba(49, 45, 40, 0.18);
+   }
+ 
+   .room-layout .chat-input-row {
+@@ -9606,6 +9822,16 @@ p { margin: 0.5rem 0; }
+   }
+ }
+ 
++@media (max-width: 480px) {
++  .mini-btn {
++    min-height: 28px;
++    padding: 2px 9px;
++    font-size: 0.74rem;
++    border-radius: 8px;
++    box-shadow: 1.5px 1.5px 0 var(--room-ink);
++  }
++}
++
+ @media (max-width: 380px) {
+   .room-page.game-home-page {
+     padding-right: 8px;
+@@ -9619,7 +9845,21 @@ p { margin: 0.5rem 0; }
+     font-size: .68rem;
+   }
+ 
+-  .room-layout .chat-input-row {
++  .mini-btn {
++    min-height: 26px;
++    padding: 2px 7px;
++    font-size: 0.72rem;
++    border-radius: 7px;
++    box-shadow: 1px 1px 0 var(--room-ink);
++  }
++
++  .room-content-grid .member-actions,
++  .room-content-grid .member-manage-group {
++    gap: 4px;
++  }
++
++  .room-layout .chat-input-row,
++  .room-layout .chat-input-row.has-fold-btn {
+     grid-template-columns: minmax(0, 1fr);
+   }
+ 
+@@ -11823,23 +12063,29 @@ p { margin: 0.5rem 0; }
+   }
+ }
+ 
+-@media (max-width: 640px) {
++@media (orientation: portrait), (max-width: 640px) {
+   .home-header__actions {
+     gap: 6px;
+   }
+ 
+   .home-header__button {
+-    width: 40px;
+-    min-width: 40px;
+-    height: 40px;
+-    min-height: 40px;
++    width: 44px;
++    min-width: 44px;
++    height: 44px;
++    min-height: 44px;
+     padding: 0;
+   }
+ 
+-  .home-header__button span {
++  .home-header__button .home-header__button-text {
+     display: none;
+   }
+ 
++  .home-header__button .home-header__button-icon-wrap {
++    display: inline-flex !important;
++    align-items: center;
++    justify-content: center;
++  }
++
+   .home-local-badge {
+     min-height: 30px;
+     padding: 3px 8px 3px 20px;
+@@ -17061,55 +17307,20 @@ html[data-motion-level="off"] *::after {
+   flex-shrink: 0;
+ }
+ 
+-.durian-role-switch,
+-.cheese-role-switch,
+-.tabletop-role-switch {
++.cheese-screen-badge,
++.tabletop-screen-badge {
+   display: inline-flex;
+   align-items: center;
+   height: 32px;
+-  padding: 2px;
+-  background: #f5eedf;
+-  border: 2px solid var(--home-ink, #312d28);
++  padding: 0 10px;
++  background: #dbeafe;
++  color: #1e40af;
++  border: 2px solid #1e40af;
+   border-radius: 10px;
+   box-sizing: border-box;
+-  gap: 2px;
+-  box-shadow: 2px 2.5px 0 var(--home-ink, #312d28);
+-  overflow: hidden;
+-}
+-
+-.durian-role-pill,
+-.cheese-role-pill,
+-.tabletop-role-pill {
+-  height: 100%;
+-  padding: 0 8px;
+-  border: none;
+-  border-radius: 6px;
+-  background: transparent;
+-  color: var(--home-muted, #6f665d);
+   font-size: 0.76rem;
+   font-weight: 850;
+-  cursor: pointer;
+-  transition: background 0.12s ease, color 0.12s ease;
+-  display: inline-flex;
+-  align-items: center;
+-  gap: 4px;
+-  white-space: nowrap;
+-  box-sizing: border-box;
+-}
+-
+-.durian-role-pill:hover:not(.is-active),
+-.cheese-role-pill:hover:not(.is-active),
+-.tabletop-role-pill:hover:not(.is-active) {
+-  color: var(--home-ink, #312d28);
+-  background: rgba(49, 45, 40, 0.08);
+-}
+-
+-.durian-role-pill.is-active,
+-.cheese-role-pill.is-active,
+-.tabletop-role-pill.is-active {
+-  background: var(--home-yellow, #ffd43b);
+-  color: var(--home-ink, #312d28);
+-  font-weight: 950;
++  box-shadow: 2px 2.5px 0 #1e40af;
+ }
+ 
+ .cheese-tts-icon-btn.is-active {
+@@ -19388,6 +19599,12 @@ html[data-motion-level="off"] *::after {
+   white-space: nowrap;
+ }
+ 
++.room-status-badge--screen {
++  background: #dbeafe;
++  color: #1e40af;
++  border-color: #3b82f6;
++}
++
+ .room-status-badge__dot {
+   width: 6px;
+   height: 6px;
+@@ -21322,35 +21539,40 @@ html[data-motion-level="off"] *::after {
+ 
+ .cheese-wood-platter {
+   position: relative;
+-  width: min(100%, 380px);
+-  aspect-ratio: 1;
+-  border-radius: 50%;
+-  background: radial-gradient(circle, #9a572a 0%, #5c2f13 70%, #3e1b09 100%);
+-  border: 10px solid #2b1206;
+-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), inset 0 4px 12px rgba(255, 255, 255, 0.2);
++  width: min(100%, 360px);
+   display: flex;
++  flex-direction: column;
+   align-items: center;
+   justify-content: center;
+-  padding: 20px;
++  background: transparent;
++  padding: 0;
+ }
+ 
+ .cheese-cloth {
+   width: 100%;
+-  height: 100%;
+-  border-radius: 50%;
+-  background: radial-gradient(circle, #f8fafc 0%, #cbd5e1 100%);
+-  border: 3px dashed #94a3b8;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+-  box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.2);
+-  transition: background 0.3s ease;
++  background: transparent;
++  border: none;
+ }
+ 
+ .cheese-cloth.is-stolen {
+-  background: radial-gradient(circle, #fee2e2 0%, #fca5a5 100%);
+-  border-color: #ef4444;
++  background: transparent;
++  border-color: transparent;
++}
++
++.cheese-model-3d-canvas-wrapper {
++  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
++}
++
++.cheese-model-3d-canvas-wrapper.is-interactive:hover:not(.is-disabled) {
++  transform: scale(1.03);
++}
++
++.cheese-model-3d-canvas-wrapper.is-interactive:active:not(.is-disabled) {
++  transform: scale(0.97);
+ }
+ 
+ .cheese-night-stage,
+@@ -21514,18 +21736,37 @@ html[data-motion-level="off"] *::after {
+ }
+ 
+ .crumbs-warning {
+-  font-size: 1.25rem;
++  font-size: 1.2rem;
+   font-weight: 950;
+-  color: #dc2626;
+-  text-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
++  color: #fca5a5;
++  text-shadow: 0 2px 10px rgba(220, 38, 38, 0.6);
++  letter-spacing: 0.04em;
+ }
+ 
+ .cheese-crime-alert {
+-  font-size: 0.82rem;
+-  color: #991b1b;
++  font-size: 0.85rem;
++  color: #fee2e2;
+   font-weight: 800;
+   text-align: center;
+-  padding: 4px 12px;
++  padding: 6px 16px;
++  background: rgba(153, 27, 27, 0.8);
++  border: 1px solid rgba(239, 68, 68, 0.7);
++  border-radius: 999px;
++  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
++  backdrop-filter: blur(4px);
++}
++
++.cheese-safe-text {
++  font-size: 0.85rem;
++  color: #fef08a;
++  font-weight: 800;
++  text-align: center;
++  padding: 5px 16px;
++  background: rgba(30, 41, 59, 0.85);
++  border: 1px solid rgba(245, 158, 11, 0.45);
++  border-radius: 999px;
++  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
++  backdrop-filter: blur(4px);
+ }
+ 
+ /* 玩家环形座次雷达 */
+@@ -21981,19 +22222,29 @@ html[data-motion-level="off"] *::after {
+   font-weight: 700;
+ }
+ 
+-/* ════════ 奶酪大盗：移动端弹出式投票窗口 ════════ */
++/* ════════ 奶酪大盗：移动端弹出式投票窗口（对齐平台实体暖纸桌游规范） ════════ */
+ .cheese-mobile-vote-modal-backdrop {
+   position: fixed;
+   inset: 0;
+   z-index: 1000;
+-  background: rgba(0, 0, 0, 0.72);
++  background: rgba(34, 30, 26, 0.65);
+   backdrop-filter: blur(6px);
+   -webkit-backdrop-filter: blur(6px);
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   padding: 16px;
+-  animation: cheese-modal-fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
++  animation: cheese-modal-fade-in 0.2s ease-out;
++}
++
++/* 投票弹窗打开时，静默隐去底栏以消除界面重叠和操作干扰 */
++.tabletop-shell:has(.cheese-mobile-vote-modal-backdrop) .tabletop-bottom-bar,
++.tabletop-shell-stage:has(.cheese-mobile-vote-modal-backdrop) .tabletop-bottom-bar,
++body:has(.cheese-mobile-vote-modal-backdrop) .tabletop-bottom-bar {
++  opacity: 0 !important;
++  pointer-events: none !important;
++  visibility: hidden !important;
++  transition: opacity 0.2s ease;
+ }
+ 
+ @keyframes cheese-modal-fade-in {
+@@ -22005,19 +22256,22 @@ html[data-motion-level="off"] *::after {
+   position: relative;
+   width: 100%;
+   max-width: 440px;
+-  max-height: 88vh;
++  max-height: min(88dvh, 680px);
+   display: flex;
+   flex-direction: column;
+-  background: #1e293b;
+-  border: 2.5px solid #f59e0b;
++  background-color: #fcf9f2;
++  background-image: radial-gradient(#dfd7c5 1.2px, transparent 1.2px);
++  background-size: 16px 16px;
++  border: 2.5px solid var(--home-ink, #29241f);
+   border-radius: 24px;
+-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 20px rgba(245, 158, 11, 0.25);
++  box-shadow: 4px 6px 0 var(--home-ink, #29241f);
+   overflow: hidden;
+-  animation: cheese-modal-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
++  box-sizing: border-box;
++  animation: cheese-modal-slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+ }
+ 
+ @keyframes cheese-modal-slide-up {
+-  from { transform: translateY(24px) scale(0.96); opacity: 0; }
++  from { transform: translateY(20px) scale(0.97); opacity: 0; }
+   to { transform: translateY(0) scale(1); opacity: 1; }
+ }
+ 
+@@ -22025,62 +22279,77 @@ html[data-motion-level="off"] *::after {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+-  padding: 16px 20px;
+-  background: rgba(15, 23, 42, 0.8);
+-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
++  padding: 16px 20px 14px;
++  background: #fffdfa;
++  border-bottom: 2px dashed #dfd7c5;
+ }
+ 
+ .cheese-modal-title-box {
+   display: flex;
+   flex-direction: column;
+-  gap: 2px;
++  gap: 4px;
+ }
+ 
+ .cheese-modal-title-box h3 {
+   margin: 0;
+-  font-size: 1.15rem;
++  font-size: 1.18rem;
+   font-weight: 900;
+-  color: #fff;
++  color: var(--home-ink, #29241f);
++  display: flex;
++  align-items: center;
++  gap: 6px;
+ }
+ 
+ .cheese-modal-timer {
+-  font-size: 0.78rem;
+-  font-weight: 800;
+-  color: #fef08a;
++  display: inline-flex;
++  align-items: center;
++  font-size: 0.76rem;
++  font-weight: 900;
++  color: #78350f;
++  background: #fef3c7;
++  border: 1.5px solid var(--home-ink, #29241f);
++  border-radius: 6px;
++  padding: 2px 8px;
++  box-shadow: 1px 1.5px 0 var(--home-ink, #29241f);
++  width: fit-content;
+ }
+ 
+ .cheese-modal-close-btn {
+   width: 32px;
+   height: 32px;
+   border-radius: 50%;
+-  background: rgba(255, 255, 255, 0.08);
+-  border: none;
+-  color: #94a3b8;
+-  font-size: 1rem;
++  background: #fffaf1;
++  border: 2px solid var(--home-ink, #29241f);
++  color: var(--home-ink, #29241f);
++  font-size: 0.95rem;
++  font-weight: 900;
+   cursor: pointer;
+   display: grid;
+   place-items: center;
+-  transition: all 0.15s ease;
++  box-shadow: 1.5px 2px 0 var(--home-ink, #29241f);
++  transition: transform 0.12s ease, box-shadow 0.12s ease;
+ }
+ 
+ .cheese-modal-close-btn:hover {
+-  background: rgba(255, 255, 255, 0.15);
+-  color: #fff;
++  background: #fee2e2;
++  transform: translate(1px, 1px);
++  box-shadow: 0.5px 1px 0 var(--home-ink, #29241f);
+ }
+ 
+ .cheese-modal-body {
+-  padding: 18px 20px 24px;
++  padding: 18px 20px 22px;
+   overflow-y: auto;
+   display: flex;
+   flex-direction: column;
+-  gap: 16px;
++  gap: 14px;
+ }
+ 
+ .cheese-vote-instruction {
+   margin: 0;
+   font-size: 0.88rem;
+-  color: #cbd5e1;
+-  font-weight: 700;
++  color: #57534e;
++  font-weight: 800;
++  line-height: 1.4;
+ }
+ 
+ .cheese-candidate-stack {
+@@ -22092,57 +22361,76 @@ html[data-motion-level="off"] *::after {
+ .cheese-vote-candidate-card {
+   display: flex;
+   align-items: center;
+-  justify-content: space-between;
+-  padding: 12px 16px;
++  padding: 10px 14px;
+   border-radius: 14px;
+-  background: rgba(255, 255, 255, 0.05);
+-  border: 1.5px solid rgba(255, 255, 255, 0.12);
+-  color: #fff;
++  background: #ffffff;
++  border: 2px solid var(--home-ink, #29241f);
++  box-shadow: 2px 3px 0 var(--home-ink, #29241f);
++  color: var(--home-ink, #29241f);
+   cursor: pointer;
+-  transition: all 0.15s ease;
++  gap: 12px;
++  transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
++  text-align: left;
+ }
+ 
+ .cheese-vote-candidate-card:hover {
+-  background: rgba(245, 158, 11, 0.12);
+-  border-color: #f59e0b;
+-  transform: translateX(4px);
++  background: #fff8e8;
++  transform: translate(-1px, -1px);
++  box-shadow: 3px 4px 0 var(--home-ink, #29241f);
++}
++
++.cheese-vote-candidate-card:active {
++  transform: translate(1px, 1.5px);
++  box-shadow: 1px 1.5px 0 var(--home-ink, #29241f);
+ }
+ 
+ .candidate-avatar {
+-  font-size: 1.3rem;
+-  margin-right: 12px;
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  flex-shrink: 0;
+ }
+ 
+ .candidate-name {
+   flex: 1;
+-  text-align: left;
+-  font-size: 1rem;
++  font-size: 0.95rem;
+   font-weight: 900;
++  color: var(--home-ink, #29241f);
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
+ }
+ 
+ .candidate-action {
+-  font-size: 0.82rem;
+-  font-weight: 800;
+-  color: #f59e0b;
++  font-size: 0.78rem;
++  font-weight: 900;
++  color: #ffffff;
++  background: #e85d3f;
++  border: 1.5px solid var(--home-ink, #29241f);
++  border-radius: 8px;
++  padding: 4px 10px;
++  box-shadow: 1px 1.5px 0 var(--home-ink, #29241f);
++  white-space: nowrap;
++  flex-shrink: 0;
+ }
+ 
+ .cheese-vote-abstain-btn {
+   width: 100%;
+   padding: 11px;
+   border-radius: 12px;
+-  background: rgba(255, 255, 255, 0.04);
+-  border: 1px dashed rgba(255, 255, 255, 0.2);
+-  color: #94a3b8;
+-  font-size: 0.85rem;
+-  font-weight: 800;
++  background: #f5f5f4;
++  border: 2px dashed #a8a29e;
++  color: #57534e;
++  font-size: 0.86rem;
++  font-weight: 900;
+   cursor: pointer;
+-  transition: all 0.15s ease;
++  transition: all 0.12s ease;
+ }
+ 
+ .cheese-vote-abstain-btn:hover {
+-  background: rgba(255, 255, 255, 0.08);
+-  color: #cbd5e1;
+-  border-color: rgba(255, 255, 255, 0.4);
++  background: #e7e5e4;
++  border-color: var(--home-ink, #29241f);
++  color: var(--home-ink, #29241f);
+ }
+ 
+ /* 确认面板 */
+@@ -22152,41 +22440,67 @@ html[data-motion-level="off"] *::after {
+   align-items: center;
+   gap: 14px;
+   text-align: center;
+-  padding: 10px 0;
++  padding: 6px 0;
+ }
+ 
+ .cheese-vote-confirm-pane h4 {
+   margin: 0;
+-  font-size: 1.15rem;
++  font-size: 1.2rem;
+   font-weight: 900;
+-  color: #fff;
++  color: var(--home-ink, #29241f);
+ }
+ 
+ .cheese-confirm-target-box {
+   display: flex;
+   align-items: center;
+-  gap: 8px;
+-  padding: 10px 20px;
+-  border-radius: 14px;
+-  background: rgba(245, 158, 11, 0.15);
+-  border: 2px solid #f59e0b;
++  gap: 14px;
++  padding: 12px 24px;
++  border-radius: 16px;
++  background: #fffdf8;
++  border: 2.5px solid var(--home-ink, #29241f);
++  box-shadow: 3px 3.5px 0 var(--home-ink, #29241f);
++  width: 100%;
++  box-sizing: border-box;
++  justify-content: center;
+ }
+ 
+-.cheese-confirm-target-avatar {
+-  font-size: 1.5rem;
++.cheese-confirm-target-box--abstain {
++  background: #f5f5f4;
++  border-style: dashed;
++}
++
++.cheese-confirm-target-emoji {
++  font-size: 2rem;
++  display: flex;
++  align-items: center;
++}
++
++.cheese-confirm-target-info {
++  display: flex;
++  flex-direction: column;
++  align-items: flex-start;
++  gap: 2px;
++  text-align: left;
+ }
+ 
+ .cheese-confirm-target-name {
+   font-size: 1.15rem;
+-  font-weight: 950;
+-  color: #fef08a;
++  font-weight: 900;
++  color: var(--home-ink, #29241f);
++}
++
++.cheese-confirm-target-seat {
++  font-size: 0.74rem;
++  font-weight: 800;
++  color: #78716c;
+ }
+ 
+ .cheese-confirm-warning {
+   margin: 0;
+-  font-size: 0.78rem;
+-  color: #94a3b8;
++  font-size: 0.8rem;
++  color: #78716c;
+   line-height: 1.4;
++  font-weight: 700;
+ }
+ 
+ .cheese-vote-confirm-actions {
+@@ -22198,28 +22512,40 @@ html[data-motion-level="off"] *::after {
+ 
+ .cheese-confirm-btn {
+   width: 100%;
+-  padding: 13px;
++  padding: 12px;
+   border-radius: 12px;
+-  border: none;
++  border: 2px solid var(--home-ink, #29241f);
+   font-size: 0.95rem;
+   font-weight: 900;
+   cursor: pointer;
+-  transition: all 0.15s ease;
++  box-shadow: 2px 3px 0 var(--home-ink, #29241f);
++  transition: all 0.12s ease;
+ }
+ 
+ .cheese-confirm-btn.is-primary {
+-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+-  color: #1e1b18;
+-  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
++  background: #e85d3f;
++  color: #ffffff;
++}
++
++.cheese-confirm-btn.is-primary:hover:not(:disabled) {
++  background: #cf492c;
++  transform: translate(1px, 1px);
++  box-shadow: 1px 2px 0 var(--home-ink, #29241f);
+ }
+ 
+ .cheese-confirm-btn.is-danger {
+   background: #dc2626;
+-  color: #fff;
++  color: #ffffff;
++}
++
++.cheese-confirm-btn.is-danger:hover:not(:disabled) {
++  background: #b91c1c;
++  transform: translate(1px, 1px);
++  box-shadow: 1px 2px 0 var(--home-ink, #29241f);
+ }
+ 
+ .cheese-confirm-btn:disabled {
+-  opacity: 0.5;
++  opacity: 0.6;
+   cursor: not-allowed;
+ }
+ 
+@@ -22227,79 +22553,20 @@ html[data-motion-level="off"] *::after {
+   width: 100%;
+   padding: 10px;
+   border-radius: 12px;
+-  background: transparent;
+-  border: 1px solid rgba(255, 255, 255, 0.15);
+-  color: #cbd5e1;
+-  font-size: 0.85rem;
+-  font-weight: 700;
+-  cursor: pointer;
+-}
+-
+-.cheese-cancel-btn:hover {
+-  background: rgba(255, 255, 255, 0.05);
+-}
+-
+-/* 已投票状态展示 */
+-.cheese-vote-submitted-pane {
+-  display: flex;
+-  flex-direction: column;
+-  align-items: center;
+-  gap: 12px;
+-  text-align: center;
+-  padding: 16px 0;
+-}
+-
+-.cheese-submitted-icon {
+-  width: 56px;
+-  height: 56px;
+-  border-radius: 50%;
+-  background: rgba(16, 185, 129, 0.15);
+-  border: 2px solid #10b981;
+-  color: #10b981;
+-  font-size: 1.8rem;
+-  display: grid;
+-  place-items: center;
+-}
+-
+-.cheese-voted-target-desc {
+-  margin: 0;
+-  font-size: 1.1rem;
+-  font-weight: 900;
+-  color: #fff;
+-}
+-
+-.cheese-vote-modal-progress {
+-  display: flex;
+-  flex-direction: column;
+-  gap: 4px;
+-  padding: 10px 16px;
+-  background: rgba(255, 255, 255, 0.05);
+-  border-radius: 12px;
+-  width: 100%;
+-}
+-
+-.cheese-vote-modal-progress span {
++  background: #ffffff;
++  border: 2px solid var(--home-ink, #29241f);
++  color: var(--home-ink, #29241f);
+   font-size: 0.88rem;
+   font-weight: 900;
+-  color: #fef08a;
+-}
+-
+-.cheese-vote-modal-sub {
+-  margin: 0;
+-  font-size: 0.76rem;
+-  color: #94a3b8;
++  cursor: pointer;
++  box-shadow: 2px 2px 0 var(--home-ink, #29241f);
++  transition: all 0.12s ease;
+ }
+ 
+-.cheese-vote-btn--done {
+-  margin-top: 8px;
+-  padding: 10px 20px;
+-  border-radius: 999px;
+-  background: rgba(255, 255, 255, 0.08);
+-  border: 1px solid rgba(255, 255, 255, 0.2);
+-  color: #cbd5e1;
+-  font-size: 0.85rem;
+-  font-weight: 800;
+-  cursor: pointer;
++.cheese-cancel-btn:hover {
++  background: #f5f5f4;
++  transform: translate(1px, 1px);
++  box-shadow: 1px 1px 0 var(--home-ink, #29241f);
+ }
+ 
+ /* 重新打开投票窗口横幅 */
+@@ -22309,28 +22576,37 @@ html[data-motion-level="off"] *::after {
+   justify-content: space-between;
+   gap: 12px;
+   padding: 10px 16px;
+-  background: rgba(245, 158, 11, 0.15);
+-  border: 1.5px solid rgba(245, 158, 11, 0.5);
++  background: #fef3c7;
++  border: 2px solid var(--home-ink, #29241f);
+   border-radius: 14px;
++  box-shadow: 2px 2.5px 0 var(--home-ink, #29241f);
+   margin-bottom: 12px;
+ }
+ 
+ .cheese-vote-reopen-banner span {
+   font-size: 0.85rem;
+-  font-weight: 800;
+-  color: #fef08a;
++  font-weight: 900;
++  color: #78350f;
+ }
+ 
+ .cheese-reopen-vote-btn {
+   padding: 6px 14px;
+-  border-radius: 999px;
+-  background: #f59e0b;
+-  border: none;
+-  color: #1e1b18;
+-  font-size: 0.8rem;
++  border-radius: 8px;
++  background: #e85d3f;
++  border: 1.5px solid var(--home-ink, #29241f);
++  color: #ffffff;
++  font-size: 0.82rem;
+   font-weight: 900;
+   cursor: pointer;
+   white-space: nowrap;
++  box-shadow: 1px 1.5px 0 var(--home-ink, #29241f);
++  transition: all 0.12s ease;
++}
++
++.cheese-reopen-vote-btn:hover {
++  background: #cf492c;
++  transform: translate(1px, 1px);
++  box-shadow: 0.5px 1px 0 var(--home-ink, #29241f);
+ }
+ 
+ /* ════════ 奶酪大盗：终局真相大揭秘全屏遮罩 (CheeseGameOverReveal) ════════ */
+diff --git a/packages/client/tests/diceCup.test.ts b/packages/client/tests/diceCup.test.ts
+index 0789097..0a0c423 100644
+--- a/packages/client/tests/diceCup.test.ts
++++ b/packages/client/tests/diceCup.test.ts
+@@ -44,6 +44,23 @@ test('不可交互状态禁止掀开骰盅', () => {
+   assert.equal(state.isLifted, false);
+ });
+ 
++test('支持单击切换掀开定格与再次单击扣回（双模兼容）', () => {
++  let state = INITIAL_DICE_CUP_STATE;
++  assert.equal(state.isLifted, false);
++
++  // 单击掀开
++  state = reduceDiceCupState(state, { type: 'lift_toggle', canInteract: true });
++  assert.equal(state.isLifted, true);
++
++  // 再次单击扣回
++  state = reduceDiceCupState(state, { type: 'lift_toggle', canInteract: true });
++  assert.equal(state.isLifted, false);
++
++  // 不可交互时无法单击切换
++  state = reduceDiceCupState(state, { type: 'lift_toggle', canInteract: false });
++  assert.equal(state.isLifted, false);
++});
++
+ test('摇骰动效状态机触发与完成', () => {
+   let state = INITIAL_DICE_CUP_STATE;
+ 
+diff --git a/packages/server/src/core/commands/roomCommand.ts b/packages/server/src/core/commands/roomCommand.ts
+index 52050cc..8aa7ac1 100644
+--- a/packages/server/src/core/commands/roomCommand.ts
++++ b/packages/server/src/core/commands/roomCommand.ts
+@@ -77,6 +77,57 @@ export function applyRoomCommand(
+     writeAudit(tx, roomId, actorPlayerId, `ready:${payload.ready ? 'yes' : 'no'}`, 'ok');
+     return { command: payload.command, snapshot: readyOutcome.snapshot };
+   }
++
++  // 席位切换（玩家可自由将自己切为公共大屏或加入玩家席；房主亦可协助操作）
++  if (payload.command === 'switch_seat_role') {
++    if (room.status !== 'LOBBY' && room.status !== 'POST_GAME') {
++      throw new CommandError('ACTION_NOT_ALLOWED', '只能在大厅或结算阶段切换席位身份');
++    }
++    const targetPlayerId = payload.targetPlayerId ?? actorPlayerId;
++    if (targetPlayerId !== actorPlayerId && room.host_player_id !== actorPlayerId) {
++      throw new CommandError('NOT_AUTHORIZED', '无权更改他人席位身份');
++    }
++    const target = db
++      .prepare(
++        'SELECT connection_status, seat_role, seat, is_bot FROM room_members WHERE room_id = ? AND player_id = ?',
++      )
++      .get(roomId, targetPlayerId) as
++      | { connection_status: string; seat_role: string; seat: number | null; is_bot: number }
++      | undefined;
++    if (!target || target.connection_status === 'KICKED') {
++      throw new CommandError('ACTION_NOT_ALLOWED', '目标成员不在房间中');
++    }
++    if (target.is_bot) {
++      throw new CommandError('ACTION_NOT_ALLOWED', '机器人席位不能切换为公共大屏');
++    }
++    if (target.seat_role === payload.role) {
++      return { command: payload.command, snapshot: buildRoomSnapshot(db, roomId) };
++    }
++    if (payload.role === 'spectator') {
++      db.prepare(
++        'UPDATE room_members SET seat_role = ?, seat = NULL, ready = 0 WHERE room_id = ? AND player_id = ?',
++      ).run('spectator', roomId, targetPlayerId);
++    } else {
++      const roomRow = db.prepare('SELECT game_id FROM rooms WHERE id = ?').get(roomId) as { game_id: string | null } | undefined;
++      const gameEntry = getGameCatalogEntry(roomRow?.game_id ?? undefined);
++      const maxPlayers = gameEntry?.maxPlayers ?? 12;
++      const currentPlayers = db
++        .prepare("SELECT seat FROM room_members WHERE room_id = ? AND seat_role = 'player' AND connection_status != 'KICKED'")
++        .all(roomId) as { seat: number }[];
++      if (currentPlayers.length >= maxPlayers) {
++        throw new CommandError('ACTION_NOT_ALLOWED', `玩家席位已满（上限 ${maxPlayers} 人）`);
++      }
++      const usedSeats = new Set(currentPlayers.map((p) => p.seat));
++      let nextSeat = 0;
++      while (usedSeats.has(nextSeat)) nextSeat++;
++      db.prepare(
++        'UPDATE room_members SET seat_role = ?, seat = ?, ready = 0 WHERE room_id = ? AND player_id = ?',
++      ).run('player', nextSeat, roomId, targetPlayerId);
++    }
++    writeAudit(tx, roomId, actorPlayerId, `switch_seat_role:${targetPlayerId}:${payload.role}`, 'ok');
++    return { command: payload.command, snapshot: buildRoomSnapshot(db, roomId) };
++  }
++
+   if (room.host_player_id !== actorPlayerId) {
+     throw new CommandError('NOT_AUTHORIZED');
+   }
+diff --git a/packages/server/tests/room.test.ts b/packages/server/tests/room.test.ts
+index 24c0ca9..be06060 100644
+--- a/packages/server/tests/room.test.ts
++++ b/packages/server/tests/room.test.ts
+@@ -475,3 +475,76 @@ test('聊天：独立游标不推动 roomSeq；按游标补发不重复不遗漏
+     closeDb(ctx.db);
+   }
+ });
++
++test('公共大屏席位切换与房主大屏开局（switch_seat_role）', async () => {
++  const ctx = await setup();
++  try {
++    // 1. 房主将自己切换为公共大屏
++    const switchOutcome = await ctx.executor.executeOnRoom({
++      roomId: ctx.roomId,
++      actorScope: `player:${ctx.hostId}`,
++      requestId: nextReq(),
++      handler: (tx) =>
++        applyRoomCommand(tx, ctx.roomId, ctx.hostId, {
++          command: 'switch_seat_role',
++          role: 'spectator',
++        }),
++    });
++    const hostMember = switchOutcome.outcome.snapshot.members.find((m) => m.playerId === ctx.hostId);
++    assert.ok(hostMember, '房主应在成员列表中');
++    assert.equal(hostMember.seatRole, 'spectator', '房主应成功切换为观战大屏');
++    assert.equal(hostMember.seat, null, '大屏不占用席位号');
++    assert.equal(hostMember.isHost, true, '大屏仍保留房主身份');
++    assert.equal(hostMember.ready, false, '大屏无须准备');
++
++    // 2. 加入 4 名普通玩家并全部准备
++    const p1 = await join(ctx, '玩家1');
++    const p2 = await join(ctx, '玩家2');
++    const p3 = await join(ctx, '玩家3');
++    const p4 = await join(ctx, '玩家4');
++    for (const p of [p1, p2, p3, p4]) {
++      await ctx.executor.executeOnRoom({
++        roomId: ctx.roomId,
++        actorScope: `player:${p.playerId}`,
++        requestId: nextReq(),
++        handler: (tx) =>
++          applyRoomCommand(tx, ctx.roomId, p.playerId, {
++            command: 'ready',
++            ready: true,
++          }),
++      });
++    }
++
++    // 3. 房主为 spectator 时，调用 start_game 成功开局
++    const startOutcome = await ctx.executor.executeOnRoom({
++      roomId: ctx.roomId,
++      actorScope: `player:${ctx.hostId}`,
++      requestId: nextReq(),
++      handler: (tx) =>
++        applyRoomCommand(tx, ctx.roomId, ctx.hostId, {
++          command: 'start_game',
++        }),
++    });
++    assert.ok(startOutcome.outcome.gameStarted, '房主作为大屏应可正常开局');
++    assert.equal(startOutcome.outcome.snapshot.status, 'IN_GAME', '房间状态应为 IN_GAME');
++
++    // 对局进行中禁止切换席位
++    await assertCommandError(
++      () =>
++        ctx.executor.executeOnRoom({
++          roomId: ctx.roomId,
++          actorScope: `player:${p1.playerId}`,
++          requestId: nextReq(),
++          handler: (tx) =>
++            applyRoomCommand(tx, ctx.roomId, p1.playerId, {
++              command: 'switch_seat_role',
++              role: 'spectator',
++            }),
++        }),
++      'ACTION_NOT_ALLOWED',
++    );
++  } finally {
++    closeDb(ctx.db);
++  }
++});
++
+diff --git a/packages/shared/src/protocol/messages.ts b/packages/shared/src/protocol/messages.ts
+index a85c31b..3ffb59b 100644
+--- a/packages/shared/src/protocol/messages.ts
++++ b/packages/shared/src/protocol/messages.ts
+@@ -144,6 +144,14 @@ export const roomCommandPayloadSchema = z.discriminatedUnion('command', [
+   z.object({ command: z.literal('abort_game') }).strict(),
+   // POST_GAME → LOBBY（FR-RESULT-004 / D-6）
+   z.object({ command: z.literal('return_to_lobby') }).strict(),
++  // 切换席位身份：切换为参局玩家或公共桌面大屏/观战
++  z
++    .object({
++      command: z.literal('switch_seat_role'),
++      role: z.enum(['player', 'spectator']),
++      targetPlayerId: z.string().min(1).max(64).optional(),
++    })
++    .strict(),
+ ]);
+ export type RoomCommandPayload = z.infer<typeof roomCommandPayloadSchema>;
+ 
+diff --git a/scripts/check-release-endpoints.mjs b/scripts/check-release-endpoints.mjs
+index 0a4c3d9..902583e 100644
+--- a/scripts/check-release-endpoints.mjs
++++ b/scripts/check-release-endpoints.mjs
+@@ -16,7 +16,7 @@
+ const ORIGIN = (
+   process.env.TABLETOP_CLOUD_ORIGIN ||
+   process.env.VITE_CLOUD_ORIGIN ||
+-  'https://tabletop.pages.dev'
++  'https://ldj-platform.pages.dev'
+ ).replace(/\/$/, '');
+ 
+ const TIMEOUT_MS = 20_000;
+@@ -147,8 +147,8 @@ if (failed.length > 0) {
+   for (const entry of failed) {
+     console.log(`  - ${entry.name}: ${entry.detail}`);
+   }
+-  if (ORIGIN === 'https://tabletop.pages.dev' && !process.env.TABLETOP_CLOUD_ORIGIN) {
+-    console.log('\n💡 提示：当前检测使用的是默认源 https://tabletop.pages.dev（当前该域名返回 HTML 占位页）。');
++  if (ORIGIN === 'https://ldj-platform.pages.dev' && !process.env.TABLETOP_CLOUD_ORIGIN) {
++    console.log('\n💡 提示：当前检测使用的是默认源 https://ldj-platform.pages.dev（当前该域名返回 HTML 占位页）。');
+     console.log('   若您已将本项目的 packages/client 与 functions 部署到您的 Cloudflare Pages，');
+     console.log('   请通过 TABLETOP_CLOUD_ORIGIN=https://<your-project>.pages.dev node scripts/check-release-endpoints.mjs 指定实际源。');
+   }
+diff --git a/wrangler.json b/wrangler.json
+index 69f1cd3..2aefba2 100644
+--- a/wrangler.json
++++ b/wrangler.json
+@@ -1,6 +1,6 @@
+ {
+-  "": "node_modules/wrangler/config-schema.json",
+-  "name": "tabletop",
++  "$schema": "https://unpkg.com/wrangler/config-schema.json",
++  "name": "ldj-platform",
+   "pages_build_output_dir": "packages/client/dist",
+   "compatibility_date": "2026-09-01",
+   "compatibility_flags": [

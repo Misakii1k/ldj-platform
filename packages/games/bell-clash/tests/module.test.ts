@@ -63,7 +63,7 @@ test('铃铛对决 玩家动作只能由玩家发起，系统动作只能由系�
     '系统不能代玩家摸牌',
   );
   assert.equal(
-    bellClashModule.reduce(ctx, state, actor('a'), { type: 'resolve_bell', claimantId: '' }).ok,
+    bellClashModule.reduce(ctx, state, actor('a'), { type: 'challenge_timeout' }).ok,
     false,
     '玩家不能触发系统计时器',
   );
@@ -76,20 +76,6 @@ test('铃铛对决 完整局：交替出牌直到有人打完手牌', () => {
   for (let step = 0; step < 600; step += 1) {
     if (s.phase === 'game_over') break;
     const current = s.currentPlayerId as string;
-    // 若处于按铃窗口且有人拍铃 → 结算
-    if (s.bellOpen as boolean) {
-      // 让当前出牌者以外的玩家尝试拍铃（无短语则超时结算）
-      const other = players.find((id) => id !== current)!;
-      const r = bellClashModule.reduce(ctx, s, actor(other), { type: 'ring_bell', playerId: other });
-      if (r.ok) {
-        s = r.nextState;
-        continue;
-      }
-      const resolved = bellClashModule.reduce(ctx, s, sys, { type: 'resolve_bell', claimantId: '' });
-      if (!resolved.ok) throw new Error(resolved.message);
-      s = resolved.nextState;
-      continue;
-    }
     const playIndex = firstPlayable(s, current);
     if (playIndex >= 0) {
       const r = bellClashModule.reduce(ctx, s, actor(current), { type: 'play_card', playerId: current, cardIndex: playIndex });

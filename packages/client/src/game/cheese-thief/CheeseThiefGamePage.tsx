@@ -1,31 +1,37 @@
 /**
- * cheese_thief_classic_v1 客户端主页面（线下辅助与模拟模式双模体系）。
- * 支持「玩家手牌端（3D 骰盅防偷窥）」与「桌面中央端（案发大屏与 TTS 法官）」
+ * cheese_thief_classic_v1 客户端主页面 · 阁楼世界版。
+ *
+ * 视觉契约：docs/plans/2026-09-29-cheese-thief-visual/README.md
+ * 像素参照：docs/ui-preview/cheese-thief/directions/（B2 / S2 / S3 / S4，用户已确认 2026-09-26）
+ *
+ * 玩家端 = 月光阁楼四画面（本文件组装 AtticRoom / AtticSeats / AtticCenter）；
+ * 公共大屏（观战席位）= CheeseTabletopArena（T6 复用同一套阁楼场景）。
  */
 import { useEffect, useRef, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
 import { nameFor, useGameAction } from '../useGameAction.ts';
-import { ActionDock } from '../tabletop/ActionDock.tsx';
 import { GameDrawer } from '../tabletop/GameDrawer.tsx';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
-import { CheeseDiceCup3D } from './CheeseDiceCup3D.tsx';
 import { CheeseTabletopArena } from './CheeseTabletopArena.tsx';
 import { FlightLayer } from '../../shared-ui/stage/FlightLayer.tsx';
 import { useCheeseThiefStage } from './stage/useCheeseThiefStage.tsx';
 import { CheeseGameOverReveal } from './CheeseGameOverReveal.tsx';
-import { IdentityFlipCard } from '../../shared-ui/IdentityFlipCard.tsx';
-import { ArenaBoard } from '../../shared-ui/ArenaBoard.tsx';
-import { ArenaRail } from '../../shared-ui/ArenaRail.tsx';
-import { SeatTargetPicker } from '../../shared-ui/SeatTargetPicker.tsx';
 import { useCheeseTTS } from './useCheeseTTS.ts';
 import { useCountdown } from '../../shared-ui/useCountdown.ts';
 import { TabletopCountdownText } from '../../shared-ui/TabletopCountdownText.tsx';
 import { TabletopVictoryBurst } from '../../shared-ui/TabletopVictoryBurst.tsx';
-import { usePhaseEventOverlay } from '../../shared-ui/usePhaseEventOverlay.tsx';
-import { UserAvatar } from '../../user/UserAvatar.tsx';
-import { BallotIcon, CatIcon, CheeseIcon, DieIcon, DogIcon, EyeIcon, FlagIcon, MouseIcon, ScreenIcon, ScrollIcon, SunIcon } from './stage/CheeseIcons.tsx';
-import { GameIcon } from '../../shared-ui/GameIcon.tsx';
-import { resolveMemberAvatar } from '../../user/avatar.ts';
+import { ScreenIcon } from './stage/CheeseIcons.tsx';
+import { AtticRoom } from './stage/AtticRoom.tsx';
+import { AtticSeats, type AtticSeatModel } from './stage/AtticSeats.tsx';
+import { AtticCenter } from './stage/AtticCenter.tsx';
+import {
+  atticTimeFor,
+  awakeSeatIds,
+  cheeseSightFor,
+  nightNotice,
+  seatToneIndex,
+  votedSeatIds,
+} from './stage/atticModel.ts';
 import type { CheeseThiefPlayerView, RoleCard } from './types.ts';
 
 const ROLE_LABELS: Record<RoleCard, string> = {
@@ -51,15 +57,23 @@ interface Props {
   view: CheeseThiefPlayerView;
 }
 
+interface DockButton {
+  readonly id: string;
+  readonly label: string;
+  readonly primary?: boolean;
+  readonly disabled?: boolean;
+  readonly onAction: () => void;
+}
+
 export function CheeseThiefGamePage({ view }: Props) {
   const { state, me: connMe } = useConnection();
   const members = state.room?.members ?? [];
   const { act, busy, error, clearError } = useGameAction();
   const me = view.me;
   const myId = me?.playerId ?? null;
+  const nameOf = (id: string) => nameFor(members, id);
 
   // 终局揭晓按 roundToken 去重：演到一半刷新不会重演一次。
-  // 夜间暗角也由演出层统一管，避免和 phase 判断散在两处。
   const stage = useCheeseThiefStage(view);
   const myMember = state.room?.members.find((m) => m.playerId === (connMe?.playerId ?? me?.playerId ?? myId));
   const isSpectator = view.me === null || myMember?.seatRole === 'spectator' || state.game?.role === 'spectator';
@@ -68,94 +82,25 @@ export function CheeseThiefGamePage({ view }: Props) {
   const [peekTarget, setPeekTarget] = useState<string | null>(null);
   const [voteTarget, setVoteTarget] = useState<string | null>(null);
   const [accomplicePicks, setAccomplicePicks] = useState<string[]>([]);
-  const [voteModalDismissed, setVoteModalDismissed] = useState(false);
-  const [voteConfirmCandidate, setVoteConfirmCandidate] = useState<string | 'abstain' | null>(null);
+  const [peekArmed, setPeekArmed] = useState(false);
 
-  // 阶段倒计时计算
   const countdown = useCountdown(view.deadlineAt);
-  const mm = Math.floor(countdown.secondsLeft / 60);
-  const ss = countdown.secondsLeft % 60;
-  const timeFormatted = `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
 
-  // 阶段切换全屏盖印：天亮 / 进入投票 / 终局
-  const { overlay: phaseOverlay } = usePhaseEventOverlay(view.phase, (phase) => {
-    if (phase === 'dawn') {
-      return {
-        label: '天亮了',
-        sublabel: view.cheeseStolen ? '奶酪不见了！开始追查' : '奶酪安然无恙',
-        variant: view.cheeseStolen ? 'warning' : 'reveal',
-      };
-    }
-    if (phase === 'accomplice_select') return { label: '大盗正在物色同伙', variant: 'stamp' };
-    if (phase === 'vote') return { label: '指认大盗', sublabel: '投票找出偷吃奶酪的人', variant: 'stamp' };
-    return null;
-  });
-  const totalVoted = view.votes ? Object.keys(view.votes).length : 0;
-
-  // 进入投票阶段时自动弹出手机端投票窗口
-  useEffect(() => {
-    if (view.phase === 'vote') {
-      setVoteModalDismissed(false);
-      setVoteConfirmCandidate(null);
-    }
-  }, [view.phase]);
-
-  // 阶段或时刻变更时，自动清理陈旧错误提示
+  // 阶段或时刻变更时，自动清理陈旧错误提示与本地选择
   useEffect(() => {
     clearError();
+    setPeekArmed(false);
+    setPeekTarget(null);
   }, [view.phase, view.currentHour, clearError]);
+  useEffect(() => {
+    setVoteTarget(null);
+    setAccomplicePicks([]);
+  }, [view.phase]);
 
-  // 席位驱动设备角色：
-  // 若在房间中是 spectator，或无 me 个人视图，则锁定为纯正公共大屏（不发手牌、不参与个人操作）；
-  // 若是参局玩家，则为玩家端手持体验。
+  // 席位驱动设备角色：spectator / 无 me 个人视图 → 公共大屏；否则玩家端。
   const isSimulator = view.mode === 'simulator';
   const isTableScreen = isSpectator;
   const isSimulatorTable = isTableScreen;
-
-  // 开局准备阶段判定（两骰自选或夜间第 0 时刻）——仅对非大屏且有个人身份的玩家展示
-  const isOpening = !isTableScreen && view.me !== null && (view.phase === 'hour_choice' || (view.phase === 'night' && view.currentHour === 0));
-  const [identityCardVisible, setIdentityCardVisible] = useState(isOpening);
-  const [identityCardExiting, setIdentityCardExiting] = useState(false);
-  const prevOpeningRef = useRef(isOpening);
-
-  // 身份卡开局看身份倒计时结束（进入第 1 时刻）后，平滑淡出+缩放彻底消失
-  useEffect(() => {
-    if (prevOpeningRef.current && !isOpening) {
-      setIdentityCardExiting(true);
-      const timer = setTimeout(() => {
-        setIdentityCardVisible(false);
-        setIdentityCardExiting(false);
-      }, 450);
-      return () => clearTimeout(timer);
-    } else if (!prevOpeningRef.current && isOpening) {
-      setIdentityCardVisible(true);
-      setIdentityCardExiting(false);
-    }
-    prevOpeningRef.current = isOpening;
-  }, [isOpening]);
-
-  // 倒计时由底部通栏平滑位移至顶部动效控制
-  const [countdownMoving, setCountdownMoving] = useState(false);
-  const prevOpeningForCountdownRef = useRef(isOpening);
-
-  useEffect(() => {
-    if (prevOpeningForCountdownRef.current && !isOpening) {
-      setCountdownMoving(true);
-      const timer = setTimeout(() => {
-        setCountdownMoving(false);
-      }, 600);
-      return () => clearTimeout(timer);
-    }
-    prevOpeningForCountdownRef.current = isOpening;
-  }, [isOpening]);
-
-  // 天亮讨论面板收起/展开状态（离开 dawn 阶段时自动重置）
-  const [discussionCollapsed, setDiscussionCollapsed] = useState(false);
-  useEffect(() => {
-    if (view.phase !== 'dawn') {
-      setDiscussionCollapsed(false);
-    }
-  }, [view.phase]);
 
   // 专属 TTS/录音法官主持 Hook（依据权威 view.deadlineAt 动态排程）
   const { ttsEnabled, toggleTts } = useCheeseTTS({
@@ -174,159 +119,201 @@ export function CheeseThiefGamePage({ view }: Props) {
     view.phase === 'accomplice_select' && me?.isThief === true && myId !== null;
   const accompliceCount = view.players.length >= 7 ? 2 : 1;
 
-  const players = view.players.map((playerId) => {
-    let status = '';
-    if (view.phase === 'game_over') {
-      status = (view.winners ?? []).includes(playerId) ? '获胜' : '失败';
-    } else if (playerId === myId) {
-      status = me?.isThief ? '我是大盗' : me?.isAccomplice ? '我是共犯' : '贪睡鼠';
-    }
-    return { id: playerId, name: nameFor(members, playerId), status, active: false };
+  const players = view.players.map((playerId) => ({
+    id: playerId,
+    name: nameOf(playerId),
+    status: '',
+    active: false,
+  }));
+
+  /* ── 席位点击：偷看 / 挑共犯 / 投票指认（按阶段互斥） ── */
+  const canClickSeats = !isTableScreen && !isSpectator && myId !== null;
+  const votePicking = canClickSeats && view.phase === 'vote' && !me?.hasVoted;
+  const onSeatClick = canClickSeats
+    ? (id: string) => {
+        if (id === myId) return;
+        if (view.phase === 'night' && me?.canPeek && peekArmed) {
+          setPeekTarget(id);
+          setPeekArmed(false);
+          void act({ type: 'peek_die', playerId: myId, targetPlayerId: id });
+        } else if (view.phase === 'accomplice_select' && myTurnAccomplice) {
+          setAccomplicePicks((prev) => {
+            if (prev.includes(id)) return prev.filter((x) => x !== id);
+            if (prev.length >= accompliceCount) return prev;
+            return [...prev, id];
+          });
+        } else if (votePicking) {
+          setVoteTarget((prev) => (prev === id ? null : id));
+        }
+      }
+    : undefined;
+
+  /* ── 席位模型 ── */
+  const time = atticTimeFor(view.phase);
+  const awakeIds = awakeSeatIds(view, myId);
+  const voted = votedSeatIds(view);
+  const cheeseSight = cheeseSightFor(view, myId);
+  const seats: AtticSeatModel[] = view.players.map((id, index) => {
+    const isMe = id === myId;
+    const night = time === 'night';
+    return {
+      id,
+      seatNo: index + 1,
+      name: nameOf(id),
+      isMe,
+      tone: seatToneIndex(view.players, id, myId),
+      asleep: night && !awakeIds.has(id),
+      awake: awakeIds.has(id),
+      // 骰子：你自己始终知道自己的点数（未定时扣盅）；别人一律扣盅（④ 翻面才亮）
+      die: isMe && me && me.wakeHour >= 1 ? me.wakeHour : null,
+      cupped: isMe ? !(me && me.wakeHour >= 1) : true,
+      hasLoot: isMe && cheeseSight === 'with-me',
+      pickable:
+        (view.phase === 'night' && Boolean(me?.canPeek) && peekArmed && !isMe) ||
+        (myTurnAccomplice && !isMe),
+      selected: voteTarget === id || accomplicePicks.includes(id) || peekTarget === id,
+      hasVoted: (view.phase === 'vote' || view.phase === 'game_over') && voted.has(id),
+      voteTag: false,
+      revealedRole: null,
+      votesGot: null,
+      out: false,
+      win: false,
+      flip: '' as const,
+      voteCandidate: Boolean(votePicking && !isMe),
+    };
   });
 
-  // 主操作（仅在非大屏的参局玩家设备上生成；公共大屏设备绝对不生成或触发任何个人动作）
-  let primary: Parameters<typeof ActionDock>[0]['primary'] | null = null;
-  let secondary: Parameters<typeof ActionDock>[0]['secondary'] = [];
-
-  if (!isTableScreen && !isSpectator) {
-    if (view.phase === 'hour_choice' && me?.hourChoices && myId) {
-      const hasChosen = typeof me.wakeHour === 'number' && me.wakeHour > 0;
-      if (hasChosen) {
-        primary = {
-          id: 'hour-chosen',
-          label: `已选定第 ${me.wakeHour} 时刻醒来（等待其他玩家）`,
-          disabled: true,
-          onAction: () => {},
-        };
-        secondary = [];
-      } else {
-        const [h1, h2] = me.hourChoices;
-        primary = {
-          id: `choose-${h1}`,
-          label: `选定 ${h1} 点醒来`,
-          disabled: busy,
-          onAction: () => {
-            void act({ type: 'choose_hour', playerId: myId, hour: h1 });
-          },
-        };
-        secondary = [
-          {
-            id: `choose-${h2}`,
-            label: `选定 ${h2} 点醒来`,
-            disabled: busy,
-            onAction: () => {
-              void act({ type: 'choose_hour', playerId: myId, hour: h2 });
-            },
-          },
-        ];
-      }
-    } else if (myTurnAccomplice && myId) {
-      const selected = accomplicePicks;
-      const ready = selected.length === accompliceCount;
-      primary = {
-        id: 'confirm-accomplice',
-        label: ready ? `确认共犯（${selected.map((id) => nameFor(members, id)).join('、')}）` : `已选 ${selected.length}/${accompliceCount}`,
-        disabled: !ready,
-        onAction: () => {
-          if (!ready) return;
-          void act({ type: 'select_accomplice', playerId: myId, accompliceIds: selected });
-        },
-      };
-    } else if (view.phase === 'night' && me && me.wakeHour === view.currentHour && !view.cheeseStolen && (me.coWakers ?? []).length === 0 && myId) {
-      primary = {
-        id: 'steal-cheese',
-        label: '伸手偷走奶酪（成为大盗）',
-        disabled: busy,
-        onAction: () => {
-          void act({ type: 'steal_cheese', playerId: myId });
-        },
-      };
-    } else if (view.phase === 'night' && me?.canPeek && myId) {
-      primary = peekTarget
-        ? { id: 'confirm-peek', label: `查看 ${nameFor(members, peekTarget)} 的骰子`, disabled: false, onAction: () => { void act({ type: 'peek_die', playerId: myId, targetPlayerId: peekTarget }); } }
-        : { id: 'skip-peek', label: '不查看（跳过）', disabled: false, onAction: () => void act({ type: 'skip_peek', playerId: myId }) };
-    } else if (view.phase === 'dawn' && me?.roleCard === 'cat' && myId && view.revealedCat === null) {
-      primary = { id: 'reveal-cat', label: '展示猫身份并查看骰子', disabled: false, onAction: () => {} };
-      secondary = view.players
-        .filter((id) => id !== myId)
-        .map((id) => ({
-          id: `cat-${id}`,
-          label: `查看 ${nameFor(members, id)}`,
-          disabled: false,
-          onAction: () => void act({ type: 'reveal_cat', playerId: myId, targetPlayerId: id }),
-        }));
-    } else if (view.phase === 'dawn' && me?.roleCard === 'dog' && myId && view.revealedDog === null) {
-      primary = { id: 'reveal-dog', label: '展示狗身份并指定先投票', disabled: false, onAction: () => {} };
-      secondary = view.players
-        .filter((id) => id !== myId)
-        .map((id) => ({
-          id: `dog-${id}`,
-          label: `指定 ${nameFor(members, id)} 先投票`,
-          disabled: false,
-          onAction: () => void act({ type: 'reveal_dog', playerId: myId, firstVoterId: id }),
-        }));
-    } else if (view.phase === 'vote' && myId) {
-      if (me?.hasVoted) {
-        primary = {
-          id: 'has-voted',
-          label: voteTarget ? `已指认 ${nameFor(members, voteTarget)}（已投票）` : '已完成投票，等待开票…',
-          disabled: true,
-          onAction: () => {},
-        };
-        secondary = [];
-      } else {
-        primary = voteTarget
-          ? { id: 'confirm-vote', label: `指认 ${nameFor(members, voteTarget)}`, disabled: false, onAction: () => { void act({ type: 'cast_vote', playerId: myId, targetPlayerId: voteTarget }); } }
-          : { id: 'abstain', label: '弃票', disabled: false, onAction: () => void act({ type: 'cast_abstention', playerId: myId }) };
-      }
-    }
+  /* ── 告示牌与说明胶囊 ── */
+  let when: string;
+  let title: string;
+  let caption: string;
+  if (view.phase === 'night') {
+    const notice = nightNotice(view, myId, nameOf);
+    when = notice.when;
+    title = notice.title;
+    caption = notice.caption;
+  } else if (view.phase === 'hour_choice') {
+    when = '入夜前';
+    title = '摇出你的醒来时刻';
+    caption = '点数只有你能看到';
+  } else if (view.phase === 'accomplice_select') {
+    when = '夜晚 · 更深';
+    title = myTurnAccomplice ? '你是大盗！' : '夜更深了……';
+    caption = myTurnAccomplice ? `挑出 ${accompliceCount} 只老鼠做你的共犯` : '大盗正在悄悄物色同伙';
+  } else if (view.phase === 'dawn') {
+    when = '天亮了 · 讨论';
+    title = view.cheeseStolen ? '奶酪不见了！' : '奶酪还在！';
+    caption = view.cheeseStolen ? '砧板空了，谁拿的？' : '奶酪还在砧板上';
+  } else if (view.phase === 'vote') {
+    when = '天亮了 · 投票';
+    title = '谁偷了奶酪？';
+    caption = '秘密投票，结果揭晓时公开';
+  } else {
+    when = '投票结束';
+    title = '揭晓……';
+    caption = '';
   }
 
-  const waitingReason = isTableScreen
-    ? view.phase === 'game_over'
-      ? null
-      : view.phase === 'hour_choice'
-        ? '玩家正在选择各自的醒来时刻…'
-        : view.phase === 'night'
-          ? `夜间进行中 · 第 ${Math.max(1, view.currentHour)} 时刻`
-          : view.phase === 'accomplice_select'
-            ? '大盗正在秘密挑选共犯…'
-            : view.phase === 'dawn'
-              ? '天亮讨论中 · 自由发言，讨论结束进入投票'
-              : '指认投票中 · 请参局玩家在手机上完成指认投票'
-    : view.phase === 'game_over'
-      ? null
-      : view.phase === 'hour_choice'
-        ? me?.wakeHour
-          ? `你已选定第 ${me.wakeHour} 时刻，等待其他玩家完成选择…`
-          : '你掷出了两枚骰子，请在下方选择你的醒来时刻'
-        : view.phase === 'night'
-          ? me?.wakeHour === view.currentHour
-            ? !view.cheeseStolen && (me.coWakers ?? []).length === 0
-              ? '轮到你的时刻且独醒！奶酪就在桌上，点击偷走奶酪成为怪盗'
-              : me.canPeek
-                ? '轮到你的时刻且独醒：按住目标玩家骰盅偷看其点数，或直接跳过'
-                : (me.coWakers ?? []).length > 0
-                  ? '轮到你的时刻：有其他人同时醒来，互相目击'
-                  : '轮到你的时刻推进中'
-            : '夜间进行中——闭眼装睡，轮到你的时刻才睁眼'
-          : view.phase === 'accomplice_select'
-            ? '大盗正在秘密挑选共犯（限时 17 秒）…'
-            : view.phase === 'dawn'
-              ? '天亮讨论中——线下自由发言，讨论结束自动进入投票'
-              : me?.hasVoted
-                ? '你已完成投票，等待其他玩家完成投票…'
-                : '请选择你怀疑的大盗，或在下方操作栏弃票';
+  /* ── 坞：私密信息（左）+ 按钮（右）+ 倒计时胶囊 ── */
+  const dockButtons: DockButton[] = [];
+  let dockStrong = '';
+  let dockSpan = '';
 
-  const presentationState = error
-    ? 'error'
-    : busy
-      ? 'busy'
-      : view.phase === 'game_over'
-        ? 'result'
-        : primary && !primary.disabled
-          ? 'action'
-          : 'waiting';
+  if (!isTableScreen && !isSpectator && me && myId) {
+    if (view.phase === 'hour_choice' && me.hourChoices) {
+      if (me.wakeHour >= 1) {
+        dockStrong = `你会在 ${me.wakeHour} 点醒来`;
+        dockSpan = '等待其他玩家选定……';
+      } else {
+        dockStrong = '两枚骰子，选一个作为醒来时刻';
+        dockSpan = `${me.hourChoices[0]} 点 或 ${me.hourChoices[1]} 点`;
+        for (const h of me.hourChoices) {
+          dockButtons.push({
+            id: `choose-${h}`,
+            label: `选定 ${h} 点`,
+            primary: h === me.hourChoices[0],
+            disabled: busy,
+            onAction: () => void act({ type: 'choose_hour', playerId: myId, hour: h }),
+          });
+        }
+      }
+    } else if (view.phase === 'night') {
+      if (me.wakeHour === view.currentHour && view.currentHour >= 1) {
+        dockStrong = me.isThief
+          ? '奶酪到手，别出声'
+          : me.coWakers.length > 0
+            ? '你们同时醒来了'
+            : view.cheeseStolen
+              ? '奶酪已经不见了'
+              : '只有你醒着';
+        dockSpan = me.canPeek ? '可以偷看一只老鼠的骰子' : '记住你看到的，天亮再说';
+        if (me.canPeek) {
+          dockButtons.push({
+            id: 'peek',
+            label: peekArmed ? '取消偷看' : '偷看骰子',
+            onAction: () => setPeekArmed((v) => !v),
+          });
+        }
+      } else {
+        dockStrong = view.currentHour < 1 ? '看好自己的骰盅' : '你在睡觉';
+        dockSpan = view.currentHour < 1 ? `你在 ${me.wakeHour || '？'} 点醒来` : '轮到你的一刻会叫你';
+      }
+    } else if (myTurnAccomplice) {
+      dockStrong = `选择 ${accompliceCount} 名共犯`;
+      dockSpan = accomplicePicks.length > 0 ? `已选：${accomplicePicks.map(nameOf).join('、')}` : '点席位上的老鼠挑选';
+      dockButtons.push({
+        id: 'confirm-accomplice',
+        label: `选定共犯（${accomplicePicks.length}/${accompliceCount}）`,
+        primary: true,
+        disabled: busy || accomplicePicks.length !== accompliceCount,
+        onAction: () => void act({ type: 'select_accomplice', playerId: myId, accompliceIds: accomplicePicks }),
+      });
+    } else if (view.phase === 'dawn') {
+      dockStrong = '说出你几点醒来、看到了什么';
+      dockSpan = `你是 ${me.wakeHour} 点醒的。可以说真话，也可以不说。`;
+      dockButtons.push({
+        id: 'skip-discussion',
+        label: '提前去投票',
+        onAction: () => void act({ type: 'skip_discussion', playerId: myId }),
+      });
+    } else if (view.phase === 'vote') {
+      if (me.hasVoted) {
+        dockStrong = '已投票，等其他人投完';
+        dockSpan = '投票是秘密的，别人看不到你投给了谁';
+      } else {
+        dockStrong = '点一只老鼠，指认它';
+        dockSpan = '票数最多的出局；平票一起出局';
+        dockButtons.push(
+          {
+            id: 'abstain',
+            label: '弃票',
+            disabled: busy,
+            onAction: () => void act({ type: 'cast_abstention', playerId: myId }),
+          },
+          {
+            id: 'confirm-vote',
+            label: voteTarget ? `指认 ${nameOf(voteTarget)}` : '确认指认',
+            primary: true,
+            disabled: busy || !voteTarget,
+            onAction: () => {
+              if (voteTarget) void act({ type: 'cast_vote', playerId: myId, targetPlayerId: voteTarget });
+            },
+          },
+        );
+      }
+    } else if (view.phase === 'game_over') {
+      dockStrong = '对局结束';
+      dockSpan = '';
+    }
+    // 角色卡变体（默认关）：最小呈现为坞内一行小字（§6 确认记录 3）
+    if (me.roleCard !== 'none') {
+      dockSpan = `${dockSpan}${dockSpan ? ' · ' : ''}身份卡：${ROLE_LABELS[me.roleCard]}`;
+    }
+  } else {
+    dockStrong = phaseLabel(view.phase);
+    dockSpan = view.phase === 'night' ? `夜间进行中 · 第 ${Math.max(1, view.currentHour)} 时刻` : '';
+  }
+
   const phaseAnnouncement = view.phase === 'night'
     ? `${phaseLabel(view.phase)}，当前 ${Math.max(1, view.currentHour)} 点`
     : phaseLabel(view.phase);
@@ -351,6 +338,35 @@ export function CheeseThiefGamePage({ view }: Props) {
     </div>
   );
 
+  const dock = (
+    <div className="cta-dock">
+      <div className="cta-dock__info cheese-secret-card">
+        <strong>{dockStrong}</strong>
+        {dockSpan ? <span>{dockSpan}</span> : null}
+      </div>
+      {view.deadlineAt ? (
+        <span className="cta-dock__pill" aria-label="倒计时">
+          <TabletopCountdownText secondsLeft={countdown.secondsLeft} format="clock" />
+        </span>
+      ) : null}
+      {dockButtons.length > 0 ? (
+        <div className="cta-dock__actions">
+          {dockButtons.map((btn) => (
+            <button
+              key={btn.id}
+              type="button"
+              className={`cta-btn${btn.primary ? ' cta-btn--primary' : ''}`}
+              disabled={btn.disabled}
+              onClick={btn.onAction}
+            >
+              {btn.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+
   return (
     <TabletopShell
       title="奶酪大盗"
@@ -360,754 +376,71 @@ export function CheeseThiefGamePage({ view }: Props) {
       spectator={isSpectator}
       players={players}
       theme="night"
-      hideSeats={isSimulatorTable}
+      hideSeats
       rulesButton={headerControls}
       stageFit="arena"
-      actions={
-        !isTableScreen && primary ? (
-          <ActionDock
-            primary={primary}
-            secondary={secondary}
-            busy={busy}
-            waitingReason={waitingReason ?? undefined}
-          />
-        ) : undefined
-      }
+      actions={dock}
       drawer={rulesOpen && (
         <GameDrawer kind="rules" title="本局规则" triggerRef={rulesRef} onClose={() => setRulesOpen(false)}>
           <h4>奶酪大盗规则速览</h4>
           <p>1. <strong>掷骰定醒来时刻</strong>：每位玩家掷 6 面骰扣在骰盅内，决定夜间第几时刻醒来。</p>
           <p>2. <strong>夜间时刻推进</strong>：夜间 1→6 时刻依次推进，轮到自己点数时睁眼。独醒且奶酪在场者取走奶酪成为怪盗！</p>
-          <p>3. <strong>独醒偷看</strong>：轮到自己时刻若独醒，可按住任意一位玩家的 3D 骰盅查验其骰子；若多人同醒则互相目击、无法偷看。</p>
+          <p>3. <strong>独醒偷看</strong>：轮到自己时刻若独醒，可偷看任意一位玩家的骰子；若多人同醒则互相目击、无法偷看。</p>
           <p>4. <strong>共犯与胜利</strong>：大盗秘密挑选共犯。白天讨论投票，投中大盗则好人胜，否则大盗与共犯胜。</p>
         </GameDrawer>
       )}
     >
-      <p
-        className={`sr-only cheese-phase-feedback cheese-phase-feedback--${presentationState}`}
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {phaseAnnouncement}{waitingReason ? `。${waitingReason}` : ''}
+      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {phaseAnnouncement}
       </p>
       {error && (
-        <p
-          className="game-error cheese-feedback cheese-feedback--error"
-          role="alert"
-          onClick={clearError}
-          title="点击关闭提示"
-        >
+        <p className="game-error" role="alert" onClick={clearError} title="点击关闭提示">
           <span>{error}</span>
-          <button
-            type="button"
-            className="game-error-close-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              clearError();
-            }}
-            aria-label="关闭错误提示"
-          >
-            ✕
-          </button>
         </p>
       )}
 
-      {/* 桌面端呈现。外面这层负责夜间暗角与飞行层的锚点测量宿主 */}
       <div
-        className="cheese-stage"
+        className={`cta-stage cta-phase--${view.phase}`}
+        data-time={time}
+        data-n={view.players.length}
         ref={stage.stageRef}
-        data-vignette={stage.vignette ? 'true' : undefined}
       >
-      <span className="cheese-vignette" aria-hidden="true" />
-      {isSimulatorTable ? (
-        <CheeseTabletopArena
-          view={view}
-          myId={myId}
-          members={members}
-          ttsEnabled={ttsEnabled}
-          onToggleTts={toggleTts}
-          onSkipDiscussion={() => {
-            void act({ type: 'skip_discussion', playerId: myId ?? undefined });
-          }}
-          onStealCheese={() => {
-            // 真实偷取动作：服务端校验"当前时刻恰有独醒大盗"才受理（桌面匿名点击按时刻归属）；
-            // 受理后 cheeseStolen 保持到天亮，不会在下一时刻回退。
-            if (myId) void act({ type: 'steal_cheese', playerId: myId });
-          }}
-        />
-      ) : (
-        /* 玩家端呈现 */
-        <div
-          className={`sg-stage cheese-player-stage cheese-phase--${view.phase} is-${presentationState}`}
-          data-cheese-phase={view.phase}
-          data-cheese-state={presentationState}
-          aria-busy={busy}
-        >
-          {/* 4 人局两骰自选时刻面板 */}
-          {view.phase === 'hour_choice' && me?.hourChoices && (
-            <ArenaBoard
-              className="cheese-focal cheese-hour-choice-panel"
-              tone="dark"
-              headline={<><DieIcon /> 掷出两枚骰子，自选醒来时刻</>}
-              hint={
-                me.wakeHour
-                  ? `你已选定第 ${me.wakeHour} 时刻醒来，等待其他玩家…`
-                  : '请从你掷出的两枚骰子中选择一个作为你夜间醒来的时刻'
-              }
-              footer={
-                view.deadlineAt ? (
-                  <span className="cheese-countdown-pill cheese-countdown-pill--opening" aria-label="时刻选择倒计时">
-                    <span className="cheese-countdown-pill__label">选择倒计时</span>
-                    <TabletopCountdownText className="cheese-countdown-pill__time" secondsLeft={countdown.secondsLeft} format="clock" />
-                  </span>
-                ) : undefined
-              }
-            >
-              <div className="cheese-hour-choice-dice-row">
-                {me.hourChoices.map((h, idx) => {
-                  const isSelected = me.wakeHour === h;
-                  return (
-                    <button
-                      key={`${h}-${idx}`}
-                      type="button"
-                      className={`cheese-hour-choice-die ${isSelected ? 'is-selected' : ''}`}
-                      style={{ ['--i' as string]: idx }}
-                      onClick={() => {
-                        if (!me.wakeHour && myId) {
-                          void act({ type: 'choose_hour', playerId: myId, hour: h });
-                        }
-                      }}
-                      disabled={busy || !!me.wakeHour}
-                      title={`选定第 ${h} 时刻醒来`}
-                    >
-                      <span className="choice-die-num">{h}</span>
-                      <span className="choice-die-label">{h} 点醒来</span>
-                      {isSelected && <span className="choice-die-badge">已选</span>}
-                    </button>
-                  );
-                })}
-              </div>
-            </ArenaBoard>
-          )}
-
-          {/* 夜间推进时刻轴置顶展示 */}
-          {view.phase === 'night' && (
-            <ArenaBoard
-              className="cheese-focal cheese-night"
-              tone="dark"
-              headline={
-                view.currentHour >= 1 && view.currentHour <= 6
-                  ? `夜深了……第 ${view.currentHour} 时刻`
-                  : '夜幕降临 · 开局准备'
-              }
-              hint={
-                view.currentHour === 0
-                  ? '请在倒计时结束前查看你的身份卡与 3D 骰盅'
-                  : me?.wakeHour === view.currentHour
-                    ? '轮到你的时刻，请睁眼！'
-                    : '闭眼装睡，轮到你的时刻才睁眼'
-              }
-              footer={
-                !isOpening && !countdownMoving && view.deadlineAt ? (
-                  <span className="cheese-countdown-pill cheese-countdown-pill--night" aria-label="时刻倒计时">
-                    <span className="cheese-countdown-pill__label">时刻倒计时</span>
-                    <TabletopCountdownText className="cheese-countdown-pill__time" secondsLeft={countdown.secondsLeft} format="clock" />
-                  </span>
-                ) : undefined
-              }
-            >
-              <div className="cheese-moon" aria-hidden="true"><span className="cheese-moon__glow" /></div>
-              <ArenaRail
-                label="第六时刻推进"
-                className="cheese-hours-rail"
-                items={[1, 2, 3, 4, 5, 6].map((hour) => ({
-                  key: String(hour),
-                  label: `${hour} 时`,
-                  state:
-                    view.currentHour === hour
-                      ? 'active'
-                      : view.currentHour > hour && view.currentHour <= 6
-                        ? 'done'
-                        : 'idle',
-                }))}
-              />
-            </ArenaBoard>
-          )}
-
-          {me && (
-            <section
-              className={`cheese-secret-card ${identityCardVisible ? 'cheese-secret-card--has-identity' : 'cheese-secret-card--dice-only'}`}
-              aria-label="我的私密身份与3D骰盅"
-            >
-              <div className="cheese-secret-card__body">
-                {/* 3D 拟真骰盅与骰子 */}
-                <div className="cheese-dice-cup-container">
-                  <CheeseDiceCup3D
-                    diceValue={me.wakeHour}
-                    isMe={true}
-                    canInteract={true}
-                    variant="compact"
-                    hint="按住掀开"
-                    allowShake={false}
-                  />
-                </div>
-
-                {/* 3D 秘密身份卡牌：开局看身份定时展示，到期淡出缩放彻底消失 */}
-                {identityCardVisible && (
-                  <div className={`cheese-identity-card-container ${identityCardExiting ? 'cheese-identity-card--exiting' : ''}`}>
-                    <IdentityFlipCard
-                      theme="classic"
-                      variant="compact"
-                      roleName={me.isThief ? '贪吃鼠（怪盗）' : me.isAccomplice ? '共犯老鼠' : '贪睡鼠（村民）'}
-                      roleSubtitle={me.roleCard !== 'none' ? `身份卡：${ROLE_LABELS[me.roleCard]}` : me.isThief ? '夜间偷吃奶酪' : me.isAccomplice ? '协助大盗掩护' : '找出偷吃大盗'}
-                      roleCamp={me.isThief || me.isAccomplice ? 'evil' : 'good'}
-                      secretHints={[
-                        me.isThief
-                          ? (me.knownAccomplices.length > 0
-                              ? `你在自己的时刻偷吃奶酪！你的共犯是：${me.knownAccomplices.map((id) => nameFor(members, id)).join('、')}，天亮后隐藏身份相互掩护！`
-                              : '你在自己的时刻醒来并偷吃奶酪，天亮后隐藏身份！')
-                          : me.isAccomplice
-                            ? (me.knownAccomplices.length > 0
-                                ? `你被怪盗选为共犯！怪盗是【${nameFor(members, me.knownAccomplices[0])}】${me.knownAccomplices.length > 1 ? `，另一位共犯是【${me.knownAccomplices.slice(1).map((id) => nameFor(members, id)).join('、')}】` : ''}，协助怪盗掩盖偷吃痕迹！`
-                                : '你被怪盗选为共犯，协助怪盗掩盖偷吃痕迹！')
-                            : '你在自己的时刻醒来观察周围动静，天亮后找出怪盗！',
-                      ]}
-                      canInteract={true}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* 专属情报条目 */}
-              {(me.catPeekedHour || me.peekedHour || me.knownAccomplices.length > 0) && (
-                <div className="cheese-secret-intel-row">
-                  {me.isThief && me.knownAccomplices.length > 0 && (
-                    <div className="cheese-intel-chip">
-                      <span className="intel-icon" aria-hidden="true"><MouseIcon /></span>
-                      <span>你的共犯：<strong>{me.knownAccomplices.map((id) => nameFor(members, id)).join('、')}</strong>（天亮请协助掩护）</span>
-                    </div>
-                  )}
-                  {me.isAccomplice && me.knownAccomplices.length > 0 && (
-                    <div className="cheese-intel-chip">
-                      <span className="intel-icon" aria-hidden="true"><CheeseIcon /></span>
-                      <span>
-                        怪盗是：<strong>{nameFor(members, me.knownAccomplices[0])}</strong>
-                        {me.knownAccomplices.length > 1 && (
-                          <>，另一位共犯是：<strong>{me.knownAccomplices.slice(1).map((id) => nameFor(members, id)).join('、')}</strong></>
-                        )}
-                      </span>
-                    </div>
-                  )}
-                  {me.catPeekedHour && (
-                    <div className="cheese-intel-chip">
-                      <span className="intel-icon" aria-hidden="true"><CatIcon /></span>
-                      <span>猫咪情报：<strong>{nameFor(members, me.catPeekedHour.target)}</strong> 是第 <strong>{me.catPeekedHour.hour}</strong> 时刻</span>
-                    </div>
-                  )}
-                  {me.peekedHour && (
-                    <div className="cheese-intel-chip">
-                      <span className="intel-icon" aria-hidden="true"><EyeIcon /></span>
-                      <span>独醒偷看：<strong>{nameFor(members, me.peekedHour.target)}</strong> 是第 <strong>{me.peekedHour.hour}</strong> 时刻</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* 开局准备阶段置底通栏倒计时与平滑位移动效 */}
-          {(isOpening || countdownMoving) && view.deadlineAt && (
-            <div
-              className={`cheese-opening-countdown-bar ${countdownMoving ? 'is-moving-to-top' : ''}`}
-              role="status"
-              aria-live="polite"
-            >
-              <div className="cheese-opening-countdown-inner">
-                <div className="cheese-opening-countdown-left">
-                  <GameIcon name="hourglass" size={20} className="cheese-opening-icon" alt="" aria-hidden="true" />
-                  <span className="cheese-opening-title">
-                    {view.phase === 'hour_choice' ? '选择醒来时刻' : '开局准备'}
-                  </span>
-                </div>
-                <span className="cheese-countdown-pill cheese-countdown-pill--opening" aria-label="开局倒计时">
-                  <span className="cheese-countdown-pill__label">倒计时</span>
-                  <TabletopCountdownText className="cheese-countdown-pill__time" secondsLeft={countdown.secondsLeft} format="clock" />
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* 独醒且奶酪在场：手机端偷取行动面板 */}
-          {view.phase === 'night' && me && me.wakeHour === view.currentHour && !view.cheeseStolen && (me.coWakers ?? []).length === 0 && (
-            <ArenaBoard
-              className="cheese-focal cheese-steal-panel"
-              tone="accent"
-              headline={<><CheeseIcon /> 轮到你的时刻且独醒！</>}
-              hint="你是此刻唯一睁眼的老鼠，桌上的大奶酪就在你眼前——偷走它，你将成为本局怪盗"
-              footer={(
-                <button
-                  type="button"
-                  className="cheese-player-steal-btn"
-                  onClick={() => {
-                    if (myId) void act({ type: 'steal_cheese', playerId: myId });
-                  }}
-                  disabled={busy}
-                >
-                  <span className="cheese-icon-bounce" aria-hidden="true"><CheeseIcon /></span>
-                  <span className="cheese-steal-btn-text">
-                    <strong>伸手偷走奶酪</strong>
-                    <small>点击取走奶酪成为怪盗</small>
-                  </span>
-                </button>
-              )}
+        {isSimulatorTable ? (
+          <CheeseTabletopArena
+            view={view}
+            myId={myId}
+            members={members}
+            ttsEnabled={ttsEnabled}
+            onToggleTts={toggleTts}
+            onSkipDiscussion={() => {
+              void act({ type: 'skip_discussion', playerId: myId ?? undefined });
+            }}
+            onStealCheese={() => {
+              if (myId) void act({ type: 'steal_cheese', playerId: myId });
+            }}
+          />
+        ) : (
+          <>
+            <AtticRoom
+              time={time}
+              when={when}
+              title={title}
+              currentHour={view.phase === 'night' ? view.currentHour : 0}
+              myHour={me && me.wakeHour >= 1 ? me.wakeHour : null}
             />
-          )}
-
-          {/* 独醒查验：3D 骰盅点击/长按查验他人 */}
-          {view.phase === 'night' && me?.canPeek && (
-            <ArenaBoard
-              className="cheese-focal"
-              tone="dark"
-              headline="轮到你且独醒！按住目标玩家的骰盅掀开查验"
-              hint="松手后自动扣盖并提交，或在下方直接跳过"
-            >
-              <div className="cheese-peek-grid">
-                {view.players.filter((id) => id !== myId).map((id) => (
-                  <div key={id} className={`cheese-peek-item ${peekTarget === id ? 'is-selected' : ''}`}>
-                    <CheeseDiceCup3D
-                      diceValue={me.peekedHour?.target === id ? me.peekedHour.hour : null}
-                      playerName={nameFor(members, id)}
-                      peekTargetName={nameFor(members, id)}
-                      isMe={false}
-                      canInteract={true}
-                      variant="compact"
-                      allowShake={false}
-                      onInspectCommit={() => {
-                        setPeekTarget(id);
-                        void act({ type: 'peek_die', playerId: myId!, targetPlayerId: id });
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </ArenaBoard>
-          )}
-
-          {/* 共犯挑选 */}
-          {view.phase === 'accomplice_select' && me?.isThief && myTurnAccomplice && (
-            <ArenaBoard
-              className="cheese-focal"
-              tone="accent"
-              headline="你是大盗！选择你的共犯"
-              hint={`需选 ${accompliceCount} 名，选中后可再次点击取消`}
-            >
-              <SeatTargetPicker
-                label="选择共犯"
-                max={accompliceCount}
-                selectedIds={accomplicePicks}
-                onSelect={(ids) => setAccomplicePicks(ids)}
-                options={view.players
-                  .filter((id) => id !== myId)
-                  .map((id) => ({ id, name: nameFor(members, id) }))}
-              />
-            </ArenaBoard>
-          )}
-
-          {/* 天亮讨论：顶部浮层遮罩 + 卷轴式收起到底部 */}
-          {view.phase === 'dawn' && (
-            <>
-              <div
-                className={`cheese-dawn-backdrop ${discussionCollapsed ? 'is-collapsed' : 'is-expanded'}`}
-                onClick={() => setDiscussionCollapsed(true)}
-                aria-hidden="true"
-              />
-              <section
-                className={`cheese-dawn-overlay ${discussionCollapsed ? 'is-collapsed' : 'is-expanded'}`}
-                data-tone="paper"
-                aria-label={`天亮了！线下自由讨论 桌上的奶酪不见了！抓紧盘问各个时刻的动静；讨论结束或点下方按钮进入投票 倒计时 ${timeFormatted}`}
-              >
-                <div className="cheese-dawn-scroll-card">
-                  <div className="cheese-scroll-rod cheese-scroll-rod--top" aria-hidden="true" />
-                  <div className="cheese-dawn-header">
-                    <div className="cheese-dawn-title-group">
-                      <span className="cheese-dawn-icon" aria-hidden="true"><SunIcon /></span>
-                      <div>
-                        <h3 className="cheese-dawn-title">天亮了！线下自由讨论</h3>
-                        <p className="cheese-dawn-hint">
-                          桌上的奶酪不见了！抓紧盘问各个时刻的动静；讨论结束或点下方按钮进入投票
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="cheese-dawn-collapse-btn"
-                      onClick={() => setDiscussionCollapsed(true)}
-                      aria-label="关闭收起讨论面板到屏幕底部"
-                      title="关闭/收起讨论面板到屏幕底部"
-                    >
-                      <span className="cheese-dawn-btn-label">关闭 · 收起</span>
-                      <span className="collapse-arrow" aria-hidden="true">▾</span>
-                    </button>
-                  </div>
-
-                  <div className="cheese-dawn-body">
-                    {view.deadlineAt && (
-                      <span className="cheese-countdown-pill" aria-label="讨论倒计时">
-                        <span className="cheese-countdown-pill__label">倒计时</span>
-                        <TabletopCountdownText className="cheese-countdown-pill__time" secondsLeft={countdown.secondsLeft} format="clock" />
-                      </span>
-                    )}
-                    {(view.revealedCat || view.revealedDog) && (
-                      <div className="sg-chip-row">
-                        {view.revealedCat && (
-                          <span className="sg-chip sg-chip--peek">
-                            <CatIcon /> {nameFor(members, view.revealedCat)} 是猫
-                          </span>
-                        )}
-                        {view.revealedDog && (
-                          <span className="sg-chip sg-chip--peek">
-                            <DogIcon /> {nameFor(members, view.revealedDog)} 是狗 · 指定 {nameFor(members, view.dogFirstVoter ?? '')} 先投票
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="cheese-dawn-footer">
-                    <button
-                      type="button"
-                      className="cheese-skip-discussion-btn"
-                      onClick={() => void act({ type: 'skip_discussion', playerId: myId ?? undefined })}
-                      disabled={busy}
-                      title="提前结束讨论，全员弹出投票窗口"
-                    >
-                      <span className="btn-icon" aria-hidden="true"><BallotIcon /></span>
-                      <span className="btn-main-text">提前进入投票环节</span>
-                    </button>
-                  </div>
-                  <div className="cheese-scroll-rod cheese-scroll-rod--bottom" aria-hidden="true" />
-                </div>
-              </section>
-
-              {/* 收起到底部后的卷轴式通栏 */}
-              <div
-                className={`cheese-dawn-bottom-bar ${discussionCollapsed ? 'is-visible' : 'is-hidden'}`}
-                onClick={() => setDiscussionCollapsed(false)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setDiscussionCollapsed(false);
-                  }
-                }}
-                aria-label="点击展开天亮讨论面板"
-              >
-                <div className="cheese-dawn-bottom-bar__left">
-                  <span className="cheese-dawn-bottom-bar__icon" aria-hidden="true"><ScrollIcon /></span>
-                  <span className="cheese-dawn-bottom-bar__status">线下自由讨论中</span>
-                  {view.deadlineAt && (
-                    <span className="cheese-countdown-pill cheese-countdown-pill--mini" aria-label="讨论倒计时">
-                      <TabletopCountdownText className="cheese-countdown-pill__time" secondsLeft={countdown.secondsLeft} format="clock" />
-                    </span>
-                  )}
-                </div>
-                <div className="cheese-dawn-bottom-bar__right">
-                  <button
-                    type="button"
-                    className="cheese-dawn-expand-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDiscussionCollapsed(false);
-                    }}
-                    aria-label="展开讨论面板"
-                  >
-                    <span>展开面板</span>
-                    <span className="expand-arrow" aria-hidden="true">▴</span>
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* 投票指认 */}
-          {view.phase === 'vote' && myId && (
-            <ArenaBoard
-              className="cheese-focal"
-              tone="paper"
-              headline={me?.hasVoted ? '✓ 你的投票已完成' : '指认你怀疑的大盗'}
-              hint={me?.hasVoted ? '正在等待其他玩家完成投票…' : '点选你要指认的玩家；提交后不可更改'}
-              footer={view.deadlineAt ? (
-                <span className="cheese-countdown-pill" aria-label="投票倒计时">
-                  <span className="cheese-countdown-pill__label">倒计时</span>
-                  <TabletopCountdownText className="cheese-countdown-pill__time" secondsLeft={countdown.secondsLeft} format="clock" />
-                </span>
-              ) : undefined}
-            >
-              {voteModalDismissed && (
-                <div className="cheese-vote-reopen-banner">
-                  <span><BallotIcon /> 投票进行中（已投 {totalVoted}/{view.players.length} 人）</span>
-                  <button
-                    type="button"
-                    className="cheese-reopen-vote-btn"
-                    onClick={() => setVoteModalDismissed(false)}
-                  >
-                    {me?.hasVoted ? '查看投票状态' : '打开投票弹窗'}
-                  </button>
-                </div>
-              )}
-
-              {me?.hasVoted ? (
-                <p className="cheese-vote-done-note">
-                  ✓ {(() => {
-                    const myVote = view.votes?.[myId];
-                    if (myVote?.kind === 'accuse') return `你已指认【${nameFor(members, myVote.targetPlayerId)}】`;
-                    if (myVote?.kind === 'abstain') return '你已选择【弃票】';
-                    return voteTarget ? `你已指认【${nameFor(members, voteTarget)}】` : '你已完成投票';
-                  })()}，正在等待其他玩家完成投票…
-                </p>
-              ) : null}
-
-              <SeatTargetPicker
-                label="指认奶酪大盗"
-                selectedIds={voteTarget ? [voteTarget] : []}
-                onSelect={(ids) => setVoteTarget(ids[0] ?? null)}
-                disabled={me?.hasVoted === true}
-                options={view.players
-                  .filter((id) => id !== myId)
-                  .map((id) => ({ id, name: nameFor(members, id) }))}
-              />
-            </ArenaBoard>
-          )}
-
-          {/* 终局真相大揭秘全屏遮罩 */}
-          {view.phase === 'game_over' && (
-            <CheeseGameOverReveal view={view} members={members} myId={myId} />
-          )}
-        </div>
-      )}
-
-      {/* 手机端专属弹出式投票窗口 */}
-      {view.phase === 'vote' && myId && !isSimulatorTable && !voteModalDismissed && (
-        <div
-          className="cheese-mobile-vote-modal-backdrop"
-          role="dialog"
-          aria-modal="true"
-          aria-label="指认奶酪大盗投票窗口"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setVoteModalDismissed(true);
-            }
-          }}
-        >
-          <div className="cheese-mobile-vote-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="cheese-modal-header">
-              <div className="cheese-modal-title-box">
-                <h3><BallotIcon /> 指认奶酪大盗</h3>
-                {view.deadlineAt && (
-                  <span className="cheese-modal-timer">倒计时：<TabletopCountdownText secondsLeft={countdown.secondsLeft} format="clock" /></span>
-                )}
-              </div>
-              <button
-                type="button"
-                className="cheese-modal-close-btn"
-                onClick={() => setVoteModalDismissed(true)}
-                aria-label="收起窗口"
-                title="暂时收起窗口"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="cheese-modal-body">
-              {me?.hasVoted ? (
-                <div className="cheese-vote-submitted-pane">
-                  <div className="cheese-submitted-icon">✓</div>
-                  <h3>投票已成功提交！</h3>
-                  {(() => {
-                    const myVote = view.votes?.[myId];
-                    const targetId = myVote?.kind === 'accuse' ? myVote.targetPlayerId : voteTarget;
-                    const isAbstain = myVote?.kind === 'abstain' || (!targetId && myVote);
-
-                    if (targetId) {
-                      const targetMember = members.find((m) => m.playerId === targetId);
-                      const targetAvatar = resolveMemberAvatar(targetMember, {
-                        playerId: targetId,
-                        isMe: targetId === myId,
-                      });
-                      const targetName = nameFor(members, targetId);
-
-                      return (
-                        <div className="cheese-voted-target-card">
-                          <UserAvatar avatar={targetAvatar} nickname={targetName} size={40} />
-                          <div className="cheese-voted-target-info">
-                            <span className="cheese-voted-target-tag">怀疑目标</span>
-                            <strong className="cheese-voted-target-desc">
-                              {targetName}
-                            </strong>
-                          </div>
-                        </div>
-                      );
-                    } else if (isAbstain) {
-                      return (
-                        <div className="cheese-voted-target-card cheese-voted-target-card--abstain">
-                          <span className="cheese-confirm-target-emoji" aria-hidden="true"><FlagIcon /></span>
-                          <div className="cheese-voted-target-info">
-                            <span className="cheese-voted-target-tag">选择弃票</span>
-                            <strong className="cheese-voted-target-desc">未指认任何人</strong>
-                          </div>
-                        </div>
-                      );
-                    }
-                    return <p className="cheese-voted-target-desc">你的投票已记录完成</p>;
-                  })()}
-                  <div className="cheese-vote-modal-progress">
-                    <span>全场已投票：{totalVoted} / {view.players.length} 人</span>
-                    <p className="cheese-vote-modal-sub">
-                      等待其他玩家完成投票，倒计时结束后将揭晓全场票数与大盗身份…
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className="cheese-vote-btn--done"
-                    onClick={() => setVoteModalDismissed(true)}
-                  >
-                    收起窗口查看桌面
-                  </button>
-                </div>
-              ) : voteConfirmCandidate !== null ? (
-                <div className="cheese-vote-confirm-pane">
-                  {voteConfirmCandidate === 'abstain' ? (
-                    <>
-                      <h4>确认放弃本次指认？</h4>
-                      <div className="cheese-confirm-target-box cheese-confirm-target-box--abstain">
-                        <span className="cheese-confirm-target-emoji" aria-hidden="true"><FlagIcon /></span>
-                        <div className="cheese-confirm-target-info">
-                          <strong className="cheese-confirm-target-name">放弃指认</strong>
-                          <span className="cheese-confirm-target-seat">本局不指认任何玩家</span>
-                        </div>
-                      </div>
-                      <p className="cheese-confirm-warning">弃票后，本局将不计入你对任何人的怀疑票。</p>
-                      <div className="cheese-vote-confirm-actions">
-                        <button
-                          type="button"
-                          className="cheese-confirm-btn is-danger"
-                          disabled={busy}
-                          onClick={() => {
-                            void act({ type: 'cast_abstention', playerId: myId });
-                          }}
-                        >
-                          确认弃票
-                        </button>
-                        <button
-                          type="button"
-                          className="cheese-cancel-btn"
-                          onClick={() => setVoteConfirmCandidate(null)}
-                        >
-                          返回重选
-                        </button>
-                      </div>
-                    </>
-                  ) : (() => {
-                    const targetMember = members.find((m) => m.playerId === voteConfirmCandidate);
-                    const targetAvatar = resolveMemberAvatar(targetMember, {
-                      playerId: voteConfirmCandidate,
-                      isMe: voteConfirmCandidate === myId,
-                    });
-                    const targetName = nameFor(members, voteConfirmCandidate);
-
-                    return (
-                      <>
-                        <h4>确认指认该玩家为大盗？</h4>
-                        <div className="cheese-confirm-target-box">
-                          <UserAvatar avatar={targetAvatar} nickname={targetName} size={48} />
-                          <div className="cheese-confirm-target-info">
-                            <strong className="cheese-confirm-target-name">{targetName}</strong>
-                            <span className="cheese-confirm-target-seat">指认怀疑对象</span>
-                          </div>
-                        </div>
-                        <p className="cheese-confirm-warning">
-                          提交后不可更改，倒计时结束后将公开全场投票结果。
-                        </p>
-                        <div className="cheese-vote-confirm-actions">
-                          <button
-                            type="button"
-                            className="cheese-confirm-btn is-primary"
-                            disabled={busy}
-                            onClick={() => {
-                              setVoteTarget(voteConfirmCandidate);
-                              void act({
-                                type: 'cast_vote',
-                                playerId: myId,
-                                targetPlayerId: voteConfirmCandidate,
-                              });
-                            }}
-                          >
-                            确认指认【{targetName}】
-                          </button>
-                          <button
-                            type="button"
-                            className="cheese-cancel-btn"
-                            onClick={() => setVoteConfirmCandidate(null)}
-                          >
-                            返回重选其他玩家
-                          </button>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-              ) : (
-                <>
-                  <p className="cheese-vote-instruction">谁偷吃了奶酪？请点击指认怀疑的目标玩家：</p>
-                  <div className="cheese-candidate-stack">
-                    {view.players
-                      .filter((id) => id !== myId)
-                      .map((id, candidateIndex) => {
-                        const member = members.find((m) => m.playerId === id);
-                        const avatar = resolveMemberAvatar(member, {
-                          playerId: id,
-                          isMe: id === myId,
-                        });
-                        const candidateName = nameFor(members, id);
-
-                        return (
-                          <button
-                            key={id}
-                            type="button"
-                            className="cheese-vote-candidate-card"
-                            style={{ ['--i' as string]: candidateIndex }}
-                            onClick={() => setVoteConfirmCandidate(id)}
-                          >
-                            <div className="candidate-avatar">
-                              <UserAvatar avatar={avatar} nickname={candidateName} size={38} />
-                            </div>
-                            <strong className="candidate-name" title={candidateName}>{candidateName}</strong>
-                            <span className="candidate-action">指认TA →</span>
-                          </button>
-                        );
-                      })}
-                  </div>
-                  <button
-                    type="button"
-                    className="cheese-vote-abstain-btn"
-                    onClick={() => setVoteConfirmCandidate('abstain')}
-                  >
-                    弃权 / 弃票（不指认任何人）
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+            <AtticSeats seats={seats} onSeatClick={onSeatClick} />
+            <AtticCenter cheese={cheeseSight} caption={caption} />
+            {/* 旧「终局真相大揭秘」遮罩：T5 用画面④翻面揭晓替换后删除 */}
+            {view.phase === 'game_over' && (
+              <CheeseGameOverReveal view={view} members={members} myId={myId} />
+            )}
+          </>
+        )}
       </div>
 
       {/* 飞行层必须挂在舞台之外：舞台内若有 transform 祖先，
           position:fixed 会退化为相对定位，实测屏幕坐标会全部失效。 */}
       <FlightLayer flights={stage.flights} simplified={stage.simplifiedFlights} />
-      {phaseOverlay}
       <TabletopVictoryBurst
         gameOver={view.phase === 'game_over'}
         isWinner={myId ? (view.winners ?? []).includes(myId) : null}
@@ -1117,4 +450,3 @@ export function CheeseThiefGamePage({ view }: Props) {
     </TabletopShell>
   );
 }
-

@@ -1,26 +1,35 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMotion } from '../../../motion/MotionContext.tsx';
-import { breakdownNotes, type NoteDenomination, type PlayerRoundLedgerView, type TargetId, type WitsWagersPlayerView } from '../types.ts';
+import { playerColorFor } from '../seats.ts';
+import type { TargetId, WitsWagersPlayerView } from '../types.ts';
 import { deriveStageEvents, stageEventKey, type ChipMove, type StageEvent } from './deriveStageEvents.ts';
 import { createStageMemory } from '../../../shared-ui/stage/stageMemory.ts';
-import { fitToDeadline, legDuration, measure, measureAnchor, wait, type Rect } from '../../../shared-ui/stage/flip.ts';
+import { fitToDeadline, measure, measureAnchor, wait, type Rect } from '../../../shared-ui/stage/flip.ts';
 import { playCueFor, playFlipCue } from './audioCues.ts';
+
+/** 飞行筹码的外观：颜色 = 主人玩家色；label = A/B 或座位号；extraStake 挂「+N / −N」签 */
+export interface FlightChip {
+  readonly color: string;
+  readonly label: string;
+  readonly extraStake?: number;
+}
 
 export interface FlightSpec {
   readonly id: string;
-  /** note = 一叠钞票；card = 一张背面朝上的答案牌（交牌演出） */
+  /** note = 一枚筹码（2026-09-27 起一次下注 / 收付只飞一枚）；card = 一张背面朝上的答案牌 */
   readonly kind: 'note' | 'card';
-  /** 这一笔要飞的钞票面值，按 breakdownNotes 拆好 */
-  readonly notes?: readonly NoteDenomination[];
-  /** 首张钞票的角标：标明这是永久筹码 A 还是 B */
+  /** 首枚筹码的角标：标明这是永久筹码 A 还是 B */
   readonly badge?: 'A' | 'B' | null;
+  /** 筹码直径（px） */
   readonly noteWidth?: number;
+  /** 筹码外观 */
+  readonly chip?: FlightChip;
   readonly from: Rect;
   readonly to: Rect;
   readonly arc: number;
   readonly durationMs: number;
   readonly delayMs: number;
-  /** 整叠错峰飞完的预算：张数越多间隔越小 */
+  /** 单枚飞行 + 落袋停顿的节拍预算 */
   readonly budgetMs?: number;
 }
 
@@ -30,13 +39,20 @@ export interface StageState {
   readonly flights: readonly FlightSpec[];
   /** 正在演出：用于压住"正在结算"之类的提示，不阻塞交互 */
   readonly isPlaying: boolean;
-  readonly bankActive: boolean;
   /**
    * 收付演出期间的积分覆盖值（稀疏）。
    * 只在派彩动画进行时填充，演完即清空 —— 平时一律显示服务端的权威分数，
    * 否则任何没有账本的玩家都会被钉在一个过期的数字上。
    */
   readonly displayScores: Readonly<Record<string, number>>;
+  /** 结算演出：桌上筹码已飞回主人（隐藏格内筹码摞） */
+  readonly hideTableChips: boolean;
+  /** 结算演出：已放出增减徽章 / 作者签的玩家 */
+  readonly settleRevealed: Readonly<Record<string, boolean>>;
+  /** 结算演出：名次章已统一放出 */
+  readonly ranksRevealed: boolean;
+  /** 结算演出：第一名（皇冠） */
+  readonly crownedId: string | null;
 }
 
 export interface WitsStageApi extends StageState {
@@ -46,21 +62,37 @@ export interface WitsStageApi extends StageState {
 }
 
 const FLIP_STEP_MS = 220;
-/** 单张钞票的飞行时长基准；性格各自再乘一个倍率 */
+/** 单枚筹码的飞行时长基准 */
 const NOTE_FLIGHT_MS = 640;
-/** 单笔收付的节拍上限：飞行时间 + 落袋后的短暂停顿 */
-const MAX_LEG_MS = 900;
-/** 桌面上的钞票尺寸 */
-const NOTE_W_TABLE = 44;
-const NOTE_W_HAND = 56;
-
-/** 基础筹码（免费的那一枚）在桌上就是一张带角标的 100 元钞。 */
-function notesForBet(extraStake: number): NoteDenomination[] {
-  return [100, ...breakdownNotes(extraStake)];
-}
+/** 筹码直径：桌面格内 34px，托盘/手边 46px（A2 方向稿） */
+const NOTE_W_TABLE = 34;
+const NOTE_W_HAND = 46;
 
 function allRevealed(view: WitsWagersPlayerView): Set<TargetId> {
   return new Set(view.board.map((t) => t.id));
+}
+
+/** 结算终态的 staging 字段：落终态 / 低动效档 / 演出被打断后的兜底共用 */
+function settlementFinalFields(view: WitsWagersPlayerView): Pick<
+  StageState,
+  'hideTableChips' | 'settleRevealed' | 'ranksRevealed' | 'crownedId'
+> {
+  const revealed = view.revealed;
+  const inSettlement = view.phase === 'settlement' || view.phase === 'game_over';
+  if (!inSettlement || !revealed) {
+    return { hideTableChips: false, settleRevealed: {}, ranksRevealed: false, crownedId: null };
+  }
+  const settleRevealed: Record<string, boolean> = {};
+  let crownedId: string | null = null;
+  let best = -Infinity;
+  for (const entry of revealed.ledger) {
+    settleRevealed[entry.playerId] = true;
+    if (entry.scoreAfter > best) {
+      best = entry.scoreAfter;
+      crownedId = entry.playerId;
+    }
+  }
+  return { hideTableChips: true, settleRevealed, ranksRevealed: true, crownedId };
 }
 
 /**
@@ -88,8 +120,8 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
     revealedTargets: allRevealed(view),
     flights: [],
     isPlaying: false,
-    bankActive: false,
     displayScores: {},
+    ...settlementFinalFields(view),
   }));
 
   const patch = useCallback((next: Partial<StageState>) => {
@@ -102,8 +134,8 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
       revealedTargets: allRevealed(v),
       flights: [],
       isPlaying: false,
-      bankActive: false,
       displayScores: {},
+      ...settlementFinalFields(v),
     });
   }, []);
 
@@ -135,7 +167,7 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
 
   /**
    * 我这一侧的入画/出画位置：屏幕下方中央，贴着底部拇指区。
-   * 找不到底部托盘锚点时用它兜底，钞票从我面前飞出、也飞回我面前。
+   * 找不到底部托盘锚点时用它兜底，筹码从我面前飞出、也飞回我面前。
    */
   const myHome = useCallback((): { x: number; y: number } => {
     if (typeof window === 'undefined') return { x: 0, y: 0 };
@@ -143,17 +175,18 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
   }, []);
 
 /**
- * 我的下注被服务端接受：钞票在托盘与槽位之间飞。
+ * 我的下注被服务端接受：一枚筹码在托盘与槽位之间飞。
  *
- * 加注/减注只飞差额那几张——整叠重飞会让"我只多押了一张"看起来像重新下注。
+ * 加注/减注只飞差额那一枚（带 +N / −N 签）——整摞重飞会让"我只多押了一枚"
+ * 看起来像重新下注。
  */
   const runChipMoves = useCallback(
-    async (moves: readonly ChipMove[], signal: AbortSignal) => {
+    async (moves: readonly ChipMove[], signal: AbortSignal, myColor: string) => {
       if (!animated || moves.length === 0) return;
 
       const tray = outerRect('tray');
       const home = myHome();
-      const handRect = tray ?? { x: home.x - 28, y: home.y - 15, width: 56, height: 30 };
+      const handRect = tray ?? { x: home.x - 23, y: home.y - 23, width: 46, height: 46 };
 
       for (const move of moves) {
         if (signal.aborted) return;
@@ -165,32 +198,30 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
 
         let from: Rect;
         let to: Rect;
-        let notes: NoteDenomination[];
-        let badge: 'A' | 'B' | null = move.chipId;
+        let chip: FlightChip;
 
         switch (move.type) {
           case 'place':
             from = handRect;
             to = targetRect;
-            notes = notesForBet(move.extraStake);
+            chip = { color: myColor, label: move.chipId, extraStake: move.extraStake };
             break;
           case 'pickUp':
-            // 拿回：连基础筹码一起收回手边
+            // 拿回：永久筹码收回手边
             from = targetRect;
             to = handRect;
-            notes = [100];
+            chip = { color: myColor, label: move.chipId, extraStake: 0 };
             break;
           case 'move':
             from = anchorRect(`target:${move.from}`) ?? targetRect;
             to = targetRect;
-            notes = notesForBet(move.extraStake);
+            chip = { color: myColor, label: move.chipId, extraStake: move.extraStake };
             break;
           case 'restake': {
             // 只飞差额：加注从手边补进去，减注从槽位退回来
             const delta = move.to - move.from;
-            notes = breakdownNotes(Math.abs(delta));
-            if (notes.length === 0) continue;
-            badge = null;
+            if (delta === 0) continue;
+            chip = { color: myColor, label: '', extraStake: delta };
             if (delta > 0) {
               from = handRect;
               to = targetRect;
@@ -202,14 +233,14 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
           }
         }
 
-        const budget = NOTE_FLIGHT_MS + notes.length * 60;
+        const budget = NOTE_FLIGHT_MS + 60;
         patch({
           flights: [
             {
               id: `${move.type}:${move.chipId}:${targetId}`,
               kind: 'note',
-              notes,
-              badge,
+              chip,
+              badge: move.type === 'restake' ? null : move.chipId,
               noteWidth: NOTE_W_HAND,
               from,
               to,
@@ -261,116 +292,153 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
     [softAnimated, patch],
   );
 
+  /**
+   * 结算演出（01-CONTRACT.md §4.5 / §5.2，A2 ④ 的节奏）：
+   * 1. 筹码回收：桌上所有筹码飞回主人的座位章（押中高抛 150px/640ms，
+   *    押错低掠 30px/460ms，逐枚间隔 70ms）；
+   * 2. 逐个计分：从最低分到最高分，座位章弹一下 → 增减徽章 / 作者签放出 →
+   *    余额从 scoreBefore 计到 scoreAfter（基准 500ms，被 deadline 压缩时按比例缩短）；
+   * 3. 名次章统一放出，随后第一名戴冠。
+   * 总时长必须收在 deadlineAt 内（fitToDeadline 已由调用方压过一轮）。
+   */
   const runSettlement = useCallback(
-    async (
-      ledger: readonly PlayerRoundLedgerView[],
-      signal: AbortSignal,
-      budgetMs: number,
-      myPlayerId: string | null,
-    ) => {
+    async (v: WitsWagersPlayerView, signal: AbortSignal, budgetMs: number) => {
+      const revealed = v.revealed;
+      if (!revealed) return;
+
       if (!animated || budgetMs <= 0) {
-        setState((current) => ({ ...current, displayScores: {}, bankActive: false }));
+        // 低动效档 / 无预算：直接落终态（徽章、名次、皇冠全部就位）
+        setState((current) => ({
+          ...current,
+          displayScores: {},
+          ...settlementFinalFields(v),
+        }));
         return;
       }
 
-      patch({ bankActive: true });
+      const winSet = new Set(revealed.winningTargetIds);
 
-      // 演出开始时把各账本玩家钉在结算前的分数上，收款落袋时再逐个释放，
-      // 这样数字的变化和筹码的到达是同一个瞬间。
-      const beforeScores: Record<string, number> = {};
-      for (const entry of ledger) beforeScores[entry.playerId] = entry.scoreBefore;
-      setState((current) => ({ ...current, displayScores: beforeScores }));
-
-      const bank = anchorRect('bank');
-      const home = myHome();
-
-      // 第一步：银行收回输掉的附加注
-      const losers = ledger.filter((entry) => entry.loss > 0);
-      // 第二步：银行派出赢得的筹码与作者奖励
-      const winners = ledger.filter((entry) => entry.winProfit > 0 || entry.authorBonus > 0);
-
-      const legs = losers.length + winners.length;
-      const perLeg = legDuration(budgetMs, legs, MAX_LEG_MS);
-
-      for (const entry of losers) {
-        if (signal.aborted) break;
-        const seat = seatRect(entry.playerId);
-        const from =
-          entry.playerId === myPlayerId
-            ? { x: home.x - 28, y: home.y - 15, width: 56, height: 30 }
-            : (seat ?? bank);
-        // 只收附加注：永久筹码不会被银行拿走
-        const notes = breakdownNotes(entry.loss);
-        if (from && bank && notes.length > 0) {
-          patch({
-            flights: [
-              {
-                id: `loss:${entry.playerId}`,
-                kind: 'note',
-                notes,
-                noteWidth: NOTE_W_TABLE,
-                from,
-                to: bank,
-                arc: 72,
-                durationMs: Math.min(NOTE_FLIGHT_MS, perLeg),
-                delayMs: 0,
-                budgetMs: perLeg,
-              },
-            ],
+      // —— 第一步：筹码回收（桌上筹码飞回主人座位章） ——
+      const chipFlights: FlightSpec[] = [];
+      let index = 0;
+      for (const [pid, pair] of Object.entries(revealed.bets)) {
+        for (const chip of pair) {
+          if (!chip.targetId) continue;
+          const from = anchorRect(`target:${chip.targetId}`);
+          const to = seatRect(pid);
+          if (!from || !to) continue;
+          const win = winSet.has(chip.targetId);
+          chipFlights.push({
+            id: `return:${pid}:${chip.chipId}`,
+            kind: 'note',
+            chip: { color: playerColorFor(pid), label: chip.chipId, extraStake: chip.extraStake },
+            noteWidth: NOTE_W_TABLE,
+            from,
+            to,
+            arc: win ? 150 : 30,
+            durationMs: win ? 640 : 460,
+            delayMs: index * 70,
           });
+          index += 1;
         }
-        await wait(perLeg, signal);
+      }
+
+      let elapsed = 0;
+      patch({ hideTableChips: true });
+      if (chipFlights.length > 0) {
+        patch({ flights: chipFlights });
+        elapsed = Math.max(...chipFlights.map((f) => f.delayMs + f.durationMs)) + 60;
+        await wait(elapsed, signal);
         patch({ flights: [] });
       }
 
-      for (const entry of winners) {
+      // —— 第二步：逐个计分（从最低分到最高分） ——
+      const sorted = [...revealed.ledger].sort((a, b) => a.scoreAfter - b.scoreAfter);
+      const remaining = Math.max(600, budgetMs - elapsed - 450);
+      const perPlayer = Math.min(700, Math.floor(remaining / Math.max(1, sorted.length)));
+      const countMs = Math.max(120, Math.floor(perPlayer * 0.7));
+      const gapMs = Math.max(0, perPlayer - countMs);
+
+      // 演出期间把各人钉在结算前的分数，计到谁头上谁释放
+      const beforeScores: Record<string, number> = {};
+      for (const entry of revealed.ledger) beforeScores[entry.playerId] = entry.scoreBefore;
+      setState((current) => ({ ...current, displayScores: beforeScores }));
+
+      for (const entry of sorted) {
         if (signal.aborted) break;
-        const seat = seatRect(entry.playerId);
-        // 我的收款朝屏幕下方（我的托盘），他人的朝各自座位
-        const to =
-          entry.playerId === myPlayerId
-            ? { x: home.x - 28, y: home.y - 15, width: 56, height: 30 }
-            : (seat ?? bank);
-        const notes = breakdownNotes(entry.winProfit + entry.authorBonus);
-        if (bank && to && notes.length > 0) {
-          patch({
-            flights: [
-              {
-                id: `win:${entry.playerId}`,
-                kind: 'note',
-                notes,
-                noteWidth: entry.playerId === myPlayerId ? NOTE_W_HAND : NOTE_W_TABLE,
-                from: bank,
-                to,
-                arc: 88,
-                durationMs: Math.min(NOTE_FLIGHT_MS, perLeg),
-                delayMs: 0,
-                budgetMs: perLeg,
-              },
-            ],
+
+        // 座位章弹一下（元素不靠 transform 定位，用 scale 属性安全，§5.1 第 1 条）
+        if (typeof document !== 'undefined') {
+          const chipEl = document.querySelector(
+            `[data-player-id="${CSS.escape(entry.playerId)}"] .ww-seat-card__chip`,
+          );
+          chipEl?.animate([{ scale: '1.3' }, { scale: '1' }], {
+            duration: 260,
+            easing: 'cubic-bezier(.34,1.56,.64,1)',
           });
         }
-        await wait(Math.floor(perLeg * 0.6), signal);
-        // 筹码落袋的同时释放该玩家的覆盖值，座位数字随即跳到服务端的 scoreAfter：
-        // 收款与数字变化是同一件事，而权威值始终来自服务端。
+
+        // 增减徽章 / 作者签放出（CSS 弹入）
+        setState((current) => ({
+          ...current,
+          settleRevealed: { ...current.settleRevealed, [entry.playerId]: true },
+        }));
+
+        // 余额计数：scoreBefore → scoreAfter（ease-out cubic）
+        await new Promise<void>((resolve) => {
+          if (entry.scoreBefore === entry.scoreAfter) {
+            resolve();
+            return;
+          }
+          const start = performance.now();
+          const step = (now: number) => {
+            if (signal.aborted) {
+              resolve();
+              return;
+            }
+            const t = Math.min(1, (now - start) / countMs);
+            const eased = 1 - Math.pow(1 - t, 3);
+            const val = Math.round(entry.scoreBefore + (entry.scoreAfter - entry.scoreBefore) * eased);
+            setState((current) => ({
+              ...current,
+              displayScores: { ...current.displayScores, [entry.playerId]: val },
+            }));
+            if (t < 1) {
+              requestAnimationFrame(step);
+            } else {
+              resolve();
+            }
+          };
+          requestAnimationFrame(step);
+        });
+
+        // 计完释放覆盖值，座位回落到服务端权威分数（= scoreAfter）
         setState((current) => {
           const next = { ...current.displayScores };
           delete next[entry.playerId];
           return { ...current, displayScores: next };
         });
-        await wait(perLeg - Math.floor(perLeg * 0.6), signal);
-        patch({ flights: [] });
+        await wait(gapMs, signal);
       }
 
-      setState((current) => ({
-        ...current,
-        // 清空覆盖值：座位重新显示服务端的权威分数，演出不再遮挡真实账本
-        displayScores: {},
-        flights: [],
-        bankActive: false,
-      }));
+      // —— 第三步：名次章统一出现，第一名戴冠 ——
+      await wait(450, signal);
+      patch({ ranksRevealed: true });
+      await wait(150, signal);
+
+      let crownedId: string | null = null;
+      let best = -Infinity;
+      for (const entry of revealed.ledger) {
+        if (entry.scoreAfter > best) {
+          best = entry.scoreAfter;
+          crownedId = entry.playerId;
+        }
+      }
+      patch({ crownedId });
+
+      setState((current) => ({ ...current, displayScores: {} }));
     },
-    [animated, anchorRect, seatRect, myHome, patch],
+    [animated, anchorRect, seatRect, patch],
   );
 
   /** 我的估数被接受：一张背面牌从我面前（底部托盘）飞到毡面上。 */
@@ -380,12 +448,12 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
       const felt = anchorRect('felt');
       if (!felt) return;
       const home = myHome();
-      const from = outerRect('tray') ?? { x: home.x - 32, y: home.y - 22, width: 64, height: 44 };
+      const from = outerRect('tray') ?? { x: home.x - 32, y: home.y - 45, width: 64, height: 90 };
       const to = {
         x: felt.x + felt.width / 2 - 32,
         y: felt.y + felt.height * 0.62,
         width: 64,
-        height: 44,
+        height: 90,
       };
       patch({
         flights: [
@@ -463,7 +531,6 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
       return;
     }
 
-    const myPlayerId = view.me?.playerId ?? null;
     const now = Date.now();
 
     queueRef.current = queueRef.current.then(async () => {
@@ -476,13 +543,17 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
 
         switch (event.kind) {
           case 'roundReset':
-            // 清桌：收手、撤筹码、把牌收回背面，等新一轮的翻牌演出重新摊开
+            // 清桌：收手、撤筹码、把牌收回背面，等新一轮的翻牌演出重新摊开；
+            // 上一轮的结算 staging（徽章 / 名次 / 皇冠 / 筹码回收）一并复位
             setState({
               revealedTargets: new Set(),
               flights: [],
               isPlaying: true,
-              bankActive: false,
               displayScores: {},
+              hideTableChips: false,
+              settleRevealed: {},
+              ranksRevealed: false,
+              crownedId: null,
             });
             break;
 
@@ -499,7 +570,7 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
             break;
 
           case 'myBetsAccepted':
-            await runChipMoves(event.moves, signal);
+            await runChipMoves(event.moves, signal, playerColorFor(view.me?.playerId));
             break;
 
           case 'winningRevealed':
@@ -509,10 +580,9 @@ export function useWitsWagersStage(view: WitsWagersPlayerView): WitsStageApi {
 
           case 'settlementLedger':
             await runSettlement(
-              event.ledger,
+              view,
               signal,
-              fitToDeadline(2600, view.deadlineAt, now, 1200),
-              myPlayerId,
+              fitToDeadline(4200, view.deadlineAt, now, 1500),
             );
             break;
 

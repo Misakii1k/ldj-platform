@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>狼人杀 · N 入夜 / 夜间行动</title>
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="_ticket.css">
+<style>
+  /* 入夜画面整体是夜，但保留一束冷月光打在舞台中央，所以不压整屏暗幕，只压两侧 */
+  body[data-time="night"] .device::after {
+    background: radial-gradient(ellipse 34% 60% at 50% 40%, transparent 40%, rgba(4, 3, 10, .55) 100%);
+  }
+  /* 夜里的席位仍需可读、可点：席位栏、顶栏、操作区浮在夜幕之上 */
+  .box-rail, .topbar, .dock { z-index: 31; }
+  .seat.ticket { cursor: default; }
+  .seat.ticket.pickable { cursor: pointer; }
+  .seat.ticket.pickable:hover { transform: translateY(-2px) rotate(-.6deg); border-color: rgba(150, 180, 255, .7); }
+  .seat.ticket.unpickable { opacity: .45; }
+  .seat.ticket.is-mate { border-color: rgba(255, 110, 90, .6); }
+  .seat.ticket.is-mate .tag { color: #ff9a86; font-weight: 700; }
+  .seat.ticket.is-victim { border-color: rgba(255, 110, 90, .9); box-shadow: 0 0 0 2px rgba(255, 90, 70, .3), 0 0 24px rgba(255, 70, 50, .35); }
+  .seat.ticket.is-victim .tag { color: #ff9a86; font-weight: 700; }
+  .seat.ticket.is-picked { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(232, 194, 122, .35), 0 0 26px rgba(150, 180, 255, .35); }
+
+  /* 身份印章：盖在票根右侧，斜 12°，盖下时从大到小砸下 */
+  .stamp {
+    position: absolute; z-index: 4; right: 10px; top: 50%; width: 46px; height: 46px; margin-top: -23px;
+    display: grid; place-items: center; border-radius: 50%; pointer-events: none;
+    font-size: 22px; transform: rotate(-12deg);
+    border: 2.5px solid currentColor; box-shadow: inset 0 0 0 3px rgba(0, 0, 0, .25);
+    background: rgba(0, 0, 0, .35); animation: stamp 420ms var(--ease-back);
+  }
+  .stamp.wolf { color: #ff6a52; }
+  .stamp.seer { color: #9fc0ff; }
+  .stamp.witch { color: #c89bff; }
+  .stamp.guard { color: #8fe0c0; }
+  @keyframes stamp {
+    0% { transform: rotate(-24deg) scale(2.4); opacity: 0; }
+    60% { transform: rotate(-10deg) scale(.9); opacity: 1; }
+    100% { transform: rotate(-12deg) scale(1); }
+  }
+  .seat.ticket.compact .stamp { right: 50%; top: 34px; margin: 0 -17px 0 0; width: 34px; height: 34px; font-size: 16px; }
+  /* 狼人队友：票根上的小狼爪 */
+  .mate-paw { position: absolute; right: 8px; top: 6px; font-size: 13px; opacity: .9; }
+  .seat.ticket.compact .mate-paw { right: 4px; top: 34px; }
+
+  /* 查验结果：票根翻面露出阵营 */
+  .seat.ticket .no.flipped { animation: flip 520ms ease; }
+  @keyframes flip { 0% { transform: rotateY(0); } 50% { transform: rotateY(90deg); } 100% { transform: rotateY(0); } }
+  .seat.ticket .no.good { background: #1f3a2c; color: #9fe3b8; }
+  .seat.ticket .no.bad { background: #4a1414; color: #ff9a86; }
+
+  /* ── 舞台中央：身份插画 + 大字 ── */
+  .wake { position: absolute; z-index: 36; display: grid; justify-items: center; text-align: center; }
+  .wake .art {
+    position: relative; display: grid; place-items: center;
+  }
+  .wake .art::before { /* 冷月光光晕 */
+    content: ""; position: absolute; inset: -12%; border-radius: 50%;
+    background: radial-gradient(circle, rgba(var(--cold), .38), rgba(var(--cold), .08) 55%, transparent 70%);
+  }
+  .wake .art img { position: relative; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 10px 24px #000c); }
+  .wake.enter .art { animation: art-in 560ms var(--ease-back); }
+  @keyframes art-in { 0% { transform: translateY(24px) scale(.8); opacity: 0; } 100% { transform: none; opacity: 1; } }
+  .wake.sleeping .art img { filter: brightness(.08) drop-shadow(0 0 1px rgba(150, 180, 255, .8)) drop-shadow(0 0 18px rgba(var(--cold), .35)); }
+  .wake .kicker { font-size: 13px; letter-spacing: .3em; color: #b9c7ff; margin-top: 6px; }
+  .wake h2 { margin: 4px 0 0; font: 700 44px/1.1 var(--serif); color: #eef0ff; text-shadow: 0 3px 0 #000a, 0 0 24px rgba(var(--cold), .45); }
+  .wake .line { margin-top: 6px; font-size: 15px; color: #c9cbe6; }
+  .wake .line b { font-family: var(--serif); font-size: 18px; color: #fff; }
+  .wake .line .red { color: #ff9a86; }
+  .wake [data-timer] { margin-top: 10px; }
+  .wake .timer .bar { stroke: #b9c7ff; }
+
+  /* 女巫药瓶 */
+  .potions { display: flex; gap: 12px; margin-top: 12px; }
+  .potion {
+    min-height: 46px; padding: 0 16px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px;
+    border: 1.5px solid rgba(200, 160, 255, .5); background: rgba(40, 20, 60, .6); color: #eadcff;
+  }
+  .potion.used { opacity: .35; text-decoration: line-through; pointer-events: none; }
+  .potion[aria-pressed="true"] { border-color: #c89bff; background: rgba(120, 60, 180, .55); box-shadow: 0 0 20px rgba(200, 155, 255, .35); }
+
+  /* 闭眼等待时，所有人席位压暗 */
+  body[data-view="sleep"] .seat.ticket { opacity: .55; }
+  body[data-view="sleep"] .seat.ticket.is-self { opacity: .9; }
+
+  .toolbar .group.roles button[aria-pressed="true"] { background: #9fb4ff; border-color: #9fb4ff; }
+  .device[data-size="mobile"] .wake h2 { font-size: 30px; }
+  .device[data-size="mobile"] .wake .kicker { font-size: 11px; }
+  .device[data-size="mobile"] .wake .line { font-size: 12.5px; }
+  .device[data-size="mobile"] .wake .line b { font-size: 14px; }
+  .device[data-size="mobile"] .potions { flex-direction: column; gap: 8px; width: 100%; }
+  .device[data-size="mobile"] .potion { min-height: 44px; justify-content: center; font-size: 13px; padding: 0 8px; }
+  .device[data-size="mobile"] .dock { flex-wrap: wrap; }
+  .device[data-size="mobile"] .dock .info { flex: 1 0 100%; }
+  .device[data-size="mobile"] .dock .btn { flex: 1; }
+  .device[data-size="mobile"] .topbar .game { font-size: 16px; }
+  .device[data-size="mobile"] .topbar .day { font-size: 13px; padding: 2px 10px; }
+  .device[data-size="mobile"] .icon-btn { width: 32px; height: 32px; }
+</style>
+</head>
+<body data-time="night" data-view="wolf">
+<div class="toolbar">
+  <strong>N · 入夜 / 夜间行动</strong>
+  <span class="note">沿用 A2 定稿（两翼包厢 + 剧场票根）｜ 红幕落下，一束冷月光打在舞台中央的身份插画上 ｜ 点票根选人，盖上身份印章，再点黄色按钮确认</span>
+  <div class="group"><button data-set-size="desktop">桌面 1280×800</button><button data-set-size="mobile">手机 390×844</button></div>
+  <div class="group"><button data-set-count="9">9 人</button><button data-set-count="12">12 人</button></div>
+  <div class="group roles"><button data-view="wolf">狼人</button><button data-view="seer">预言家</button><button data-view="witch">女巫</button><button data-view="guard">守卫</button><button data-view="sleep">闭眼等待</button></div>
+  <div class="group"><button id="nreset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="scaler"><div class="device"></div></div></div>
+<script src="_ticket.js"></script>
+<script>
+window.CUSTOM_FLOW = true;
+const WOLF_MATE = 9;          // 你是狼人时的队友
+const VICTIM = 4;             // 今晚被刀的人（女巫视角可见）
+const GUARDED_LAST = 3;       // 守卫昨晚守过的人，今晚不能连守
+const TEAM = { 1: 'good', 3: 'good', 4: 'good', 5: 'bad', 7: 'good', 8: 'good', 9: 'bad', 10: 'good', 11: 'good' };
+
+const ROLES = {
+  wolf:  { img: 'werewolf', name: '狼人', stamp: '🐾', verb: '选择今夜的猎物', cta: '确认袭击', total: 40 },
+  seer:  { img: 'seer', name: '预言家', stamp: '👁', verb: '选择一名玩家查验身份', cta: '查验', total: 25 },
+  witch: { img: 'witch', name: '女巫', stamp: '⚗', verb: '', cta: '确认用药', total: 25 },
+  guard: { img: 'guard', name: '守卫', stamp: '🛡', verb: '选择今夜守护的人', cta: '确认守护', total: 25 },
+  sleep: { img: 'werewolf', name: '狼人', total: 40 },
+};
+const night = { view: 'wolf', pick: null, done: false, potion: null, result: null };
+
+function el(sel) { return document.querySelector(sel); }
+function selfNo() { return 6; }
+
+function pickable(p) {
+  if (p.dead || night.done) return false;
+  const v = night.view;
+  if (v === 'sleep') return false;
+  if (v === 'wolf') return p.no !== selfNo() && p.no !== WOLF_MATE;
+  if (v === 'seer') return p.no !== selfNo();
+  if (v === 'guard') return p.no !== GUARDED_LAST;
+  if (v === 'witch') return night.potion === 'poison' && p.no !== selfNo();
+  return false;
+}
+
+function seatTag(p) {
+  const v = night.view;
+  if (p.dead) return p.dead;
+  if (p.no === selfNo()) return v === 'sleep' ? '闭眼中' : `你 · ${ROLES[v].name}`;
+  if (v === 'wolf' && p.no === WOLF_MATE) return night.pick ? `同伴 · 选了 ${night.pick} 号` : '狼队友';
+  if (v === 'witch' && p.no === VICTIM) return '今晚倒下';
+  if (v === 'guard' && p.no === GUARDED_LAST) return '昨晚已守';
+  if (v === 'seer' && night.result && p.no === night.result.no) return night.result.good ? '查验：好人' : '查验：狼人';
+  return '';
+}
+
+function paintSeats() {
+  const W = window.WW;
+  for (const p of W.players()) {
+    const s = W.seatEls.get(p.no);
+    if (!s) continue;
+    s.classList.remove('is-speaking', 'is-next');
+    s.classList.toggle('is-self', p.self);
+    s.classList.toggle('is-dead', Boolean(p.dead));
+    s.classList.toggle('pickable', pickable(p));
+    s.classList.toggle('unpickable', !p.dead && !pickable(p) && night.view !== 'sleep' && !p.self && !night.done && (night.view !== 'witch' || night.potion === 'poison'));
+    s.classList.toggle('is-mate', night.view === 'wolf' && p.no === WOLF_MATE);
+    s.classList.toggle('is-victim', night.view === 'witch' && p.no === VICTIM);
+    s.classList.toggle('is-picked', night.pick === p.no);
+    s.querySelector('.tag').textContent = seatTag(p);
+    // 印章
+    s.querySelectorAll('.stamp, .mate-paw').forEach((x) => x.remove());
+    if (night.pick === p.no) {
+      const st = document.createElement('span');
+      st.className = 'stamp ' + (night.view === 'witch' ? 'witch' : night.view);
+      st.textContent = night.view === 'witch' ? '☠' : ROLES[night.view].stamp;
+      s.appendChild(st);
+    }
+    if (night.view === 'wolf' && p.no === WOLF_MATE) {
+      const paw = document.createElement('span');
+      paw.className = 'mate-paw'; paw.textContent = '🐾';
+      s.appendChild(paw);
+    }
+    // 查验翻面
+    const no = s.querySelector('.no');
+    no.classList.remove('good', 'bad');
+    if (night.view === 'seer' && night.result && night.result.no === p.no) no.classList.add(night.result.good ? 'good' : 'bad');
+  }
+}
+
+function paintStage(enter) {
+  const v = night.view;
+  const r = ROLES[v];
+  const wake = el('.wake');
+  wake.classList.toggle('sleeping', v === 'sleep');
+  wake.querySelector('img').src = `img/${r.img}.png`;
+  const kicker = wake.querySelector('.kicker');
+  const h2 = wake.querySelector('h2');
+  const line = wake.querySelector('.line');
+  const potions = wake.querySelector('.potions');
+  potions.hidden = v !== 'witch';
+  if (v === 'sleep') {
+    kicker.textContent = '第 2 夜 · 请保持闭眼';
+    h2.textContent = '狼人正在行动';
+    line.innerHTML = '你是 <b>村民</b>，今夜无需操作';
+  } else if (v === 'witch') {
+    kicker.textContent = '第 2 夜 · 你被唤醒';
+    h2.textContent = '女巫请睁眼';
+    line.innerHTML = night.done
+      ? (night.potion === 'save' ? '你救下了 <b>4</b> 号' : night.potion === 'poison' ? `你向 <b>${night.pick}</b> 号下了毒` : '今夜不用药')
+      : `今晚 <b class="red">${VICTIM} 号 Kiki</b> 倒下了`;
+  } else {
+    kicker.textContent = '第 2 夜 · 你被唤醒';
+    h2.textContent = `${r.name}请睁眼`;
+    if (night.done && v === 'seer' && night.result) {
+      line.innerHTML = `<b>${night.result.no}</b> 号是 ${night.result.good ? '<b style="color:#9fe3b8">好人</b>' : '<b class="red">狼人</b>'}`;
+    } else if (night.done) {
+      line.innerHTML = v === 'wolf' ? `已锁定 <b>${night.pick}</b> 号，等待同伴` : `今夜守护 <b>${night.pick}</b> 号`;
+    } else {
+      line.innerHTML = night.pick ? `已选 <b>${night.pick}</b> 号，点黄色按钮确认` : r.verb;
+    }
+  }
+  if (enter) { wake.classList.remove('enter'); void wake.offsetWidth; wake.classList.add('enter'); }
+
+  // 底部操作区
+  const dock = el('.dock');
+  const cta = dock.querySelector('[data-cta]');
+  const skip = dock.querySelector('.btn:not([data-cta])');
+  const info = dock.querySelector('.info');
+  if (v === 'sleep') {
+    info.querySelector('strong').textContent = '天黑请闭眼';
+    info.querySelector('span').textContent = '法官正在依次唤醒各个身份，请不要出声';
+    cta.hidden = true; skip.hidden = true;
+    return;
+  }
+  skip.hidden = night.done || v === 'wolf' || v === 'seer';
+  skip.textContent = v === 'witch' ? '今夜不用药' : '空守';
+  info.querySelector('strong').textContent = night.done ? '已完成，请闭眼' : `你是${r.name}`;
+  info.querySelector('span').textContent = night.done ? '等待其他身份行动' : v === 'witch' ? '解药和毒药每局各一瓶，同一晚只能用一瓶' : '点左右两侧的票根选人';
+  const ready = v === 'witch' ? (night.potion === 'save' || (night.potion === 'poison' && night.pick)) : night.pick !== null;
+  cta.hidden = night.done || !ready;
+  cta.textContent = v === 'witch' ? (night.potion === 'save' ? `用解药救 ${VICTIM} 号` : `向 ${night.pick} 号下毒`) : `${r.cta} · ${night.pick} 号`;
+  if (!cta.hidden) { cta.style.animation = 'none'; void cta.offsetWidth; cta.style.animation = ''; }
+}
+
+function paintPotions() {
+  el('.wake').querySelectorAll('.potion').forEach((b) => b.setAttribute('aria-pressed', String(night.potion === b.dataset.potion)));
+}
+
+function paint(enter) { paintSeats(); paintStage(enter); paintPotions(); }
+
+function setView(v) {
+  night.view = v; night.pick = null; night.done = false; night.potion = null; night.result = null;
+  document.body.dataset.view = v;
+  document.querySelectorAll('[data-view]').forEach((b) => b.tagName === 'BUTTON' && b.setAttribute('aria-pressed', String(b.dataset.view === v)));
+  const W = window.WW;
+  W.state.total = ROLES[v].total; W.state.left = v === 'sleep' ? 31 : ROLES[v].total - 6; W.paintTimer();
+  paint(true);
+}
+
+function confirm() {
+  const v = night.view;
+  night.done = true;
+  if (v === 'seer') night.result = { no: night.pick, good: TEAM[night.pick] !== 'bad' };
+  paint(false);
+  if (v === 'seer') {
+    const no = window.WW.seatEls.get(night.pick).querySelector('.no');
+    no.classList.remove('flipped'); void no.offsetWidth; no.classList.add('flipped');
+  }
+  const d = el('.device'); d.classList.remove('shake'); void d.offsetWidth; d.classList.add('shake');
+}
+
+document.addEventListener('click', (e) => {
+  const seat = e.target.closest('.seat.ticket.pickable');
+  if (seat) { night.pick = Number(seat.dataset.no); paint(false); return; }
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.tagName === 'BUTTON' && b.dataset.view) setView(b.dataset.view);
+  else if (b.dataset.potion) {
+    night.potion = night.potion === b.dataset.potion ? null : b.dataset.potion;
+    night.pick = null; paint(false);
+  }
+  else if (b.hasAttribute('data-cta')) confirm();
+  else if (b.closest('.dock') && !b.hasAttribute('data-cta')) { night.done = true; night.pick = null; night.potion = null; paint(false); }
+  else if (b.id === 'nreset') setView(night.view);
+});
+
+window.AFTER_RENDER = () => { setView(night.view); };
+
+window.LAYOUT = function ({ size, count, players, makeSeat, device }) {
+  const W = window.WW;
+  W.reset(device);
+  const half = Math.ceil(count / 2);
+  const left = players.slice(0, half);
+  const right = players.slice(half).reverse();
+  const rail = (list, x, y, w, h, compact) => {
+    const r = W.place(W.add(device, 'box-rail'), x, y, w, h);
+    r.style.gridTemplateRows = `repeat(${list.length}, minmax(0, 1fr))`;
+    list.forEach((p) => r.appendChild(ticketize(makeSeat(p, compact))));
+  };
+  const wakeHtml = `<div class="art"><img alt=""></div><div class="kicker"></div><h2></h2><div class="line"></div>
+    <div class="potions" hidden><button class="potion" data-potion="save">💧 解药</button><button class="potion" data-potion="poison">☠ 毒药</button></div>
+    <div data-timer="${size === 'desktop' ? 30 : 22}"></div>`;
+
+  if (size === 'desktop') {
+    W.buildTopbar(device, { x: 28, y: 18, w: 1224, day: '第 2 夜 · 🌙' });
+    rail(left, 24, 70, 250, 610);
+    rail(right, 1006, 70, 250, 610);
+    W.buildStage(device, { x: 300, y: 70, w: 680, h: 560, floorH: 56 });
+    const wake = W.place(W.add(device, 'wake', wakeHtml), 300, 92, 680);
+    Object.assign(wake.querySelector('.art').style, { width: '250px', height: '250px' });
+    W.buildDock(device, { x: 24, y: 706, w: 1232, h: 72 });
+  } else {
+    W.buildTopbar(device, { x: 16, y: 16, w: 358, day: '第 2 夜 · 🌙' }, true);
+    rail(left, 8, 64, 86, 620, true);
+    rail(right, 296, 64, 86, 620, true);
+    W.buildStage(device, { x: 100, y: 110, w: 190, h: 440, floorH: 40, spotW: 150 });
+    const wake = W.place(W.add(device, 'wake', wakeHtml), 100, 128, 190);
+    Object.assign(wake.querySelector('.art').style, { width: '150px', height: '150px' });
+    W.buildDock(device, { x: 16, y: 700, w: 358, h: 124 });
+  }
+  // 公共底栏的第一个按钮当"跳过/空守/不用药"
+  const dock = device.querySelector('.dock');
+  dock.querySelector('.btn:not([data-cta])').removeAttribute('title');
+};
+</script>
+<script src="_shared.js"></script>
+</body>
+</html>

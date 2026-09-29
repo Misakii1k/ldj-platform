@@ -5,11 +5,11 @@
  * 出牌、摸牌、换色、抓漏报一律看 topDiscard / deckCount / currentColor /
  * unoRaceWindow 的变化，而不是看用户点了按钮。
  */
-import type { UnoHousePlayerView } from '../types.ts';
+import type { UnoCard, UnoHousePlayerView } from '../types.ts';
 
 export type StageEvent =
-  /** 有人出牌：牌从其手边/席位飞到弃牌堆 */
-  | { kind: 'cardPlayed'; playerId: string | null; seq: number; isMe: boolean }
+  /** 有人出牌：牌从其手边/席位飞到弃牌堆（card 为飞出的那张，供飞行层渲染实体牌） */
+  | { kind: 'cardPlayed'; playerId: string | null; seq: number; isMe: boolean; card: UnoCard }
   /** 有人摸牌：背面牌从摸牌堆飞到其手边/席位 */
   | { kind: 'cardDrawn'; playerId: string; seq: number; count: number; isMe: boolean }
   /** 换色：中央牌堆按新色扫光 */
@@ -85,6 +85,7 @@ export function deriveStageEvents(
       playerId: player,
       seq: next.discardCount,
       isMe: player === myId,
+      card: next.topDiscard,
     });
   }
 

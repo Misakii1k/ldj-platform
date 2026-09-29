@@ -6,7 +6,7 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 import { seedRoom } from './helpers/dbClient.ts';
 import { RoomDriver } from './helpers/wsClient.ts';
-import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL } from './helpers/serverEnv.ts';
+import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL, skipPcHostConsole } from './helpers/serverEnv.ts';
 
 const CHEESE_CONFIG = {
   rulesetId: 'cheese_thief_classic_v1',
@@ -30,6 +30,7 @@ async function openBrowser(browser: Browser, me: Me): Promise<Page> {
     [ME_STORAGE_KEY, JSON.stringify({ ...me, seatRole: 'player' })],
   );
   await page.setViewportSize({ width: 1280, height: 800 });
+  await skipPcHostConsole(page);
   await page.goto(BASE_URL);
   await page.locator('.tabletop-shell').waitFor({ timeout: 30_000 });
   return page;

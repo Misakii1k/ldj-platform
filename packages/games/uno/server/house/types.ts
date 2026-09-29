@@ -187,6 +187,18 @@ export interface UnoHousePublicView {
   readonly cumulativeScores: readonly number[];
   readonly matchRanking: readonly UnoHouseMatchRankingEntry[] | null;
   readonly clockInfo: UnoHouseClockInfo;
+  /**
+   * 最近一局的结算快照（round_over / match_over 阶段下发，供结算页逐张翻开剩余手牌）；
+   * round_playing 等其它阶段恒为 null（隐私不变量：不在对局中泄露手牌）。
+   */
+  readonly lastRound: UnoHouseLastRoundSummary | null;
+}
+
+export interface UnoHouseLastRoundSummary {
+  readonly roundNumber: number;
+  readonly finisherPlayerId: string;
+  /** 每人结算时剩余手牌（按 players 顺序，出完的人是空数组）。 */
+  readonly remainingHands: readonly (readonly UnoHouseCard[])[];
 }
 
 export interface UnoHousePlayerMeView {
@@ -214,6 +226,8 @@ export interface UnoHouseRoundResult {
   readonly winnerPlayerIds: readonly string[];
   /** team 模式获胜队伍；平局可并列；individual 模式为 null。 */
   readonly teamWinnerIds: readonly string[] | null;
+  /** 每人剩余手牌（按 players 顺序，出完的人是空数组）。 */
+  readonly remainingHands?: readonly (readonly UnoHouseCard[])[];
 }
 
 export interface UnoHouseResult {

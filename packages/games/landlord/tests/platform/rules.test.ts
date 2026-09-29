@@ -249,6 +249,33 @@ test('platform 视图遮滤：手牌只对自己；地主确定后底牌公开�
   assert.deepEqual(specAfter.currentTrick, after.currentTrick);
 });
 
+test('platform 隐私边界与终局亮牌：对局中无 revealedHands；终局有且与各人剩余手牌一致', () => {
+  const s = startedPlaying(PLAYERS, [2, 0, 0]);
+  const playingPublic = landlordPlatformModule.getSpectatorView(s);
+  const playingPlayer = landlordPlatformModule.getPlayerView(s, 'p0');
+  assert.equal('revealedHands' in playingPublic, false, '出牌阶段公开视图不得含有 revealedHands');
+  assert.equal('revealedHands' in playingPlayer, false, '出牌阶段玩家视角不得含有 revealedHands');
+
+  // 模拟对局结束
+  const finished = reduce(s, system, { type: 'player_forfeited', playerIds: ['p1'] });
+  assert.equal(finished.state.phase, 'game_over');
+
+  const overPublic = landlordPlatformModule.getSpectatorView(finished.state);
+  const overPlayer = landlordPlatformModule.getPlayerView(finished.state, 'p0');
+  assert.ok(overPublic.revealedHands !== undefined, '终局公开视角必须包含 revealedHands');
+  assert.ok(overPlayer.revealedHands !== undefined, '终局玩家视角必须包含 revealedHands');
+
+  assert.deepEqual(
+    overPublic.revealedHands,
+    {
+      p0: finished.state.hands.p0,
+      p1: finished.state.hands.p1,
+      p2: finished.state.hands.p2,
+    },
+    'revealedHands 必须与各玩家剩余手牌完全一致',
+  );
+});
+
 test('platform 未参局玩家不能操作', () => {
   const s = init(PLAYERS);
   const denied = deny(s, { kind: 'player', playerId: 'ghost' }, { type: 'bid_score', score: 1 });

@@ -1,0 +1,38 @@
+:root {
+  --font-body: "Microsoft YaHei", "PingFang SC", sans-serif;
+  --font-display: "STSong", "SimSun", serif;
+  --night: #0c1424;
+  --night-panel: #17243a;
+  --moon: #e4ecfa;
+  --moon-muted: #acbdd4;
+  --blood: #973e4d;
+  --paper: #fff5df;
+  --orchard: #244e39;
+  --ink: #243d2c;
+  --mango: #f4c65b;
+  font-family: var(--font-body);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, select, input { font: inherit; }
+button, a, select { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+button { cursor: pointer; }
+button:disabled { cursor: default; }
+button, select { min-height: 44px; }
+a { color: inherit; }
+button:focus-visible, a:focus-visible, select:focus-visible, [tabindex]:focus-visible { outline: 3px solid #c17119; outline-offset: 3px; }
+[data-game="werewolf"] :focus-visible { outline-color: #e4c37b; }
+[hidden] { display: none !important; }
+img { max-width: 100%; }
+dialog { max-width: calc(100vw - 24px); max-height: calc(100dvh - 32px); overflow: auto; overscroll-behavior: contain; }
+dialog::backdrop { background: rgb(5 12 23 / 78%); backdrop-filter: blur(5px); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+#preview-tools { flex-shrink: 0; }
+.preview-tools { background: #f5f4f0; color: #282e35; border-bottom: 1px solid #c5c8c9; padding: 5px 12px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; font: 12px var(--font-body); }
+.preview-tools a, .preview-tools button, .preview-tools select { padding: 0 10px; display: inline-flex; align-items: center; border: 1px solid #bdc3c9; border-radius: 6px; background: #fff; color: #282e35; text-decoration: none; }
+.preview-tools a[aria-current="page"] { color: #fff; background: #283b4d; border-color: #283b4d; }
+.preview-tools label { display: inline-flex; align-items: center; gap: 5px; }
+.preview-reopen { position: fixed; z-index: 20; top: 8px; right: 8px; background: #f5f4f0; color: #282e35; border: 1px solid #6b7480; border-radius: 8px; padding: 0 10px; font-size: 12px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }

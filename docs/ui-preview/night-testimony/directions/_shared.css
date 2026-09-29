@@ -1,0 +1,100 @@
+/* 谁是狱警方向稿公用（与伪人测试同骨架）：预览外壳 + 席位 / 倒计时 / 按钮骨架。颜色全部走变量，由各方向稿覆盖。只服务于静态预览，不进生产。 */
+:root {
+  --ink: #292722;
+  --muted: #575147;
+  --cream: #fffdf7;
+  --paper: #fff4df;
+  --yellow: #f7c84b;
+  --coral: #c23616;
+  --serif: "Noto Serif SC", Georgia, "Songti SC", "STSong", serif;
+  --sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  /* 表皮变量（方向稿覆盖） */
+  --line: var(--ink);
+  --bw: 3px;
+  --card: var(--cream);
+  --card-text: var(--ink);
+  --card-muted: var(--muted);
+  --shadow: 0 5px 0 var(--ink);
+  --shadow-sm: 0 3px 0 var(--ink);
+  --accent: #e76835;
+  --bust-line: var(--ink);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: #3a3833; font-family: var(--sans); color: var(--ink); overflow: hidden; }
+
+/* ---------- 预览工具条（不属于设计） ---------- */
+.toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 16px; background: #22211e; color: #f1eadc; font-size: 13px; }
+.toolbar strong { font-size: 15px; }
+.toolbar .tb-note { color: #c9c0ae; }
+.toolbar .group { display: flex; gap: 4px; }
+.toolbar .group:first-of-type { margin-left: auto; }
+.toolbar button { font: inherit; color: #f1eadc; background: #3a3833; border: 1px solid #6b665c; border-radius: 8px; padding: 6px 12px; cursor: pointer; min-height: 32px; }
+.toolbar button[aria-pressed="true"] { background: #f7c84b; color: #292722; border-color: #f7c84b; font-weight: 800; }
+.stage-wrap { display: grid; place-items: start center; padding: 16px; }
+.device { position: relative; overflow: hidden; transform-origin: top center; container-type: size; border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+
+/* ---------- 文案 ---------- */
+.eyebrow { font: 800 11px/1.2 var(--sans); letter-spacing: .18em; text-transform: uppercase; }
+.title { font-family: var(--serif); font-weight: 700; line-height: 1.15; margin: 0; }
+.numeral { font-family: var(--serif); font-variant-numeric: tabular-nums lining-nums; line-height: 1; }
+
+/* ---------- 人像剪影 ---------- */
+.bust { width: 100%; height: auto; display: block; overflow: visible; }
+
+/* ---------- 席位卡（骨架；各方向稿重写外观） ---------- */
+.seat {
+  position: relative; display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 2px 10px;
+  padding: 8px 12px 8px 10px; background: var(--card); color: var(--card-text);
+  border: var(--bw) solid var(--line); border-radius: 14px; box-shadow: var(--shadow-sm);
+  transition: transform 200ms cubic-bezier(.34,1.56,.64,1), box-shadow 200ms, opacity 200ms, outline-color 200ms;
+}
+.seat .av { width: 44px; grid-row: span 2; color: var(--seat-c); }
+.seat .nm { font-weight: 800; font-size: 15px; line-height: 1.2; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seat .st { font-size: 12px; font-weight: 700; color: var(--card-muted); }
+.seat .sc { grid-row: span 2; font-size: 26px; font-weight: 700; }
+.seat .no {
+  position: absolute; left: -9px; top: -9px; width: 24px; height: 24px; display: grid; place-items: center;
+  font: 800 12px var(--sans); background: var(--card); color: var(--card-text); border: 2px solid var(--line); border-radius: 50%;
+}
+.seat .you { font-style: normal; font-size: 11px; font-weight: 900; margin-left: 4px; padding: 1px 6px; border-radius: 999px; background: var(--yellow); color: var(--ink); vertical-align: 2px; }
+.seat.done { opacity: .62; }
+.seat.speaking { transform: translateY(-3px) scale(1.04); }
+.seat.judge .st { color: var(--accent); }
+
+/* ---------- 倒计时环 ---------- */
+.ring {
+  --p: 1; --ring-c: var(--accent); --ring-bg: rgba(0,0,0,.12);
+  width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center;
+  background: conic-gradient(var(--ring-c) calc(var(--p) * 360deg), var(--ring-bg) 0);
+}
+.ring > span { width: calc(100% - 10px); height: calc(100% - 10px); border-radius: 50%; display: grid; place-items: center; background: var(--card); color: var(--card-text); font: 700 17px var(--serif); font-variant-numeric: tabular-nums; }
+.ring.warn { --ring-c: #e5484d; animation: tick 1s steps(1) infinite; }
+@keyframes tick { 0% { transform: scale(1.08); } 20% { transform: scale(1); } }
+
+/* ---------- 按钮 ---------- */
+.btn {
+  font: 900 15px var(--sans); color: var(--ink); background: var(--cream);
+  border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 3px 0 var(--ink);
+  min-height: 48px; padding: 8px 20px; cursor: pointer;
+  transition: transform 140ms cubic-bezier(.34,1.56,.64,1), box-shadow 140ms;
+}
+.btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 0 var(--ink); }
+.btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn-primary { background: var(--yellow); }
+
+/* ---------- 私密身份条 ---------- */
+.secret { cursor: pointer; user-select: none; }
+.secret .word { filter: blur(0); transition: filter 200ms; }
+.secret.hidden .word { filter: blur(7px); }
+
+/* ---------- 飞行物 ---------- */
+.flying { position: absolute; z-index: 80; pointer-events: none; margin: 0; }
+
+@keyframes pop { 0% { transform: scale(.4); } 60% { transform: scale(1.18); } 100% { transform: none; } }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

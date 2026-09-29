@@ -1,0 +1,1594 @@
+{
+  "base": "http://127.0.0.1:4176",
+  "startedAt": "2026-09-18T12:04:33.291Z",
+  "chromium": "151.0.7922.34",
+  "viewports": {
+    "360x640": {
+      "durian": {
+        "turnDialogAutoOpen": true,
+        "auditDialog": {
+          "viewport": {
+            "w": 360,
+            "h": 640
+          },
+          "doc": {
+            "scrollWidth": 360,
+            "clientWidth": 360,
+            "scrollHeight": 640,
+            "clientHeight": 640,
+            "bodyScrollWidth": 360,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": [
+            {
+              "id": "d-turn-dialog",
+              "rect": {
+                "top": 32.3,
+                "bottom": 607.7,
+                "left": 12,
+                "right": 348,
+                "w": 336,
+                "h": 575.4
+              },
+              "fitsViewport": true,
+              "activeInsideDialog": true,
+              "activeTag": "dialog#d-turn-dialog > header.d-dialog-header > button.d-button",
+              "scrollableBody": {
+                "scrollH": 384,
+                "clientH": 384,
+                "canScroll": false
+              }
+            }
+          ]
+        },
+        "fitDialog": {
+          "scrollers": []
+        },
+        "auditCompact": {
+          "viewport": {
+            "w": 360,
+            "h": 640
+          },
+          "doc": {
+            "scrollWidth": 360,
+            "clientWidth": 360,
+            "scrollHeight": 640,
+            "clientHeight": 640,
+            "bodyScrollWidth": 360,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": []
+        },
+        "fitCompact": {
+          "scrollers": []
+        },
+        "auditComfortable": {
+          "viewport": {
+            "w": 360,
+            "h": 640
+          },
+          "doc": {
+            "scrollWidth": 360,
+            "clientWidth": 360,
+            "scrollHeight": 640,
+            "clientHeight": 640,
+            "bodyScrollWidth": 360,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": []
+        },
+        "fitComfortable": {
+          "scrollers": [
+            {
+              "sel": "main.d-game",
+              "over": 127
+            }
+          ]
+        },
+        "auditResult": {
+          "viewport": {
+            "w": 360,
+            "h": 640
+          },
+          "doc": {
+            "scrollWidth": 360,
+            "clientWidth": 360,
+            "scrollHeight": 640,
+            "clientHeight": 640,
+            "bodyScrollWidth": 360,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": [
+            {
+              "id": "d-result-dialog",
+              "rect": {
+                "top": 14,
+                "bottom": 626,
+                "left": 14,
+                "right": 346,
+                "w": 332,
+                "h": 612
+              },
+              "fitsViewport": true,
+              "activeInsideDialog": true,
+              "activeTag": "dialog#d-result-dialog > header.d-dialog-header > button.d-close",
+              "scrollableBody": {
+                "scrollH": 550,
+                "clientH": 434,
+                "canScroll": true
+              }
+            }
+          ]
+        },
+        "fitResult": {
+          "scrollers": [
+            {
+              "sel": "div#d-result-body.d-dialog-body",
+              "over": 116
+            }
+          ]
+        },
+        "consoleIssues": []
+      },
+      "werewolf": {
+        "theme": "woodcut",
+        "design": "refined",
+        "auditWoodcut": {
+          "viewport": {
+            "w": 360,
+            "h": 640
+          },
+          "doc": {
+            "scrollWidth": 360,
+            "clientWidth": 360,
+            "scrollHeight": 640,
+            "clientHeight": 640,
+            "bodyScrollWidth": 360,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": []
+        },
+        "fitWoodcut": {
+          "scrollers": []
+        },
+        "seatFit": {
+          "leftBottom": 555,
+          "rightBottom": 555,
+          "viewportH": 640
+        },
+        "seatCounts": {
+          "left": 6,
+          "right": 6
+        },
+        "nameClipping": [
+          {
+            "text": "阿橙",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "月亮邮递员",
+            "scrollW": 50,
+            "clientW": 50,
+            "clipped": false
+          },
+          {
+            "text": "小满",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "不吃香菜的猫",
+            "scrollW": 57,
+            "clientW": 57,
+            "clipped": false
+          },
+          {
+            "text": "十一",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "山间一阵晚风",
+            "scrollW": 57,
+            "clientW": 57,
+            "clipped": false
+          },
+          {
+            "text": "南瓜",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "阿白",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "薄荷",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "长颈鹿不熬夜",
+            "scrollW": 57,
+            "clientW": 57,
+            "clipped": false
+          },
+          {
+            "text": "小岛",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "半夏",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          }
+        ],
+        "audit_eclipse": {
+          "viewport": {
+            "w": 360,
+            "h": 640
+          },
+          "doc": {
+            "scrollWidth": 360,
+            "clientWidth": 360,
+            "scrollHeight": 640,
+            "clientHeight": 640,
+            "bodyScrollWidth": 360,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": []
+        },
+        "audit_curtain": {
+          "viewport": {
+            "w": 360,
+            "h": 640
+          },
+          "doc": {
+            "scrollWidth": 360,
+            "clientWidth": 360,
+            "scrollHeight": 640,
+            "clientHeight": 640,
+            "bodyScrollWidth": 360,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": []
+        },
+        "consoleIssues": []
+      }
+    },
+    "390x844": {
+      "durian": {
+        "turnDialogAutoOpen": true,
+        "auditDialog": {
+          "viewport": {
+            "w": 390,
+            "h": 844
+          },
+          "doc": {
+            "scrollWidth": 390,
+            "clientWidth": 390,
+            "scrollHeight": 844,
+            "clientHeight": 844,
+            "bodyScrollWidth": 390,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": [
+            {
+              "id": "d-turn-dialog",
+              "rect": {
+                "top": 134.3,
+                "bottom": 709.7,
+                "left": 12,
+                "right": 378,
+                "w": 366,
+                "h": 575.4
+              },
+              "fitsViewport": true,
+              "activeInsideDialog": true,
+              "activeTag": "dialog#d-turn-dialog > header.d-dialog-header > button.d-button",
+              "scrollableBody": {
+                "scrollH": 384,
+                "clientH": 384,
+                "canScroll": false
+              }
+            }
+          ]
+        },
+        "fitDialog": {
+          "scrollers": []
+        },
+        "auditCompact": {
+          "viewport": {
+            "w": 390,
+            "h": 844
+          },
+          "doc": {
+            "scrollWidth": 390,
+            "clientWidth": 390,
+            "scrollHeight": 844,
+            "clientHeight": 844,
+            "bodyScrollWidth": 390,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": []
+        },
+        "fitCompact": {
+          "scrollers": []
+        },
+        "auditComfortable": {
+          "viewport": {
+            "w": 390,
+            "h": 844
+          },
+          "doc": {
+            "scrollWidth": 390,
+            "clientWidth": 390,
+            "scrollHeight": 844,
+            "clientHeight": 844,
+            "bodyScrollWidth": 390,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": []
+        },
+        "fitComfortable": {
+          "scrollers": []
+        },
+        "auditResult": {
+          "viewport": {
+            "w": 390,
+            "h": 844
+          },
+          "doc": {
+            "scrollWidth": 390,
+            "clientWidth": 390,
+            "scrollHeight": 844,
+            "clientHeight": 844,
+            "bodyScrollWidth": 390,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": [
+            {
+              "id": "d-result-dialog",
+              "rect": {
+                "top": 58.1,
+                "bottom": 785.9,
+                "left": 14,
+                "right": 376,
+                "w": 362,
+                "h": 727.9
+              },
+              "fitsViewport": true,
+              "activeInsideDialog": true,
+              "activeTag": "dialog#d-result-dialog > header.d-dialog-header > button.d-close",
+              "scrollableBody": {
+                "scrollH": 550,
+                "clientH": 550,
+                "canScroll": false
+              }
+            }
+          ]
+        },
+        "fitResult": {
+          "scrollers": []
+        },
+        "consoleIssues": []
+      },
+      "werewolf": {
+        "theme": "woodcut",
+        "design": "refined",
+        "auditWoodcut": {
+          "viewport": {
+            "w": 390,
+            "h": 844
+          },
+          "doc": {
+            "scrollWidth": 390,
+            "clientWidth": 390,
+            "scrollHeight": 844,
+            "clientHeight": 844,
+            "bodyScrollWidth": 390,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": []
+        },
+        "fitWoodcut": {
+          "scrollers": []
+        },
+        "seatFit": {
+          "leftBottom": 759,
+          "rightBottom": 759,
+          "viewportH": 844
+        },
+        "seatCounts": {
+          "left": 6,
+          "right": 6
+        },
+        "nameClipping": [
+          {
+            "text": "阿橙",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "月亮邮递员",
+            "scrollW": 50,
+            "clientW": 50,
+            "clipped": false
+          },
+          {
+            "text": "小满",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "不吃香菜的猫",
+            "scrollW": 60,
+            "clientW": 60,
+            "clipped": false
+          },
+          {
+            "text": "十一",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "山间一阵晚风",
+            "scrollW": 60,
+            "clientW": 60,
+            "clipped": false
+          },
+          {
+            "text": "南瓜",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "阿白",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "薄荷",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "长颈鹿不熬夜",
+            "scrollW": 60,
+            "clientW": 60,
+            "clipped": false
+          },
+          {
+            "text": "小岛",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "半夏",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          }
+        ],
+        "audit_eclipse": {
+          "viewport": {
+            "w": 390,
+            "h": 844
+          },
+          "doc": {
+            "scrollWidth": 390,
+            "clientWidth": 390,
+            "scrollHeight": 844,
+            "clientHeight": 844,
+            "bodyScrollWidth": 390,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": []
+        },
+        "audit_curtain": {
+          "viewport": {
+            "w": 390,
+            "h": 844
+          },
+          "doc": {
+            "scrollWidth": 390,
+            "clientWidth": 390,
+            "scrollHeight": 844,
+            "clientHeight": 844,
+            "bodyScrollWidth": 390,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": []
+        },
+        "consoleIssues": []
+      }
+    },
+    "844x390": {
+      "durian": {
+        "turnDialogAutoOpen": true,
+        "auditDialog": {
+          "viewport": {
+            "w": 844,
+            "h": 390
+          },
+          "doc": {
+            "scrollWidth": 844,
+            "clientWidth": 844,
+            "scrollHeight": 390,
+            "clientHeight": 390,
+            "bodyScrollWidth": 844,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": [
+            {
+              "id": "d-turn-dialog",
+              "rect": {
+                "top": 14,
+                "bottom": 376,
+                "left": 162,
+                "right": 682,
+                "w": 520,
+                "h": 362
+              },
+              "fitsViewport": true,
+              "activeInsideDialog": true,
+              "activeTag": "dialog#d-turn-dialog > header.d-dialog-header > button.d-button",
+              "scrollableBody": {
+                "scrollH": 434,
+                "clientH": 235,
+                "canScroll": true
+              }
+            }
+          ]
+        },
+        "fitDialog": {
+          "scrollers": [
+            {
+              "sel": "div.d-dialog-body",
+              "over": 199
+            }
+          ]
+        },
+        "auditCompact": {
+          "viewport": {
+            "w": 844,
+            "h": 390
+          },
+          "doc": {
+            "scrollWidth": 844,
+            "clientWidth": 844,
+            "scrollHeight": 390,
+            "clientHeight": 390,
+            "bodyScrollWidth": 844,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": []
+        },
+        "fitCompact": {
+          "scrollers": []
+        },
+        "auditComfortable": {
+          "viewport": {
+            "w": 844,
+            "h": 390
+          },
+          "doc": {
+            "scrollWidth": 844,
+            "clientWidth": 844,
+            "scrollHeight": 390,
+            "clientHeight": 390,
+            "bodyScrollWidth": 844,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": []
+        },
+        "fitComfortable": {
+          "scrollers": []
+        },
+        "auditResult": {
+          "viewport": {
+            "w": 844,
+            "h": 390
+          },
+          "doc": {
+            "scrollWidth": 844,
+            "clientWidth": 844,
+            "scrollHeight": 390,
+            "clientHeight": 390,
+            "bodyScrollWidth": 844,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": [
+            {
+              "id": "d-result-dialog",
+              "rect": {
+                "top": 14,
+                "bottom": 376,
+                "left": 162,
+                "right": 682,
+                "w": 520,
+                "h": 362
+              },
+              "fitsViewport": true,
+              "activeInsideDialog": true,
+              "activeTag": "dialog#d-result-dialog > header.d-dialog-header > button.d-close",
+              "scrollableBody": {
+                "scrollH": 528,
+                "clientH": 184,
+                "canScroll": true
+              }
+            }
+          ]
+        },
+        "fitResult": {
+          "scrollers": [
+            {
+              "sel": "div#d-result-body.d-dialog-body",
+              "over": 344
+            }
+          ]
+        },
+        "consoleIssues": []
+      },
+      "werewolf": {
+        "theme": "woodcut",
+        "design": "refined",
+        "auditWoodcut": {
+          "viewport": {
+            "w": 844,
+            "h": 390
+          },
+          "doc": {
+            "scrollWidth": 844,
+            "clientWidth": 844,
+            "scrollHeight": 390,
+            "clientHeight": 390,
+            "bodyScrollWidth": 844,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": []
+        },
+        "fitWoodcut": {
+          "scrollers": []
+        },
+        "seatFit": {
+          "leftBottom": 311,
+          "rightBottom": 311,
+          "viewportH": 390
+        },
+        "seatCounts": {
+          "left": 6,
+          "right": 6
+        },
+        "nameClipping": [
+          {
+            "text": "阿橙",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "月亮邮递员",
+            "scrollW": 50,
+            "clientW": 50,
+            "clipped": false
+          },
+          {
+            "text": "小满",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "不吃香菜的猫",
+            "scrollW": 60,
+            "clientW": 60,
+            "clipped": false
+          },
+          {
+            "text": "十一",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "山间一阵晚风",
+            "scrollW": 60,
+            "clientW": 60,
+            "clipped": false
+          },
+          {
+            "text": "南瓜",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "阿白",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "薄荷",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "长颈鹿不熬夜",
+            "scrollW": 60,
+            "clientW": 60,
+            "clipped": false
+          },
+          {
+            "text": "小岛",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          },
+          {
+            "text": "半夏",
+            "scrollW": 20,
+            "clientW": 20,
+            "clipped": false
+          }
+        ],
+        "audit_eclipse": {
+          "viewport": {
+            "w": 844,
+            "h": 390
+          },
+          "doc": {
+            "scrollWidth": 844,
+            "clientWidth": 844,
+            "scrollHeight": 390,
+            "clientHeight": 390,
+            "bodyScrollWidth": 844,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": []
+        },
+        "audit_curtain": {
+          "viewport": {
+            "w": 844,
+            "h": 390
+          },
+          "doc": {
+            "scrollWidth": 844,
+            "clientWidth": 844,
+            "scrollHeight": 390,
+            "clientHeight": 390,
+            "bodyScrollWidth": 844,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": []
+        },
+        "consoleIssues": []
+      }
+    },
+    "1280x800": {
+      "durian": {
+        "turnDialogAutoOpen": true,
+        "auditDialog": {
+          "viewport": {
+            "w": 1280,
+            "h": 800
+          },
+          "doc": {
+            "scrollWidth": 1280,
+            "clientWidth": 1280,
+            "scrollHeight": 800,
+            "clientHeight": 800,
+            "bodyScrollWidth": 1280,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": [
+            {
+              "id": "d-turn-dialog",
+              "rect": {
+                "top": 86.8,
+                "bottom": 713.2,
+                "left": 380,
+                "right": 900,
+                "w": 520,
+                "h": 626.3
+              },
+              "fitsViewport": true,
+              "activeInsideDialog": true,
+              "activeTag": "dialog#d-turn-dialog > header.d-dialog-header > button.d-button",
+              "scrollableBody": {
+                "scrollH": 434,
+                "clientH": 434,
+                "canScroll": false
+              }
+            }
+          ]
+        },
+        "fitDialog": {
+          "scrollers": []
+        },
+        "auditCompact": {
+          "viewport": {
+            "w": 1280,
+            "h": 800
+          },
+          "doc": {
+            "scrollWidth": 1280,
+            "clientWidth": 1280,
+            "scrollHeight": 800,
+            "clientHeight": 800,
+            "bodyScrollWidth": 1280,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": []
+        },
+        "fitCompact": {
+          "scrollers": []
+        },
+        "auditComfortable": {
+          "viewport": {
+            "w": 1280,
+            "h": 800
+          },
+          "doc": {
+            "scrollWidth": 1280,
+            "clientWidth": 1280,
+            "scrollHeight": 800,
+            "clientHeight": 800,
+            "bodyScrollWidth": 1280,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": []
+        },
+        "fitComfortable": {
+          "scrollers": [
+            {
+              "sel": "main.d-game",
+              "over": 76
+            }
+          ]
+        },
+        "auditResult": {
+          "viewport": {
+            "w": 1280,
+            "h": 800
+          },
+          "doc": {
+            "scrollWidth": 1280,
+            "clientWidth": 1280,
+            "scrollHeight": 800,
+            "clientHeight": 800,
+            "bodyScrollWidth": 1280,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": [
+            {
+              "id": "d-result-dialog",
+              "rect": {
+                "top": 46.9,
+                "bottom": 753.1,
+                "left": 380,
+                "right": 900,
+                "w": 520,
+                "h": 706.3
+              },
+              "fitsViewport": true,
+              "activeInsideDialog": true,
+              "activeTag": "dialog#d-result-dialog > header.d-dialog-header > button.d-close",
+              "scrollableBody": {
+                "scrollH": 528,
+                "clientH": 528,
+                "canScroll": false
+              }
+            }
+          ]
+        },
+        "fitResult": {
+          "scrollers": []
+        },
+        "consoleIssues": []
+      },
+      "werewolf": {
+        "theme": "woodcut",
+        "design": "refined",
+        "auditWoodcut": {
+          "viewport": {
+            "w": 1280,
+            "h": 800
+          },
+          "doc": {
+            "scrollWidth": 1280,
+            "clientWidth": 1280,
+            "scrollHeight": 800,
+            "clientHeight": 800,
+            "bodyScrollWidth": 1280,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": []
+        },
+        "fitWoodcut": {
+          "scrollers": []
+        },
+        "seatFit": {
+          "leftBottom": 703,
+          "rightBottom": 703,
+          "viewportH": 800
+        },
+        "seatCounts": {
+          "left": 6,
+          "right": 6
+        },
+        "nameClipping": [
+          {
+            "text": "阿橙",
+            "scrollW": 118,
+            "clientW": 118,
+            "clipped": false
+          },
+          {
+            "text": "月亮邮递员",
+            "scrollW": 118,
+            "clientW": 118,
+            "clipped": false
+          },
+          {
+            "text": "小满",
+            "scrollW": 118,
+            "clientW": 118,
+            "clipped": false
+          },
+          {
+            "text": "不吃香菜的猫",
+            "scrollW": 118,
+            "clientW": 118,
+            "clipped": false
+          },
+          {
+            "text": "十一",
+            "scrollW": 118,
+            "clientW": 118,
+            "clipped": false
+          },
+          {
+            "text": "山间一阵晚风",
+            "scrollW": 118,
+            "clientW": 118,
+            "clipped": false
+          },
+          {
+            "text": "南瓜",
+            "scrollW": 118,
+            "clientW": 118,
+            "clipped": false
+          },
+          {
+            "text": "阿白",
+            "scrollW": 118,
+            "clientW": 118,
+            "clipped": false
+          },
+          {
+            "text": "薄荷",
+            "scrollW": 118,
+            "clientW": 118,
+            "clipped": false
+          },
+          {
+            "text": "长颈鹿不熬夜",
+            "scrollW": 118,
+            "clientW": 118,
+            "clipped": false
+          },
+          {
+            "text": "小岛",
+            "scrollW": 118,
+            "clientW": 118,
+            "clipped": false
+          },
+          {
+            "text": "半夏",
+            "scrollW": 118,
+            "clientW": 118,
+            "clipped": false
+          }
+        ],
+        "audit_eclipse": {
+          "viewport": {
+            "w": 1280,
+            "h": 800
+          },
+          "doc": {
+            "scrollWidth": 1280,
+            "clientWidth": 1280,
+            "scrollHeight": 800,
+            "clientHeight": 800,
+            "bodyScrollWidth": 1280,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": []
+        },
+        "audit_curtain": {
+          "viewport": {
+            "w": 1280,
+            "h": 800
+          },
+          "doc": {
+            "scrollWidth": 1280,
+            "clientWidth": 1280,
+            "scrollHeight": 800,
+            "clientHeight": 800,
+            "bodyScrollWidth": 1280,
+            "horizontalOverflow": false
+          },
+          "outOfViewport": [],
+          "clippedText": [],
+          "smallTargets": [],
+          "dialogState": []
+        },
+        "consoleIssues": []
+      }
+    }
+  },
+  "durianFlow": [
+    {
+      "step": "1. placement 场景加载后回合弹窗自动打开",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "1b. 弹窗打开时焦点在弹层内",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "1c. 初始牌列张数为 6",
+      "ok": true,
+      "detail": {
+        "before": 6
+      }
+    },
+    {
+      "step": "2. 点「收起看桌面」后弹窗关闭",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "2b. 收起未提交（牌列张数不变）",
+      "ok": true,
+      "detail": {
+        "after": 6
+      }
+    },
+    {
+      "step": "2c. 收起后顶部出现「继续我的回合」",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "2d. 收起后焦点回到 #d-resume",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "3. 点「继续我的回合」重新打开弹窗",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "4. 选左半边后 aria-pressed=true",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "4b. 选边后确认按钮可用",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "5. 再次收起后重开，选择仍保留",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "5b. 重开后确认按钮仍可用",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "6. 确认出牌后牌列 +1（只提交一次）",
+      "ok": true,
+      "detail": {
+        "before": 6,
+        "afterPlace": 7
+      }
+    },
+    {
+      "step": "6b. 确认后回合弹窗关闭（进入等待）",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "6c. 确认出牌后焦点不丢到 body",
+      "ok": true,
+      "detail": {
+        "isBody": false,
+        "tag": "button#d-view-history"
+      }
+    },
+    {
+      "step": "7. waiting 阶段有「看牌列」与「开始下一轮」出路",
+      "ok": true,
+      "detail": {
+        "history": true,
+        "next": true
+      }
+    },
+    {
+      "step": "7b. 「看牌列」打开牌列弹窗",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "8. 开始下一轮后轮次 +1",
+      "ok": true,
+      "detail": {
+        "round": "03"
+      }
+    },
+    {
+      "step": "8b. 下一轮牌列清空",
+      "ok": true,
+      "detail": {
+        "count": 0
+      }
+    },
+    {
+      "step": "8c. 下一轮摸牌弹窗自动打开",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "8d. 焦点落在「摸一张牌」按钮",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "9. 摸牌后进入选边阶段且弹窗仍打开",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "9b. 未选边时确认按钮禁用",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "9c. 选右半边后确认按钮可用",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "9d. 出牌后牌列 +1",
+      "ok": true,
+      "detail": {
+        "count": 1
+      }
+    },
+    {
+      "step": "10. ESC 可关闭回合弹窗",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "10b. 遮罩外点击可关闭回合弹窗",
+      "ok": true,
+      "detail": {
+        "r": {
+          "top": 134.3125,
+          "left": 12,
+          "width": 366,
+          "height": 575.375
+        }
+      }
+    },
+    {
+      "step": "10c. 弹窗内部点击不会关闭",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "11. draw 场景弹窗自动打开",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "11b. 桌面已有出牌时出现「按铃质疑」",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "11c. 质疑后结算弹窗打开",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "11d. 结算内容已渲染且可继续下一轮",
+      "ok": true,
+      "detail": {
+        "title": "质疑成功",
+        "hasNext": true,
+        "bodyLen": 154,
+        "scrollable": false
+      }
+    },
+    {
+      "step": "11e. 结算后「开始下一轮」推进轮次",
+      "ok": true,
+      "detail": {
+        "roundBefore": "02",
+        "roundAfter": "03"
+      }
+    },
+    {
+      "step": "11f. 新一轮摸牌弹窗自动打开",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "11g. 焦点落在「摸一张牌」按钮",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "12. Tab 焦点不跑出弹层",
+      "ok": true,
+      "detail": {
+        "trail": [
+          "button",
+          "button",
+          "button",
+          "button",
+          "button",
+          "button",
+          "button",
+          "button",
+          "button",
+          "button",
+          "button",
+          "button",
+          "button",
+          "button"
+        ]
+      }
+    },
+    {
+      "step": "console",
+      "issues": []
+    }
+  ],
+  "werewolfFlow": [
+    {
+      "step": "狼人杀 · 本局规则 弹层可打开",
+      "ok": true,
+      "detail": {
+        "title": "十二人 · 经典场"
+      }
+    },
+    {
+      "step": "狼人杀 · 本局规则 打开后焦点在弹层内",
+      "ok": true,
+      "detail": {
+        "open": true,
+        "id": "dialog",
+        "activeInside": true,
+        "activeTag": "button#close"
+      }
+    },
+    {
+      "step": "狼人杀 · 本局规则 弹层完整在视口内",
+      "ok": true,
+      "detail": {
+        "fits": true,
+        "r": {
+          "top": 266.5,
+          "bottom": 533.5,
+          "left": 450,
+          "right": 830
+        }
+      }
+    },
+    {
+      "step": "狼人杀 · 本局规则 ESC 可关闭",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "狼人杀 · 本局规则 关闭后焦点回到触发元素",
+      "ok": true,
+      "detail": {
+        "activeIsTrigger": true,
+        "activeTag": "button#rules"
+      }
+    },
+    {
+      "step": "狼人杀 · 我的身份 弹层可打开",
+      "ok": true,
+      "detail": {
+        "title": "预言家 · 好人阵营"
+      }
+    },
+    {
+      "step": "狼人杀 · 我的身份 打开后焦点在弹层内",
+      "ok": true,
+      "detail": {
+        "open": true,
+        "id": "dialog",
+        "activeInside": true,
+        "activeTag": "button#close"
+      }
+    },
+    {
+      "step": "狼人杀 · 我的身份 弹层完整在视口内",
+      "ok": true,
+      "detail": {
+        "fits": true,
+        "r": {
+          "top": 203.8,
+          "bottom": 596.2,
+          "left": 450,
+          "right": 830
+        }
+      }
+    },
+    {
+      "step": "狼人杀 · 我的身份 ESC 可关闭",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "狼人杀 · 我的身份 关闭后焦点回到触发元素",
+      "ok": true,
+      "detail": {
+        "activeIsTrigger": true,
+        "activeTag": "button#identity"
+      }
+    },
+    {
+      "step": "狼人杀 · 上一轮票型 弹层可打开",
+      "ok": true,
+      "detail": {
+        "title": "第二日 · 放逐记录"
+      }
+    },
+    {
+      "step": "狼人杀 · 上一轮票型 打开后焦点在弹层内",
+      "ok": true,
+      "detail": {
+        "open": true,
+        "id": "dialog",
+        "activeInside": true,
+        "activeTag": "button#close"
+      }
+    },
+    {
+      "step": "狼人杀 · 上一轮票型 弹层完整在视口内",
+      "ok": true,
+      "detail": {
+        "fits": true,
+        "r": {
+          "top": 241.8,
+          "bottom": 558.2,
+          "left": 450,
+          "right": 830
+        }
+      }
+    },
+    {
+      "step": "狼人杀 · 上一轮票型 ESC 可关闭",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "狼人杀 · 上一轮票型 关闭后焦点回到触发元素",
+      "ok": true,
+      "detail": {
+        "activeIsTrigger": true,
+        "activeTag": "button#ledger"
+      }
+    },
+    {
+      "step": "狼人杀 · 查看席位 弹层可打开",
+      "ok": true,
+      "detail": {
+        "title": "1 号 · 阿橙"
+      }
+    },
+    {
+      "step": "狼人杀 · 查看席位 打开后焦点在弹层内",
+      "ok": true,
+      "detail": {
+        "open": true,
+        "id": "dialog",
+        "activeInside": true,
+        "activeTag": "button#close"
+      }
+    },
+    {
+      "step": "狼人杀 · 查看席位 弹层完整在视口内",
+      "ok": true,
+      "detail": {
+        "fits": true,
+        "r": {
+          "top": 297.7,
+          "bottom": 502.3,
+          "left": 450,
+          "right": 830
+        }
+      }
+    },
+    {
+      "step": "狼人杀 · 查看席位 ESC 可关闭",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "狼人杀 · 查看席位 关闭后焦点回到触发元素",
+      "ok": true,
+      "detail": {
+        "activeIsTrigger": true,
+        "activeTag": "button"
+      }
+    },
+    {
+      "step": "狼人杀 · 「收起并返回」按钮可关闭弹层",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "狼人杀 · 结束发言推进到 07 号",
+      "ok": true,
+      "detail": {
+        "beforeSpeaker": "山间一阵晚风",
+        "afterSpeaker": "南瓜"
+      }
+    },
+    {
+      "step": "狼人杀 · 推进后按钮变为禁用（正在聆听）",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "狼人杀 · 推进后焦点落到新发言人（不丢到 body）",
+      "ok": true,
+      "detail": {
+        "isBody": false,
+        "tag": "h1",
+        "text": "南瓜"
+      }
+    },
+    {
+      "step": "狼人杀 · Tab 焦点不跑出弹层",
+      "ok": true,
+      "detail": {
+        "trail": [
+          "button#close",
+          "button#close",
+          "button#close",
+          "button#close",
+          "button#close",
+          "button#close",
+          "button#close",
+          "button#close",
+          "button#close",
+          "button#close"
+        ]
+      }
+    },
+    {
+      "step": "console",
+      "issues": []
+    }
+  ],
+  "consoleIssues": [],
+  "finishedAt": "2026-09-18T12:05:01.122Z"
+}

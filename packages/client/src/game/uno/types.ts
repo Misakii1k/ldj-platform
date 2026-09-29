@@ -334,6 +334,15 @@ export interface UnoHousePublicView {
   cumulativeScores: number[];
   matchRanking: UnoHouseMatchRankingEntry[] | null;
   clockInfo: UnoHouseClockInfo;
+  /** 最近一局的结算快照（仅 round_over / match_over 阶段下发；对局中恒为 null）。 */
+  lastRound: UnoHouseLastRound | null;
+}
+
+export interface UnoHouseLastRound {
+  roundNumber: number;
+  finisherPlayerId: string;
+  /** 每人结算时剩余手牌（按 players 顺序，出完的人是空数组）。 */
+  remainingHands: UnoCard[][];
 }
 
 export interface UnoHousePlayerMeView {
@@ -346,6 +355,16 @@ export interface UnoHousePlayerMeView {
   activeWindow: string | null;
 }
 
+export interface UnoHouseRoundResult {
+  roundNumber: number;
+  finisherPlayerId: string;
+  perPlayerTotals: number[];
+  teamTotals: number[] | null;
+  winnerPlayerIds: string[];
+  teamWinnerIds: string[] | null;
+  remainingHands?: UnoCard[][];
+}
+
 export interface UnoHousePlayerView extends UnoHousePublicView {
   me: UnoHousePlayerMeView | null;
 }
@@ -354,7 +373,7 @@ const HOUSE_PUBLIC_KEYS = [
   'gameId', 'rulesetId', 'phase', 'round', 'roundLimit', 'mode', 'players',
   'topDiscard', 'currentColor', 'currentPlayerId', 'direction', 'pendingPenalty',
   'unoRaceWindow', 'deckCount', 'discardCount', 'roundScores', 'cumulativeScores',
-  'matchRanking', 'clockInfo',
+  'matchRanking', 'clockInfo', 'lastRound',
 ] as const;
 
 const HOUSE_PLAYER_SUMMARY_KEYS = ['playerId', 'handCount', 'unoCalled', 'isCurrentPlayer', 'teamId'] as const;
@@ -362,6 +381,7 @@ const HOUSE_PENALTY_KEYS = ['total', 'kind', 'responderId', 'challengeable', 'wi
 const HOUSE_RACE_KEYS = ['targetPlayerId', 'windowToken', 'openedAtSequence', 'closesEarlyOnNextEffective'] as const;
 const HOUSE_CLOCK_KEYS = ['turnDeadlineAt', 'windowDeadlineAt'] as const;
 const HOUSE_RANKING_KEYS = ['playerId', 'total', 'rank'] as const;
+const HOUSE_LAST_ROUND_KEYS = ['roundNumber', 'finisherPlayerId', 'remainingHands'] as const;
 const HOUSE_ME_KEYS = [
   'playerId', 'hand', 'playableCardIds', 'capabilities', 'hasDrawnThisTurn',
   'isCurrentPlayer', 'activeWindow',
@@ -410,6 +430,25 @@ function parseHouseRanking(v: unknown): UnoHouseMatchRankingEntry | null {
   return { playerId, total, rank };
 }
 
+function parseHouseLastRound(v: unknown): UnoHouseLastRound | null {
+  if (!isObject(v) || !hasExactKeys(v, HOUSE_LAST_ROUND_KEYS)) return null;
+  const { roundNumber, finisherPlayerId, remainingHands } = v;
+  if (!isNumber(roundNumber) || !isString(finisherPlayerId)) return null;
+  if (!Array.isArray(remainingHands)) return null;
+  const parsedHands: UnoCard[][] = [];
+  for (const hand of remainingHands) {
+    if (!Array.isArray(hand)) return null;
+    const parsedHand: UnoCard[] = [];
+    for (const card of hand) {
+      const parsed = parseCard(card);
+      if (parsed === null) return null;
+      parsedHand.push(parsed);
+    }
+    parsedHands.push(parsedHand);
+  }
+  return { roundNumber, finisherPlayerId, remainingHands: parsedHands };
+}
+
 function parseHouseMe(v: unknown): UnoHousePlayerMeView | null {
   if (v === null) return null;
   if (!isObject(v) || !hasExactKeys(v, HOUSE_ME_KEYS)) return null;
@@ -452,6 +491,7 @@ export function parseUnoHouseView(
     gameId, rulesetId, phase, round, roundLimit, mode, players, topDiscard,
     currentColor, currentPlayerId, direction, pendingPenalty, unoRaceWindow,
     deckCount, discardCount, roundScores, cumulativeScores, matchRanking, clockInfo,
+    lastRound,
   } = view;
   if (gameId !== 'uno' || rulesetId !== 'uno_platform_house_v1') return null;
   if (!HOUSE_PHASES.includes(phase as UnoHousePhase)) return null;
@@ -476,6 +516,8 @@ export function parseUnoHouseView(
   if (unoRaceWindow !== null && parsedRace === null) return null;
   const parsedClock = parseHouseClock(clockInfo);
   if (parsedClock === null) return null;
+  const parsedLastRound = lastRound === null ? null : parseHouseLastRound(lastRound);
+  if (lastRound !== null && parsedLastRound === null) return null;
 
   const parsedRoundScores: number[][] = [];
   for (const row of roundScores) {
@@ -515,6 +557,7 @@ export function parseUnoHouseView(
     cumulativeScores: cumulativeScores as number[],
     matchRanking: parsedRanking,
     clockInfo: parsedClock,
+    lastRound: parsedLastRound,
   };
 
   if (role === 'spectator') {

@@ -10,6 +10,9 @@ import '@fontsource/noto-serif-sc/700.css';
 import './styles.css';
 // 各游戏专属样式（由 styles.css 按游戏拆分而来）。顺序刻意保持与拆分前一致：
 // 必须在 styles.css 之后、game-ui.css 之前，否则 game-ui.css 的归一化层会失去“源顺序在后”的压制力。
+// 派对桌共用套件（UNO / Ding 的桌布、圆盘、贴纸、牌框）：必须排在 uno.css / bell-clash.css
+// 之前，好让各游戏的专属覆盖规则（如 .pt-disc--result）靠源顺序压过它。
+import './game/party-table/party-table.css';
 import './game/night-testimony/night-testimony.css';
 import './game/echo-judge/echo-judge.css';
 import './game/bell-clash/bell-clash.css';

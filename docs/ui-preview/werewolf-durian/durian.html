@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <title>榴莲 · 水果派对设计预览</title>
+  <link rel="stylesheet" href="shared.css">
+  <link rel="stylesheet" href="durian.css">
+  <script src="shared.js" defer></script>
+  <script src="durian.js" defer></script>
+<link rel="stylesheet" href="fusion.css"><link rel="stylesheet" href="durian-fit.css"><link rel="stylesheet" href="durian-turn.css"><link rel="stylesheet" href="durian-cards.css"></head>
+<body data-game="durian" data-card-layout="compact">
+  <div id="preview-tools"></div>
+  <main class="d-game" aria-label="榴莲个人操作界面">
+    <div class="d-page">
+      <header class="d-header">
+        <div class="d-brand"><img src="assets/fruit-durian.svg" alt="" width="48" height="48"><div><span class="d-eyebrow">THE FRUIT PARTY</span><h1>榴莲<span>水果生意，心里有数。</span></h1></div></div>
+        <div class="d-round"><span>ROUND</span><strong id="d-round">02</strong><small>/ 07</small></div>
+      </header>
+      <div class="d-layout">
+        <section class="d-players-area" aria-labelledby="d-players-heading">
+          <div class="d-section-heading"><h2 id="d-players-heading">这一桌的水果</h2><label class="d-card-layout"><span>7 人同桌</span><select id="d-card-layout" aria-label="玩家牌面排版"><option value="compact">紧凑总览</option><option value="comfortable">舒展牌面</option></select></label></div>
+          <div class="d-player-grid" id="d-players"></div>
+          <div class="d-self"><span class="d-number">03</span><strong>你的小果摊</strong><span class="d-hidden-card" aria-hidden="true">?</span><span id="d-self-state">本人牌已隐藏</span><span class="d-score">罚分 <b id="d-own-score">0</b></span></div>
+          <section class="d-demand" aria-labelledby="d-demand-heading">
+            <div class="d-section-heading"><h2 id="d-demand-heading">桌面累计需求</h2><button class="d-history-button" id="d-history"><span>牌列 <b id="d-placement-count">6</b> 张</span><span aria-hidden="true">↗</span></button></div>
+            <div class="d-demand-grid" id="d-totals"></div>
+          </section>
+        </section>
+
+      </div>
+    </div>
+    <div id="d-resume-bar" class="d-actions" hidden><span id="d-turn-summary" role="status">轮到你了</span><button id="d-resume" class="d-button d-primary">继续我的回合 →</button></div><footer class="d-actions" id="d-actions"></footer>
+  </main>
+  <dialog class="d-dialog d-turn-dialog" id="d-turn-dialog" aria-labelledby="d-turn-title"><header class="d-dialog-header"><strong>你的回合 · 03 号</strong><button class="d-button" data-close>收起看桌面</button></header><div class="d-dialog-body">        <section class="d-play-area" aria-labelledby="d-turn-title">
+          <div class="d-turn-heading"><span class="d-turn-dot" aria-hidden="true"></span><div><span class="d-eyebrow" id="d-turn-caption">轮到你了 · 03 号</span><h2 id="d-turn-title">哪一半，算数？</h2></div><span class="d-deck-count">牌堆 <b id="d-deck-count">14</b></span></div>
+          <div class="d-card-stage" id="d-card-stage"></div>
+          <p class="d-play-hint" id="d-play-hint" aria-live="polite">选一半水果，加入这桌的需求。</p>
+          <div class="d-turn-footnote"><span id="d-last-action">上一手 · 02 号青柠，榴莲 +2</span><span>第 <b id="d-turn-number">7</b> 手</span></div>
+        </section></div><div id="d-turn-action-host"></div></dialog>
+  <dialog class="d-dialog" id="d-history-dialog" aria-labelledby="d-history-title">
+    <header class="d-dialog-header"><div><span class="d-eyebrow">TABLE CARDS</span><h2 id="d-history-title">已出牌列</h2></div><button class="d-close" data-close aria-label="关闭已出牌列">×</button></header>
+    <div class="d-dialog-body"><p class="d-dialog-intro">绿色半边计入需求；另一半不计入。</p><div class="d-history-list" id="d-history-list"></div></div>
+    <footer class="d-dialog-footer"><button class="d-button d-primary" data-close>返回桌面</button></footer>
+  </dialog>
+  <dialog class="d-dialog" id="d-result-dialog" aria-labelledby="d-result-title">
+    <header class="d-dialog-header"><div><span class="d-eyebrow">THE BELL HAS RUNG</span><h2 id="d-result-title">质疑成功</h2></div><button class="d-close" data-close aria-label="关闭结算，保留本轮结果">×</button></header>
+    <div class="d-dialog-body" id="d-result-body"></div>
+    <footer class="d-dialog-footer"><span>罚分越少越好</span><button class="d-button d-primary" id="d-next-round">开始下一轮 →</button></footer>
+  </dialog>
+</body>
+</html>

@@ -25,6 +25,7 @@ const GAME_CSS_FILES = [
   '../src/game/cheese-thief/cheese-thief.css',
   '../src/game/durian/durian.css',
   '../src/game/landlord/landlord.css',
+  '../src/game/landlord/teahouse/teahouse.css',
   '../src/game/wits-wagers/wits-wagers.css',
   '../src/game/werewolf/werewolf.css',
   '../src/shared-ui/sim-stage.css',

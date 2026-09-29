@@ -1,0 +1,44 @@
+/* Candidate design system. Preview-only: no production token replacement. */
+:root{
+ --v2-paper:#f4efe5;--v2-surface:#fffdf7;--v2-ink:#292d2a;--v2-muted:#586059;
+ --v2-line:#8a9187;--v2-green:#245844;--v2-gold:#e6c68c;
+ --v2-radius:12px;--v2-shadow:0 2px 0 #29362d24,0 8px 22px #29362d09;
+}
+body[data-design=refined]{--desk:#161e20;--card:#222d2e;--text:#f1eadc;--secondary:#c0c8c1;--edge:#71827d;--detail:#dec699;--active:#e9dfc9;--active-ink:#27372e;background:radial-gradient(ellipse at 50% 35%,#2c3b374d,transparent 65%),var(--desk);color:var(--text)}
+body[data-design=refined][data-theme=eclipse]{--desk:#191d2b;--card:#272d40;--text:#f0edf6;--secondary:#c8c8da;--edge:#81879e;--detail:#d6c7ec;--active:#e6e1ee;--active-ink:#2b2b40}
+body[data-design=refined][data-theme=curtain]{--desk:#251b20;--card:#35262d;--text:#f6eade;--secondary:#d8c6c6;--edge:#a08789;--detail:#e3b9a1;--active:#eeddcb;--active-ink:#412b31}
+body[data-design=refined] header,body[data-design=refined] footer{background:transparent;color:var(--text);border-color:var(--edge);border-width:1px}
+body[data-design=refined] .brand{font-weight:700;letter-spacing:.05em}
+body[data-design=refined] .brand small,body[data-design=refined] .chapter,body[data-design=refined] footer small{color:var(--secondary)}
+body[data-design=refined] .tools{background:var(--v2-paper);border-bottom:1px solid var(--v2-line);color:var(--v2-ink)}
+body[data-design=refined] .tools button,body[data-design=refined] #show{border:1px solid var(--v2-line);background:var(--v2-surface);color:var(--v2-ink);box-shadow:0 2px 0 #29362d1c;border-radius:8px;font-weight:500}
+body[data-design=refined] .tools button[aria-pressed=true]{background:var(--v2-green);color:#fffdf7;border-color:var(--v2-green)}
+.design-choice{display:flex;align-items:center;gap:5px;font-size:11px}.design-choice select{min-height:44px;max-width:140px;background:#fffdf7;color:#292d2a;border:1px solid #8a9187;border-radius:8px;padding:6px;font:inherit}
+body[data-design=refined] .seat-rail .seat{background:var(--card);color:var(--text);border:1px solid var(--edge);border-radius:var(--v2-radius);box-shadow:0 2px 0 #0004,inset 0 1px 0 #ffffff0a}
+body[data-design=refined] .seat-rail .seat b{font:500 26px Georgia,serif;color:var(--detail)}
+body[data-design=refined] .seat-rail .seat .name{font-weight:500}
+body[data-design=refined] .seat-rail .seat small{color:var(--secondary)}
+body[data-design=refined] .seat-rail .seat.active{background:var(--active);color:var(--active-ink);border:1px solid var(--active);box-shadow:0 3px 0 #0005}
+body[data-design=refined] .seat-rail .seat.active b,body[data-design=refined] .seat-rail .seat.active small{color:var(--active-ink)}
+body[data-design=refined] .seat-rail .seat.active::before{content:'';position:absolute;left:-1px;top:24%;height:52%;width:4px;background:var(--detail);border:1px solid var(--active-ink);border-radius:4px}
+body[data-design=refined] .seat-rail .seat.out{background:var(--desk);border:1px dashed var(--edge);color:var(--secondary);box-shadow:none}
+body[data-design=refined] .seat-rail .seat.out b{color:var(--secondary)}
+body[data-design=refined] .stage{--bg:var(--desk);--ink:var(--text);--muted:var(--secondary);--line:var(--edge);--accent:var(--detail);background:transparent;border:0;border-radius:0;box-shadow:none}
+body[data-design=refined] .stage h1{font-family:'STSong','SimSun',serif;font-weight:600;letter-spacing:.04em}
+body[data-design=refined] .stage .speaker-tag{background:var(--card);color:var(--text);border:1px solid var(--edge);font-weight:500}
+body[data-design=refined] .stage .time{background:var(--card);color:var(--text);border:1px solid var(--edge);box-shadow:none;font-family:Georgia,serif;font-weight:400}
+body[data-design=refined] .stage .time small{color:var(--secondary)}
+body[data-design=refined] .stage .ledger,body[data-design=refined] .identity,body[data-design=refined] header button{background:var(--card);color:var(--text);border:1px solid var(--edge);border-radius:var(--v2-radius);box-shadow:0 2px 0 #0003;font-weight:500}
+body[data-design=refined] .primary{background:var(--active);color:var(--active-ink);border:1px solid var(--active);border-radius:var(--v2-radius);box-shadow:0 3px 0 #0005;font-weight:700}
+body[data-design=refined] .primary:disabled{background:var(--card);border-color:var(--edge);color:var(--secondary);box-shadow:none}
+body[data-design=refined] dialog{background:var(--card);color:var(--text);border:1px solid var(--edge);border-radius:16px;box-shadow:0 25px 80px #0007}
+body[data-design=refined] dialog p{color:var(--secondary)}
+body[data-design=refined] dialog button{background:var(--active);color:var(--active-ink);border:1px solid var(--active);box-shadow:0 2px 0 #0004}
+body[data-design=refined] .art-caption{background:var(--desk);color:var(--secondary)}
+body[data-design=refined] .star{background:var(--desk)}
+body[data-design=refined] button:focus-visible,body[data-design=refined] a:focus-visible{outline:3px solid var(--detail);outline-offset:3px}
+body[data-design=refined] .tools :focus-visible{outline-color:#245844}
+body[data-design=refined] button:not(:disabled):active{transform:translateY(1px);box-shadow:none}
+@media(max-width:768px){body[data-design=refined] .seat-rail .seat b{font-size:21px}.tools>a{font-size:10px}.design-choice{gap:3px;font-size:10px}.design-choice select{max-width:117px}.tools #hide{padding:6px 8px}}
+@media(max-height:520px) and (min-width:640px){.design-choice>span{display:none}.design-choice select{max-width:110px}body[data-design=refined] .seat-rail .seat b{font-size:21px}}
+@media(prefers-reduced-motion:reduce){body[data-design=refined] button{transition:none}}

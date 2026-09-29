@@ -2,12 +2,9 @@
  * 铃铛对决的机器人策略（测试用陪练）。
  *
  * 只读玩家视角，纯函数。规则机器人不做"推理"：
+ * - 质疑投票判定中：若自己是投票人且尚未投票，默认相信（doubt: false，返回 challenge_vote）。机器人不主动拍铃（看不到线下动作）。
  * - 轮到自己时优先出与桌面顶牌同色或同数字的牌；没有可出牌则摸一张。
- * - 按铃窗口：仅在手中持有与顶牌同色的短语卡时才拍铃（避免错误拍铃被罚摸）。
  * - 其余一切情形返回 null（不参与、让计时器/system 推进，或让状态机卡住暴露缺陷）。
- *
- * 返回 null = 此刻不该我动；返回的动作会再过 parseAction + reduce，
- * 重复投递/错误身份会被 reducer 拒绝，所以"已出过牌"或"已拍铃"等状态都返回 null。
  */
 import type { BotDecisionInput } from '@ldj/shared';
 import type { BellClashAction, BellClashCard, BellClashPlayerView } from './types.ts';
@@ -29,21 +26,20 @@ export function pickBellClashBotAction(
   if (!me) return null;
   if (view.phase === 'game_over') return null;
 
-  // 按铃窗口：决定是否拍铃
-  if (view.bellOpen) {
-    // 已有人拍下，等系统 resolve_bell 结算 → 机器人不参与
-    if (view.bellClaimantId !== null) return null;
-    const top = view.discardTop;
-    if (!top || top.kind !== 'phrase') return null; // 防御：窗口应挂在短语卡上
-    // 仅在持有同色短语卡时才拍铃（避免被罚摸）
-    const hasMatch = me.hand.some(
-      (card) => card.kind === 'phrase' && card.color === top.color,
-    );
-    if (!hasMatch) return null;
-    return { type: 'ring_bell', playerId };
+  // 拍铃判定进行中：若自己是投票人且未投票，返回 challenge_vote { doubt: false }
+  if (view.challenge !== null) {
+    const ch = view.challenge;
+    if (
+      ch.voterIds.includes(playerId) &&
+      !ch.doubtIds.includes(playerId) &&
+      !ch.confirmIds.includes(playerId)
+    ) {
+      return { type: 'challenge_vote', playerId, doubt: false };
+    }
+    return null;
   }
 
-  // 非自己回合 → 不动
+  // 非自己回合 → 不动（机器人不在线下拍铃）
   if (view.currentPlayerId !== playerId) return null;
 
   // 自己回合：在手牌中找可打出的牌（按颜色 / 数字匹配）
@@ -57,6 +53,6 @@ export function pickBellClashBotAction(
     const chosen = playableIndices[random.nextInt(0, playableIndices.length)]!;
     return { type: 'play_card', playerId, cardIndex: chosen };
   }
-  // 无可出牌 → 摸一张（让 reducer 决定摸到后是否自动出）
+  // 无可出牌 → 摸一张
   return { type: 'draw_card', playerId };
 }

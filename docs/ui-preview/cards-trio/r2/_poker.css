@@ -1,0 +1,45 @@
+/* 第 2 轮 · 茶馆扑克牌面：内框、双角标、人头牌徽章、大小王星章、回纹牌背。只服务于静态预览。 */
+.pk2 {
+  --w: 64px; --h: calc(var(--w) * 1.42); width: var(--w); height: var(--h); flex: none; position: relative;
+  background: linear-gradient(170deg, #fffef9 0 45%, #fbf4e4); border: var(--border); border-radius: calc(var(--w) * .14);
+  box-shadow: inset 0 0 0 calc(var(--w) * .05) #fffdf7, inset 0 0 0 calc(var(--w) * .07) rgba(41,39,34,.14), 0 3px 0 var(--ink);
+  color: var(--ink); font-family: var(--serif); font-weight: 700; user-select: none;
+}
+.pk2.red { color: #c23616; }
+.pk2 .cn { position: absolute; display: grid; justify-items: center; line-height: .9; }
+.pk2 .cn b { font-size: calc(var(--w) * .34); letter-spacing: -.04em; }
+.pk2 .cn i { font-style: normal; font-size: calc(var(--w) * .24); }
+.pk2 .tl { left: calc(var(--w) * .08); top: calc(var(--w) * .07); }
+.pk2 .br { right: calc(var(--w) * .08); bottom: calc(var(--w) * .07); rotate: 180deg; }
+.pk2 .mid { position: absolute; inset: 0; display: grid; place-items: center; font-size: calc(var(--w) * .56); line-height: 1; padding-left: calc(var(--w) * .1); }
+/* 人头牌：圆形徽章 + 冠 */
+.pk2.face .mid::before {
+  content: ""; position: absolute; left: 50%; top: 52%; width: calc(var(--w) * .56); aspect-ratio: 1; translate: -38% -50%; border-radius: 50%;
+  background: currentColor; opacity: .12; border: 2px solid currentColor;
+}
+.pk2.face .mid { font-size: calc(var(--w) * .46); }
+.pk2.face .mid span { position: relative; }
+.pk2.face .mid span::before { content: "♛"; position: absolute; left: 50%; top: -.72em; translate: -50% 0; font-size: .5em; }
+/* 大小王 */
+.pk2.joker .cn b { writing-mode: vertical-rl; font-size: calc(var(--w) * .17); letter-spacing: -.02em; }
+.pk2.joker .mid { font-size: calc(var(--w) * .5); }
+.pk2.joker .mid span { position: relative; display: grid; place-items: center; width: calc(var(--w) * .62); aspect-ratio: 1; border-radius: 50%; border: 2.5px solid currentColor; }
+.pk2.joker .mid span::after { content: "★"; position: absolute; top: -.46em; font-size: .46em; }
+.pk2.joker.big .mid span { background: #fbe0d6; }
+/* 牌背：朱红回纹 */
+.pk2.back {
+  background:
+    repeating-linear-gradient(0deg, transparent 0 7px, rgba(255,253,247,.22) 7px 9px),
+    repeating-linear-gradient(90deg, transparent 0 7px, rgba(255,253,247,.22) 7px 9px),
+    #b8431f;
+  box-shadow: inset 0 0 0 calc(var(--w) * .07) #b8431f, inset 0 0 0 calc(var(--w) * .1) rgba(255,253,247,.75), 0 3px 0 var(--ink);
+}
+.pk2.back::after {
+  content: "乐"; position: absolute; inset: 0; display: grid; place-items: center; font: 700 calc(var(--w) * .34)/1 var(--serif); color: #e0a92a;
+  -webkit-text-stroke: 1px var(--ink);
+}
+.pk2.back.sm::after { content: none; }
+/* 选中与落地 */
+.pk2.sel { box-shadow: inset 0 0 0 calc(var(--w) * .05) #fffdf7, 0 0 0 4px var(--yellow), 0 7px 0 var(--ink); }
+.pk2.land { animation: pop 320ms var(--spring) both; }
+.pk2.flip { animation: flipIn 420ms var(--out) both; }

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>斗地主 · A 八仙桌俯视</title>
+<link rel="stylesheet" href="_shell.css">
+<link rel="stylesheet" href="_landlord.css">
+<style>
+  /* ── 场景：茶馆青砖地 + 俯视八仙桌 ── */
+  .device {
+    background:
+      radial-gradient(ellipse 60% 55% at 50% 48%, rgba(255,226,160,.55), transparent 70%),
+      repeating-linear-gradient(0deg, transparent 0 58px, rgba(41,39,34,.12) 58px 60px),
+      repeating-linear-gradient(90deg, transparent 0 118px, rgba(41,39,34,.12) 118px 120px),
+      #d8cdb6;
+  }
+  .table {
+    position: absolute; left: 50%; top: 46%; translate: -50% -50%;
+    width: 600px; height: 520px; border: 4px solid var(--ink); border-radius: 18px;
+    background:
+      linear-gradient(90deg, rgba(0,0,0,.05) 0 2px, transparent 2px) 0 0/34px 100%,
+      radial-gradient(ellipse at 50% 40%, var(--wood-light), var(--wood) 70%);
+    box-shadow: 0 10px 0 var(--ink), inset 0 0 0 18px var(--wood-dark), inset 0 0 0 21px var(--ink);
+  }
+  .table::after { /* 桌心红纸垫 */
+    content: ""; position: absolute; left: 50%; top: 50%; width: 300px; height: 300px; translate: -50% -50%; rotate: 45deg;
+    background: var(--tea-red); border: 3px solid var(--ink); opacity: .9;
+    box-shadow: inset 0 0 0 8px rgba(255,253,247,.25);
+  }
+  .table .fu { position: absolute; left: 50%; top: 50%; translate: -50% -50%; font: 900 150px/1 var(--serif); color: rgba(255,253,247,.18); z-index: 1; }
+  .pile { position: absolute; left: 50%; top: 45%; translate: -50% -50%; z-index: 3; }
+  .tea { position: absolute; left: 50%; top: 96px; translate: -50% 0; width: 110px; z-index: 2; }
+
+  /* 席位：桌的左右两边，贴桌沿的卡纸名牌 */
+  .opp {
+    position: absolute; top: 38%; translate: 0 -50%; z-index: 4; width: 170px;
+    display: grid; justify-items: center; gap: 8px; padding: 14px 12px 12px;
+    background: var(--cream); border: var(--border); border-radius: 16px; box-shadow: var(--shadow);
+  }
+  .opp.l { left: 40px; } .opp.r { right: 40px; }
+  .opp.active { outline: 4px solid var(--yellow); outline-offset: 4px; }
+  .avatar { width: 56px; height: 56px; border-radius: 50%; border: var(--border); display: grid; place-items: center; font: 900 22px var(--serif); }
+  .opp .name { font: 900 17px var(--sans); }
+  .opp .role { font: 800 12px var(--sans); color: var(--muted); letter-spacing: .15em; }
+
+  .top-strip { position: absolute; left: 50%; top: 20px; translate: -50% 0; display: flex; align-items: center; gap: 18px; z-index: 5; }
+  .top-strip .phase { font: 700 28px/1 var(--serif); padding: 10px 18px; background: var(--cream); border: var(--border); border-radius: 12px; box-shadow: var(--shadow-sm); rotate: -1.5deg; }
+
+  .me-zone { position: absolute; left: 0; right: 0; bottom: 0; height: 250px; z-index: 6; display: grid; justify-items: center; align-content: end; gap: 12px; padding-bottom: 18px; }
+  .me-tag { position: absolute; left: 40px; bottom: 24px; display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--cream); border: var(--border); border-radius: 16px; box-shadow: var(--shadow); }
+  .me-tag .name { font: 900 17px var(--sans); }
+  .me-tag .count-chip { margin-left: 4px; }
+  .me-bubble { left: 50%; bottom: 250px; translate: -50% 0; }
+  .side-mult { position: absolute; right: 40px; bottom: 28px; }
+
+  /* ── 手机 ── */
+  .device[data-size="mobile"] .table { width: 330px; height: 330px; top: 41%; box-shadow: 0 7px 0 var(--ink), inset 0 0 0 12px var(--wood-dark), inset 0 0 0 15px var(--ink); }
+  .device[data-size="mobile"] .table::after { width: 180px; height: 180px; }
+  .device[data-size="mobile"] .table .fu { font-size: 90px; }
+  .device[data-size="mobile"] .tea { width: 64px; top: 40px; }
+  .device[data-size="mobile"] .pile { top: 42%; }
+  .device[data-size="mobile"] .opp { top: 140px; translate: 0 0; width: 150px; grid-template-columns: auto 1fr; justify-items: start; gap: 2px 10px; padding: 8px 10px; }
+  .device[data-size="mobile"] .opp.l { left: 12px; } .device[data-size="mobile"] .opp.r { right: 12px; }
+  .device[data-size="mobile"] .opp .avatar { width: 40px; height: 40px; font-size: 16px; grid-row: span 3; }
+  .device[data-size="mobile"] .opp .name { font-size: 15px; }
+  .device[data-size="mobile"] .opp .backs { display: none; }
+  .device[data-size="mobile"] .top-strip { top: 14px; gap: 10px; }
+  .device[data-size="mobile"] .top-strip .phase { font-size: 20px; padding: 8px 12px; }
+  .device[data-size="mobile"] .turn-ring { width: 48px; height: 48px; }
+  .device[data-size="mobile"] .me-zone { height: 290px; padding-bottom: 14px; }
+  .device[data-size="mobile"] .me-tag { position: static; order: -1; padding: 6px 12px; border-radius: 12px; }
+  .device[data-size="mobile"] .side-mult { right: 12px; bottom: auto; top: 404px; }
+  .device[data-size="mobile"] .side-mult .numeral { font-size: 24px; }
+  .device[data-size="mobile"] .me-bubble { bottom: 300px; }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>斗地主 · A 八仙桌俯视</strong>
+  <span class="note">对标：榴莲的"一屏总览" ｜ 与 B/C 的差别：从正上方看整张八仙桌，桌子本身就是舞台，环境只有青砖地</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile">手机 390×844</button></div>
+  <div class="group"><button id="btn-kitty">翻底牌</button><button id="reset">重播</button><a href="index.html">返回目录</a></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="table"><span class="fu">茶</span></div>
+  <svg class="tea" viewBox="0 0 120 60" aria-hidden="true">
+    <ellipse cx="60" cy="44" rx="54" ry="12" fill="#fffdf7" stroke="#292722" stroke-width="4"/>
+    <path d="M26 20 Q26 46 60 46 Q94 46 94 20 Z" fill="#fffdf7" stroke="#292722" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M36 28 Q60 34 84 28" stroke="#6fae95" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="60" cy="18" rx="36" ry="8" fill="#fffdf7" stroke="#292722" stroke-width="4"/>
+    <circle cx="60" cy="12" r="6" fill="#fffdf7" stroke="#292722" stroke-width="3.5"/>
+  </svg>
+
+  <div class="top-strip" data-box="top">
+    <div class="kitty"><div class="pk back"></div><div class="pk back"></div><div class="pk back"></div></div>
+    <div class="phase">轮到你出牌</div>
+    <div class="turn-ring"><svg viewBox="0 0 60 60"><circle class="track" cx="30" cy="30" r="26"/><circle class="bar" cx="30" cy="30" r="26"/></svg><span class="ring-num"></span></div>
+  </div>
+
+  <div class="opp l active" data-box="oppL">
+    <div class="avatar" style="background:#f29a7a">杰</div>
+    <div class="name">阿杰</div>
+    <div class="role">农 民</div>
+    <div class="backs"><div class="pk back"></div><div class="pk back"></div><div class="pk back"></div><div class="pk back"></div><div class="pk back"></div></div>
+    <div class="count-chip">9<small>张</small></div>
+  </div>
+  <div class="opp r" data-box="oppR">
+    <div class="avatar" style="background:#8fd3b6">可</div>
+    <div class="name">可可</div>
+    <div class="role">农 民</div>
+    <div class="backs"><div class="pk back"></div><div class="pk back"></div><div class="pk back"></div><div class="pk back"></div></div>
+    <div class="count-chip">7<small>张</small></div>
+  </div>
+
+  <div class="pile" data-box="pile"><div class="pile-cards"></div><div class="pile-label">阿杰 · 对子</div></div>
+
+  <div class="me-zone">
+    <div class="me-tag" data-box="metag">
+      <svg class="ingot" viewBox="0 0 40 28" aria-label="地主"><path d="M2 14 Q6 26 20 26 Q34 26 38 14 L30 14 Q28 4 20 4 Q12 4 10 14 Z" fill="#f7c84b" stroke="#292722" stroke-width="3" stroke-linejoin="round"/></svg>
+      <span class="name">小鱼干 · 地主</span>
+      <span class="count-chip"><span data-me-count>14</span><small>张</small></span>
+    </div>
+    <div class="fan my-hand" data-box="hand"></div>
+    <div class="dock" data-box="dock">
+      <button class="btn" id="btn-pass">不出</button>
+      <button class="btn" id="btn-hint">提示（选中炸弹）</button>
+      <button class="btn btn-primary" id="btn-play">出牌</button>
+    </div>
+  </div>
+  <div class="mult-tag side-mult" data-box="mult"><small>倍数</small><span class="numeral" data-mult>×6</span></div>
+  <div class="me-bubble"></div>
+  <div class="slam slam-bomb"><span class="word">炸！</span></div>
+</div></div>
+<script src="_shell.js"></script>
+<script src="_landlord.js"></script>
+</body>
+</html>

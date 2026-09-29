@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UNO · 整屏色块 · ① 出牌</title>
+<link rel="stylesheet" href="../_shell.css">
+<link rel="stylesheet" href="_party.css">
+</head>
+<body>
+<div class="toolbar">
+  <strong>UNO · 整屏色块 · ① 出牌（打磨稿）</strong>
+  <span class="note">第 1 轮 B 稿打磨：桌布加暗角与淡剪影、泼色从弃牌堆扩散；纸板圆盘加年轮纹；牌面加内框光泽；席位加牌背张数、当前玩家虚线环；功能牌加放大残影；对手会接着出牌</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile">手机 390×844</button></div>
+  <div class="group"><button data-hand="7" aria-pressed="true">手牌 7 张</button><button data-hand="16">16 张</button><button data-hand="25">25 张</button></div>
+  <div class="group"><button id="reset">重播</button><a href="index.html">返回目录</a></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="round-tag">第 <b>2</b> / 3 局 · 累计 <b>34</b> 分</div>
+  <div class="phase-word" data-box="phase" id="phase">轮到你</div>
+  <div class="hud" data-box="hud">
+    <span class="color-chip"><i></i>当前：<span data-color-name></span></span>
+    <div class="turn-ring" id="ring"><svg viewBox="0 0 60 60"><circle class="track" cx="30" cy="30" r="26"/><circle class="bar" cx="30" cy="30" r="26"/></svg><span class="ring-num"></span></div>
+  </div>
+  <div class="me-zone">
+    <div class="fan my-hand" data-box="hand"></div>
+    <div class="dock" data-box="dock">
+      <button class="btn" id="btn-draw">摸牌</button>
+      <button class="btn btn-primary" id="btn-uno">UNO!</button>
+    </div>
+  </div>
+  <div class="sticker me-tag" data-box="me"><div class="avatar" style="background:#f7c84b">鱼</div><b>小鱼干（你）</b><span class="n" data-count id="me-count">7</span><span class="say"></span></div>
+</div></div>
+<script src="../_shell.js"></script>
+<script src="_party.js"></script>
+<script>
+(function () {
+  const P = Preview, U = Party;
+  const device = document.querySelector('.device');
+  U.build();
+  // 固定数据：6 人欢乐房规第 2 局；你剩 7 张，可可和糯米只剩 1 张；顺时针下一位是阿杰
+  const S = U.seats([
+    { id: 'momo', name: 'Momo', a: 'M', bg: '#f6b7cf', n: 3 },
+    { id: 'nuomi', name: '糯米', a: '糯', bg: '#9cc7f0', n: 1 },
+    { id: 'wang', name: '老王', a: '王', bg: '#b9a4e6', n: 5 },
+    { id: 'keke', name: '可可', a: '可', bg: '#8fd3b6', n: 1 },
+    { id: 'jie', name: '阿杰', a: '杰', bg: '#f29a7a', n: 9 },
+  ]);
+  const me = document.querySelector('.me-tag');
+  const HAND = [{ c: 'red', v: '3' }, { c: 'red', v: 'reverse' }, { c: 'blue', v: '7' }, { c: 'green', v: 'skip' }, { c: 'red', v: 'draw2' }, { c: 'wild', v: 'wild' }, { c: 'wild', v: 'draw4' }];
+  const DRAW = [{ c: 'green', v: '4' }, { c: 'red', v: '9' }, { c: 'yellow', v: '1' }];
+  const hand = document.querySelector('.my-hand');
+  const discard = document.querySelector('.discard');
+  const deck = document.querySelector('.deck');
+  const ring = document.getElementById('ring');
+  let top = { c: 'red', v: '7' };
+  U.landOnDiscard(U.card(top), { tilt: -4 });
+  U.setColor('red', { splash: false });
+  U.setActive(me);
+  P.countdown(ring, 15);
+
+  const canPlay = (el) => el.dataset.c === 'wild' || el.dataset.c === device.dataset.color || el.dataset.v === top.v;
+  function mark() { [...hand.children].forEach((el) => { el.classList.toggle('playable', canPlay(el)); el.classList.toggle('dim', !canPlay(el)); }); }
+  function wire(el) { el.addEventListener('click', () => { if (!U.peekFirst(hand, el)) play(el); }); }
+  function relayout() { P.indexFan(hand); U.fitHand(hand); }
+  // 牌多时的演示：在基础 7 张后面补数字牌 / 功能牌；手牌按颜色归堆（红黄绿蓝 + 万能），收紧后同色角标连成一段更好认
+  const EXTRA = ['red', 'yellow', 'green', 'blue'].flatMap((c) => ['1', '2', '4', '5', '6', '8', '9', 'skip', 'reverse'].map((v) => ({ c, v })));
+  const COLOR_ORDER = ['red', 'yellow', 'green', 'blue', 'wild'];
+  function deal(n) {
+    const list = [...HAND, ...EXTRA.filter((_, k) => k % 2 === 0).slice(0, Math.max(0, n - HAND.length))]
+      .sort((a, b) => COLOR_ORDER.indexOf(a.c) - COLOR_ORDER.indexOf(b.c));
+    hand.innerHTML = list.map((c) => U.card(c)).join('');
+    [...hand.children].forEach(wire);
+    relayout();
+    mark();
+    document.getElementById('me-count').dataset.value = n;
+    document.getElementById('me-count').textContent = n;
+  }
+  deal(7);
+  document.querySelectorAll('[data-hand]').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-hand]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    deal(Number(b.dataset.hand));
+  }));
+
+  let myTurn = true;
+  async function play(el) {
+    if (!myTurn || !canPlay(el)) { if (!P.reduce) el.animate([{ translate: '0 0' }, { translate: '-6px 0' }, { translate: '6px 0' }, { translate: '0 0' }], { duration: 240 }); return; }
+    myTurn = false;
+    clearTimeout(ring._t);
+    const g = el.cloneNode(true);
+    g.style.transform = 'none';
+    el.style.visibility = 'hidden';
+    await P.fly(g, el, discard, { lift: 180, spin: 16, duration: 520 });
+    const landed = U.landOnDiscard(el.outerHTML.replace(/ playable| dim/g, ''));
+    landed.style.visibility = 'visible';
+    el.remove();
+    relayout();
+    P.roll(document.getElementById('me-count'), hand.children.length);
+    const v = el.dataset.v;
+    top = { c: el.dataset.c, v };
+    const needColor = U.fx(v);
+    let color = el.dataset.c;
+    if (needColor) {
+      color = await U.pickColor();
+      landed.classList.add('tinted');
+    }
+    U.setColor(color);
+    // 罚牌：下家阿杰摸 2 / 4（欢乐房规可叠加，这里演示他接不住）
+    if (v === 'draw2' || v === 'draw4') {
+      const k = v === 'draw2' ? 2 : 4;
+      await U.penaltyFly(deck, S.jie, `+${k}`);
+      U.say(S.jie, `摸 ${k} 张`);
+      U.setCount(S.jie, 9 + k);
+    }
+    if (hand.children.length === 1) document.getElementById('btn-uno').classList.add('ready');
+    mark();
+    nextTurns(v);
+  }
+
+  // 对手回合演示：跳过 / 反转会改变下一位；轮一圈后回到你
+  async function nextTurns(v) {
+    const cw = !device.querySelector('.dir-ring').classList.contains('ccw');
+    let order = cw ? ['jie', 'keke'] : ['momo', 'nuomi'];
+    if (v === 'skip' || v === 'draw2' || v === 'draw4') order = cw ? ['keke', 'wang'] : ['nuomi', 'wang'];
+    document.getElementById('phase').textContent = '等别人出牌';
+    for (const id of order) {
+      U.setActive(S[id]);
+      await new Promise((ok) => setTimeout(ok, 900));
+      const c = device.dataset.color;
+      const tmp = U.node(U.card({ c, v: String(2 + Math.floor(Math.random() * 7)) }));
+      await P.fly(tmp, S[id], discard, { lift: 110, spin: 12, duration: 460 });
+      U.landOnDiscard(tmp.outerHTML);
+      top = { c, v: tmp.dataset.v };
+      const n = Number(S[id].querySelector('[data-count]').dataset.value ?? S[id].querySelector('[data-count]').textContent) - 1;
+      U.setCount(S[id], Math.max(1, n));
+    }
+    U.setActive(me);
+    document.getElementById('phase').textContent = '轮到你';
+    myTurn = true;
+    mark();
+    P.countdown(ring, 15);
+  }
+
+  document.getElementById('btn-draw').addEventListener('click', async () => {
+    if (!myTurn) return;
+    const next = DRAW[(DRAW.i = ((DRAW.i ?? -1) + 1) % DRAW.length)];
+    const g = U.node(U.card({ c: 'back', v: 'UNO' }));
+    await P.fly(g, deck, hand, { lift: 90, spin: -8, duration: 460 });
+    const el = U.node(U.card(next, 'drawn'));
+    hand.appendChild(el);
+    wire(el);
+    relayout();
+    P.roll(document.getElementById('me-count'), hand.children.length);
+    const left = document.getElementById('deck-left');
+    left.textContent = `剩 ${Number(left.textContent.replace(/\D/g, '')) - 1} 张`;
+    mark();
+  });
+  document.getElementById('btn-uno').addEventListener('click', () => { U.slam('UNO!', 'uno'); P.shake(4); U.say(me, '喊了 UNO'); });
+})();
+</script>
+</body>
+</html>

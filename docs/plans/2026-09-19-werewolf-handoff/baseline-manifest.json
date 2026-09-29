@@ -1,0 +1,110 @@
+{
+  "capturedAt": "2026-09-19T09:19:43.171Z",
+  "head": "21c2daf4fea968bd0bf4f4dfa86e80b226002c22",
+  "branch": "main",
+  "note": "Hashes record the existing dirty worktree; not ownership claims or permission to restore these files.",
+  "files": [
+    {
+      "path": "D:\\项目\\packages\\shared\\src\\game\\werewolfTimeline.ts",
+      "sha256": "c429868d99ed0c8e33f64dd589f763b70fd1edbf3ea71f7b0d4baada938e0448",
+      "bytes": 757
+    },
+    {
+      "path": "D:\\项目\\packages\\shared\\src\\game\\werewolfModeratorTypes.ts",
+      "sha256": "b51043e294ec9f959897945c46d27449e4402fb666e82fefb000bb74984ad2cf",
+      "bytes": 4456
+    },
+    {
+      "path": "D:\\项目\\packages\\shared\\src\\protocol\\messages.ts",
+      "sha256": "876afeb8e44467aa9d515f003b7bbb81a1a0210d4a0035df001c4e98839b586a",
+      "bytes": 7512
+    },
+    {
+      "path": "D:\\项目\\packages\\shared\\src\\index.ts",
+      "sha256": "b9058c459557ba6ba0b333335fa45dacf3fee78a1c25295682eb8f17a0db5c83",
+      "bytes": 749
+    },
+    {
+      "path": "D:\\项目\\packages\\server\\src\\persistence\\migrations.ts",
+      "sha256": "6879d96ecb9c7e02e38516e2c7ae619d052fe1327afb11df9fcb261564f299b8",
+      "bytes": 12696
+    },
+    {
+      "path": "D:\\项目\\packages\\server\\src\\core\\commands\\chat.ts",
+      "sha256": "81391163092982960b3225be01634ae0844ac107db5d5180ec76e59ff5067bb9",
+      "bytes": 4307
+    },
+    {
+      "path": "D:\\项目\\packages\\server\\src\\gateway\\ws.ts",
+      "sha256": "fd5be327d72abfee9c565d788658497c220e03e2d69eace384d381ef3cc67953",
+      "bytes": 45403
+    },
+    {
+      "path": "D:\\项目\\packages\\games\\werewolf\\server\\module.ts",
+      "sha256": "a52b040b3c25968f7321809a8146bebd518c4c259a41ec16fce7fc378890c4d0",
+      "bytes": 58922
+    },
+    {
+      "path": "D:\\项目\\packages\\games\\werewolf\\server\\v2\\rules.ts",
+      "sha256": "053884919852ef005679249a6914715a68edb685a8de41b6e1d77dcbf13db6fc",
+      "bytes": 43785
+    },
+    {
+      "path": "D:\\项目\\packages\\games\\werewolf\\server\\moderator\\reducer.ts",
+      "sha256": "13cf1672fd73585a81724b7699927c1a78823a2687d7de668ed6476cbd7b74d7",
+      "bytes": 12374
+    },
+    {
+      "path": "D:\\项目\\packages\\client\\src\\game\\GamePage.tsx",
+      "sha256": "d4780d943cf8e4d11a5bb7fdc52348ec9bf51aaae11b19afe7fd05ca14023319",
+      "bytes": 15695
+    },
+    {
+      "path": "D:\\项目\\packages\\client\\src\\game\\GameChatDrawer.tsx",
+      "sha256": "fba531379f12730f42d8c80c03c0fe5fc42c9a022f974787c6e5d59dafb8b75f",
+      "bytes": 12399
+    },
+    {
+      "path": "D:\\项目\\packages\\client\\src\\game\\werewolf\\ui\\WerewolfStage.tsx",
+      "sha256": "fe6307e39331cf6bce5a3f5268f403d3a679998134199113aec1975a4d91cf45",
+      "bytes": 25537
+    },
+    {
+      "path": "D:\\项目\\packages\\client\\src\\game\\werewolf\\werewolf-native.css",
+      "sha256": "b6cb127b533d50c2e2562475b32f73defe1f9c20d02dfe36ce6a9e49b2ef82d1",
+      "bytes": 23685
+    },
+    {
+      "path": "D:\\项目\\packages\\client\\src\\shared-ui\\useCountdown.ts",
+      "sha256": "9dca0689b208493fe21ad5cf2f4d8d225454c741369e24a35e9fc24e372e776d",
+      "bytes": 2351
+    },
+    {
+      "path": "D:\\项目\\packages\\client\\src\\game\\werewolf\\ui\\GameOverReveal.tsx",
+      "sha256": "db68fde1899b4ba07be57d31d3fea06d413a6d50cfa3a569198772bf04af176a",
+      "bytes": 2458
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "D:\\项目\\output\\playwright\\werewolf-live-20260919-A-desktop.png",
+      "sha256": "23b3389209afb5c797a1d021c53d39cc977982f521c556720ff81d924d88f9cb",
+      "bytes": 262880
+    },
+    {
+      "path": "D:\\项目\\output\\playwright\\werewolf-live-20260919-B-desktop.png",
+      "sha256": "87e849e2d65185520fcad3208d5373d65f767ff977fa8a6512f30000b9cf046a",
+      "bytes": 301261
+    },
+    {
+      "path": "D:\\项目\\output\\playwright\\werewolf-live-20260919-C-desktop.png",
+      "sha256": "97993036f1fe74775b299816bb8c70a335444a92292516c3bcde227e56829ccc",
+      "bytes": 110222
+    },
+    {
+      "path": "D:\\项目\\output\\playwright\\werewolf-live-20260919-C-mobile.png",
+      "sha256": "34c9d8453f5d7516391bb0b5c2688d9465009f42971fe75ca9ea30927eba9015",
+      "bytes": 60078
+    }
+  ]
+}

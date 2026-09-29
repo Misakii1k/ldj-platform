@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>狼人杀 · A2 两翼包厢（修订稿）</title>
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="_ticket.css">
+<style>
+  .device[data-size="mobile"] .speaker .kicker { font-size: 11px; }
+  .device[data-size="mobile"] .speaker .sub { font-size: 12px; }
+  .device[data-size="mobile"] .speaker .sub b { font-size: 14px; }
+  .device[data-size="mobile"] .box-rail { padding: 12px 6px; gap: 10px; border-radius: 14px; }
+  .device[data-size="mobile"] .dock { flex-wrap: wrap; }
+  .device[data-size="mobile"] .dock .info { flex: 1 0 100%; }
+  .device[data-size="mobile"] .dock .btn { flex: 1; }
+  .device[data-size="mobile"] .night-title h2 { font-size: 36px; }
+  .device[data-size="mobile"] .topbar .game { font-size: 16px; }
+  .device[data-size="mobile"] .topbar .day { font-size: 13px; padding: 2px 10px; }
+  .device[data-size="mobile"] .icon-btn { width: 32px; height: 32px; }
+</style>
+</head>
+<body data-time="day">
+<div class="toolbar">
+  <strong>A2 · 两翼包厢（修订稿）</strong>
+  <span class="note">在 A 基础上：① 席位卡 = 剧场票根（出局撕角作废）② 发言者保持 A 原版（圆形立绘 + 大字 + 倒计时环） ｜ 对照看 <a href="A-box-wings.html" style="color:#e8c27a">A 原稿</a></span>
+  <div class="group"><button data-set-size="desktop">桌面 1280×800</button><button data-set-size="mobile">手机 390×844</button></div>
+  <div class="group"><button data-set-count="9">9 人</button><button data-set-count="12">12 人</button></div>
+  <div class="group"><button data-set-time="day">白天 ☀</button><button data-set-time="night">入夜 🌙</button></div>
+  <div class="group"><button id="pass" class="hit">交麦（看飞行）</button><button id="last10">跳到最后 10 秒</button><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="scaler"><div class="device"></div></div></div>
+<script src="_ticket.js"></script>
+<script>
+window.LAYOUT = function ({ size, count, players, makeSeat, device }) {
+  const W = window.WW;
+  W.reset(device);
+  const half = Math.ceil(count / 2);
+  const left = players.slice(0, half);
+  const right = players.slice(half).reverse();
+  const rail = (list, x, y, w, h, compact) => {
+    const el = W.place(W.add(device, 'box-rail'), x, y, w, h);
+    el.style.gridTemplateRows = `repeat(${list.length}, minmax(0, 1fr))`;
+    list.forEach((p) => el.appendChild(ticketize(makeSeat(p, compact))));
+  };
+
+  if (size === 'desktop') {
+    W.buildTopbar(device, { x: 28, y: 18, w: 1224 });
+    rail(left, 24, 70, 250, 610);
+    rail(right, 1006, 70, 250, 610);
+    W.buildStage(device, { x: 300, y: 70, w: 680, h: 560, floorH: 56 });
+    W.buildSpeaker(device, { x: 300, y: 170, w: 680, portrait: 150, font: 52, timerR: 36 });
+    W.buildNight(device, 250);
+    W.buildDock(device, { x: 24, y: 706, w: 1232, h: 72 });
+  } else {
+    W.buildTopbar(device, { x: 16, y: 16, w: 358 }, true);
+    rail(left, 8, 64, 86, 620, true);
+    rail(right, 296, 64, 86, 620, true);
+    W.buildStage(device, { x: 100, y: 110, w: 190, h: 440, floorH: 40, spotW: 150 });
+    W.buildSpeaker(device, { x: 100, y: 200, w: 190, portrait: 96, font: 30, timerR: 26, timerGap: 10 });
+    W.buildNight(device, 300);
+    W.buildDock(device, { x: 16, y: 700, w: 358, h: 124 });
+  }
+};
+</script>
+<script src="_shared.js"></script>
+</body>
+</html>

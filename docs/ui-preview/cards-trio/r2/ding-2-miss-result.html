@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ding · 整屏色块 · ② 拍错罚牌 + 结算</title>
+<link rel="stylesheet" href="../_shell.css">
+<link rel="stylesheet" href="_party.css">
+<link rel="stylesheet" href="_ding.css">
+<style>
+  /* 结算：胜者贴纸飞到圆盘中央、铃自己连响三下；其他人剩几张牌摊成一排（按现有规则不计分，只按剩牌数排名） */
+  .result-layer { position: absolute; inset: 0; z-index: 20; display: none; }
+  .device.over .result-layer { display: block; }
+  .device.over .bell-ring, .device.over .core, .device.over .hud, .device.over .phase-word, .device.over .me-zone, .device.over .ring-seats, .device.over .me-tag { display: none; }
+  .device.over .bell { top: 26%; }
+  .device.over .disc { top: 26%; width: 340px; height: 340px; }
+  .champ { position: absolute; left: 50%; top: 26%; translate: -50% 90px; display: grid; justify-items: center; gap: 8px; }
+  .champ b { font: 900 52px/1 var(--serif); color: var(--cream); -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; text-shadow: 0 6px 0 var(--ink); white-space: nowrap; }
+  .champ small { font: 800 15px var(--sans); color: var(--cream); background: var(--ink); padding: 5px 12px; border-radius: 999px; }
+  .champ.in b { animation: pop 460ms var(--spring); }
+  .rest { position: absolute; left: 50%; bottom: 96px; translate: -50% 0; width: 900px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .rest .card-row { display: grid; justify-items: center; gap: 8px; padding: 12px 8px 14px; background: var(--cream); border: var(--border); border-radius: 18px; box-shadow: var(--shadow-sm); opacity: 0; translate: 0 20px; transition: opacity 240ms, translate 280ms var(--spring); }
+  .rest .card-row.in { opacity: 1; translate: 0 0; }
+  .rest .card-row .who { display: flex; align-items: center; gap: 6px; font: 900 15px var(--sans); }
+  .rest .card-row .who i { width: 30px; height: 30px; border-radius: 50%; border: 2.5px solid var(--ink); display: grid; place-items: center; font: 900 13px var(--serif); font-style: normal; }
+  .rest .card-row .rk { font: 700 14px var(--serif); color: var(--muted); }
+  .rest .backs { display: flex; min-height: 44px; }
+  .rest .backs .uc2 { --w: 28px; border-width: 2px; margin-left: -16px; box-shadow: 0 2px 0 var(--ink); }
+  .rest .backs .uc2:first-child { margin-left: 0; }
+  .rest .backs .uc2 .v { display: none; }
+  .rest .left-n { font: 700 28px/1 var(--serif); }
+  .rest .left-n small { font: 800 12px var(--sans); color: var(--muted); margin-left: 3px; }
+  .after-dock { position: absolute; left: 0; right: 0; bottom: 22px; display: flex; justify-content: center; gap: 12px; }
+
+  .device[data-size="mobile"].over .bell, .device[data-size="mobile"].over .disc { top: 20%; }
+  .device[data-size="mobile"].over .disc { width: 220px; height: 220px; }
+  .device[data-size="mobile"] .champ { top: 20%; translate: -50% 70px; }
+  .device[data-size="mobile"] .champ b { font-size: 30px; -webkit-text-stroke: 2px var(--ink); }
+  .device[data-size="mobile"] .champ small { font-size: 12px; }
+  .device[data-size="mobile"] .rest { width: 370px; grid-template-columns: repeat(2, 1fr); gap: 8px; bottom: 84px; }
+  .device[data-size="mobile"] .rest .card-row { grid-template-columns: auto 1fr auto; justify-items: start; align-items: center; padding: 6px 10px; border-radius: 12px; gap: 6px; }
+  .device[data-size="mobile"] .rest .card-row .backs { display: none; }
+  .device[data-size="mobile"] .rest .card-row .who { font-size: 13px; }
+  .device[data-size="mobile"] .rest .card-row .who i { width: 24px; height: 24px; font-size: 11px; }
+  .device[data-size="mobile"] .rest .card-row .rk { font-size: 12px; order: -1; }
+  .device[data-size="mobile"] .rest .left-n { font-size: 20px; }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>Ding · 整屏色块 · ② 拍错罚牌 + 结算</strong>
+  <span class="note">按纠正后的规则：你拍铃亮出「做了一个鬼脸」，但其他人过半点了「没做过」= 拍错：卡弹回手里、罚摸 1 张、回合不变。结算：先打完手牌的人获胜，不计分</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile">手机 390×844</button></div>
+  <div class="group"><button id="demo-win">② 看结算</button><button id="reset">重播</button><a href="index.html">返回目录</a></div>
+</div>
+<div class="stage-wrap"><div class="device ding" data-size="desktop">
+  <div class="phase-word" data-box="phase" id="phase">轮到可可</div>
+  <div class="hud" data-box="hud">
+    <span class="color-chip"><i></i>当前：<span data-color-name></span></span>
+    <div class="turn-ring" id="ring"><svg viewBox="0 0 60 60"><circle class="track" cx="30" cy="30" r="26"/><circle class="bar" cx="30" cy="30" r="26"/></svg><span class="ring-num"></span></div>
+  </div>
+  <div class="me-zone">
+    <div class="fan my-hand" data-box="hand"></div>
+    <div class="dock" data-box="dock">
+      <button class="btn" id="btn-draw">摸牌</button>
+      <button class="btn" id="btn-ring" disabled>拍铃！</button>
+    </div>
+  </div>
+  <div class="sticker me-tag" data-box="me"><div class="avatar" style="background:#f7c84b">鱼</div><b>小鱼干（你）</b><span class="n" data-count id="me-count">3</span><span class="say"></span></div>
+
+  <div class="result-layer">
+    <div class="champ" id="champ"><b>可可 先出完！</b><small>本局获胜</small></div>
+    <div class="rest" id="rest"></div>
+    <div class="after-dock"><button class="btn">返回房间</button><button class="btn btn-primary">再来一局</button></div>
+  </div>
+</div></div>
+<script src="../_shell.js"></script>
+<script src="_party.js"></script>
+<script src="_ding.js"></script>
+<script>
+(function () {
+  const P = Preview, U = Party, B = DingBell;
+  const device = document.querySelector('.device');
+  U.build({ backLabel: 'Ding', art: ['叮', '!', '🔔', '?'] });
+  B.buildBell();
+  const S = U.seats([
+    { id: 'momo', name: 'Momo', a: 'M', bg: '#f6b7cf', n: 4 },
+    { id: 'nuomi', name: '糯米', a: '糯', bg: '#9cc7f0', n: 2 },
+    { id: 'wang', name: '老王', a: '王', bg: '#b9a4e6', n: 6 },
+    { id: 'keke', name: '可可', a: '可', bg: '#8fd3b6', n: 2 },
+    { id: 'jie', name: '阿杰', a: '杰', bg: '#f29a7a', n: 5 },
+  ]);
+  const me = document.querySelector('.me-tag');
+  // 固定数据：你手里没有红色短语卡——这一下是拍错
+  const HAND = [{ c: 'blue', v: '3' }, { c: 'yellow', phrase: '做了一个鬼脸' }, { c: 'green', v: '5' }];
+  const hand = document.querySelector('.my-hand');
+  const discard = document.querySelector('.discard');
+  const deck = document.querySelector('.deck');
+  hand.innerHTML = HAND.map((c) => U.card(c)).join('');
+  P.indexFan(hand);
+  U.landOnDiscard(U.card({ c: 'red', v: '2' }), { tilt: 3 });
+  U.setColor('red', { splash: false });
+  U.setActive(S.keke);
+  P.countdown(document.getElementById('ring'), 15);
+
+  // 拍错：你拍铃亮出「做了一个鬼脸」，但其实没人做——4/5 质疑 → 卡弹回手里 + 罚摸 1 张，回合不变
+  function onRing() {
+    if (B.ring(hand)) { U.slam('叮！', 'ding'); document.getElementById('phase').textContent = '你拍了铃'; }
+  }
+  document.getElementById('bell').addEventListener('click', onRing);
+  document.getElementById('btn-ring').addEventListener('click', onRing);
+  [...hand.children].forEach((el) => el.addEventListener('click', () => { if (B.state.phase === 'picking' && el.dataset.phrase) pick(el); }));
+
+  async function pick(el) {
+    const res = await B.reveal(el, [
+      { who: 'jie', a: '杰', bg: '#f29a7a', doubt: true, at: 500 },
+      { who: 'keke', a: '可', bg: '#8fd3b6', doubt: true, at: 800 },
+      { who: 'wang', a: '王', bg: '#b9a4e6', doubt: false, at: 1300 },
+      { who: 'nuomi', a: '糯', bg: '#9cc7f0', doubt: true, at: 1600 },
+      { who: 'momo', a: 'M', bg: '#f6b7cf', doubt: true, at: 2000 },
+    ]);
+    // 质疑过半：亮出的卡上盖一个"没人做过"的叉，弹回手里；再罚摸 1 张
+    const stamp = U.node('<span class="nope">没人做过</span>');
+    res.card.parentElement.appendChild(stamp);
+    B.strike(true);
+    P.shake(4);
+    U.slam('拍错了！罚摸 1 张', 'miss');
+    await new Promise((ok) => setTimeout(ok, 800));
+    await P.fly(res.card.cloneNode(true), res.card, res.handEl, { lift: 60, spin: -6, duration: 420, endScale: .6 });
+    res.handEl.style.visibility = 'visible';
+    stamp.remove();
+    B.finish();
+    await U.penaltyFly(deck, me, '+1');
+    const g = U.node(U.card({ c: 'back', v: 'Ding' }));
+    await P.fly(g, deck, hand, { lift: 90, spin: -8, duration: 460 });
+    const el2 = U.node(U.card({ c: 'red', v: '8' }, 'drawn'));
+    hand.appendChild(el2);
+    P.indexFan(hand);
+    U.fitHand(hand);
+    P.roll(document.getElementById('me-count'), hand.children.length);
+    U.say(me, '罚摸 1 张');
+    document.getElementById('phase').textContent = '拍错 · 仍然轮到可可';
+    U.setActive(S.keke);
+  }
+
+  // 结算：可可出完；其他人按剩余张数少者在前
+  const REST = [
+    { name: '糯米', a: '糯', bg: '#9cc7f0', n: 2 },
+    { name: '小鱼干（你）', a: '鱼', bg: '#f7c84b', n: 4 },
+    { name: 'Momo', a: 'M', bg: '#f6b7cf', n: 4 },
+    { name: '阿杰', a: '杰', bg: '#f29a7a', n: 5 },
+    { name: '老王', a: '王', bg: '#b9a4e6', n: 6 },
+  ];
+  document.getElementById('demo-win').addEventListener('click', async () => {
+    B.finish();
+    device.classList.remove('picking');
+    device.classList.add('over');
+    U.setColor('green');
+    const rest = document.getElementById('rest');
+    let rank = 1;
+    rest.innerHTML = REST.map((p, k) => {
+      if (k && p.n !== REST[k - 1].n) rank = k + 1;
+      return `<div class="card-row"><span class="rk">第 ${rank + 1} 名</span><span class="who"><i style="background:${p.bg}">${p.a}</i>${p.name}</span><div class="backs">${Array.from({ length: p.n }, () => U.card({ c: 'back', v: '' })).join('')}</div><span class="left-n">${p.n}<small>张</small></span></div>`;
+    }).join('');
+    document.getElementById('champ').classList.add('in');
+    // 铃自己连响三下
+    for (let i = 0; i < 3; i++) { B.strike(); if (i === 0) { U.slam('叮叮叮！', 'ding'); P.shake(4); } await new Promise((ok) => setTimeout(ok, 380)); }
+    [...rest.children].forEach((r, k) => setTimeout(() => r.classList.add('in'), k * 140));
+  });
+})();
+</script>
+</body>
+</html>

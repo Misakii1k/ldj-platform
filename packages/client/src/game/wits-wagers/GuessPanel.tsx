@@ -8,9 +8,14 @@ export interface GuessPanelProps {
   canGuess: boolean;
   onSubmit: (value: number) => void;
   submitting?: boolean;
-  /** 输入获得/失去焦点时通知舞台，驱动握笔动作 */
 }
 
+/**
+ * 作答输入（01-CONTRACT.md §4.2，A2 的 .entry）。
+ *
+ * 黄铜细边输入框 + 衬线大数字 + 单位；提交逻辑、校验、MIN/MAX_GUESS 一律不动。
+ * 主按钮「交出答案」；已交后变为次要样式「已交 · 可修改」。
+ */
 export function GuessPanel({
   question,
   submittedGuess,
@@ -48,44 +53,46 @@ export function GuessPanel({
 
   return (
     <div className="ww-guess-panel">
-      {/* 题面由舞台桌沿统一呈现，这里只负责输入，避免同一道题出现两处 */}
       {submittedGuess && (
         <div className="ww-guess-panel__submitted-alert">
-          已提交估数：<strong>{submittedGuess.value.toLocaleString()}</strong>（全员提交前可再次修改）
+          已交 <strong>{submittedGuess.value.toLocaleString()}</strong> · 全员提交前可再次修改
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="ww-guess-panel__form">
         <label className="ww-guess-panel__label" htmlFor="ww-guess-input">
-          我的估数（单位：{question?.unit ?? '无'}）
+          我的估数
         </label>
         <div className="ww-guess-panel__input-row">
-          <input
-            id="ww-guess-input"
-            className="ww-input"
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            value={valStr}
-            onChange={(e) => {
-              setValStr(e.target.value);
-              setErrorMsg(null);
-            }}
-            placeholder="输入正整数，例如 100"
-            disabled={!canGuess || submitting}
-            autoComplete="off"
-          />
+          <div className="ww-guess-panel__field">
+            <input
+              id="ww-guess-input"
+              className="ww-input ww-guess-panel__input"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={valStr}
+              onChange={(e) => {
+                setValStr(e.target.value);
+                setErrorMsg(null);
+              }}
+              placeholder="输入正整数"
+              disabled={!canGuess || submitting}
+              autoComplete="off"
+            />
+            <span className="ww-guess-panel__unit">{question?.unit ?? ''}</span>
+          </div>
           <button
             type="submit"
-            className="ww-btn ww-btn--primary"
+            className={`ww-btn ${submittedGuess ? 'ww-btn--secondary' : 'ww-btn--primary'}`}
             disabled={!canGuess || submitting || !valStr.trim()}
           >
-            {submitting ? '提交中…' : submittedGuess ? '修改估数' : '提交估数'}
+            {submitting ? '提交中…' : submittedGuess ? '已交 · 可修改' : '交出答案'}
           </button>
         </div>
         {errorMsg && <div className="ww-guess-panel__error ww-diff-neg">{errorMsg}</div>}
         <div className="ww-guess-panel__hint">
-          提示：所有参赛者提交后将立即揭晓并开始下注，请尽快作答。
+          写一个正整数；估得越接近、又不超过越好
         </div>
       </form>
     </div>

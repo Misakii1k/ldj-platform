@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <title>榴莲 · 公共桌面</title>
+  <link rel="stylesheet" href="shared.css">
+  <link rel="stylesheet" href="durian.css">
+  <link rel="stylesheet" href="durian-cards.css">
+  <link rel="stylesheet" href="durian-table.css">
+  <script src="durian-table.js" defer></script>
+</head>
+<body data-game="durian">
+  <nav class="dt-tools" aria-label="预览工具"><a href="durian.html">← 玩家个人端</a><a href="moderator.html">狼人杀法官端 ↗</a><a href="display.html">朝外展示端 ↗</a></nav>
+  <main class="d-game dt-game" aria-label="榴莲公共桌面">
+    <div class="d-page dt-page">
+      <header class="d-header dt-header">
+        <div class="d-brand"><img src="assets/fruit-durian.svg" alt="" width="48" height="48"><div><span class="d-eyebrow">THE FRUIT PARTY</span><h1>榴莲<span>公共桌面 · 房间共用大屏</span></h1></div></div>
+        <div class="dt-head-right">
+          <span class="dt-badge">公共大屏 · 不含任何隐藏信息</span>
+          <div class="d-round"><span>ROUND</span><strong id="dt-round">02</strong><small>/ <b id="dt-max-round">07</b></small></div>
+        </div>
+      </header>
+
+      <section class="dt-demand" aria-labelledby="dt-demand-title">
+        <div class="d-section-heading"><h2 id="dt-demand-title">全桌累计需求</h2><span id="dt-demand-note">下家认为某种水果超卖时，可以按铃质疑。</span></div>
+        <div class="dt-demand-grid" id="dt-totals"></div>
+      </section>
+
+      <div class="dt-body">
+        <section class="dt-placements" aria-labelledby="dt-placements-title">
+          <div class="d-section-heading"><h2 id="dt-placements-title">已出牌列</h2><span id="dt-placement-note">绿底半边计入需求</span></div>
+          <div class="dt-placement-list" id="dt-placements"></div>
+        </section>
+
+        <aside class="dt-side">
+          <div class="dt-turn" id="dt-turn" role="status"></div>
+          <div class="dt-deck" id="dt-deck"></div>
+          <section class="dt-players" aria-labelledby="dt-players-title">
+            <div class="d-section-heading"><h2 id="dt-players-title">玩家罚分</h2><span>超过 7 分淘汰</span></div>
+            <div class="dt-player-list" id="dt-players"></div>
+          </section>
+        </aside>
+      </div>
+
+      <footer class="dt-footer">
+        <p>公共桌面只展示全桌公开信息：累计需求、已出牌列、罚分与轮次。<b>任何人的头顶牌与当前摸到的牌都不会出现在这块屏幕上。</b></p>
+      </footer>
+    </div>
+  </main>
+</body>
+</html>

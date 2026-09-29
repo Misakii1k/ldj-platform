@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>狼人杀 · Design 优化对比</title><link rel="stylesheet" href="art-directions.css"><link rel="stylesheet" href="art-seating.css"><link rel="stylesheet" href="art-platform.css"><link rel="stylesheet" href="design-v2.css"><script defer src="art-directions.js"></script></head>
+<body data-theme="woodcut" data-design="refined">
+<nav class="tools" aria-label="预览工具"><a href="design-v2.html">Design 提案 ↗</a><label class="design-choice"><span>对比</span><select id="design-choice" aria-label="设计版本"><option value="refined">优化版 · 轻纸夜桌</option><option value="current">上一版 · 粗线纸卡</option></select></label><div class="choices"><button data-theme="woodcut" aria-pressed="true">A · 林中木刻</button><button data-theme="eclipse" aria-pressed="false">B · 月蚀星轨</button><button data-theme="curtain" aria-pressed="false">C · 赤幕剧场</button></div><button id="hide">隐藏工具</button></nav><button id="show" hidden>显示工具</button>
+<main>
+<header><div class="brand">聚乐 · 狼人杀 <small id="edition">THE FOREST FABLE</small></div><span class="chapter">第三日 / 自由之夜之后</span><button id="rules">本局规则 ↗</button></header>
+<div class="layout"><aside id="seats-left" class="seat-rail" aria-label="1 至 6 号玩家"></aside><section class="stage">
+<div class="stage-top"><span id="kicker">CHAPTER III · 林中证词</span><span class="time">00:48 <small>发言剩余</small></span></div>
+<div class="art" aria-hidden="true">
+<svg class="forest" viewBox="0 0 600 400"><defs><pattern id="cuts" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(23)"><path d="M0 0V8" stroke="currentColor" stroke-width="2"/></pattern></defs><circle cx="308" cy="148" r="108" fill="currentColor"/><path d="M0 380L40 25 70 380M70 400L112 62 150 400M438 400L477 25 520 400M510 400L565 5 605 400" fill="var(--bg)" stroke="currentColor" stroke-width="3"/><path d="M218 320L213 118 277 179 329 171 392 99 374 312 305 368Z" fill="var(--bg)" stroke="currentColor" stroke-width="4"/><path d="M230 142L276 191 240 246M374 126L330 193 361 247M240 257L279 270 265 243M363 257L325 270 340 243M277 307L304 326 331 305 305 350Z" fill="currentColor"/><path d="M226 290L283 340M228 302L273 348M370 286L327 338M367 302L337 345" stroke="currentColor" stroke-width="2"/><path d="M0 380L40 25 70 380M438 400L477 25 520 400" fill="url(#cuts)"/><path d="M140 370Q300 395 453 367" stroke="currentColor" fill="none"/></svg>
+<div class="astral"><div class="orbit o1"></div><div class="orbit o2"></div><div class="orbit o3"></div><span class="star s1">✦</span><span class="star s2">✧</span><div class="moon"></div><span class="lunar-label">☽ &nbsp; III &nbsp; ☾</span></div>
+<div class="theatre"><div class="drape left"></div><div class="drape right"></div><div class="beam"></div><span class="act">ACT<br><b>III</b></span></div>
+<span class="art-caption" id="art-caption">没有人，能够置身故事之外。</span></div>
+<div class="speaker"><span class="speaker-tag">● 06 号 · 正在发言</span><h1 tabindex="-1">山间一阵晚风</h1><p id="tagline">森林记得每一个声音。</p></div>
+<div class="next"><span>下一位证词</span><b>07 号 / 南瓜</b><span>→</span></div>
+<div class="table-summary"><span>10 / 12 存活</span><small id="table-caption">TWELVE VOICES</small></div><button id="ledger" class="ledger">上一轮票型 <span>09 号 · 4 票 ↗</span></button></section><aside id="seats-right" class="seat-rail" aria-label="7 至 12 号玩家"></aside></div>
+<footer><button id="identity" class="identity"><span>☾</span><span>我的身份<small>仅自己查看</small></span></button><p>轮到你发言<br><small>说出判断，也听见不同的声音。</small></p><button id="finish" class="primary">结束发言 <span>→</span></button></footer>
+</main><dialog id="dialog" aria-labelledby="dialog-title"><h2 id="dialog-title"></h2><div id="dialog-body"></div><button id="close">收起并返回</button></dialog>
+</body></html>

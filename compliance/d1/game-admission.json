@@ -389,8 +389,8 @@
             "机制忠实原版《Ding! 眼急脑快》（HUCH 原版 + 一刻馆）：UNO 式出牌（同色/同数字）+ 行动短语卡 + 按铃抢回合，每人 8 张先打完者胜",
             "规则基线 2026-08-10 调研：C 级（高斯Goh 实况简介逐字说明 + 析弈讲规则标题）；纠正资料库'图案/颜色抢答'误判",
             "牌库为平台原创设计（4 色×数字 1-8 各 2 张 + 每色自编短语卡 2 张），不复制原版牌表",
-            "错误拍铃罚摸一张、无人拍铃计时器兜底：原版细则未获取，平台裁定并如实标注",
-            "线下桌游辅助定位：App 管发牌/出牌合法性/摸牌/按铃窗口计时/终局判定，短语口头触发由线下判断"
+            "随时拍铃亮出短语卡，其他玩家 3 秒质疑投票判定：过半质疑判拍错罚摸并放回手牌，否则接管回合；原版细则未获取，平台裁定并如实标注",
+            "线下桌游辅助定位：App 管发牌/出牌合法性/摸牌/质疑投票与倒计时/终局判定，短语口头与微动作触发由线下观察"
           ],
           "rights": {
             "status": "approved",
@@ -428,6 +428,61 @@
           "rights": {
             "status": "approved",
             "recordId": "internal-admission-g2-2026-08-10-e01",
+            "scope": "internal_platform_launch_2026",
+            "expiresAt": "2099-12-31",
+            "rightsApprover": "internal-rights-admin",
+            "rulesApprover": "internal-rules-committee"
+          }
+        }
+      ]
+    },
+    {
+      "gameId": "wits-wagers",
+      "catalogStatus": "playable",
+      "rulesets": [
+        {
+          "rulesetId": "wits_wagers_platform_v1",
+          "kind": "platform_variant",
+          "releaseStatus": "playable",
+          "sourceDocuments": [
+            "docs/plans/2026-09-20-wits-wagers/01-rules-and-sources.md",
+            "docs/plans/2026-09-20-wits-wagers/02-architecture-contract.md"
+          ],
+          "includedExtensions": [],
+          "excludedExtensions": [],
+          "digitalAdaptations": [
+            "正整数作答（1..999,999,999,999）与固定七轮",
+            "判定按绝对差值最近（2026-09-22 修订），两侧等距并列获胜；边缘槽只保留「更低」（赔率 6），原「更高」槽于同日二次修订删除，回归原版仅一张「比所有答案都小」卡的设定",
+            "超时不补答：未作答者本轮不上版图；全员未答则本轮作废换备用题重打",
+            "同分先比获胜答案次数，仍同分并列获胜"
+          ],
+          "rights": {
+            "status": "approved",
+            "recordId": "internal-admission-ww-2026-09-21-w01",
+            "scope": "internal_platform_launch_2026",
+            "expiresAt": "2099-12-31",
+            "rightsApprover": "internal-rights-admin",
+            "rulesApprover": "internal-rules-committee"
+          }
+        },
+        {
+          "rulesetId": "wits_wagers_sim_v1",
+          "kind": "platform_variant",
+          "releaseStatus": "playable",
+          "sourceDocuments": [
+            "packages/games/wits-wagers/server/sim/module.ts",
+            "docs/plans/2026-09-20-wits-wagers/01-rules-and-sources.md"
+          ],
+          "includedExtensions": [],
+          "excludedExtensions": [],
+          "digitalAdaptations": [
+            "线下桌游辅助定位：App 只管抽题、收私密猜测、亮牌后复用 buildBoard 排版图与赔率、翻面公开标准答案",
+            "筹码摆放与钞票增减为自由道具，不校验余额、不结算、不判胜负（resultCandidate 恒 null）",
+            "通用道具：计时器 / 骰子 / 按铃 / 活动日志，与其余五款桌面模拟一致"
+          ],
+          "rights": {
+            "status": "approved",
+            "recordId": "internal-admission-ww-2026-09-22-w02",
             "scope": "internal_platform_launch_2026",
             "expiresAt": "2099-12-31",
             "rightsApprover": "internal-rights-admin",

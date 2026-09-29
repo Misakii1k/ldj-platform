@@ -40,40 +40,11 @@ const SLOTS: readonly (Slot | EdgeSlot)[] = ['L3', 'L2', 'L1', 'C', 'R1', 'R2', 
 export const TOTAL_ROUNDS = 7;
 
 /**
- * 一分等于多少元。
- *
- * 服务端的 score 永远是"分"（官方规则里的最小计分单位），桌面上摆的是钞票。
- * 官方计分筹码最小面值就是 100，所以 1 分 = ¥100 —— 只是换了张皮，
- * 账本公式、存档与服务端校验一律不动。
+ * 贵宾厅改版后的唯一金额文案：直接显示「N 分」，带千分位。
+ * 服务端的 score 本来就是分，前端不做换算（2026-09-27 用户：「改成筹码，显示分」）。
  */
-export const YUAN_PER_POINT = 100;
-
-/** 桌上流通的钞票面值，降序（拆张按贪心，从大到小）。 */
-export const NOTE_DENOMINATIONS = [1000, 500, 200, 100] as const;
-export type NoteDenomination = (typeof NOTE_DENOMINATIONS)[number];
-
-/** 把服务端的积分格式化成桌面上的金额文案。 */
-export function formatMoney(points: number): string {
-  return `¥${(points * YUAN_PER_POINT).toLocaleString('zh-CN')}`;
-}
-
-/**
- * 把积分拆成具体的几张钞票，用于钞票堆与飞行演出。
- *
- * 贪心即可：以 100 为单位看就是 {1,2,5,10}，这是规范币制（canonical），
- * 贪心结果必然是张数最少的解。
- */
-export function breakdownNotes(points: number): NoteDenomination[] {
-  if (!Number.isFinite(points) || points <= 0) return [];
-  let remaining = Math.floor(points) * YUAN_PER_POINT;
-  const notes: NoteDenomination[] = [];
-  for (const denom of NOTE_DENOMINATIONS) {
-    while (remaining >= denom) {
-      notes.push(denom);
-      remaining -= denom;
-    }
-  }
-  return notes;
+export function formatPoints(points: number): string {
+  return `${points.toLocaleString('zh-CN')} 分`;
 }
 
 /** 槽位在界面上的名字：边缘槽用中文，数值槽用千分位数字。 */

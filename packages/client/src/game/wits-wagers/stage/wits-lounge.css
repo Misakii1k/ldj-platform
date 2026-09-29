@@ -1,0 +1,1979 @@
+/**
+ * 一智千金 · 深夜赌场贵宾厅 —— 舞台层样式（X01 场景 / X02 牌与筹码 / X03 席位卡）。
+ *
+ * 颜色一律引用 `wits-wagers.css` 里 `.ww-game[data-ww-theme="felt-green"]` 的 §3 令牌；
+ * 本文件不出现任何十六进制字面量色（X01 完成判据）。半透明黑白只作为遮罩、暗角与
+ * 接触阴影使用，不承载主题语义。
+ *
+ * 像素参照：docs/ui-preview/wits-wagers/directions/A2-casino-lounge.html。
+ * 场景几何从方向稿的固定 px（1280×800 / 390×844 设备框）换算成 `.ww-game` 盒子的百分比，
+ * 原因与逐条差异记在 docs/plans/2026-09-26-wits-wagers-visual/PROGRESS.md「与方向稿的差异记录」。
+ */
+
+/* ===================================================================
+ * 1. 场景层：房间 / 光锥 / 烟雾 / 毡桌 / 吊灯（五层，纯装饰）
+ * =================================================================== */
+
+.ww-lounge {
+  --ww-scene-lamp-top: -3.75%;
+  --ww-scene-lamp-w: 21.875%;
+  --ww-scene-lamp-h: 8.75%;
+  --ww-scene-cone-top: 3.75%;
+  --ww-scene-cone-w: 85.938%;
+  --ww-scene-cone-h: 95%;
+  --ww-scene-table-top: 23.75%;
+  --ww-scene-table-w: 84.375%;
+  --ww-scene-table-h: 70%;
+
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* 暗墙：竖向细纹 + 中心亮、四周沉下去的径向渐变 */
+.ww-lounge__room {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.018) 0 2px, transparent 2px 64px),
+    radial-gradient(90% 70% at 50% 40%, var(--ww-room-glow) 0%, var(--ww-room) 70%);
+}
+
+/* 吊灯光锥：从顶部中央斜切下来的暖色梯形 */
+.ww-lounge__cone {
+  position: absolute;
+  left: 50%;
+  top: var(--ww-scene-cone-top);
+  width: var(--ww-scene-cone-w);
+  height: var(--ww-scene-cone-h);
+  transform: translateX(-50%);
+  background: radial-gradient(
+    50% 55% at 50% 0%,
+    var(--ww-lamp-light),
+    color-mix(in srgb, var(--ww-lamp-light) 30%, transparent) 55%,
+    transparent 75%
+  );
+  clip-path: polygon(40% 0, 60% 0, 100% 100%, 0 100%);
+}
+
+/* 烟雾：两团极淡的白，缓慢呼吸 */
+.ww-lounge__smoke {
+  position: absolute;
+  left: 20%;
+  top: 15%;
+  width: 60%;
+  height: 25%;
+  opacity: 0.5;
+  background:
+    radial-gradient(40% 50% at 30% 50%, rgba(255, 255, 255, 0.05), transparent),
+    radial-gradient(35% 45% at 70% 40%, rgba(255, 255, 255, 0.04), transparent);
+  animation: ww-lounge-breathe 7s ease-in-out infinite;
+}
+
+/* 用独立的 translate 属性做呼吸：不覆盖元素自身的定位 transform（契约 §5.1 第 1 条） */
+@keyframes ww-lounge-breathe {
+  50% {
+    translate: 0 -3px;
+  }
+}
+
+/* 椭圆毡桌：径向毡面 + 木沿 + 黄铜细圈 + 外圈暗木 */
+.ww-lounge__table {
+  position: absolute;
+  left: 50%;
+  top: var(--ww-scene-table-top);
+  width: var(--ww-scene-table-w);
+  height: var(--ww-scene-table-h);
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    60% 55% at 50% 35%,
+    var(--ww-felt-a) 0%,
+    var(--ww-felt-mid) 45%,
+    var(--ww-felt-b) 100%
+  );
+  box-shadow:
+    0 0 0 14px var(--ww-rail),
+    0 0 0 16px var(--ww-brass-dim),
+    0 0 0 26px var(--ww-rail-edge),
+    0 40px 80px rgba(0, 0, 0, 0.7),
+    inset 0 0 90px rgba(0, 0, 0, 0.55);
+}
+
+/* 桌面下沿印字（仅桌面；手机隐藏） */
+.ww-lounge__table::after {
+  content: "一 智 千 金 · 贵 宾 厅";
+  position: absolute;
+  left: 50%;
+  bottom: 12.5%;
+  transform: translateX(-50%);
+  font: 600 15px/1 var(--gp-font-display);
+  letter-spacing: 0.6em;
+  color: color-mix(in srgb, var(--ww-brass) 28%, transparent);
+  white-space: nowrap;
+}
+
+/* 吊灯：绿罩 + 黄铜下沿 + 向下的暖光晕 */
+.ww-lounge__lamp {
+  position: absolute;
+  left: 50%;
+  top: var(--ww-scene-lamp-top);
+  width: var(--ww-scene-lamp-w);
+  height: var(--ww-scene-lamp-h);
+  transform: translateX(-50%);
+  background: linear-gradient(var(--ww-lamp), color-mix(in srgb, var(--ww-lamp) 45%, black));
+  border-radius: 0 0 140px 140px / 0 0 60px 60px;
+  border-bottom: 2px solid var(--ww-brass);
+  box-shadow: 0 16px 50px rgba(255, 220, 140, 0.35);
+}
+
+/* 场景层落在内容之下；舞台里的实体内容各自抬一层 */
+.ww-game > .ww-stage,
+.ww-game > .ww-guess-panel,
+.ww-game > .ww-phase-block,
+.ww-game > .ww-bet-editor,
+.ww-game > .ww-result-panel,
+.ww-game > .ww-spectator-banner,
+.ww-game > .ww-error-banner {
+  position: relative;
+  z-index: 1;
+}
+
+/* 手机竖屏：桌面放大到出血、印字去掉、吊灯变窄（照方向稿 mobile 规则换算成百分比） */
+@media (max-width: 640px) {
+  .ww-lounge {
+    --ww-scene-lamp-w: 46.154%;
+    --ww-scene-table-top: 29.621%;
+    --ww-scene-table-w: 143.59%;
+    --ww-scene-table-h: 66.351%;
+  }
+
+  .ww-lounge__table::after {
+    display: none;
+  }
+}
+
+/* 低动效档位：烟雾的呼吸循环停掉（reduced 及以下）。
+   注：`minimal` / `off` 由 styles.css 的全局压制块兜底，这里只补 reduced 一档；
+   该选择器尚未登记进 src/motion/ambientMotion.ts（不在 X01 白名单内），已在 PROGRESS 记待办。 */
+html[data-motion-level='reduced'] .ww-lounge__smoke {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ww-lounge__smoke {
+    animation: none;
+  }
+}
+
+/* ===================================================================
+ * 2. 扑克牌（X02，契约 §4.2 / §4.3；A2 的 .pcard / .back）
+ * =================================================================== */
+
+.ww-poker-card {
+  position: relative;
+  width: 94px;
+  height: 132px;
+  /* 牌面大字自适应用：--ww-card-fit=可写字宽（牌宽减金框/内距），--ww-val-cap=该视口的设计字号上限。
+     __value 按数字位数在 [11px, cap] 间自动取值，长数字自动缩，短数字维持 cap 视觉不变。 */
+  --ww-card-fit: 82px;
+  --ww-val-cap: 30px;
+  border-radius: 9px;
+  color: var(--ww-card-ink);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 30% 20%, rgba(255, 255, 255, 0.7), transparent 60%),
+    repeating-linear-gradient(115deg, color-mix(in srgb, var(--ww-brass) 10%, transparent) 0 2px, transparent 2px 5px),
+    linear-gradient(var(--ww-ivory), var(--ww-ivory-2));
+  box-shadow:
+    0 10px 18px rgba(0, 0, 0, 0.5),
+    0 1px 0 rgba(0, 0, 0, 0.3),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.1),
+    inset 0 0 0 5px transparent,
+    inset 0 0 0 6px color-mix(in srgb, var(--ww-brass) 45%, transparent);
+}
+
+/* 淡水印花色 */
+.ww-poker-card--face::before {
+  content: '♠';
+  position: absolute;
+  font-size: 88px;
+  line-height: 1;
+  color: color-mix(in srgb, var(--ww-card-ink) 5%, transparent);
+}
+
+.ww-poker-card__value {
+  position: relative;
+  /* 位数驱动的自适应字号：短数字取 cap（视觉不变），长数字按可写字宽收敛，
+     下限 11px 兜底；配合牌容器的 overflow:hidden，极端超长数字最多轻微裁切而不外溢。 */
+  font: 700 30px/1 var(--gp-font-display);
+  font-size: clamp(11px, calc(var(--ww-card-fit, 82px) / (var(--ww-val-len, 4) * 0.6)), var(--ww-val-cap, 30px));
+  max-width: calc(100% - 10px);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ww-poker-card__unit {
+  position: absolute;
+  top: calc(50% + 22px);
+  font-size: 11px;
+  color: color-mix(in srgb, var(--ww-card-ink) 58%, var(--ww-ivory));
+}
+
+/* 牌角索引：数字 + 红 ♠；右下角旋转 180° */
+.ww-poker-card__ix {
+  position: absolute;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  font: 700 11px/1 var(--gp-font-display);
+  color: color-mix(in srgb, var(--ww-card-ink) 72%, var(--ww-ivory));
+  font-variant-numeric: tabular-nums;
+}
+
+.ww-poker-card__ix i {
+  font-style: normal;
+  font-size: 9px;
+  color: var(--ww-card-back);
+}
+
+.ww-poker-card__ix--tl { left: 8px; top: 8px; }
+.ww-poker-card__ix--br { right: 8px; bottom: 8px; transform: rotate(180deg); }
+
+/* 作者色点（与座位章同色的玩家色） */
+.ww-poker-card__authors {
+  position: absolute;
+  right: 8px;
+  top: 9px;
+  display: flex;
+  gap: 3px;
+}
+
+.ww-poker-card__authors i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px var(--ww-ivory), 0 0 0 2.5px rgba(0, 0, 0, 0.25);
+}
+
+/* 「更低」格：透明虚线牌（契约 §4.3） */
+.ww-poker-card--lower {
+  background: rgba(0, 0, 0, 0.18);
+  border: 1.5px dashed var(--ww-brass-dim);
+  box-shadow:
+    inset 0 0 0 5px transparent,
+    inset 0 0 0 6px color-mix(in srgb, var(--ww-brass) 25%, transparent);
+  color: var(--ww-brass);
+}
+
+.ww-poker-card--lower::before {
+  content: '↓';
+  position: absolute;
+  font-size: 100px;
+  line-height: 1;
+  color: color-mix(in srgb, var(--ww-brass) 8%, transparent);
+}
+
+.ww-poker-card__lower-label {
+  position: relative;
+  font: 700 22px/1.35 var(--gp-font-display);
+  text-align: center;
+}
+
+.ww-poker-card__lower-label small {
+  display: block;
+  font: 600 11px/1.4 inherit;
+  font-family: inherit;
+  color: var(--ww-muted);
+}
+
+/* 背面：酒红菱格 + 象牙白边 + 中央黄铜「智」字圆章 */
+.ww-poker-card--back {
+  background:
+    repeating-linear-gradient(45deg, color-mix(in srgb, var(--ww-brass-hi) 16%, transparent) 0 1px, transparent 1px 9px),
+    repeating-linear-gradient(-45deg, color-mix(in srgb, var(--ww-brass-hi) 16%, transparent) 0 1px, transparent 1px 9px),
+    linear-gradient(var(--ww-card-back), var(--ww-card-back-2));
+  box-shadow:
+    0 10px 18px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 5px var(--ww-ivory),
+    inset 0 0 0 6px rgba(0, 0, 0, 0.2),
+    inset 0 0 0 9px transparent,
+    inset 0 0 0 10px color-mix(in srgb, var(--ww-brass-hi) 45%, transparent);
+}
+
+.ww-poker-card--back::after {
+  content: '智';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font: 700 17px/1 var(--gp-font-display);
+  color: var(--ww-card-back-2);
+  background: radial-gradient(circle at 40% 35%, var(--ww-brass-hi), var(--ww-brass));
+  box-shadow: 0 0 0 2px var(--ww-card-back-2), 0 0 0 3px var(--ww-brass-dim);
+}
+
+.ww-poker-card--compact {
+  width: 78px;
+  height: 92px;
+  --ww-card-fit: 66px;
+}
+
+/* 飞行幽灵里的背面牌跟着幽灵框走（交牌演出的起止框由实测决定） */
+.ww-flight__ghost .ww-poker-card {
+  width: 100%;
+  height: 100%;
+}
+
+/* ===================================================================
+ * 3. 筹码（X02，契约 §4.4；A2 的 .chip）
+ * =================================================================== */
+
+.ww-chip {
+  position: relative;
+  flex: none;
+  display: inline-block;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, transparent 0 58%, rgba(0, 0, 0, 0.18) 59% 61%, transparent 62%),
+    repeating-conic-gradient(from 11deg, var(--ww-ivory) 0 16deg, transparent 16deg 45deg),
+    var(--ww-chip-color);
+  /* 厚度：三层逐级加深的下投影 + 落地阴影 */
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--ww-chip-color) 70%, black),
+    0 2px 0 color-mix(in srgb, var(--ww-chip-color) 55%, black),
+    0 3px 0 color-mix(in srgb, var(--ww-chip-color) 45%, black),
+    0 5px 6px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+/* 中心象牙嵌片 */
+.ww-chip::before {
+  content: '';
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, var(--ww-ivory), var(--ww-ivory-2));
+  box-shadow: 0 0 0 1.5px var(--ww-chip-color), 0 0 0 2.5px rgba(0, 0, 0, 0.2);
+}
+
+/* 筹码面文字（A / B / 座位号）：字号由组件按直径内联给出，::after 用 1em 继承 */
+.ww-chip::after {
+  content: attr(data-l);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font: 800 1em/1 var(--gp-font-display);
+  color: var(--ww-card-ink);
+}
+
+/* 加注签：底部金色「+N」（减注差额飞行为「−N」） */
+.ww-chip__extra {
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  transform: translateX(-50%);
+  z-index: 2;
+  font: 800 10px/1 var(--gp-font-body, inherit);
+  font-style: normal;
+  color: var(--ww-card-ink);
+  background: linear-gradient(var(--ww-brass-hi), var(--ww-brass));
+  border-radius: 4px;
+  padding: 2px 4px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+.ww-chip--pending {
+  opacity: 0.55;
+}
+
+/* 一摞筹码：后一枚压前一枚，不换行（契约 §4.4：桌面 -18px / 手机 -15px） */
+.ww-chip-stack {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.ww-chip-stack .ww-chip + .ww-chip {
+  margin-left: -18px;
+}
+
+/* ===================================================================
+ * 4. 版图槽位：黄铜赔率牌 + 扑克牌 + 底部筹码摞（X02，A2 的 .slot）
+ * =================================================================== */
+
+.ww-board__slot {
+  position: relative;
+  width: 118px;
+  height: 236px;
+  border: 1.5px solid var(--ww-brass-dim);
+  border-radius: 12px;
+  display: grid;
+  grid-template-rows: auto auto;
+  justify-items: center;
+  align-content: start;
+  padding: 10px 8px;
+  background: radial-gradient(80% 60% at 50% 40%, rgba(255, 255, 255, 0.03), transparent);
+  transition:
+    filter 300ms var(--gp-ease-standard, ease),
+    opacity 300ms var(--gp-ease-standard, ease),
+    translate 160ms var(--gp-ease-standard, ease),
+    border-color 160ms var(--gp-ease-standard, ease),
+    box-shadow 160ms var(--gp-ease-standard, ease);
+}
+
+.ww-board__slot .ww-poker-card {
+  margin-top: 10px;
+}
+
+/* 黄铜赔率牌「净赢 ×N」 */
+.ww-odds-plaque {
+  padding: 4px 10px 3px;
+  border-radius: 6px;
+  background: linear-gradient(var(--ww-brass-hi), var(--ww-brass) 60%, color-mix(in srgb, var(--ww-brass) 62%, black));
+  color: var(--ww-card-ink);
+  font: 800 16px/1 var(--gp-font-display);
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+}
+
+.ww-odds-plaque small {
+  font: 700 10px/1 var(--gp-font-body, inherit);
+  margin-right: 3px;
+  letter-spacing: 0.05em;
+}
+
+/* 格底筹码摞 */
+.ww-board__chips {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+  display: flex;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 6px;
+  pointer-events: none;
+}
+
+/* 下注阶段可点的格子：悬停上浮 3px + 黄铜描边（用独立 translate，不动 transform） */
+.ww-board__slot--interactive {
+  cursor: pointer;
+}
+
+.ww-board__slot--interactive:hover,
+.ww-board__slot--interactive:focus-visible {
+  translate: 0 -3px;
+  border-color: var(--ww-brass);
+  outline: none;
+}
+
+.ww-board__slot--selected {
+  border-color: var(--ww-brass);
+  box-shadow: 0 0 0 1px var(--ww-brass-dim), 0 0 18px color-mix(in srgb, var(--ww-brass) 35%, transparent);
+}
+
+/* 胜出格（基础态；完整揭示演出在 X06） */
+.ww-board__slot--win {
+  border-color: var(--ww-brass-hi);
+  box-shadow: 0 0 0 2px var(--ww-brass-hi), 0 0 60px color-mix(in srgb, var(--ww-brass-hi) 45%, transparent);
+}
+
+/* ===================================================================
+ * 5. 作答阶段的背面牌扇形堆（X02，A2 的 .pile / .facedown）
+ * =================================================================== */
+
+.ww-pile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.ww-pile__fan {
+  position: relative;
+  height: 148px;
+  width: 100%;
+}
+
+/* 扇形：以中央为轴，按序号左右错开 26px、各转 7deg。
+   用独立 rotate 属性而不是 transform（契约 §5.1 第 1 条） */
+.ww-pile__card {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  margin-left: calc(-47px + (var(--ww-fan-i) - (var(--ww-fan-n) - 1) / 2) * 26px);
+  rotate: calc((var(--ww-fan-i) - (var(--ww-fan-n) - 1) / 2) * 7deg);
+}
+
+.ww-pile__count {
+  font-size: 14px;
+  color: var(--ww-muted);
+}
+
+.ww-pile__count b {
+  font: 700 22px/1 var(--gp-font-display);
+  color: var(--ww-txt);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===================================================================
+ * 6. 手机竖屏（≤640px，A2 的 [data-size="mobile"] 规则）
+ * =================================================================== */
+
+@media (max-width: 640px) {
+  .ww-board__slot {
+    width: 108px;
+    height: 178px;
+    padding: 8px 6px;
+  }
+
+  .ww-odds-plaque {
+    font-size: 14px;
+    padding: 3px 8px 2px;
+  }
+
+  .ww-board__slot .ww-poker-card {
+    width: 78px;
+    height: 92px;
+    margin-top: 7px;
+    --ww-card-fit: 66px;
+    --ww-val-cap: 24px;
+  }
+
+  .ww-board__slot .ww-poker-card::before {
+    font-size: 64px;
+  }
+
+  /* 中央大字改由 __value 的位数自适应 clamp 统一控制（cap=24px 由上方令牌给出），
+     不再写死 font-size，否则会盖掉长数字的自动缩放。 */
+
+  .ww-board__slot .ww-poker-card__unit {
+    top: calc(50% + 17px);
+    font-size: 10px;
+  }
+
+  .ww-board__slot .ww-poker-card__ix {
+    font-size: 9px;
+  }
+
+  .ww-board__slot .ww-poker-card__ix--tl { left: 6px; top: 6px; }
+  .ww-board__slot .ww-poker-card__ix--br { right: 6px; bottom: 6px; }
+
+  .ww-board__slot .ww-poker-card__authors {
+    right: 6px;
+    top: 7px;
+  }
+
+  .ww-board__slot .ww-poker-card__authors i {
+    width: 8px;
+    height: 8px;
+  }
+
+  .ww-board__slot .ww-poker-card__lower-label {
+    font-size: 18px;
+  }
+
+  .ww-board__chips {
+    bottom: 8px;
+    min-height: 28px;
+  }
+
+  /* 筹码直径由组件内联（桌面 34 / 托盘 46），手机统一缩：内联尺寸没有媒体查询入口，
+     这里用 !important 压过内联宽高（字号同步缩，保证面字仍是直径的 0.32 倍） */
+  .ww-board__chips .ww-chip {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 9px !important;
+  }
+
+  .ww-bet-editor .ww-chip {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 12px !important;
+  }
+
+  .ww-chip-stack .ww-chip + .ww-chip {
+    margin-left: -15px;
+  }
+
+  .ww-pile__fan {
+    height: 108px;
+  }
+
+  .ww-pile__fan .ww-pile__card .ww-poker-card {
+    width: 78px;
+    height: 92px;
+  }
+
+  .ww-pile__card {
+    margin-left: calc(-39px + (var(--ww-fan-i) - (var(--ww-fan-n) - 1) / 2) * 22px);
+  }
+}
+
+/* ===================================================================
+ * 7. 席位卡（X03，契约 §4.1；A2 的 .seat）与席位轨道（.seats）
+ * =================================================================== */
+
+/* 桌面：绝对定位叠在场景上，左右围坐；轨道本身不接事件，卡片恢复 */
+.ww-seat-rail {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.ww-seat-rail__side {
+  position: absolute;
+  top: 27%;
+  bottom: 22%;
+  width: 184px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.ww-seat-rail__side--left { left: 22px; }
+.ww-seat-rail__side--right { right: 22px; }
+
+/* 错落：中间一张外凸 8px（照方向稿左 22/14/26 的节奏） */
+.ww-seat-rail__side--left > .ww-seat-card:nth-child(even) { margin-left: -8px; }
+.ww-seat-rail__side--left > .ww-seat-card:nth-child(3) { margin-left: 4px; }
+.ww-seat-rail__side--right > .ww-seat-card:nth-child(even) { margin-right: -8px; }
+.ww-seat-rail__side--right > .ww-seat-card:nth-child(3) { margin-right: 4px; }
+
+.ww-seat-card {
+  position: relative;
+  width: 184px;
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  grid-template-rows: auto auto;
+  gap: 2px 12px;
+  align-items: center;
+  padding: 12px 14px 12px 12px;
+  border-radius: 16px;
+  background: linear-gradient(160deg, var(--ww-seat-bg), var(--ww-seat-bg-2));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ww-brass) 30%, transparent),
+    0 12px 24px rgba(0, 0, 0, 0.45);
+}
+
+.ww-seat-card__chip {
+  grid-row: span 2;
+}
+
+.ww-seat-card__name {
+  font: 800 17px/1.2 var(--gp-font-body, inherit);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ww-txt);
+}
+
+.ww-seat-card__you {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font: 800 10px/1 var(--gp-font-body, inherit);
+  vertical-align: 2px;
+  color: var(--ww-card-ink);
+  background: var(--ww-brass);
+}
+
+.ww-seat-card__status {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-height: 28px;
+}
+
+.ww-seat-card__score {
+  font: 700 26px/1 var(--gp-font-display);
+  color: color-mix(in srgb, var(--ww-ivory) 55%, white);
+  font-variant-numeric: tabular-nums;
+}
+
+.ww-seat-card__score small {
+  font: 600 12px/1 var(--gp-font-body, inherit);
+  color: var(--ww-muted);
+  margin-left: 2px;
+}
+
+/* 作答阶段状态灯：灰灯思考中（省略号闪烁）/ 绿灯已交牌 */
+.ww-seat-card__tag {
+  font: 700 13px/1 var(--gp-font-body, inherit);
+  color: var(--ww-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ww-seat-card__tag::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ww-muted) 60%, var(--ww-room));
+}
+
+.ww-seat-card--done .ww-seat-card__tag {
+  color: var(--ww-up);
+}
+
+.ww-seat-card--done .ww-seat-card__tag::before {
+  background: var(--ww-up);
+  box-shadow: 0 0 8px var(--ww-up);
+}
+
+.ww-seat-card:not(.ww-seat-card--done):not(.ww-seat-card--forfeited) .ww-seat-card__tag::after {
+  content: '…';
+  animation: ww-seat-thinking 1s steps(2) infinite;
+}
+
+@keyframes ww-seat-thinking {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+html[data-motion-level='reduced'] .ww-seat-card__tag::after,
+html[data-motion-level='minimal'] .ww-seat-card__tag::after,
+html[data-motion-level='off'] .ww-seat-card__tag::after {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ww-seat-card__tag::after {
+    animation: none;
+  }
+}
+
+/* 自己的卡：1.5px 黄铜描边 + 柔光 */
+.ww-seat-card--me {
+  box-shadow:
+    inset 0 0 0 1.5px var(--ww-brass),
+    0 0 30px color-mix(in srgb, var(--ww-brass) 25%, transparent),
+    0 12px 24px rgba(0, 0, 0, 0.45);
+}
+
+/* 退席：整卡 45% 透明 + 状态行「已退席」（Q3 默认值，方向稿没画） */
+.ww-seat-card--forfeited {
+  opacity: 0.45;
+}
+
+/* 结算：增减徽章（演出前透明占位，is-on 放出；X06 编排） */
+.ww-seat-card__delta {
+  font: 800 15px/1 var(--gp-font-display);
+  padding: 3px 6px;
+  border-radius: 6px;
+  opacity: 0;
+  transition: opacity 200ms var(--gp-ease-standard, ease);
+  font-variant-numeric: tabular-nums;
+}
+
+.ww-seat-card__delta.is-on {
+  opacity: 1;
+}
+
+.ww-seat-card__delta--up {
+  color: color-mix(in srgb, var(--ww-up) 22%, black);
+  background: var(--ww-up);
+}
+
+.ww-seat-card__delta--down {
+  color: color-mix(in srgb, var(--ww-down) 20%, black);
+  background: var(--ww-down);
+}
+
+.ww-seat-card__delta--zero {
+  color: var(--ww-muted);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* 作者奖励签（右上角金色小签） */
+.ww-seat-card__author {
+  position: absolute;
+  right: 10px;
+  top: -10px;
+  font: 800 10px/1 var(--gp-font-body, inherit);
+  color: var(--ww-card-ink);
+  background: linear-gradient(var(--ww-brass-hi), var(--ww-brass));
+  padding: 3px 6px;
+  border-radius: 5px;
+  opacity: 0;
+  transition: opacity 200ms var(--gp-ease-standard, ease);
+  z-index: 2;
+}
+
+.ww-seat-card__author.is-on {
+  opacity: 1;
+}
+
+/* 名次圆章（左上角） */
+.ww-seat-card__rank {
+  position: absolute;
+  left: -8px;
+  top: -10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font: 800 13px/1 var(--gp-font-display);
+  background: color-mix(in srgb, var(--ww-room) 60%, var(--ww-felt-b));
+  color: var(--ww-muted);
+  box-shadow: inset 0 0 0 1px var(--ww-brass-dim);
+  opacity: 0;
+  transition: opacity 200ms var(--gp-ease-standard, ease);
+  z-index: 2;
+}
+
+.ww-seat-card__rank.is-on {
+  opacity: 1;
+}
+
+/* 第一名：整卡黄铜高光 + 名次章上方金色 ♛ */
+.ww-seat-card--top {
+  box-shadow:
+    inset 0 0 0 2px var(--ww-brass-hi),
+    0 0 44px color-mix(in srgb, var(--ww-brass-hi) 45%, transparent),
+    0 12px 24px rgba(0, 0, 0, 0.45);
+}
+
+.ww-seat-card--top .ww-seat-card__rank {
+  background: linear-gradient(var(--ww-brass-hi), var(--ww-brass));
+  color: var(--ww-card-ink);
+}
+
+.ww-seat-card--top .ww-seat-card__rank::before {
+  content: '♛';
+  position: absolute;
+  top: -17px;
+  font-size: 16px;
+  color: var(--ww-brass-hi);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--ww-brass-hi) 80%, transparent);
+}
+
+/* 手机竖屏：题目下方 3×2 网格（用户最终选定，不许改左右两列） */
+@media (max-width: 640px) {
+  .ww-seat-rail {
+    position: static;
+    inset: auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px 6px;
+    padding: 0 10px;
+    pointer-events: auto;
+  }
+
+  /* 两侧容器摊平进同一个网格 */
+  .ww-seat-rail__side {
+    display: contents;
+  }
+
+  .ww-seat-card {
+    width: auto;
+    grid-template-columns: 30px 1fr;
+    padding: 7px 8px 7px 7px;
+    gap: 1px 7px;
+    border-radius: 12px;
+  }
+
+  .ww-seat-rail__side > .ww-seat-card:nth-child(even),
+  .ww-seat-rail__side > .ww-seat-card:nth-child(3) {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .ww-seat-card__chip {
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 12px !important;
+  }
+
+  .ww-seat-card__name {
+    font-size: 13px;
+  }
+
+  .ww-seat-card__you {
+    display: none;
+  }
+
+  .ww-seat-card__status {
+    min-height: 18px;
+    gap: 4px;
+  }
+
+  .ww-seat-card__score {
+    font-size: 17px;
+  }
+
+  .ww-seat-card__score small {
+    display: none;
+  }
+
+  .ww-seat-card__tag {
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .ww-seat-card__tag::before {
+    width: 6px;
+    height: 6px;
+  }
+
+  .ww-seat-card__delta {
+    font-size: 11px;
+    padding: 2px 4px;
+  }
+
+  .ww-seat-card__author {
+    right: 4px;
+    top: -8px;
+    font-size: 9px;
+    padding: 2px 4px;
+  }
+
+  .ww-seat-card__rank {
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+    left: -6px;
+    top: -8px;
+  }
+
+  .ww-seat-card--top .ww-seat-card__rank::before {
+    top: -14px;
+    font-size: 13px;
+  }
+}
+
+/* ===================================================================
+ * 8. 题目 + 作答输入 + 阶段文案 + 主按钮（X04，契约 §4.2；A2 的 .question / .entry）
+ * =================================================================== */
+
+/* 深底正文：挂了场景层的页面一律用贵宾厅令牌色（walnut / midnight 无场景层，不受影响） */
+.ww-game:has(> .ww-lounge) {
+  color: var(--ww-txt);
+}
+
+/* 平台外壳的整页 phase-enter 漂移在贵宾厅关闭：方向稿的阶段切换是瞬切，
+   整页漂移正是用户反馈的「突然一下子移动」。两处平台演出都关：
+   game-motion-phase-enter（透明度 + 6px 浮入）与 tgm-stage-arrive（translate + scale 0.985 弹性升入）。
+   只作用于本游戏作用域，其它游戏不受影响（动效令牌本身不动）。 */
+.tabletop-shell[data-game-id='wits-wagers']:has(.ww-lounge) .game-motion-phase-transition.is-active,
+.tabletop-shell[data-game-id='wits-wagers']:has(.ww-lounge) .tabletop-center-content__stage.is-active > * {
+  animation: none;
+}
+
+/* 桌沿行定高：倒计时环在非计时阶段会卸载（StageCountdownRing return null），
+   行高塌掉会把整列内容顶上去 —— 用环本身的高度撑住。 */
+.ww-game .ww-stage__rail {
+  min-height: calc(3.25rem * var(--ww-font-scale));
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* 阶段胶囊（A2 的 .hud .phase）：只出现在手机竖屏——桌面的阶段横幅由外壳呈现 */
+.ww-phase-pill {
+  display: none;
+  margin-right: auto;
+  padding: 5px 14px;
+  border: 1px solid var(--ww-brass-dim);
+  border-radius: 999px;
+  font: 700 13px/1 var(--gp-font-body, inherit);
+  letter-spacing: 0.2em;
+  color: var(--ww-brass);
+}
+
+/* 底部操作区一律绝对定位于画面底部（A2 的 entry/tray/dock 都是 overlay）：
+   换阶段时作答框 / 排牌提示 / 下注托盘 / 结算提示高度不同，
+   若在文档流里会把题目、席位、牌区整体顶上去（跳动检测的 MOVE 就是这个）。 */
+.ww-game .ww-guess-panel,
+.ww-game .ww-bet-editor,
+.ww-game .ww-phase-block__lead,
+.ww-game .ww-result-panel--bare {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 20px;
+  z-index: 5;
+}
+
+.ww-game .ww-guess-panel,
+.ww-game .ww-phase-block__lead,
+.ww-game .ww-result-panel--bare {
+  width: min(440px, 92%);
+  margin: 0 auto;
+}
+
+/* 给底部操作区让位：牌区不被托盘/作答框压住 */
+.ww-game:has(> .ww-lounge) .ww-felt {
+  padding-bottom: 170px;
+}
+
+/* 题目绝对定位（A2 的 .question）：作答 / 排牌 / 下注 / 结算四个画面题目字号不同，
+   绝对定位让题目区不占文档流，切画面时席位与牌区零位移 */
+.ww-game .ww-question {
+  position: absolute;
+  top: 56px;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  text-align: center;
+  padding: 2px 16px 0;
+  pointer-events: none;
+}
+
+.ww-question__kicker {
+  font: 600 13px/1 var(--gp-font-body, inherit);
+  letter-spacing: 0.3em;
+  color: var(--ww-brass);
+}
+
+.ww-question__prompt {
+  margin: 12px 0 6px;
+  font: 700 calc(40px * var(--ww-font-scale)) / 1.2 var(--gp-font-display);
+  color: color-mix(in srgb, var(--ww-ivory) 55%, white);
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.6);
+}
+
+.ww-question__unit {
+  font-size: 14px;
+  color: var(--ww-muted);
+}
+
+/* settlement 变体：缩成一行灰字（X06 的牌匾上方） */
+.ww-question--compact .ww-question__prompt {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--ww-muted);
+  text-shadow: none;
+}
+
+/* 作答输入：黄铜细边 + 衬线大数字 + 单位 */
+.ww-game .ww-guess-panel {
+  width: min(420px, 92%);
+  margin: 0 auto;
+  text-align: center;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.ww-game .ww-guess-panel__submitted-alert {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--ww-up);
+}
+
+.ww-game .ww-guess-panel__label {
+  display: block;
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  color: var(--ww-brass);
+  text-align: center;
+}
+
+.ww-game .ww-guess-panel__input-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  align-items: stretch;
+}
+
+.ww-guess-panel__field {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 76px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--ww-brass);
+  border-radius: 14px;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+  padding: 0 14px;
+}
+
+.ww-game .ww-guess-panel__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  text-align: center;
+  font: 700 calc(44px * var(--ww-font-scale)) / 1 var(--gp-font-display);
+  color: color-mix(in srgb, var(--ww-ivory) 55%, white);
+  caret-color: var(--ww-brass);
+  font-variant-numeric: tabular-nums;
+  box-shadow: none;
+}
+
+.ww-guess-panel__unit {
+  flex: none;
+  color: var(--ww-muted);
+  font-size: 14px;
+}
+
+.ww-game .ww-guess-panel__hint {
+  font-size: 12px;
+  color: var(--ww-muted);
+  margin-top: 8px;
+}
+
+.ww-game .ww-guess-panel__error {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+/* 排牌阶段底部黄铜文字（A2 的 .dock-wait） */
+.ww-game .ww-phase-block__lead {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 4px;
+  text-align: center;
+  font: 600 15px/1 var(--gp-font-display);
+  color: var(--ww-brass);
+  letter-spacing: 0.2em;
+}
+
+/* 主按钮：平台黄色 CTA（每视口唯一）；次要按钮深色细边 */
+.ww-game .ww-btn--primary {
+  background: var(--gp-yellow);
+  color: var(--gp-ink);
+  border-color: color-mix(in srgb, var(--gp-yellow) 55%, black);
+  box-shadow:
+    0 3px 0 color-mix(in srgb, var(--gp-yellow) 45%, black),
+    0 10px 20px rgba(0, 0, 0, 0.4);
+}
+
+.ww-game .ww-btn--secondary {
+  background: var(--ww-seat-bg);
+  color: var(--ww-txt);
+  border-color: var(--ww-brass-dim);
+}
+
+/* ===================================================================
+ * 9. 入场演出（X04，契约 §5.2；只在 dealing 窗口内播，落终态不重播）
+ *    弹跳 / 位移一律用独立 scale / translate / rotate 属性（§5.1 第 1 条）
+ * =================================================================== */
+
+/* ② 排牌：牌从上方 50px 绕 Y 轴翻入并回弹（JS 逐张挂载错峰，无开场延迟） */
+.ww-board--dealing .ww-poker-card--face {
+  animation: ww-card-flip-in 480ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+@keyframes ww-card-flip-in {
+  from {
+    translate: 0 -50px;
+    rotate: y 90deg;
+    opacity: 0.3;
+  }
+  60% {
+    rotate: y -10deg;
+  }
+  to {
+    translate: 0 0;
+    rotate: y 0deg;
+    opacity: 1;
+  }
+}
+
+/* ② 赔率牌弹出：scale 0 → 1.3 → 1，按槽位序号小错峰 */
+.ww-board--dealing .ww-odds-plaque {
+  animation: ww-odds-pop 300ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+  animation-delay: calc(120ms + var(--ww-reveal-index) * 60ms);
+}
+
+@keyframes ww-odds-pop {
+  from {
+    scale: 0;
+  }
+  60% {
+    scale: 1.3;
+  }
+  to {
+    scale: 1;
+  }
+}
+
+/* ① 背面牌落桌：上方 60px、顺扇形角多转 -12° 旋入，420ms 回弹；
+   已有牌随扇形重排滑动（margin/rotate 过渡 = FLIP 让位，不瞬移） */
+.ww-pile__card {
+  transition:
+    margin-left 260ms var(--gp-ease-standard, ease),
+    rotate 260ms var(--gp-ease-standard, ease);
+  animation: ww-pile-drop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+@keyframes ww-pile-drop {
+  from {
+    translate: 0 -60px;
+    rotate: calc((var(--ww-fan-i) - (var(--ww-fan-n) - 1) / 2) * 7deg - 12deg);
+    opacity: 0.4;
+  }
+  to {
+    translate: 0 0;
+    opacity: 1;
+  }
+}
+
+@keyframes ww-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* reduced 档：翻牌 / 落桌降级为淡入（§5.2） */
+html[data-motion-level='reduced'] .ww-board--dealing .ww-poker-card--face {
+  animation: ww-fade-in 240ms ease-out backwards;
+}
+
+html[data-motion-level='reduced'] .ww-board--dealing .ww-odds-plaque {
+  animation: ww-fade-in 200ms ease-out backwards;
+}
+
+html[data-motion-level='reduced'] .ww-pile__card {
+  animation: ww-fade-in 180ms ease-out backwards;
+}
+
+/* minimal / off：直接落终态 */
+html[data-motion-level='minimal'] .ww-board--dealing .ww-poker-card--face,
+html[data-motion-level='minimal'] .ww-board--dealing .ww-odds-plaque,
+html[data-motion-level='minimal'] .ww-pile__card,
+html[data-motion-level='off'] .ww-board--dealing .ww-poker-card--face,
+html[data-motion-level='off'] .ww-board--dealing .ww-odds-plaque,
+html[data-motion-level='off'] .ww-pile__card {
+  animation: none;
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ww-board--dealing .ww-poker-card--face,
+  .ww-board--dealing .ww-odds-plaque,
+  .ww-pile__card {
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .ww-question__prompt {
+    font-size: calc(24px * var(--ww-font-scale));
+  }
+
+  .ww-question--compact .ww-question__prompt {
+    font-size: 15px;
+  }
+
+  .ww-game .ww-guess-panel__input-row {
+    flex-direction: column;
+  }
+
+  .ww-game .ww-guess-panel__input-row .ww-btn {
+    width: 100%;
+  }
+
+  .ww-guess-panel__field {
+    height: 60px;
+  }
+
+  .ww-game .ww-guess-panel__input {
+    font-size: calc(30px * var(--ww-font-scale));
+  }
+
+  /* 手机：托盘换行后更高，操作区让位加大 */
+  .ww-game:has(> .ww-lounge) .ww-felt {
+    padding-bottom: 240px;
+  }
+
+  .ww-game .ww-bet-editor,
+  .ww-game .ww-guess-panel,
+  .ww-game .ww-phase-block__lead,
+  .ww-game .ww-result-panel--bare {
+    bottom: 12px;
+  }
+}
+
+/* ===================================================================
+ * 10. 下注托盘（X05，契约 §4.4；A2 的 .tray）
+ * =================================================================== */
+
+/* 深底上的涨跌色：旧浅色主题的正绿/正红在深底上对比度不足，换贵宾厅令牌 */
+.ww-game .ww-diff-pos {
+  color: var(--ww-up);
+}
+
+.ww-game .ww-diff-neg {
+  color: var(--ww-down);
+}
+
+.ww-game .ww-bet-editor {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.ww-tray {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  padding: 12px 20px;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: linear-gradient(var(--ww-seat-bg), var(--ww-seat-bg-2));
+  border: 1px solid var(--ww-brass-dim);
+  border-radius: 16px;
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.5);
+}
+
+.ww-tray__balance {
+  font-size: 13px;
+  color: var(--ww-muted);
+  white-space: nowrap;
+}
+
+.ww-tray__balance b {
+  font: 700 30px/1 var(--gp-font-display);
+  color: var(--ww-brass-hi);
+  font-variant-numeric: tabular-nums;
+  margin: 0 2px;
+}
+
+.ww-tray__balance-sub {
+  font-size: 12px;
+}
+
+.ww-tray__bet {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-left: 18px;
+  border-left: 1px solid color-mix(in srgb, var(--ww-brass) 20%, transparent);
+}
+
+/* 选中要配置的筹码：黄铜光圈 */
+.ww-tray__chip-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  margin: -4px;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.ww-tray__chip-btn[aria-pressed='true'] {
+  box-shadow:
+    0 0 0 2px var(--ww-brass),
+    0 0 14px color-mix(in srgb, var(--ww-brass) 40%, transparent);
+}
+
+.ww-tray__bet-to {
+  font: 700 17px/1.1 var(--gp-font-display);
+  color: var(--ww-txt);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ww-tray__bet-to small {
+  font: 700 12px/1 var(--gp-font-body, inherit);
+  color: var(--ww-brass);
+}
+
+.ww-game .ww-stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ww-game .ww-stepper__btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--ww-brass-dim);
+  background: transparent;
+  color: var(--ww-txt);
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+
+.ww-game .ww-stepper__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ww-game .ww-stepper__val {
+  min-width: 36px;
+  text-align: center;
+  font: 700 18px/1 var(--gp-font-display);
+  color: var(--ww-txt);
+  font-variant-numeric: tabular-nums;
+}
+
+.ww-game .ww-bet-editor__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: min(720px, 100%);
+}
+
+.ww-game .ww-bet-editor__estimate {
+  font-size: 13px;
+  color: var(--ww-muted);
+}
+
+.ww-game .ww-bet-editor__placeholder {
+  color: var(--ww-muted);
+}
+
+.ww-bet-editor__buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 手机竖屏：托盘全宽换行（A2 mobile 规则） */
+@media (max-width: 640px) {
+  .ww-tray {
+    width: calc(100% - 20px);
+    flex-wrap: wrap;
+    gap: 8px 6px;
+    padding: 10px;
+  }
+
+  .ww-tray__balance {
+    width: 100%;
+  }
+
+  .ww-tray__balance b {
+    font-size: 24px;
+  }
+
+  .ww-tray__bet {
+    flex: 1;
+    padding-left: 0;
+    border-left: none;
+    gap: 6px;
+  }
+
+  .ww-tray__bet-to {
+    font-size: 14px;
+  }
+
+  .ww-game .ww-stepper__btn {
+    width: 30px;
+    height: 30px;
+  }
+
+  .ww-game .ww-stepper__val {
+    min-width: 26px;
+    font-size: 15px;
+  }
+
+  .ww-game .ww-bet-editor__actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .ww-bet-editor__buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ww-bet-editor__buttons .ww-btn--primary {
+    width: 100%;
+  }
+}
+
+/* ===================================================================
+ * 11. 揭晓结算（X06，契约 §4.5；A2 的 .reveal / .slot.win / 逐个计分）
+ * =================================================================== */
+
+/* 黄铜答案牌匾：小字 + 衬线金色大数字 + 单位 + 来源小字。
+   绝对定位浮层（A2 的 .reveal）：进场不挤占文档流，结算入场零重排 */
+.ww-plaque {
+  position: absolute;
+  top: 140px;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: fit-content;
+  z-index: 5;
+  text-align: center;
+  padding: 12px 34px 10px;
+  border-radius: 14px;
+  background: linear-gradient(
+    color-mix(in srgb, var(--ww-brass) 16%, black),
+    color-mix(in srgb, var(--ww-brass) 5%, black)
+  );
+  box-shadow:
+    inset 0 0 0 1px var(--ww-brass),
+    inset 0 0 0 5px transparent,
+    inset 0 0 0 6px var(--ww-brass-dim),
+    0 0 60px color-mix(in srgb, var(--ww-brass-hi) 28%, transparent),
+    0 16px 30px rgba(0, 0, 0, 0.6);
+}
+
+.ww-plaque__label {
+  font: 700 12px/1 var(--gp-font-body, inherit);
+  letter-spacing: 0.4em;
+  color: var(--ww-brass);
+}
+
+.ww-plaque__value {
+  margin-top: 6px;
+  font: 800 calc(72px * var(--ww-font-scale)) / 1 var(--gp-font-display);
+  color: var(--ww-brass-hi);
+  text-shadow: 0 0 24px color-mix(in srgb, var(--ww-brass-hi) 50%, transparent);
+  font-variant-numeric: tabular-nums;
+  min-width: 3ch;
+}
+
+.ww-plaque__value small {
+  font: 600 18px/1 var(--gp-font-body, inherit);
+  color: var(--ww-muted);
+  margin-left: 6px;
+}
+
+/* 计数结束弹一下（scale 1.35 → 1；§5.1 用独立 scale 属性） */
+.ww-plaque__value.is-done {
+  animation: ww-plaque-bounce 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes ww-plaque-bounce {
+  from {
+    scale: 1.35;
+  }
+  to {
+    scale: 1;
+  }
+}
+
+.ww-plaque__src {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--ww-muted);
+}
+
+/* 胜出格：边框高光（基础态在 §4）+「最接近」绶带 + 牌升起放大 + 斜向扫光循环 */
+.ww-board__slot--win {
+  z-index: 2;
+}
+
+.ww-board__slot--win::before {
+  content: '最接近';
+  position: absolute;
+  left: 50%;
+  top: -16px;
+  transform: translateX(-50%);
+  z-index: 3;
+  white-space: nowrap;
+  padding: 4px 12px;
+  font: 800 12px/1 var(--gp-font-body, inherit);
+  letter-spacing: 0.2em;
+  color: var(--ww-card-ink);
+  background: linear-gradient(var(--ww-brass-hi), var(--ww-brass));
+  border-radius: 4px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.45);
+}
+
+.ww-board__slot--win .ww-poker-card {
+  translate: 0 -10px;
+  scale: 1.12;
+  transition:
+    translate 380ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    scale 380ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 斜向扫光循环（元素本体不靠 transform 定位，用独立 translate/rotate 属性） */
+.ww-board__slot--win .ww-poker-card--face::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: -60%;
+  width: 40%;
+  height: 140%;
+  rotate: 18deg;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+  animation: ww-card-sweep 1.6s ease-in-out 0.2s infinite;
+  pointer-events: none;
+}
+
+@keyframes ww-card-sweep {
+  0% {
+    translate: 0 0;
+  }
+  55%,
+  100% {
+    translate: 420% 0;
+  }
+}
+
+/* 落败格压暗去饱和（槽位在 §4 已带 filter/opacity 过渡） */
+.ww-board__slot--lose {
+  opacity: 0.34;
+  filter: saturate(0.25);
+}
+
+/* 逐个计分：增减徽章从下方弹入、作者签弹入（演出通过 .is-on 逐个放出） */
+.ww-seat-card__delta.is-on {
+  animation: ww-badge-pop 360ms ease-out backwards;
+}
+
+@keyframes ww-badge-pop {
+  from {
+    translate: 0 8px;
+    scale: 0.6;
+    opacity: 0;
+  }
+  60% {
+    translate: 0 -3px;
+    scale: 1.2;
+    opacity: 1;
+  }
+  to {
+    translate: 0 0;
+    scale: 1;
+    opacity: 1;
+  }
+}
+
+.ww-seat-card__author.is-on,
+.ww-seat-card__rank.is-on {
+  animation: ww-tag-pop 300ms ease-out backwards;
+}
+
+@keyframes ww-tag-pop {
+  from {
+    scale: 0;
+  }
+  60% {
+    scale: 1.2;
+  }
+  to {
+    scale: 1;
+  }
+}
+
+/* 第一名：整卡 scale 回弹（高光与 ♛ 样式在 §7） */
+.ww-seat-card--top {
+  animation: ww-crown-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes ww-crown-pop {
+  from {
+    scale: 1;
+  }
+  40% {
+    scale: 1.06;
+  }
+  to {
+    scale: 1;
+  }
+}
+
+/* reduced 档：去掉扫光循环与弹跳，保留淡入（§5.2） */
+html[data-motion-level='reduced'] .ww-board__slot--win .ww-poker-card--face::after,
+html[data-motion-level='minimal'] .ww-board__slot--win .ww-poker-card--face::after,
+html[data-motion-level='off'] .ww-board__slot--win .ww-poker-card--face::after {
+  animation: none;
+  opacity: 0;
+}
+
+html[data-motion-level='reduced'] .ww-seat-card__delta.is-on,
+html[data-motion-level='reduced'] .ww-seat-card__author.is-on,
+html[data-motion-level='reduced'] .ww-seat-card__rank.is-on {
+  animation: ww-fade-in 250ms ease-out backwards;
+}
+
+html[data-motion-level='reduced'] .ww-plaque__value.is-done,
+html[data-motion-level='reduced'] .ww-seat-card--top,
+html[data-motion-level='minimal'] .ww-plaque__value.is-done,
+html[data-motion-level='minimal'] .ww-seat-card--top,
+html[data-motion-level='off'] .ww-plaque__value.is-done,
+html[data-motion-level='off'] .ww-seat-card--top {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ww-board__slot--win .ww-poker-card--face::after {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* 结算提示条：账本已上席位卡，面板只剩一行灰字 */
+.ww-game .ww-result-panel--bare {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  text-align: center;
+}
+
+.ww-game .ww-result-panel__waiting {
+  background: transparent;
+  border: none;
+  color: var(--ww-muted);
+}
+
+/* game_over 总排名：布局结构不动（用户 2026-09-27），只换成贵宾厅深底令牌色 */
+.ww-game .ww-result-panel {
+  background: linear-gradient(160deg, var(--ww-seat-bg), var(--ww-seat-bg-2));
+  border: 1px solid var(--ww-brass-dim);
+  color: var(--ww-txt);
+}
+
+.ww-game .ww-result-panel__final-head h2,
+.ww-game .ww-result-panel__champion {
+  color: var(--ww-brass-hi);
+}
+
+.ww-game .ww-result-panel__ledger-table th {
+  color: var(--ww-muted);
+}
+
+.ww-game .ww-result-panel__ledger-table th,
+.ww-game .ww-result-panel__ledger-table td {
+  border-bottom-color: color-mix(in srgb, var(--ww-brass) 18%, transparent);
+  color: var(--ww-txt);
+}
+
+@media (max-width: 640px) {
+  /* 手机：题目绝对定位在桌沿行之下，席位网格让出题目区（两行题面 + 单位 ≈ 110px） */
+  .ww-game .ww-question {
+    top: 56px;
+  }
+
+  .ww-game .ww-seat-rail {
+    margin-top: 170px;
+  }
+
+  .ww-plaque {
+    top: 112px;
+    padding: 8px 26px 7px;
+  }
+
+  .ww-plaque__label {
+    font-size: 10px;
+  }
+
+  .ww-plaque__value {
+    font-size: calc(48px * var(--ww-font-scale));
+    margin-top: 4px;
+  }
+
+  .ww-plaque__src {
+    font-size: 10px;
+    margin-top: 4px;
+  }
+
+  .ww-board__slot--win::before {
+    font-size: 10px;
+    padding: 3px 8px;
+    top: -12px;
+  }
+}
+
+/* ===================================================================
+ * 12. 手机竖屏紧凑包（X08 实测：390×844 下下注画面的托盘曾压住牌区，
+ *     原因是外壳头栏吃掉约 130px + 各区分高未压缩。数值经 e2e 探针实测迭代）
+ * =================================================================== */
+
+@media (max-width: 640px) {
+  /* 阶段横幅在手机上收成桌沿行的胶囊（横幅整行约 36px 让出来） */
+  .tabletop-shell[data-game-id='wits-wagers']:has(.ww-lounge) .tabletop-phase-banner {
+    display: none;
+  }
+
+  .ww-phase-pill {
+    display: inline-block;
+  }
+
+  /* 桌沿行 + 倒计时环压缩 */
+  .ww-game .ww-stage__rail {
+    min-height: 40px;
+  }
+
+  .ww-countdown {
+    --stage-countdown-size: calc(2.5rem * var(--ww-font-scale));
+    --stage-countdown-font: calc(1.05rem * var(--ww-font-scale));
+  }
+
+  /* 题目区：48px 起，题面 22px 最多两行 */
+  .ww-game .ww-question {
+    top: 48px;
+  }
+
+  .ww-question__prompt {
+    font-size: calc(22px * var(--ww-font-scale));
+    margin: 8px 0 4px;
+  }
+
+  .ww-game .ww-seat-rail {
+    margin-top: 92px;
+  }
+
+  /* 结算阶段专属：牌匾（.ww-plaque top:112px、高约 98px、底边≈210px）只在 settlement
+     出现（game_over 无牌匾）。§12 的 92px 是为无牌匾的作答/下注调的，会让席位网格顶到
+     牌匾底下、盖住每人分数变化。这里用更高优先级（.ww-game .ww-stage[data-phase] .ww-seat-rail）
+     把结算态席位下压到牌匾之下，作答/下注仍走 92px。 */
+  .ww-game .ww-stage[data-phase='settlement'] .ww-seat-rail {
+    margin-top: 178px;
+  }
+
+  /* 席位卡压扁一档 */
+  .ww-seat-card {
+    padding: 5px 6px 5px 5px;
+    gap: 1px 6px;
+  }
+
+  .ww-seat-card__status {
+    min-height: 16px;
+  }
+
+  /* 下注槽位紧凑（A2 mobile betting：槽 156px、牌 74px 高、右下角索引隐藏；
+     实测还要再压一档才能在外壳头栏下放下 2 行 + 托盘） */
+  .ww-stage[data-phase='betting'] .ww-board__slot {
+    height: 118px;
+    padding: 5px 4px;
+  }
+
+  .ww-stage[data-phase='betting'] .ww-board__slot .ww-poker-card {
+    height: 52px;
+    width: 72px;
+    --ww-card-fit: 58px;
+    --ww-val-cap: 20px;
+  }
+
+  .ww-stage[data-phase='betting'] .ww-poker-card__ix--br {
+    display: none;
+  }
+
+  /* 托盘与操作行紧凑：收益预估与辅助按钮并进同一行（display:contents 摊平）。
+     注：平台触控底线 44px（.tabletop-shell button 的 --gp-touch）高于 A2 方向稿的
+     30px 步进器 —— 可及性优先，两个筹码槽因此在托盘里上下排（方向稿差异已记录）。 */
+  .ww-tray {
+    padding: 4px 8px;
+    gap: 2px;
+  }
+
+  .ww-tray__balance b {
+    font-size: 18px;
+  }
+
+  .ww-bet-editor .ww-chip {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 10px !important;
+  }
+
+  /* 步进器与目标文收窄：让筹码 A / B 两个槽在托盘里并成一行（332px 内） */
+  .ww-tray__chip-btn {
+    padding: 2px;
+    margin: -2px;
+  }
+
+  .ww-tray__bet {
+    gap: 4px;
+  }
+
+  .ww-tray__bet-to {
+    font-size: 13px;
+  }
+
+  .ww-game .ww-stepper {
+    gap: 2px;
+  }
+
+  .ww-game .ww-stepper__btn {
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+  }
+
+  .ww-game .ww-stepper__val {
+    min-width: 18px;
+    font-size: 12px;
+  }
+
+  .ww-game .ww-bet-editor__actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .ww-game .ww-bet-editor__estimate {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ww-bet-editor__buttons {
+    display: contents;
+  }
+
+  .ww-bet-editor__buttons .ww-btn--compact {
+    flex: 0 0 auto;
+    height: 28px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  .ww-bet-editor__buttons .ww-btn--primary {
+    width: 100%;
+    height: 40px;
+  }
+
+  /* 舞台高度锁进 .ww-game 盒子：flex-basis 0 + min-height 0，超出时毡面内部滚动，
+     否则毡面会随内容长高、把绝对定位的底部操作区推到可视区之下（实测重叠 84px） */
+  .ww-game:has(> .ww-lounge) .ww-stage {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  /* 底部操作区让位高度按压缩后的编辑器（约 200px）；
+     毡面在手机上顶对齐（垂直居中会把牌区压进托盘），实在放不下时允许毡面内部滚动
+     （优雅降级：胜过静默裁掉牌） */
+  .ww-game:has(> .ww-lounge) .ww-felt {
+    padding: 4px 4px 190px;
+    align-items: flex-start;
+    overflow-y: auto;
+  }
+}

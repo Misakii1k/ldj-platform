@@ -267,6 +267,11 @@ export async function driveFullGameWithCrashMatrix(options: FullGameMatrixOption
   let finished = false;
   // 虚拟时间累计：动作步进 + 计时器调度时长；anchor 记录上一个被消费计时器的调度时刻
   let virtualTimeMs = 0;
+  // 连续被拒计数：竞态拒绝通常下一步即恢复；时间门拒绝（如狼人杀语音播报期间
+  // judgeVoiceWrapper 拒收 confirm_announcement/finish_speech 等）重试永不成功，
+  // 连续达到阈值后改为推进计时器，让阶段按既定时限前进。
+  let consecutiveDenials = 0;
+  const DENIAL_TIMER_FALLBACK_THRESHOLD = 3;
   let lastTimerAnchorAt = Date.now();
 
   const assertVirtualTimeCap = (): void => {
@@ -343,8 +348,20 @@ export async function driveFullGameWithCrashMatrix(options: FullGameMatrixOption
         });
       } catch {
         // 策略动作被规则拒绝（竞态/过期）：换一步再试，不计步
+        consecutiveDenials += 1;
+        if (consecutiveDenials >= DENIAL_TIMER_FALLBACK_THRESHOLD) {
+          // 时间门拒绝：播报窗口内重试不会改变结果，推进最早计时器破局
+          const advanced = await forceAdvanceTimers(driver.executor, driver.db, driver.roomId);
+          if (advanced.deadlineAt !== null) {
+            virtualTimeMs += Math.max(0, advanced.deadlineAt - lastTimerAnchorAt);
+            lastTimerAnchorAt = Math.max(lastTimerAnchorAt, advanced.deadlineAt);
+          }
+          consecutiveDenials = 0;
+          assertVirtualTimeCap();
+        }
         continue;
       }
+      consecutiveDenials = 0;
       // 动作 accepted：计入虚拟时间步进
       virtualTimeMs += ACTION_VIRTUAL_STEP_MS;
       assertVirtualTimeCap();

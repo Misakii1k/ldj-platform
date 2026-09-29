@@ -1,7 +1,5 @@
 import { nameFor, type MemberLike } from '../useGameAction.ts';
-import { RollingNumber } from '../../shared-ui/RollingNumber.tsx';
 import type { RoundResultView, FinalResultView } from './types.ts';
-import { targetLabel } from './types.ts';
 
 export interface ResultPanelProps {
   revealed: RoundResultView | null;
@@ -78,99 +76,11 @@ export function ResultPanel({
     return <div className="ww-result-panel__waiting">正在等待结算公布…</div>;
   }
 
-  // 单轮结算展示
-  const q = revealed.question;
-  const myLedger = revealed.ledger.find((l) => l.playerId === myPlayerId);
-  // 等距时两个槽并列获胜；作废轮一个都没有
-  const winningTargets = revealed.winningTargetIds
-    .map((id) => revealed.board.find((t) => t.id === id))
-    .filter((t): t is NonNullable<typeof t> => Boolean(t));
-
+  // 单轮结算：答案在黄铜牌匾（WitsAnswerPlaque）、分数落在席位卡上（X06，A2 结构），
+  // 账本列表不再重复渲染；推进由服务端计时器驱动（下一轮自动开始，无本地按钮可沿用）。
   return (
-    <div className="ww-result-panel">
-      {/* 正确答案与题目揭晓 */}
-      <div className="ww-result-panel__correct-box">
-        <div className="ww-result-panel__round-tag">第 {revealed.round} 轮正确答案</div>
-        <div className="ww-result-panel__answer">
-          {q.answer.toLocaleString()} {q.unit}
-        </div>
-        <div className="ww-result-panel__winning">
-          获胜槽位：
-          <span>
-            {winningTargets.length === 0
-              ? '本轮无人作答，作废'
-              : winningTargets
-                  .map((t) => `${targetLabel(t)} (净赢 ×${t.odds})`)
-                  .join('　与　')}
-          </span>
-        </div>
-        <div className="ww-result-panel__note">
-          {q.explanation}（出处：{q.sourceNote}）
-        </div>
-      </div>
-
-      {/* 我的账本明细 */}
-      {myLedger && (
-        <div className="ww-result-panel__my-ledger">
-          <div className="ww-result-panel__my-ledger-title">我的本轮账本</div>
-          <div className="ww-result-panel__my-ledger-row">
-            <span>结算前积分：{myLedger.scoreBefore}</span>
-            <span>
-              押中净收益：
-              <span className={myLedger.winProfit > 0 ? 'ww-diff-pos' : undefined}>
-                +{myLedger.winProfit}
-              </span>
-            </span>
-            <span>
-              失败损失：
-              <span className={myLedger.loss > 0 ? 'ww-diff-neg' : undefined}>-{myLedger.loss}</span>
-            </span>
-            <span>
-              作者奖励：
-              <span className={myLedger.authorBonus > 0 ? 'ww-diff-pos' : undefined}>
-                +{myLedger.authorBonus}
-              </span>
-            </span>
-            <span>
-              结算后积分：<RollingNumber as="strong" value={myLedger.scoreAfter} />
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* 全员结算简表 */}
-      <div>
-        <div className="ww-result-panel__table-title">全员结算</div>
-        <table className="ww-result-panel__ledger-table">
-          <thead>
-            <tr>
-              <th>玩家</th>
-              <th>前积分</th>
-              <th>收益</th>
-              <th>亏损</th>
-              <th>作者奖</th>
-              <th>后积分</th>
-            </tr>
-          </thead>
-          <tbody>
-            {revealed.ledger.map((l) => (
-              <tr key={l.playerId} className={l.playerId === myPlayerId ? 'ww-result-row--me' : undefined}>
-                <td>
-                  {nameFor(members, l.playerId)}
-                  {l.playerId === myPlayerId ? '（我）' : ''}
-                </td>
-                <td>{l.scoreBefore}</td>
-                <td className={l.winProfit > 0 ? 'ww-diff-pos' : undefined}>+{l.winProfit}</td>
-                <td className={l.loss > 0 ? 'ww-diff-neg' : undefined}>-{l.loss}</td>
-                <td className={l.authorBonus > 0 ? 'ww-diff-pos' : undefined}>+{l.authorBonus}</td>
-                <td>
-                  <RollingNumber as="strong" value={l.scoreAfter} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div className="ww-result-panel ww-result-panel--bare">
+      <div className="ww-result-panel__waiting">排牌结算完毕，即将进入下一轮…</div>
     </div>
   );
 }

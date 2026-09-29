@@ -2,68 +2,59 @@ import { useCallback, useRef, useState } from 'react';
 import { useStageMachine, type StagePlayContext } from '../../../shared-ui/stage/useStageMachine.ts';
 import { fitToDeadline, measure, measureAnchor, wait, type Rect } from '../../../shared-ui/stage/flip.ts';
 import type { StageFlight } from '../../../shared-ui/stage/FlightLayer.tsx';
-import type { BellClashCard, BellClashPlayerView } from '../types.ts';
+import type { BellClashPlayerView } from '../types.ts';
 import {
   deriveStageEvents,
   roundTokenOf,
   stageEventKey,
   type StageEvent,
 } from './deriveStageEvents.ts';
-import { playCueFor, VIBRATE } from './audioCues.ts';
+import { playCueFor } from './audioCues.ts';
 
-/** 一张牌飞到弃牌堆的时长 */
+import type { PartySlamKind } from '../../party-table/PartySlam.tsx';
+
 const PLAY_FLIGHT_MS = 460;
-/** 摸牌飞回手边的时长 */
 const DRAW_FLIGHT_MS = 380;
-/** 铃按下到弹起 */
-const BELL_PRESS_MS = 320;
-/** 终局收桌：每人一叠错峰飞回弃牌堆 */
+const BELL_PRESS_MS = 380;
 const SWEEP_LEG_MS = 260;
 
-/** 牌的飞行尺寸；与 .bc-discard 的牌面比例一致 */
-const CARD_W = 52;
-const CARD_H = 78;
+const CARD_W = 60;
+const CARD_H = 90;
 
 export interface BellStageApi {
   readonly stageRef: React.RefObject<HTMLDivElement | null>;
   readonly flights: readonly StageFlight[];
   readonly isPlaying: boolean;
   readonly simplifiedFlights: boolean;
-  /** 铃正被按下：驱动铃体下沉与投影压扁 */
-  readonly bellPressing: boolean;
-  /** 抢铃结果的全屏反馈；由页面交给 TabletopEventOverlay */
-  readonly claimBanner: { name: string; isMe: boolean } | null;
-  readonly dismissClaim: () => void;
-  /** 我刚错拍被罚摸：检视器区域出提示 */
-  readonly penalty: boolean;
-  /**
-   * 最近几手弃牌（最新在前）。服务端只给 discardTop，这里靠差分累积出历史带，
-   * 纯展示、不参与任何判定；刷新后从空开始，这是可接受的。
-   */
-  readonly discardTrail: readonly { seq: number; card: BellClashCard; playerId: string }[];
-  /** 每人抢到铃的次数，同样是差分累积的展示数据 */
-  readonly claimCounts: Readonly<Record<string, number>>;
+  /** 铃被敲击下沉 */
+  readonly bellHit: boolean;
+  /** 铃拍错左右晃 */
+  readonly bellMiss: boolean;
+  /** 拍错方印章呈现 */
+  readonly showNope: boolean;
+  /** 冲屏大字演出 */
+  readonly slam: { text: string; kind?: PartySlamKind } | null;
+  /** 泼色原点与目标色 */
+  readonly splash: { color: string; origin: { x: number; y: number } } | null;
+  /** 手动触发本人的铃拍动演出（如挑卡时） */
+  readonly triggerBellHit: () => void;
+  /** 手动触发错按铃演出（如手里无短语卡时） */
+  readonly triggerBellMiss: () => void;
+  /** 手动触发冲屏大字 */
+  readonly triggerSlam: (text: string, kind?: PartySlamKind) => void;
+  readonly dismissSlam: () => void;
 }
 
-/** 历史带最多留几张：多了铃左边就挤了 */
-const TRAIL_MAX = 5;
-
-/**
- * Ding 演出编排。
- *
- * 三条规则由 shared-ui/stage/useStageMachine 保证：只有服务端差分驱动演出、
- * 一次性演出开播即写记忆、时长收敛在 deadlineAt 内。这里只描述演什么。
- */
 export function useBellClashStage(
   view: BellClashPlayerView,
   nameOf: (playerId: string) => string,
 ): BellStageApi {
   const [flights, setFlights] = useState<readonly StageFlight[]>([]);
-  const [bellPressing, setBellPressing] = useState(false);
-  const [penalty, setPenalty] = useState(false);
-  const [claimBanner, setClaimBanner] = useState<{ name: string; isMe: boolean } | null>(null);
-  const [discardTrail, setDiscardTrail] = useState<readonly { seq: number; card: BellClashCard; playerId: string }[]>([]);
-  const [claimCounts, setClaimCounts] = useState<Readonly<Record<string, number>>>({});
+  const [bellHit, setBellHit] = useState(false);
+  const [bellMiss, setBellMiss] = useState(false);
+  const [showNope, setShowNope] = useState(false);
+  const [slam, setSlam] = useState<{ text: string; kind?: PartySlamKind } | null>(null);
+  const [splash, setSplash] = useState<{ color: string; origin: { x: number; y: number } } | null>(null);
 
   const stageRef = useRef<HTMLDivElement | null>(null);
   const deadlineRef = useRef<number | null>(null);
@@ -73,7 +64,6 @@ export function useBellClashStage(
   const viewRef = useRef(view);
   viewRef.current = view;
 
-  /** 席位矩形：席位环由外壳渲染，不在舞台子树内，只能从 document 取。 */
   const seatRect = useCallback((playerId: string): Rect | null => {
     if (typeof document === 'undefined') return null;
     return measure(document.querySelector(`[data-player-id="${CSS.escape(playerId)}"]`));
@@ -83,7 +73,6 @@ export function useBellClashStage(
     return measureAnchor(stageRef.current, anchor);
   }, []);
 
-  /** 我这一侧：扇形手牌的位置；测不到时退到屏幕下方中央。 */
   const myHand = useCallback((): Rect => {
     const fan = anchorRect('hand');
     if (fan) return fan;
@@ -96,7 +85,6 @@ export function useBellClashStage(
     };
   }, [anchorRect]);
 
-  /** 某人的「手边」：我用扇形手牌，他人用各自席位。 */
   const handOf = useCallback(
     (playerId: string): Rect | null => {
       if (playerId === viewRef.current.me?.playerId) return myHand();
@@ -110,37 +98,81 @@ export function useBellClashStage(
       key,
       width: CARD_W,
       height: CARD_H,
-      // 牌是硬纸板，不做钞票那种翻面压暗与高光
       paper: false,
       node: (
-        <span className="bc-flight-card" data-face={faceDown ? 'back' : 'front'} aria-hidden="true" />
+        <span
+          className="pt-card pt-card--flight"
+          data-face={faceDown ? 'back' : 'front'}
+          aria-hidden="true"
+        />
       ),
     }),
     [],
   );
 
+  const triggerBellHit = useCallback(() => {
+    setBellHit(true);
+    setTimeout(() => setBellHit(false), BELL_PRESS_MS);
+  }, []);
+
+  const triggerBellMiss = useCallback(() => {
+    setBellMiss(true);
+    setTimeout(() => setBellMiss(false), 460);
+  }, []);
+
+  const triggerSlam = useCallback(
+    (text: string, kind: PartySlamKind = 'ding') => {
+      setSlam({ text, kind });
+    },
+    [],
+  );
+
+  const dismissSlam = useCallback(() => {
+    setSlam(null);
+  }, []);
+
   const playEvent = useCallback(
     async (event: StageEvent, ctx: StagePlayContext) => {
       switch (event.kind) {
-        case 'myTurnStarted': {
-          // 提醒而非装饰：不受动效档位限制
-          VIBRATE.myTurn();
+        case 'myTurnStarted':
+          return;
+
+        case 'bellRung': {
+          setBellHit(true);
+          triggerSlam('叮！', 'ding');
+          await wait(BELL_PRESS_MS, ctx.signal);
+          if (!ctx.signal.aborted) setBellHit(false);
           return;
         }
 
-        case 'bellOpened': {
-          VIBRATE.bellOpen();
+        case 'challengeResolved': {
+          if (event.success) {
+            // 抢到回合：泼色成短语卡颜色 + 冲屏
+            const discardEl = anchorRect('discard');
+            if (discardEl) {
+              setSplash({
+                color: event.card.color,
+                origin: { x: discardEl.x + discardEl.width / 2, y: discardEl.y + discardEl.height / 2 },
+              });
+            }
+            triggerSlam('抢到回合！', 'ding');
+            await wait(700, ctx.signal);
+            if (!ctx.signal.aborted) setSplash(null);
+          } else {
+            // 拍错：盖章没人做过 + 铃左右晃 + 冲屏罚摸
+            setShowNope(true);
+            setBellMiss(true);
+            triggerSlam('拍错了！罚摸 1 张', 'ding');
+            await wait(800, ctx.signal);
+            if (!ctx.signal.aborted) {
+              setShowNope(false);
+              setBellMiss(false);
+            }
+          }
           return;
         }
 
         case 'cardPlayed': {
-          // 先记历史带再演飞行：动效档位关掉时历史带也得更新
-          const played = viewRef.current.discardTop;
-          if (played) {
-            setDiscardTrail((prev) =>
-              [{ seq: event.seq, card: played, playerId: event.playerId }, ...prev].slice(0, TRAIL_MAX),
-            );
-          }
           if (!ctx.animated) return;
           const from = handOf(event.playerId);
           const to = anchorRect('discard');
@@ -149,7 +181,6 @@ export function useBellClashStage(
           setFlights([
             {
               id: `play:${event.seq}`,
-              // 牌被甩到桌中央：抛物线 + 3D 景深，但不翻面
               motion: 'toss',
               from,
               to,
@@ -166,17 +197,7 @@ export function useBellClashStage(
 
         case 'cardDrawn':
         case 'penaltyDrawn': {
-          const isPenalty = event.kind === 'penaltyDrawn';
-          if (isPenalty && event.playerId === viewRef.current.me?.playerId) {
-            setPenalty(true);
-          }
-          if (!ctx.animated) {
-            if (isPenalty) {
-              await wait(900, ctx.signal);
-              if (!ctx.signal.aborted) setPenalty(false);
-            }
-            return;
-          }
+          if (!ctx.animated) return;
 
           const from = anchorRect('draw');
           const to = handOf(event.playerId);
@@ -185,7 +206,6 @@ export function useBellClashStage(
           setFlights([
             {
               id: `${event.kind}:${event.seq}:${event.playerId}`,
-              // 摸牌是被递过来的，直线滑行不打旋
               motion: 'slide',
               from,
               to,
@@ -196,36 +216,20 @@ export function useBellClashStage(
             },
           ]);
           await wait(DRAW_FLIGHT_MS + 120, ctx.signal);
-          if (!ctx.signal.aborted) {
-            setFlights([]);
-            if (isPenalty) {
-              await wait(700, ctx.signal);
-              if (!ctx.signal.aborted) setPenalty(false);
-            }
-          }
-          return;
-        }
-
-        case 'bellClaimed': {
-          setClaimBanner({ name: nameRef.current(event.claimantId), isMe: event.isMe });
-          setClaimCounts((prev) => ({ ...prev, [event.claimantId]: (prev[event.claimantId] ?? 0) + 1 }));
-          if (event.isMe) VIBRATE.ring();
-          if (!ctx.softAnimated) return;
-
-          // 铃被按下：实体按压，投影从 0 7px 压到 0 1px
-          setBellPressing(true);
-          await wait(BELL_PRESS_MS, ctx.signal);
-          if (!ctx.signal.aborted) setBellPressing(false);
+          if (!ctx.signal.aborted) setFlights([]);
           return;
         }
 
         case 'gameOver': {
+          // 终局由结算画面接管：先清掉可能残留的挑战冲屏/罚摸态，
+          // 免得「拍错了！罚摸 1」在早退分支里挂到结算画面上（与获胜横幅重叠）。
+          setSlam(null);
+          setShowNope(false);
+          setBellMiss(false);
           if (!ctx.animated) return;
           const to = anchorRect('discard');
           if (!to) return;
 
-          // 收桌：各席位剩余手牌飞回弃牌堆。这是终局的仪式感，
-          // 但必须收敛在服务端的展示窗口内。
           const legs = viewRef.current.players
             .map((id) => ({ id, count: viewRef.current.handCounts?.[id] ?? 0 }))
             .filter((x) => x.count > 0);
@@ -251,7 +255,6 @@ export function useBellClashStage(
               arc: 0,
               durationMs: SWEEP_LEG_MS,
               delayMs: index * 90,
-              // 一人一叠，最多画 4 张避免刷屏
               pieces: Array.from({ length: Math.min(count, 4) }, (_, k) =>
                 cardPiece(`sweep-${id}-${k}`, true),
               ),
@@ -269,13 +272,16 @@ export function useBellClashStage(
           return;
       }
     },
-    [anchorRect, handOf, cardPiece],
+    [anchorRect, handOf, cardPiece, triggerSlam],
   );
 
   const clear = useCallback(() => {
     setFlights([]);
-    setBellPressing(false);
-    setPenalty(false);
+    setBellHit(false);
+    setBellMiss(false);
+    setShowNope(false);
+    setSlam(null);
+    setSplash(null);
   }, []);
 
   const machine = useStageMachine<BellClashPlayerView, StageEvent>({
@@ -284,8 +290,7 @@ export function useBellClashStage(
     roundToken: roundTokenOf,
     derive: deriveStageEvents,
     eventKey: stageEventKey,
-    // 抢铃与终局必须立刻开演，不能排在上一张牌的飞行后面等
-    isHardCut: (event) => event.kind === 'bellClaimed' || event.kind === 'gameOver',
+    isHardCut: (event) => event.kind === 'bellRung' || event.kind === 'challengeResolved' || event.kind === 'gameOver',
     applyFinalState: clear,
     onSettle: clear,
     play: async (event, ctx) => {
@@ -294,18 +299,19 @@ export function useBellClashStage(
     },
   });
 
-  const dismissClaim = useCallback(() => setClaimBanner(null), []);
-
   return {
     stageRef,
     flights,
     isPlaying: machine.isPlaying,
     simplifiedFlights: machine.simplifiedFlights,
-    bellPressing,
-    claimBanner,
-    dismissClaim,
-    penalty,
-    discardTrail,
-    claimCounts,
+    bellHit,
+    bellMiss,
+    showNope,
+    slam,
+    splash,
+    triggerBellHit,
+    triggerBellMiss,
+    triggerSlam,
+    dismissSlam,
   };
 }

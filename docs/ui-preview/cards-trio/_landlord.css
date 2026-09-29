@@ -1,0 +1,96 @@
+/* 斗地主三稿共用物件：倒计时环、出牌区、底牌、气泡、炸弹冲屏、操作坞。场景与构图在各稿文件里。 */
+:root {
+  --tea-red: #b8431f;
+  --tea-red-dark: #8c2f14;
+  --lacquer: #7a3a1e;
+  --wood: #c9955e;
+  --wood-light: #deb37f;
+  --wood-dark: #9c6a3a;
+  --jade: #6fae95;
+  --gold: #e0a92a;
+}
+
+/* 倒计时环 */
+.turn-ring { position: relative; width: 58px; height: 58px; flex: none; }
+.turn-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.turn-ring .track { fill: var(--cream); stroke: var(--ink); stroke-width: 3; }
+.turn-ring .bar { fill: none; stroke: var(--jade); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 200ms; }
+.turn-ring.low .bar { stroke: var(--gold); }
+.turn-ring.last .bar { stroke: var(--coral); }
+.turn-ring .ring-num { position: absolute; inset: 0; display: grid; place-items: center; font: 700 22px/1 var(--serif); }
+.turn-ring.last { animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.08); } }
+
+/* 出牌区 */
+.pile { display: grid; justify-items: center; gap: 8px; }
+.pile-cards { display: flex; justify-content: center; min-height: 80px; }
+.pile-cards > * { margin-left: -26px; }
+.pile-cards > *:first-child { margin-left: 0; }
+.pile-cards > .pk { --w: 70px; }
+.pile-cards.leaving { opacity: 0; transition: opacity 160ms; }
+.pile-cards > .land { animation: pop 320ms var(--spring) both; }
+.pile-label {
+  font: 800 13px/1 var(--sans); padding: 6px 12px; border-radius: 999px;
+  background: var(--cream); border: 2.5px solid var(--ink); box-shadow: 0 2px 0 var(--ink);
+}
+
+/* 底牌 */
+.kitty { display: flex; gap: 6px; }
+.kitty .pk { --w: 38px; border-width: 2.5px; box-shadow: 0 2px 0 var(--ink); }
+.kitty .pk.flip { animation: flipIn 420ms var(--out) both; }
+.kitty .pk.flip:nth-child(2) { animation-delay: 120ms; }
+.kitty .pk.flip:nth-child(3) { animation-delay: 240ms; }
+
+/* 地主标识：金元宝 */
+.ingot { width: 34px; height: 24px; display: inline-block; vertical-align: middle; }
+
+/* 我的气泡（不出） */
+.me-bubble {
+  position: absolute; padding: 8px 14px; background: var(--cream); border: var(--border); border-radius: 14px;
+  box-shadow: var(--shadow-sm); font: 900 18px var(--sans); opacity: 0; pointer-events: none; z-index: 40;
+}
+.me-bubble.show { animation: bubble 1400ms var(--out) forwards; }
+@keyframes bubble { 0% { opacity: 0; transform: translateY(10px) scale(.7); } 15% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-8px); } }
+
+/* 炸弹冲屏 */
+.slam-bomb .word {
+  font: 900 150px/1 var(--serif); color: var(--tea-red); -webkit-text-stroke: 6px var(--ink); paint-order: stroke fill;
+  text-shadow: 0 10px 0 var(--ink); letter-spacing: .06em;
+}
+.device[data-size="mobile"] .slam-bomb .word { font-size: 96px; -webkit-text-stroke: 4px var(--ink); text-shadow: 0 7px 0 var(--ink); }
+.slam-bomb.run::before {
+  content: ""; position: absolute; width: 520px; height: 520px; border-radius: 50%;
+  background: repeating-conic-gradient(rgba(247,200,75,.55) 0 8deg, transparent 8deg 20deg);
+  animation: rays 900ms var(--out) forwards;
+}
+@keyframes rays { from { transform: scale(.3) rotate(0); opacity: 1; } to { transform: scale(1.3) rotate(40deg); opacity: 0; } }
+
+/* 操作坞 */
+.dock { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.device[data-size="mobile"] .dock { gap: 8px; }
+.device[data-size="mobile"] .dock .btn { min-height: 46px; padding: 6px 16px; font-size: 15px; }
+
+/* 手牌尺寸 */
+.my-hand .pk { --w: 74px; }
+.my-hand { --overlap: -34px; --tilt: 1.6deg; }
+.device[data-size="mobile"] .my-hand .pk { --w: 50px; border-width: 2.5px; }
+.device[data-size="mobile"] .my-hand { --overlap: -27px; --tilt: 1.2deg; }
+.device[data-size="mobile"] .pile-cards > .pk { --w: 52px; }
+.device[data-size="mobile"] .pile-cards > * { margin-left: -20px; }
+
+/* 倍数牌：红纸 + 衬线大数字 */
+.mult-tag {
+  display: grid; justify-items: center; gap: 2px; padding: 8px 12px 10px; background: var(--tea-red); color: var(--cream);
+  border: var(--border); border-radius: 6px; box-shadow: var(--shadow-sm);
+}
+.mult-tag small { font: 800 11px/1 var(--sans); letter-spacing: .2em; opacity: .85; }
+.mult-tag .numeral { font-size: 34px; font-weight: 700; display: inline-block; }
+.device.bombed .mult-tag { background: #d6361a; }
+
+/* 对手手牌背面小扇 */
+.backs { display: flex; }
+.backs .pk { --w: 30px; border-width: 2px; box-shadow: 0 2px 0 var(--ink); margin-left: -20px; border-radius: 6px; }
+.backs .pk:first-child { margin-left: 0; }
+.backs .pk.back::after { inset: 3px; border-width: 1.5px; border-radius: 3px; }
+.count-chip { font: 700 22px/1 var(--serif); }
+.count-chip small { font: 700 12px var(--sans); color: var(--muted); margin-left: 2px; }

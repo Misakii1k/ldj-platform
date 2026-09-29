@@ -1,0 +1,1326 @@
+/* ==========================================================================
+   狼人杀 · 全新 4 大艺术美学预览系统 (Werewolf Art Directions)
+   重构：左右两侧环桌对列布局 (Left-Right Flanking / Zero Scroll)
+   遵循 WCAG AA/AAA 对比度铁律与规范断点契约 (380/480/640/768/1024/1280px)
+   ========================================================================== */
+
+:root {
+  --studio-bg: #141311;
+  --studio-ink: #f4ede2;
+  --studio-border: #3b362f;
+  --studio-active: #f7c84b;
+  --studio-active-ink: #1f1d19;
+  
+  --font-serif: "SimSun", "Songti SC", Georgia, "Times New Roman", serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-num: Georgia, "Times New Roman", serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--studio-bg);
+  color: var(--studio-ink);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+/* --------------------------------------------------------------------------
+   顶部控制工坊 Studio Bar
+   -------------------------------------------------------------------------- */
+.art-studio-bar {
+  background: #0f0e0c;
+  border-bottom: 2px solid var(--studio-border);
+  padding: 10px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+
+.studio-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.studio-back {
+  display: inline-flex;
+  align-items: center;
+  color: #c9bea3;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border: 1px solid #4a4338;
+  border-radius: 6px;
+  background: #1f1c18;
+  transition: all 0.2s ease;
+}
+
+.studio-back:hover {
+  color: #fff;
+  border-color: #8c7b64;
+}
+
+.studio-divider {
+  width: 1px;
+  height: 22px;
+  background: #38342c;
+  margin: 0 4px;
+}
+
+.studio-label {
+  font-size: 11px;
+  color: #a39988;
+  font-weight: 600;
+}
+
+.style-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.style-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  min-height: 40px;
+  background: #201c18;
+  color: #d6ccbb;
+  border: 1.5px solid #443c30;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.16s ease;
+}
+
+.style-btn:hover {
+  border-color: #948369;
+  background: #2c2721;
+}
+
+.style-btn.is-active {
+  background: #f7c84b;
+  color: #1f1d19;
+  border-color: #fff;
+  box-shadow: 0 0 14px rgba(247, 200, 75, 0.4);
+}
+
+.style-btn.is-active small {
+  color: #4a3e1c;
+}
+
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.4);
+  flex-shrink: 0;
+}
+
+.s-storybook { background: #b89158; }
+.s-tarot { background: #6173a8; }
+.s-folklore { background: #96a7b8; }
+.s-theatre { background: #a82e44; }
+
+.btn-text strong {
+  display: block;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.btn-text small {
+  display: block;
+  font-size: 9px;
+  color: #8c8272;
+}
+
+.studio-sub {
+  gap: 10px;
+}
+
+.scene-switcher, .viewport-switcher {
+  display: flex;
+  gap: 5px;
+}
+
+.scene-btn, .viewport-btn {
+  padding: 5px 10px;
+  min-height: 36px;
+  background: #1a1714;
+  color: #bfb4a0;
+  border: 1px solid #3d362d;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.scene-btn:hover, .viewport-btn:hover {
+  background: #2b2721;
+  color: #fff;
+}
+
+.scene-btn.is-active, .viewport-btn.is-active {
+  background: #3d3529;
+  color: #f7c84b;
+  border-color: #f7c84b;
+}
+
+/* --------------------------------------------------------------------------
+   视口与框架模拟器
+   -------------------------------------------------------------------------- */
+.showcase-viewport {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: radial-gradient(circle at center, #24201b 0%, #100f0d 100%);
+  min-height: calc(100vh - 65px);
+}
+
+.device-frame {
+  width: 100%;
+  max-width: 390px;
+  height: 844px;
+  background: #000;
+  border-radius: 40px;
+  border: 9px solid #29241f;
+  box-shadow: 0 25px 80px rgba(0,0,0,0.85), 0 0 0 2px rgba(255,255,255,0.06);
+  position: relative;
+  overflow: hidden;
+  transition: max-width 0.3s ease, height 0.3s ease;
+}
+
+body[data-viewport="small"] .device-frame {
+  max-width: 360px;
+  height: 640px;
+  border-radius: 26px;
+  border-width: 7px;
+}
+
+body[data-viewport="free"] .device-frame {
+  max-width: 1080px;
+  height: 820px;
+  border-radius: 20px;
+  border-width: 6px;
+}
+
+.screen-canvas {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  color: var(--art-ink);
+  background: var(--art-bg);
+}
+
+/* ==========================================================================
+   风格定义 01：怪诞绘本 (Storybook / 锈湖风)
+   ========================================================================== */
+body[data-style="storybook"] {
+  --art-bg: #191714;
+  --art-panel: #24201b;
+  --art-surface: #2e2922;
+  --art-ink: #f7f1e3;
+  --art-muted: #bdae97;
+  --art-accent: #f2c76e;
+  --art-accent-bg: #383021;
+  --art-border: #4d4233;
+  --art-border-strong: #786850;
+  --art-primary-bg: #e2be6c;
+  --art-primary-ink: #1c170d;
+  --art-seat-bg: #221e19;
+  --art-seat-active-bg: #f5eedf;
+  --art-seat-active-ink: #211c14;
+  --art-seat-out-bg: #14120f;
+}
+
+body[data-style="storybook"] .brand-crest {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--art-accent);
+  border-radius: 3px;
+  background: repeating-linear-gradient(45deg, transparent, transparent 2px, var(--art-border) 2px, var(--art-border) 4px);
+}
+
+body[data-style="storybook"] .brand-title {
+  font-family: var(--font-serif);
+  letter-spacing: 0.18em;
+  font-weight: 700;
+}
+
+body[data-style="storybook"] .sb-moon {
+  fill: #362e22;
+  stroke: var(--art-accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 2;
+}
+
+body[data-style="storybook"] .sb-branches {
+  stroke: var(--art-border-strong);
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+}
+
+body[data-style="storybook"] .sb-wolf-head {
+  fill: #14120f;
+  stroke: var(--art-accent);
+  stroke-width: 1.5;
+}
+
+body[data-style="storybook"] .sb-eye { fill: #fff; }
+body[data-style="storybook"] .sb-nose { fill: var(--art-accent); }
+body[data-style="storybook"] .sb-frame { fill: none; stroke: var(--art-border); stroke-width: 1.5; }
+
+body[data-style="storybook"] .seat-card {
+  border: 1.5px solid var(--art-border);
+  background: var(--art-seat-bg);
+  box-shadow: 0 2px 0 #100e0c;
+}
+
+body[data-style="storybook"] .seat-card.is-speaking {
+  background: var(--art-seat-active-bg);
+  color: var(--art-seat-active-ink);
+  border-color: #fff;
+  box-shadow: 0 0 12px rgba(242, 199, 110, 0.4);
+}
+
+body[data-style="storybook"] .seat-card.is-speaking .seat-number {
+  color: #1f1a11;
+}
+
+body[data-style="storybook"] .seat-card.is-speaking .seat-name {
+  color: #211c14;
+  font-weight: 700;
+}
+
+body[data-style="storybook"] .seat-card.is-speaking .seat-status {
+  color: #6e5828;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   风格定义 02：秘术塔罗 (Tarot / 占星大阿卡那)
+   ========================================================================== */
+body[data-style="tarot"] {
+  --art-bg: #0c101c;
+  --art-panel: #131a2b;
+  --art-surface: #1b253e;
+  --art-ink: #f2e9d4;
+  --art-muted: #a6b4d4;
+  --art-accent: #e5b958;
+  --art-accent-bg: #292415;
+  --art-border: #354466;
+  --art-border-strong: #d4a742;
+  --art-primary-bg: linear-gradient(135deg, #f0ca72, #c79430);
+  --art-primary-ink: #101524;
+  --art-seat-bg: #121827;
+  --art-seat-active-bg: linear-gradient(160deg, #263559, #172138);
+  --art-seat-active-ink: #fff7e6;
+  --art-seat-out-bg: #080b12;
+}
+
+body[data-style="tarot"] .brand-crest {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--art-accent);
+  border-radius: 50%;
+  position: relative;
+  box-shadow: 0 0 8px rgba(229,185,88,0.4);
+}
+
+body[data-style="tarot"] .brand-crest::after {
+  content: '✦';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 10px;
+  color: var(--art-accent);
+}
+
+body[data-style="tarot"] .brand-title {
+  font-family: var(--font-serif);
+  letter-spacing: 0.22em;
+}
+
+body[data-style="tarot"] .tarot-celestial {
+  width: 110px;
+  height: 110px;
+  margin: auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body[data-style="tarot"] .celestial-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid var(--art-border);
+}
+
+body[data-style="tarot"] .ring-outer {
+  width: 106px;
+  height: 106px;
+  border-color: #4a5c8a;
+}
+
+body[data-style="tarot"] .ring-zodiac {
+  width: 82px;
+  height: 82px;
+  border: 1px dashed var(--art-accent);
+  animation: tarotSpin 60s linear infinite;
+}
+
+body[data-style="tarot"] .ring-inner {
+  width: 58px;
+  height: 58px;
+  border: 1px solid #7c8fb8;
+}
+
+@keyframes tarotSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+body[data-style="tarot"] .tarot-emblem {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body[data-style="tarot"] .tarot-numeral {
+  font-family: var(--font-num);
+  font-size: 20px;
+  color: var(--art-accent);
+  text-shadow: 0 0 10px rgba(229,185,88,0.7);
+  z-index: 2;
+}
+
+body[data-style="tarot"] .tarot-svg {
+  position: absolute;
+  inset: 0;
+}
+
+body[data-style="tarot"] .tarot-poly {
+  fill: none;
+  stroke: var(--art-accent);
+  stroke-width: 1.2;
+  opacity: 0.5;
+}
+
+body[data-style="tarot"] .tarot-core {
+  fill: #131a2b;
+  stroke: var(--art-accent);
+  stroke-width: 1.2;
+}
+
+body[data-style="tarot"] .tarot-dot {
+  fill: var(--art-accent);
+}
+
+body[data-style="tarot"] .seat-card {
+  border: 1.5px solid var(--art-border);
+  background: var(--art-seat-bg);
+  border-radius: 8px 8px 3px 3px;
+}
+
+body[data-style="tarot"] .seat-card.is-speaking {
+  border: 2px solid var(--art-accent);
+  background: var(--art-seat-active-bg);
+  box-shadow: 0 0 14px rgba(229,185,88,0.4);
+}
+
+body[data-style="tarot"] .seat-card.is-speaking .seat-number {
+  color: var(--art-accent);
+  text-shadow: 0 0 8px rgba(229,185,88,0.6);
+}
+
+/* ==========================================================================
+   风格定义 03：北欧剪影 (Folklore / 冷杉荒原)
+   ========================================================================== */
+body[data-style="folklore"] {
+  --art-bg: #090d13;
+  --art-panel: #111720;
+  --art-surface: #182230;
+  --art-ink: #f0f6fc;
+  --art-muted: #8e9fb8;
+  --art-accent: #f0f6fc;
+  --art-accent-bg: #1c2738;
+  --art-border: #263345;
+  --art-border-strong: #4f678a;
+  --art-primary-bg: #f0f6fc;
+  --art-primary-ink: #090d13;
+  --art-seat-bg: #0f151e;
+  --art-seat-active-bg: #202d3f;
+  --art-seat-active-ink: #ffffff;
+  --art-seat-out-bg: #06080c;
+}
+
+body[data-style="folklore"] .brand-crest {
+  width: 18px;
+  height: 18px;
+  background: #f0f6fc;
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+}
+
+body[data-style="folklore"] .brand-title {
+  font-family: var(--font-sans);
+  font-weight: 900;
+  letter-spacing: 0.25em;
+}
+
+body[data-style="folklore"] .svg-folklore {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+body[data-style="folklore"] .fk-moon {
+  fill: #f0f6fc;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 12px rgba(240, 246, 252, 0.4));
+}
+
+body[data-style="folklore"] .fk-fir-back { fill: #131b26; }
+body[data-style="folklore"] .fk-wolf { fill: #f0f6fc; opacity: 0.95; }
+
+body[data-style="folklore"] .folklore-mist {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(to top, var(--art-bg), transparent);
+  pointer-events: none;
+}
+
+body[data-style="folklore"] .seat-card {
+  border: 1px solid var(--art-border);
+  background: var(--art-seat-bg);
+  border-radius: 3px;
+}
+
+body[data-style="folklore"] .seat-card.is-speaking {
+  border: 2px solid #f0f6fc;
+  background: #202d3f;
+  box-shadow: 0 0 12px rgba(240,246,252,0.3);
+}
+
+body[data-style="folklore"] .seat-card.is-out {
+  border-style: dashed;
+  opacity: 0.55;
+}
+
+body[data-style="folklore"] .seat-card.is-out .seat-number {
+  text-decoration: line-through;
+  color: #e53e3e;
+}
+
+/* ==========================================================================
+   风格定义 04：悬疑剧院 (Theatre / 百老汇黑金与深绯天鹅绒)
+   ========================================================================== */
+body[data-style="theatre"] {
+  --art-bg: #12070a;
+  --art-panel: #220c13;
+  --art-surface: #33121c;
+  --art-ink: #fff0db;
+  --art-muted: #d9b8a8;
+  --art-accent: #f5c467;
+  --art-accent-bg: #381218;
+  --art-border: #571e27;
+  --art-border-strong: #9e2a3d;
+  --art-primary-bg: #9e2034;
+  --art-primary-ink: #fff0db;
+  --art-seat-bg: #200b12;
+  --art-seat-active-bg: #9e2034;
+  --art-seat-active-ink: #fff7ed;
+  --art-seat-out-bg: #0f0407;
+}
+
+body[data-style="theatre"] .brand-crest {
+  width: 18px;
+  height: 18px;
+  background: #9e2034;
+  border: 1.5px solid var(--art-accent);
+  border-radius: 2px;
+  transform: rotate(45deg);
+}
+
+body[data-style="theatre"] .brand-title {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+}
+
+body[data-style="theatre"] .theatre-drape {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 28%;
+  z-index: 2;
+  background: repeating-linear-gradient(90deg, #3d0b14, #611322 10px, #330810 20px);
+  box-shadow: 0 0 15px rgba(0,0,0,0.8);
+}
+
+body[data-style="theatre"] .drape-left {
+  left: 0;
+  clip-path: polygon(0 0, 100% 0, 60% 70%, 20% 100%, 0 100%);
+}
+
+body[data-style="theatre"] .drape-right {
+  right: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 80% 100%, 40% 70%);
+}
+
+body[data-style="theatre"] .theatre-spotlight-beam {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(245, 196, 103, 0.25) 0%, rgba(245, 196, 103, 0.02) 100%);
+  clip-path: polygon(40% 0, 60% 0, 95% 100%, 5% 100%);
+  pointer-events: none;
+}
+
+body[data-style="theatre"] .theatre-stage-floor {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 14px;
+  background: #170609;
+  border-top: 1.5px solid #4a171f;
+}
+
+body[data-style="theatre"] .theatre-badge {
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 3;
+}
+
+body[data-style="theatre"] .theatre-act-label {
+  display: block;
+  font-family: var(--font-num);
+  font-size: 15px;
+  color: var(--art-accent);
+  letter-spacing: 0.25em;
+}
+
+body[data-style="theatre"] .theatre-act-title {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  color: #ffcfcf;
+  margin-top: 2px;
+}
+
+body[data-style="theatre"] .seat-card {
+  border: 1px solid var(--art-border);
+  background: var(--art-seat-bg);
+  border-radius: 5px 5px 0 0;
+  border-bottom: 2.5px solid #571e27;
+}
+
+body[data-style="theatre"] .seat-card.is-speaking {
+  background: var(--art-seat-active-bg);
+  border-color: #f7a8b8;
+  border-bottom: 2.5px solid #ffc2cd;
+  box-shadow: 0 0 14px rgba(158,32,52,0.5);
+}
+
+/* ==========================================================================
+   全新环桌布局系统 (Left-Right Flanking Arena)
+   ========================================================================== */
+
+.game-header {
+  height: 48px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1.5px solid var(--art-border);
+  background: var(--art-panel);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.game-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-title {
+  font-size: 17px;
+  line-height: 1;
+  color: var(--art-ink);
+}
+
+.brand-subtitle {
+  display: block;
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+  color: var(--art-muted);
+  margin-top: 2px;
+}
+
+.header-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chapter-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--art-ink);
+  background: var(--art-accent-bg);
+  border: 1px solid var(--art-border);
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+
+.icon-btn {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--art-panel);
+  color: var(--art-ink);
+  border: 1px solid var(--art-border);
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* 核心竞技场容器：100% 一屏尽览，绝不滚动 */
+.tabletop-arena {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 左右两侧席位侧翼 (Wing Seats) */
+.wing-seats {
+  width: 72px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 5px;
+  flex-shrink: 0;
+  z-index: 5;
+}
+
+.seat-card {
+  flex: 1;
+  min-height: 58px;
+  max-height: 82px;
+  padding: 5px 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.14s ease, border-color 0.14s ease;
+}
+
+.seat-card:hover {
+  transform: scale(1.04);
+}
+
+.seat-top {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.seat-number {
+  font-family: var(--font-num);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--art-ink);
+}
+
+.seat-self-badge {
+  position: absolute;
+  right: -2px;
+  top: -2px;
+  font-size: 8px;
+  padding: 0 2px;
+  background: var(--art-accent);
+  color: #000;
+  font-weight: 700;
+  border-radius: 2px;
+}
+
+.seat-name {
+  font-size: 10px;
+  font-weight: 600;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--art-ink);
+}
+
+.seat-status {
+  font-size: 8.5px;
+  color: var(--art-muted);
+}
+
+.seat-card.is-target {
+  outline: 2px solid var(--art-accent);
+  outline-offset: 1px;
+}
+
+/* 中央焦点视界 (Center Stage) */
+.center-stage {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  position: relative;
+  z-index: 2;
+}
+
+/* 顶部倒计时阶段微胶囊 */
+.stage-kicker-capsule {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--art-panel);
+  border: 1px solid var(--art-border);
+  padding: 4px 10px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.stage-phase-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--art-accent);
+}
+
+.stage-timer {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.timer-num {
+  font-family: var(--font-num);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--art-ink);
+}
+
+.timer-label {
+  font-size: 9px;
+  color: var(--art-muted);
+}
+
+/* 艺术画卷背板 */
+.stage-art-backdrop {
+  height: 125px;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  background: #000;
+  border: 1.5px solid var(--art-border);
+  flex-shrink: 0;
+}
+
+.art-layer {
+  display: none;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+body[data-style="storybook"] .art-storybook { display: block; }
+body[data-style="tarot"] .art-tarot { display: block; }
+body[data-style="folklore"] .art-folklore { display: block; }
+body[data-style="theatre"] .art-theatre { display: block; }
+
+.svg-art {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* 发言者台词与状态卡片 */
+.focus-bubble-card {
+  flex: 1;
+  min-height: 0;
+  padding: 10px 12px;
+  background: var(--art-panel);
+  border: 1.5px solid var(--art-border-strong);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+
+.focus-actor-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.focus-actor-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--art-accent-bg);
+  border: 1.5px solid var(--art-accent);
+  color: var(--art-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.actor-seat-num {
+  font-family: var(--font-num);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.focus-actor-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.focus-actor-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--art-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.focus-actor-role {
+  display: block;
+  font-size: 9.5px;
+  color: var(--art-accent);
+}
+
+.focus-speech-bubble {
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--art-muted);
+  margin: 6px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.stage-sub-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 6px;
+  border-top: 1px solid var(--art-border);
+  font-size: 10px;
+  color: var(--art-muted);
+}
+
+.stage-sub-info strong {
+  color: var(--art-ink);
+}
+
+/* 历史记录胶囊按钮 */
+.meta-pill-btn {
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 8px;
+  background: var(--art-panel);
+  border: 1px solid var(--art-border);
+  border-radius: 6px;
+  color: var(--art-ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.pill-title {
+  color: var(--art-muted);
+  margin-left: 2px;
+}
+
+.pill-data {
+  color: var(--art-accent);
+  font-weight: 700;
+  margin-left: auto;
+  margin-right: 4px;
+}
+
+/* 底部操作底座 Dock */
+.game-dock {
+  background: var(--art-panel);
+  border-top: 1.5px solid var(--art-border);
+  padding: 8px 12px max(10px, env(safe-area-inset-bottom));
+  flex-shrink: 0;
+  z-index: 10;
+  box-shadow: 0 -8px 25px rgba(0,0,0,0.6);
+}
+
+.dock-status {
+  font-size: 10px;
+  color: var(--art-muted);
+  text-align: center;
+  margin-bottom: 6px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dock-controls {
+  display: grid;
+  grid-template-columns: 105px 1fr;
+  gap: 8px;
+}
+
+.secret-card-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 4px 8px;
+  background: var(--art-surface);
+  border: 1.5px solid var(--art-border);
+  border-radius: 7px;
+  color: var(--art-ink);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.secret-card-trigger:active {
+  transform: translateY(2px);
+}
+
+.card-icon-preview {
+  width: 22px;
+  height: 30px;
+  border: 1.5px solid var(--art-accent);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--art-bg);
+  color: var(--art-accent);
+  font-family: var(--font-num);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.card-trigger-label strong {
+  display: block;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.card-trigger-label small {
+  display: block;
+  font-size: 8.5px;
+  color: var(--art-muted);
+}
+
+.action-primary-btn {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  background: var(--art-primary-bg);
+  color: var(--art-primary-ink);
+  border: 2px solid #fff;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  transition: all 0.15s ease;
+}
+
+.action-primary-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+
+.btn-action-icon {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* 弹窗样式 Modal */
+.art-modal {
+  border: none;
+  background: transparent;
+  padding: 16px;
+  max-width: 360px;
+  width: 90%;
+  margin: auto;
+}
+
+.art-modal::backdrop {
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+}
+
+.modal-card {
+  background: var(--art-panel);
+  border: 2px solid var(--art-border-strong);
+  border-radius: 14px;
+  padding: 20px;
+  color: var(--art-ink);
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+  text-align: center;
+}
+
+.modal-card-edge {
+  position: absolute;
+  inset: 5px;
+  border: 1px solid var(--art-border);
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+.edge-ornament {
+  position: absolute;
+  color: var(--art-accent);
+  font-size: 9px;
+}
+
+.o-tl { top: 3px; left: 5px; }
+.o-tr { top: 3px; right: 5px; }
+.o-bl { bottom: 3px; left: 5px; }
+.o-br { bottom: 3px; right: 5px; }
+
+.camp-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 6px;
+  background: var(--art-accent-bg);
+  border: 1px solid var(--art-border-strong);
+  color: var(--art-accent);
+}
+
+.role-name {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.role-quote {
+  font-size: 11px;
+  color: var(--art-muted);
+  font-style: italic;
+  margin-bottom: 12px;
+}
+
+.modal-art-figure {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  border: 2px solid var(--art-accent);
+  background: var(--art-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 16px rgba(0,0,0,0.5);
+}
+
+.seer-svg {
+  width: 90px;
+  height: 90px;
+}
+
+.seer-halo {
+  fill: none;
+  stroke: var(--art-border);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 2;
+}
+
+.seer-eye-outer {
+  fill: none;
+  stroke: var(--art-accent);
+  stroke-width: 2.2;
+}
+
+.seer-eye-pupil { fill: var(--art-accent); }
+.seer-eye-iris { fill: var(--art-bg); }
+.seer-spikes { stroke: var(--art-accent); stroke-width: 1.2; }
+
+.role-skill-box {
+  background: var(--art-surface);
+  border: 1px solid var(--art-border);
+  padding: 10px;
+  border-radius: 6px;
+  text-align: left;
+  font-size: 11px;
+  line-height: 1.55;
+  margin-bottom: 14px;
+}
+
+.role-skill-box h4 {
+  color: var(--art-accent);
+  font-size: 11.5px;
+  margin-bottom: 3px;
+}
+
+.modal-dismiss-btn {
+  width: 100%;
+  min-height: 42px;
+  background: var(--art-primary-bg);
+  color: var(--art-primary-ink);
+  border: 1.5px solid #fff;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.player-info-card { text-align: left; }
+.player-status-line { font-size: 11px; color: var(--art-accent); margin-bottom: 10px; }
+.player-log-box {
+  background: var(--art-surface);
+  border: 1px solid var(--art-border);
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.7;
+  margin-bottom: 12px;
+}
+
+/* Toast 提示 */
+.art-toast {
+  position: absolute;
+  bottom: 86px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #28231a;
+  color: #fff;
+  border: 1px solid #786850;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.8);
+  z-index: 999;
+  white-space: nowrap;
+}
+
+/* 场景变体：夜间与公决 */
+body[data-scene="night"] {
+  --art-bg: #07090f;
+  --art-panel: #0e1320;
+}
+
+body[data-scene="vote"] .stage-phase-tag {
+  color: #f75555;
+}
+
+/* ==========================================================================
+   响应式断点适配 (380/480/640/768/1024/1280px)
+   ========================================================================== */
+body[data-viewport="small"] .wing-seats {
+  width: 62px;
+  gap: 3px;
+}
+
+body[data-viewport="small"] .seat-card {
+  min-height: 48px;
+  padding: 3px 2px;
+}
+
+body[data-viewport="small"] .seat-number {
+  font-size: 17px;
+}
+
+body[data-viewport="small"] .stage-art-backdrop {
+  height: 95px;
+}
+
+body[data-viewport="small"] .dock-controls {
+  grid-template-columns: 95px 1fr;
+}
+
+body[data-viewport="free"] .wing-seats {
+  width: 125px;
+  gap: 8px;
+}
+
+body[data-viewport="free"] .seat-card {
+  min-height: 80px;
+  padding: 8px 6px;
+}
+
+body[data-viewport="free"] .seat-number {
+  font-size: 24px;
+}
+
+body[data-viewport="free"] .seat-name {
+  font-size: 12px;
+}
+
+body[data-viewport="free"] .stage-art-backdrop {
+  height: 200px;
+}

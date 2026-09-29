@@ -332,6 +332,13 @@ function basePublicView(state: PlatformState): PlatformPublicView {
     winnerId: state.winnerId,
     deadlineAt: state.deadlineAt,
     aborted: state.aborted,
+    ...(state.phase === 'game_over'
+      ? {
+          revealedHands: Object.fromEntries(
+            state.players.map((id) => [id, (state.hands[id] ?? []).map((c) => ({ ...c }))]),
+          ),
+        }
+      : {}),
   };
 }
 

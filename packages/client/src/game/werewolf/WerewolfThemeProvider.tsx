@@ -8,17 +8,19 @@ import {
 } from './theme.ts';
 
 export interface WerewolfThemeContextValue {
+  /** 只可能是 'theatre'；主题切换入口已随森林主题一并移除（W01）。 */
   readonly pair: WerewolfThemePair;
+  /** 保留签名：主题已收敛为唯一剧场，切换是 no-op，只为兼容旧消费者。 */
   readonly setPair: (pair: WerewolfThemePair) => void;
   readonly period: WerewolfThemePeriod;
   readonly resolvedTheme: WerewolfResolvedTheme;
 }
 
 const WerewolfThemeContext = createContext<WerewolfThemeContextValue>({
-  pair: 'forest',
+  pair: 'theatre',
   setPair: () => {},
   period: 'day',
-  resolvedTheme: 'woodcut-day',
+  resolvedTheme: 'theatre-day',
 });
 
 export function useWerewolfTheme(): WerewolfThemeContextValue {
@@ -38,7 +40,8 @@ export function WerewolfThemeProvider({
   nightStage,
   children,
 }: WerewolfThemeProviderProps) {
-  const [pair, setPairState] = useState<WerewolfThemePair>(() => getThemePairPreference());
+  // 读取即迁移：旧存储值（forest / woodcut / eclipse / 未知值）会被归一并写回 theatre。
+  const [pair] = useState<WerewolfThemePair>(() => getThemePairPreference());
 
   const period = useMemo(
     () => resolveThemePeriod(timelinePeriod, phase, nightStage),
@@ -46,13 +49,13 @@ export function WerewolfThemeProvider({
   );
 
   const setPair = (nextPair: WerewolfThemePair) => {
-    setPairState(nextPair);
+    // 唯一主题：切换不再改变画面，只把归一化后的值写回存储。
     setThemePairPreference(nextPair);
   };
 
   const resolvedTheme = useMemo(
-    () => resolveWerewolfTheme(pair, period),
-    [pair, period],
+    () => resolveWerewolfTheme(period),
+    [period],
   );
 
   useEffect(() => {

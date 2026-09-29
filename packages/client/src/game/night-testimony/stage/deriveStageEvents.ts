@@ -5,21 +5,24 @@
  * 便签是否入板、票是否落下，一律看 history / accusedId 的变化，
  * 而不是看用户点了按钮。
  */
-import type { NightTestimonyPlayerView } from '../types.ts';
+import type { NightTestimonyPlayerView, QuestionRecord } from '../types.ts';
 
 export type StageEvent =
-  /** 一道题全员答完：当前题便签从焦点位钉进案卷板 */
-  | { kind: 'docketPinned'; questionIndex: number; yesCount: number }
+  /** 一道题全员答完：当前题同时翻开、YES 红章飞回档案袋、审讯单随后归档。
+   *  record 带着归档后的完整问答，演出靠它翻出 YES / NO（此时答案已公开）。 */
+  | { kind: 'docketPinned'; questionIndex: number; yesCount: number; record: QuestionRecord }
   /** 新题广播：便签翻到正面摊在焦点位 */
   | { kind: 'questionAsked'; questionIndex: number }
   /** 有人自告：席位翻牌公开身份 */
   | { kind: 'identityExposed'; playerIds: string[] }
   /** 进入投票：暗角压下 */
   | { kind: 'voteStarted' }
-  /** 开票：票从各席位飞向被票出者 */
+  /** 开票：选票落下、被票出的档案袋被抽到桌中央拆封 */
   | { kind: 'voteResolved'; accusedId: string; voterIds: string[] }
   /** 狱警猜罪开场 */
   | { kind: 'guessingStarted' }
+  /** 狱警提交猜罪：逐袋核对 ✔ / ✘（wardenGuesses 由 null 变为有值） */
+  | { kind: 'guessesRevealed' }
   /** 终局 */
   | { kind: 'gameOver' };
 
@@ -39,6 +42,8 @@ export function stageEventKey(event: StageEvent): string | null {
       return `vote:${event.accusedId}`;
     case 'guessingStarted':
       return 'guessing';
+    case 'guessesRevealed':
+      return 'guesses-revealed';
     case 'gameOver':
       return 'over';
     // 自告与进入投票只有音效与静态表现，不占播放记忆
@@ -64,7 +69,7 @@ export function deriveStageEvents(
     for (let i = prev.history.length; i < next.history.length; i += 1) {
       const record = next.history[i]!;
       const yesCount = Object.values(record.answers).filter((a) => a === 'yes').length;
-      events.push({ kind: 'docketPinned', questionIndex: record.questionIndex, yesCount });
+      events.push({ kind: 'docketPinned', questionIndex: record.questionIndex, yesCount, record });
     }
   }
 
@@ -101,6 +106,11 @@ export function deriveStageEvents(
 
   if (!prev.guessingInProgress && next.guessingInProgress) {
     events.push({ kind: 'guessingStarted' });
+  }
+
+  // 狱警提交猜罪：核对结果随 reveal.wardenGuesses 一起下发
+  if ((prev.reveal?.wardenGuesses ?? null) === null && (next.reveal?.wardenGuesses ?? null) !== null) {
+    events.push({ kind: 'guessesRevealed' });
   }
 
   if (prev.phase !== 'game_over' && next.phase === 'game_over') {

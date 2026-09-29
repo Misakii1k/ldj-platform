@@ -14860,6 +14860,103 @@ body.is-immersive .tabletop-arena-container {
   padding-bottom: max(var(--safe-bottom), 6px);
 }
 
+/* ============================================================
+   通用悬浮控制坞：全屏 / 沉浸收起顶栏 / 设置（覆盖所有游戏）
+   ============================================================ */
+.ldj-session-dock {
+  position: fixed;
+  top: calc(var(--safe-top, 0px) + 10px);
+  right: calc(env(safe-area-inset-right, 0px) + 10px);
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.ldj-session-dock__btn {
+  pointer-events: auto;
+  width: 38px;
+  height: 38px;
+  /* 覆盖全局 button 规则（min-width/min-height: var(--touch-size) 与 padding: 8px 16px），
+     否则按钮被撑成 44x44+padding，图标随之偏移 */
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 12px;
+  border: 1.5px solid rgba(255, 255, 255, 0.42);
+  background: rgba(24, 20, 32, 0.62);
+  color: #fff;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.34);
+  cursor: pointer;
+  transition: transform .14s ease, background .14s ease, border-color .14s ease;
+}
+.ldj-session-dock__btn:hover { background: rgba(36, 30, 48, .82); border-color: rgba(255, 255, 255, .7); }
+.ldj-session-dock__btn:active { transform: scale(.93); }
+.ldj-session-dock__btn--settings { background: rgba(234, 88, 12, .92); border-color: #fed7aa; }
+.ldj-session-dock__btn--settings:hover { background: rgba(234, 88, 12, 1); }
+
+/* 顶栏右侧动作让位给悬浮坞，避免与菜单/规则按钮重叠 */
+.tabletop-header__actions { padding-right: 52px; }
+.ww-topbar .ww-tools { padding-right: 50px; }
+.pt-top-bar .pt-top-actions { padding-right: 48px; }
+/* 注：.mod-header 的右侧让位写在 werewolf-moderator.css 源头（懒加载顺序会覆盖此处同优先级规则） */
+/* 收起顶栏：隐藏各游戏自身顶栏，让舞台占满、腾出画面空间 */
+body.ldj-chrome-collapsed .tabletop-header,
+body.ldj-chrome-collapsed .ww-topbar,
+body.ldj-chrome-collapsed .pt-top-bar,
+body.ldj-chrome-collapsed .mod-header {
+  display: none !important;
+}
+body.ldj-chrome-collapsed .tabletop-shell,
+body.ldj-chrome-collapsed .werewolf-native-page,
+body.ldj-chrome-collapsed .mod-console {
+  padding-top: max(var(--safe-top), 8px) !important;
+}
+
+/* iOS 全屏降级引导条 */
+.ldj-ios-fullscreen-hint {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--safe-bottom, 0px) + 88px);
+  transform: translateX(-50%);
+  z-index: 1201;
+  max-width: min(92vw, 430px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 10px 14px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(255, 255, 255, .28);
+  background: rgba(24, 20, 32, .93);
+  color: #fff;
+  font-size: .8rem;
+  line-height: 1.42;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, .42);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.ldj-ios-fullscreen-hint__close {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, .3);
+  background: rgba(255, 255, 255, .08);
+  color: #fff;
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+  .ldj-session-dock__btn { width: 34px; height: 34px; border-radius: 10px; }
+  .tabletop-header__actions { padding-right: 46px; }
+}
+
 /* 顶栏推荐横屏微章与菜单按钮 */
 .tabletop-recommend-chip {
   background: linear-gradient(135deg, #ea580c, #f59e0b) !important;

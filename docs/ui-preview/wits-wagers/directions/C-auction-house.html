@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>一智千金 · C 地下拍卖行</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+/* =========================================================
+   C 地下拍卖行
+   世界：私人拍卖行的深夜场。题目是今晚的「拍品」卡，放在画架上；估数是挂在黄铜横杆上的价签，按价格从高到低竖着排成阶梯；
+   下注就是举起号码牌挂到价签上；揭晓时落槌「成交」。
+   表皮：深色悬疑 → 胡桃木 + 牛血红皮革 + 黄铜细边；价签是羊皮纸色，唯一的浅色物件。
+   ========================================================= */
+.device {
+  --wood: #2a1a12; --wood-2: #150d09; --leather: #5a1a1a; --brass: #cfa55a; --brass-dim: rgba(207,165,90,.4);
+  --parch: #efe2c4; --ink: #2a1c10; --txt: #f1e6d0; --muted: #a8977c;
+  background: var(--wood-2); color: var(--txt); --ring-bg: #1c120c;
+}
+.decor { position: absolute; inset: 0; pointer-events: none; }
+.decor .wall { position: absolute; inset: 0;
+  background:
+    linear-gradient(90deg, rgba(0,0,0,.35), transparent 20%, transparent 80%, rgba(0,0,0,.35)),
+    repeating-linear-gradient(90deg, transparent 0 158px, rgba(0,0,0,.4) 158px 160px, rgba(255,255,255,.03) 160px 162px),
+    linear-gradient(#2e1d14, #1a100b);
+}
+.decor .wainscot { position: absolute; left: 0; right: 0; bottom: 0; height: 160px; background: linear-gradient(#3a2418, #1c110b); border-top: 3px solid var(--brass-dim); }
+.decor .sconce { position: absolute; top: 90px; width: 14px; height: 30px; border-radius: 7px; background: #ffd99a; box-shadow: 0 0 40px 20px rgba(255,200,120,.22), 0 0 120px 60px rgba(255,200,120,.08); }
+.decor .sconce.a { left: 36px; } .decor .sconce.b { right: 36px; }
+.decor .glow { position: absolute; left: 30%; top: 0; width: 40%; height: 100%; background: radial-gradient(50% 45% at 50% 45%, rgba(255,215,150,.10), transparent 70%); }
+.decor .easel { position: absolute; left: 60px; top: 104px; width: 470px; height: 560px; }
+.decor .easel::before, .decor .easel::after { content: ""; position: absolute; bottom: 0; width: 10px; height: 560px; background: linear-gradient(90deg, #4a2e1c, #2a1a10); border-radius: 4px; }
+.decor .easel::before { left: 70px; transform: rotate(4deg); } .decor .easel::after { right: 70px; transform: rotate(-4deg); }
+.decor .rail { position: absolute; left: 598px; top: 118px; width: 8px; height: 560px; border-radius: 4px; background: linear-gradient(90deg, #8a6a35, var(--brass), #7a5a2c); box-shadow: 0 0 12px rgba(0,0,0,.6); }
+.decor .gavel { position: absolute; left: 400px; top: 560px; width: 120px; height: 60px; }
+.decor .gavel .head { position: absolute; left: 0; top: 0; width: 70px; height: 32px; border-radius: 8px; background: linear-gradient(#6a3e22, #3a2012); box-shadow: inset 0 0 0 1px var(--brass-dim); transform-origin: 100% 100%; }
+.decor .gavel .handle { position: absolute; left: 60px; top: 12px; width: 70px; height: 8px; border-radius: 4px; background: #4a2c18; }
+.decor .gavel .block { position: absolute; left: 10px; top: 40px; width: 70px; height: 16px; border-radius: 50%; background: #3a2012; box-shadow: 0 4px 0 #1a0e08; }
+
+.hud { position: absolute; left: 36px; right: 36px; top: 20px; display: flex; align-items: center; gap: 14px; z-index: 5; }
+.hud .round { font-size: 14px; color: var(--muted); }
+.hud .round b { font-size: 22px; color: var(--brass); }
+.hud .phase { font: 700 13px/1 var(--serif); letter-spacing: .3em; color: var(--brass); border-bottom: 1px solid var(--brass-dim); padding-bottom: 4px; }
+.hud .ring { margin-left: auto; --ring: var(--brass); }
+
+/* 拍品卡（题目） */
+.question { position: absolute; left: 76px; top: 104px; width: 438px; padding: 26px 30px 24px; z-index: 4;
+  background: linear-gradient(#3b1a1a, #2a1010); border-radius: 6px; box-shadow: inset 0 0 0 1px var(--brass-dim), inset 0 0 0 7px #2a1010, inset 0 0 0 8px var(--brass-dim), 0 20px 40px rgba(0,0,0,.6);
+}
+.q-kicker { font: 600 12px/1 var(--serif); letter-spacing: .35em; color: var(--brass); }
+.q-kicker::before { content: "LOT 03 · "; }
+.q-text { margin: 14px 0 10px; font: 700 34px/1.3 var(--serif); color: #fbf1dc; }
+.q-unit { font-size: 13px; color: var(--muted); }
+
+/* 价签阶梯 */
+.board { position: absolute; left: 606px; top: 128px; display: flex; flex-direction: column-reverse; gap: 12px; z-index: 4; }
+.slot { position: relative; height: 72px; display: flex; align-items: center; gap: 10px; transition: opacity 300ms, filter 300ms; }
+.slot::before { content: ""; width: 18px; height: 2px; background: var(--brass); }
+.tagp { position: relative; width: 196px; height: 64px; display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 0 16px 0 26px;
+  background: var(--parch); color: var(--ink); clip-path: polygon(14px 0, 100% 0, 100% 100%, 14px 100%, 0 50%);
+  box-shadow: 0 6px 12px rgba(0,0,0,.4);
+}
+.tagp::before { content: ""; position: absolute; left: 12px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: var(--wood-2); }
+.tagp .v { font: 800 30px/1 var(--serif); font-variant-numeric: tabular-nums; }
+.tagp .v small { font: 600 12px var(--sans); color: #7a6448; margin-left: 3px; }
+.tagp .odds { font: 800 16px/1 var(--serif); color: var(--leather); text-align: right; }
+.tagp .odds small { display: block; font: 600 10px var(--sans); color: #7a6448; margin-top: 2px; }
+.tagp .by { position: absolute; left: 26px; bottom: 5px; display: flex; gap: 3px; }
+.tagp .by i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+.slot.lower .tagp { background: transparent; color: var(--brass); box-shadow: none; outline: 1.5px dashed var(--brass-dim); outline-offset: -4px; }
+.slot.lower .tagp .v { font-size: 20px; } .slot.lower .tagp .odds { color: var(--brass); }
+.slot.lower .tagp::before { background: var(--brass-dim); }
+.chips { display: flex; gap: 4px; min-width: 60px; flex-wrap: wrap; max-width: 124px; }
+.chip { position: relative; width: 28px; height: 40px; display: grid; justify-items: center; }
+.chip::before { content: attr(data-l); width: 28px; height: 28px; border-radius: 50%; background: var(--pc); color: #1a0e08; display: grid; place-items: center; font: 800 12px/1 var(--serif);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.4), 0 3px 0 rgba(0,0,0,.4); }
+.chip::after { content: ""; width: 5px; height: 12px; background: #3a2418; border-radius: 0 0 3px 3px; }
+.chip em { position: absolute; top: -6px; right: -6px; font: 800 10px/1 var(--sans); font-style: normal; background: var(--parch); color: var(--ink); padding: 2px 4px; border-radius: 4px; }
+.slot.win .tagp { background: #ffe9a8; box-shadow: 0 0 0 3px var(--brass), 0 0 50px rgba(255,210,120,.6); transform: scale(1.06); transform-origin: left center; }
+.slot.lose { opacity: .35; filter: grayscale(.8); }
+/* 给放大后的胜出价签预留位置：所有格子统一留，胜出时筹码不会被挤开 */
+.slot .chips { margin-left: 14px; }
+.tagp { transition: transform 320ms cubic-bezier(.34,1.56,.64,1), background 320ms; }
+.stamp { position: absolute; left: 150px; top: 50%; transform: translateY(-50%) rotate(-12deg); font: 900 22px/1 var(--serif); color: #b8231f; border: 3px solid #b8231f; border-radius: 6px; padding: 4px 8px; background: rgba(255,240,210,.2); letter-spacing: .2em; z-index: 3; }
+
+/* 席位：竞买人号码牌列表 */
+.seats { position: absolute; right: 40px; top: 128px; width: 250px; display: grid; gap: 10px; z-index: 4; }
+.seat { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 10px; height: 64px; padding: 0 14px 0 10px; border-radius: 10px; background: rgba(0,0,0,.35); box-shadow: inset 0 0 0 1px rgba(207,165,90,.2); }
+.seat .pad { width: 40px; height: 40px; border-radius: 50%; background: var(--pc); color: #1a0e08; display: grid; place-items: center; font: 800 17px/1 var(--serif); box-shadow: inset 0 0 0 2px rgba(255,255,255,.4); }
+.seat .nm { font-weight: 800; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seat .sc { font: 700 24px/1 var(--serif); color: var(--brass); font-variant-numeric: tabular-nums; }
+.seat .tag { font-size: 12px; color: var(--muted); }
+.seat.done .tag { color: var(--brass); }
+.seat.me { box-shadow: inset 0 0 0 1.5px var(--brass); background: rgba(207,165,90,.1); }
+
+/* 作答：密封估价信封 */
+.pile { position: absolute; left: 640px; top: 150px; width: 300px; height: 440px; z-index: 4; }
+.facedown { position: absolute; left: 30px; top: calc(var(--i, 0) * 16px + 20px); width: 220px; height: 120px; transform: rotate(calc((var(--i, 0) - 1.5) * 3deg)); }
+.facedown.flying { position: static; width: 220px; height: 120px; transform: none; }
+.back { width: 100%; height: 100%; border-radius: 4px; background: #d9c8a4; position: relative; box-shadow: 0 6px 14px rgba(0,0,0,.5);
+  background-image: linear-gradient(160deg, transparent 49.5%, rgba(0,0,0,.14) 50%, transparent 51%), linear-gradient(20deg, transparent 49.5%, rgba(0,0,0,.14) 50%, transparent 51%); }
+.back::after { content: "封"; position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); width: 34px; height: 34px; border-radius: 50%; background: #8f1d1d; color: #f3d9b0; font: 800 14px/34px var(--serif); text-align: center; box-shadow: 0 2px 0 #4a0e0e; }
+.pile-count { position: absolute; left: 0; bottom: 0; width: 280px; text-align: center; font-size: 14px; color: var(--muted); }
+.pile-count b { font-size: 22px; color: var(--brass); }
+.entry { position: absolute; left: 76px; top: 420px; width: 438px; z-index: 4; }
+.entry-label { font: 600 12px/1 var(--serif); letter-spacing: .3em; color: var(--brass); }
+.entry-field { margin: 10px 0 8px; height: 76px; display: flex; align-items: center; gap: 10px; padding: 0 20px; border-bottom: 2px solid var(--brass); background: linear-gradient(transparent, rgba(207,165,90,.08)); }
+.entry-value { font-size: 46px; color: #fbf1dc; }
+.entry-unit { color: var(--muted); }
+.entry-hint { font-size: 12px; color: var(--muted); }
+
+/* 下注：我的两块号码牌 */
+.tray { position: absolute; left: 76px; top: 440px; width: 438px; display: grid; gap: 10px; z-index: 6; }
+.tray-bal { font-size: 13px; color: var(--muted); }
+.tray-bal b { font-size: 30px; color: var(--brass); }
+.bet { display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 12px; height: 60px; padding: 0 12px; border-radius: 10px; background: rgba(0,0,0,.35); box-shadow: inset 0 0 0 1px var(--brass-dim); }
+.bet-to { font: 700 20px var(--serif); } .bet-to small { font: 700 13px var(--sans); color: var(--brass); }
+.stepper { display: flex; gap: 6px; align-items: center; }
+.stepper button { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--brass-dim); background: transparent; color: var(--txt); font-size: 18px; }
+.stepper span { min-width: 34px; text-align: center; font-size: 18px; }
+[data-screen="betting"] .q-text { font-size: 28px; }
+
+/* 结算 */
+.reveal { position: absolute; left: 76px; top: 380px; width: 438px; z-index: 5; }
+.rv-label { font: 600 13px/1 var(--serif); letter-spacing: .4em; color: var(--brass); }
+.rv-value { margin: 8px 0 4px; font: 900 84px/1 var(--serif); color: #ffe3a0; text-shadow: 0 0 30px rgba(255,210,120,.35); font-variant-numeric: tabular-nums; }
+.rv-value small { font: 600 20px var(--sans); color: var(--muted); margin-left: 6px; }
+.rv-src { font-size: 12px; color: var(--muted); }
+[data-screen="settlement"] .q-text { font-size: 24px; }
+[data-screen="settlement"] .question { padding-bottom: 20px; }
+.device[data-screen="settlement"] .seats { display: none; }
+.ledger { position: absolute; right: 40px; top: 128px; width: 250px; display: grid; gap: 10px; z-index: 4; }
+.row { display: grid; grid-template-columns: 22px 1fr auto; grid-template-rows: auto auto; gap: 0 8px; align-items: center; height: 64px; padding: 0 14px 0 12px; border-radius: 10px; background: rgba(0,0,0,.35); border-left: 4px solid var(--pc); }
+.row .rk { grid-row: span 2; color: var(--muted); font-size: 18px; }
+.row .nm { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .sc { grid-row: span 2; grid-column: 3; grid-row-start: 1; font-size: 28px; color: #fbf1dc; }
+.row .dl { font-size: 13px; } .row .dl.up { color: #b8e6bf; } .row .dl.down { color: #e8a39a; }
+.row .au { display: none; }
+.row:first-child { background: rgba(207,165,90,.18); box-shadow: inset 0 0 0 1.5px var(--brass); }
+.row.me .nm::after { content: "（你）"; color: var(--muted); font-weight: 600; }
+
+.dock { position: absolute; left: 76px; width: 438px; bottom: 28px; display: flex; z-index: 6; }
+.dock .cta { width: 100%; }
+.dock-wait { font: 600 15px var(--serif); color: var(--brass); letter-spacing: .25em; }
+
+/* ---------------- 手机 390×844 ---------------- */
+[data-size="mobile"] .decor .easel, [data-size="mobile"] .decor .gavel, [data-size="mobile"] .decor .sconce { display: none; }
+[data-size="mobile"] .decor .rail { left: 22px; top: 222px; height: 400px; }
+[data-size="mobile"] .decor .wainscot { height: 120px; }
+[data-size="mobile"] .hud { left: 16px; right: 16px; top: 12px; }
+[data-size="mobile"] .question { left: 12px; top: 66px; width: 366px; padding: 14px 18px; }
+[data-size="mobile"] .q-text { font-size: 22px; margin: 8px 0 4px; }
+[data-size="mobile"] .board { left: 26px; top: 228px; gap: 6px; }
+[data-size="mobile"] .slot { height: 50px; gap: 8px; }
+[data-size="mobile"] .slot::before { width: 12px; }
+[data-size="mobile"] .tagp { width: 168px; height: 46px; padding: 0 12px 0 22px; }
+[data-size="mobile"] .tagp .v { font-size: 22px; }
+[data-size="mobile"] .slot.lower .tagp .v { font-size: 16px; }
+[data-size="mobile"] .tagp .odds { font-size: 14px; }
+[data-size="mobile"] .tagp .odds small { display: none; }
+[data-size="mobile"] .chips { max-width: 170px; gap: 2px; }
+[data-size="mobile"] .chip { width: 26px; height: 34px; }
+[data-size="mobile"] .chip::before { width: 24px; height: 24px; font-size: 10px; }
+[data-size="mobile"] .chip::after { height: 8px; }
+[data-size="mobile"] .stamp { left: 110px; font-size: 16px; }
+[data-size="mobile"] .seats { left: 12px; right: 12px; top: auto; bottom: 94px; width: auto; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+[data-size="mobile"] .seat { height: 50px; grid-template-columns: 26px 1fr; grid-template-rows: auto auto; gap: 0 6px; padding: 0 8px 0 6px; }
+[data-size="mobile"] .seat .pad { grid-row: span 2; width: 26px; height: 26px; font-size: 12px; }
+[data-size="mobile"] .seat .nm { font-size: 12px; }
+[data-size="mobile"] .seat .sc { font-size: 15px; }
+[data-size="mobile"] .seat .tag { font-size: 11px; }
+[data-size="mobile"] .pile { left: 40px; top: 230px; width: 310px; height: 300px; }
+[data-size="mobile"] .facedown { left: 40px; width: 180px; height: 96px; top: calc(var(--i, 0) * 18px + 10px); }
+[data-size="mobile"] .facedown.flying { width: 180px; height: 96px; }
+[data-size="mobile"] .pile-count { width: 260px; bottom: 90px; }
+[data-size="mobile"] .entry { left: 20px; width: 350px; top: 540px; }
+[data-size="mobile"] .entry-field { height: 56px; margin: 6px 0 4px; }
+[data-size="mobile"] .entry-value { font-size: 34px; }
+[data-size="mobile"][data-screen="answering"] .pile-count { bottom: 10px; }
+[data-size="mobile"][data-screen="answering"] .pile { height: 200px; }
+[data-size="mobile"][data-screen="answering"] .seats { bottom: 90px; }
+[data-size="mobile"][data-screen="answering"] .entry { top: 452px; }
+[data-size="mobile"] .tray { left: 12px; width: 366px; top: auto; bottom: 90px; gap: 6px; }
+[data-size="mobile"] .tray-bal b { font-size: 22px; }
+[data-size="mobile"] .bet { height: 50px; grid-template-columns: 30px 1fr auto; gap: 8px; }
+[data-size="mobile"] .bet-to { font-size: 16px; }
+[data-size="mobile"] .stepper button { width: 34px; height: 34px; }
+[data-size="mobile"][data-screen="betting"] .seats { display: none; }
+[data-size="mobile"][data-screen="betting"] .q-text { font-size: 20px; }
+[data-size="mobile"] .reveal { left: 12px; width: 366px; top: 66px; display: grid; grid-template-columns: auto 1fr; align-items: end; gap: 0 12px; padding: 12px 18px; }
+[data-size="mobile"] .rv-label { grid-column: 1 / -1; }
+[data-size="mobile"] .rv-value { font-size: 52px; margin: 6px 0 0; }
+[data-size="mobile"] .rv-src { font-size: 11px; padding-bottom: 6px; }
+[data-size="mobile"][data-screen="settlement"] .question { display: none; }
+[data-size="mobile"] .ledger { left: 12px; right: 12px; top: auto; bottom: 94px; width: auto; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+[data-size="mobile"] .row { height: 50px; grid-template-columns: 14px 1fr auto; padding: 0 8px; gap: 0 4px; }
+[data-size="mobile"] .row .rk { font-size: 13px; }
+[data-size="mobile"] .row .nm { font-size: 12px; }
+[data-size="mobile"] .row .sc { font-size: 18px; }
+[data-size="mobile"] .row .dl { font-size: 11px; }
+[data-size="mobile"] .row.me .nm::after { content: ""; }
+[data-size="mobile"] .dock { left: 16px; right: 16px; width: auto; bottom: 22px; }
+</style>
+</head>
+<body data-title="C · 地下拍卖行" data-note="对标狼人杀的暗场质感 + Balatro「道具即界面」 ｜ 画架上的拍品卡 + 黄铜横杆上的竖向价签阶梯 + 号码牌 ｜ 与 A/B 差别：数轴竖着排，高价在上，一眼看出谁高谁低">
+<script src="_shared.js"></script>
+<script>
+WWUse({
+  decor: () => '<div class="wall"></div><div class="glow"></div><div class="wainscot"></div><div class="sconce a"></div><div class="sconce b"></div><div class="easel"></div><div class="rail"></div><div class="gavel"><div class="block"></div><div class="handle"></div><div class="head"></div></div>',
+  kicker: (s) => ({ answering: '今晚的拍品', arranging: '估价上墙', betting: '举牌押注', settlement: '本件拍品' })[s],
+  seat: (p, s) => `<div class="pad">${p.seat}</div><div class="nm">${p.name}${p.me ? '（你）' : ''}</div>
+    ${s === 'answering' ? `<div class="tag">${p.submitted ? '已封存' : '估价中…'}</div>` : `<div class="sc">${p.before}</div>`}`,
+  back: () => '<div class="back"></div>',
+  card: (t) => `<div class="tagp">${t.value === null
+    ? '<span class="v">更低</span><span class="odds">×6<small>全部太高</small></span>'
+    : `<span class="v">${WW.fmt(t.value)}<small>米</small></span><span class="odds">×${t.odds}<small>净赢</small></span><span class="by">${t.authors.map((a) => `<i style="--c:${a.c}"></i>`).join('')}</span>`}</div>`,
+  chip: (p, id, extra) => `<span class="chip" style="--pc:${p.c}" data-l="${id}">${extra ? `<em>+${extra}</em>` : ''}</span>`,
+  // 揭晓：木槌落下 → 获胜价签盖「成交」章
+  onReveal: async (device) => {
+    device.querySelectorAll('.stamp').forEach((s) => s.remove());
+    const head = device.querySelector('.gavel .head');
+    if (head && getComputedStyle(head).display !== 'none') await WW.gate(head.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(-40deg)', offset: 0.6 }, { transform: 'rotate(8deg)' }, { transform: 'rotate(0)' }], { duration: 480, easing: 'ease-in' }).finished);
+    WW.WIN.forEach((id) => {
+      const slot = device.querySelector(`[data-slot="${id}"]`);
+      slot.insertAdjacentHTML('beforeend', '<span class="stamp">成交</span>');
+      slot.lastElementChild.animate([{ transform: 'translateY(-50%) rotate(-12deg) scale(2.4)', opacity: 0 }, { transform: 'translateY(-50%) rotate(-12deg) scale(1)', opacity: 1 }], { duration: 260, easing: 'cubic-bezier(.5,0,.8,.4)' });
+    });
+  },
+  after: (device, state) => {
+    if (state.screen === 'settlement') WW.WIN.forEach((id) => device.querySelector(`[data-slot="${id}"]`).insertAdjacentHTML('beforeend', '<span class="stamp">成交</span>'));
+  },
+});
+</script>
+</body>
+</html>

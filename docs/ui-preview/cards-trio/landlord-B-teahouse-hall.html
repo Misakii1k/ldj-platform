@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>斗地主 · B 茶馆正堂</title>
+<link rel="stylesheet" href="_shell.css">
+<link rel="stylesheet" href="_landlord.css">
+<style>
+  /* ── 场景：坐在茶馆正堂里，面前是透视的八仙桌，远处是墙、梁、灯笼、对联 ── */
+  .device { background: #efe2c6; }
+  .wall {
+    position: absolute; inset: 0 0 42% 0;
+    background:
+      linear-gradient(180deg, rgba(0,0,0,.06), transparent 30%),
+      repeating-linear-gradient(90deg, transparent 0 200px, rgba(122,58,30,.16) 200px 206px),
+      #f3e6c8;
+  }
+  .beam { position: absolute; left: 0; right: 0; top: 0; height: 46px; background: var(--lacquer); border-bottom: 4px solid var(--ink); }
+  .beam::after { content: ""; position: absolute; left: 0; right: 0; bottom: 8px; height: 6px; background: repeating-linear-gradient(90deg, var(--gold) 0 30px, transparent 30px 44px); opacity: .8; }
+  .lantern { position: absolute; top: 42px; width: 64px; z-index: 2; transform-origin: 50% 0; animation: sway 4s ease-in-out infinite; }
+  .lantern.l { left: 12%; } .lantern.r { right: 12%; animation-delay: -2s; }
+  @keyframes sway { 50% { rotate: 3deg; } }
+  .couplet {
+    position: absolute; top: 96px; width: 52px; padding: 14px 0; background: var(--tea-red); border: var(--border); box-shadow: var(--shadow-sm);
+    writing-mode: vertical-rl; font: 700 26px/52px var(--serif); color: var(--gold); text-align: center; letter-spacing: .3em;
+  }
+  .couplet.l { left: 3%; } .couplet.r { right: 3%; }
+  .plaque {
+    position: absolute; left: 50%; top: 58px; translate: -50% 0; padding: 10px 34px; background: var(--lacquer); border: var(--border); border-radius: 6px;
+    box-shadow: var(--shadow); font: 700 30px/1 var(--serif); color: var(--gold); letter-spacing: .4em; z-index: 3;
+  }
+  .window { position: absolute; top: 120px; width: 150px; height: 150px; border: var(--border); background:
+      repeating-linear-gradient(0deg, transparent 0 22px, var(--lacquer) 22px 26px),
+      repeating-linear-gradient(90deg, transparent 0 22px, var(--lacquer) 22px 26px), #fff4d6; opacity: .75; }
+  .window.l { left: 13%; } .window.r { right: 13%; }
+
+  /* 透视桌面 */
+  .table-wrap { position: absolute; left: 0; right: 0; bottom: 0; height: 64%; perspective: 900px; }
+  .table {
+    position: absolute; left: 50%; top: 0; width: 1140px; height: 640px; translate: -50% 0;
+    transform: rotateX(46deg); transform-origin: 50% 0;
+    background:
+      linear-gradient(90deg, rgba(0,0,0,.05) 0 2px, transparent 2px) 0 0/40px 100%,
+      radial-gradient(ellipse at 50% 20%, var(--wood-light), var(--wood) 60%, var(--wood-dark));
+    border: 5px solid var(--ink); border-radius: 22px; box-shadow: inset 0 0 0 22px var(--wood-dark), inset 0 0 0 26px var(--ink);
+  }
+  .table-edge { position: absolute; left: 50%; top: 0; width: 820px; height: 16px; translate: -50% -8px; background: var(--wood-dark); border: 4px solid var(--ink); border-radius: 10px; }
+
+  /* 对手：坐在桌对面，半身剪影 + 名牌 */
+  .opp { position: absolute; bottom: 58%; z-index: 4; display: grid; justify-items: center; }
+  .opp.l { left: 20%; } .opp.r { right: 20%; }
+  .opp svg { width: 120px; display: block; }
+  .opp .plate {
+    margin-top: -18px; display: grid; justify-items: center; gap: 2px; padding: 8px 16px; background: var(--cream); border: var(--border);
+    border-radius: 12px; box-shadow: var(--shadow-sm); position: relative;
+  }
+  .opp .plate b { font: 900 17px var(--sans); }
+  .opp .plate span { font: 800 12px var(--sans); color: var(--muted); }
+  .opp.active .plate { outline: 4px solid var(--yellow); outline-offset: 3px; }
+  .opp .count { position: absolute; top: -14px; right: -26px; width: 44px; height: 44px; display: grid; place-items: center; background: var(--cream); border: var(--border); border-radius: 50%; font: 700 20px var(--serif); box-shadow: var(--shadow-sm); }
+
+  .pile { position: absolute; left: 50%; top: 41%; translate: -50% 0; z-index: 5; }
+  .kitty-box { position: absolute; left: 50%; top: 31%; translate: -50% 0; z-index: 5; display: flex; gap: 14px; align-items: center; }
+  .tea { position: absolute; left: 20%; top: 62%; width: 90px; z-index: 5; }
+
+  .hud { position: absolute; right: 36px; top: 64%; display: grid; justify-items: center; gap: 12px; z-index: 6; }
+  .phase { position: absolute; left: 36px; top: 64%; z-index: 6; }
+  .phase .t { font: 700 34px/1.1 var(--serif); }
+  .phase .s { font: 800 14px var(--sans); color: var(--muted); margin-top: 6px; display: flex; align-items: center; gap: 6px; }
+
+  .me-zone { position: absolute; left: 0; right: 0; bottom: 0; z-index: 7; display: grid; justify-items: center; gap: 12px; padding-bottom: 18px; }
+  .me-bubble { left: 50%; bottom: 240px; translate: -50% 0; }
+
+  /* ── 手机 ── */
+  .device[data-size="mobile"] .wall { inset: 0 0 50% 0; }
+  .device[data-size="mobile"] .beam { height: 30px; }
+  .device[data-size="mobile"] .plaque { top: 38px; font-size: 20px; padding: 8px 20px; }
+  .device[data-size="mobile"] .couplet, .device[data-size="mobile"] .window { display: none; }
+  .device[data-size="mobile"] .lantern { width: 40px; top: 28px; }
+  .device[data-size="mobile"] .lantern.l { left: 6%; } .device[data-size="mobile"] .lantern.r { right: 6%; }
+  .device[data-size="mobile"] .table-wrap { height: 60%; }
+  .device[data-size="mobile"] .table { width: 600px; height: 560px; }
+  .device[data-size="mobile"] .table-edge { width: 420px; }
+  .device[data-size="mobile"] .opp { bottom: 60%; }
+  .device[data-size="mobile"] .opp.l { left: 6%; } .device[data-size="mobile"] .opp.r { right: 6%; }
+  .device[data-size="mobile"] .opp svg { width: 80px; }
+  .device[data-size="mobile"] .opp .plate { padding: 6px 10px; }
+  .device[data-size="mobile"] .opp .count { width: 36px; height: 36px; font-size: 16px; right: -18px; }
+  .device[data-size="mobile"] .kitty-box { top: 43%; }
+  .device[data-size="mobile"] .pile { top: 51%; }
+  .device[data-size="mobile"] .tea { display: none; }
+  .device[data-size="mobile"] .phase { left: 14px; top: 180px; }
+  .device[data-size="mobile"] .phase .t { font-size: 22px; }
+  .device[data-size="mobile"] .phase .s { display: none; }
+  .device[data-size="mobile"] .hud { right: 14px; top: 606px; grid-auto-flow: column; }
+  .device[data-size="mobile"] .hud .mult-tag .numeral { font-size: 24px; }
+  .device[data-size="mobile"] .me-bubble { bottom: 230px; }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>斗地主 · B 茶馆正堂</strong>
+  <span class="note">对标：狼人杀的"场景即世界" ｜ 与 A/C 的差别：第一人称坐在桌前，桌面透视，远处有梁、灯笼、对联、牌匾；对手是坐在对面的人</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile">手机 390×844</button></div>
+  <div class="group"><button id="btn-kitty">翻底牌</button><button id="reset">重播</button><a href="index.html">返回目录</a></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="wall"></div>
+  <div class="beam"></div>
+  <div class="window l"></div><div class="window r"></div>
+  <div class="couplet l">春风得意</div><div class="couplet r">四海来财</div>
+  <div class="plaque">聚 乐 茶 馆</div>
+  <svg class="lantern l" viewBox="0 0 60 100" aria-hidden="true"><line x1="30" y1="0" x2="30" y2="14" stroke="#292722" stroke-width="3"/><rect x="18" y="12" width="24" height="8" fill="#e0a92a" stroke="#292722" stroke-width="3"/><ellipse cx="30" cy="48" rx="26" ry="30" fill="#c23616" stroke="#292722" stroke-width="4"/><path d="M30 18 V78 M16 24 Q8 48 16 72 M44 24 Q52 48 44 72" stroke="#8c2f14" stroke-width="3" fill="none"/><rect x="18" y="76" width="24" height="8" fill="#e0a92a" stroke="#292722" stroke-width="3"/><path d="M26 84 V98 M30 84 V100 M34 84 V98" stroke="#e0a92a" stroke-width="3"/></svg>
+  <svg class="lantern r" viewBox="0 0 60 100" aria-hidden="true"><line x1="30" y1="0" x2="30" y2="14" stroke="#292722" stroke-width="3"/><rect x="18" y="12" width="24" height="8" fill="#e0a92a" stroke="#292722" stroke-width="3"/><ellipse cx="30" cy="48" rx="26" ry="30" fill="#c23616" stroke="#292722" stroke-width="4"/><path d="M30 18 V78 M16 24 Q8 48 16 72 M44 24 Q52 48 44 72" stroke="#8c2f14" stroke-width="3" fill="none"/><rect x="18" y="76" width="24" height="8" fill="#e0a92a" stroke="#292722" stroke-width="3"/><path d="M26 84 V98 M30 84 V100 M34 84 V98" stroke="#e0a92a" stroke-width="3"/></svg>
+
+  <div class="opp l active" data-box="oppL">
+    <svg viewBox="0 0 120 110" aria-hidden="true"><path d="M10 110 Q14 64 60 62 Q106 64 110 110 Z" fill="#f29a7a" stroke="#292722" stroke-width="4"/><circle cx="60" cy="38" r="28" fill="#fbe3cf" stroke="#292722" stroke-width="4"/><path d="M34 30 Q40 6 60 8 Q82 6 86 30 Q70 20 60 22 Q46 20 34 30 Z" fill="#292722"/><circle cx="50" cy="40" r="3.5" fill="#292722"/><circle cx="70" cy="40" r="3.5" fill="#292722"/><path d="M52 52 Q60 57 68 52" stroke="#292722" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+    <div class="plate"><b>阿杰</b><span>农民</span><div class="count">9</div></div>
+  </div>
+  <div class="opp r" data-box="oppR">
+    <svg viewBox="0 0 120 110" aria-hidden="true"><path d="M10 110 Q14 64 60 62 Q106 64 110 110 Z" fill="#8fd3b6" stroke="#292722" stroke-width="4"/><circle cx="60" cy="38" r="28" fill="#fbe3cf" stroke="#292722" stroke-width="4"/><path d="M30 42 Q28 8 60 8 Q92 8 90 42 Q86 22 60 20 Q34 22 30 42 Z" fill="#6b3f22"/><circle cx="50" cy="40" r="3.5" fill="#292722"/><circle cx="70" cy="40" r="3.5" fill="#292722"/><path d="M53 53 H67" stroke="#292722" stroke-width="3" stroke-linecap="round"/></svg>
+    <div class="plate"><b>可可</b><span>农民</span><div class="count">7</div></div>
+  </div>
+
+  <div class="table-wrap"><div class="table"></div><div class="table-edge"></div></div>
+
+  <div class="kitty-box" data-box="kitty"><div class="kitty"><div class="pk back"></div><div class="pk back"></div><div class="pk back"></div></div></div>
+  <div class="pile" data-box="pile"><div class="pile-cards"></div><div class="pile-label">阿杰 · 对子</div></div>
+  <svg class="tea" viewBox="0 0 120 60" aria-hidden="true"><ellipse cx="60" cy="44" rx="54" ry="12" fill="#fffdf7" stroke="#292722" stroke-width="4"/><path d="M26 20 Q26 46 60 46 Q94 46 94 20 Z" fill="#fffdf7" stroke="#292722" stroke-width="4" stroke-linejoin="round"/><path d="M36 28 Q60 34 84 28" stroke="#6fae95" stroke-width="5" fill="none" stroke-linecap="round"/><ellipse cx="60" cy="18" rx="36" ry="8" fill="#fffdf7" stroke="#292722" stroke-width="4"/><circle cx="60" cy="12" r="6" fill="#fffdf7" stroke="#292722" stroke-width="3.5"/></svg>
+
+  <div class="phase" data-box="phase">
+    <div class="t">轮到你出牌</div>
+    <div class="s"><svg class="ingot" viewBox="0 0 40 28" aria-label="地主"><path d="M2 14 Q6 26 20 26 Q34 26 38 14 L30 14 Q28 4 20 4 Q12 4 10 14 Z" fill="#f7c84b" stroke="#292722" stroke-width="3" stroke-linejoin="round"/></svg>你是地主 · 剩 <span data-me-count>14</span> 张</div>
+  </div>
+  <div class="hud" data-box="hud">
+    <div class="turn-ring"><svg viewBox="0 0 60 60"><circle class="track" cx="30" cy="30" r="26"/><circle class="bar" cx="30" cy="30" r="26"/></svg><span class="ring-num"></span></div>
+    <div class="mult-tag"><small>倍数</small><span class="numeral" data-mult>×6</span></div>
+  </div>
+
+  <div class="me-zone">
+    <div class="fan my-hand" data-box="hand"></div>
+    <div class="dock" data-box="dock">
+      <button class="btn" id="btn-pass">不出</button>
+      <button class="btn" id="btn-hint">提示（选中炸弹）</button>
+      <button class="btn btn-primary" id="btn-play">出牌</button>
+    </div>
+  </div>
+  <div class="me-bubble"></div>
+  <div class="slam slam-bomb"><span class="word">炸！</span></div>
+</div></div>
+<script src="_shell.js"></script>
+<script src="_landlord.js"></script>
+</body>
+</html>

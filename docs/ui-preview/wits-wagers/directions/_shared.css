@@ -1,0 +1,59 @@
+/* 方向稿公用样式：预览外壳 + 通用演出。只服务于静态预览，不进生产。 */
+:root {
+  --serif: "Noto Serif SC", Georgia, "Songti SC", "STSong", serif;
+  --sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --cta: #f2c14e;
+  --cta-ink: #231a08;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body { background: #111; font-family: var(--sans); overflow-x: hidden; }
+
+/* ---------- 预览工具条（不属于设计） ---------- */
+.toolbar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px 16px; background: #1c1c1c; color: #eee; font-size: 13px; border-bottom: 1px solid #333;
+}
+.toolbar strong { font-size: 15px; }
+.toolbar .note { color: #aaa; }
+.toolbar .group { display: flex; gap: 4px; }
+.toolbar .group:first-of-type { margin-left: auto; }
+.toolbar button {
+  font: inherit; color: #eee; background: #2a2a2a; border: 1px solid #555;
+  border-radius: 8px; padding: 6px 12px; cursor: pointer; min-height: 32px;
+}
+.toolbar button[aria-pressed="true"] { background: #eee; color: #111; font-weight: 800; }
+.toolbar #play { background: #3b3320; border-color: #8a7440; }
+.stage-wrap { display: grid; justify-content: center; padding: 16px; }
+.device { position: relative; overflow: hidden; transform-origin: top center; border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+
+/* ---------- 通用 ---------- */
+.ghost { position: absolute; z-index: 50; pointer-events: none; will-change: transform; }
+.cta {
+  font: 800 17px/1 var(--sans); color: var(--cta-ink); background: var(--cta); border: 0;
+  border-radius: 14px; min-height: 52px; padding: 0 28px; cursor: pointer;
+  box-shadow: 0 4px 0 rgba(0,0,0,.45), 0 0 24px rgba(242,193,78,.35);
+  transition: transform 120ms cubic-bezier(.34,1.56,.64,1);
+}
+.cta:hover { transform: translateY(-2px); }
+.cta:active { transform: translateY(2px); }
+.num { font-family: var(--serif); font-variant-numeric: tabular-nums; }
+.ring { --p: .62; width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; position: relative;
+  background: conic-gradient(var(--ring, #f2c14e) calc(var(--p) * 360deg), rgba(255,255,255,.12) 0);
+}
+.ring::before { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--ring-bg, #151515); }
+.ring span { position: relative; font: 700 20px/1 var(--serif); }
+.ring small { position: absolute; bottom: -16px; font: 600 10px/1 var(--sans); opacity: .7; white-space: nowrap; }
+@keyframes glow { 50% { filter: brightness(1.35); } }
+@keyframes breathe { 50% { transform: translateY(-3px); } }
+@keyframes dropIn { from { transform: translateY(-40px) rotate(-8deg); opacity: 0; } }
+@keyframes rise { from { transform: translateY(14px); opacity: 0; } }
+
+/* 计数中的数字固定宽度：位数从 1 位涨到 3 位时，所在的居中牌匾 / 席位卡不会跟着变宽而左右晃 */
+[data-answer] { display: inline-block; min-width: 3ch; text-align: center; font-variant-numeric: tabular-nums; }
+[data-from] { display: inline-block; min-width: 2ch; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* 同一格筹码叠放成一摞：每枚压住前一枚，多也不溢出、不压答案 */
+.slot .chips { flex-wrap: nowrap !important; }
+.slot .chips .chip + .chip { margin-left: var(--stack, -14px); }
+.slot .chips .chip { flex: none; }

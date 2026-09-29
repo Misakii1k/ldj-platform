@@ -1,0 +1,5 @@
+PASS: required files and T00-T10 structure
+PASS: 35 numerical fixtures independently checked (of 45 total specifications)
+PASS: 5 opaque color contrast pairs and seven-round score upper bound
+PASS: 216 assertions
+NOT RUN: product implementation, 10 rejection behaviors, real timers/results, browser visuals, typecheck, build, E2E, devices

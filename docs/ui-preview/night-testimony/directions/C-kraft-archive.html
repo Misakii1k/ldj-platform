@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>谁是狱警 · 方向 C · 牛皮纸档案室</title>
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="C-kraft-archive.css">
+</head>
+<body>
+<div class="toolbar">
+  <strong>方向 C · 牛皮纸档案室（浅色粗墨边）</strong>
+  <span class="tb-note">构图：俯视办公桌——中央夹板审讯单 + 右上旧审讯单一叠 + 底部一排档案袋席位；回答 = 盖章　对标：Balatro 的道具即界面 · 奶酪大盗的卡纸感</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile" aria-pressed="false">手机 390×844</button></div>
+  <div class="group"><button data-set-count="5">5 人</button><button data-set-count="6">6 人</button></div>
+  <div class="group"><button id="act-hurry">跳到最后 10 秒</button><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="head">
+    <h1 class="title">谁是狱警？</h1>
+    <div class="eyebrow">第 <span data-bind="qi"></span> / <span data-bind="limit"></span> 份审讯单</div>
+  </div>
+  <div class="ring-box"><div class="ring" data-ring><span></span></div></div>
+
+  <section class="form">
+    <div class="row"><span>审讯单 No.<b>00<span data-bind="qi"></span></b></span><span>提问人：<b data-bind="asker"></b></span></div>
+    <p class="q" data-bind="question"></p>
+    <div class="answers" data-answers></div>
+    <div class="foot"><span class="numeral"><span data-bind="answered"></span>/<span data-bind="total"></span></span>已盖章 · 全员盖完同时揭开<span class="rule">满 <span data-bind="max-yes"></span> 个 YES 章立刻投票</span></div>
+  </section>
+
+  <aside class="stack"><h3>已归档</h3><div data-history style="display:contents"></div></aside>
+
+  <div class="files" data-seats="all"></div>
+
+  <div class="dock">
+    <div class="secret" data-secret title="点击遮挡 / 显示">
+      <div><div class="tag">你的罪行</div><small>点击遮挡</small></div>
+      <span class="word" data-bind="crime"></span>
+    </div>
+    <div class="info"><strong data-bind="dock-title"></strong><span data-bind="dock-sub"></span></div>
+    <button class="btn btn-stamp btn-no" data-answer="no">盖 NO</button>
+    <button class="btn btn-stamp btn-yes" data-answer="yes">盖 YES</button>
+  </div>
+</div></div>
+<script src="_shared.js"></script>
+</body>
+</html>

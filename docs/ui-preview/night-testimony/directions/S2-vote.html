@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>谁是狱警 · 定稿 C · ② 投票（指认狱警）</title>
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="C-kraft-archive.css">
+<style>
+  /* ② 投票：审讯结束，所有人（包括狱警本人）往一只档案袋上贴「嫌疑」封条；投谁不公开，只公开「已投」。
+     不能投自己、不能投已自告身份的人；全员投完或 90 秒到点开票，票最多的档案袋被拆开。 */
+  .board { position: absolute; left: 50%; top: 84px; translate: -58% 0; width: 620px; display: grid; gap: 12px; z-index: 1; }
+  .summary { padding: 18px 22px 16px; background: #fffaf0; border: 3px solid var(--ink); border-radius: 4px; box-shadow: 0 7px 0 var(--ink); rotate: -1deg; }
+  .summary .row { display: flex; justify-content: space-between; font: 700 13px "Courier New", monospace; color: var(--muted); letter-spacing: .06em; }
+  .summary h2 { margin: 10px 0 12px; font: 700 28px var(--serif); }
+  .summary table { width: 100%; border-collapse: collapse; font-size: 13px; font-weight: 700; }
+  .summary th { text-align: left; font: 800 11px var(--sans); color: var(--muted); padding: 4px 6px; border-bottom: 2px solid var(--ink); }
+  .summary td { padding: 5px 6px; border-bottom: 1px dashed rgba(41,39,34,.3); }
+  .summary td.y { color: var(--coral); font: 900 13px var(--serif); text-align: center; }
+  .summary td.n { color: #2f5d8a; font: 900 13px var(--serif); text-align: center; opacity: .55; }
+  .summary th.c { text-align: center; }
+  .stack { display: none; }
+
+  .files .seat { cursor: pointer; }
+  .files .seat.voted-mark .st::after { content: " · 已投"; color: #2f7a4f; }
+  .files .seat.no-vote { cursor: not-allowed; }
+  .files .seat.no-vote::after { content: "不能投"; position: absolute; right: 8px; top: 22px; font: 800 11px var(--sans); color: #5b4527; opacity: .7; }
+  .files .seat.exposed { background: linear-gradient(#e9e4d8, #d8d1c1); }
+  .files .seat.exposed .st { color: var(--ink); }
+  .files .seat.target { transform: translateY(-10px) rotate(-1.5deg); }
+  .seal-tape {
+    position: absolute; left: -10px; right: -10px; top: 46%; height: 26px; display: grid; place-items: center; z-index: 2;
+    font: 900 15px var(--serif); letter-spacing: .3em; color: #fff; background: var(--coral); border: 3px solid var(--ink); rotate: -8deg;
+    animation: slap 320ms cubic-bezier(.34,1.56,.64,1) both;
+  }
+  @keyframes slap { 0% { transform: scale(1.6) rotate(-14deg); opacity: 0; } 70% { transform: scale(.96); opacity: 1; } 100% { transform: none; } }
+  .tape-fly { width: 120px; height: 26px; background: var(--coral); border: 3px solid var(--ink); }
+  .btn-vote { background: var(--coral); color: #fff; }
+  .btn-expose { font-size: 13px; }
+
+  @container (max-width: 600px) {
+    .board { left: 12px; right: 12px; width: auto; translate: none; top: 100px; }
+    .summary { padding: 10px 12px; rotate: 0deg; }
+    .summary h2 { font-size: 18px; margin: 6px 0 8px; }
+    .summary .row { font-size: 10px; }
+    .summary table { font-size: 11px; }
+    .summary td, .summary th { padding: 3px 3px; }
+    .summary .qcol { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .seal-tape { font-size: 11px; height: 18px; letter-spacing: .15em; }
+    .files .seat.no-vote::after { display: none; }
+    .btn-expose .long { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>谁是狱警 · 定稿 C · ② 投票</strong>
+  <span class="tb-note">点档案袋贴「嫌疑」封条 ｜ 投谁不公开，只公开谁已投 ｜ 不能投自己、不能投已自告的人</span>
+  <div class="group"><button data-param="size" data-value="desktop">桌面 1280×800</button><button data-param="size" data-value="mobile">手机 390×844</button></div>
+  <div class="group"><button data-param="n" data-value="5">5 人</button><button data-param="n" data-value="6">6 人</button></div>
+  <div class="group"><button id="act-hurry">跳到最后 10 秒</button><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device">
+  <div class="head">
+    <h1 class="title">谁是狱警？</h1>
+    <div class="eyebrow">审讯结束 · 指认狱警</div>
+  </div>
+  <div class="ring-box"><div class="ring" data-ring><span></span></div></div>
+
+  <section class="board">
+    <div class="summary">
+      <div class="row"><span>结案汇总 · 5 份审讯单</span><span>YES 满 3 章 → 提前结束</span></div>
+      <h2>谁的 YES 和罪行对不上？</h2>
+      <table id="table"></table>
+    </div>
+  </section>
+
+  <div class="files" data-seats="all"></div>
+
+  <div class="dock">
+    <div class="secret" data-secret title="点击遮挡 / 显示">
+      <div><div class="tag">你的罪行</div><small>点击遮挡</small></div>
+      <span class="word">偷吃外卖</span>
+    </div>
+    <div class="info"><strong data-bind="dock-title"></strong><span data-bind="dock-sub"></span></div>
+    <button class="btn btn-expose" id="act-expose">自告罪行<span class="long">（排除嫌疑）</span></button>
+    <button class="btn btn-vote" id="act-vote" disabled>贴封条</button>
+  </div>
+</div></div>
+<script src="_kit.js"></script>
+<script>
+  const { players, count } = KIT;
+  const me = KIT.byName('小鱼干');
+  me.me = true;
+  const HISTORY = [
+    ['作案是否发生在深夜黑暗或无人时？', ['可可', '老王', 'Momo']],
+    ['你是否直接盗取了他人的实体物品？', ['小鱼干', '可可']],
+    ['作案现场是否有火烧痕迹？', ['阿杰', '老王']],
+    ['你是否在人多的公共场所作案？', ['可可', '一个名字特别长的囚犯']],
+    ['作案是否使用了打火机、汽油或易燃物？', ['阿杰']],
+  ];
+  document.getElementById('table').innerHTML =
+    `<tr><th>#</th><th>问题</th>${players.map((p) => `<th class="c">${p.name.length > 4 ? p.name.slice(0, 3) + '…' : p.name}</th>`).join('')}</tr>` +
+    HISTORY.map(([q, yes], i) => `<tr><td>Q${i + 1}</td><td class="qcol">${q}</td>${players.map((p) => (yes.includes(p.name) ? '<td class="y">YES</td>' : '<td class="n">NO</td>')).join('')}</tr>`).join('');
+
+  const exposed = new Set(['Momo'].filter((n) => KIT.byName(n)).map(KIT.byName)); // 演示：Momo 已自告「吃霸王餐」
+  const voted = new Set([KIT.byName('阿杰'), KIT.byName('可可')]);
+  let target = null;
+  let cast = false;
+  const canVote = (p) => p !== me && !exposed.has(p);
+  KIT.status = (p) => (exposed.has(p) ? '已自告 · 吃霸王餐' : p.warden ? '囚犯?' : '囚犯?');
+  KIT.decorate = (el, p) => {
+    if (voted.has(p)) el.classList.add('voted-mark');
+    if (exposed.has(p)) el.classList.add('exposed');
+    if (!canVote(p)) el.classList.add('no-vote');
+    if (p === target) {
+      el.classList.add('target');
+      if (cast) el.insertAdjacentHTML('beforeend', '<span class="seal-tape">嫌 疑</span>');
+    }
+    el.onclick = () => { if (!cast && canVote(p)) { target = p; KIT.render(); text(); } };
+  };
+  KIT.ring(90, 71);
+  function text() {
+    const v = document.getElementById('act-vote');
+    v.disabled = !target || cast;
+    v.textContent = cast ? '已贴封条' : target ? `给 ${target.name} 贴封条` : '贴封条';
+    KIT.bind('dock-title', cast ? `已投 · ${voted.size} / ${players.length}` : '点一只档案袋，指认狱警');
+    KIT.bind('dock-sub', cast ? '只有你知道投了谁；全员投完立刻开票' : '狱警没有罪行，只能靠猜答题——找出 YES 最不像真话的人');
+  }
+  document.getElementById('act-vote').addEventListener('click', async () => {
+    if (!target || cast) return;
+    const tape = document.createElement('div');
+    tape.className = 'tape-fly';
+    await KIT.fly(KIT.seatOf(me), KIT.seatOf(target), tape, { arc: 140, spin: -20, dur: 560 });
+    cast = true; voted.add(me);
+    KIT.render(); KIT.shake(); text();
+    // 其余人陆续投完 → 开票
+    for (const p of players) {
+      if (voted.has(p)) continue; // 已自告的人也要投票（开票条件是全员投完）
+      await KIT.wait(500);
+      voted.add(p); KIT.render(); text();
+    }
+    await KIT.wait(700);
+    location.href = 'S3-reveal.html?case=' + (target.warden ? 'caught' : 'wrong') + '&n=' + count;
+  });
+  document.getElementById('act-expose').addEventListener('click', () => {
+    if (exposed.has(me)) return;
+    exposed.add(me); if (target === me) target = null;
+    KIT.render(); text();
+    KIT.bind('dock-title', '你已自告：偷吃外卖');
+    KIT.bind('dock-sub', '别人不能再投你；你仍需要投一票');
+    document.getElementById('act-expose').disabled = true;
+  });
+  KIT.render();
+  text();
+</script>
+</body>
+</html>

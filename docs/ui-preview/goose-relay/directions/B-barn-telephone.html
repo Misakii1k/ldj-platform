@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>以鹅传鹅 · B 谷仓传话筒</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  /* B 谷仓传话筒（浅色派对表皮）：红谷仓里的一场"传话游戏"。
+     全员排成一排手牌式的鹅卡压在底部（像 Balatro 的手牌），传过的翻成背面；
+     正在表演和正在看的两只被"抽"到中央放大，面对面，中间一根罐头电话线。 */
+  :root {
+    --barn: #d9573f; --barn-dark: #b8412d; --barn-line: rgba(41,39,34,.22);
+    --trim: #fff4df;
+    --hay: #f2cf6b; --hay-dark: #d9ad45;
+    --mint: #2f9e7a;
+    --blue: #3f7fd9;
+    --border: 3px solid var(--ink);
+    --shadow: 0 5px 0 var(--ink);
+    --shadow-sm: 0 3px 0 var(--ink);
+  }
+
+  /* ---------- 场景：谷仓内墙 + 干草地 ---------- */
+  .device {
+    background:
+      repeating-linear-gradient(90deg, transparent 0 62px, var(--barn-line) 62px 65px),
+      linear-gradient(var(--barn-dark), var(--barn) 30%, var(--barn) 70%);
+  }
+  .beam-x { position: absolute; left: 0; right: 0; top: 118px; height: 26px; background: var(--trim); border-block: var(--border); }
+  .beam-x::before, .beam-x::after {
+    content: ""; position: absolute; top: 23px; width: 26px; height: 250px; background: var(--trim); border: var(--border); border-top: 0;
+  }
+  .beam-x::before { left: 60px; } .beam-x::after { right: 60px; }
+  .lamp { position: absolute; left: 50%; top: 0; translate: -50% 0; width: 6px; height: 60px; background: var(--ink); }
+  .lamp::after {
+    content: ""; position: absolute; left: 50%; top: 56px; translate: -50% 0; width: 90px; height: 42px;
+    background: #ffe58a; border: var(--border); border-radius: 50px 50px 8px 8px;
+  }
+  .spot {
+    position: absolute; left: 50%; top: 100px; translate: -50% 0; width: 900px; height: 520px;
+    background: radial-gradient(ellipse at 50% 30%, rgba(255,240,190,.6), rgba(255,240,190,.18) 45%, transparent 70%);
+    pointer-events: none;
+  }
+  .hay {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 210px; background: var(--hay); border-top: var(--border);
+  }
+  .hay::before {
+    content: ""; position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(170deg, transparent 0 18px, rgba(217,173,69,.7) 18px 20px),
+      repeating-linear-gradient(12deg, transparent 0 26px, rgba(255,255,255,.25) 26px 28px);
+  }
+  .bale {
+    position: absolute; bottom: 196px; width: 150px; height: 70px; background: var(--hay); border: var(--border); border-radius: 12px;
+    background-image: repeating-linear-gradient(90deg, transparent 0 14px, var(--hay-dark) 14px 16px);
+    box-shadow: var(--shadow-sm);
+  }
+  .bale::after { content: ""; position: absolute; top: -3px; bottom: -3px; left: 32%; width: 8px; background: #8a5a32; border-inline: 2px solid var(--ink); box-shadow: 44px 0 0 #8a5a32; }
+
+  /* ---------- 底部手牌：全员排队 ---------- */
+  .links { display: none; }
+  .hand-card {
+    position: relative; width: 96px; height: 132px; background: var(--cream); border: var(--border); border-radius: 12px;
+    box-shadow: var(--shadow-sm); padding: 4px; rotate: var(--r, 0deg);
+    transition: transform 220ms cubic-bezier(.34,1.56,.64,1), box-shadow 220ms;
+  }
+  .hand-card .face, .hand-card .back { position: absolute; inset: 4px; border: 2px solid var(--ink); border-radius: 8px; overflow: hidden; }
+  .hand-card .face img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 28%; display: block; }
+  .hand-card .back {
+    display: none; place-items: center; font: 700 30px var(--serif); color: var(--cream);
+    background: repeating-linear-gradient(45deg, var(--mint) 0 8px, #268a6a 8px 16px);
+  }
+  .hand-card .back::after { content: "✓"; width: 46px; height: 46px; display: grid; place-items: center; background: var(--ink); border-radius: 50%; }
+  .hand-card .plate {
+    position: absolute; left: 50%; bottom: -12px; translate: -50% 0; max-width: 108px; padding: 3px 8px; z-index: 2;
+    background: var(--cream); border: 2.5px solid var(--ink); border-radius: 8px; font: 900 12px/1.2 var(--sans);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .hand-card .no {
+    position: absolute; left: -9px; top: -9px; width: 28px; height: 28px; z-index: 2; display: grid; place-items: center;
+    background: var(--cream); border: 2.5px solid var(--ink); border-radius: 50%; font: 700 14px var(--serif);
+  }
+  .hand-card.is-head .no { background: var(--ink); color: #ffe58a; }
+  .hand-card.is-me .plate { background: var(--ink); color: var(--cream); }
+  .hand-card.is-done .face { display: none; }
+  .hand-card.is-done .back { display: grid; }
+  .hand-card.is-done { transform: translateY(12px); }
+  .hand-card:not(.is-done):not(.is-active):not(.is-next):hover { transform: translateY(-14px) rotate(-3deg); }
+  /* 被"抽"到中央的两张：手牌里留一个虚线空位 */
+  .hand-card.is-active, .hand-card.is-next { transform: translateY(-26px); box-shadow: 0 0 0 4px var(--cream), 0 0 0 7px var(--ink); }
+  .hand-card.is-active::before, .hand-card.is-next::before {
+    content: ""; position: absolute; left: 50%; top: -30px; translate: -50% 0; z-index: 3;
+    border: 9px solid transparent; border-bottom: 0; border-top-color: var(--ink);
+  }
+  [data-size="mobile"] .hand-card { width: 58px; height: 80px; border-radius: 9px; padding: 3px; border-width: 2.5px; }
+  [data-size="mobile"] .hand-card .face, [data-size="mobile"] .hand-card .back { inset: 3px; border-radius: 6px; }
+  [data-size="mobile"] .hand-card .plate { font-size: 10px; max-width: 62px; padding: 2px 5px; bottom: -10px; border-width: 2px; }
+  [data-size="mobile"] .hand-card .no { width: 22px; height: 22px; font-size: 12px; left: -7px; top: -7px; border-width: 2px; }
+  [data-size="mobile"] .hand-card .back { font-size: 18px; }
+  [data-size="mobile"] .hand-card .back::after { width: 28px; height: 28px; }
+  [data-size="mobile"] .hand-card.is-active, [data-size="mobile"] .hand-card.is-next { transform: translateY(-16px); }
+  [data-size="mobile"] .hand-card.is-active::before, [data-size="mobile"] .hand-card.is-next::before { top: -22px; border-width: 7px; border-bottom: 0; }
+
+  /* ---------- 中央：面对面传话 ---------- */
+  .title-card {
+    position: absolute; left: 50%; top: 22px; translate: -50% 0; text-align: center; white-space: nowrap; z-index: 6;
+    padding: 8px 24px 10px; background: var(--cream); border: var(--border); border-radius: 12px; box-shadow: var(--shadow); rotate: 1.2deg;
+  }
+  .title-card .title { font-size: 36px; }
+  .title-card .hint { margin-top: 2px; font-weight: 700; font-size: 15px; color: var(--muted); }
+  .duo {
+    position: absolute; left: 50%; top: 172px; translate: -50% 0; width: 860px; height: 364px;
+    display: grid; grid-template-columns: 1fr 280px 1fr; align-items: center;
+  }
+  .big {
+    justify-self: center; position: relative; width: 236px; height: 324px; padding: 8px; background: var(--cream);
+    border: var(--border); border-radius: 18px; box-shadow: 0 7px 0 var(--ink);
+  }
+  .big img { width: 100%; height: 100%; object-fit: cover; display: block; border: 2.5px solid var(--ink); border-radius: 11px; }
+  .big .who {
+    position: absolute; left: 50%; bottom: -20px; translate: -50% 0; white-space: nowrap; padding: 6px 14px;
+    border: var(--border); border-radius: 10px; font: 900 16px var(--sans); box-shadow: var(--shadow-sm);
+  }
+  .big.performer { rotate: -4deg; }
+  .big.performer img { animation: sway 1s ease-in-out infinite; transform-origin: 50% 100%; }
+  .big.performer .who { background: var(--mint); color: #fff; }
+  .big.watcher { rotate: 4deg; }
+  .big.watcher .who { background: var(--cream); }
+  .big .corner {
+    position: absolute; top: -16px; padding: 4px 10px; border: 2.5px solid var(--ink); border-radius: 999px;
+    font: 900 13px var(--sans); background: var(--cream); box-shadow: 0 2px 0 var(--ink); white-space: nowrap;
+  }
+  .big.performer .corner { left: -14px; } .big.watcher .corner { right: -14px; }
+  .big.empty { display: grid; place-items: center; background: #fff4df; border-style: dashed; box-shadow: none; }
+  .big.empty span { font: 700 26px var(--serif); color: var(--muted); text-align: center; line-height: 1.4; }
+
+  .wire { position: relative; height: 200px; }
+  .wire svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .wire .string { fill: none; stroke: var(--ink); stroke-width: 3; stroke-dasharray: 8 6; animation: march 700ms linear infinite; }
+  .wire .can { fill: #c7cdd6; stroke: var(--ink); stroke-width: 3; }
+  .bubble {
+    position: absolute; left: 50%; top: 6px; translate: -50% 0; padding: 8px 14px; white-space: nowrap;
+    background: var(--cream); border: var(--border); border-radius: 16px; font: 900 20px var(--sans); box-shadow: var(--shadow-sm);
+    animation: bob 1.4s ease-in-out infinite;
+  }
+  .bubble::after { content: ""; position: absolute; left: 30%; bottom: -12px; border: 8px solid transparent; border-top-color: var(--ink); border-bottom: 0; }
+  .rule { position: absolute; left: 50%; bottom: 8px; translate: -50% 0; white-space: nowrap; font: 800 13px var(--sans); color: var(--cream); background: var(--ink); padding: 4px 10px; border-radius: 999px; }
+  .progress { position: absolute; left: 50%; top: 126px; translate: -50% 0; font-weight: 800; color: var(--cream); display: flex; align-items: baseline; gap: 6px; z-index: 6; }
+  .progress .numeral { font-size: 30px; }
+  .progress { padding: 2px 14px; background: var(--ink); border-radius: 999px; }
+
+  /* 倒计时：挂在谷仓梁上的挂钟 */
+  .countdown { background: var(--cream); border: var(--border); border-radius: 50%; box-shadow: var(--shadow-sm); }
+  .countdown .ring-bg { stroke: #efe4cc; } .countdown .ring-fg { stroke: var(--mint); }
+  .countdown.last10 .ring-fg { stroke: var(--barn); }
+  #cd { right: 64px; top: 22px; }
+
+  /* ---------- 操作条：贴在干草上方 ---------- */
+  .dock { position: absolute; left: 50%; bottom: 14px; translate: -50% 0; display: flex; gap: 12px; align-items: center; }
+  .dock .btn { border: var(--border); box-shadow: var(--shadow-sm); min-width: 320px; }
+  .dock .btn:disabled { background: #fff4df; color: var(--muted); }
+  .dock .btn-primary:not(:disabled):hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+  .dock .btn-primary:not(:disabled):active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+  .dock .role { padding: 6px 12px; border: 2.5px solid var(--ink); border-radius: 999px; background: var(--cream); font: 900 13px var(--sans); }
+
+  .can-baton { width: 44px; height: 50px; }
+
+  /* ---------- 手机 ---------- */
+  [data-size="mobile"] .beam-x { top: 150px; height: 18px; }
+  [data-size="mobile"] .beam-x::before, [data-size="mobile"] .beam-x::after { top: 15px; width: 16px; height: 160px; }
+  [data-size="mobile"] .beam-x::before { left: 14px; } [data-size="mobile"] .beam-x::after { right: 14px; }
+  [data-size="mobile"] .lamp { display: none; }
+  [data-size="mobile"] .spot { width: 440px; top: 170px; }
+  [data-size="mobile"] .hay { height: 290px; }
+  [data-size="mobile"] .bale { display: none; }
+  [data-size="mobile"] .title-card { top: 20px; max-width: 360px; white-space: normal; padding: 8px 14px 10px; }
+  [data-size="mobile"] .title-card .title { font-size: 28px; }
+  [data-size="mobile"] .title-card .hint { font-size: 13px; }
+  [data-size="mobile"] .progress { top: 176px; }
+  [data-size="mobile"] .progress .numeral { font-size: 24px; }
+  [data-size="mobile"] .duo { top: 228px; width: 380px; height: 310px; grid-template-columns: 1fr 64px 1fr; }
+  [data-size="mobile"] .big { width: 146px; height: 204px; padding: 5px; border-radius: 14px; }
+  [data-size="mobile"] .big .who { font-size: 13px; padding: 4px 10px; bottom: -16px; }
+  [data-size="mobile"] .big .corner { font-size: 11px; top: -13px; }
+  [data-size="mobile"] .big.empty span { font-size: 18px; }
+  [data-size="mobile"] .bubble { font-size: 14px; padding: 5px 8px; top: -34px; }
+  [data-size="mobile"] .rule { display: none; }
+  [data-size="mobile"] #cd { right: 12px; top: 164px; width: 56px; height: 56px; }
+  [data-size="mobile"] #cd .num { font-size: 22px; }
+  [data-size="mobile"] .dock { width: 366px; flex-direction: column; gap: 8px; }
+  [data-size="mobile"] .dock .btn { width: 100%; min-width: 0; }
+  [data-size="mobile"] .dock .role { display: none; }
+
+  @keyframes march { to { stroke-dashoffset: -28; } }
+  @keyframes sway { 0%, 100% { rotate: -4deg; } 50% { rotate: 4deg; } }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>B · 谷仓传话筒</strong>
+  <span class="note">浅色派对 ｜ 对标：Balatro 手牌（悬停上浮、抽牌放大）+ 榴莲粗墨边 ｜ 区别：全员是底部一排手牌，只把"演的"和"看的"两只抽到中央面对面</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile" aria-pressed="false">手机 390×844</button></div>
+  <div class="group"><button data-set-count="5">5 人</button><button data-set-count="7">7 人</button><button data-set-count="9">9 人</button></div>
+  <div class="group"><button data-act="next">下一棒 ▶</button><button data-act="myturn">跳到我</button><button data-act="last5">最后 5 秒</button><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="beam-x"></div>
+  <div class="lamp"></div>
+  <div class="spot"></div>
+  <div class="hay"></div>
+  <div class="bale" style="left:36px"></div>
+  <div class="bale" style="right:36px"></div>
+
+  <div class="title-card" data-box="title">
+    <h1 class="title" id="headline"></h1>
+    <div class="hint" id="hint"></div>
+  </div>
+  <div class="countdown" id="cd" data-box="countdown">
+    <svg viewBox="0 0 84 84"><circle class="ring-bg" cx="42" cy="42" r="34"/><circle class="ring-fg" cx="42" cy="42" r="34"/></svg>
+    <span class="num numeral">30</span>
+  </div>
+  <div class="progress" data-box="progress"><span>第</span><span class="numeral" id="prog"></span><span>棒</span></div>
+
+  <div class="duo" data-box="duo">
+    <div id="left"></div>
+    <div class="wire" id="wire">
+      <svg viewBox="0 0 280 200" preserveAspectRatio="none" aria-hidden="true">
+        <path class="string" d="M0 110 Q140 170 280 110"/>
+      </svg>
+      <span class="bubble" id="bubble">嘎？嘎嘎！</span>
+      <span class="rule">只许比划 · 可以鹅叫 · 不许说字</span>
+    </div>
+    <div id="right"></div>
+  </div>
+
+  <svg class="links" aria-hidden="true"></svg>
+  <div class="seats"></div>
+
+  <div class="dock" data-box="dock">
+    <span class="role">你是 白鹅</span>
+    <button class="btn btn-primary" id="act-pass"></button>
+  </div>
+</div></div>
+
+<script>
+  const CAN = `<svg class="can-baton" viewBox="0 0 44 50" aria-hidden="true">
+    <rect x="6" y="8" width="32" height="38" rx="5" fill="#c7cdd6" stroke="#292722" stroke-width="3.5"/>
+    <ellipse cx="22" cy="9" rx="16" ry="5" fill="#e6eaf0" stroke="#292722" stroke-width="3.5"/>
+    <path d="M22 9 Q30 -4 42 2" fill="none" stroke="#292722" stroke-width="3" stroke-dasharray="4 3"/>
+    <rect x="6" y="22" width="32" height="10" fill="#f7c84b" stroke="#292722" stroke-width="3"/>
+  </svg>`;
+  const BUBBLES = ['嘎？嘎嘎！', '（拼命扑腾）', '嘎——！', '（假装切菜）', '嘎嘎嘎？'];
+  const big = (p, role, corner) => `<div class="big ${role}" data-swap>
+      <span class="corner">${corner}</span><img src="${p.img}" alt="${p.goose}">
+      <span class="who">${p.me ? '你' : p.name}</span></div>`;
+
+  window.DESIGN = {
+    seat: (p) => `<div class="hand-card">
+      <span class="no">${p.head ? '头' : p.seatNo}</span>
+      <div class="face"><img src="${p.img}" alt="${p.goose}"></div><div class="back"></div>
+      <span class="plate">${p.me ? '你 · ' : ''}${p.name}</span></div>`,
+    layout(size, n, w, h) {
+      // 手牌：底部一排，中间略高、两端下垂成扇形
+      const mobile = size === 'mobile';
+      if (mobile && n > 5) {
+        // 手机 6 人以上：两排手牌，第一排在上
+        const top = Math.ceil(n / 2);
+        return Array.from({ length: n }, (_, i) => {
+          const row = i < top ? 0 : 1, k = row ? i - top : i, count = row ? n - top : top;
+          const span = (count - 1) * 72;
+          return { x: w / 2 - span / 2 + k * 72, y: row ? h - 132 : h - 234 };
+        });
+      }
+      const y0 = mobile ? h - 186 : h - 170;
+      const span = mobile ? Math.min(w - 84, (n - 1) * 70) : Math.min(1000, (n - 1) * 118);
+      return Array.from({ length: n }, (_, i) => {
+        const t = n === 1 ? 0 : i / (n - 1) - 0.5;
+        return { x: w / 2 + t * span, y: y0 + t * t * (mobile ? 40 : 60) };
+      });
+    },
+    batonSelector: '.face',
+    baton: () => CAN,
+    onState(c) {
+      document.getElementById('headline').textContent = c.headline;
+      document.getElementById('hint').textContent = c.hint;
+      document.getElementById('prog').textContent = c.finished ? `${c.n} / ${c.n}` : `${c.state.cur + 1} / ${c.n}`;
+      document.querySelectorAll('.hand-card').forEach((el, i) => {
+        const t = c.n === 1 ? 0 : i / (c.n - 1) - 0.5;
+        el.style.setProperty('--r', c.size === 'mobile' && c.n > 5 ? '0deg' : t * 14 + 'deg');
+      });
+      const L = document.getElementById('left'), R = document.getElementById('right');
+      document.getElementById('bubble').textContent = BUBBLES[c.state.cur % BUBBLES.length];
+      document.getElementById('wire').style.visibility = c.finished ? 'hidden' : '';
+      if (c.finished) {
+        L.innerHTML = `<div class="big empty"><span>全员<br>传完</span></div>`;
+        R.innerHTML = `<div class="big empty"><span>准备<br>讨论</span></div>`;
+        return;
+      }
+      L.innerHTML = big(c.performer, 'performer', c.performer.head ? '头鹅 · 照案情演' : '表演中');
+      R.innerHTML = c.watcher
+        ? big(c.watcher, 'watcher', c.watcher.me ? '👀 你在看' : '👀 在看')
+        : `<div class="big empty"><span>末棒<br>无人接</span></div>`;
+    },
+  };
+</script>
+<script src="_shared.js"></script>
+</body>
+</html>

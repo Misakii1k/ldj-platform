@@ -1,0 +1,82 @@
+/* 第 2 轮 · Ding 专属：盘心大铃、拍铃 → 挑卡 → 亮卡质疑。桌布、牌、席位复用 _party.css。
+   规则按用户 2026-09-26 纠正：任何时候都能拍铃；先拍铃再亮出自己的短语卡；不用同色；其他人 3 秒内可质疑，过半 = 拍错。 */
+.bell { position: absolute; left: 50%; top: 44%; translate: -50% -50%; z-index: 4; width: 176px; aspect-ratio: 1; cursor: pointer; border: 0; background: none; padding: 0; }
+.bell .base { position: absolute; left: 3%; right: 3%; bottom: 0; height: 26%; border-radius: 50%; background: linear-gradient(180deg, #1c8a70, var(--ding)); border: 4px solid var(--ink); box-shadow: 0 8px 0 var(--ink); }
+.bell .base::after { content: ""; position: absolute; left: 12%; right: 12%; top: 18%; height: 22%; border-radius: 50%; background: rgba(255,255,255,.2); }
+.bell .dome { position: absolute; left: 13%; right: 13%; bottom: 14%; height: 62%; border-radius: 50% 50% 14% 14% / 72% 72% 14% 14%;
+  background: radial-gradient(circle at 32% 26%, #fffbe6 0 9%, #ffe07a 22%, #f2b92e 55%, #b98016 100%); border: 4px solid var(--ink); box-shadow: 0 6px 0 var(--ink), inset -10px -8px 0 rgba(150,95,10,.25);
+  transition: transform 110ms var(--spring); transform-origin: 50% 100%; }
+.bell .rim { position: absolute; left: 10%; right: 10%; bottom: 12%; height: 9%; border-radius: 50%; background: #d99f22; border: 4px solid var(--ink); }
+.bell .knob { position: absolute; left: 50%; top: 13%; width: 20%; aspect-ratio: 1; translate: -50% 0; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff6c8, #f2b92e 70%); border: 4px solid var(--ink); }
+.bell:active .dome, .bell.hit .dome { transform: translateY(8px) scaleY(.9); box-shadow: 0 1px 0 var(--ink); }
+.bell.hit { animation: bellHit 460ms var(--spring); }
+@keyframes bellHit { 20% { rotate: -9deg; } 45% { rotate: 8deg; } 70% { rotate: -3deg; } }
+.bell .wave { position: absolute; inset: -12%; border-radius: 50%; border: 6px solid var(--yellow); opacity: 0; pointer-events: none; }
+.bell.hit .wave { animation: wave 600ms var(--out) forwards; }
+.bell.hit .wave:nth-child(2) { animation-delay: 120ms; }
+@keyframes wave { from { scale: .6; opacity: 1; } to { scale: 1.9; opacity: 0; } }
+/* 平时铃轻轻呼吸，提示"随时能拍" */
+.bell .dome { animation: idle 2.4s ease-in-out infinite; }
+@keyframes idle { 50% { transform: translateY(-3px); } }
+.bell.miss .dome { filter: grayscale(.7); }
+.bell.miss { animation: missShake 420ms ease-out; }
+@keyframes missShake { 20%, 60% { translate: calc(-50% - 8px) -50%; } 40%, 80% { translate: calc(-50% + 8px) -50%; } }
+
+/* 牌堆与弃牌分列铃两侧 */
+.device.ding .core { gap: 230px; }
+
+/* 质疑 3 秒环：包在铃外 */
+.bell-ring { position: absolute; left: 50%; top: 44%; width: 244px; height: 244px; translate: -50% -50%; z-index: 3; pointer-events: none; opacity: 0; transition: opacity 200ms; }
+.device.bell-open .bell-ring { opacity: 1; }
+.bell-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.bell-ring .track { fill: none; stroke: rgba(41,39,34,.2); stroke-width: 5; }
+.bell-ring .bar { fill: none; stroke: var(--yellow); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 200ms; }
+.bell-ring.low .bar, .bell-ring.last .bar { stroke: var(--red); }
+.bell-ring .ring-num { display: none; }
+
+/* 第 1 步：拍铃后挑卡——手里短语卡浮起并发亮，其余牌压暗 */
+.pick-tip { position: absolute; left: 50%; bottom: 176px; translate: -50% 0; z-index: 9; padding: 6px 16px; background: var(--ink); color: var(--cream); border-radius: 999px; font: 900 15px var(--sans); opacity: 0; pointer-events: none; white-space: nowrap; }
+.device.picking .pick-tip { opacity: 1; animation: pop 300ms var(--spring); }
+.device.picking .my-hand .uc2:not(.hot) { filter: saturate(.3) brightness(.8); }
+.device.picking .my-hand .uc2.hot { transform: translateY(-30px) rotate(0deg) scale(1.05); box-shadow: 0 0 0 4px var(--yellow), 0 6px 0 var(--ink); z-index: 5; cursor: pointer; }
+.device.picking .my-hand.tight .uc2.hot { margin-right: 30px; }
+
+/* 第 2 步：亮卡 + 质疑面板，占圆盘位置 */
+.reveal { position: absolute; left: 50%; top: 44%; translate: -50% -50%; z-index: 8; display: none; align-items: center; gap: 22px; }
+.device.challenging .reveal { display: flex; }
+.device.challenging .core, .device.challenging .bell, .device.challenging .phase-word, .device.challenging .hud { visibility: hidden; }
+.reveal-card { width: 140px; height: 208px; display: grid; place-items: center; }
+.reveal-card .uc2 { --w: 140px; border-width: 4px; rotate: -4deg; }
+.challenge { display: grid; gap: 10px; padding: 16px 18px; background: var(--cream); border: var(--border); border-radius: 18px; box-shadow: var(--shadow); min-width: 260px; }
+.challenge b { font: 700 22px/1.2 var(--serif); }
+.challenge .votes { display: grid; grid-template-columns: repeat(3, auto); gap: 8px; justify-content: start; }
+.vote { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px 4px 4px; border: 2.5px solid var(--ink); border-radius: 999px; font: 900 13px var(--sans); background: #f2eadb; }
+.vote i { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--ink); display: grid; place-items: center; font: 900 11px var(--serif); font-style: normal; }
+.vote em { font-style: normal; color: var(--muted); }
+.vote.ok { background: #dff3e8; } .vote.ok em { color: #1f7a4d; }
+.vote.doubt { background: #fde3dd; } .vote.doubt em { color: var(--coral); }
+.challenge .left { font: 700 18px/1 var(--serif); color: var(--muted); }
+.reveal-card { position: relative; }
+.nope { position: absolute; left: 50%; top: 50%; translate: -50% -50%; rotate: -14deg; z-index: 3; padding: 6px 12px; background: var(--cream); border: 4px solid var(--coral); border-radius: 10px;
+  color: var(--coral); font: 900 22px/1 var(--serif); white-space: nowrap; box-shadow: inset 0 0 0 3px var(--cream), inset 0 0 0 5px var(--coral); animation: stampIn 380ms var(--spring); }
+@keyframes stampIn { 0% { opacity: 0; transform: scale(2.4); } 60% { opacity: 1; transform: scale(.92); } 100% { transform: none; } }
+.device[data-size="mobile"] .nope { font-size: 14px; padding: 4px 8px; border-width: 3px; }
+
+/* ── 手机 ── */
+.device[data-size="mobile"] .bell, .device[data-size="mobile"] .bell-ring, .device[data-size="mobile"] .reveal { top: 40%; }
+.device[data-size="mobile"] .reveal { top: auto; }
+.device[data-size="mobile"] .bell { width: 96px; }
+.device[data-size="mobile"] .bell .base, .device[data-size="mobile"] .bell .dome, .device[data-size="mobile"] .bell .rim, .device[data-size="mobile"] .bell .knob { border-width: 3px; }
+.device[data-size="mobile"] .bell-ring { width: 138px; height: 138px; }
+.device.ding[data-size="mobile"] .core { gap: 112px; }
+.device.ding[data-size="mobile"] .discard .uc2, .device.ding[data-size="mobile"] .deck .uc2 { --w: 58px; }
+.device[data-size="mobile"] .pick-tip { bottom: 250px; font-size: 13px; }
+.device[data-size="mobile"] .reveal { flex-direction: row; gap: 8px; top: auto; bottom: 330px; translate: -50% 0; }
+.device[data-size="mobile"] .reveal-card { width: 70px; height: 104px; }
+.device[data-size="mobile"] .reveal-card .uc2 { --w: 70px; border-width: 3px; }
+.device[data-size="mobile"] .challenge { min-width: 0; width: 200px; padding: 8px 10px; gap: 5px; }
+.device[data-size="mobile"] .challenge b { font-size: 14px; }
+.device[data-size="mobile"] .challenge .votes { grid-template-columns: repeat(2, auto); gap: 4px; }
+.device[data-size="mobile"] .vote { font-size: 11px; padding: 2px 7px 2px 2px; }
+.device[data-size="mobile"] .vote i { width: 20px; height: 20px; }
+.device[data-size="mobile"] .challenge .left { font-size: 14px; }

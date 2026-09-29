@@ -113,6 +113,7 @@ const pubBase = z
     winnerId: pid.nullable(),
     deadlineAt: z.number().int().nullable(),
     aborted: z.boolean(),
+    revealedHands: z.record(pid, z.array(platformCardSchema)).optional(),
   })
   .strict();
 

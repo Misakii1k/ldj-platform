@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { publicSceneCues, applyPublicSceneVoice, type VoiceView } from '../server/publicVoice.ts';
+import { publicSceneCues, applyPublicSceneVoice, dawnBroadcastMs, type VoiceView } from '../server/publicVoice.ts';
 import { buildNightPlan, createInitialTimelineState } from '../server/timeline.ts';
 import { createWerewolfAnnouncement, getVoiceCueDurationMs, resolveWerewolfVoiceCue, type WerewolfAnnouncement } from '@ldj/shared';
 const base:VoiceView={phase:'night',day:1,players:Array.from({length:12},(_,i)=>({playerId:`p${i+1}`,seat:i})),currentSpeakerId:null,lastWordsPlayerId:null,lastNightDeaths:[],lastVoteSummary:null,winner:null,aborted:false};
@@ -34,6 +34,31 @@ test('automatic cue duration extends scheduled timer and stale night clips are c
  const prior={...before,announcement:createWerewolfAnnouncement('old',['dawn'],0)};
  const next={...before,announcement:prior.announcement,timelineState:{...timelineState,current:{...timelineState.current,id:'new'}}};
  assert.equal(applyPublicSceneVoice(prior,next,base,base,100,[],false).state.announcement,null);
+});
+
+test('dawn announcement deadline tracks the actual broadcast instead of stacking the base pace',()=>{
+ const timelineState=createInitialTimelineState(buildNightPlan({},1),1,'auto',100);
+ const before={phase:'night',day:1,deadlineAt:1000,timelineState};
+ const timer=(deadlineAt:number)=>({type:'schedule_timer' as const,timerId:'x',deadlineAt,action:{type:'phase_timeout'}});
+ // 平安夜：天亮+间隔+平安夜+收尾+余量，不叠加基础阶段时长
+ const peacefulView:VoiceView={...base,phase:'day_announcement'};
+ const r1=applyPublicSceneVoice(before,{...before,phase:'day_announcement',deadlineAt:13_000},base,peacefulView,100,[timer(13_000)],false);
+ const expectedPeaceful=100+dawnBroadcastMs(peacefulView,1);
+ assert.equal(r1.state.deadlineAt,expectedPeaceful);
+ assert.equal(r1.effects[0]?.type,'schedule_timer');
+ assert.equal((r1.effects[0] as {deadlineAt:number}).deadlineAt,expectedPeaceful);
+ assert.ok(expectedPeaceful<13_000,'平安夜播报应显著短于旧的基础时长叠加');
+ // 首日双死：导语+逐位报号+遗言提示全部计入，且定时器同步改写
+ const deadView:VoiceView={...base,phase:'day_announcement',lastNightDeaths:['p5','p2']};
+ const r2=applyPublicSceneVoice(before,{...before,phase:'day_announcement',deadlineAt:13_000},base,deadView,100,[timer(13_000)],false);
+ const expectedDead=100+dawnBroadcastMs(deadView,1);
+ assert.equal(r2.state.deadlineAt,expectedDead);
+ assert.equal((r2.effects[0] as {deadlineAt:number}).deadlineAt,expectedDead);
+ const voiceOnly=getVoiceCueDurationMs('dawn')+getVoiceCueDurationMs('day_death_intro')+getVoiceCueDurationMs('day_death_number_2')+getVoiceCueDurationMs('day_death_number_5')+getVoiceCueDurationMs('day_last_words');
+ assert.ok(dawnBroadcastMs(deadView,1)>voiceOnly,'动态时限需覆盖客户端段间间隔');
+ // 非天亮阶段维持「基础时限+播报时长」语义
+ const r3=applyPublicSceneVoice(before,{...before,phase:'discussion',deadlineAt:2000},base,{...base,phase:'discussion',currentSpeakerId:'p1'},100,[timer(2000)],false);
+ assert.equal(r3.state.deadlineAt,2000+getVoiceCueDurationMs('speak_normal_1'));
 });
 
 test('all generated night cues are accurately classified as automatic in the inventory',()=>{

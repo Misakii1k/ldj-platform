@@ -1,0 +1,49 @@
+/* One-screen gameplay. Only history and settlement dialogs scroll. */
+.d-game{overflow:hidden;min-height:0}
+.d-page{min-height:0;margin:0 auto;padding:12px 24px;display:flex;flex-direction:column}
+.d-header{padding-bottom:8px;flex-shrink:0}.d-brand>img{width:36px;height:36px}.d-header h1{font-size:25px}.d-round strong{font-size:28px}
+/* The preview reopen button must stay a full 44px touch target in every layout. */
+body[data-game=durian] .preview-reopen{min-width:44px}
+.d-layout{flex:1;min-height:0;padding-top:12px;gap:24px;align-items:stretch}
+.d-players-area{min-height:0;display:flex;flex-direction:column}.d-section-heading{flex-shrink:0;margin-bottom:7px}
+.d-player-grid{flex:1;min-height:0;grid-template-rows:repeat(2,minmax(0,1fr));gap:10px}.d-player{min-height:0;display:flex;flex-direction:column}.d-player-head{flex-shrink:0;margin-bottom:4px}.d-mini-card{flex:1;min-height:0}.d-mini-half{padding:4px 0}.d-mini-half img{height:clamp(24px,5dvh,48px);width:clamp(24px,5dvh,48px)}
+.d-self{flex-shrink:0;margin-top:10px;padding:5px 9px}.d-demand{flex-shrink:0;margin-top:8px}.d-demand .d-section-heading{margin-bottom:5px}.d-total{padding:4px}.d-total img{height:26px;width:26px}.d-total strong{font-size:24px}
+.d-play-area{min-height:0;display:flex;flex-direction:column;padding:14px}.d-turn-heading{flex-shrink:0}.d-card-stage{flex:1;min-height:0;padding:10px;overflow:hidden}.d-drawn-card{max-height:100%;height:100%;max-width:350px;transform:none}.d-half{min-height:44px;justify-content:center;padding:5px;overflow:hidden}.d-half img{width:clamp(28px,9dvh,80px);height:clamp(28px,9dvh,80px);margin:3px 0}.d-check{margin-top:4px}.d-play-hint{flex-shrink:0;margin:5px 0;font-size:11px}.d-turn-footnote{flex-shrink:0;padding-top:6px}.d-deck{height:90%;max-height:230px;width:auto;aspect-ratio:3/4}.d-deck img{width:45%;height:auto}.d-waiting{padding:5px}.d-waiting>span{font-size:38px}.d-waiting h3{font-size:17px;margin:5px 0}.d-waiting p{margin:5px 0}
+.d-actions{position:static;flex-shrink:0;flex-wrap:nowrap;padding:8px 24px max(10px,env(safe-area-inset-bottom));gap:10px}.d-action-copy{width:auto;display:block}.d-action-copy span{display:none}.d-actions>.d-button{min-height:44px;padding:8px 14px}.d-action-copy strong{font-size:12px}
+body[data-game=durian] .preview-reopen{position:static;flex-shrink:0;padding:4px 8px;min-height:44px;font-size:11px;box-shadow:none}.d-header .d-round{margin-left:auto}
+@media(max-width:768px){
+ .d-page{padding:7px 10px 9px}.d-header{padding-bottom:5px;gap:8px}.d-header h1{font-size:21px}.d-brand>img{width:29px;height:29px}.d-brand .d-eyebrow{display:none}.d-round strong{font-size:23px}.d-round small{font-size:10px}
+ .d-layout{grid-template-columns:1fr;grid-template-rows:minmax(245px,1.2fr) minmax(155px,1fr);gap:9px;padding-top:8px}
+ .d-section-heading h2{font-size:12px}.d-section-heading>span{font-size:10px}.d-player-grid{gap:7px}.d-player-head{gap:3px;margin-bottom:3px}.d-player-name{font-size:11px}.d-number{height:19px;min-width:19px;font-size:10px}.d-player-penalty{font-size:9px}
+ .d-mini-half{padding:2px;flex-direction:row;gap:2px;flex-wrap:wrap}.d-mini-half img{width:25px;height:25px}.d-mini-half>span{font-size:10px;margin:0}.d-mini-half b{font-size:16px;margin-left:0}
+ .d-self{margin-top:7px;padding:3px 6px;gap:5px;font-size:10px;min-height:28px}.d-self>strong{font-size:11px}.d-hidden-card{height:18px;width:15px;font-size:13px}
+ .d-demand{margin-top:4px}.d-demand .d-section-heading{margin-bottom:4px}.d-history-button{padding:3px 8px;font-size:10px;min-height:44px}.d-demand-grid{gap:5px}.d-total{grid-template-columns:1fr 1fr;padding:3px 2px}.d-total img{width:21px;height:21px}.d-total strong{font-size:21px}.d-total-name{font-size:9px}
+ .d-play-area{padding:7px 9px;border-radius:14px}.d-turn-heading h2{font-size:16px;margin:2px 0}.d-turn-caption,.d-deck-count{font-size:10px}.d-turn-heading .d-eyebrow{font-size:9px}.d-card-stage{padding:5px 14px}.d-drawn-card{padding:3px;max-width:300px}.d-half{padding:3px;display:grid;grid-template-columns:30px 1fr;grid-template-rows:auto auto;gap:0 4px;align-content:center;align-items:center;justify-items:center}.d-half-label{display:none}.d-half img{width:30px;height:30px;grid-row:1;margin:0}.d-half-fruit{font-size:11px;white-space:nowrap}.d-half-fruit b{font-size:24px;margin-left:2px}.d-check{grid-column:1/-1;min-height:17px;min-width:0;font-size:9px;margin-top:2px;padding:1px 4px}.d-play-hint{font-size:10px;margin:3px 0;min-height:0}.d-turn-footnote{display:none}
+ .d-actions{padding:7px 10px max(9px,env(safe-area-inset-bottom));gap:7px}.d-action-copy{display:none}.d-actions>.d-button{flex:1;min-width:0;padding:7px 8px;font-size:12px}
+ .d-deck{max-height:100px;border-width:3px}.d-deck small{display:none}.d-deck strong{font-size:10px}.d-waiting{padding:0}.d-waiting>span{display:none}.d-waiting h3{font-size:14px}.d-waiting p{font-size:10px;line-height:1.5;margin:3px 0}
+}
+@media(max-height:620px) and (min-width:640px){
+ .d-header{padding-bottom:4px}.d-brand .d-eyebrow,.d-header h1 span{display:none}.d-layout{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:14px;padding-top:7px}.d-page{padding:5px 14px 8px}.d-player-grid{gap:5px}.d-mini-half{flex-direction:row;padding:2px;gap:2px}.d-mini-half img{width:22px;height:22px}.d-mini-half>span{font-size:10px}.d-mini-half b{font-size:15px}.d-self{margin-top:5px;padding:2px 6px;min-height:24px;font-size:10px}.d-self>strong{font-size:10px}.d-self .d-hidden-card{height:16px;font-size:12px}.d-demand{margin-top:2px}.d-section-heading{margin-bottom:3px}.d-section-heading h2{font-size:12px}.d-demand .d-section-heading{margin-bottom:2px}.d-history-button{padding:2px 8px;font-size:10px}.d-total{display:flex;flex-direction:row;justify-content:center;gap:4px;padding:3px}.d-total img{width:20px;height:20px}.d-total-name{display:none}.d-total strong{font-size:19px}.d-play-area{padding:8px}.d-turn-heading h2{font-size:17px}.d-turn-footnote{display:none}.d-actions{padding-top:5px;padding-bottom:8px}.d-mini-card,.d-total{box-shadow:none}.d-player-head{margin-bottom:2px}.d-number{height:17px;min-width:17px;font-size:9px}.d-player-name{font-size:10px}.d-player-penalty{font-size:9px}.d-deck{max-height:120px}.d-deck small{display:none}
+}
+/* Very short windows keep an accessible scroll fallback instead of clipping cards. */
+@media(max-height:520px) and (max-width:480px){.d-game{overflow-y:auto}.d-page{flex:none;min-height:465px}.d-actions{position:sticky;bottom:0}}
+
+/* 短横屏（如 844×390）：.d-layout 的第二列本来就是空的——它的第二个子元素 .d-play-area
+   早已移进回合弹窗，只剩 .d-players-area 一个孩子。这里把空列真正用起来，
+   把「桌面累计需求」放进该列，纵向省下约 93px，全程不缩小任何文字或 44px 触控目标。 */
+@media(max-height:520px) and (min-width:640px){
+ .d-layout{grid-template-columns:minmax(0,1fr)}
+ .d-players-area{display:grid;grid-template-columns:minmax(0,1.32fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;column-gap:18px}
+ .d-players-area>.d-section-heading{grid-column:1;grid-row:1}
+ .d-players-area>.d-player-grid{grid-column:1;grid-row:2;min-height:174px}
+ .d-players-area>.d-self{grid-column:1;grid-row:3}
+ .d-players-area>.d-demand{grid-column:2;grid-row:1/4;margin-top:0;align-self:start}
+ /* 舒展模式在该断点仍是 3 列 × 2 行；把行高下限收到与紧凑同量级，保证叠加 60px 的
+    「继续我的回合」条后整页仍不滚动。 */
+ body[data-card-layout=comfortable] .d-players-area .d-player-grid{min-height:176px;grid-template-rows:repeat(2,minmax(82px,1fr))}
+ /* 需求区获得独立列后，把该断点原先被隐藏的水果名恢复回来，不再以折叠文字换高度。 */
+ .d-demand .d-total{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:5px 2px}
+ .d-demand .d-total img{grid-row:auto;width:26px;height:26px}
+ .d-demand .d-total-name{display:block;grid-column:auto;grid-row:auto;font-size:10px;margin:0}
+ .d-demand .d-total strong{grid-column:auto;font-size:24px}
+}

@@ -64,6 +64,7 @@ export interface PlatformPublicView {
   winnerId: string | null;
   deadlineAt: number | null;
   aborted: boolean;
+  revealedHands?: Record<string, LandlordCard[]>;
 }
 
 export interface PlatformPlayerView extends PlatformPublicView {

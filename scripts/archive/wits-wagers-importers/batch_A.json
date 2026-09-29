@@ -1,0 +1,158 @@
+[
+  {
+    "id": "ww-batchA-01", "prompt": "一只成年蓝鲸的舌头重量大约是多少？", "unit": "千克", "answer": 2700, "sourceUrl": "https://en.wikipedia.org/wiki/Blue_whale", "sourceNote": "维基百科", "asOf": "2024", "explanation": "一只成年蓝鲸的舌头重约2.7吨（2700千克），甚至比一头亚洲象还要重。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-02", "prompt": "世界上最长寿的树“玛土撒拉”的年龄大约是多少？", "unit": "年", "answer": 4855, "sourceUrl": "https://en.wikipedia.org/wiki/Methuselah_(tree)", "sourceNote": "维基百科", "asOf": "2024", "explanation": "玛土撒拉是一棵大盆地刺果松，估计已有超过4855年的历史。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-03", "prompt": "一只成年大象每天平均需要消耗多少升水？", "unit": "升", "answer": 180, "sourceUrl": "https://www.worldwildlife.org/", "sourceNote": "野生动物档案", "asOf": "2024", "explanation": "成年大象每天大约需要喝150到200升水以维持生命。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-04", "prompt": "亚马逊雨林估计包含多少亿棵树？", "unit": "亿棵", "answer": 3900, "sourceUrl": "https://en.wikipedia.org/wiki/Amazon_rainforest", "sourceNote": "科学期刊Nature", "asOf": "2024", "explanation": "据估计，亚马逊雨林大约包含3900亿棵树，属于16000个不同的树种。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-05", "prompt": "地球上已知最深的海沟马里亚纳海沟“挑战者深渊”最深处深度为多少？", "unit": "米", "answer": 10994, "sourceUrl": "https://en.wikipedia.org/wiki/Mariana_Trench", "sourceNote": "NOAA", "asOf": "2024", "explanation": "挑战者深渊的最大深度被测量为10994米，比珠穆朗玛峰的高度还要深。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-06", "prompt": "猎豹全力奔跑时的最高时速可达多少？", "unit": "公里", "answer": 120, "sourceUrl": "https://en.wikipedia.org/wiki/Cheetah", "sourceNote": "国家地理", "asOf": "2024", "explanation": "猎豹是陆地上跑得最快的动物，最高时速可达120公里。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-07", "prompt": "现存最长寿的脊椎动物格陵兰鲨的已知最长寿命大约是多少？", "unit": "年", "answer": 400, "sourceUrl": "https://en.wikipedia.org/wiki/Greenland_shark", "sourceNote": "Science", "asOf": "2024", "explanation": "放射性碳定年法显示，部分格陵兰鲨的寿命可达400年以上。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-08", "prompt": "一只树懒消化一顿食物最长可能需要多少天？", "unit": "天", "answer": 30, "sourceUrl": "https://en.wikipedia.org/wiki/Sloth", "sourceNote": "BBC自然", "asOf": "2024", "explanation": "树懒的新陈代谢极慢，有时消化一片树叶需要长达一个月。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-09", "prompt": "北极燕鸥每年的往返迁徙距离大约是多少？", "unit": "公里", "answer": 70900, "sourceUrl": "https://en.wikipedia.org/wiki/Arctic_tern", "sourceNote": "国家地理", "asOf": "2024", "explanation": "北极燕鸥从北极飞往南极并返回，年均飞行距离超过7万公里。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-10", "prompt": "世界上最大的花大王花，其花朵直径最大可达多少？", "unit": "厘米", "answer": 110, "sourceUrl": "https://en.wikipedia.org/wiki/Rafflesia", "sourceNote": "植物学年鉴", "asOf": "2024", "explanation": "大王花可以长到直径一米以上，且散发出腐肉的臭味。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-11", "prompt": "一滴未经处理的海水中大约含有多少万个病毒？", "unit": "万个", "answer": 1000, "sourceUrl": "https://en.wikipedia.org/wiki/Marine_virus", "sourceNote": "海洋微生物学", "asOf": "2024", "explanation": "一毫升（约20滴）海水中包含多达数千万个海洋病毒颗粒，主要感染细菌。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-12", "prompt": "全球最大的单体生物——奥氏蜜环菌的占地面积约为多少公顷？", "unit": "公顷", "answer": 890, "sourceUrl": "https://en.wikipedia.org/wiki/Armillaria_ostoyae", "sourceNote": "维基百科", "asOf": "2024", "explanation": "位于美国俄勒冈州的巨型真菌覆盖了超过8.9平方公里（890公顷）的土地。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-13", "prompt": "全球最大的珊瑚礁群大堡礁，全长约多少？", "unit": "公里", "answer": 2300, "sourceUrl": "https://en.wikipedia.org/wiki/Great_Barrier_Reef", "sourceNote": "联合国教科文组织", "asOf": "2024", "explanation": "大堡礁由数以千计的独立礁石组成，全长超过2300公里，甚至可以从太空中看到。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-14", "prompt": "一只蚊子每次吸血大概能吸多少微升？", "unit": "微升", "answer": 5, "sourceUrl": "https://www.mosquito.org/", "sourceNote": "美国蚊虫控制协会", "asOf": "2024", "explanation": "蚊子一次可以吸取相当于自身体重一倍以上的血液，大约为5微升。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-15", "prompt": "世界上最小的哺乳动物凹脸蝠的成年体重约为多少？", "unit": "克", "answer": 2, "sourceUrl": "https://en.wikipedia.org/wiki/Kitti%27s_hog-nosed_bat", "sourceNote": "大英百科全书", "asOf": "2024", "explanation": "凹脸蝠又称大黄蜂蝠，是已知体型最小的哺乳动物，重约1.5-2克。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-16", "prompt": "竹子在最快生长状态下一天能长高多少？", "unit": "厘米", "answer": 91, "sourceUrl": "https://www.guinnessworldrecords.com/", "sourceNote": "吉尼斯世界纪录", "asOf": "2024", "explanation": "某些种类的竹子曾创下一天生长91厘米的记录，几乎肉眼可见。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-17", "prompt": "世界最长的河流尼罗河全长约多少？", "unit": "公里", "answer": 6650, "sourceUrl": "https://en.wikipedia.org/wiki/Nile", "sourceNote": "大英百科全书", "asOf": "2024", "explanation": "尼罗河全长约6650公里，流经非洲东北部多个国家。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-18", "prompt": "太平洋的总面积大约是多少万平方公里？", "unit": "万", "answer": 16525, "sourceUrl": "https://en.wikipedia.org/wiki/Pacific_Ocean", "sourceNote": "NOAA", "asOf": "2024", "explanation": "太平洋面积达1.6525亿平方公里，约占地球总面积的三分之一。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-19", "prompt": "一个正常的成年人体内大约有多少万亿个微生物细胞？", "unit": "万亿个", "answer": 39, "sourceUrl": "https://www.nature.com/", "sourceNote": "人类微生物组计划", "asOf": "2024", "explanation": "人体内有大约39万亿个微生物细胞，比人体自身的细胞数量还要多。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-20", "prompt": "一只成年长颈鹿的舌头最长可达多少？", "unit": "厘米", "answer": 50, "sourceUrl": "https://en.wikipedia.org/wiki/Giraffe", "sourceNote": "野生动物知识", "asOf": "2024", "explanation": "长颈鹿的舌头呈现紫黑色以防晒伤，长度可达45到50厘米，能卷取树叶。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-21", "prompt": "大王巨乌贼的眼睛直径最大可达多少？", "unit": "厘米", "answer": 27, "sourceUrl": "https://en.wikipedia.org/wiki/Colossal_squid", "sourceNote": "海洋生物学", "asOf": "2024", "explanation": "这是动物界中已知最大的眼睛，如同一个餐盘大小，用于在深海捕捉微弱光线。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-22", "prompt": "世界上最深的大峡谷雅鲁藏布大峡谷最深处可达多少？", "unit": "米", "answer": 6009, "sourceUrl": "https://en.wikipedia.org/wiki/Yarlung_Tsangpo_Grand_Canyon", "sourceNote": "国家地理", "asOf": "2024", "explanation": "雅鲁藏布大峡谷最深处超过6000米，是世界上最大、最深的峡谷。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-23", "prompt": "非洲象的单根象牙最重纪录是多少？", "unit": "千克", "answer": 102, "sourceUrl": "https://www.guinnessworldrecords.com/", "sourceNote": "吉尼斯", "asOf": "2024", "explanation": "历史上记录过最重的单根大象象牙重量达到了约102千克。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-24", "prompt": "世界上最大的沙漠撒哈拉沙漠的面积约多少万平方公里？", "unit": "万", "answer": 920, "sourceUrl": "https://en.wikipedia.org/wiki/Sahara", "sourceNote": "维基百科", "asOf": "2024", "explanation": "撒哈拉沙漠占地超过920万平方公里，接近整个美国的面积。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-25", "prompt": "世界上已知的蚂蚁种类大约有多少？", "unit": "种", "answer": 16000, "sourceUrl": "https://en.wikipedia.org/wiki/Ant", "sourceNote": "昆虫学", "asOf": "2024", "explanation": "目前生物学家已经分类命名了超过16000种蚂蚁，估计未发现的还有数万种。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-26", "prompt": "地球上每年大约会发生多少亿次闪电？", "unit": "亿次", "answer": 14, "sourceUrl": "https://en.wikipedia.org/wiki/Lightning", "sourceNote": "世界气象组织", "asOf": "2024", "explanation": "全球每天约产生800万次雷击，一年超过14亿次，这使氮气固定成为可能。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-27", "prompt": "一只成年雄性大猩猩的握力估计可达多少？", "unit": "千克", "answer": 320, "sourceUrl": "https://www.bbcearth.com/", "sourceNote": "BBC Earth", "asOf": "2024", "explanation": "大猩猩的力量大约是人类的6倍，其单手握力可轻松超过300千克。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-28", "prompt": "最大的活火山冒纳罗亚火山高出海平面多少？", "unit": "米", "answer": 4169, "sourceUrl": "https://en.wikipedia.org/wiki/Mauna_Loa", "sourceNote": "美国地质调查局", "asOf": "2024", "explanation": "夏威夷的冒纳罗亚火山海拔4169米，若从海底山脚算起超过一万米。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-29", "prompt": "帝企鹅在极端严寒的南极孵蛋时，最长可以绝食多少天？", "unit": "天", "answer": 115, "sourceUrl": "https://en.wikipedia.org/wiki/Emperor_penguin", "sourceNote": "极地生物研究", "asOf": "2024", "explanation": "雄性帝企鹅需要连续抱卵超过3个月，在此期间完全不进食，靠消耗脂肪维持。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-30", "prompt": "世界上发现的最重恐龙化石阿根廷龙估计体重达多少？", "unit": "吨", "answer": 100, "sourceUrl": "https://en.wikipedia.org/wiki/Argentinosaurus", "sourceNote": "古生物学记录", "asOf": "2024", "explanation": "阿根廷龙是已知最大的陆地脊椎动物之一，估计其最高体重可达100吨左右。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-31", "prompt": "一只成年考拉每天平均睡眠时间大约为多少？", "unit": "小时", "answer": 20, "sourceUrl": "https://en.wikipedia.org/wiki/Koala", "sourceNote": "澳洲动物协会", "asOf": "2024", "explanation": "由于桉树叶营养低且含有毒素，考拉需要极长的时间睡眠来节省能量并消化。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-32", "prompt": "世界上飞行最快的鸟类游隼在俯冲时的最高时速约多少？", "unit": "公里", "answer": 389, "sourceUrl": "https://en.wikipedia.org/wiki/Peregrine_falcon", "sourceNote": "国家地理", "asOf": "2024", "explanation": "游隼在俯冲捕猎时，曾测得超过389公里/小时的惊人速度。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-33", "prompt": "世界最长的山脉安第斯山脉全长约多少？", "unit": "公里", "answer": 8900, "sourceUrl": "https://en.wikipedia.org/wiki/Andes", "sourceNote": "大英百科", "asOf": "2024", "explanation": "安第斯山脉纵贯南美洲西部，全长近9000公里。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-34", "prompt": "猎豹从静止加速到100公里/小时大约仅需几秒？", "unit": "秒", "answer": 3, "sourceUrl": "https://en.wikipedia.org/wiki/Cheetah", "sourceNote": "动物行为学", "asOf": "2024", "explanation": "猎豹的加速度甚至超过了许多顶级超级跑车，只需短短3秒即可破百。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-35", "prompt": "一头成年抹香鲸可以潜入最深多少米的海域寻找食物？", "unit": "米", "answer": 3000, "sourceUrl": "https://en.wikipedia.org/wiki/Sperm_whale", "sourceNote": "海洋记录", "asOf": "2024", "explanation": "为了捕猎大王乌贼，抹香鲸可以深潜到海底近3000米深度。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-36", "prompt": "世界最干旱的沙漠阿塔卡马沙漠曾创下连续多少个月没有降雨的记录？", "unit": "个月", "answer": 400, "sourceUrl": "https://en.wikipedia.org/wiki/Atacama_Desert", "sourceNote": "气象档案", "asOf": "2024", "explanation": "阿塔卡马沙漠部分地区曾有长达400个月（超过30年）未见一滴雨的记录。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-37", "prompt": "世界上最大的植物种子海椰子最重可达多少？", "unit": "千克", "answer": 30, "sourceUrl": "https://en.wikipedia.org/wiki/Coco_de_mer", "sourceNote": "植物之最", "asOf": "2024", "explanation": "海椰子是已知最大的植物种子，不仅个头庞大，其重量也可达30公斤。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-38", "prompt": "地球上最深的淡水湖贝加尔湖的最大深度为多少？", "unit": "米", "answer": 1642, "sourceUrl": "https://en.wikipedia.org/wiki/Lake_Baikal", "sourceNote": "地质学", "asOf": "2024", "explanation": "贝加尔湖不仅深达1642米，还储存了全球超过20%的不冻淡水。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-39", "prompt": "成年鸵鸟的一只眼球重量大约是多少？", "unit": "克", "answer": 60, "sourceUrl": "https://en.wikipedia.org/wiki/Ostrich", "sourceNote": "鸟类解剖", "asOf": "2024", "explanation": "鸵鸟拥有陆地脊椎动物中最大的眼球，单重可达60克，甚至比它的大脑还重。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-40", "prompt": "南极洲冰盖的平均厚度大约是多少？", "unit": "米", "answer": 2100, "sourceUrl": "https://en.wikipedia.org/wiki/Antarctic_ice_sheet", "sourceNote": "冰川学", "asOf": "2024", "explanation": "南极冰盖平均厚度超过两公里，最厚处接近4800米。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-41", "prompt": "世界上已知最高的一棵活树“亥伯龙神”的高度约为多少？", "unit": "米", "answer": 116, "sourceUrl": "https://en.wikipedia.org/wiki/Hyperion_(tree)", "sourceNote": "植物界记录", "asOf": "2024", "explanation": "亥伯龙神是一棵加州红木，高度达到115.92米，为保护其安全具体位置一直保密。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-42", "prompt": "一只普通的家猫一天大约需要睡多少小时？", "unit": "小时", "answer": 15, "sourceUrl": "https://en.wikipedia.org/wiki/Cat", "sourceNote": "宠物护理", "asOf": "2024", "explanation": "为了节省捕猎所需的能量，猫咪平均每天要睡12到16个小时。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-43", "prompt": "已知最深的洞穴库鲁伯亚拉洞穴的深度大约是多少？", "unit": "米", "answer": 2197, "sourceUrl": "https://en.wikipedia.org/wiki/Krubera_Cave", "sourceNote": "洞穴探险", "asOf": "2024", "explanation": "库鲁伯亚拉洞穴曾是世界上已知唯一的深度超过两公里的洞穴。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-44", "prompt": "一只北极熊的胃一次可以容纳最多多少千克的食物？", "unit": "千克", "answer": 70, "sourceUrl": "https://en.wikipedia.org/wiki/Polar_bear", "sourceNote": "北极生物", "asOf": "2024", "explanation": "北极熊是超级大胃王，一次可以吃下相当于其体重10%至20%的海豹肉。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-45", "prompt": "地球上已知最大的真菌子实体（一朵蘑菇）的重量曾达到多少？", "unit": "千克", "answer": 500, "sourceUrl": "https://www.kew.org/", "sourceNote": "真菌学界", "asOf": "2024", "explanation": "曾在中国海南岛发现过重达近半吨的巨大多孔菌子实体。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-46", "prompt": "一只成年河马每天可以吃掉约多少公斤的草？", "unit": "千克", "answer": 40, "sourceUrl": "https://en.wikipedia.org/wiki/Hippopotamus", "sourceNote": "非洲动物档案", "asOf": "2024", "explanation": "尽管河马体型庞大，但因其新陈代谢低，每天“只”需要消耗约40千克草。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-47", "prompt": "成年企鹅在水下最长一次可以憋气约多少分钟？", "unit": "分钟", "answer": 20, "sourceUrl": "https://en.wikipedia.org/wiki/Penguin", "sourceNote": "南极生物学", "asOf": "2024", "explanation": "帝企鹅通过极端的生理调整，可以在水下潜游憋气长达20分钟。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-48", "prompt": "地球表面最大的淡水湖泊系统五大湖中的苏必利尔湖，面积达多少万平方公里？", "unit": "万", "answer": 8, "sourceUrl": "https://en.wikipedia.org/wiki/Lake_Superior", "sourceNote": "地理杂志", "asOf": "2024", "explanation": "苏必利尔湖面积超过8.2万平方公里，比许多国家都要大。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-49", "prompt": "单细胞生物眼虫移动时挥鞭一次的速度最快可以达多少微米每秒？", "unit": "微米", "answer": 100, "sourceUrl": "https://en.wikipedia.org/wiki/Euglena", "sourceNote": "微生物物理学", "asOf": "2024", "explanation": "尽管肉眼不可见，但在显微尺度下，它的相对游动速度可达100微米/秒。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-50", "prompt": "一只黑猩猩体内的基因数量大约有多少万个？", "unit": "万个", "answer": 2, "sourceUrl": "https://en.wikipedia.org/wiki/Chimpanzee_genome_project", "sourceNote": "基因组工程", "asOf": "2024", "explanation": "黑猩猩约有2万到2.5万个基因，与人类非常接近。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-51", "prompt": "一头健康的蓝鲸每天可以排泄多少千克的粪便？", "unit": "千克", "answer": 200, "sourceUrl": "https://marinemammalscience.org/", "sourceNote": "海洋营养循环", "asOf": "2024", "explanation": "蓝鲸庞大的食量导致其每天可以排泄出重达200千克的粪便，为海洋表层提供丰富铁质。", "reviewed": true
+  },
+  {
+    "id": "ww-batchA-52", "prompt": "人类头皮上平均大约拥有多少万根头发？", "unit": "万根", "answer": 10, "sourceUrl": "https://en.wikipedia.org/wiki/Hair", "sourceNote": "人体解剖", "asOf": "2024", "explanation": "正常成年人的头皮上大约有10万到15万个毛囊。", "reviewed": true
+  }
+]

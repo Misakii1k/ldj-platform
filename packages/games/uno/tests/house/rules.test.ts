@@ -353,7 +353,84 @@ test('TERMINAL-001：末张 +2 固定摸两张后结算', () => {
   assert.equal((next.round.hands[responder] ?? []).length, responderBefore + 2, '末张 +2 下家固定摸两张');
   assert.equal(next.match.roundScores.length, 1, '回合应结算');
   assert.equal(next.match.roundResults.length, 1);
+  const roundRes = next.match.roundResults[0]!;
+  assert.ok(roundRes.remainingHands, '结算时应包含 remainingHands');
+  assert.equal(roundRes.remainingHands.length, next.round.players.length);
+  for (let i = 0; i < next.round.players.length; i++) {
+    const hand: readonly UnoHouseCard[] | undefined = roundRes.remainingHands[i];
+    assert.ok(hand);
+    const computedScore: number = hand.reduce((sum: number, card: UnoHouseCard) => {
+      if (card.kind === 'number') return sum + card.value;
+      if (card.kind === 'wild' || card.kind === 'wild4') return sum + 50;
+      return sum + 20;
+    }, 0);
+    assert.equal(computedScore, roundRes.perPlayerTotals[i], '每人剩牌分之和应等于该人本局分');
+  }
+  // 对局中视图不得包含 remainingHands，lastRound 恒为 null（隐私不变量）
+  const playingView = unoHouseModule.getPlayerView(state, current) as unknown as Record<string, unknown>;
+  assert.equal(playingView['remainingHands'], undefined, '对局中视图不应泄漏 remainingHands');
+  assert.equal(playingView['lastRound'], null, '对局中 lastRound 恒为 null');
+  // match_over 视图必须带结算快照：逐张翻开剩余手牌的数据源
+  const overView = unoHouseModule.getPlayerView(next, current) as unknown as Record<string, unknown>;
+  const lastRound = overView['lastRound'] as { roundNumber: number; finisherPlayerId: string; remainingHands: unknown[][] } | null;
+  assert.ok(lastRound, 'match_over 视图必须带 lastRound 结算快照');
+  assert.equal(lastRound.roundNumber, roundRes.roundNumber);
+  assert.equal(lastRound.finisherPlayerId, current);
+  assert.equal(lastRound.remainingHands.length, next.round.players.length);
   assertUnoHouseInvariants(next);
+});
+
+test('ROUND-OVER：非末局结算后停在小结屏，begin 推进到下一局', () => {
+  // roundCount 3：出完第 1 局后必须停在 round_over 而不是直接开第 2 局
+  let state = init(['p1', 'p2'], { mode: 'individual', roundCount: 3 }, 'seed-park');
+  const current = state.round.currentPlayerId;
+  const top = state.round.topDiscard;
+  const hand = state.round.hands[current]!;
+  const topColor = cardColorOf(top);
+  // 找一张确定能出的牌：同色 > 同点数 > 万能牌
+  const last =
+    hand.find((c) => cardColorOf(c) !== null && cardColorOf(c) === topColor)
+    ?? hand.find((c) => c.kind === 'number' && top.kind === 'number' && c.value === top.value)
+    ?? hand.find((c) => c.kind === 'wild' || c.kind === 'wild4');
+  assert.ok(last, '起手 7 张牌必然存在可出的牌');
+  const isWildCard = last.kind === 'wild' || last.kind === 'wild4';
+  state = trimHand(state, current, [last]);
+  const r = unoHouseModule.reduce(
+    makeCtx(),
+    state,
+    { kind: 'player', playerId: current },
+    (isWildCard
+      ? { type: 'play_card', cardId: last.id, declaredColor: 'red' }
+      : { type: 'play_card', cardId: last.id }) as never,
+  );
+  assert.ok(r.ok);
+  state = r.nextState;
+  assert.equal(state.round.phase, 'round_over', '非末局结算后应停在小结屏');
+  assert.equal(state.match.roundScores.length, 1, '第 1 局分数已入账');
+  assert.equal(state.round.turnDeadlineAt, null, '小结屏期间无回合计时器');
+  assert.equal(state.round.windowDeadlineAt, null, '小结屏期间无窗口计时器');
+  assert.equal(r.resultCandidate, null, '非终局不下发正式结果');
+
+  // 小结屏视图带 lastRound 快照，且与入账分数一致
+  const view = unoHouseModule.getPlayerView(state, current) as unknown as Record<string, unknown>;
+  const lastRound = view['lastRound'] as { roundNumber: number; finisherPlayerId: string; remainingHands: unknown[][] } | null;
+  assert.ok(lastRound, 'round_over 视图必须带 lastRound');
+  assert.equal(lastRound.roundNumber, 1);
+  assert.equal(lastRound.finisherPlayerId, current);
+
+  // round_over 期间普通操作幂等空转，只有 begin 推进
+  const idle = unoHouseModule.reduce(makeCtx(), state, { kind: 'player', playerId: current }, { type: 'call_uno' } as never);
+  assert.ok(idle.ok);
+  assert.equal(idle.nextState.round.phase, 'round_over');
+
+  const rb = unoHouseModule.reduce(makeCtx(), state, { kind: 'player', playerId: current }, { type: 'begin' } as never);
+  assert.ok(rb.ok, 'begin 推进不应被拒');
+  assert.equal(rb.nextState.round.phase, 'round_playing', 'begin 后进入下一局');
+  assert.equal(rb.nextState.round.roundNumber, 2);
+  assert.equal(rb.nextState.match.roundResults.length, 1, '账本会带上一局结算');
+  const nextView = unoHouseModule.getPlayerView(rb.nextState, current) as unknown as Record<string, unknown>;
+  assert.equal(nextView['lastRound'], null, '新一局开打后 lastRound 重新为 null');
+  assertUnoHouseInvariants(rb.nextState);
 });
 
 test('SCORE/MATCH：3 回合个人赛：非终局 resultCandidate 为 null，终局恰一次', () => {
@@ -362,6 +439,13 @@ test('SCORE/MATCH：3 回合个人赛：非终局 resultCandidate 为 null，终
   let finished = false;
   for (let step = 0; step < 2000; step += 1) {
     if (state.round.phase === 'match_over') { finished = true; break; }
+    // 非末局结算后停在小结屏（round_over）：由「下一局」(begin) 推进
+    if (state.round.phase === 'round_over') {
+      const rb = unoHouseModule.reduce(makeCtx(), state, { kind: 'player', playerId: state.round.players[0]! }, { type: 'begin' } as never);
+      assert.ok(rb.ok, 'begin 推进下一局不应被拒');
+      state = rb.nextState;
+      continue;
+    }
     const current = state.round.currentPlayerId;
     const view = unoHouseModule.getPlayerView(state, current) as {
       me: { playableCardIds: string[]; capabilities: string[]; hasDrawnThisTurn: boolean } | null;

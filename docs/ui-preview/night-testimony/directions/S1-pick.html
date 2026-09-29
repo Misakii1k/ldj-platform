@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>谁是狱警 · 定稿 C · ① 出题（抽审讯单）</title>
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="C-kraft-archive.css">
+<style>
+  /* ① 出题：轮到的出题人从 3 张空白审讯单里挑 1 张，塞进夹板；其他人只看到「老王正在挑审讯单」。超时系统代选第一张。 */
+  .picker { position: absolute; left: 50%; top: 92px; translate: -58% 0; width: 640px; display: grid; gap: 14px; z-index: 1; }
+  .picker h2 { margin: 0; font: 900 13px var(--sans); letter-spacing: .16em; color: #eaf3ec; }
+  .slips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .slip {
+    position: relative; display: grid; grid-template-rows: auto 1fr auto; gap: 10px; padding: 16px 14px 12px; min-height: 210px; cursor: pointer; text-align: left;
+    font: inherit; color: var(--ink); background: repeating-linear-gradient(transparent 0 27px, rgba(121,96,165,.18) 27px 28px), #fffaf0;
+    border: 3px solid var(--ink); border-radius: 4px; box-shadow: 0 5px 0 var(--ink); transition: transform 160ms cubic-bezier(.34,1.56,.64,1), box-shadow 160ms;
+  }
+  .slip:nth-child(1) { rotate: -3deg; } .slip:nth-child(2) { rotate: 1deg; } .slip:nth-child(3) { rotate: 3.5deg; }
+  .slip:hover { transform: translateY(-8px); box-shadow: 0 13px 0 var(--ink); }
+  .slip .cat { justify-self: start; padding: 1px 8px; font: 800 11px var(--sans); letter-spacing: .1em; background: var(--kraft); border: 2px solid var(--ink); border-radius: 3px; }
+  .slip .txt { font: 700 19px/1.45 var(--serif); }
+  .slip .no { font: 700 12px "Courier New", monospace; color: var(--muted); }
+  .slip.gone { opacity: 0; transform: translateY(40px) rotate(10deg); pointer-events: none; transition: all 260ms; }
+  .waiting { display: grid; place-items: center; gap: 12px; min-height: 250px; padding: 20px; text-align: center; background: #fffaf0; border: 3px dashed var(--ink); border-radius: 4px; font: 800 16px var(--sans); color: var(--muted); rotate: -1deg; }
+  .waiting .pen { width: 60px; height: 10px; background: var(--ink); border-radius: 5px; animation: write 1.2s ease-in-out infinite; }
+  @keyframes write { 50% { translate: 24px 4px; rotate: 8deg; } }
+  .waiting b { font: 700 26px var(--serif); color: var(--ink); }
+  [data-view="asker"] .only-other, [data-view="other"] .only-asker { display: none !important; }
+  .files .seat.asker .st::after { content: " ✎"; }
+
+  @container (max-width: 600px) {
+    .picker { left: 12px; right: 12px; width: auto; translate: none; top: 100px; gap: 8px; }
+    .picker h2 { font-size: 11px; }
+    .slips { grid-template-columns: 1fr; gap: 8px; }
+    .slip, .slip:nth-child(n) { rotate: 0deg; min-height: 0; padding: 8px 10px; grid-template-rows: auto auto; grid-template-columns: auto 1fr; gap: 4px 8px; }
+    .slip .txt { font-size: 14px; grid-column: 1 / -1; }
+    .slip .no { justify-self: end; }
+    .waiting { min-height: 150px; font-size: 13px; }
+    .waiting b { font-size: 20px; }
+    .stack { top: 390px; }
+  }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>谁是狱警 · 定稿 C · ① 出题</strong>
+  <span class="tb-note">出题人 3 选 1 审讯单 → 塞进夹板 ｜ 其他人看到出题人在写 ｜ 超时系统代选第一张</span>
+  <div class="group"><button data-param="v" data-value="asker">你是出题人</button><button data-param="v" data-value="other">别人出题</button></div>
+  <div class="group"><button data-param="size" data-value="desktop">桌面 1280×800</button><button data-param="size" data-value="mobile">手机 390×844</button></div>
+  <div class="group"><button data-param="n" data-value="5">5 人</button><button data-param="n" data-value="6">6 人</button></div>
+  <div class="group"><button id="act-hurry">跳到最后 10 秒</button><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device">
+  <div class="head">
+    <h1 class="title">谁是狱警？</h1>
+    <div class="eyebrow">第 3 / 5 份审讯单 · 出题</div>
+  </div>
+  <div class="ring-box"><div class="ring" data-ring><span></span></div></div>
+
+  <section class="picker">
+    <h2 class="only-asker">挑一张审讯单 · 所有人都要如实回答 YES / NO（狱警除外）</h2>
+    <div class="slips only-asker" id="slips"></div>
+    <div class="waiting only-other"><div class="pen"></div><b data-bind="asker"></b>正在挑审讯单……</div>
+  </section>
+
+  <aside class="stack"><h3>已归档</h3>
+    <div class="note"><span class="note-no">Q1</span><span class="note-q">作案是否发生在深夜黑暗或无人时？</span><span class="note-yes"><i style="--seat-c:#8fd3b6"></i><i style="--seat-c:#9cc7f0"></i><i style="--seat-c:#f6b7cf"></i></span></div>
+    <div class="note"><span class="note-no">Q2</span><span class="note-q">你是否直接盗取了他人的实体物品？</span><span class="note-yes"><i style="--seat-c:#f7c84b"></i><i style="--seat-c:#8fd3b6"></i></span></div>
+  </aside>
+
+  <div class="files" data-seats="all"></div>
+
+  <div class="dock">
+    <div class="secret" data-secret title="点击遮挡 / 显示">
+      <div><div class="tag">你的罪行</div><small>点击遮挡</small></div>
+      <span class="word">偷吃外卖</span>
+    </div>
+    <div class="info"><strong data-bind="dock-title"></strong><span data-bind="dock-sub"></span></div>
+    <button class="btn only-other" id="act-bot">模拟出题完成</button>
+  </div>
+</div></div>
+<script src="_kit.js"></script>
+<script>
+  const { players, params } = KIT;
+  const view = params.get('v') || 'asker';
+  KIT.device.dataset.view = view;
+  const asker = view === 'asker' ? KIT.byName('小鱼干') : KIT.byName('老王');
+  KIT.byName('小鱼干').me = true;
+  const SLIPS = [
+    { cat: '现场痕迹', text: '作案现场是否有火烧或焦黑痕迹？' },
+    { cat: '作案手段', text: '你是否使用了假证件、假公章或伪造文件？' },
+    { cat: '受害接触', text: '你是否将受害人关押在秘密地点限制人身？' },
+  ];
+  KIT.status = (p) => (p === asker ? '出题人 · 挑单中' : '待审');
+  KIT.decorate = (el, p) => { if (p === asker) el.classList.add('asker'); };
+  KIT.ring(90, 64);
+  KIT.bind('asker', asker.name);
+  KIT.bind('dock-title', view === 'asker' ? '轮到你出题' : `${asker.name} 在出题`);
+  KIT.bind('dock-sub', view === 'asker' ? '挑一个能让狱警露馅的问题——他没有罪行，只能靠猜着答' : '等审讯单下来，按你的罪行如实回答');
+
+  const box = document.getElementById('slips');
+  box.innerHTML = SLIPS.map((s, i) => `<button class="slip" data-i="${i}"><span class="cat">${s.cat}</span><span class="txt">${s.text}</span><span class="no">No.00${3}-${'ABC'[i]}</span></button>`).join('');
+  box.querySelectorAll('.slip').forEach((b) => b.addEventListener('click', () => pick(b)));
+  async function pick(b) {
+    box.querySelectorAll('.slip').forEach((x) => x !== b && x.classList.add('gone'));
+    await KIT.wait(280);
+    // 选中的单子飞进夹板位置（即问答画面的 .form），落地后跳到问答画面
+    b.animate([{ transform: 'none' }, { transform: 'translate(0,-20px) scale(1.15) rotate(-4deg)' }, { transform: 'scale(1)' }], { duration: 420, easing: 'cubic-bezier(.34,1.56,.64,1)' });
+    KIT.shake();
+    await KIT.wait(500);
+    location.href = 'C-kraft-archive.html' + (params.get('n') ? '?n=' + params.get('n') : '');
+  }
+  document.getElementById('act-bot').addEventListener('click', () => { location.href = 'C-kraft-archive.html' + (params.get('n') ? '?n=' + params.get('n') : ''); });
+  KIT.render();
+</script>
+</body>
+</html>

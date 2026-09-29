@@ -1,64 +1,46 @@
-import type { ReactNode } from 'react';
+/**
+ * 谁是狱警 · 旧审讯单小卡（右上角「已归档」一叠）。
+ *
+ * 每张：Q 编号 + 题目（两行截断）+ 答 YES 的人的小色章。
+ * 最新一张带 drop-in 落入动画（由 newest 标记驱动）。
+ */
+import type { CSSProperties, ReactNode } from 'react';
+import type { MemberLike } from '../../useGameAction.ts';
+import type { QuestionRecord } from '../types.ts';
+import { seatColor } from './ArchiveProps.tsx';
 
 export interface TestimonyNoteProps {
-  /** 题号；null 表示这是待定的当前题（还没归档） */
-  readonly index: number | null;
-  readonly question: string;
-  /** 本题的 YES 数；null 表示还没答完，不显示图钉 */
-  readonly yesCount: number | null;
-  /** 参与人数，用于把图钉画成「N 个里 M 个是」 */
-  readonly total?: number;
-  /** 正在钉入：驱动图钉敲入动效 */
-  readonly pinning?: boolean;
-  /** 焦点态：当前题摊在板中央，比归档的便签大一号 */
-  readonly focus?: boolean;
-  readonly children?: ReactNode;
+  readonly record: QuestionRecord;
+  readonly members: readonly MemberLike[];
+  /** 全部玩家（答案人名 → 座次色 的映射用） */
+  readonly players: readonly string[];
+  /** 刚归档：播落入动画 */
+  readonly newest?: boolean;
 }
 
-/**
- * 审讯便签。
- *
- * 一道题的问答被写在便签上钉到证词板；YES 数用红色图钉表示，
- * 「几个人说了是」一眼可数，不需要读数字。
- */
-export function TestimonyNote({
-  index,
-  question,
-  yesCount,
-  total,
-  pinning = false,
-  focus = false,
-  children,
-}: TestimonyNoteProps) {
-  const pins = total ?? 0;
+export function TestimonyNote({ record, members, players, newest = false }: TestimonyNoteProps): ReactNode {
+  const yesPlayers = players.filter((id) => record.answers[id] === 'yes');
+  const nameOf = (id: string) => members.find((m) => m.playerId === id)?.nickname ?? id;
   return (
-    <article
-      className="nt-note"
-      data-focus={focus ? 'true' : undefined}
-      data-pinning={pinning ? 'true' : undefined}
-      aria-label={
-        index === null
-          ? `当前审讯题：${question}`
-          : `第 ${index} 题：${question}${yesCount === null ? '' : `，${yesCount} 人回答是`}`
-      }
+    <div
+      className={`nt-note${newest ? ' nt-note--new' : ''}`}
+      aria-label={`第 ${record.questionIndex} 问：${record.question}，${yesPlayers.length} 人回答 YES`}
     >
-      <span className="nt-note__tack" aria-hidden="true" />
-      <header className="nt-note__head">
-        {index === null ? (
-          <span className="nt-note__seal">待定</span>
+      <span className="nt-note__no">Q{record.questionIndex}</span>
+      <span className="nt-note__q">{record.question}</span>
+      <span className="nt-note__yes">
+        {yesPlayers.length > 0 ? (
+          yesPlayers.map((id) => (
+            <i
+              key={id}
+              style={{ '--seat-c': seatColor(players.indexOf(id)) } as CSSProperties}
+              title={nameOf(id)}
+            />
+          ))
         ) : (
-          <span className="nt-note__num">#{index}</span>
+          <em>全员 NO</em>
         )}
-        {yesCount !== null && pins > 0 && (
-          <span className="nt-note__pins" aria-hidden="true">
-            {Array.from({ length: pins }, (_, i) => (
-              <span key={i} className="nt-note__pin" data-on={i < yesCount ? 'true' : undefined} />
-            ))}
-          </span>
-        )}
-      </header>
-      <p className="nt-note__text">「{question}」</p>
-      {children}
-    </article>
+      </span>
+    </div>
   );
 }

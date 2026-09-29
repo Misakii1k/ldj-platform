@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ding · 整屏色块 · ① 出牌 + 拍铃</title>
+<link rel="stylesheet" href="../_shell.css">
+<link rel="stylesheet" href="_party.css">
+<link rel="stylesheet" href="_ding.css">
+</head>
+<body>
+<div class="toolbar">
+  <strong>Ding · 整屏色块 · ① 拍铃成功</strong>
+  <span class="note">按纠正后的规则：任何时候都能拍铃 → 亮出手里对应的短语卡（不用同色）→ 其他人 3 秒内可点「没做过」，过半才算拍错 → 成功则回合交给你。轮到你时短语卡也能按颜色当普通牌打</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile">手机 390×844</button></div>
+  <div class="group"><button data-hand="6" aria-pressed="true">手牌 6 张</button><button data-hand="15">15 张</button><button data-hand="24">24 张</button></div>
+  <div class="group"><button id="reset">重播</button><a href="index.html">返回目录</a></div>
+</div>
+<div class="stage-wrap"><div class="device ding" data-size="desktop">
+  <div class="phase-word" data-box="phase" id="phase">轮到阿杰 · 老王刚伸了个懒腰</div>
+  <div class="hud" data-box="hud">
+    <span class="color-chip"><i></i>当前：<span data-color-name></span></span>
+    <div class="turn-ring" id="ring"><svg viewBox="0 0 60 60"><circle class="track" cx="30" cy="30" r="26"/><circle class="bar" cx="30" cy="30" r="26"/></svg><span class="ring-num"></span></div>
+  </div>
+  <div class="me-zone">
+    <div class="fan my-hand" data-box="hand"></div>
+    <div class="dock" data-box="dock">
+      <button class="btn" id="btn-draw">摸牌</button>
+      <button class="btn btn-primary" id="btn-ring">拍铃！</button>
+    </div>
+  </div>
+  <div class="sticker me-tag" data-box="me"><div class="avatar" style="background:#f7c84b">鱼</div><b>小鱼干（你）</b><span class="n" data-count id="me-count">6</span><span class="say"></span></div>
+</div></div>
+<script src="../_shell.js"></script>
+<script src="_party.js"></script>
+<script src="_ding.js"></script>
+<script>
+(function () {
+  const P = Preview, U = Party, B = DingBell;
+  const device = document.querySelector('.device');
+  U.build({ backLabel: 'Ding', art: ['叮', '!', '🔔', '?'] });
+  B.buildBell();
+  const S = U.seats([
+    { id: 'momo', name: 'Momo', a: 'M', bg: '#f6b7cf', n: 7 },
+    { id: 'nuomi', name: '糯米', a: '糯', bg: '#9cc7f0', n: 5 },
+    { id: 'wang', name: '老王', a: '王', bg: '#b9a4e6', n: 8 },
+    { id: 'keke', name: '可可', a: '可', bg: '#8fd3b6', n: 6 },
+    { id: 'jie', name: '阿杰', a: '杰', bg: '#f29a7a', n: 4 },
+  ]);
+  const me = document.querySelector('.me-tag');
+  // 固定数据：轮到阿杰；老王刚伸了个懒腰——你手里正好有绿色短语卡「伸了一个懒腰」（和顶牌蓝色不同色也能打）
+  const HAND = [{ c: 'green', v: '2' }, { c: 'blue', v: '5' }, { c: 'green', phrase: '伸了一个懒腰' }, { c: 'red', v: '6' }, { c: 'yellow', phrase: '双手抱胸' }, { c: 'blue', v: '1' }];
+  const EXTRA = [{ c: 'red', v: '3' }, { c: 'yellow', v: '4' }, { c: 'blue', phrase: '做了一个鬼脸' }, { c: 'green', v: '6' }, { c: 'red', phrase: '举起了右手' }, { c: 'yellow', v: '1' }, { c: 'blue', v: '2' }, { c: 'green', phrase: '双手交叉放桌上' }, { c: 'red', v: '5' },
+    { c: 'yellow', phrase: '低头看手机或桌面' }, { c: 'blue', v: '6' }, { c: 'green', v: '3' }, { c: 'red', phrase: '发出笑声或微笑' }, { c: 'yellow', v: '2' }, { c: 'blue', phrase: '两手合十拜一下' }, { c: 'green', v: '1' }, { c: 'red', v: '4' }, { c: 'yellow', v: '5' }];
+  const COLOR_ORDER = ['red', 'yellow', 'green', 'blue'];
+  const hand = document.querySelector('.my-hand');
+  const discard = document.querySelector('.discard');
+  const deck = document.querySelector('.deck');
+  const ring = document.getElementById('ring');
+  let top = { c: 'blue', v: '4' };
+  U.landOnDiscard(U.card(top), { tilt: -4 });
+  U.setColor('blue', { splash: false });
+  U.setActive(S.jie);
+  P.countdown(ring, 15);
+  // 桌边提示：老王的贴纸上冒出"伸懒腰"动作气泡
+  setTimeout(() => U.say(S.wang, '（伸了个懒腰）'), 600);
+
+  let myTurn = false;
+  const canPlay = (el) => el.dataset.c === device.dataset.color || (!!el.dataset.v && el.dataset.v === top.v);
+  function relayout() { P.indexFan(hand); U.fitHand(hand); }
+  function deal(n) {
+    const list = [...HAND, ...EXTRA.slice(0, Math.max(0, n - HAND.length))].sort((a, b) => COLOR_ORDER.indexOf(a.c) - COLOR_ORDER.indexOf(b.c));
+    hand.innerHTML = list.map((c) => U.card(c)).join('');
+    [...hand.children].forEach(wire);
+    relayout();
+    document.getElementById('me-count').dataset.value = n;
+    document.getElementById('me-count').textContent = n;
+  }
+  function wire(el) {
+    el.addEventListener('click', () => {
+      if (B.state.phase === 'picking') { if (el.dataset.phrase) pick(el); return; }
+      if (U.peekFirst(hand, el)) return;
+      if (myTurn && canPlay(el)) playNormal(el);
+    });
+  }
+  deal(6);
+  document.querySelectorAll('[data-hand]').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-hand]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    deal(Number(b.dataset.hand));
+  }));
+
+  function onRing() {
+    if (B.ring(hand)) {
+      U.slam('叮！', 'ding');
+      document.getElementById('phase').textContent = '你拍了铃';
+    }
+  }
+  document.getElementById('bell').addEventListener('click', onRing);
+  document.getElementById('btn-ring').addEventListener('click', onRing);
+
+  async function pick(el) {
+    // 其他 5 人投票：这次只有 1 人质疑，没过半 → 成功
+    const res = await B.reveal(el, [
+      { who: 'jie', a: '杰', bg: '#f29a7a', doubt: false, at: 700 },
+      { who: 'keke', a: '可', bg: '#8fd3b6', doubt: false, at: 1100 },
+      { who: 'wang', a: '王', bg: '#b9a4e6', doubt: false, at: 1500 },
+      { who: 'nuomi', a: '糯', bg: '#9cc7f0', doubt: true, at: 1900 },
+      { who: 'momo', a: 'M', bg: '#f6b7cf', doubt: false, at: 2300 },
+    ]);
+    // 成功：卡飞到弃牌堆，颜色换成这张卡的颜色，回合交给你
+    const card = res.card;
+    B.finish();
+    await P.fly(card.cloneNode(true), card, discard, { lift: 80, spin: 8, duration: 420 });
+    U.landOnDiscard(card.outerHTML);
+    res.handEl.remove();
+    relayout();
+    P.roll(document.getElementById('me-count'), hand.children.length);
+    top = { c: card.dataset.c, v: null };
+    U.setColor(card.dataset.c);
+    U.slam('抢到回合！', 'ding');
+    P.shake(3);
+    U.setActive(me);
+    U.say(me, '轮到我了');
+    document.getElementById('phase').textContent = '轮到你 · 接着出一张';
+    myTurn = true;
+    P.countdown(ring, 15);
+  }
+
+  async function playNormal(el) {
+    myTurn = false;
+    const g = el.cloneNode(true);
+    g.style.transform = 'none';
+    el.style.visibility = 'hidden';
+    await P.fly(g, el, discard, { lift: 170, spin: 16, duration: 500 });
+    U.landOnDiscard(el.outerHTML);
+    discard.lastElementChild.style.visibility = 'visible';
+    el.remove();
+    relayout();
+    P.roll(document.getElementById('me-count'), hand.children.length);
+    top = { c: el.dataset.c, v: el.dataset.v ?? null };
+    U.setColor(el.dataset.c);
+    document.getElementById('phase').textContent = el.dataset.phrase ? '当普通牌打出 · 轮到可可' : '轮到可可';
+    U.setActive(S.keke);
+  }
+
+  document.getElementById('btn-draw').addEventListener('click', async () => {
+    if (!myTurn) return;
+    const g = U.node(U.card({ c: 'back', v: 'Ding' }));
+    await P.fly(g, deck, hand, { lift: 90, spin: -8, duration: 460 });
+    const el = U.node(U.card({ c: 'red', v: '3' }, 'drawn'));
+    hand.appendChild(el);
+    wire(el);
+    relayout();
+    P.roll(document.getElementById('me-count'), hand.children.length);
+  });
+})();
+</script>
+</body>
+</html>

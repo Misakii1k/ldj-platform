@@ -2,7 +2,7 @@
  * 一智千金桌面模拟模式页面（wits_wagers_sim_v1）。
  *
  * 系统只管：抽题、收秘密猜测、亮牌后排版图算赔率、翻面公开答案。
- * 筹码摆放与钞票加减是自由道具，不校验、不结算、不判胜负。
+ * 筹码摆放与分数加减是自由道具，不校验、不结算、不判胜负。
  */
 import { useEffect, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
@@ -10,12 +10,15 @@ import { nameFor, useGameAction } from '../useGameAction.ts';
 import { TabletopShell } from '../tabletop/TabletopShell.tsx';
 import { SimBoard, SimPanelHead, SimToolsPanel, useSimTimerDeadline } from '../tabletop/SimBoard.tsx';
 import { webAudio } from '../../shared-ui/WebAudioManager.ts';
-import { WitsAnswerCard } from './stage/WitsAnswerCard.tsx';
-import { WitsNoteStack } from './stage/WitsNoteStack.tsx';
+import { WitsLoungeScene } from './stage/WitsLoungeScene.tsx';
+import { WitsPokerCard } from './stage/WitsPokerCard.tsx';
+import { WitsChip } from './stage/WitsChip.tsx';
 import { WitsTableStage } from './stage/WitsTableStage.tsx';
-import { formatMoney, MAX_GUESS, MIN_GUESS, targetLabel, type BetPairView, type BoardTargetView, type ChipId, type TargetId } from './types.ts';
+import { playerColorFor, PLAYER_COLORS } from './seats.ts';
+import { formatPoints, MAX_GUESS, MIN_GUESS, targetLabel, type BetPairView, type BoardTargetView, type ChipId, type TargetId } from './types.ts';
 import type { WitsWagersSimPlayerView } from './simTypes.ts';
 import './wits-wagers.css';
+import './stage/wits-lounge.css';
 
 /**
  * 版图上离答案最近的牌（与服务端 board.ts 的 pickWinningTargets 同一口径）：
@@ -64,7 +67,7 @@ export function WitsWagersSimStage({ view }: Props) {
   const players = view.players.map((id) => ({
     id,
     name: nameFor(members, id),
-    score: formatMoney(view.money[id] ?? 0),
+    score: formatPoints(view.money[id] ?? 0),
     status: view.revealed
       ? (view.guesses?.[id] !== undefined ? `猜 ${view.guesses[id]!.toLocaleString('zh-CN')}` : '未交')
       : view.submittedIds.includes(id) ? '已交' : '写数字中',
@@ -102,7 +105,7 @@ export function WitsWagersSimStage({ view }: Props) {
     for (const c of pair) if (c.targetId) placedChips.push({ playerId: pid, chipId: c.chipId, targetId: c.targetId });
   }
 
-  /** 我的两枚筹码折成完整版的下注形状，桌面上就能画出同款钞票堆（sim 不押附加注） */
+  /** 我的两枚筹码折成完整版的下注形状，桌面上就能画出同款筹码摞（sim 不押附加注） */
   const myBets: BetPairView | null = myChips
     ? [
         { chipId: myChips[0].chipId, targetId: myChips[0].targetId, extraStake: 0 },
@@ -164,10 +167,10 @@ export function WitsWagersSimStage({ view }: Props) {
         logs={logs}
         tools={
           <>
-            {/* 我的猜测 + 我的钱：只有在座玩家才有 */}
+            {/* 我的猜测 + 我的筹码：只有在座玩家才有 */}
             {me && (
               <section className="sim-panel">
-                <SimPanelHead icon="pointer" title="我的猜测与钞票" />
+                <SimPanelHead icon="pointer" title="我的猜测与筹码" />
                 <div className="sim-board__row sim-tools ww-sim__me-row">
                   <div className="sim-tool">
                     <span className="stage-eyebrow">我的猜测</span>
@@ -195,10 +198,10 @@ export function WitsWagersSimStage({ view }: Props) {
                     <small className="sim-hint">{view.revealed ? '已亮牌，本题不能再改' : me.myGuess === null ? '只有自己能看到' : `已交：${me.myGuess.toLocaleString('zh-CN')}，亮牌前可改`}</small>
                   </div>
                   <div className="sim-tool">
-                    <span className="stage-eyebrow">我的钞票</span>
+                    <span className="stage-eyebrow">我的筹码</span>
                     <div className="ww-sim__money">
-                      <WitsNoteStack extraStake={myMoney} noteWidth={34} />
-                      <span className="sim-tool__value stage-numeral">{formatMoney(myMoney)}</span>
+                      <WitsChip color={myId ? playerColorFor(myId) : PLAYER_COLORS[0]} label="" size={34} />
+                      <span className="sim-tool__value stage-numeral">{formatPoints(myMoney)}</span>
                     </div>
                     <div className="sim-tool__row">
                       <button type="button" className="sim-tool__btn" disabled={busy || myMoney < 5} onClick={() => adjustMoney(-5)}>−5</button>
@@ -206,7 +209,7 @@ export function WitsWagersSimStage({ view }: Props) {
                       <button type="button" className="sim-tool__btn" disabled={busy} onClick={() => adjustMoney(1)}>+1</button>
                       <button type="button" className="sim-tool__btn" disabled={busy} onClick={() => adjustMoney(5)}>+5</button>
                     </div>
-                    <small className="sim-hint">1 分 = ¥100，输赢自己算自己记</small>
+                    <small className="sim-hint">输赢自己算自己记</small>
                   </div>
                 </div>
               </section>
@@ -215,8 +218,9 @@ export function WitsWagersSimStage({ view }: Props) {
           </>
         }
       >
-        {/* 中央桌面：直接复用完整版的 3D 毡面牌桌（钞箱 + 倒计时环 + 题目卡 + 版图 / 背面悬念行） */}
+        {/* 中央桌面：与联机版同款的贵宾厅场景 + 正视毡面牌桌（倒计时环 + 题目 + 版图 / 背面悬念扇） */}
         <div className="ww-game ww-sim__table" data-ww-theme="felt-green">
+          <WitsLoungeScene compact />
           <WitsTableStage
             phase={view.revealed ? 'betting' : 'answering'}
             question={question ? { prompt: question.prompt, unit: question.unit } : null}
@@ -236,7 +240,7 @@ export function WitsWagersSimStage({ view }: Props) {
             <section className="sim-panel ww-sim__foot">
               <div className="ww-sim__answer-card">
                 <span className="stage-eyebrow">{view.answerRevealed ? '标准答案' : '答案背面'}</span>
-                <WitsAnswerCard target={answerTarget} faceUp={answerTarget !== null} />
+                <WitsPokerCard target={answerTarget} size="compact" />
               </div>
 
               <div className="ww-sim__chip-area">
@@ -266,7 +270,7 @@ export function WitsWagersSimStage({ view }: Props) {
                     <div className="ww-sim__chips">
                       {placedChips.map((p) => (
                         <span key={`${p.playerId}:${p.chipId}`} className="ww-sim__chip" title={`${nameFor(members, p.playerId)} 的筹码 ${p.chipId}`}>
-                          <WitsNoteStack badge={p.chipId} noteWidth={22} />
+                          <WitsChip color={playerColorFor(p.playerId)} label={p.chipId} size={26} />
                           <small>{nameFor(members, p.playerId)} → {targetLabel(view.board.find((t) => t.id === p.targetId))}</small>
                         </span>
                       ))}
@@ -289,8 +293,8 @@ export function WitsWagersSimStage({ view }: Props) {
           <ul>
             <li>写数字：亮牌前只有自己能看到，可以反复改。</li>
             <li>亮牌排版图：去重、升序，按 1~7 个不同值查表给赔率；最左一张「更低」固定 6 倍，右边没有对应卡。</li>
-            <li>摆筹码：先选 A 或 B，再点牌；再点一次收回。想押多少钱口头说。</li>
-            <li>钞票：± 按钮自己加减，1 分 = ¥100。</li>
+            <li>摆筹码：先选 A 或 B，再点牌；再点一次收回。想押多少分口头说。</li>
+            <li>筹码：± 按钮自己加减。</li>
             <li>翻开答案：主持人翻面公开，可以再盖回去。</li>
           </ul>
         </div>

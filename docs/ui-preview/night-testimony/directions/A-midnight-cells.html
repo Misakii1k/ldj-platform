@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>谁是狱警 · 方向 A · 深夜牢房</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  /* 方向 A：深色细边。世界 = 午夜牢区；顶部一排牢房（每位玩家一间，铁栏 + 囚号），探照灯来回扫；中央是铁桌上的审讯题牌，答题牌扣在桌上；右侧墙上用粉笔划着前几问的记录。 */
+  :root {
+    --line: rgba(214, 190, 140, .45);
+    --bw: 1.5px;
+    --card: #1b1a1f;
+    --card-text: #efe6d2;
+    --card-muted: #948a78;
+    --shadow: 0 10px 26px rgba(0,0,0,.55);
+    --shadow-sm: 0 6px 16px rgba(0,0,0,.45);
+    --accent: #e8c170;
+    --red: #e5484d;
+    --bust-line: #0d0c10;
+  }
+  .device {
+    background:
+      radial-gradient(ellipse 46% 60% at var(--sx, 50%) 62%, rgba(255,236,180,.20), transparent 70%),
+      linear-gradient(#141318 0 250px, #0f0e12 250px);
+    color: var(--card-text);
+  }
+  .device::before { /* 砖墙纹 */
+    content: ""; position: absolute; inset: 250px 0 0; pointer-events: none; opacity: .5;
+    background:
+      linear-gradient(rgba(255,255,255,.03) 2px, transparent 2px) 0 0 / 100% 40px,
+      linear-gradient(90deg, rgba(255,255,255,.03) 2px, transparent 2px) 0 0 / 80px 40px;
+  }
+  .searchlight { position: absolute; top: -40px; left: 0; width: 520px; height: 900px; pointer-events: none; transform-origin: 50% 0;
+    background: linear-gradient(rgba(255,236,180,.16), transparent 75%); clip-path: polygon(46% 0, 54% 0, 100% 100%, 0 100%);
+    animation: sweep 7s ease-in-out infinite alternate; }
+  @keyframes sweep { from { translate: -60px 0; rotate: 18deg; } to { translate: 820px 0; rotate: -18deg; } }
+
+  .head { position: absolute; left: 32px; top: 272px; }
+  .head .eyebrow { color: var(--accent); }
+  .head .title { font-size: 34px; margin-top: 6px; color: #fff4dc; }
+  .ring-box { position: absolute; right: 32px; top: 268px; }
+  .ring { --ring-bg: rgba(232,193,112,.14); width: 70px; height: 70px; }
+  .ring > span { background: #16151a; color: #fff4dc; }
+
+  /* 牢房排 */
+  .cells { position: absolute; left: 24px; right: 24px; top: 20px; height: 214px; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; }
+  .cells .seat {
+    grid-template-columns: 1fr; justify-items: center; align-content: end; text-align: center; gap: 4px;
+    padding: 16px 10px 12px; border-radius: 10px 10px 4px 4px; background: linear-gradient(#232128, #17161b);
+    overflow: hidden;
+  }
+  .cells .seat::before { /* 铁栏 */
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    background: repeating-linear-gradient(90deg, transparent 0 22px, rgba(160,150,130,.55) 22px 26px);
+    transition: opacity 300ms;
+  }
+  .cells .seat .av { width: 64px; grid-row: auto; }
+  .cells .seat .nm { font-size: 15px; max-width: 100%; position: relative; z-index: 2; background: rgba(15,14,18,.8); padding: 0 6px; border-radius: 6px; }
+  .cells .seat .st { position: relative; z-index: 2; }
+  .cells .seat .no { z-index: 3; left: 6px; top: 6px; background: #16151a; color: var(--accent); border-color: var(--line); }
+  .inmate { position: absolute; right: 8px; top: 8px; z-index: 3; font: 700 12px var(--serif); color: var(--accent); letter-spacing: .06em; }
+  .yes { display: flex; gap: 5px; position: relative; z-index: 2; }
+  .yes i { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--line); }
+  .yes i.used { background: var(--red); border-color: var(--red); box-shadow: 0 0 8px var(--red); }
+  .seat.hot .yes i:not(.used) { border-color: var(--red); }
+  .seat.me { box-shadow: 0 0 0 2px var(--yellow), var(--shadow-sm); }
+  .seat.me::before { opacity: .35; }
+  .seat.asker .st { color: var(--accent); }
+  .seat.said-yes { box-shadow: 0 0 0 2px var(--red), 0 0 28px rgba(229,72,77,.45); }
+  .seat.said-yes .st { color: var(--red); font-weight: 900; }
+
+  /* 铁桌 */
+  .table {
+    position: absolute; left: 50%; top: 334px; translate: -50% 0; width: 660px;
+    display: grid; gap: 16px; justify-items: center; text-align: center;
+  }
+  .plaque {
+    width: 100%; padding: 22px 30px 20px; border: 1.5px solid var(--line); border-radius: 12px;
+    background: linear-gradient(#2a282e, #1e1d22); box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.06);
+    position: relative;
+  }
+  .plaque::before, .plaque::after { content: ""; position: absolute; top: 12px; width: 8px; height: 8px; border-radius: 50%; background: #5d574c; }
+  .plaque::before { left: 12px; } .plaque::after { right: 12px; }
+  .plaque .by { font: 800 12px var(--sans); letter-spacing: .16em; color: var(--card-muted); }
+  .plaque .by b { color: var(--accent); }
+  .q { font-family: var(--serif); font-size: 30px; line-height: 1.4; margin: 10px 0 0; color: #fff4dc; }
+  .answers { display: flex; gap: 12px; justify-content: center; }
+  .chip {
+    width: 74px; height: 92px; display: grid; grid-template-rows: 1fr auto; place-items: center; padding: 8px 4px 6px;
+    border-radius: 10px; border: 1.5px dashed var(--line); color: var(--card-muted);
+  }
+  .chip.in { border-style: solid; border-color: rgba(232,193,112,.6); background: repeating-linear-gradient(45deg, #2b2830 0 6px, #25232a 6px 12px); box-shadow: var(--shadow-sm); }
+  .chip-face { font: 700 24px var(--serif); }
+  .chip-name { font-size: 11px; font-weight: 700; max-width: 66px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip.flip { animation: flip 460ms cubic-bezier(.22,1,.36,1) both; }
+  .chip.flip.yes { background: var(--red); border-color: var(--red); color: #fff; box-shadow: 0 0 26px rgba(229,72,77,.6); }
+  .chip.flip.no { background: #d8cfbd; border-color: #d8cfbd; color: #1b1a1f; }
+  @keyframes flip { 0% { transform: rotateY(90deg) scale(1.2); } 100% { transform: none; } }
+  .count-line { font: 700 13px var(--sans); color: var(--card-muted); }
+  .count-line .numeral { font-size: 22px; color: #fff4dc; margin-right: 4px; }
+  .pin-fly { width: 16px; height: 16px; border-radius: 50%; background: var(--red); box-shadow: 0 0 14px var(--red); }
+
+  /* 粉笔墙：前几问 */
+  .wall { position: absolute; right: 32px; top: 360px; width: 230px; display: grid; gap: 10px; }
+  .wall h3 { margin: 0; font: 800 12px var(--sans); letter-spacing: .18em; color: var(--card-muted); }
+  .note { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; padding: 8px 10px; border-left: 2px solid rgba(239,230,210,.35); font-size: 13px; color: #d9cfbb; }
+  .note-no { font: 700 15px var(--serif); color: var(--accent); grid-row: span 2; }
+  .note-yes { display: flex; gap: 4px; }
+  .note-yes i { width: 10px; height: 10px; border-radius: 50%; background: var(--red); outline: 2px solid var(--seat-c); outline-offset: 1px; }
+  .note-yes em { font-size: 11px; color: var(--card-muted); font-style: normal; }
+  .rule { position: absolute; left: 32px; top: 372px; width: 220px; font-size: 13px; line-height: 1.7; color: var(--card-muted); }
+  .rule b { color: var(--card-text); }
+  .rule .big { display: block; font: 700 40px var(--serif); color: var(--red); margin-bottom: 4px; }
+
+  .dock {
+    position: absolute; left: 32px; right: 32px; bottom: 20px; display: flex; align-items: center; gap: 16px;
+    padding: 12px 14px 12px 16px; border: 1.5px solid var(--line); border-radius: 16px; background: rgba(22,21,26,.96); box-shadow: var(--shadow);
+  }
+  .dock .info { flex: 1; min-width: 0; }
+  .dock .info strong { display: block; font-size: 17px; color: #fff4dc; }
+  .dock .info span { font-size: 13px; color: var(--card-muted); font-weight: 600; }
+  .secret { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: 12px; border: 1.5px solid var(--line); background: rgba(232,193,112,.07); }
+  .secret .tag { font: 800 12px var(--sans); color: var(--accent); letter-spacing: .1em; }
+  .secret .word { font: 700 22px var(--serif); color: #fff; }
+  .secret small { display: block; font-size: 11px; color: var(--card-muted); }
+  .btn { border-color: transparent; box-shadow: 0 4px 0 #8d6a12; }
+  .btn-no { background: #d8cfbd; box-shadow: 0 4px 0 #6d6556; }
+  .btn-yes { background: var(--red); color: #fff; box-shadow: 0 4px 0 #8a2126; }
+
+  .flash-red { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 50%, rgba(229,72,77,.35), transparent 60%); opacity: 0; }
+  .flash-red.run { animation: fr 520ms ease-out; }
+  @keyframes fr { 20% { opacity: 1; } }
+
+  @container (max-width: 600px) {
+    .device { background: radial-gradient(ellipse 80% 40% at 50% 52%, rgba(255,236,180,.16), transparent 70%), linear-gradient(#141318 0 340px, #0f0e12 340px); }
+    .device::before { top: 340px; }
+    .searchlight { width: 300px; }
+    .cells { left: 10px; right: 10px; top: 10px; height: 320px; grid-auto-flow: row; grid-template-columns: repeat(3, 1fr); grid-auto-columns: auto; gap: 8px; }
+    .cells .seat { padding: 10px 4px 8px; gap: 2px; }
+    .cells .seat::before { background: repeating-linear-gradient(90deg, transparent 0 16px, rgba(160,150,130,.5) 16px 19px); }
+    .cells .seat .av { width: 40px; }
+    .cells .seat .nm { font-size: 12px; }
+    .cells .seat .nm .you { display: none; }
+    .cells .seat .st { font-size: 10px; }
+    .cells .seat .no { width: 18px; height: 18px; font-size: 10px; left: 4px; top: 4px; }
+    .inmate { font-size: 10px; right: 5px; top: 5px; }
+    .yes i { width: 9px; height: 9px; }
+    .head { left: 14px; top: 350px; }
+    .head .title { font-size: 22px; }
+    .head .eyebrow { font-size: 10px; }
+    .ring-box { right: 14px; top: 346px; }
+    .ring { width: 54px; height: 54px; }
+    .ring > span { font-size: 13px; }
+    .rule, .wall h3 { display: none; }
+    .table { top: 412px; width: calc(100% - 24px); gap: 10px; }
+    .plaque { padding: 14px 14px 12px; }
+    .q { font-size: 19px; margin-top: 6px; }
+    .answers { gap: 6px; }
+    .chip { width: 54px; height: 64px; padding: 4px 2px; }
+    .chip-face { font-size: 17px; }
+    .chip-name { font-size: 10px; max-width: 50px; }
+    .wall { left: 12px; right: 12px; top: auto; bottom: 170px; width: auto; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .note { font-size: 11px; padding: 4px 6px; }
+    .note-q { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .dock { left: 12px; right: 12px; bottom: 14px; flex-wrap: wrap; gap: 10px; padding: 12px; }
+    .dock .info { flex: 1 1 150px; min-width: 0; }
+    .dock .secret { flex: 0 0 auto; }
+    .secret { padding: 6px 10px; }
+    .secret small { display: none; }
+    .dock .info strong { font-size: 15px; }
+    .dock .info span { font-size: 12px; }
+    .secret .word { font-size: 17px; }
+    .dock .btn { flex: 1 1 calc(50% - 5px); min-height: 44px; }
+  }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>方向 A · 深夜牢房（深色细边）</strong>
+  <span class="tb-note">构图：顶部一排牢房席位 + 中央铁桌题牌 + 右墙粉笔记录　对标：狼人杀的夜色 · Balatro 的翻牌计分</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile" aria-pressed="false">手机 390×844</button></div>
+  <div class="group"><button data-set-count="5">5 人</button><button data-set-count="6">6 人</button></div>
+  <div class="group"><button id="act-hurry">跳到最后 10 秒</button><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="searchlight"></div>
+  <div class="cells" data-seats="all"></div>
+
+  <div class="head">
+    <div class="eyebrow">MIDNIGHT · 第 <span data-bind="qi"></span> / <span data-bind="limit"></span> 问</div>
+    <h1 class="title">谁是狱警？</h1>
+  </div>
+  <div class="ring-box"><div class="ring" data-ring><span></span></div></div>
+
+  <p class="rule"><span class="big numeral"><span data-bind="max-yes"></span></span>任何人用满 <b><span data-bind="max-yes"></span> 次 YES</b>，或问满 5 题，立刻投票抓狱警。</p>
+
+  <section class="table">
+    <div class="plaque">
+      <div class="by">出题人 <b data-bind="asker"></b></div>
+      <p class="q" data-bind="question"></p>
+    </div>
+    <div class="answers" data-answers></div>
+    <div class="count-line"><span class="numeral"><span data-bind="answered"></span>/<span data-bind="total"></span></span>已扣下答题牌 · 全员答完同时翻开</div>
+  </section>
+
+  <aside class="wall"><h3>墙上的记录</h3><div data-history style="display:contents"></div></aside>
+
+  <div class="dock">
+    <div class="secret" data-secret title="点击遮挡 / 显示">
+      <div><div class="tag">你的罪行</div><small>点击遮挡</small></div>
+      <span class="word" data-bind="crime"></span>
+    </div>
+    <div class="info"><strong data-bind="dock-title"></strong><span data-bind="dock-sub"></span></div>
+    <button class="btn btn-no" data-answer="no">NO</button>
+    <button class="btn btn-yes" data-answer="yes">YES</button>
+  </div>
+  <div class="flash-red" id="fr"></div>
+</div></div>
+<script src="_shared.js"></script>
+<script>
+  document.addEventListener('reveal', () => { const f = document.getElementById('fr'); f.classList.remove('run'); void f.offsetWidth; f.classList.add('run'); });
+</script>
+</body>
+</html>

@@ -1,11 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useWerewolfTheme } from '../WerewolfThemeProvider.tsx';
 import { NARRATION_SETTINGS_EVENT, readNarrationSettings } from './narrationSettings.ts';
 import './werewolf-settings.css';
 import { webAudio } from '../../../shared-ui/WebAudioManager.ts';
 import { useTabletopMenu } from '../../../shared-ui/useTabletopMenu.ts';
 import { ConfirmDialog } from '../../../shared-ui/ConfirmDialog.tsx';
-import { Volume2, VolumeX, BookOpen, Home, LogOut, Flame, Palette } from 'lucide-react';
+import { Volume2, VolumeX, BookOpen, Home, LogOut, Flame } from 'lucide-react';
 
 interface WerewolfSettingsDrawerProps {
   readonly isOpen: boolean;
@@ -20,7 +19,6 @@ export function WerewolfSettingsDrawer({
   onShowRules,
   isHost = false,
 }: WerewolfSettingsDrawerProps) {
-  const { pair, setPair } = useWerewolfTheme();
   const menu = useTabletopMenu();
 
   // 音效与音量状态
@@ -123,57 +121,6 @@ export function WerewolfSettingsDrawer({
           </div>
 
           <div className="ww-settings-content">
-            {/* 主题选择组（两组卡片而非散切皮肤） */}
-            <div className="ww-settings-section">
-              <span className="ww-settings-section-title">
-                <Palette size={16} aria-hidden="true" style={{ display: 'inline', marginRight: 4, verticalAlign: '-2px' }} />
-                视觉主题套装
-              </span>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '6px' }}>
-                <button
-                  type="button"
-                  aria-pressed={pair === 'forest'}
-                  onClick={() => setPair('forest')}
-                  style={{
-                    padding: '10px',
-                    borderRadius: '8px',
-                    border: pair === 'forest' ? '2px solid var(--active, #245844)' : '1px solid var(--edge, #748575)',
-                    background: pair === 'forest' ? 'var(--card, #fffdf7)' : 'var(--desk, #f4efe5)',
-                    color: 'var(--text, #203c30)',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    boxShadow: pair === 'forest' ? '0 0 0 1px var(--active, #245844)' : 'none',
-                  }}
-                >
-                  <strong style={{ display: 'block', fontSize: '13px' }}>林中星轨</strong>
-                  <small style={{ display: 'block', color: 'var(--secondary, #465c4e)', marginTop: '2px', fontSize: '11px' }}>
-                    日: 日光木刻 · 夜: 月蚀星轨
-                  </small>
-                </button>
-
-                <button
-                  type="button"
-                  aria-pressed={pair === 'theatre'}
-                  onClick={() => setPair('theatre')}
-                  style={{
-                    padding: '10px',
-                    borderRadius: '8px',
-                    border: pair === 'theatre' ? '2px solid var(--active, #753747)' : '1px solid var(--edge, #a57b87)',
-                    background: pair === 'theatre' ? 'var(--card, #fffaf2)' : 'var(--desk, #f7efe5)',
-                    color: 'var(--text, #4b2430)',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    boxShadow: pair === 'theatre' ? '0 0 0 1px var(--active, #753747)' : 'none',
-                  }}
-                >
-                  <strong style={{ display: 'block', fontSize: '13px' }}>双面剧场</strong>
-                  <small style={{ display: 'block', color: 'var(--secondary, #714654)', marginTop: '2px', fontSize: '11px' }}>
-                    日: 白昼剧场 · 夜: 赤幕剧场
-                  </small>
-                </button>
-              </div>
-            </div>
-
             {/* 音量与播报设置 */}
             <div className="ww-settings-section">
               <span className="ww-settings-section-title">音频与播报</span>

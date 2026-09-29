@@ -43,7 +43,7 @@ const REGISTRY: Readonly<Record<string, GameViewParser>> = {
     parsePlayerView: (view) => parseUnoView(view, 'player'),
     parseSpectatorView: (view) => parseUnoView(view, 'spectator'),
   },
-  'uno:uno_platform_house_v1:1': {
+  'uno:uno_platform_house_v1:2': {
     parsePlayerView: (view) => parseUnoHouseView(view, 'player'),
     parseSpectatorView: (view) => parseUnoHouseView(view, 'spectator'),
   },

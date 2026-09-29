@@ -673,17 +673,18 @@ export const GAME_CATALOG = [
     maxPlayers: 7,
     availability: 'playable',
     maturity: 'M3',
-    summary: '匹配颜色或数字出牌。诱导其他玩家触发手牌上的短语或动作时可按铃抢夺出牌权，先出完所有手牌者获胜。',
+    summary: '匹配颜色或数字出牌。任何时候都能按铃亮出短语卡，再由其他人质疑判定，先出完所有手牌者获胜。',
     tags: ['反应', '卡牌', '聚会'],
     theme: 'berry',
     rulesets: [
       {
         id: 'bell_clash_v1',
         label: '标准规则（出牌短语 · 拍铃抢回合）',
-        description: '出同色或同数字手牌。当其他玩家触发手牌上的行动短语时按铃抢夺出牌权，先出完手牌者获胜。',
+        description: '出同色或同数字手牌。任何时候都能按铃亮出短语卡，再由其他人质疑判定，先出完手牌者获胜。',
         details: [
           '【卡牌出牌】打出同色或同数字手牌，无牌可出摸一张。',
-          '【短语拍铃】手牌印有日常口癖或动作短语，有玩家触发即可拍铃抢出牌。',
+          '【短语拍铃】手牌印有日常口癖或动作短语，任何人看到有人做了对应动作即可拍铃亮卡（不必与顶牌同色）。',
+          '【质疑判定】亮卡后其他人有数秒时间质疑；质疑过半算拍错，罚摸一张并把卡收回。',
           '【先出完胜】先将手中所有牌打光者获胜。',
         ],
       },
@@ -701,16 +702,17 @@ export const GAME_CATALOG = [
     setup: defaultSetup({
       id: 'bell_clash_v1',
       label: '标准规则（出牌短语 · 拍铃抢回合）',
-      description: '出同色或同数字手牌。当其他玩家触发手牌上的行动短语时按铃抢夺出牌权，先出完手牌者获胜。',
+      description: '出同色或同数字手牌。任何时候都能按铃亮出短语卡，再由其他人质疑判定，先出完手牌者获胜。',
       details: [
         '【卡牌出牌】打出同色或同数字手牌，无牌可出摸一张。',
-        '【短语拍铃】手牌印有日常口癖或动作短语，有玩家触发即可拍铃抢出牌。',
+        '【短语拍铃】手牌印有日常口癖或动作短语，任何人看到有人做了对应动作即可拍铃亮卡（不必与顶牌同色）。',
+        '【质疑判定】亮卡后其他人有数秒时间质疑；质疑过半算拍错，罚摸一张并把卡收回。',
         '【先出完胜】先将手中所有牌打光者获胜。',
       ],
     }, [
       { key: 'handSize', kind: 'integer', label: '每人手牌数', defaultValue: 8, min: 1, max: 12, step: 1 },
       { key: 'turnSeconds', kind: 'integer', label: '出牌时长（秒）', defaultValue: 30, min: 1, max: 600, step: 1 },
-      { key: 'bellSeconds', kind: 'integer', label: '按铃窗口（秒）', defaultValue: 10, min: 1, max: 600, step: 1 },
+      { key: 'challengeSeconds', kind: 'integer', label: '质疑判定时长（秒）', defaultValue: 3, min: 1, max: 30, step: 1 },
     ], {}, [
       {
         id: 'bell_clash_sim_v1',

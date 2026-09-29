@@ -1,551 +1,2101 @@
 /**
- * 囚徒之夜 · 审讯室长桌
+ * 谁是狱警（囚徒之夜）· C 牛皮纸档案室
  *
- * 契约见 docs/plans/2026-09-22-game-ui-uplift/contracts/night-testimony.md
- * - 浅色纸感底；只在投票与猜罪阶段加局部暗角（审讯灯只照桌中央）
- * - 平面：不启用 .stage-felt-3d，只用 FLIP 与平面飞行层
- * - accent 取 catalog 的 violet（#7960a5，对比度 3.83），只作描边 / 图钉 / ≥24px 大字，
- *   纸底正文一律 ink / muted
- * - 布局量用局部 --nt-*，颜色一律平台令牌
+ * 视觉契约与像素参照：
+ * - docs/plans/2026-09-26-night-testimony-visual/README.md（§1 视觉契约）
+ * - docs/ui-preview/night-testimony/directions/C-kraft-archive.css（颜色/尺寸以它为准）
+ *
+ * 世界：监狱档案室的办公桌（俯视）。深绿桌面 + 台灯光圈；中央夹板审讯单；
+ * 右上旧审讯单一叠；底部一排牛皮纸档案袋席位。
+ * 浅色粗墨边（3px 墨线 + 硬投影），桌面是唯一的深色大面积。
+ *
+ * 颜色：全局令牌（--game-ink/--game-muted/--game-surface/--game-accent/--game-coral/--game-yellow）
+ * + 本文件局部 --nt-*（桌面绿 / 牛皮纸 / 出题人紫 / NO 蓝 / 对号绿 / 狱警深色 / 已自告灰）。
+ * 布局量用局部变量；断点只用规范集合（640 / 480 + 横屏 520）。
  *
  * main.tsx 在 styles.css 之后、game-ui.css 之前按原顺序 import。
  */
 
-.nt-game {
-  --nt-gap: 10px;
-  --nt-note-w: 168px;
-  --nt-radius: var(--gp-radius-md);
+/* ── 桌面（舞台根） ────────────────────────────────────────── */
 
-  display: flex;
-  flex-direction: column;
-  gap: var(--nt-gap);
-  min-width: 0;
-  min-height: 0;
+.nt-desk {
+  /* 局部色（契约 §1.3 的“局部”列） */
+  --nt-rule: rgba(121, 96, 165, 0.18);
+  --nt-desk-a: #5f7f6b;
+  --nt-desk-b: #557462;
+  --nt-lamp: rgba(255, 247, 215, 0.35);
+  --nt-kraft: #d9b27c;
+  --nt-kraft-d: #b98a4f;
+  --nt-kraft-ink: #5b4527;
+  --nt-asker-a: #cfc3e4;
+  --nt-asker-b: #b9a9d6;
+  --nt-asker-ink: #4e3777;
+  --nt-no: #2f5d8a;
+  --nt-ok: #2f7a4f;
+  --nt-warden-a: #4b5263;
+  --nt-warden-b: #2e3440;
+  --nt-exposed-a: #e9e4d8;
+  --nt-exposed-b: #d8d1c1;
+  --nt-paper: #fffaf0;
+  --nt-cream-text: #eaf3ec;
+
+  position: relative;
   flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.035) 1px, transparent 1px) 0 0 / 7px 100%,
+    linear-gradient(var(--nt-desk-a), var(--nt-desk-b));
+  box-shadow: inset 0 0 0 rgba(18, 16, 12, 0);
+  transition: box-shadow var(--gp-dur-phase, 0.4s) ease;
 }
 
-/* ── 顶部横栏：身份卡 / 倒计时环 / 全员 YES 计数 ───────────────── */
-
-.nt-rail {
-  display: flex;
-  align-items: stretch;
-  gap: var(--nt-gap);
-  min-width: 0;
-  flex-wrap: wrap;
+/* 台灯光圈（中心偏左上 46% 40%） */
+.nt-desk::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 50% 55% at 46% 40%, var(--nt-lamp), transparent 70%);
 }
 
-.nt-private {
-  flex: 0 1 220px;
-  min-width: 0;
-  padding: 8px;
+/* 投票与猜罪：暗角压下，台灯只照桌中央 */
+.nt-desk[data-vignette='true'] {
+  box-shadow: inset 0 0 140px rgba(18, 16, 12, 0.6);
+}
+
+/* ── 左上告示牌头 ──────────────────────────────────────────── */
+
+.nt-head {
+  position: absolute;
+  left: 24px;
+  top: 18px;
+  z-index: 2;
+}
+
+.nt-head__title {
+  display: inline-block;
+  margin: 0;
+  padding: 6px 18px 8px;
+  font-family: var(--gp-font-display);
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--game-ink);
+  background: var(--game-surface);
+  border: 3px solid var(--game-ink);
+  border-radius: 6px;
+  box-shadow: 0 5px 0 var(--game-ink);
+  rotate: -3deg;
+}
+
+.nt-head__eyebrow {
+  margin: 10px 0 0 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: var(--nt-cream-text);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+/* ── 右上倒计时环 ──────────────────────────────────────────── */
+
+.nt-ring {
+  position: absolute;
+  right: 24px;
+  top: 18px;
+  z-index: 2;
 }
 
 .nt-countdown {
-  align-self: center;
+  --stage-countdown-size: 72px;
+  --stage-countdown-font: 18px;
+  background: var(--game-surface);
+  border: 3px solid var(--game-ink);
+  border-radius: 50%;
+  box-shadow: 0 4px 0 var(--game-ink);
 }
 
-.nt-yes-rail {
-  flex: 1 1 240px;
-  min-width: 0;
-  justify-content: center;
+.nt-countdown .stage-countdown__value {
+  font-family: var(--gp-font-display);
+}
+
+/* ── 右上：旧审讯单一叠 ────────────────────────────────────── */
+
+.nt-stack {
+  position: absolute;
+  right: 24px;
+  top: 116px;
+  width: 240px;
+  display: grid;
+  gap: 10px;
+  z-index: 1;
+}
+
+.nt-stack h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  color: var(--nt-cream-text);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.nt-note {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  padding: 10px 12px;
+  background: var(--nt-paper);
+  border: 2.5px solid var(--game-ink);
+  border-radius: 4px;
+  box-shadow: 0 3px 0 var(--game-ink);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--game-ink);
+  rotate: 1.5deg;
+}
+
+.nt-note:nth-child(2n + 1) {
+  rotate: -1.2deg;
+}
+
+.nt-note--new {
+  animation: nt-drop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.nt-note__no {
+  grid-row: span 2;
+  font-family: var(--gp-font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--game-accent);
+}
+
+.nt-note__q {
+  overflow: hidden;
+}
+
+.nt-note__yes {
+  display: flex;
+  gap: 4px;
   flex-wrap: wrap;
 }
 
-/* 移动端身份折叠横条：窄屏才出现 */
-.nt-identity-toggle {
-  display: none;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  width: 100%;
-  min-height: var(--gp-touch);
-  padding: 8px 12px;
-  border: var(--gp-border-sm);
-  border-radius: var(--gp-radius-sm);
-  background: var(--gp-surface);
-  color: var(--gp-ink);
-  font-weight: 800;
-  font-size: 0.82rem;
-  cursor: pointer;
+.nt-note__yes i {
+  width: 26px;
+  height: 16px;
+  border: 2px solid var(--game-coral);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--seat-c) 50%, transparent);
+  rotate: -6deg;
 }
 
-@media (max-width: 640px) {
-  .nt-identity-toggle {
-    display: flex;
-  }
-  .nt-private.is-collapsed-mobile {
-    display: none;
-  }
-  .nt-private {
-    flex-basis: 100%;
-  }
+.nt-note__yes em {
+  font-style: normal;
+  color: var(--game-muted);
 }
 
-/* ── 证词板 ────────────────────────────────────────────────── */
+/* ── 中央内容区 ────────────────────────────────────────────── */
 
-.nt-stage {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  flex: 1 1 auto;
-}
-
-.nt-board {
-  position: relative;
+.nt-center {
+  position: absolute;
+  left: 50%;
+  top: 64px;
+  translate: -56% 0;
+  width: min(660px, 62%);
+  display: grid;
+  justify-items: center;
   z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--nt-gap);
-  min-height: 0;
-  flex: 1 1 auto;
-  padding: 12px;
-  /* 软木板：纸底 + accent 描边，钉便签的那块板 */
-  border: 3px solid var(--game-accent, var(--gp-ink));
-  border-radius: var(--gp-radius-lg);
-  background: var(--gp-paper);
-  box-shadow: var(--gp-shadow);
 }
 
-.nt-board__head {
+/* ── 夹板审讯单 ────────────────────────────────────────────── */
+
+.nt-form {
+  position: relative;
+  width: 620px;
+  max-width: 100%;
+  margin-top: 18px;
+  padding: 26px 34px 22px;
+  background: repeating-linear-gradient(transparent 0 31px, var(--nt-rule) 31px 32px), var(--nt-paper);
+  border: 3px solid var(--game-ink);
+  border-radius: 4px;
+  box-shadow: 0 7px 0 var(--game-ink);
+  rotate: -1deg;
+  font-family: 'Courier New', monospace;
+}
+
+/* 夹子 */
+.nt-form::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -18px;
+  translate: -50% 0;
+  width: 90px;
+  height: 28px;
+  background: #8d8a80;
+  border: 3px solid var(--game-ink);
+  border-radius: 6px;
+}
+
+.nt-form__row {
   display: flex;
-  align-items: baseline;
   justify-content: space-between;
-  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--game-muted);
+  letter-spacing: 0.06em;
 }
 
-.nt-board__title {
-  /* accent 在纸底只允许 ≥24px 大字 */
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  color: var(--game-dark, var(--gp-ink));
+.nt-form__row b {
+  color: var(--game-ink);
 }
 
-.nt-board__badge {
-  padding: 3px 10px;
-  border: var(--gp-border-sm);
-  border-radius: var(--gp-radius-pill);
-  background: var(--gp-surface);
-  color: var(--gp-ink);
-  font-size: 0.78rem;
+.nt-form__q {
+  font-family: var(--gp-font-display);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 14px 0 16px;
+  color: var(--game-ink);
+}
+
+.nt-form__answers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.nt-chip {
+  width: 90px;
+  height: 64px;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  place-items: center;
+  padding: 4px;
+  border: 2px dashed rgba(41, 39, 34, 0.35);
+  border-radius: 6px;
+  color: var(--game-muted);
+  position: relative;
+  font-family: var(--gp-sans, system-ui, sans-serif);
+}
+
+.nt-chip--in {
+  border-style: solid;
+  border-color: var(--game-ink);
+  background: rgba(41, 39, 34, 0.06);
+}
+
+.nt-chip--in .nt-chip__face::before {
+  content: '已盖章';
+  font-size: 12px;
   font-weight: 800;
+  color: var(--game-muted);
+}
+
+.nt-chip__face {
+  font-family: var(--gp-font-display);
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.nt-chip__name {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--game-ink);
+  max-width: 82px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* 已归档的便签：横向排开，钉在板上 */
-.nt-board__pins {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-bottom: 4px;
-  -webkit-overflow-scrolling: touch;
+.nt-chip--flip {
+  animation: nt-stamp 380ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  border-width: 3px;
+  border-style: solid;
 }
 
-.nt-board__pins:empty {
-  display: none;
+.nt-chip--flip.nt-chip--yes {
+  color: var(--game-coral);
+  border-color: var(--game-coral);
+  background: rgba(194, 54, 22, 0.08);
+  rotate: -6deg;
 }
 
-.nt-board__focus {
-  display: flex;
-  flex-direction: column;
-  gap: var(--nt-gap);
-  min-height: 0;
-  flex: 1 1 auto;
+.nt-chip--flip.nt-chip--no {
+  color: var(--nt-no);
+  border-color: var(--nt-no);
+  background: rgba(47, 93, 138, 0.06);
+  rotate: 4deg;
 }
 
-/* ── 便签 ──────────────────────────────────────────────────── */
-
-.nt-note {
-  position: relative;
-  flex: 0 0 var(--nt-note-w);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 14px 10px 8px;
-  border: var(--gp-border-sm);
-  border-radius: var(--gp-radius-sm);
-  background: var(--gp-surface);
-  box-shadow: var(--gp-shadow-sm);
-  /* 钉上板的便签略微歪一点，像真的被人按上去的 */
-  transform: rotate(-0.6deg);
-}
-
-.nt-note:nth-child(even) {
-  transform: rotate(0.8deg);
-}
-
-/* 焦点态：当前题摊在板中央，比归档便签大一号且不歪 */
-.nt-note[data-focus='true'] {
-  flex: 1 1 auto;
-  transform: none;
-  padding: 18px 14px 12px;
-  box-shadow: var(--gp-shadow);
-}
-
-/* 图钉本体：便签顶部正中那一枚 */
-.nt-note__tack {
-  position: absolute;
-  top: -6px;
-  left: 50%;
-  width: 12px;
-  height: 12px;
-  margin-left: -6px;
-  border: 2px solid var(--gp-ink);
-  border-radius: 50%;
-  background: var(--game-accent, var(--gp-purple));
-}
-
-.nt-note__head {
+.nt-form__foot {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 6px;
+  gap: 10px;
+  margin-top: 14px;
+  font-family: var(--gp-sans, system-ui, sans-serif);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--game-ink);
 }
 
-.nt-note__num {
-  font-size: 0.78rem;
-  font-weight: 900;
-  color: var(--gp-muted);
-  font-variant-numeric: tabular-nums;
+.nt-form__numeral {
+  font-family: var(--gp-font-display);
+  font-size: 26px;
+  font-variant-numeric: tabular-nums lining-nums;
+  line-height: 1;
 }
 
-/* 待定印章：当前题还没归档 */
-.nt-note__seal {
-  padding: 2px 8px;
-  border: 2px solid var(--game-coral);
-  border-radius: var(--gp-radius-sm);
-  color: var(--game-coral);
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  transform: rotate(-6deg);
-}
-
-/* YES 图钉计数：几个人说了「是」一眼可数，不用读数字 */
-.nt-note__pins {
-  display: inline-flex;
-  gap: 3px;
-}
-
-.nt-note__pin {
-  width: 9px;
-  height: 9px;
-  border: 1.5px solid var(--gp-line);
-  border-radius: 50%;
-  background: var(--gp-surface);
-}
-
-.nt-note__pin[data-on='true'] {
-  background: var(--game-coral);
-}
-
-.nt-note__text {
-  margin: 0;
-  font-size: 0.86rem;
+.nt-form__rule {
+  margin-left: auto;
+  color: var(--game-muted);
   font-weight: 700;
-  line-height: 1.4;
-  color: var(--gp-ink);
 }
 
-.nt-note[data-focus='true'] .nt-note__text {
-  font-size: 1.0625rem;
-}
+/* ── 底部档案袋席位 ────────────────────────────────────────── */
 
-.nt-note__role-tip {
-  margin: 6px 0 0;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--gp-muted);
-}
-
-.nt-note__answers {
+.nt-files {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 16px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
+  gap: 12px;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 2;
 }
 
-.nt-note__ans {
-  padding: 1px 6px;
-  border: 1.5px solid var(--gp-line);
-  border-radius: var(--gp-radius-pill);
-  background: var(--gp-surface);
-  color: var(--gp-muted);
-  font-size: 0.7rem;
+.nt-file {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 2px 8px;
+  align-items: center;
+  width: 172px;
+  padding: 22px 10px 10px;
+  background: linear-gradient(var(--nt-kraft), var(--nt-kraft-d));
+  color: var(--game-ink);
+  border: 3px solid var(--game-ink);
+  border-radius: 4px 12px 4px 4px;
+  box-shadow: 0 5px 0 var(--game-ink);
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 200ms, opacity 200ms;
+}
+
+/* 页签 */
+.nt-file::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: -16px;
+  width: 64px;
+  height: 16px;
+  background: var(--nt-kraft);
+  border: 3px solid var(--game-ink);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+}
+
+.nt-file[role='button'] {
+  cursor: pointer;
+}
+
+.nt-file__seatno {
+  position: absolute;
+  left: 4px;
+  top: -13px;
+  z-index: 1;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  background: var(--game-surface);
+  color: var(--game-ink);
+  border: 2px solid var(--game-ink);
+  border-radius: 50%;
+}
+
+.nt-file__inmate {
+  position: absolute;
+  right: 8px;
+  top: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
   font-weight: 700;
+  color: var(--nt-kraft-ink);
 }
 
-.nt-note__ans[data-yes='true'] {
+.nt-file__av {
+  width: 40px;
+  grid-row: span 2;
+  background: var(--nt-paper);
+  border: 2px solid var(--game-ink);
+  border-radius: 3px;
+  padding: 2px 2px 0;
+  rotate: -3deg;
+  color: var(--seat-c);
+}
+
+.nt-bust {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+
+.nt-file__nm {
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nt-file__you {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 900;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--game-yellow);
+  color: var(--game-ink);
+  vertical-align: 2px;
+}
+
+.nt-file__st {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--nt-kraft-ink);
+}
+
+.nt-file__yes {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.nt-file__yes i {
+  flex: 1;
+  height: 12px;
+  border: 2px solid var(--game-ink);
+  border-radius: 3px;
+  background: #efd9b5;
+}
+
+.nt-file__yes i.used {
   background: var(--game-coral);
-  border-color: var(--game-coral);
-  /* white / coral = 5.48 ✅ 正文 */
+}
+
+/* 「你」的档案袋：黄色外框 */
+.nt-file--me {
+  outline: 4px solid var(--game-yellow);
+  outline-offset: 3px;
+}
+
+/* 出题人：淡紫 */
+.nt-file--asker {
+  background: linear-gradient(var(--nt-asker-a), var(--nt-asker-b));
+}
+
+.nt-file--asker::before {
+  background: var(--nt-asker-a);
+}
+
+.nt-file--asker .nt-file__st,
+.nt-file--asker .nt-file__inmate {
+  color: var(--nt-asker-ink);
+}
+
+/* 已自告：灰 */
+.nt-file--exposed {
+  background: linear-gradient(var(--nt-exposed-a), var(--nt-exposed-b));
+}
+
+.nt-file--exposed::before {
+  background: var(--nt-exposed-a);
+}
+
+.nt-file--exposed .nt-file__st {
+  color: var(--game-ink);
+}
+
+/* 翻开演出：答 YES 的人上浮 + 盖章 */
+.nt-file--said-yes {
+  transform: translateY(-8px) rotate(-1.5deg);
+}
+
+.nt-file--said-yes::after {
+  content: 'YES';
+  position: absolute;
+  right: 10px;
+  top: 20px;
+  font-family: var(--gp-font-display);
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--game-coral);
+  border: 3px solid var(--game-coral);
+  border-radius: 4px;
+  padding: 0 6px;
+  rotate: -12deg;
+  animation: nt-stamp 360ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* 投票态 */
+.nt-file--voted .nt-file__st::after {
+  content: ' · 已投';
+  color: var(--nt-ok);
+}
+
+.nt-file--no-vote {
+  cursor: not-allowed;
+}
+
+.nt-file--no-vote::after {
+  content: '不能投';
+  position: absolute;
+  right: 8px;
+  top: 22px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--nt-kraft-ink);
+  opacity: 0.7;
+}
+
+.nt-file--target {
+  transform: translateY(-10px) rotate(-1.5deg);
+}
+
+/* 开票：被抽出的档案袋原位置变淡 */
+.nt-file--pulled-out {
+  opacity: 0.3;
+}
+
+/* 狱警翻开 / 猜罪中的狱警袋：深色 */
+.nt-file--warden {
+  background: linear-gradient(var(--nt-warden-a), var(--nt-warden-b));
   color: #ffffff;
 }
 
-/* 图钉敲入：便签刚归档时那一下。只动 transform。 */
-.nt-note[data-pinning='true'] .nt-note__tack {
-  animation: nt-tack-in var(--gp-dur-emphasis) var(--gp-ease-press);
+.nt-file--warden::before {
+  background: var(--nt-warden-a);
 }
 
-@keyframes nt-tack-in {
-  0% {
-    transform: translateY(-10px) scale(1.5);
-  }
-  70% {
-    transform: translateY(1px) scale(0.92);
-  }
-  100% {
-    transform: translateY(0) scale(1);
-  }
+.nt-file--warden .nt-file__st {
+  color: var(--game-yellow);
 }
 
-html[data-motion-level='minimal'] .nt-note[data-pinning='true'] .nt-note__tack,
-html[data-motion-level='off'] .nt-note[data-pinning='true'] .nt-note__tack {
-  animation: none;
+.nt-file--warden .nt-file__inmate,
+.nt-file--warden .nt-file__nm {
+  color: #ffffff;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .nt-note[data-pinning='true'] .nt-note__tack {
-    animation: none;
-  }
+/* 猜罪：当前选中要贴的袋子 */
+.nt-file--focus {
+  outline: 4px solid var(--game-yellow);
+  outline-offset: 3px;
+  transform: translateY(-8px);
 }
 
-/* ── 焦点区各形态 ──────────────────────────────────────────── */
-
-.nt-focus {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-height: 0;
-}
-
-.nt-focus__title {
-  /* ≥24px 才允许用 accent 派生的深色 */
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 900;
-  color: var(--game-dark, var(--gp-ink));
-}
-
-.nt-focus__hint {
-  margin: 0;
-  font-size: 0.84rem;
-  color: var(--gp-muted);
-}
-
-.nt-focus__waiting {
-  margin: auto;
-  padding: 24px 12px;
-  text-align: center;
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: var(--gp-muted);
-}
-
-/* 候选题卡 */
-.nt-card-choices {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.nt-topic-card {
-  flex: 1 1 150px;
-  min-width: 0;
-  min-height: var(--gp-touch);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px;
-  border: var(--gp-border-sm);
-  border-radius: var(--gp-radius-sm);
-  background: var(--gp-surface);
-  color: var(--gp-ink);
-  text-align: left;
-  cursor: pointer;
-  transition: transform var(--gp-dur-fast) var(--gp-ease-standard),
-    box-shadow var(--gp-dur-fast) ease,
-    border-color var(--gp-dur-fast) ease;
-}
-
-.nt-topic-card[data-selected='true'] {
-  border-color: var(--game-accent, var(--gp-purple));
-  box-shadow: var(--gp-shadow-sm);
-  transform: translateY(-2px);
-}
-
-.nt-topic-card__tag {
-  align-self: flex-start;
-  padding: 1px 7px;
-  border: 1.5px solid var(--gp-line);
-  border-radius: var(--gp-radius-pill);
-  font-size: 0.7rem;
-  font-weight: 800;
-  color: var(--gp-muted);
-}
-
-.nt-topic-card__text {
-  margin: 0;
-  font-size: 0.86rem;
+/* 猜罪标签位 */
+.nt-file__slot {
+  grid-column: 1 / -1;
+  margin-top: 6px;
+  min-height: 30px;
+  display: grid;
+  place-items: center;
+  font-family: var(--gp-font-display);
+  font-size: 14px;
   font-weight: 700;
-  line-height: 1.4;
+  background: rgba(255, 250, 240, 0.55);
+  border: 2.5px dashed var(--nt-kraft-ink);
+  border-radius: 3px;
+  color: var(--nt-kraft-ink);
 }
 
-/* 作答进度指示灯 */
-.nt-progress {
+.nt-file__slot--filled {
+  background: var(--nt-paper);
+  border: 2.5px solid var(--game-ink);
+  color: var(--game-ink);
+  rotate: -2deg;
+  animation: nt-slap 280ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.nt-file__slot--locked {
+  background: var(--nt-exposed-a);
+  border-style: solid;
+  color: var(--game-ink);
+}
+
+/* 核对章 */
+.nt-file__mark {
+  position: absolute;
+  right: 6px;
+  top: 16px;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  font-family: var(--gp-font-display);
+  font-size: 24px;
+  font-weight: 900;
+  border: 3px solid currentColor;
+  border-radius: 50%;
+  background: var(--game-surface);
+  animation: nt-stamp 340ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  z-index: 2;
+}
+
+.nt-file__mark--ok {
+  color: var(--nt-ok);
+  rotate: -8deg;
+}
+
+.nt-file__mark--bad {
+  color: var(--game-coral);
+  rotate: 10deg;
+}
+
+.nt-file__truth {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--game-coral);
+  text-align: center;
+}
+
+/* 我贴出去的封条（只有我自己看得见） */
+.nt-file__tape {
+  position: absolute;
+  left: -10px;
+  right: -10px;
+  top: 46%;
+  z-index: 2;
+}
+
+.nt-seal-tape {
+  display: grid;
+  place-items: center;
+  height: 26px;
+  font-family: var(--gp-font-display);
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.3em;
+  color: #ffffff;
+  background: var(--game-coral);
+  border: 3px solid var(--game-ink);
+  rotate: -8deg;
+  animation: nt-slap 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ── 底栏（奶油卡） ────────────────────────────────────────── */
+
+.nt-dock {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 14px 12px 16px;
+  background: var(--game-surface);
+  border: 3px solid var(--game-ink);
+  border-radius: 16px;
+  box-shadow: 0 5px 0 var(--game-ink);
+  box-sizing: border-box;
 }
 
-.nt-progress__chip {
+.nt-dock__info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.nt-dock__info strong {
+  display: block;
+  font-size: 17px;
+  color: var(--game-ink);
+}
+
+.nt-dock__info span {
+  font-size: 13px;
+  color: var(--game-muted);
+  font-weight: 600;
+}
+
+/* 牛皮纸罪行条（点击遮挡 / 显示） */
+.nt-secret {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  background: var(--nt-kraft);
+  border: 3px solid var(--game-ink);
+  border-radius: 6px;
+  rotate: -1.5deg;
+  cursor: pointer;
+  user-select: none;
+  font: inherit;
+}
+
+.nt-secret__tag {
+  display: block;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--nt-kraft-ink);
+}
+
+.nt-secret__hint {
+  display: block;
+  font-size: 11px;
+  color: var(--nt-kraft-ink);
+}
+
+.nt-secret__word {
+  font-family: var(--gp-font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--game-ink);
+  filter: blur(0);
+  transition: filter 200ms;
+}
+
+.nt-secret--hidden .nt-secret__word {
+  filter: blur(7px);
+}
+
+/* 按钮 */
+.nt-btn {
+  font-size: 15px;
+  font-weight: 900;
+  font-family: inherit;
+  color: var(--game-ink);
+  background: var(--game-surface);
+  border: 3px solid var(--game-ink);
+  border-radius: 14px;
+  box-shadow: 0 3px 0 var(--game-ink);
+  min-height: 48px;
+  padding: 8px 20px;
+  cursor: pointer;
+  transition: transform 140ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 140ms;
+  white-space: nowrap;
+}
+
+.nt-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0 var(--game-ink);
+}
+
+.nt-btn:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--game-ink);
+}
+
+.nt-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* 盖章按钮前的章柄 */
+.nt-btn--no,
+.nt-btn--yes {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 9px;
-  border: var(--gp-border-sm);
-  border-radius: var(--gp-radius-pill);
-  background: var(--gp-surface);
-  font-size: 0.75rem;
-  font-weight: 800;
+  gap: 8px;
 }
 
-.nt-progress__chip[data-answered='true'] {
-  border-color: var(--game-dark, var(--gp-green-dark));
+.nt-btn--no::before,
+.nt-btn--yes::before {
+  content: '';
+  width: 14px;
+  height: 18px;
+  border-radius: 3px 3px 6px 6px;
+  background: currentColor;
 }
 
-.nt-progress__name {
-  color: var(--gp-ink);
+/* 盖 YES / 盖 NO 平权：同款纸面描边按钮，仅以印章色区分，不引导选择 */
+.nt-btn--no {
+  color: var(--nt-no);
 }
 
-.nt-progress__mark {
-  color: var(--gp-muted);
+.nt-btn--yes {
+  color: var(--game-coral);
 }
 
-.nt-progress__mark[data-answer='yes'],
-.nt-progress__mark[data-answer='no'] {
-  color: var(--gp-ink);
+.nt-btn--coral {
+  background: var(--game-coral);
+  color: #ffffff;
 }
 
-/* 罪行选择网格 */
-.nt-crime-grid {
+/* 唯一黄色主按钮：提交猜罪 */
+.nt-btn--primary {
+  background: var(--game-yellow);
+  color: var(--game-ink);
+}
+
+.nt-btn--expose {
+  font-size: 13px;
+  min-height: 44px;
+  padding: 6px 14px;
+}
+
+/* ── ① 出题 ───────────────────────────────────────────────── */
+
+.nt-picker {
+  width: 640px;
+  max-width: 100%;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
-  gap: 6px;
+  gap: 14px;
+  margin-top: 34px;
 }
 
-.nt-crime-btn {
-  min-height: var(--gp-touch);
-  padding: 6px 8px;
-  border: var(--gp-border-sm);
-  border-radius: var(--gp-radius-sm);
-  background: var(--gp-surface);
-  color: var(--gp-ink);
-  font-size: 0.8rem;
-  font-weight: 800;
+.nt-picker > h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  color: var(--nt-cream-text);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.nt-slips {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.nt-slip {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 10px;
+  padding: 16px 14px 12px;
+  min-height: 210px;
   cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: var(--game-ink);
+  background: repeating-linear-gradient(transparent 0 27px, var(--nt-rule) 27px 28px), var(--nt-paper);
+  border: 3px solid var(--game-ink);
+  border-radius: 4px;
+  box-shadow: 0 5px 0 var(--game-ink);
+  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 160ms, opacity 260ms;
 }
 
-.nt-crime-btn[data-active='true'] {
-  /* 选中用黄底 + ink 字（9.46），与主 CTA 的高亮语言一致 */
-  background: var(--gp-yellow);
-  border-color: var(--gp-ink);
+.nt-slip:nth-child(1) { rotate: -3deg; }
+.nt-slip:nth-child(2) { rotate: 1deg; }
+.nt-slip:nth-child(3) { rotate: 3.5deg; }
+
+.nt-slip:hover:not(:disabled) {
+  transform: translateY(-8px);
+  box-shadow: 0 13px 0 var(--game-ink);
 }
 
-/* ── 暗角 ──────────────────────────────────────────────────── */
+.nt-slip--gone {
+  opacity: 0;
+  transform: translateY(40px) rotate(10deg);
+  pointer-events: none;
+}
 
-/*
- * 审讯灯：投票与猜罪阶段压下四角，板面保持纸白。
- * 只是叠在上面的一层渐变，不改变其下任何文字的底色，所以不影响对比度。
- */
-.nt-vignette {
+.nt-slip--picked {
+  animation: nt-slap 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.nt-slip__cat {
+  justify-self: start;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  background: var(--nt-kraft);
+  border: 2px solid var(--game-ink);
+  border-radius: 3px;
+}
+
+.nt-slip__txt {
+  font-family: var(--gp-font-display);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.nt-slip__no {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--game-muted);
+}
+
+/* 其他人等待：虚线框 + 写字的笔 */
+.nt-waiting {
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  min-height: 250px;
+  padding: 20px;
+  text-align: center;
+  background: var(--nt-paper);
+  border: 3px dashed var(--game-ink);
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--game-muted);
+  rotate: -1deg;
+}
+
+.nt-waiting b {
+  font-family: var(--gp-font-display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--game-ink);
+}
+
+.nt-waiting__pen {
+  width: 60px;
+  height: 10px;
+  background: var(--game-ink);
+  border-radius: 5px;
+  animation: nt-write 1.2s ease-in-out infinite;
+}
+
+/* ── ③ 投票：结案汇总表 ───────────────────────────────────── */
+
+.nt-board-summary {
+  width: 620px;
+  max-width: 100%;
+  margin-top: 24px;
+  display: grid;
+}
+
+.nt-summary {
+  padding: 18px 22px 16px;
+  background: var(--nt-paper);
+  border: 3px solid var(--game-ink);
+  border-radius: 4px;
+  box-shadow: 0 7px 0 var(--game-ink);
+  rotate: -1deg;
+}
+
+.nt-summary__row {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--game-muted);
+  letter-spacing: 0.06em;
+}
+
+.nt-summary h2 {
+  margin: 10px 0 12px;
+  font-family: var(--gp-font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--game-ink);
+}
+
+.nt-summary__scroll {
+  overflow-y: auto;
+  max-height: min(46vh, 380px);
+}
+
+.nt-summary table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--game-ink);
+}
+
+.nt-summary th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--game-muted);
+  padding: 4px 6px;
+  border-bottom: 2px solid var(--game-ink);
+}
+
+.nt-summary th.c {
+  text-align: center;
+}
+
+.nt-summary td {
+  padding: 5px 6px;
+  border-bottom: 1px dashed rgba(41, 39, 34, 0.3);
+}
+
+.nt-summary td.y {
+  color: var(--game-coral);
+  font-family: var(--gp-font-display);
+  font-weight: 900;
+  text-align: center;
+}
+
+.nt-summary td.n {
+  color: var(--nt-no);
+  font-family: var(--gp-font-display);
+  font-weight: 900;
+  text-align: center;
+  opacity: 0.55;
+}
+
+/* ── ④ 开票 ───────────────────────────────────────────────── */
+
+.nt-table-center {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  width: 520px;
+  max-width: 100%;
+  margin-top: 20px;
+}
+
+.nt-tallies {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.nt-tally {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  min-width: 72px;
+  background: var(--nt-paper);
+  border: 3px solid var(--game-ink);
+  border-top: 8px solid var(--seat-c, var(--game-accent));
+  border-radius: 4px;
+  box-shadow: 0 3px 0 var(--game-ink);
+  opacity: 0;
+  animation: nt-rise 260ms ease-out both;
+  animation-delay: var(--d, 0ms);
+}
+
+.nt-tally b {
+  font-family: var(--gp-font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--game-coral);
+}
+
+.nt-tally span {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--game-ink);
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 被抽到桌中央的档案袋 */
+.nt-pulled {
+  position: relative;
+  width: 360px;
+  height: 250px;
+  margin-top: 10px;
+  animation: nt-pull 460ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* 揭示演出期间中央区压过档案袋行，告示牌不被裁切 */
+.nt-center:has(.nt-pulled) {
+  z-index: 3;
+}
+
+/* 档案袋背板 */
+.nt-folder {
   position: absolute;
-  inset: -12px;
+  inset: 0;
+  background: linear-gradient(var(--nt-kraft), var(--nt-kraft-d));
+  border: 3px solid var(--game-ink);
+  border-radius: 4px 14px 4px 4px;
+  box-shadow: 0 7px 0 var(--game-ink);
+}
+
+/* 背板页签 */
+.nt-folder::before {
+  content: attr(data-name);
+  position: absolute;
+  left: -3px;
+  top: -30px;
+  padding: 4px 14px;
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--game-ink);
+  background: var(--nt-kraft);
+  border: 3px solid var(--game-ink);
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  white-space: nowrap;
+}
+
+/* 前袋：盖住证件下半截——袋口内侧阴影 + 拇指半圆缺口，读出"口袋"的层次 */
+.nt-folder__front {
+  position: absolute;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  height: 54%;
+  background: linear-gradient(var(--nt-kraft-d), var(--nt-kraft));
+  border: 3px solid var(--game-ink);
+  border-radius: 4px 14px 4px 4px;
+  box-shadow: inset 0 12px 10px -8px rgba(0, 0, 0, 0.55);
   z-index: 2;
   pointer-events: none;
-  opacity: 0;
-  border-radius: var(--gp-radius-lg);
-  background: radial-gradient(
-    ellipse at 50% 45%,
-    transparent 38%,
-    rgba(18, 16, 12, 0.34) 78%,
-    rgba(18, 16, 12, 0.52) 100%
-  );
-  transition: opacity var(--gp-dur-phase) var(--gp-ease-standard);
+  -webkit-mask: radial-gradient(circle 26px at 50% 0, transparent 25px, #000 26px);
+  mask: radial-gradient(circle 26px at 50% 0, transparent 25px, #000 26px);
 }
 
-.nt-stage[data-vignette='true'] .nt-vignette {
+/* 前袋上的白色分类贴纸 */
+.nt-folder__front::after {
+  content: 'CASE FILE';
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  translate: -50% 0;
+  padding: 3px 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+  color: var(--game-muted);
+  background: var(--nt-paper);
+  border: 2px solid var(--game-ink);
+  border-radius: 3px;
+  rotate: -1.5deg;
+}
+
+.nt-pulled__tape {
+  position: absolute;
+  left: -14px;
+  right: -14px;
+  top: 40%;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  font-family: var(--gp-font-display);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.3em;
+  color: #ffffff;
+  background: var(--game-coral);
+  border: 3px solid var(--game-ink);
+  rotate: -8deg;
+  transition: transform 380ms cubic-bezier(0.5, -0.4, 0.7, 1), opacity 380ms;
+  z-index: 3;
+}
+
+.nt-pulled--torn .nt-pulled__tape {
+  transform: translate(260px, -80px) rotate(30deg);
+  opacity: 0;
+}
+
+/* 证件：收在袋里（藏在前袋后面），撕封条后向上抽出、袋口之上露头 */
+.nt-idcard {
+  position: absolute;
+  left: 26px;
+  right: 26px;
+  top: 22px;
+  height: 165px;
+  display: grid;
+  gap: 6px 16px;
+  align-content: center;
+  justify-items: start;
+  padding: 14px 18px;
+  background: var(--nt-paper);
+  border: 3px solid var(--game-ink);
+  border-radius: 8px;
+  opacity: 0;
+  transform: translateY(70px);
+  transition: transform 480ms cubic-bezier(0.34, 1.3, 0.64, 1), opacity 300ms;
+  z-index: 1;
+}
+
+.nt-pulled--torn .nt-idcard {
+  opacity: 1;
+  /* 插入量压过袋口缺口下沿，保证证件底部始终插在袋里 */
+  transform: translateY(-42px) rotate(-3deg);
+}
+
+.nt-idcard__k {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: var(--game-muted);
+}
+
+.nt-idcard__v {
+  font-family: var(--gp-font-display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--game-ink);
+}
+
+.nt-idcard__x {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--game-muted);
+}
+
+.nt-idcard--warden {
+  background: var(--nt-warden-b);
+  color: #ffffff;
+}
+
+.nt-idcard--warden .nt-idcard__k,
+.nt-idcard--warden .nt-idcard__x {
+  color: #c9c0ae;
+}
+
+.nt-idcard--warden .nt-idcard__v {
+  color: var(--game-yellow);
+}
+
+/* 撕封条证件滑出时，选票退场让位（不占位，给证件与告示牌腾纵向空间） */
+.nt-table-center[data-step='torn'] .nt-tallies,
+.nt-table-center[data-step='result'] .nt-tallies {
+  display: none;
+}
+
+/* ── 告示牌（结果 / 标题卡） ───────────────────────────────── */
+
+.nt-notice {
+  position: relative;
+  z-index: 4;
+  padding: 8px 26px 10px;
+  background: var(--game-surface);
+  border: 3px solid var(--game-ink);
+  border-radius: 10px;
+  box-shadow: 0 6px 0 var(--game-ink);
+  rotate: -2deg;
+  text-align: center;
+  animation: nt-stamp 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.nt-notice__title {
+  font-family: var(--gp-font-display);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--game-ink);
+}
+
+.nt-notice__sub {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--game-muted);
+  margin-top: 2px;
+}
+
+.nt-notice--danger .nt-notice__title {
+  color: var(--game-coral);
+}
+
+.nt-notice--ok .nt-notice__title {
+  color: var(--nt-ok);
+}
+
+.nt-notice--warden .nt-notice__title {
+  color: var(--nt-warden-b);
+}
+
+/* ── ⑤ 猜罪 ───────────────────────────────────────────────── */
+
+.nt-labels-area {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  width: min(700px, 100%);
+  margin-top: 30px;
+}
+
+.nt-labels-area .nt-notice .nt-notice__title {
+  font-size: 26px;
+}
+
+.nt-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.nt-label {
+  font-family: var(--gp-font-display);
+  font-size: 17px;
+  font-weight: 700;
+  padding: 8px 16px;
+  cursor: pointer;
+  color: var(--game-ink);
+  background: var(--nt-paper);
+  border: 3px solid var(--game-ink);
+  border-radius: 4px;
+  box-shadow: 0 4px 0 var(--game-ink);
+  transition: transform 140ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 160ms;
+}
+
+.nt-label:nth-child(odd) { rotate: -2deg; }
+.nt-label:nth-child(even) { rotate: 1.5deg; }
+
+.nt-label:hover:not(:disabled) {
+  transform: translateY(-3px);
+}
+
+.nt-label[aria-pressed='true'] {
+  outline: 4px solid var(--game-yellow);
+  outline-offset: 2px;
+}
+
+.nt-label:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.nt-watch {
+  padding: 10px 16px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--game-ink);
+  background: var(--nt-paper);
+  border: 3px dashed var(--game-ink);
+  border-radius: 6px;
+}
+
+/* ── 终局结算 ──────────────────────────────────────────────── */
+
+.nt-over {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  width: 100%;
+  margin-top: 30px;
+}
+
+.nt-over__grid {
+  width: 100%;
+  max-height: min(40vh, 320px);
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.nt-dossier-tag {
+  padding: 2px 8px;
+  border: 2px solid var(--game-ink);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  background: var(--nt-paper);
+  color: var(--game-ink);
+}
+
+.nt-dossier-tag--warden {
+  background: var(--nt-warden-b);
+  color: var(--game-yellow);
+}
+
+/* ── 飞行物（FlightLayer 幽灵） ────────────────────────────── */
+
+.nt-pin-fly {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 3px solid var(--game-coral);
+  border-radius: 4px;
+  background: rgba(194, 54, 22, 0.2);
+  box-sizing: border-box;
+}
+
+.nt-chip-fly {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border: 3px solid currentColor;
+  border-radius: 6px;
+  background: var(--nt-paper);
+  box-sizing: border-box;
+}
+
+.nt-chip-fly--yes {
+  color: var(--game-coral);
+}
+
+.nt-chip-fly--no {
+  color: var(--nt-no);
+}
+
+.nt-tape-fly {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--game-coral);
+  border: 3px solid var(--game-ink);
+  box-sizing: border-box;
+}
+
+.nt-label-fly {
+  display: inline-block;
+  font-family: var(--gp-font-display);
+  font-size: 15px;
+  font-weight: 700;
+  padding: 6px 12px;
+  background: var(--nt-paper);
+  border: 3px solid var(--game-ink);
+  border-radius: 4px;
+  color: var(--game-ink);
+  white-space: nowrap;
+}
+
+/* ── 关键帧（新增 ≤6：盖章 / 贴条 / 抽出 / 落入 / 升起 / 笔） ── */
+
+@keyframes nt-stamp {
+  0% { transform: scale(2.2); opacity: 0; }
+  60% { transform: scale(0.92); opacity: 1; }
+  100% { transform: none; }
+}
+
+@keyframes nt-slap {
+  0% { transform: scale(1.5); opacity: 0; }
+  100% { transform: none; opacity: 1; }
+}
+
+@keyframes nt-pull {
+  0% { transform: translateY(260px) scale(0.6) rotate(8deg); }
+  100% { transform: none; }
+}
+
+@keyframes nt-drop {
+  0% { transform: translateY(-30px) rotate(-6deg) scale(1.15); opacity: 0; }
+  100% { transform: none; opacity: 1; }
+}
+
+@keyframes nt-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* 循环类（照奶酪大盗的豁免写法）：出题人的笔 */
+@keyframes nt-write {
+  50% { translate: 24px 4px; rotate: 8deg; }
+}
+
+/* ── 动效门控（四档 data-motion-level + 系统减弱） ─────────── */
+
+html[data-motion-level='minimal'] .nt-note--new,
+html[data-motion-level='off'] .nt-note--new,
+html[data-motion-level='minimal'] .nt-tally,
+html[data-motion-level='off'] .nt-tally,
+html[data-motion-level='minimal'] .nt-pulled,
+html[data-motion-level='off'] .nt-pulled,
+html[data-motion-level='minimal'] .nt-notice,
+html[data-motion-level='off'] .nt-notice {
+  animation: none;
   opacity: 1;
 }
 
-/* 暗角是阶段信息而不是装饰，reduced 档保留；只有无动画档去掉过渡 */
-html[data-motion-level='minimal'] .nt-vignette,
-html[data-motion-level='off'] .nt-vignette {
+html[data-motion-level='minimal'] .nt-waiting__pen,
+html[data-motion-level='off'] .nt-waiting__pen,
+html[data-motion-level='reduced'] .nt-waiting__pen {
+  animation: none;
+}
+
+html[data-motion-level='minimal'] .nt-chip--flip,
+html[data-motion-level='off'] .nt-chip--flip,
+html[data-motion-level='minimal'] .nt-file--said-yes::after,
+html[data-motion-level='off'] .nt-file--said-yes::after,
+html[data-motion-level='minimal'] .nt-file__slot--filled,
+html[data-motion-level='off'] .nt-file__slot--filled,
+html[data-motion-level='minimal'] .nt-file__mark,
+html[data-motion-level='off'] .nt-file__mark,
+html[data-motion-level='minimal'] .nt-seal-tape,
+html[data-motion-level='off'] .nt-seal-tape,
+html[data-motion-level='minimal'] .nt-slip--picked,
+html[data-motion-level='off'] .nt-slip--picked {
+  animation: none;
+}
+
+html[data-motion-level='minimal'] .nt-file,
+html[data-motion-level='off'] .nt-file,
+html[data-motion-level='minimal'] .nt-slip,
+html[data-motion-level='off'] .nt-slip,
+html[data-motion-level='minimal'] .nt-label,
+html[data-motion-level='off'] .nt-label,
+html[data-motion-level='minimal'] .nt-btn,
+html[data-motion-level='off'] .nt-btn,
+html[data-motion-level='minimal'] .nt-pulled__tape,
+html[data-motion-level='off'] .nt-pulled__tape,
+html[data-motion-level='minimal'] .nt-idcard,
+html[data-motion-level='off'] .nt-idcard,
+html[data-motion-level='minimal'] .nt-desk,
+html[data-motion-level='off'] .nt-desk,
+html[data-motion-level='minimal'] .nt-secret__word,
+html[data-motion-level='off'] .nt-secret__word {
   transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nt-vignette {
+  .nt-note--new,
+  .nt-tally,
+  .nt-pulled,
+  .nt-notice,
+  .nt-chip--flip,
+  .nt-file--said-yes::after,
+  .nt-file__slot--filled,
+  .nt-file__mark,
+  .nt-seal-tape,
+  .nt-slip--picked,
+  .nt-waiting__pen {
+    animation: none;
+  }
+  .nt-file,
+  .nt-slip,
+  .nt-label,
+  .nt-btn,
+  .nt-pulled__tape,
+  .nt-idcard,
+  .nt-desk,
+  .nt-secret__word {
     transition: none;
   }
 }
 
-/* ── 飞行中的选票 ──────────────────────────────────────────── */
+/* ── 手机竖屏（≤640px）：参照稿 container 600px 的合规映射 ──── */
 
-.nt-vote-token {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border: 2px solid var(--gp-ink);
-  border-radius: 50%;
-  background: var(--gp-yellow);
-  box-shadow: 0 2px 0 var(--gp-ink);
+@media (max-width: 640px) {
+  .nt-desk {
+    display: flex;
+    flex-direction: column;
+    padding: 12px 10px 10px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .nt-head {
+    position: static;
+    order: 0;
+    padding-right: 64px;
+  }
+
+  .nt-head__title {
+    font-size: 22px;
+    padding: 4px 12px 6px;
+  }
+
+  .nt-head__eyebrow {
+    font-size: 10px;
+    margin-top: 6px;
+  }
+
+  .nt-ring {
+    right: 12px;
+    top: 12px;
+  }
+
+  .nt-countdown {
+    --stage-countdown-size: 56px;
+    --stage-countdown-font: 13px;
+  }
+
+  .nt-center {
+    position: static;
+    translate: none;
+    width: 100%;
+    order: 1;
+    margin-top: 10px;
+  }
+
+  .nt-stack {
+    position: static;
+    order: 2;
+    width: auto;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 8px;
+    /* 归档叠限高内部滚动：不挤占审讯单与档案袋的位置，主画面尽量不滚 */
+    max-height: 118px;
+    overflow-y: auto;
+    align-content: start;
+  }
+
+  .nt-stack h3 {
+    display: none;
+  }
+
+  .nt-note {
+    font-size: 10px;
+    padding: 5px 6px;
+    gap: 2px 6px;
+  }
+
+  .nt-note__no {
+    font-size: 13px;
+  }
+
+  .nt-note__q {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .nt-note__yes i {
+    width: 16px;
+    height: 10px;
+  }
+
+  .nt-files {
+    position: static;
+    order: 3;
+    margin-top: auto;
+    padding-top: 14px;
+    flex-wrap: wrap;
+    gap: 18px 6px;
+  }
+
+  /* 审讯单 */
+  .nt-form {
+    width: 100%;
+    margin-top: 12px;
+    padding: 16px 14px 12px;
+    rotate: 0deg;
+  }
+
+  .nt-form::before {
+    width: 60px;
+    height: 20px;
+    top: -12px;
+  }
+
+  .nt-form__row {
+    font-size: 10px;
+  }
+
+  .nt-form__q {
+    font-size: 18px;
+    margin: 8px 0 10px;
+  }
+
+  .nt-form__answers {
+    gap: 5px;
+  }
+
+  .nt-chip {
+    width: calc(20% - 4px);
+    flex: 0 0 auto;
+    height: 50px;
+    padding: 2px;
+  }
+
+  .nt-desk[data-count='6'] .nt-chip {
+    width: calc(33.3% - 4px);
+    height: 40px;
+    grid-template-rows: auto auto;
+  }
+
+  .nt-chip__face {
+    font-size: 15px;
+  }
+
+  .nt-chip--in .nt-chip__face::before {
+    font-size: 9px;
+  }
+
+  .nt-chip__name {
+    font-size: 9px;
+    max-width: 100%;
+  }
+
+  .nt-form__foot {
+    margin-top: 8px;
+    font-size: 12px;
+  }
+
+  .nt-form__numeral {
+    font-size: 18px;
+  }
+
+  .nt-form__rule {
+    display: none;
+  }
+
+  /* 档案袋：3 列两行 */
+  .nt-file {
+    width: calc(33.3% - 4px);
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+    padding: 14px 4px 6px;
+  }
+
+  .nt-file::before {
+    width: 40px;
+    height: 12px;
+    top: -12px;
+  }
+
+  .nt-file__av {
+    width: 28px;
+    grid-row: auto;
+  }
+
+  .nt-file__nm {
+    font-size: 12px;
+    max-width: 100%;
+  }
+
+  .nt-file__nm .nt-file__you {
+    display: none;
+  }
+
+  .nt-file__st {
+    font-size: 10px;
+  }
+
+  .nt-file__seatno {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+    top: -12px;
+  }
+
+  .nt-file__inmate {
+    font-size: 9px;
+    right: 4px;
+    top: 2px;
+  }
+
+  .nt-file__yes i {
+    height: 8px;
+  }
+
+  .nt-file--said-yes::after {
+    font-size: 12px;
+    right: 4px;
+    top: 16px;
+    padding: 0 3px;
+  }
+
+  .nt-file--no-vote::after {
+    display: none;
+  }
+
+  .nt-file__slot {
+    font-size: 11px;
+    min-height: 24px;
+    margin-top: 4px;
+  }
+
+  .nt-file__mark {
+    width: 26px;
+    height: 26px;
+    font-size: 15px;
+    top: 10px;
+    right: 2px;
+  }
+
+  .nt-file__truth {
+    font-size: 9px;
+  }
+
+  .nt-seal-tape {
+    font-size: 11px;
+    height: 18px;
+    letter-spacing: 0.15em;
+  }
+
+  /* 出题 */
+  .nt-picker {
+    width: 100%;
+    margin-top: 8px;
+    gap: 8px;
+  }
+
+  .nt-picker > h2 {
+    font-size: 11px;
+  }
+
+  .nt-slips {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .nt-slip,
+  .nt-slip:nth-child(n) {
+    rotate: 0deg;
+    min-height: 0;
+    padding: 8px 10px;
+    grid-template-rows: auto auto;
+    grid-template-columns: auto 1fr;
+    gap: 4px 8px;
+  }
+
+  .nt-slip__txt {
+    font-size: 14px;
+    grid-column: 1 / -1;
+  }
+
+  .nt-slip__no {
+    justify-self: end;
+  }
+
+  .nt-waiting {
+    min-height: 150px;
+    font-size: 13px;
+  }
+
+  .nt-waiting b {
+    font-size: 20px;
+  }
+
+  /* 结案汇总 */
+  .nt-board-summary {
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .nt-summary {
+    padding: 10px 12px;
+    rotate: 0deg;
+  }
+
+  .nt-summary h2 {
+    font-size: 18px;
+    margin: 6px 0 8px;
+  }
+
+  .nt-summary__row {
+    font-size: 10px;
+  }
+
+  .nt-summary table {
+    font-size: 11px;
+  }
+
+  .nt-summary td,
+  .nt-summary th {
+    padding: 3px 3px;
+  }
+
+  .nt-summary__qcol {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .nt-summary__scroll {
+    max-height: 32vh;
+  }
+
+  /* 开票 */
+  .nt-table-center {
+    width: 100%;
+    margin-top: 12px;
+    gap: 10px;
+  }
+
+  .nt-tally {
+    min-width: 56px;
+    padding: 4px 6px;
+  }
+
+  .nt-tally b {
+    font-size: 13px;
+  }
+
+  .nt-tally span {
+    font-size: 9px;
+    max-width: 58px;
+  }
+
+  .nt-pulled {
+    width: 280px;
+    height: 200px;
+    margin-top: 4px;
+  }
+
+  .nt-idcard {
+    left: 16px;
+    right: 16px;
+    top: 14px;
+    height: 130px;
+    padding: 10px;
+  }
+
+  .nt-idcard__v {
+    font-size: 20px;
+  }
+
+  .nt-pulled--torn .nt-idcard {
+    /* 插入量要压过袋口缺口下沿（袋口 108px + 缺口 26px），保证证件底部始终插在袋里 */
+    transform: translateY(-22px) rotate(-3deg);
+  }
+
+  /* 告示牌 */
+  .nt-notice {
+    padding: 6px 14px 8px;
+  }
+
+  .nt-notice__title {
+    font-size: 22px;
+  }
+
+  .nt-notice__sub {
+    font-size: 11px;
+  }
+
+  /* 猜罪 */
+  .nt-labels-area {
+    width: 100%;
+    margin-top: 10px;
+    gap: 8px;
+  }
+
+  .nt-labels-area .nt-notice .nt-notice__title {
+    font-size: 18px;
+  }
+
+  .nt-labels {
+    gap: 6px;
+  }
+
+  .nt-label {
+    font-size: 13px;
+    padding: 5px 9px;
+  }
+
+  .nt-watch {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  /* 终局 */
+  .nt-over {
+    margin-top: 10px;
+    gap: 10px;
+  }
+
+  .nt-over__grid {
+    max-height: 30vh;
+  }
+
+  /* 底栏 */
+  .nt-dock {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .nt-dock__info {
+    flex: 1 1 150px;
+    min-width: 0;
+  }
+
+  .nt-dock__info strong {
+    font-size: 15px;
+  }
+
+  .nt-dock__info span {
+    font-size: 12px;
+  }
+
+  .nt-secret {
+    flex: 0 0 auto;
+    padding: 6px 10px;
+  }
+
+  .nt-secret__hint {
+    display: none;
+  }
+
+  .nt-secret__word {
+    font-size: 17px;
+  }
+
+  .nt-btn {
+    flex: 1 1 calc(50% - 5px);
+    min-height: 44px;
+    justify-content: center;
+    padding: 8px 10px;
+  }
+
+  /* 自告独占一行，盖 NO / 盖 YES 等分同一行，彻底平权 */
+  .nt-btn--expose {
+    flex-basis: 100%;
+  }
+
+  .nt-btn--expose .nt-btn__long {
+    display: none;
+  }
+
+  /* 贴封条 / 提交猜罪等主操作单独成行时拉通栏，不缩成半颗 */
+  .nt-btn--coral,
+  .nt-btn--primary {
+    flex: 1 1 100%;
+  }
 }
 
-/* ── 窄屏 ──────────────────────────────────────────────────── */
-
+/* 小屏手机（≤480px）再收一档 */
 @media (max-width: 480px) {
-  .nt-game {
-    --nt-note-w: 140px;
+  .nt-head__title {
+    font-size: 20px;
   }
-  .nt-board {
-    padding: 10px 8px;
+
+  .nt-form__q {
+    font-size: 16px;
   }
-  .nt-board__title {
-    font-size: 1.25rem;
+
+  .nt-file__nm {
+    font-size: 11px;
   }
-  .nt-focus__title {
-    font-size: 1.25rem;
-  }
-  .nt-crime-grid {
-    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+
+  .nt-summary__qcol {
+    max-width: 88px;
   }
 }
 
-/* 横屏矮视口：压缩纵向留白，把便签轨收窄 */
+/* 横屏矮视口：压缩纵向留白 */
 @media (orientation: landscape) and (max-height: 520px) {
-  .nt-game {
-    --nt-gap: 6px;
-    --nt-note-w: 132px;
+  .nt-head {
+    left: 14px;
+    top: 10px;
   }
-  .nt-board {
-    padding: 8px;
+
+  .nt-head__title {
+    font-size: 24px;
+    padding: 4px 12px 6px;
   }
-  .nt-board__title,
-  .nt-focus__title {
-    font-size: 1.125rem;
+
+  .nt-center {
+    top: 44px;
+  }
+
+  .nt-form__q {
+    font-size: 20px;
+    margin: 8px 0 10px;
+  }
+
+  .nt-slip {
+    min-height: 120px;
+  }
+
+  .nt-waiting {
+    min-height: 120px;
   }
 }
 
-/* ── 终局复盘（沿用原有类名，未在本轮重做） ─────────────────── */
-
-.testimony-over-stage {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+/* ── 终局复盘卡（沿用既有类名，未在本轮重做） ───────────────── */
 
 .testimony-dossier-grid {
   display: grid;
@@ -555,10 +2105,11 @@ html[data-motion-level='off'] .nt-vignette {
 
 .testimony-dossier-card {
   padding: 10px;
-  border: var(--gp-border-sm);
-  border-radius: var(--gp-radius-sm);
-  background: var(--gp-surface);
-  box-shadow: var(--gp-shadow-sm);
+  border: 2.5px solid var(--game-ink);
+  border-radius: 6px;
+  background: var(--game-surface);
+  box-shadow: 0 3px 0 var(--game-ink);
+  text-align: left;
 }
 
 .testimony-dossier-card.is-warden {
@@ -572,6 +2123,7 @@ html[data-motion-level='off'] .nt-vignette {
   gap: 6px;
   margin-bottom: 6px;
   font-size: 0.9rem;
+  color: var(--game-ink);
 }
 
 .testimony-dossier-card__crime,
@@ -580,16 +2132,16 @@ html[data-motion-level='off'] .nt-vignette {
   align-items: baseline;
   gap: 4px;
   font-size: 0.8rem;
-  color: var(--gp-muted);
+  color: var(--game-muted);
 }
 
 .testimony-dossier-card__crime strong,
 .testimony-dossier-card__guess strong {
-  color: var(--gp-ink);
+  color: var(--game-ink);
 }
 
 .testimony-dossier-card__guess.is-correct {
-  color: var(--game-dark, var(--gp-green-dark));
+  color: var(--nt-ok);
 }
 
 .testimony-dossier-card__guess.is-wrong {
@@ -617,17 +2169,6 @@ html[data-motion-level='off'] .nt-vignette {
   padding: 16px 20px;
   background: linear-gradient(135deg, #27272a 0%, #18181b 100%);
   border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-}
-
-.nt-expose-modal__icon {
-  font-size: 2rem;
-  line-height: 1;
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
 }
 
 .nt-expose-modal__title-group h3 {

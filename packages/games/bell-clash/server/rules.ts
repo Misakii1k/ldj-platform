@@ -158,94 +158,117 @@ export const MASTER_PHRASE_POOL: Record<CardColor, readonly string[]> = {
     '把手放在胸口',
     '说了「别搞」',
     '两手张开掌心向上',
-    '说了「有意思」',
-    '把重心移到另一条腿',
-    '说了「没问题」',
-    '轻轻咳嗽了一声',
-    '说了「听我说」',
-    '把双手握成拳头',
-    '说了「我也觉得」',
-    '微微仰头看上方',
-    '说了「那就这样」',
-    '拍了拍自己的肩膀',
-    '说了「算你走运」',
-    '用手指敲了敲椅背',
-    '说了「有把握」',
-    '握着拳头锤了一下手掌',
-    '说了「接着来」',
-    '伸手整理了一下衣服',
+    '说了「要不起」',
+    '摸了摸自己的下嘴唇',
+    '说了「看我的」',
+    '轻轻咳了一下',
+    '说了「给个机会」',
+    '把双手平摊在桌面两侧',
+    '说了「搞快点」',
+    '抓了抓后脑勺',
+    '说了「我服了」',
+    '低头看着双手',
+    '说了「真有你的」',
+    '两手手腕交叉',
+    '说了「不会吧」',
+    '身体向左倾斜',
+    '说了「承让」',
+    '身体向右倾斜',
   ],
   blue: [
-    '说了「我出这个」',
-    '说了「算你狠」',
-    '说了「怎么可能」',
-    '摸了一下耳朵',
-    '抿嘴或撇嘴',
+    '用手摸了摸桌沿',
+    '说出「好的吧」',
+    '做了一个推眼镜的动作',
+    '说了「好吧」',
+    '喝了一口饮料或水',
+    '说了「怎么会」',
+    '手托着右脸颊',
+    '说了「过」',
+    '手托着左脸颊',
+    '说了「快出」',
+    '看了看天花板或上方',
+    '说了「有意思」',
+    '用手按住胸口',
     '说了「等等我」',
-    '说了「随便吧」',
-    '手掌摊开向上',
-    '说了「厉害啊」',
-    '咳嗽了一声',
-    '说了「看我的」',
-    '说了「还有谁」',
-    '双手交叉放桌上',
-    '说了「你确定？」',
-    '身体微微前倾',
-    '说了「好险」',
-    '伸手指向牌堆',
-    '说了「别搞我」',
+    '双手手指交叉放在脑后',
+    '说了「哎呀」',
+    '用食指敲了敲桌面',
+    '说了「行吧」',
+    '深吸一口气',
+    '说了「难办」',
+    '整理了一下衣领或袖口',
+    '说了「别这样」',
+    '把手肘放在桌上支撑',
+    '说了「真假」',
+    '轻轻摇了摇头',
+    '说了「好家伙」',
+    '看了看旁边的玩家',
+    '说了「不至于」',
+    '手指轻轻敲击大腿',
+    '说了「这就来」',
+    '微笑着点了点头',
+    '说了「厉害」',
+    '用手背贴了贴自己的脸颊',
     '说了「让我看看」',
-    '两手平摊在桌沿',
-    '说了「我不信」',
-    '用手指了指自己',
-    '说了「你看着办」',
-    '两手食指互碰',
-    '说了「我先摸一张」',
-    '拍了拍自己的胸脯',
-    '说了「稳如老狗」',
-    '摸了摸自己的眉毛',
-    '说了「谁打的？」',
-    '用手掌撑住脸颊',
-    '说了「有内鬼」',
-    '把牌一张张扇形展开',
+    '轻轻咬了咬牙',
+    '说了「行啊」',
+    '把一张手牌挪到了最前面',
+    '说了「就来」',
+    '把一张手牌挪到了最后面',
+    '说了「我看看牌」',
+    '双手握成拳头放在桌上',
+    '说了「可以的」',
+    '闭了闭眼睛又睁开',
+    '说了「算你狠」',
+    '低头看了一眼自己的手指',
+    '说了「怎么说呢」',
+    '把两张牌调换了位置',
     '说了「别慌」',
-    '轻轻甩了一下手腕',
-    '说了「我翻盘了」',
-    '用右手摸了摸左肩',
-    '说了「这不科学」',
-    '两手在胸前比个大叉',
-    '说了「你完了」',
-    '用手背擦了一下下巴',
-    '说了「这就很尴尬」',
-    '手背朝上放在桌上',
-    '说了「相信我」',
-    '两只脚踝交叉叠放',
-    '说了「开玩笑吧」',
-    '转了转手中的某张牌',
-    '说了「这波我在大气层」',
-    '用手指指着对面的玩家',
-    '说了「到此为止了」',
-    '身体向左或向右微倾',
+    '用手指轻轻划了划桌面',
+    '说了「这就对了」',
   ],
 };
 
-/** 兼容旧版引用 */
-export const PHRASES = MASTER_PHRASE_POOL;
+export interface BellRandom {
+  nextInt(minInclusive: number, maxExclusive: number): number;
+  shuffle<T>(items: readonly T[]): T[];
+}
 
-const deny = (message: string): BellClashReduceResult => ({
-  ok: false,
-  code: 'ACTION_NOT_ALLOWED',
-  message,
-});
+/**
+ * 构建原创牌库（4色×(6张数字卡 + 从大词库随机抽选18张聚会高频短语卡) = 96张牌，短语卡占比 75%）。
+ * 支持传入 PRNG 随机抽选，保证开局多局不重样；无参调用时确定性取各色前 18 张。
+ */
+export function buildDeck(random?: BellRandom): BellClashCard[] {
+  const deck: BellClashCard[] = [];
+  for (const color of COLORS) {
+    // 6 张数字卡（1–6 各 1 张，占 25%）
+    for (let number = 1; number <= 6; number += 1) {
+      deck.push({ kind: 'number', color, number });
+    }
+    // 18 张高频易触发短语卡（从 50+ 大词库中随机抽选 18 张，占 75%）
+    const colorPool = MASTER_PHRASE_POOL[color];
+    const sampledPhrases = random
+      ? random.shuffle([...colorPool]).slice(0, 18)
+      : colorPool.slice(0, 18);
 
-const idempotent = (state: BellClashState): BellClashReduceResult => ({
-  ok: true,
-  nextState: state,
-  events: [],
-  effects: [],
-});
+    for (const phrase of sampledPhrases) {
+      deck.push({ kind: 'phrase', color, phrase });
+    }
+  }
+  return deck;
+}
 
-const system = (text: string): GameEffect => ({ type: 'system_message', text });
+function system(text: string): GameEffect {
+  return { type: 'system_message', text };
+}
+
+function deny(message: string): BellClashReduceResult {
+  return { ok: false, code: 'ACTION_NOT_ALLOWED', message };
+}
+
+function idempotent(state: BellClashState): BellClashReduceResult {
+  return { ok: true, nextState: state, events: [], effects: [] };
+}
 
 /**
  * 回合超时。顺便把截止时刻与类别写进 state：客户端的倒计时环需要它们，
@@ -264,18 +287,18 @@ function scheduleTurnTimeout(state: BellClashState, playerId: string, now: numbe
 }
 
 /**
- * 抢铃窗口超时。窗口通常只有几秒，是本游戏最需要可见倒计时的地方。
- * deadlineKind 标为 'bell'，客户端据此换 phaseKey 重测满格。
+ * 质疑投票判定超时。
+ * deadlineKind 标为 'challenge'，客户端据此换 phaseKey 重测满格。
  */
-function scheduleBellTimeout(state: BellClashState, now: number): GameEffect {
-  const deadlineAt = now + state.config.bellSeconds * 1000;
+function scheduleChallengeTimeout(state: BellClashState, now: number): GameEffect {
+  const deadlineAt = now + state.config.challengeSeconds * 1000;
   state.deadlineAt = deadlineAt;
-  state.deadlineKind = 'bell';
+  state.deadlineKind = 'challenge';
   return {
     type: 'schedule_timer',
-    timerId: 'bell_timeout',
+    timerId: 'challenge_timeout',
     deadlineAt,
-    action: { type: 'resolve_bell', claimantId: '' },
+    action: { type: 'challenge_timeout' },
   };
 }
 
@@ -283,20 +306,17 @@ function scheduleBellTimeout(state: BellClashState, now: number): GameEffect {
  * 构建原创牌库：4色×(6张数字卡 + 从大词库随机抽选18张聚会高频短语卡) = 96张牌（短语卡占比 75%）。
  * 支持传入 PRNG 随机抽选，保证开局多局不重样；无参调用时确定性取各色前 18 张。
  */
-export function buildDeck(random?: BellRandom): BellClashCard[] {
+export function buildStandardDeck(rng?: BellRandom): BellClashCard[] {
   const deck: BellClashCard[] = [];
   for (const color of COLORS) {
-    // 6 张数字卡（1–6 各 1 张，占 25%）
-    for (let number = 1; number <= 6; number += 1) {
-      deck.push({ kind: 'number', color, number });
+    // 6 张数字卡（1–6）
+    for (let n = 1; n <= 6; n++) {
+      deck.push({ kind: 'number', color, number: n });
     }
-    // 18 张高频易触发短语卡（从 50+ 大词库中随机抽选 18 张，占 75%）
-    const colorPool = MASTER_PHRASE_POOL[color];
-    const sampledPhrases = random
-      ? random.shuffle([...colorPool]).slice(0, 18)
-      : colorPool.slice(0, 18);
-
-    for (const phrase of sampledPhrases) {
+    // 18 张高频短语卡
+    const pool = MASTER_PHRASE_POOL[color];
+    const pickedPhrases = rng ? rng.shuffle(pool).slice(0, 18) : pool.slice(0, 18);
+    for (const phrase of pickedPhrases) {
       deck.push({ kind: 'phrase', color, phrase });
     }
   }
@@ -335,8 +355,7 @@ export function createBellClashState(
     drawPile: [...deck],
     discardTop,
     currentPlayerId: players[0]!,
-    bellOpen: false,
-    bellClaimantId: null,
+    challenge: null,
     penaltyPulls: {},
     winners: [],
     deadlineAt: null,
@@ -366,8 +385,24 @@ export function assertBellClashInvariants(state: BellClashState): void {
   if (new Set(state.players).size !== state.players.length) {
     throw new Error('玩家列表存在重复 ID');
   }
-  if (state.bellOpen && (!state.discardTop || state.discardTop.kind !== 'phrase')) {
-    throw new Error('按铃窗口应挂在短语卡上');
+  if (state.challenge) {
+    const ch = state.challenge;
+    if (!state.players.includes(ch.claimantId)) {
+      throw new Error('拍铃者不在本局');
+    }
+    if (ch.card.kind !== 'phrase') {
+      throw new Error('拍铃亮出的卡必须是短语卡');
+    }
+    if (ch.voters.includes(ch.claimantId)) {
+      throw new Error('拍铃者不可作为投票人');
+    }
+    const voterSet = new Set(ch.voters);
+    for (const d of ch.doubts) {
+      if (!voterSet.has(d)) throw new Error('质疑者不在投票人列表中');
+    }
+    for (const c of ch.confirms) {
+      if (!voterSet.has(c)) throw new Error('确认者不在投票人列表中');
+    }
   }
   for (const id of state.players) {
     if (!Array.isArray(state.hands[id])) {
@@ -390,6 +425,82 @@ export interface ReduceContext {
 }
 
 /**
+ * 拍铃判定结算：成功
+ */
+function resolveChallengeSuccess(
+  next: BellClashState,
+  events: BellClashEvent[],
+  effects: GameEffect[],
+  now: number,
+): BellClashReduceResult {
+  const ch = next.challenge!;
+  const claimantId = ch.claimantId;
+
+  // 弃牌堆顶换为亮出的短语卡
+  next.discardTop = ch.card;
+  next.currentPlayerId = claimantId;
+  const doubts = [...ch.doubts];
+  next.challenge = null;
+
+  events.push({ type: 'bell_resolved', claimantId, success: true, doubts });
+  effects.push({ type: 'cancel_timer', timerId: 'challenge_timeout' });
+  effects.push(system(`玩家 ${claimantId} 拍铃成功！短语卡打出并接管回合！`));
+
+  // 获胜判定：拍铃成功打出手牌，若手牌打光即赢
+  if (next.hands[claimantId]!.length === 0) {
+    next.phase = 'game_over';
+    next.deadlineAt = null;
+    next.deadlineKind = null;
+    next.winners = [claimantId];
+    events.push({ type: 'game_finished', winners: [claimantId] });
+    effects.push(system(`玩家 ${claimantId} 打光手牌，赢得胜利！`));
+    assertBellClashInvariants(next);
+    return { ok: true, nextState: next, events, effects };
+  }
+
+  // 接管回合后排上新回合计时
+  effects.push(scheduleTurnTimeout(next, claimantId, now));
+  assertBellClashInvariants(next);
+  return { ok: true, nextState: next, events, effects };
+}
+
+/**
+ * 拍铃判定结算：拍错（严格过半质疑）
+ */
+function resolveChallengeFailure(
+  next: BellClashState,
+  events: BellClashEvent[],
+  effects: GameEffect[],
+  now: number,
+): BellClashReduceResult {
+  const ch = next.challenge!;
+  const claimantId = ch.claimantId;
+
+  // 卡牌放回原位
+  const hand = next.hands[claimantId]!;
+  const safeIdx = Math.min(ch.handIndex, hand.length);
+  hand.splice(safeIdx, 0, ch.card);
+
+  // 罚摸 1 张
+  drawOne(next, claimantId);
+  next.penaltyPulls[claimantId] = (next.penaltyPulls[claimantId] ?? 0) + 1;
+
+  // 回合回到原本被打断的人
+  next.currentPlayerId = ch.interruptedPlayerId;
+  const doubts = [...ch.doubts];
+  next.challenge = null;
+
+  events.push({ type: 'bell_resolved', claimantId, success: false, doubts });
+  effects.push({ type: 'cancel_timer', timerId: 'challenge_timeout' });
+  effects.push(system(`玩家 ${claimantId} 拍错短语卡，被超过半数质疑！卡牌收回手牌并罚摸 1 张！`));
+
+  // 为被打断者重新开启完整回合计时
+  effects.push(scheduleTurnTimeout(next, ch.interruptedPlayerId, now));
+  assertBellClashInvariants(next);
+  return { ok: true, nextState: next, events, effects };
+}
+
+/**
  * 状态转移主函数。
  */
 export function reduceBellClashState(
@@ -408,15 +519,13 @@ export function reduceBellClashState(
         ok: true,
         nextState: state,
         events: [],
-        effects: [
-          scheduleTurnTimeout(state, state.currentPlayerId, now),
-        ],
+        effects: [scheduleTurnTimeout(state, state.currentPlayerId, now)],
       };
     }
 
     case 'play_card': {
       if (state.phase !== 'playing') return deny('游戏已结束');
-      if (state.bellOpen) return deny('当前处于按铃抢答窗口，不可正常出牌');
+      if (state.challenge !== null) return deny('当前处于拍铃质疑判定，不可出牌');
       if (action.playerId !== state.currentPlayerId) return deny('非当前出牌者');
 
       const hand = state.hands[action.playerId];
@@ -439,7 +548,6 @@ export function reduceBellClashState(
       // 获胜判定：手牌打光即赢
       if (next.hands[action.playerId]!.length === 0) {
         next.phase = 'game_over';
-        // 终局不再计时：客户端倒计时环据此隐藏
         next.deadlineAt = null;
         next.deadlineKind = null;
         next.winners = [action.playerId];
@@ -449,20 +557,7 @@ export function reduceBellClashState(
         return { ok: true, nextState: next, events, effects };
       }
 
-      // 若打出的是短语卡，开启按铃抢答窗口
-      if (card.kind === 'phrase') {
-        next.bellOpen = true;
-        next.bellClaimantId = null;
-        events.push({ type: 'bell_opened' });
-        effects.push(
-          system(`触发短语「${card.phrase}」！若有人说了/做了牌上内容，可拍铃抢回合！`),
-        );
-        effects.push(scheduleBellTimeout(next, now));
-        assertBellClashInvariants(next);
-        return { ok: true, nextState: next, events, effects };
-      }
-
-      // 数字牌：回合转移给下一位玩家
+      // 普通出牌（无论数字牌还是短语卡当普通牌打）都不开按铃窗口，回合转下一位
       const currentIdx = next.players.indexOf(action.playerId);
       const nextPlayerId = next.players[(currentIdx + 1) % next.players.length]!;
       next.currentPlayerId = nextPlayerId;
@@ -476,14 +571,12 @@ export function reduceBellClashState(
 
     case 'draw_card': {
       if (state.phase !== 'playing') return deny('游戏已结束');
-      if (state.bellOpen) return deny('当前处于按铃窗口，不可摸牌');
+      if (state.challenge !== null) return deny('当前处于拍铃质疑判定，不可摸牌');
       if (action.playerId !== state.currentPlayerId) return deny('非当前出牌者');
 
       const next = structuredClone(state) as BellClashState;
       const drawn = drawOne(next, action.playerId);
       const events: BellClashEvent[] = [{ type: 'card_drawn', playerId: action.playerId }];
-      // 摸牌即消耗本回合决策：必须取消待触发的 turn_timeout，
-      // 否则短语牌自动打出开启按铃窗口后，旧超时会误摸牌并过牌破坏结算
       const effects: GameEffect[] = [{ type: 'cancel_timer', timerId: 'turn_timeout' }];
 
       if (!drawn) {
@@ -491,7 +584,6 @@ export function reduceBellClashState(
         const minCount = Math.min(...next.players.map((p) => next.hands[p]!.length));
         const winners = next.players.filter((p) => next.hands[p]!.length === minCount);
         next.phase = 'game_over';
-        // 终局不再计时：客户端倒计时环据此隐藏
         next.deadlineAt = null;
         next.deadlineKind = null;
         next.winners = winners;
@@ -511,21 +603,11 @@ export function reduceBellClashState(
 
         if (next.hands[action.playerId]!.length === 0) {
           next.phase = 'game_over';
-          // 终局不再计时：客户端倒计时环据此隐藏
           next.deadlineAt = null;
           next.deadlineKind = null;
           next.winners = [action.playerId];
           events.push({ type: 'game_finished', winners: [action.playerId] });
           effects.push(system(`玩家 ${action.playerId} 打光手牌获胜！`));
-          assertBellClashInvariants(next);
-          return { ok: true, nextState: next, events, effects };
-        }
-
-        if (drawn.kind === 'phrase') {
-          next.bellOpen = true;
-          next.bellClaimantId = null;
-          events.push({ type: 'bell_opened' });
-          effects.push(scheduleBellTimeout(next, now));
           assertBellClashInvariants(next);
           return { ok: true, nextState: next, events, effects };
         }
@@ -545,134 +627,114 @@ export function reduceBellClashState(
 
     case 'ring_bell': {
       if (state.phase !== 'playing') return deny('游戏已结束');
-      if (!state.bellOpen) return deny('当前未开启按铃窗口');
-      if (state.bellClaimantId !== null) return deny('已有人拍铃');
+      if (state.challenge !== null) return deny('已有拍铃判定正在进行');
+      if (!state.players.includes(action.playerId)) return deny('非本局玩家');
 
-      const next = structuredClone(state) as BellClashState;
-      const top = next.discardTop;
-      const hand = next.hands[action.playerId] ?? [];
-      const phraseIndex = hand.findIndex(
-        (c) => c.kind === 'phrase' && top !== null && c.color === top.color,
-      );
-
-      // 若手中无同色短语卡，即时结算为错误拍铃并关闭窗口
-      if (phraseIndex < 0) {
-        drawOne(next, action.playerId);
-        next.penaltyPulls[action.playerId] = (next.penaltyPulls[action.playerId] ?? 0) + 1;
-        next.bellOpen = false;
-        next.bellClaimantId = null;
-
-        const currentIdx = next.players.indexOf(next.currentPlayerId);
-        const nextPlayerId = next.players[(currentIdx + 1) % next.players.length]!;
-        next.currentPlayerId = nextPlayerId;
-
-        const events: BellClashEvent[] = [
-          { type: 'bell_rung', claimantId: action.playerId },
-          { type: 'bell_resolved', claimantId: action.playerId, wonTurn: false },
-          { type: 'turn_passed', playerId: nextPlayerId },
-        ];
-        const effects: GameEffect[] = [
-          system(`玩家 ${action.playerId} 错误拍铃（无同色短语卡），罚摸 1 张！`),
-          { type: 'cancel_timer', timerId: 'bell_timeout' },
-          scheduleTurnTimeout(next, nextPlayerId, now),
-        ];
-
-        assertBellClashInvariants(next);
-        return { ok: true, nextState: next, events, effects };
+      const hand = state.hands[action.playerId];
+      if (!hand || action.cardIndex < 0 || action.cardIndex >= hand.length) {
+        return deny('卡牌索引越界');
       }
 
-      next.bellClaimantId = action.playerId;
-      const events: BellClashEvent[] = [{ type: 'bell_rung', claimantId: action.playerId }];
+      const card = hand[action.cardIndex]!;
+      if (card.kind !== 'phrase') {
+        return deny('拍铃只能亮出手中的短语卡');
+      }
+
+      const next = structuredClone(state) as BellClashState;
+      // 从手牌中移出这张短语卡，放进判定区暂存
+      next.hands[action.playerId]!.splice(action.cardIndex, 1);
+
+      const voters = next.players.filter((p) => p !== action.playerId);
+
+      next.challenge = {
+        claimantId: action.playerId,
+        card,
+        handIndex: action.cardIndex,
+        voters,
+        doubts: [],
+        confirms: [],
+        interruptedPlayerId: next.currentPlayerId,
+      };
+
+      const events: BellClashEvent[] = [{ type: 'bell_rung', claimantId: action.playerId, card }];
       const effects: GameEffect[] = [
-        system(`玩家 ${action.playerId} 拍铃抢答！`),
+        { type: 'cancel_timer', timerId: 'turn_timeout' },
+        system(`玩家 ${action.playerId} 拍铃并亮出短语卡「${card.phrase}」！等待他人质疑…`),
       ];
 
+      // 若在局只有拍铃者 1 人（极特殊），直接成功
+      if (voters.length === 0) {
+        return resolveChallengeSuccess(next, events, effects, now);
+      }
+
+      effects.push(scheduleChallengeTimeout(next, now));
       assertBellClashInvariants(next);
       return { ok: true, nextState: next, events, effects };
     }
 
-    case 'resolve_bell': {
+    case 'challenge_vote': {
       if (state.phase !== 'playing') return deny('游戏已结束');
-      if (!state.bellOpen) return deny('按铃窗口未开启');
+      if (state.challenge === null) return deny('当前没有正在进行的拍铃判定');
 
-      const next = structuredClone(state) as BellClashState;
-      const claimantId = action.claimantId || next.bellClaimantId;
-      next.bellOpen = false;
-      next.bellClaimantId = null;
-
-      const events: BellClashEvent[] = [];
-      const effects: GameEffect[] = [{ type: 'cancel_timer', timerId: 'bell_timeout' }];
-
-      const top = next.discardTop;
-
-      if (claimantId && next.players.includes(claimantId)) {
-        // 检查拍铃者手中是否有同色短语卡
-        const hand = next.hands[claimantId]!;
-        const phraseIndex = hand.findIndex(
-          (c) => c.kind === 'phrase' && top !== null && c.color === top.color,
-        );
-
-        if (phraseIndex >= 0) {
-          // 拍铃成功：打出该短语卡并接管回合
-          const playedPhrase = hand.splice(phraseIndex, 1)[0]!;
-          next.discardTop = playedPhrase;
-          next.currentPlayerId = claimantId;
-          events.push({ type: 'bell_resolved', claimantId, wonTurn: true });
-          effects.push(system(`玩家 ${claimantId} 拍铃成功！打出短语卡并接管回合！`));
-
-          if (hand.length === 0) {
-            next.phase = 'game_over';
-            // 终局不再计时：客户端倒计时环据此隐藏
-            next.deadlineAt = null;
-            next.deadlineKind = null;
-            next.winners = [claimantId];
-            events.push({ type: 'game_finished', winners: [claimantId] });
-            effects.push(system(`玩家 ${claimantId} 打光手牌获胜！`));
-            assertBellClashInvariants(next);
-            return { ok: true, nextState: next, events, effects };
-          }
-
-          // 拍铃成功：关闭按铃窗口，回合归该玩家
-          next.bellOpen = false;
-          next.bellClaimantId = null;
-          effects.push(scheduleTurnTimeout(next, claimantId, now));
-          assertBellClashInvariants(next);
-          return { ok: true, nextState: next, events, effects };
-        }
-
-        // 错误拍铃：罚摸一张
-        drawOne(next, claimantId);
-        next.penaltyPulls[claimantId] = (next.penaltyPulls[claimantId] ?? 0) + 1;
-        events.push({ type: 'bell_resolved', claimantId, wonTurn: false });
-        effects.push(system(`玩家 ${claimantId} 错误拍铃（无同色短语卡），罚摸 1 张！`));
-
-        // 轮到原出牌者的下一位
-        const currentIdx = next.players.indexOf(next.currentPlayerId);
-        const nextPlayerId = next.players[(currentIdx + 1) % next.players.length]!;
-        next.currentPlayerId = nextPlayerId;
-        events.push({ type: 'turn_passed', playerId: nextPlayerId });
-
-        effects.push(scheduleTurnTimeout(next, nextPlayerId, now));
-
-        assertBellClashInvariants(next);
-        return { ok: true, nextState: next, events, effects };
+      const ch = state.challenge;
+      if (!ch.voters.includes(action.playerId)) return deny('非本次拍铃判定的投票人');
+      if (ch.doubts.includes(action.playerId) || ch.confirms.includes(action.playerId)) {
+        return deny('您已投过票');
       }
 
-      // 无人拍铃：回合流转到下一位
-      const currentIdx = next.players.indexOf(next.currentPlayerId);
-      const nextPlayerId = next.players[(currentIdx + 1) % next.players.length]!;
-      next.currentPlayerId = nextPlayerId;
-      events.push({ type: 'turn_passed', playerId: nextPlayerId });
+      const next = structuredClone(state) as BellClashState;
+      if (action.doubt) {
+        next.challenge!.doubts.push(action.playerId);
+      } else {
+        next.challenge!.confirms.push(action.playerId);
+      }
 
-      effects.push(scheduleTurnTimeout(next, nextPlayerId, now));
+      const totalVoters = ch.voters.length;
+      const doubtCount = next.challenge!.doubts.length;
+      const confirmCount = next.challenge!.confirms.length;
+      const remainingVotes = totalVoters - doubtCount - confirmCount;
 
+      const events: BellClashEvent[] = [];
+      const effects: GameEffect[] = [];
+
+      // 判定 1：质疑票已严格过半（doubts * 2 > totalVoters）-> 立即判定拍错提前结算！
+      if (doubtCount * 2 > totalVoters) {
+        return resolveChallengeFailure(next, events, effects, now);
+      }
+
+      // 判定 2：即使剩余所有未投票全部质疑，也绝不可能过半 -> 立即判定成功提前结算！
+      if ((doubtCount + remainingVotes) * 2 <= totalVoters) {
+        return resolveChallengeSuccess(next, events, effects, now);
+      }
+
+      // 否则继续等待其他投票或超时
       assertBellClashInvariants(next);
       return { ok: true, nextState: next, events, effects };
+    }
+
+    case 'challenge_timeout': {
+      if (state.phase !== 'playing') return deny('游戏已结束');
+      if (state.challenge === null) return deny('当前没有正在进行的拍铃判定');
+
+      const next = structuredClone(state) as BellClashState;
+      const totalVoters = next.challenge!.voters.length;
+      const doubtCount = next.challenge!.doubts.length;
+
+      const events: BellClashEvent[] = [];
+      const effects: GameEffect[] = [];
+
+      // 超时判定：质疑数严格过半则拍错，否则拍铃成功
+      if (doubtCount * 2 > totalVoters) {
+        return resolveChallengeFailure(next, events, effects, now);
+      } else {
+        return resolveChallengeSuccess(next, events, effects, now);
+      }
     }
 
     case 'turn_timeout': {
       if (state.phase !== 'playing') return deny('游戏已结束');
       if (action.playerId !== state.currentPlayerId) return deny('非当前玩家超时');
+      if (state.challenge !== null) return deny('当前处于拍铃判定，回合超时暂停');
 
       // 超时自动摸一张并过牌
       const next = structuredClone(state) as BellClashState;
@@ -700,27 +762,62 @@ export function reduceBellClashState(
       const forfeiting = new Set(action.playerIds);
       next.players = next.players.filter((id) => !forfeiting.has(id));
 
+      const events: BellClashEvent[] = [];
       const effects: GameEffect[] = [
         system(`玩家 ${action.playerIds.join('、')} 退出了对局。`),
       ];
 
-      if (forfeiting.has(next.currentPlayerId)) {
-        next.currentPlayerId = next.players[0] ?? '';
+      // 处理正在进行的判定
+      if (next.challenge) {
+        if (forfeiting.has(next.challenge.claimantId)) {
+          // 拍铃者退出：判定取消，卡作废，回合归被打断者
+          const resumeId = forfeiting.has(next.challenge.interruptedPlayerId)
+            ? (next.players[0] ?? '')
+            : next.challenge.interruptedPlayerId;
+          next.challenge = null;
+          effects.push({ type: 'cancel_timer', timerId: 'challenge_timeout' });
+          if (resumeId) {
+            next.currentPlayerId = resumeId;
+            effects.push(scheduleTurnTimeout(next, resumeId, now));
+          }
+        } else {
+          // 投票人退出：从投票人集合中移除
+          next.challenge.voters = next.challenge.voters.filter((id) => !forfeiting.has(id));
+          next.challenge.doubts = next.challenge.doubts.filter((id) => !forfeiting.has(id));
+          next.challenge.confirms = next.challenge.confirms.filter((id) => !forfeiting.has(id));
+
+          const totalVoters = next.challenge.voters.length;
+          const doubtCount = next.challenge.doubts.length;
+          const confirmCount = next.challenge.confirms.length;
+          const remainingVotes = totalVoters - doubtCount - confirmCount;
+
+          if (doubtCount * 2 > totalVoters) {
+            return resolveChallengeFailure(next, events, effects, now);
+          } else if ((doubtCount + remainingVotes) * 2 <= totalVoters) {
+            return resolveChallengeSuccess(next, events, effects, now);
+          }
+        }
+      } else {
+        if (forfeiting.has(next.currentPlayerId)) {
+          next.currentPlayerId = next.players[0] ?? '';
+          if (next.currentPlayerId && next.phase === 'playing') {
+            effects.push(scheduleTurnTimeout(next, next.currentPlayerId, now));
+          }
+        }
       }
 
       if (next.players.length <= 1) {
         next.phase = 'game_over';
-        // 终局不再计时：客户端倒计时环据此隐藏
         next.deadlineAt = null;
         next.deadlineKind = null;
         next.winners = next.players.length === 1 ? [next.players[0]!] : [];
-        const events: BellClashEvent[] = [{ type: 'game_finished', winners: next.winners }];
+        events.push({ type: 'game_finished', winners: next.winners });
         assertBellClashInvariants(next);
         return { ok: true, nextState: next, events, effects };
       }
 
       assertBellClashInvariants(next);
-      return { ok: true, nextState: next, events: [], effects };
+      return { ok: true, nextState: next, events, effects };
     }
 
     default: {
@@ -728,4 +825,3 @@ export function reduceBellClashState(
     }
   }
 }
-

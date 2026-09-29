@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>狼人杀 · B 圆形剧场</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  /* 圆形剧场：舞台在下方中央，所有人坐成一道弧形阶梯看台，面朝舞台 */
+  .tiers { position: absolute; z-index: 1; pointer-events: none; border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
+  .tiers i {
+    position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+    border-radius: 50% 50% 0 0 / 100% 100% 0 0; border: 1px solid rgba(232, 194, 122, .14); border-bottom: 0;
+    background: radial-gradient(ellipse at 50% 100%, transparent 58%, rgba(90, 30, 40, .28) 59%, rgba(40, 12, 18, .1) 100%);
+  }
+  .arc-seat { position: absolute; z-index: 6; transform: translate(-50%, -50%); }
+  .arc-seat .seat { width: 100%; }
+  .arc-seat .seat.compact .name { font-size: 12.5px; }
+  /* 舞台做成半圆形台面，从下方伸出 */
+  .apron {
+    position: absolute; z-index: 2; border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,.25) 0 2px, transparent 2px 58px),
+      radial-gradient(ellipse at 50% 100%, #6a3c24, #3e2114 70%);
+    border-top: 3px solid var(--gold); box-shadow: 0 -2px 0 #6b4a22, 0 -18px 40px rgba(0,0,0,.6);
+  }
+  .apron .lip { position: absolute; left: 6%; right: 6%; top: 10px; height: 8px; display: flex; justify-content: space-around; }
+  .apron .lip i { width: 16px; height: 7px; border-radius: 6px; background: #ffe7b0; box-shadow: 0 -4px 14px 3px rgba(var(--warm), .55); transition: opacity 600ms; }
+  body[data-time="night"] .apron .lip i { opacity: .15; box-shadow: none; }
+  .backcurtain {
+    position: absolute; z-index: 1; overflow: hidden; border-radius: 12px 12px 0 0;
+    background: linear-gradient(180deg, #1a070b, #2a0c12);
+  }
+  .backcurtain .curtain { width: 51%; }
+  .backcurtain .valance { height: 22%; }
+  .device[data-size="mobile"] .speaker .kicker { font-size: 11px; }
+  .device[data-size="mobile"] .speaker .sub { font-size: 12px; }
+  .device[data-size="mobile"] .speaker .sub b { font-size: 14px; }
+  .device[data-size="mobile"] .dock { flex-wrap: wrap; }
+  .device[data-size="mobile"] .dock .info { flex: 1 0 100%; }
+  .device[data-size="mobile"] .dock .btn { flex: 1; }
+  .device[data-size="mobile"] .night-title h2 { font-size: 36px; }
+  .device[data-size="mobile"] .topbar .game { font-size: 16px; }
+  .device[data-size="mobile"] .topbar .day { font-size: 13px; padding: 2px 10px; }
+  .device[data-size="mobile"] .icon-btn { width: 32px; height: 32px; }
+</style>
+</head>
+<body data-time="day">
+<div class="toolbar">
+  <strong>B · 圆形剧场</strong>
+  <span class="note">对标：Balatro 的"一眼看全桌"｜ 所有人坐在一道弧形阶梯看台上，面朝下方的半圆舞台，交麦时话筒沿弧线飞 ｜ 与 A/C 的差别：打破左右两排，座位顺序一目了然</span>
+  <div class="group"><button data-set-size="desktop">桌面 1280×800</button><button data-set-size="mobile">手机 390×844</button></div>
+  <div class="group"><button data-set-count="9">9 人</button><button data-set-count="12">12 人</button></div>
+  <div class="group"><button data-set-time="day">白天 ☀</button><button data-set-time="night">入夜 🌙</button></div>
+  <div class="group"><button id="pass" class="hit">交麦（看飞行）</button><button id="last10">跳到最后 10 秒</button><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="scaler"><div class="device"></div></div></div>
+<script>
+window.LAYOUT = function ({ size, count, players, makeSeat, device }) {
+  const W = window.WW;
+  W.reset(device);
+  const desk = size === 'desktop';
+  // 弧心与半径：座位从左下 → 顶 → 右下，1 号在左下
+  const g = desk
+    ? { cx: 640, cy: 660, rx: 580, ry: 560, a0: 190, a1: 350, seatW: count > 9 ? 104 : 132, compact: count > 9 }
+    : { cx: 195, cy: 520, rx: 158, ry: 420, a0: 188, a1: 352, seatW: 70, compact: true };
+
+  const tiers = W.place(W.add(device, 'tiers'), g.cx - g.rx - 60, g.cy - g.ry - 60, (g.rx + 60) * 2, g.ry + 60);
+  [1, .82, .64].forEach((f) => {
+    const t = document.createElement('i');
+    Object.assign(t.style, { width: (g.rx + 60) * 2 * f + 'px', height: (g.ry + 60) * f + 'px' });
+    tiers.appendChild(t);
+  });
+
+  if (desk) {
+    W.buildTopbar(device, { x: 28, y: 18, w: 1224 }).style.pointerEvents = 'none';
+    device.querySelector('.topbar .icons').style.pointerEvents = 'auto';
+    W.place(W.add(device, 'backcurtain', '<div class="valance"></div><div class="curtain l"></div><div class="curtain r"></div>'), 360, 250, 560, 330);
+    W.place(W.add(device, 'apron', '<div class="lip">' + '<i></i>'.repeat(7) + '</div>'), 300, 560, 680, 130);
+    W.place(W.add(device, 'spot'), 470, 180, 340, 420);
+    W.place(W.add(device, 'spot-pool'), 440, 560, 400, 60);
+    W.buildSpeaker(device, { x: 390, y: 270, w: 500, portrait: 124, font: 46, timerR: 32, timerGap: 10 });
+    W.buildNight(device, 300);
+    W.buildDock(device, { x: 24, y: 710, w: 1232, h: 72 });
+  } else {
+    W.buildTopbar(device, { x: 16, y: 16, w: 358 }, true);
+    W.place(W.add(device, 'backcurtain', '<div class="valance"></div><div class="curtain l"></div><div class="curtain r"></div>'), 86, 250, 218, 300);
+    W.place(W.add(device, 'apron', '<div class="lip">' + '<i></i>'.repeat(4) + '</div>'), 56, 530, 278, 90);
+    W.place(W.add(device, 'spot'), 125, 230, 140, 320);
+    W.place(W.add(device, 'spot-pool'), 105, 520, 180, 40);
+    W.buildSpeaker(device, { x: 86, y: 262, w: 218, portrait: 92, font: 28, timerR: 24, timerGap: 8 });
+    W.buildNight(device, 280);
+    W.buildDock(device, { x: 16, y: 700, w: 358, h: 124 });
+  }
+
+  const n = players.length;
+  // 手机：马蹄形看台（左列自下而上 → 顶排 → 右列自上而下），按路径长度均分
+  const horseshoe = (t) => {
+    const L = 470, T = 294, total = L * 2 + T, s = t * total;
+    if (s <= L) return [48, 610 - s];
+    if (s <= L + T) return [48 + (s - L), 140];
+    return [342, 140 + (s - L - T)];
+  };
+  // 桌面：沿椭圆弧按弧长均分（按角度均分会让两端挤在一起）
+  const arcPts = [];
+  if (desk) {
+    const steps = 400;
+    let acc = 0, prev = null;
+    for (let s = 0; s <= steps; s += 1) {
+      const a = (g.a0 + (g.a1 - g.a0) * s / steps) * Math.PI / 180;
+      const pt = [g.cx + g.rx * Math.cos(a), g.cy + g.ry * Math.sin(a)];
+      if (prev) acc += Math.hypot(pt[0] - prev[0], pt[1] - prev[1]);
+      arcPts.push({ pt, acc });
+      prev = pt;
+    }
+  }
+  const alongArc = (t) => {
+    const target = t * arcPts[arcPts.length - 1].acc;
+    return (arcPts.find((p) => p.acc >= target) || arcPts[arcPts.length - 1]).pt;
+  };
+  players.forEach((p, i) => {
+    const t = n === 1 ? .5 : i / (n - 1);
+    let x, y;
+    if (desk) {
+      [x, y] = alongArc(t);
+    } else {
+      [x, y] = horseshoe(t);
+    }
+    const wrap = W.place(W.add(device, 'arc-seat'), x, y, g.seatW);
+    wrap.appendChild(makeSeat(p, g.compact));
+  });
+};
+</script>
+<script src="_shared.js"></script>
+</body>
+</html>

@@ -14,16 +14,16 @@ export type StageEvent =
   | { kind: 'landlordDecided'; playerId: string; isMe: boolean }
   /** 有人出牌：牌从其手边飞到中央 */
   | { kind: 'cardsPlayed'; playerId: string; comboType: string; count: number; seq: number; isMe: boolean }
-  /** 有人过牌 */
-  | { kind: 'passed'; passCount: number }
-  /** 炸弹 / 王炸：倍数翻番，全屏事件 */
-  | { kind: 'bombDropped'; playerId: string; comboType: string; multiplier: number }
+  /** 有人过牌：playerId 是被越过回合的那位（= 变化前的 currentPlayerId） */
+  | { kind: 'passed'; playerId: string | null; passCount: number }
+  /** 炸弹 / 王炸：全屏冲屏演出（倍数不变，只读 view.multiplier）；victimId 是被压的那一手的主人 */
+  | { kind: 'bombDropped'; playerId: string; comboType: string; multiplier: number; victimId: string | null }
   /** 轮到我 */
   | { kind: 'myTurnStarted' }
-  /** 终局 */
-  | { kind: 'gameOver'; winnerTeam: string | null };
+  /** 终局；isSpring 纯客户端判定（两农民整局一张未出），只驱动春印/冲屏展示 */
+  | { kind: 'gameOver'; winnerTeam: string | null; isSpring: boolean };
 
-/** 炸弹类组合：翻倍并触发全屏事件。 */
+/** 炸弹类组合：触发全屏炸弹冲击演出。 */
 const BOMB_TYPES = new Set(['bomb', 'rocket']);
 
 /**
@@ -103,13 +103,21 @@ export function deriveStageEvents(
         playerId: trick.playerId,
         comboType: trick.combo.type,
         multiplier: next.multiplier,
+        // 被压的是上一手的主人（契约 §4.2：上家冒气泡"啊？！"）
+        victimId: prev.currentTrick && prev.currentTrick.playerId !== trick.playerId
+          ? prev.currentTrick.playerId
+          : null,
       });
     }
   }
 
-  // 过牌：passCount 增长而手牌没变
+  // 过牌：passCount 增长而手牌没变；被越过的是变化前握有回合的那位
   if (next.passCount > prev.passCount && after === before) {
-    events.push({ kind: 'passed', passCount: next.passCount });
+    events.push({
+      kind: 'passed',
+      playerId: prev.currentPlayerId !== next.currentPlayerId ? prev.currentPlayerId : null,
+      passCount: next.passCount,
+    });
   }
 
   if (
@@ -122,8 +130,21 @@ export function deriveStageEvents(
   }
 
   if (prev.phase !== 'game_over' && next.phase === 'game_over') {
-    events.push({ kind: 'gameOver', winnerTeam: next.winnerTeam });
+    events.push({ kind: 'gameOver', winnerTeam: next.winnerTeam, isSpring: isSpringWin(next) });
   }
 
   return events;
+}
+
+/**
+ * 春天判定（纯客户端，契约 §2）：地主胜，且两个农民在整局里一张都没出过
+ * —— 即 revealedHands 里两个农民都还是 17 张。只用于显示印章，不影响数值。
+ */
+function isSpringWin(view: LandlordPlatformPlayerView): boolean {
+  if (view.winnerTeam !== 'landlord') return false;
+  const revealed = view.revealedHands;
+  if (!revealed) return false;
+  const farmers = view.players.filter((p) => p.playerId !== view.landlordId);
+  if (farmers.length !== 2) return false;
+  return farmers.every((f) => (revealed[f.playerId]?.length ?? 0) === 17);
 }

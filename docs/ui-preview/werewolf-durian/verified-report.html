@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UI 验收复核 · 狼人杀与榴莲 2026-09-18</title>
+<style>
+  :root{--ink:#221f1a;--muted:#5b544a;--paper:#fbf6ec;--card:#fffdf7;--line:#8d8574;--green:#0d6b52;--red:#a5233b;--amber:#8a5a00;--blue:#1f4f86}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.7 'Microsoft YaHei',system-ui,sans-serif}
+  header{background:#221f1a;color:#fdf8ee;padding:22px 26px;border-bottom:4px solid #0d6b52}
+  header h1{margin:0 0 6px;font-size:23px}
+  header p{margin:0;color:#e2d9c6;font-size:13.5px}
+  main{max-width:1180px;margin:0 auto;padding:22px 20px 70px}
+  h2{font-size:19px;margin:34px 0 10px;padding-bottom:7px;border-bottom:2px solid var(--line)}
+  h3{font-size:15.5px;margin:22px 0 8px}
+  .note{background:#fff8e1;border-left:5px solid var(--amber);padding:12px 15px;border-radius:0 7px 7px 0;font-size:13.5px;margin:14px 0}
+  .ok{background:#e8f6ef;border-left-color:var(--green)}
+  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:10px 0;border:1px solid var(--line);border-radius:7px}
+  table{width:100%;border-collapse:collapse;background:var(--card);font-size:13.5px;min-width:560px}
+  th,td{border:1px solid #cfc7b6;padding:7px 9px;text-align:left;vertical-align:top}
+  th{background:#efe8d8;font-size:12.5px}
+  td.p{color:var(--green);font-weight:700;white-space:nowrap}
+  td.f{color:var(--red);font-weight:700}
+  code{background:#efe8d8;padding:1px 5px;border-radius:4px;font-size:12.5px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;margin:14px 0}
+  figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  figure img{width:100%;display:block;background:#ddd;border-bottom:1px solid var(--line)}
+  figcaption{padding:8px 10px;font-size:12.5px;color:var(--muted)}
+  figcaption b{color:var(--ink);display:block;font-size:13px}
+  .pill{display:inline-block;background:#221f1a;color:#fdf8ee;border-radius:20px;padding:2px 10px;font-size:11.5px;margin-right:5px}
+  .pill.g{background:var(--green)}.pill.r{background:var(--red)}.pill.b{background:var(--blue)}
+  ul{margin:8px 0;padding-left:22px}li{margin:4px 0}
+  a{color:var(--blue)}
+</style>
+</head>
+<body>
+<header>
+  <h1>UI 验收复核 · 狼人杀与榴莲</h1>
+  <p>复核日期 2026-09-18 · 基准版本：<code>durian.html</code>（紧凑总览 + 回合弹窗 + Georgia 大数字）与 <code>art-directions.html</code>（refined + woodcut）· 真实 Chromium 151 渲染</p>
+</header>
+<main>
+  <div class="note ok">
+    <b>本轮结论：</b>在真实浏览器中复核了 360×640、390×844、844×390、1280×800 四种视口，并跑通榴莲回合全流程。
+    共发现并修复 <b>4 个具体问题</b>，修复后 <b>116 项断言全部通过</b>（72 项流程 + 44 项弹层/交互），两种布局均无横向溢出、无文字裁切、无小于 44px 的触控目标。
+  </div>
+
+  <h2>1. 修复的具体问题</h2>
+  <div class="tw">
+  <table>
+    <tr><th style="width:52px">#</th><th style="width:150px">位置</th><th>问题（修复前实测）</th><th style="width:290px">修复</th></tr>
+    <tr>
+      <td>1</td><td>榴莲 · 横屏 844×390</td>
+      <td>牌面小卡用 <code>grid</code> 两列布局，但数量 <code>&lt;b&gt;</code> 嵌在 <code>&lt;span&gt;</code> 内部、不是网格子项，落到第 1 行第 2 列。实测图片 <code>img 149..177</code> 与水果名 <code>145..181</code> 垂直重叠，数量被压在名称上。</td>
+      <td>改为网格内单行两项：图片第 1 列垂直居中，<code>&lt;span&gt;</code> 第 2 列内部用 flex 纵向排名称与数量。</td>
+    </tr>
+    <tr>
+      <td>2</td><td>狼人杀 · 竖屏 360×640</td>
+      <td>左右席位栏仅 65px，<code>.name</code> 保留 <code>nowrap + ellipsis</code>，12 个昵称全部被裁（<code>scrollHeight 14px</code> 挤进 <code>clientHeight 9px</code>），<code>月亮邮递员</code>／<code>长颈鹿不熬夜</code>／<code>山间一阵晚风</code> 显示不全。</td>
+      <td>≤380px 时允许换行并隐藏最低优先级的「存活/发言中」状态行，把高度让给完整昵称；长昵称最多 2 行完整显示。</td>
+    </tr>
+    <tr>
+      <td>3</td><td>榴莲 · 全部视口</td>
+      <td>预览工具栏「预览」按钮实测宽 42px（高 44px），短横屏下仍不足 44px 触控标准。</td>
+      <td><code>min-width:44px</code>，四种视口均达标。</td>
+    </tr>
+    <tr>
+      <td>4</td><td>榴莲 · 回合流程</td>
+      <td>确认出牌后进入 <code>waiting</code>，底部只剩禁用的「等待 04 号行动」，没有可点的下一步，「确认 → 下一轮」整轮闭环走不通（自动化点击超时 30s）。</td>
+      <td><code>waiting</code> 状态补上「看牌列」与可用的「开始下一轮 →」，回合闭环完整。</td>
+    </tr>
+  </table>
+  </div>
+
+  <h2>2. 四种视口布局复核</h2>
+  <div class="tw">
+  <table>
+    <tr><th>视口</th><th>横向溢出</th><th>文字裁切</th><th>触控 &lt;44px</th><th>整屏无需滚动</th></tr>
+    <tr><td>360×640</td><td class="p">无</td><td class="p">无</td><td class="p">无</td><td class="p">紧凑模式一屏；舒展模式可滚动（符合设计）</td></tr>
+    <tr><td>390×844</td><td class="p">无</td><td class="p">无</td><td class="p">无</td><td class="p">紧凑与舒展均一屏</td></tr>
+    <tr><td>844×390</td><td class="p">无</td><td class="p">无</td><td class="p">无</td><td class="p">一屏，牌面与需求并列</td></tr>
+    <tr><td>1280×800</td><td class="p">无</td><td class="p">无</td><td class="p">无</td><td class="p">紧凑一屏</td></tr>
+  </table>
+  </div>
+  <p style="font-size:13.5px;color:var(--muted)">狼人杀在四种视口下均为左右各 6 人、12 席位全部可见，<code>woodcut / eclipse / curtain</code> 三种主题逐一复核，均无裁切与溢出；长昵称完整显示。</p>
+
+  <h2>3. 榴莲回合流程验证（每种视口 18 步，共 72 项）</h2>
+  <div class="tw">
+  <table>
+    <tr><th style="width:44px">#</th><th>验证内容</th><th style="width:120px">结果</th></tr>
+    <tr><td>1</td><td>轮到自己（摸牌）时自动弹出操作窗，操作按钮在窗内</td><td class="p">通过</td></tr>
+    <tr><td>2</td><td>「收起看桌面」只收起、不提交，牌列数不变（6）</td><td class="p">通过</td></tr>
+    <tr><td>3</td><td>「继续我的回合」重新打开弹窗</td><td class="p">通过</td></tr>
+    <tr><td>4</td><td>摸牌进入选半边，「确认出牌」初始为禁用</td><td class="p">通过</td></tr>
+    <tr><td>5</td><td>选左半边后确认按钮变为可用</td><td class="p">通过</td></tr>
+    <tr><td>6</td><td>已选半边时收起弹窗：仍未提交（牌列仍 6）</td><td class="p">通过</td></tr>
+    <tr><td>7</td><td>重新打开后<b>选择保留</b>（左半边仍是选中态）</td><td class="p">通过</td></tr>
+    <tr><td>8</td><td>左半边 → 右半边 可切换</td><td class="p">通过</td></tr>
+    <tr><td>9</td><td>确认后只提交一次（6→7），弹窗关闭，进入等待</td><td class="p">通过</td></tr>
+    <tr><td>10</td><td>确认后等待 300ms 无重复提交、无残留弹层</td><td class="p">通过</td></tr>
+    <tr><td>11</td><td>「开始下一轮」重置牌列并自动打开摸牌弹窗</td><td class="p">通过</td></tr>
+    <tr><td>12</td><td>按铃质疑打开结算，同一时刻只有 1 个弹层</td><td class="p">通过</td></tr>
+    <tr><td>13</td><td>关闭结算后结果保留，牌列数不变</td><td class="p">通过</td></tr>
+    <tr><td>14</td><td>「查看结算」可重新打开</td><td class="p">通过</td></tr>
+    <tr><td>15</td><td>结算后「开始下一轮」自动打开摸牌弹窗</td><td class="p">通过</td></tr>
+    <tr><td>16</td><td>ESC 关闭弹窗后，「继续我的回合」条仍在</td><td class="p">通过</td></tr>
+    <tr><td>17</td><td>点击遮罩关闭弹窗，恢复条仍在</td><td class="p">通过</td></tr>
+    <tr><td>18</td><td>牌列弹层可打开（6 手牌、6 个生效半边）</td><td class="p">通过</td></tr>
+  </table>
+  </div>
+
+  <h2>4. 弹层与交互细节（每种视口 11 项，共 44 项）</h2>
+  <ul>
+    <li>牌列弹层：6 手牌 / 12 半边 / 6 个生效标记，底部按钮始终在视口内；ESC 可关闭。</li>
+    <li>质疑结算：库存对比表 5 行 + 隐藏牌揭晓 + 罚分块齐全；内容超高时内部滚动，滚到底后「开始下一轮」仍可点中（<code>elementFromPoint</code> 命中自身，高 44px）。</li>
+    <li>狼人杀四类弹层（我的身份 / 本局规则 / 上一轮票型 / 点选席位）在四种视口下均完整落在视口内，关闭按钮 44px 且可见。</li>
+    <li>「结束发言」推进到 07 号南瓜，下一位更新为 08 号阿白，按钮转为禁用。</li>
+    <li>私密身份弹层在窗口失焦（<code>blur</code>）时自动收起，不泄露身份。</li>
+    <li>主题切换到「赤幕剧场」后仍是左右各 6 人，无横向或纵向滚动。</li>
+  </ul>
+
+  <h2>5. 样式与设计偏好核对</h2>
+  <ul>
+    <li><b>Georgia 衬线大数字（保持不回退）</b>：<code>.d-round strong</code>、<code>.d-mini-half b</code>、<code>.d-total strong</code>、<code>.d-half-fruit b</code> 计算字体族首位均为 <code>Georgia</code>。</li>
+    <li><b>小辅助数字仍为正文无衬线</b>：<code>.d-number</code>、<code>.d-player-penalty</code>、<code>.d-total-name</code> 计算字体族为 <code>Microsoft YaHei</code>，未被统一成衬线。</li>
+    <li><b>数量在水果下方</b>：四种视口实测均为 图片 → 水果名 → 数量 的纵向顺序，且名称与数量框不重叠。</li>
+    <li><b>7 人长昵称</b>：<code>今天也想吃榴莲</code>（8 字）在四种视口均完整显示；狼人杀 <code>月亮邮递员</code>／<code>不吃香菜的猫</code>／<code>山间一阵晚风</code>／<code>长颈鹿不熬夜</code> 修复后全部完整。</li>
+    <li><b>对比度自检</b>：对榴莲页面全部文本节点按 WCAG 计算前景/有效背景对比度，无低于 4.5:1（大字号 3:1）的项。</li>
+  </ul>
+
+  <h2>6. 复核截图（修复后版本）</h2>
+  <p style="font-size:13.5px;color:var(--muted)">下列截图均由修复后的文件在对应视口实时渲染，PNG 尺寸与视口一致，且经像素多样性校验确认非空白页。</p>
+
+  <h3><span class="pill g">榴莲</span> 紧凑总览 · 回合弹窗 · 舒展牌面 · 质疑结算</h3>
+  <div class="grid">
+    <figure><img src="screenshots/verified-20260918/durian-360x640-table-compact.png" alt="榴莲 360x640 紧凑总览"><figcaption><b>360×640 紧凑总览</b>弹窗收起后桌面，底部为「继续我的回合」</figcaption></figure>
+    <figure><img src="screenshots/verified-20260918/durian-360x640-turn-dialog.png" alt="榴莲 360x640 回合弹窗"><figcaption><b>360×640 回合弹窗</b>选半边，确认出牌</figcaption></figure>
+    <figure><img src="screenshots/verified-20260918/durian-390x844-table-comfortable.png" alt="榴莲 390x844 舒展牌面"><figcaption><b>390×844 舒展牌面</b>2 列 × 3 行，长昵称完整</figcaption></figure>
+    <figure><img src="screenshots/verified-20260918/durian-844x390-table-compact.png" alt="榴莲 844x390 横屏"><figcaption><b>844×390 短横屏</b>修复牌面重叠后的压缩排版</figcaption></figure>
+    <figure><img src="screenshots/verified-20260918/durian-1280x800-table-compact.png" alt="榴莲 1280x800 桌面"><figcaption><b>1280×800 桌面</b>紧凑总览一屏</figcaption></figure>
+    <figure><img src="screenshots/verified-20260918/durian-390x844-result.png" alt="榴莲质疑结算"><figcaption><b>质疑结算</b>库存对比 · 揭晓 · 罚分</figcaption></figure>
+  </div>
+
+  <h3><span class="pill b">狼人杀</span> refined + 林中木刻（左右各 6 人）</h3>
+  <div class="grid">
+    <figure><img src="screenshots/verified-20260918/werewolf-360x640-refined-woodcut.png" alt="狼人杀 360x640"><figcaption><b>360×640</b>长昵称修复后完整显示</figcaption></figure>
+    <figure><img src="screenshots/verified-20260918/werewolf-390x844-refined-woodcut.png" alt="狼人杀 390x844"><figcaption><b>390×844</b>左右各 6 人一屏可见</figcaption></figure>
+    <figure><img src="screenshots/verified-20260918/werewolf-844x390-refined-woodcut.png" alt="狼人杀 844x390"><figcaption><b>844×390</b>左右各两列压缩布局</figcaption></figure>
+    <figure><img src="screenshots/verified-20260918/werewolf-1280x800-refined-woodcut.png" alt="狼人杀 1280x800"><figcaption><b>1280×800</b>桌面完整版</figcaption></figure>
+  </div>
+
+  <h2>7. 工程校验</h2>
+  <ul>
+    <li><code>node --check durian.js</code> / <code>art-directions.js</code>：通过。</li>
+    <li><code>npm run typecheck</code>：通过（server + client）。</li>
+    <li><code>node --import tsx --test packages/games/durian/tests/views.test.ts packages/games/durian/tests/rules.test.ts</code>：10/10 通过。</li>
+    <li>浏览器控制台：四种视口 × 榴莲各场景，无 <code>pageerror</code>、无 <code>console.error</code>、无资源加载失败。</li>
+  </ul>
+
+  <h2>8. 诚实边界</h2>
+  <div class="note">
+    本轮为 <b>HTML 原型</b> 的浏览器复核，未改动任何正式业务项目源码，也未把候选样式替换进 <code>packages/client</code>。
+    <ul>
+      <li>榴莲原型为固定 7 人示例数据，未接入真实协议、角色权限与对局生命周期。</li>
+      <li>狼人杀 <code>art-directions.html</code> 只演示白天发言场景；夜晚/投票完整交互仍在早期 <code>werewolf.html</code>，本轮未验收该页。</li>
+      <li>Georgia 为系统字体，Windows Chromium 已有；不同设备若缺失会回退 Times New Roman/serif，字宽会有差异。</li>
+      <li>本轮未做真机（iOS/Android 实机）触控与安全区实测，结论基于 Chromium 模拟视口。</li>
+      <li>第二批（法官端、榴莲公共桌面、朝外展示端）尚未开始，需用户确认第一批后再做。</li>
+    </ul>
+  </div>
+  <p style="font-size:13px;color:var(--muted)">复核脚本为一次性工具，未随原型目录交付；截图位于 <code>docs/ui-preview/werewolf-durian/screenshots/verified-20260918/</code>。</p>
+</main>
+</body>
+</html>

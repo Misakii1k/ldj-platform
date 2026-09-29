@@ -21,6 +21,12 @@ export function playCueFor(event: StageEvent): void {
       case 'voteResolved':
         webAudio.playCardFlip();
         break;
+      case 'guessingStarted':
+        webAudio.playCardFlip();
+        break;
+      case 'guessesRevealed':
+        webAudio.playTick();
+        break;
       case 'gameOver':
         webAudio.playVictory();
         break;

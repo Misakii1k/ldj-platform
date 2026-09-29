@@ -15,7 +15,7 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { DatabaseSync } from 'node:sqlite';
-import { BASE_URL, DB_PATH } from './helpers/serverEnv.ts';
+import { BASE_URL, DB_PATH, skipPcHostConsole } from './helpers/serverEnv.ts';
 
 /** 首页卡片：按展示名精确定位（avoid 误命中房间页的 room-code-card）。 */
 function homeCard(page: Page, displayName: string) {
@@ -116,6 +116,7 @@ function assertServerResultRow(roomCode: string): void {
 async function gotoHome(page: Page): Promise<void> {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
+      await skipPcHostConsole(page);
       await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
       return;
     } catch (err) {

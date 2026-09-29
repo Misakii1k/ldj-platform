@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>奶酪大盗 · 方向 B · 阁楼长桌</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  /* 方向 B：左右两排（同狼人杀构图），中央是被窗口月光照亮的舞台；夜色中等（淡蓝紫绘本夜） */
+  .device { background: linear-gradient(#c9cdf2 0%, #b3b6e6 55%, #a6a2d8 100%); }
+  [data-time="day"] .device { background: linear-gradient(#fff3c4 0%, #ffe39a 55%, #ffd27a 100%); }
+
+  .window {
+    position: absolute; left: 50%; top: 22px; translate: -50% 0; width: 300px; height: 180px;
+    background: linear-gradient(#6f76c9, #9aa0e0); border: var(--border); border-radius: 150px 150px 12px 12px;
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+  .window::before, .window::after { content: ""; position: absolute; background: var(--ink); }
+  .window::before { left: 50%; top: 0; bottom: 0; width: 5px; translate: -50% 0; }
+  .window::after { left: 0; right: 0; top: 58%; height: 5px; }
+  .window .moon {
+    position: absolute; left: 62%; top: 22%; width: 54px; height: 54px; border-radius: 50%;
+    background: #fff7d6; border: 3px solid var(--ink); box-shadow: inset -12px -3px 0 #ece3b8;
+  }
+  .window .star { position: absolute; color: #fff7d6; font-size: 14px; }
+  [data-time="day"] .window { background: linear-gradient(#8fd0ff, #cdeeff); }
+  [data-time="day"] .window .moon { background: #ffd23f; box-shadow: 0 0 0 10px rgba(255,210,63,.4); left: 20%; }
+  [data-time="day"] .window .star { display: none; }
+
+  .beam {
+    position: absolute; left: 50%; top: 190px; width: 520px; height: 420px; translate: -50% 0;
+    background: linear-gradient(rgba(255,251,225,.55), rgba(255,251,225,0));
+    clip-path: polygon(34% 0, 66% 0, 100% 100%, 0 100%); pointer-events: none;
+  }
+  [data-time="day"] .beam { background: linear-gradient(rgba(255,255,255,.5), rgba(255,255,255,0)); }
+
+  .head { position: absolute; top: 28px; left: 32px; width: 300px; }
+  .head .title { font-size: 34px; }
+  .hours-box { position: absolute; top: 40px; right: 32px; }
+
+  .center {
+    position: absolute; left: 50%; top: 250px; translate: -50% 0; width: 420px;
+    display: grid; justify-items: center; gap: 10px; text-align: center;
+  }
+  .center .cheese-box { width: 190px; position: relative; animation: breathe 2.6s ease-in-out infinite; }
+  .center .plate { width: 280px; height: 34px; margin-top: -18px; border-radius: 50%; background: var(--cream); border: var(--border); box-shadow: var(--shadow-sm); }
+  .center .caption { font: 800 14px var(--sans); color: var(--ink); }
+
+  .col { position: absolute; top: 230px; display: grid; gap: 14px; }
+  .col.left { left: 40px; }
+  .col.right { right: 40px; }
+  .col .seat { width: 210px; grid-template-columns: 60px 1fr auto; justify-items: start; align-items: center; text-align: left; padding: 10px 12px; }
+  .col .seat .mouse-box { width: 52px; grid-row: span 1; }
+  .col .seat .seat-name { text-align: left; }
+
+  .dock { position: absolute; left: 50%; bottom: 20px; translate: -50% 0; width: min(760px, calc(100% - 48px)); }
+
+  @container (max-width: 600px) {
+    .window { width: 170px; height: 110px; top: 14px; left: auto; right: 14px; translate: none; }
+    .window .moon { width: 34px; height: 34px; }
+    .beam { display: none; }
+    .head { top: 18px; left: 16px; width: 190px; }
+    .head .title { font-size: 24px; }
+    .hours-box { top: 136px; left: 16px; right: 16px; }
+    .hours { justify-content: space-between; }
+    .hours span { width: 30px; height: 30px; }
+    .col { top: 186px; gap: 8px; }
+    .col.left { left: 10px; }
+    .col.right { right: 10px; }
+    .col .seat { width: 112px; grid-template-columns: 36px 1fr; padding: 6px 6px; gap: 2px 4px; }
+    .col .seat .mouse-box { width: 34px; }
+    .col .seat .seat-dice { grid-column: 1 / -1; justify-self: center; }
+    .seat-name { font-size: 12px; }
+    .die, .cup { transform: scale(.8); }
+    .center { top: 320px; width: 130px; }
+    .center .cheese-box { width: 110px; }
+    .center .plate { width: 130px; height: 22px; margin-top: -12px; }
+    .center .caption { font-size: 12px; }
+    .dock { flex-wrap: wrap; bottom: 14px; padding: 10px 12px; }
+    .dock .actions { width: 100%; }
+    .dock .actions .btn, .dock .day-only { flex: 1; }
+  }
+</style>
+</head>
+<body data-time="night">
+<div class="toolbar">
+  <strong>方向 B · 阁楼长桌</strong>
+  <span class="note">构图：左右两排席位 + 中央月光窗（同狼人杀）　夜色：中等淡蓝紫　对标：狼人杀左右席位</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile" aria-pressed="false">手机 390×844</button></div>
+  <div class="group"><button data-set-time="night" aria-pressed="true">夜晚</button><button data-set-time="day" aria-pressed="false">天亮 ☀</button></div>
+  <div class="group"><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="window" data-box="window"><span class="star" style="left:14%;top:18%">✦</span><span class="star" style="left:30%;top:40%">✧</span><span class="star" style="left:82%;top:70%">✦</span><div class="moon"></div></div>
+  <div class="beam"></div>
+
+  <div class="head" data-box="head">
+    <div class="eyebrow" data-night="NIGHT · 第 3 点" data-day="MORNING · 天亮了"></div>
+    <h1 class="title" data-night="你独自醒来了" data-day="奶酪还在吗？" data-after-steal="奶酪到手，别出声"></h1>
+  </div>
+  <div class="hours-box" data-box="hours"><div class="hours"><span class="done">1</span><span class="done">2</span><span class="now">3</span><span>4</span><span>5</span><span>6</span></div></div>
+
+  <div class="col left" data-seats="0-2"></div>
+  <div class="col right" data-seats="3-5"></div>
+
+  <div class="center" data-box="center">
+    <div class="cheese-box">
+      <svg id="cheese" class="cheese" viewBox="0 0 160 110" aria-label="奶酪"><path d="M8 96 L152 96 L152 52 L26 14 Z" fill="#f7c84b" stroke="#292722" stroke-width="5" stroke-linejoin="round"/><path d="M26 14 L152 52 L152 60 L22 22 Z" fill="#ffe08a"/><circle cx="60" cy="72" r="9" fill="#e0a92a"/><circle cx="104" cy="80" r="6" fill="#e0a92a"/><circle cx="126" cy="66" r="5" fill="#e0a92a"/></svg>
+      <div class="crumbs">· · ·</div>
+    </div>
+    <div class="plate"></div>
+    <span class="caption" data-night="月光下，奶酪还在盘子上" data-day="大家一起看向盘子" data-after-steal="盘子上只剩碎屑"></span>
+  </div>
+
+  <div class="dock" data-box="dock">
+    <div class="info">
+      <strong data-night="只有你在 3 点醒着" data-day="讨论 2:00 · 谁在夜里醒过？"></strong>
+      <span data-night="可以偷走奶酪，或偷看一位玩家的骰子。只有你看得到。" data-day="说出你醒来的时刻和看到的东西，可以撒谎。"></span>
+    </div>
+    <div class="actions">
+      <button id="act-peek" class="btn" aria-pressed="false">偷看骰子</button>
+      <button id="act-steal" class="btn btn-primary">偷走奶酪</button>
+    </div>
+    <button class="btn btn-primary day-only">去投票指认</button>
+  </div>
+
+  <div class="sweep"></div>
+</div></div>
+<script src="_shared.js"></script>
+</body>
+</html>

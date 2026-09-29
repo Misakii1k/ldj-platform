@@ -1,157 +1,172 @@
-/* ── 狼人杀三主题设计系统与权威视觉规范 ── */
+/* ── 狼人杀剧场视觉规范（唯一主题 · 2026-09-26 W01） ──
+   森林（木刻日 / 月蚀夜）与主题切换已移除；只保留剧场一套，
+   始终暗场，靠灯光分昼夜（契约 §1）。深色悬疑表皮：1–1.5px 金色细边 + 贴纸阴影，不上粗墨边硬投影（C2）。 */
 
-/* 1. 主题变量作用域 */
-/* A · 林中木刻（Woodcut - 默认主题） / woodcut-day */
+/* 1. 主题变量作用域：剧场令牌（契约 §3，数值取自方向稿 _shared.css / _ticket.css） */
 .tabletop-shell[data-game-id="werewolf"],
-.tabletop-shell[data-game-id="werewolf"][data-ww-theme="woodcut"],
-.tabletop-shell[data-game-id="werewolf"][data-ww-theme="woodcut-day"],
-[data-ww-theme="woodcut-day"] .tabletop-shell,
-[data-ww-theme="woodcut-day"],
+.tabletop-shell[data-game-id="werewolf"][data-ww-theme="theatre"],
+.tabletop-shell[data-game-id="werewolf"][data-ww-theme="theatre-day"],
+.tabletop-shell[data-game-id="werewolf"][data-ww-theme="theatre-night"],
+[data-ww-theme="theatre-day"] .tabletop-shell,
+[data-ww-theme="theatre-night"] .tabletop-shell,
+[data-ww-theme="theatre-day"],
+[data-ww-theme="theatre-night"],
+.werewolf-native-page,
 .mod-console,
 .ww-private-dialog {
-  --ww-bg: #f4efe5;
-  --ww-panel: #fffdf7;
-  --ww-ink: #203c30;
-  --ww-muted: #465c4e;
-  --ww-line: #748575;
-  --ww-accent: #245844;
-  --ww-active: #245844;
-  --ww-active-ink: #ffffff;
-  --ww-silver: #748575;
-  --gp-paper: #f4efe5;
-  --gp-surface: #fffdf7;
-  --gp-surface-strong: #e9e4d8;
-  --gp-ink: #203c30;
-  --gp-muted: #465c4e;
-  --gp-line: #748575;
-  --game-ink: #203c30;
-  --game-muted: #465c4e;
-  --game-paper: #f4efe5;
-  color: var(--ww-ink);
-}
-
-.tabletop-shell[data-game-id="werewolf"],
-.tabletop-shell[data-game-id="werewolf"][data-ww-theme="woodcut"],
-.tabletop-shell[data-game-id="werewolf"][data-ww-theme="woodcut-day"] {
-  background: radial-gradient(ellipse at 50% 35%, #24584414, transparent 65%), #f4efe5;
-}
-
-/* B · 月蚀星轨（Eclipse） / eclipse-night */
-.tabletop-shell[data-game-id="werewolf"][data-ww-theme="eclipse"],
-.tabletop-shell[data-game-id="werewolf"][data-ww-theme="eclipse-night"],
-[data-ww-theme="eclipse-night"] .tabletop-shell,
-[data-ww-theme="eclipse-night"] {
-  --ww-bg: #100f24;
-  --ww-panel: #1c1b37;
-  --ww-ink: #f0ecff;
-  --ww-muted: #c7c0df;
-  --ww-line: #77718f;
-  --ww-accent: #ddd0ff;
-  --ww-active: #e6e1ee;
-  --ww-active-ink: #2b2b40;
-  --ww-silver: #ddd0ff;
-  --gp-paper: #100f24;
-  --gp-surface: #1c1b37;
-  --gp-surface-strong: #28234a;
-  --gp-ink: #f0ecff;
-  --gp-muted: #c7c0df;
-  --gp-line: #77718f;
-  --game-ink: #f0ecff;
-  --game-muted: #c7c0df;
-  --game-paper: #100f24;
-  background: radial-gradient(ellipse at 25% 35%, #28234a, transparent 55%), #100f24;
-  color: var(--ww-ink);
-}
-
-/* C · 白昼剧场（Theatre Day） / theatre-day */
-.tabletop-shell[data-game-id="werewolf"][data-ww-theme="theatre-day"],
-[data-ww-theme="theatre-day"] .tabletop-shell,
-[data-ww-theme="theatre-day"] {
-  --ww-bg: #f7efe5;
-  --ww-panel: #fffaf2;
-  --ww-ink: #4b2430;
-  --ww-muted: #714654;
-  --ww-line: #a57b87;
-  --ww-accent: #753747;
-  --ww-active: #753747;
-  --ww-active-ink: #ffffff;
-  --ww-silver: #a57b87;
-  --gp-paper: #f7efe5;
-  --gp-surface: #fffaf2;
-  --gp-surface-strong: #ede3d8;
-  --gp-ink: #4b2430;
-  --gp-muted: #714654;
-  --gp-line: #a57b87;
-  --game-ink: #4b2430;
-  --game-muted: #714654;
-  --game-paper: #f7efe5;
-  background: radial-gradient(ellipse at 50% 30%, #75374714, transparent 65%), #f7efe5;
-  color: var(--ww-ink);
-}
-
-/* D · 赤幕剧场（Theatre Night） / theatre-night */
-.tabletop-shell[data-game-id="werewolf"][data-ww-theme="theatre"],
-.tabletop-shell[data-game-id="werewolf"][data-ww-theme="theatre-night"],
-[data-ww-theme="theatre-night"] .tabletop-shell,
-[data-ww-theme="theatre-night"] {
-  --ww-bg: #210e13;
-  --ww-panel: #331820;
+  /* 契约 §3 剧场令牌 */
+  --ww-house: #120709;
+  --ww-velvet: #7a1a28;
+  --ww-velvet-hi: #a02a3a;
+  --ww-velvet-lo: #4a0d17;
+  --ww-gold: #e8c27a;
+  --ww-gold-soft: #ffdeaa;
+  --ww-gold-line: rgba(232, 194, 122, .55);
   --ww-ink: #fff0dc;
   --ww-muted: #dcc3ba;
-  --ww-line: #a57573;
-  --ww-accent: #ffdeaa;
-  --ww-active: #eeddcb;
-  --ww-active-ink: #412b31;
-  --ww-silver: #ffdeaa;
-  --gp-paper: #210e13;
-  --gp-surface: #331820;
-  --gp-surface-strong: #421e2a;
-  --gp-ink: #fff0dc;
-  --gp-muted: #dcc3ba;
-  --gp-line: #a57573;
-  --game-ink: #fff0dc;
-  --game-muted: #dcc3ba;
-  --game-paper: #210e13;
-  background: radial-gradient(ellipse at 50% 35%, #3d1b264d, transparent 65%), #210e13;
+  --ww-dim: #a88f88;
+  --ww-card: #2a1117;
+  --ww-card-2: #34151d;
+  --ww-stub: #3a1a14;
+  --ww-warm: 255, 206, 140;
+  --ww-cold: 150, 180, 255;
+  --ww-good: #9fe3b8;
+  --ww-good-bg: #1c3a2a;
+  --ww-bad: #ff9a86;
+  --ww-bad-bg: #5a1616;
+  --ww-stamp-wolf: #ff6a52;
+  --ww-stamp-seer: #9fc0ff;
+  --ww-stamp-witch: #c89bff;
+  --ww-stamp-guard: #8fe0c0;
+
+  /* 剧场构件材质令牌：同取自方向稿 _shared.css / _ticket.css 的字面量，
+     集中在这里定义，其余 CSS（如 theatre-stage.css）一律只引用令牌。 */
+  --ww-wood: #3a1a12;
+  --ww-wood-hi: #6b4a22;
+  --ww-stage: #4a1620;
+  --ww-stage-lo: #1c080c;
+  --ww-floor-hi: #5a3320;
+  --ww-floor: #3a1f12;
+  --ww-floor-lo: #24120a;
+  --ww-rail-hi: #2a0f15;
+  --ww-rail-lo: #1a080c;
+  --ww-rail-line: rgba(232, 194, 122, .25);
+  --ww-rail-dash: rgba(232, 194, 122, .15);
+  --ww-seat-line: rgba(232, 194, 122, .28);
+  --ww-stub-line: rgba(232, 194, 122, .45);
+  --ww-seat-hi: #4a2418;
+  --ww-seat-hi-lo: #2e1411;
+  --ww-daylight: #ffe7b0;
+  --ww-warn: #ff9a5a;
+  --ww-crit: #ff5a4a;
+  --ww-cand: #ffaa5a;
+  --ww-cand-ink: #ffc49a;
+  --ww-ballot: #fff6e0;
+  --ww-ballot-lo: #f0dcb0;
+  --ww-ballot-line: #b89a5c;
+  --ww-ballot-ink: #b3402f;
+  --ww-urn-hi: #6a3a22;
+  --ww-urn-lo: #3e2114;
+  --ww-moon-hi: #f4f1ff;
+  --ww-moon-mid: #bfc7ee;
+  --ww-moon-lo: #8d97c9;
+  --ww-moon-shadow: #ded6f4;
+  --ww-night-ink: #e9e6ff;
+  --ww-night-muted: #c9c6e6;
+  --ww-gold-deep: #a07a1a;
+
+  /* 夜幕压边（夜晚两侧暗角，中央留一束冷月光） */
+  --ww-nightfall: 4, 3, 10;
+  /* 遮罩黑（面板 / 幕布 / 印章的压暗层），按不透明度拆成令牌 */
+  --ww-scrim-25: rgba(0, 0, 0, .25);
+  --ww-scrim-28: rgba(0, 0, 0, .28);
+  --ww-scrim-32: rgba(0, 0, 0, .32);
+  --ww-scrim-35: rgba(0, 0, 0, .35);
+  --ww-scrim-36: rgba(0, 0, 0, .36);
+  --ww-scrim-42: rgba(0, 0, 0, .42);
+  --ww-scrim-45: rgba(0, 0, 0, .45);
+  /* 轨道 / 分隔用的半透明白 */
+  --ww-hairline: rgba(255, 255, 255, .1);
+  /* 状态描边：选中 / 队友 / 被刀 / 加赛候选 / 最终票 */
+  --ww-self-line: rgba(247, 200, 75, .7);
+  --ww-mate-line: rgba(255, 110, 90, .6);
+  --ww-victim-line: rgba(255, 110, 90, .9);
+  --ww-cand-line: rgba(255, 170, 90, .8);
+  --ww-gold-ring-45: rgba(232, 194, 122, .45);
+  --ww-gold-ring-40: rgba(232, 194, 122, .4);
+  --ww-gold-ring-35: rgba(232, 194, 122, .35);
+  /* 已放逐空位 */
+  --ww-gone-bg: rgba(60, 10, 10, .25);
+  --ww-gone-line: rgba(255, 110, 90, .55);
+  /* 主 CTA 亮边（黄底上的高光描边） */
+  --ww-cta-border: #fff3c4;
+  /* 阴影一律令牌化，theatre-stage.css 里不再出现任何颜色字面量 */
+  --ww-shadow-seat: 0 4px 0 rgba(0, 0, 0, .45), 0 10px 20px rgba(0, 0, 0, .35);
+  --ww-shadow-rail: inset 0 0 30px rgba(0, 0, 0, .42);
+  --ww-shadow-arch:
+    inset 0 0 0 2px var(--ww-gold),
+    0 0 0 2px var(--ww-wood-hi),
+    inset 0 0 60px rgba(0, 0, 0, .42);
+  --ww-shadow-curtain: inset 0 0 40px rgba(0, 0, 0, .36);
+  --ww-shadow-valance: 0 6px 12px rgba(0, 0, 0, .32);
+  --ww-shadow-speaker:
+    0 0 0 6px rgba(0, 0, 0, .35),
+    0 0 40px rgba(var(--ww-warm), .5);
+  --ww-shadow-seat-active:
+    0 0 0 2px rgba(232, 194, 122, .35),
+    0 0 28px rgba(var(--ww-warm), .45),
+    0 4px 0 rgba(0, 0, 0, .45);
+  --ww-shadow-picked:
+    0 0 0 2px rgba(232, 194, 122, .35),
+    0 0 26px rgba(var(--ww-cold), .35);
+  --ww-shadow-victim:
+    0 0 0 2px rgba(255, 90, 70, .3),
+    0 0 24px rgba(255, 70, 50, .35);
+  --ww-text-shadow-name: 0 3px 0 rgba(0, 0, 0, .42), 0 0 24px rgba(var(--ww-warm), .35);
+  --ww-shadow-cta: 0 4px 0 var(--ww-gold-deep), 0 0 24px rgba(247, 200, 75, .35);
+  --ww-shadow-press: 0 1px 0 var(--ww-gold-deep);
+
+  /* 兼容既有组件使用的别名（同源到上面的剧场令牌） */
+  --ww-bg: var(--ww-house);
+  --ww-panel: var(--ww-card-2);
+  --ww-line: var(--ww-gold-line);
+  --ww-accent: var(--ww-gold-soft);
+  --ww-active: var(--ww-gold);
+  --ww-active-ink: #2a1a08;
+  --ww-silver: var(--ww-dim);
+
+  /* 平台令牌同源：深色表皮用金色细边 + 贴纸阴影，不继承浅色游戏的粗墨边硬投影 */
+  --gp-paper: var(--ww-house);
+  --gp-surface: var(--ww-card);
+  --gp-surface-strong: var(--ww-card-2);
+  --gp-ink: var(--ww-ink);
+  --gp-muted: var(--ww-muted);
+  --gp-line: var(--ww-gold-line);
+  --gp-border: 1.5px solid var(--gp-line);
+  --gp-border-sm: 1px solid var(--gp-line);
+  --gp-shadow: var(--gp-shadow-sticker);
+  --gp-shadow-sm: var(--gp-shadow-sticker);
+  --gp-shadow-lg: var(--gp-shadow-sticker-lift);
+  --gp-shadow-press: 0 1px 0 rgba(0, 0, 0, .25);
+  --gp-accent-glow: rgba(232, 194, 122, .10);
+  --game-ink: var(--ww-ink);
+  --game-muted: var(--ww-muted);
+  --game-paper: var(--ww-house);
   color: var(--ww-ink);
 }
 
-/* 2. 顶栏主题切换器控件 */
-.ww-theme-switcher {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  background: var(--ww-panel);
-  border: 1px solid var(--ww-line);
-  border-radius: 8px;
-  padding: 2px;
-  flex-shrink: 0;
+/* 昼夜只换灯光：两态同为暗场，白天暖追光 + 脚灯，夜晚冷月光 + 近黑。 */
+.tabletop-shell[data-game-id="werewolf"],
+.tabletop-shell[data-game-id="werewolf"][data-ww-theme="theatre"],
+.tabletop-shell[data-game-id="werewolf"][data-ww-theme="theatre-day"] {
+  background:
+    radial-gradient(ellipse at 50% 35%, rgba(var(--ww-warm), .10), transparent 65%),
+    var(--ww-house);
 }
-.ww-theme-btn {
-  min-height: 38px;
-  min-width: 44px;
-  padding: 4px 8px;
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--ww-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  line-height: 1;
-}
-.ww-theme-btn:hover {
-  color: var(--ww-ink);
-}
-.ww-theme-btn.is-active {
-  background: var(--ww-accent);
-  color: var(--ww-bg);
-  border-color: var(--ww-accent);
-}
-.ww-theme-btn:focus-visible {
-  outline: 2px solid var(--ww-accent);
-  outline-offset: 1px;
+.tabletop-shell[data-game-id="werewolf"][data-ww-theme="theatre-night"] {
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(var(--ww-cold), .10), transparent 70%),
+    var(--ww-house);
 }
 
 /* 3. 舞台与基础外壳 */
@@ -490,145 +505,6 @@
   font-weight: 700;
 }
 
-/* 7. 主题专属艺术插画层 WerewolfThemeArt */
-.ww-theme-art {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  opacity: 0.12;
-  z-index: 0;
-  overflow: hidden;
-}
-
-.ww-art-woodcut, .ww-art-eclipse, .ww-art-theatre {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--ww-accent);
-}
-
-.ww-art-forest {
-  width: 80%;
-  max-height: 70%;
-  display: block;
-}
-
-.ww-art-caption {
-  font-size: 11px;
-  letter-spacing: 0.15em;
-  color: var(--ww-muted);
-  margin-top: 8px;
-}
-
-/* 月蚀插画 */
-.ww-astral {
-  position: relative;
-  width: 220px;
-  height: 220px;
-}
-.ww-orbit {
-  position: absolute;
-  border: 1px solid var(--ww-line);
-  left: 50%;
-  top: 48%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-}
-.ww-o1 { width: 200px; height: 200px; }
-.ww-o2 { width: 170px; height: 170px; border-style: dashed; }
-.ww-o3 { width: 230px; height: 120px; transform: translate(-50%, -50%) rotate(-30deg); }
-.ww-moon {
-  position: absolute;
-  left: 50%;
-  top: 48%;
-  transform: translate(-50%, -50%);
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  background: var(--ww-accent);
-  box-shadow: 0 0 35px rgba(222, 198, 153, 0.3);
-  overflow: hidden;
-}
-.ww-moon::after {
-  content: '';
-  position: absolute;
-  width: 95px;
-  height: 95px;
-  border-radius: 50%;
-  background: var(--ww-bg);
-  top: -12px;
-  left: 20px;
-}
-.ww-star {
-  position: absolute;
-  font-size: 22px;
-  background: transparent !important;
-}
-.ww-s1 { top: 10%; left: 20%; }
-.ww-s2 { bottom: 15%; right: 20%; }
-.ww-lunar-label {
-  position: absolute;
-  bottom: 10px;
-  left: 0;
-  right: 0;
-  text-align: center;
-  letter-spacing: .3em;
-  font-size: 13px;
-  font-family: var(--gp-font-display);
-}
-
-/* 赤幕插画 */
-.ww-theatre-stage {
-  position: relative;
-  width: 240px;
-  height: 200px;
-  overflow: hidden;
-}
-.ww-drape {
-  position: absolute;
-  top: 0;
-  width: 38%;
-  height: 100%;
-  background: repeating-linear-gradient(90deg, #531726, #872238 18%, #3c1020 34%);
-  z-index: 2;
-}
-.ww-drape--left {
-  left: 0;
-  clip-path: polygon(0 0, 100% 0, 55% 65%, 25% 100%, 0 100%);
-}
-.ww-drape--right {
-  right: 0;
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 75% 100%, 45% 65%);
-}
-.ww-beam {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(#f4d7aa38, #f4d7aa05);
-  clip-path: polygon(42% 0, 58% 0, 98% 100%, 2% 100%);
-}
-.ww-act {
-  position: absolute;
-  inset: 20px 0;
-  text-align: center;
-  font-size: 11px;
-  font-family: var(--gp-font-display);
-  letter-spacing: .3em;
-  color: var(--ww-accent);
-}
-.ww-act b {
-  display: block;
-  font-size: 80px;
-  font-family: var(--gp-font-display);
-  margin-top: 4px;
-}
-
 /* 8. 底部操作区与交互面板 */
 .tabletop-shell[data-game-id="werewolf"] .tabletop-bottom-bar {
   padding: 8px 12px;
@@ -902,15 +778,6 @@
     font-size: 9px;
     margin-top: 1px;
   }
-  .ww-theme-btn {
-    min-width: 44px;
-    min-height: 44px;
-    padding: 3px 5px;
-    font-size: 11px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
   .tabletop-shell[data-game-id="werewolf"] .tabletop-bottom-bar {
     padding: 6px;
     margin: 4px 0 2px;
@@ -987,8 +854,8 @@
 }
 
 /*
- * 旧 tribunal-day 皮肤仍会给席位环和 ::before 注入奶油色。新的三主题系统
- * 由 data-ww-theme 负责权威配色，白天阶段只改变阶段文案，不应覆盖主题桌面。
+ * 旧 tribunal-day 皮肤仍会给席位环和 ::before 注入奶油色。剧场主题（唯一一套）
+ * 由 data-ww-theme 负责权威配色，白天阶段只改变舞台灯光，不应覆盖主题桌面。
  */
 .tabletop-shell[data-game-id="werewolf"].tabletop-theme-tribunal-day {
   background: radial-gradient(ellipse at 50% 35%, color-mix(in srgb, var(--ww-accent) 14%, transparent), transparent 65%), var(--ww-bg) !important;

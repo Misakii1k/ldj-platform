@@ -93,7 +93,7 @@ test.describe('一智千金 T09 恢复与刷新 E2E 验证', () => {
 
       // 浏览器端自动进入 arranging 阶段展示版图
       await expect(page.locator('.ww-board')).toBeVisible({ timeout: 15_000 });
-      await expect(page.locator('.ww-target-card')).toHaveCount(5);
+      await expect(page.locator('.ww-target-card')).toHaveCount(4); // lower + 3 values
     } finally {
       p2Node.client.close();
       p3Node.client.close();

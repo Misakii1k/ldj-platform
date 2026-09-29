@@ -18,6 +18,14 @@ export interface PhraseCard {
 
 export type BellClashCard = NumberCard | PhraseCard;
 
+export interface BellClashPublicChallenge {
+  claimantId: string;
+  card: PhraseCard;
+  voterIds: string[];
+  doubtIds: string[];
+  confirmIds: string[];
+}
+
 export interface BellClashPublicView {
   gameId: 'bell-clash';
   rulesetId: 'bell_clash_v1';
@@ -27,14 +35,13 @@ export interface BellClashPublicView {
   handCounts: Record<string, number>;
   currentPlayerId: string;
   discardTop: BellClashCard | null;
-  bellOpen: boolean;
-  bellClaimantId: string | null;
+  challenge: BellClashPublicChallenge | null;
   drawCount: number;
   winners: string[];
   /** 当前计时截止时刻；终局为 null */
   deadlineAt: number | null;
-  /** 截止时刻的类别：回合 or 抢铃窗口。两类时长差很多，倒计时环据此换 phaseKey */
-  deadlineKind: 'turn' | 'bell' | null;
+  /** 截止时刻的类别：回合 or 质疑判定。倒计时环据此换 phaseKey */
+  deadlineKind: 'turn' | 'challenge' | null;
 }
 
 export interface BellClashPlayerView extends BellClashPublicView {
@@ -46,7 +53,7 @@ export interface BellClashPlayerView extends BellClashPublicView {
 
 const PUBLIC_KEYS = [
   'gameId', 'rulesetId', 'schemaVersion', 'phase', 'players', 'handCounts',
-  'currentPlayerId', 'discardTop', 'bellOpen', 'bellClaimantId', 'drawCount', 'winners',
+  'currentPlayerId', 'discardTop', 'challenge', 'drawCount', 'winners',
   'deadlineAt', 'deadlineKind',
 ] as const;
 const ME_KEYS = ['playerId', 'hand'] as const;
@@ -64,10 +71,6 @@ function hasExactKeys(record: Record<string, unknown>, allowed: readonly string[
 
 function isPlayerId(value: unknown): value is string {
   return typeof value === 'string' && value.length >= 1 && value.length <= 64;
-}
-
-function isBool(value: unknown): value is boolean {
-  return typeof value === 'boolean';
 }
 
 function isNonNegativeInteger(value: unknown): value is number {
@@ -106,6 +109,22 @@ function parseCards(value: unknown): BellClashCard[] | null {
   return cards;
 }
 
+function parseChallenge(value: unknown): BellClashPublicChallenge | null {
+  if (value === null) return null;
+  if (!isObject(value) || !hasExactKeys(value, ['claimantId', 'card', 'voterIds', 'doubtIds', 'confirmIds'])) return null;
+  if (!isPlayerId(value.claimantId)) return null;
+  const card = parseCard(value.card);
+  if (!card || card.kind !== 'phrase') return null;
+  if (!isPlayerIds(value.voterIds) || !isPlayerIds(value.doubtIds) || !isPlayerIds(value.confirmIds)) return null;
+  return {
+    claimantId: value.claimantId,
+    card,
+    voterIds: [...value.voterIds],
+    doubtIds: [...value.doubtIds],
+    confirmIds: [...value.confirmIds],
+  };
+}
+
 function parseBase(view: Record<string, unknown>, withMe: boolean): BellClashPublicView | null {
   if (!hasExactKeys(view, withMe ? [...PUBLIC_KEYS, 'me'] : PUBLIC_KEYS)) return null;
   if (view.gameId !== 'bell-clash' || view.rulesetId !== 'bell_clash_v1' || view.schemaVersion !== 1) return null;
@@ -116,11 +135,10 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): BellClashPub
     if (!isNonNegativeInteger(view.handCounts[key])) return null;
   }
   if (view.discardTop !== null && parseCard(view.discardTop) === null) return null;
-  if (!isBool(view.bellOpen)) return null;
-  if (view.bellClaimantId !== null && !isPlayerId(view.bellClaimantId)) return null;
+  if (view.challenge !== null && parseChallenge(view.challenge) === null) return null;
   if (!isNonNegativeInteger(view.drawCount) || !isPlayerIds(view.winners)) return null;
   if (view.deadlineAt !== null && typeof view.deadlineAt !== 'number') return null;
-  if (view.deadlineKind !== null && view.deadlineKind !== 'turn' && view.deadlineKind !== 'bell') return null;
+  if (view.deadlineKind !== null && view.deadlineKind !== 'turn' && view.deadlineKind !== 'challenge') return null;
   return {
     gameId: 'bell-clash',
     rulesetId: 'bell_clash_v1',
@@ -130,12 +148,11 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): BellClashPub
     handCounts: { ...(view.handCounts as Record<string, number>) },
     currentPlayerId: view.currentPlayerId as string,
     discardTop: view.discardTop === null ? null : parseCard(view.discardTop),
-    bellOpen: view.bellOpen as boolean,
-    bellClaimantId: view.bellClaimantId as string | null,
+    challenge: parseChallenge(view.challenge),
     drawCount: view.drawCount as number,
     winners: [...view.winners],
     deadlineAt: view.deadlineAt as number | null,
-    deadlineKind: view.deadlineKind as 'turn' | 'bell' | null,
+    deadlineKind: view.deadlineKind as 'turn' | 'challenge' | null,
   };
 }
 

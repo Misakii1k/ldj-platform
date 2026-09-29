@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>狼人杀 · 法官控制台</title>
+<link rel="stylesheet" href="art-directions.css"><link rel="stylesheet" href="art-platform.css"><link rel="stylesheet" href="design-v2.css"><link rel="stylesheet" href="moderator.css"><script defer src="moderator.js"></script></head>
+<body data-theme="woodcut" data-design="refined">
+<nav class="tools" aria-label="预览工具"><a href="art-directions.html">← 玩家端</a><a href="durian-table.html">榴莲公共桌面 ↗</a><label class="design-choice"><span>对比</span><select id="design-choice" aria-label="设计版本"><option value="refined">优化版 · 轻纸夜桌</option><option value="current">上一版 · 粗线纸卡</option></select></label><div class="choices"><button data-theme="woodcut" aria-pressed="true">A · 林中木刻</button><button data-theme="eclipse" aria-pressed="false">B · 月蚀星轨</button><button data-theme="curtain" aria-pressed="false">C · 赤幕剧场</button></div><button id="hide">隐藏工具</button></nav><button id="show" hidden>显示工具</button>
+
+<main class="mod-console">
+  <header class="mod-header">
+    <div class="brand">聚乐 · 狼人杀 <small>法官视角 · MODERATOR CONSOLE</small></div>
+    <span class="chapter">第三日 / 自由之夜之后</span>
+    <button id="mod-rules">本局规则 ↗</button>
+  </header>
+
+  <section class="mod-status" aria-label="全局状态">
+    <div class="mod-stat mod-stat--alive"><span>存活</span><strong id="mod-alive">10</strong><small>/ 12</small></div>
+    <div class="mod-stat mod-stat--wolf"><span>狼人</span><strong id="mod-wolf">4</strong><small>存活 <b id="mod-wolf-alive">4</b></small></div>
+    <div class="mod-stat mod-stat--god"><span>神职</span><strong id="mod-god">4</strong><small>存活 <b id="mod-god-alive">4</b></small></div>
+    <div class="mod-stat mod-stat--villager"><span>村民</span><strong id="mod-villager">4</strong><small>存活 <b id="mod-villager-alive">4</b></small></div>
+    <p class="mod-note" id="mod-note">仅法官可见全部身份。玩家端在终局亮牌前不会显示任何他人身份。</p>
+  </section>
+
+  <section class="mod-seats" aria-labelledby="mod-seats-title">
+    <div class="mod-seats-head"><h2 id="mod-seats-title">席位与身份底牌</h2><span id="mod-seats-hint">点「标记出局」需要二次确认；出局可撤销。</span></div>
+    <div class="mod-seat-grid" id="mod-seat-grid"></div>
+  </section>
+
+  <footer class="mod-footer">
+    <p>法官负责标记出局与终局亮牌，不参与发言与投票。</p>
+    <button id="mod-reveal" class="mod-reveal">结束对局并亮牌 <span aria-hidden="true">→</span></button>
+  </footer>
+</main>
+
+<dialog id="mod-confirm" aria-labelledby="mod-confirm-title">
+  <h2 id="mod-confirm-title">确认操作</h2>
+  <div id="mod-confirm-body"></div>
+  <div class="mod-dialog-actions"><button id="mod-confirm-cancel">先不操作</button><button id="mod-confirm-ok">确认</button></div>
+</dialog>
+
+<dialog id="mod-rules-dialog" aria-labelledby="mod-rules-title">
+  <h2 id="mod-rules-title">十二人 · 经典场</h2>
+  <div class="mod-rules-body">
+    <p>4 狼人、4 村民，预言家、女巫、猎人、守卫各 1 名。</p>
+    <p>白天依次发言并投票，夜晚秘密行动。法官掌握全部身份，负责标记出局与终局亮牌。</p>
+    <p class="mod-muted">本页是视觉预览：数据为固定示例，不接入真实对局，也没有夜晚行动与投票操作。</p>
+  </div>
+  <div class="mod-dialog-actions"><button id="mod-rules-close">收起并返回</button></div>
+</dialog>
+</body></html>

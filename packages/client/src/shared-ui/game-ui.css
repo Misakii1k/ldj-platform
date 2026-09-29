@@ -190,7 +190,9 @@ html[data-motion-level="reduced"] :is(
   .werewolf-spotlight__img,
   .winner-rays,
   .goose-modal-card-item,
-  .bc-bell-btn
+  .bc-bell__dome,
+  .th-lantern,
+  .th-rotate-hint__phone
 ) {
   animation: none !important;
 }

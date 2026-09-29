@@ -212,12 +212,12 @@ function openPenaltyWindow(
   };
 }
 
-/** 结算：计算每人剩余手牌分与胜负；返回下一状态（下一回合或 match_over）。 */
+/** 结算：计算每人剩余手牌分与胜负；返回下一状态（round_over 小结屏或 match_over）。 */
 function settleRound(
   ctx: GameContext,
   state: UnoHouseState,
   finisherId: string,
-  effects: GameEffect[],
+  _effects: GameEffect[],
 ): { next: UnoHouseState; roundResult: UnoHouseRoundResult } {
   const r = state.round;
   const players = r.players;
@@ -243,6 +243,7 @@ function settleRound(
     const low = Math.min(...perPlayerTotals);
     winnerPlayerIds = players.filter((_, index) => perPlayerTotals[index] === low);
   }
+  const remainingHands = players.map((id) => [...(r.hands[id] ?? [])]);
   const roundResult: UnoHouseRoundResult = {
     roundNumber: r.roundNumber,
     finisherPlayerId: finisherId,
@@ -250,6 +251,7 @@ function settleRound(
     teamTotals,
     winnerPlayerIds,
     teamWinnerIds,
+    remainingHands,
   };
 
   const roundScores = [...match.roundScores, perPlayerTotals];
@@ -285,20 +287,50 @@ function settleRound(
     };
   }
 
-  // 下一回合：新一副 108 张、重置 generation、上一回合出完者先手。
-  const nextRoundNumber = r.roundNumber + 1;
+  // 非末局：停在本局小结屏（round_over），等任意玩家「下一局」(begin) 再开新局。
+  // 计时器已在出牌路径取消，这里把截止字段清空，保证小结屏期间无任何系统动作。
+  return {
+    next: {
+      ...state,
+      match: {
+        ...match,
+        roundScores,
+        roundResults,
+        cumulativeScores,
+        lastFinisherPlayerId: finisherId,
+      },
+      round: {
+        ...r,
+        phase: 'round_over',
+        pendingPenalty: null,
+        unoRaceWindow: null,
+        turnDeadlineAt: null,
+        windowDeadlineAt: null,
+      },
+    },
+    roundResult,
+  };
+}
+
+/** 小结屏「下一局」：从 round_over 推进到下一回合（新一副 108 张、上一回合出完者先手）。 */
+function advanceToNextRound(
+  ctx: GameContext,
+  state: UnoHouseState,
+): { next: UnoHouseState; effects: GameEffect[] } {
+  const effects: GameEffect[] = [];
+  const m = state.match;
   const next = createRound(
     ctx,
-    players,
-    { ...match, mode: match.mode, roundCount: match.roundCount },
-    nextRoundNumber,
-    finisherId,
-    roundScores,
-    cumulativeScores,
+    state.round.players,
+    { mode: m.mode, roundCount: m.roundCount },
+    state.round.roundNumber + 1,
+    m.lastFinisherPlayerId,
+    m.roundScores,
+    m.cumulativeScores,
     effects,
-    roundResults,
+    m.roundResults,
   );
-  return { next, roundResult };
+  return { next, effects };
 }
 
 /** 生成下一回合（或按传入结算推进）；与 createInitialRound 共用核心。 */
@@ -840,6 +872,18 @@ export function reduceUnoHouse(
   action: UnoHouseAction,
 ): Result {
   if (action.type === 'begin') {
+    // 小结屏驻留时由任意玩家点「下一局」推进；其它阶段幂等
+    if (state.round.phase === 'round_over') {
+      const { next, effects } = advanceToNextRound(ctx, state);
+      return {
+        ok: true,
+        nextState: next,
+        publicEvents: [{ type: 'phase_changed', phase: 'round_playing', round: next.round.roundNumber }],
+        privateEvents: [],
+        effects,
+        resultCandidate: null,
+      };
+    }
     return { ok: true, nextState: state, publicEvents: [], privateEvents: [], effects: [], resultCandidate: null };
   }
   if (state.round.phase === 'match_over') {
@@ -991,6 +1035,19 @@ export function buildUnoHousePublicView(state: UnoHouseState): UnoHousePublicVie
     cumulativeScores: m.cumulativeScores,
     matchRanking: m.matchRanking,
     clockInfo: { turnDeadlineAt: r.turnDeadlineAt, windowDeadlineAt: r.windowDeadlineAt },
+    // 隐私不变量：只有 round_over / match_over 阶段才下发结算快照；对局中恒为 null
+    lastRound:
+      r.phase === 'round_over' || r.phase === 'match_over'
+        ? (() => {
+            const settled = m.roundResults[r.roundNumber - 1] ?? null;
+            if (!settled) return null;
+            return {
+              roundNumber: settled.roundNumber,
+              finisherPlayerId: settled.finisherPlayerId,
+              remainingHands: settled.remainingHands ?? r.players.map(() => []),
+            };
+          })()
+        : null,
   };
 }
 

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <title>聚乐 · 朝外展示端</title>
+  <link rel="stylesheet" href="display.css">
+  <script src="display.js" defer></script>
+</head>
+<body>
+  <nav class="dx-tools" aria-label="预览工具">
+    <a href="durian.html">← 榴莲玩家端</a>
+    <a href="moderator.html">法官端 ↗</a>
+    <a href="durian-table.html">榴莲公共桌面 ↗</a>
+    <label class="dx-switch"><span>示例状态</span>
+      <select id="dx-state" aria-label="示例状态">
+        <option value="playing">对局进行中</option>
+        <option value="waiting">等待开局</option>
+        <option value="durian">榴莲进行中</option>
+      </select>
+    </label>
+  </nav>
+
+  <main class="dx-screen" aria-label="朝外展示牌">
+    <header class="dx-brand">
+      <img src="assets/fruit-durian.svg" alt="" width="40" height="40">
+      <div><strong>聚乐 · 桌游</strong><small>JULE TABLETOP</small></div>
+    </header>
+
+    <section class="dx-hero" aria-live="polite">
+      <span class="dx-status" id="dx-status">正在进行</span>
+      <h1 id="dx-title">狼人杀</h1>
+      <p class="dx-sub" id="dx-sub">十二人 · 经典场 · 第三日 / 自由之夜之后</p>
+    </section>
+
+    <section class="dx-facts" id="dx-facts" aria-label="桌况概览"></section>
+
+    <section class="dx-join" aria-label="加入方式">
+      <div class="dx-room">
+        <span>房间号</span>
+        <b id="dx-room">8241</b>
+        <small>在 App 内输入房间号即可加入</small>
+      </div>
+      <div class="dx-qr">
+        <div class="dx-qr__box" aria-hidden="true"><span>二维码</span></div>
+        <small>二维码占位 · 接入后替换为真实邀请码</small>
+      </div>
+    </section>
+
+    <footer class="dx-foot">
+      <p>这块屏朝外摆放，只展示公开信息：正在玩什么、进行到哪一步、怎么加入。<b>不会出现任何人的身份、手牌或投票细节。</b></p>
+      <p class="dx-hint" id="dx-hint">开一局，坐下来就好。</p>
+    </footer>
+  </main>
+</body>
+</html>

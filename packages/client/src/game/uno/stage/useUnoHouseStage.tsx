@@ -2,7 +2,8 @@ import { useCallback, useRef, useState } from 'react';
 import { useStageMachine, type StagePlayContext } from '../../../shared-ui/stage/useStageMachine.ts';
 import { measure, measureAnchor, wait, type Rect } from '../../../shared-ui/stage/flip.ts';
 import type { StageFlight } from '../../../shared-ui/stage/FlightLayer.tsx';
-import type { UnoHousePlayerView } from '../types.ts';
+import { PartyCard } from '../../party-table/PartyCard.tsx';
+import type { UnoCard, UnoHousePlayerView } from '../types.ts';
 import {
   deriveStageEvents,
   roundTokenOf,
@@ -11,12 +12,10 @@ import {
 } from './deriveStageEvents.ts';
 import { playCueFor, VIBRATE } from './audioCues.ts';
 
-/** 一张牌飞到弃牌堆的时长 */
-const PLAY_FLIGHT_MS = 440;
-/** 摸牌飞回手边的时长 */
-const DRAW_FLIGHT_MS = 360;
-/** 换色扫光的持续 */
-const COLOR_SWEEP_MS = 520;
+/** 一张牌飞到弃牌堆的时长（契约 §5） */
+const PLAY_FLIGHT_MS = 520;
+/** 摸牌飞回手边的时长（契约 §5） */
+const DRAW_FLIGHT_MS = 460;
 
 const CARD_W = 50;
 const CARD_H = 76;
@@ -26,8 +25,6 @@ export interface UnoStageApi {
   readonly flights: readonly StageFlight[];
   readonly isPlaying: boolean;
   readonly simplifiedFlights: boolean;
-  /** 刚换成的颜色：驱动中央牌堆扫光，演完即清 */
-  readonly sweepColor: string | null;
 }
 
 /**
@@ -38,7 +35,6 @@ export interface UnoStageApi {
  */
 export function useUnoHouseStage(view: UnoHousePlayerView): UnoStageApi {
   const [flights, setFlights] = useState<readonly StageFlight[]>([]);
-  const [sweepColor, setSweepColor] = useState<string | null>(null);
 
   const stageRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef(view);
@@ -53,10 +49,22 @@ export function useUnoHouseStage(view: UnoHousePlayerView): UnoStageApi {
     return measureAnchor(stageRef.current, anchor);
   }, []);
 
-  /** 我这一侧：扇形手牌；测不到时退到屏幕下方中央。 */
+  /**
+   * 我这一侧：扇形手牌中心的一张牌位。
+   * slide 飞行按矩形左上角落点（toss 按中心），而手牌锚量到的是整条扇形区；
+   * 若直接把整条矩形交给 slide，牌会落在左下角——恰好是我的头像贴纸位。
+   * 这里统一收敛成以扇形中心为落点的牌尺寸矩形，两种运动模式落点一致。
+   */
   const myHand = useCallback((): Rect => {
     const fan = anchorRect('hand');
-    if (fan) return fan;
+    if (fan) {
+      return {
+        x: fan.x + fan.width / 2 - CARD_W / 2,
+        y: fan.y + fan.height / 2 - CARD_H / 2,
+        width: CARD_W,
+        height: CARD_H,
+      };
+    }
     if (typeof window === 'undefined') return { x: 0, y: 0, width: CARD_W, height: CARD_H };
     return {
       x: window.innerWidth * 0.5 - CARD_W / 2,
@@ -76,14 +84,17 @@ export function useUnoHouseStage(view: UnoHousePlayerView): UnoStageApi {
   );
 
   const cardPiece = useCallback(
-    (key: string, faceDown: boolean) => ({
+    (key: string, card: UnoCard | null) => ({
       key,
       width: CARD_W,
       height: CARD_H,
       // 牌是硬纸板，不做钞票那种翻面压暗与高光
       paper: false,
-      node: (
-        <span className="uno-flight-card" data-face={faceDown ? 'back' : 'front'} aria-hidden="true" />
+      // 飞行层渲染实体 PartyCard（出牌为牌面、摸牌为背面），不再是透明占位
+      node: card === null ? (
+        <PartyCard card={{ face: 'back', color: 'back' }} backLabel="UNO" className="uno-flight-card" />
+      ) : (
+        <PartyCard card={card} className="uno-flight-card" />
       ),
     }),
     [],
@@ -121,7 +132,7 @@ export function useUnoHouseStage(view: UnoHousePlayerView): UnoStageApi {
               arc: 66,
               durationMs: PLAY_FLIGHT_MS,
               delayMs: 0,
-              pieces: [cardPiece(`play-${event.seq}`, false)],
+              pieces: [cardPiece(`play-${event.seq}`, event.card)],
             },
           ]);
           await wait(PLAY_FLIGHT_MS + 110, ctx.signal);
@@ -147,7 +158,7 @@ export function useUnoHouseStage(view: UnoHousePlayerView): UnoStageApi {
               delayMs: 0,
               // 罚牌可能一次多张，最多画 4 张避免刷屏
               pieces: Array.from({ length: Math.min(event.count, 4) }, (_, k) =>
-                cardPiece(`draw-${event.seq}-${event.playerId}-${k}`, true),
+                cardPiece(`draw-${event.seq}-${event.playerId}-${k}`, null),
               ),
             },
           ]);
@@ -157,10 +168,10 @@ export function useUnoHouseStage(view: UnoHousePlayerView): UnoStageApi {
         }
 
         case 'colorChanged': {
+          // 换色视觉由 PartyCloth 按 data-color 变化接管（擦除式泼色）；
+          // 此处只保留音效（playCueFor）与时间线节拍
           if (!ctx.softAnimated) return;
-          setSweepColor(event.color);
-          await wait(COLOR_SWEEP_MS, ctx.signal);
-          if (!ctx.signal.aborted) setSweepColor(null);
+          await wait(220, ctx.signal);
           return;
         }
 
@@ -173,7 +184,6 @@ export function useUnoHouseStage(view: UnoHousePlayerView): UnoStageApi {
 
   const clear = useCallback(() => {
     setFlights([]);
-    setSweepColor(null);
   }, []);
 
   const machine = useStageMachine<UnoHousePlayerView, StageEvent>({
@@ -198,6 +208,5 @@ export function useUnoHouseStage(view: UnoHousePlayerView): UnoStageApi {
     flights,
     isPlaying: machine.isPlaying,
     simplifiedFlights: machine.simplifiedFlights,
-    sweepColor,
   };
 }

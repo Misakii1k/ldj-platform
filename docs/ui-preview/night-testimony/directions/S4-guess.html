@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>谁是狱警 · 定稿 C · ④ 猜罪翻盘 + 终局</title>
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="C-kraft-archive.css">
+<style>
+  /* ④ 猜罪：狱警被揪出后，把桌上的罪行标签逐一贴到每只囚犯档案袋上（候选 = 所有囚犯罪行 + 1 张多余的干扰罪行）。
+     全部贴对 → 狱警翻盘独胜；错一张 → 囚犯联盟胜。已自告的囚犯罪行是公开的，标签直接预贴、不可改。
+     提交后逐袋开封核对：对的盖绿 ✔，错的盖红 ✘ 并露出真罪行。本阶段不计时。 */
+  .stack { display: none; }
+  .ring-box { display: none; }
+  .labels-area { position: absolute; left: 50%; top: 92px; translate: -50% 0; width: 700px; display: grid; gap: 12px; justify-items: center; z-index: 2; }
+  .labels-area h2 { margin: 0; font: 700 26px var(--serif); padding: 6px 18px 8px; background: var(--card); border: 3px solid var(--ink); border-radius: 6px; box-shadow: 0 5px 0 var(--ink); rotate: -1.5deg; }
+  .labels-area p { margin: 0; font: 800 13px var(--sans); color: #eaf3ec; }
+  .labels { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .label {
+    font: 700 17px var(--serif); padding: 8px 16px; cursor: pointer; color: var(--ink); background: #fffaf0;
+    border: 3px solid var(--ink); border-radius: 4px; box-shadow: 0 4px 0 var(--ink); transition: transform 140ms cubic-bezier(.34,1.56,.64,1), opacity 160ms;
+  }
+  .label:nth-child(odd) { rotate: -2deg; } .label:nth-child(even) { rotate: 1.5deg; }
+  .label:hover:not(:disabled) { transform: translateY(-3px); }
+  .label[aria-pressed="true"] { outline: 4px solid var(--yellow); outline-offset: 2px; }
+  .label:disabled { opacity: .3; cursor: default; }
+
+  /* 档案袋上的罪行标签位 */
+  .files .seat .slot { grid-column: 1 / -1; margin-top: 6px; min-height: 30px; display: grid; place-items: center; font: 700 14px var(--serif); background: rgba(255,250,240,.55); border: 2.5px dashed #5b4527; border-radius: 3px; color: #5b4527; }
+  .files .seat .slot.filled { background: #fffaf0; border: 2.5px solid var(--ink); color: var(--ink); rotate: -2deg; animation: slap 280ms cubic-bezier(.34,1.56,.64,1) both; }
+  .files .seat .slot.locked { background: #e9e4d8; border-style: solid; color: var(--ink); }
+  .files .seat.pickable { cursor: pointer; }
+  .files .seat.focus { outline: 4px solid var(--yellow); outline-offset: 3px; transform: translateY(-8px); }
+  .files .seat.warden-seat { background: linear-gradient(#4b5263, #2e3440); color: #fff; }
+  .files .seat.warden-seat .st { color: var(--yellow); }
+  .files .seat .mark { position: absolute; right: 6px; top: 16px; width: 40px; height: 40px; display: grid; place-items: center; font: 900 24px var(--serif); border: 3px solid currentColor; border-radius: 50%; background: var(--card); animation: stamp 340ms cubic-bezier(.34,1.56,.64,1) both; z-index: 2; }
+  .files .seat .mark.ok { color: #2f7a4f; rotate: -8deg; }
+  .files .seat .mark.bad { color: var(--coral); rotate: 10deg; }
+  .files .seat .truth { grid-column: 1 / -1; font: 800 11px var(--sans); color: var(--coral); text-align: center; }
+  @keyframes slap { 0% { transform: scale(1.5); opacity: 0; } 100% { transform: none; opacity: 1; } }
+  @keyframes stamp { 0% { transform: scale(2.2); opacity: 0; } 60% { transform: scale(.92); opacity: 1; } 100% { transform: none; } }
+  .label-fly { font: 700 15px var(--serif); padding: 6px 12px; background: #fffaf0; border: 3px solid var(--ink); border-radius: 4px; }
+
+  .final { display: none; padding: 10px 30px 12px; font: 700 38px var(--serif); background: var(--card); border: 3px solid var(--ink); border-radius: 10px; box-shadow: 0 6px 0 var(--ink); rotate: -2deg; text-align: center; }
+  .final.show { display: block; animation: stamp 420ms cubic-bezier(.34,1.56,.64,1) both; }
+  .final small { display: block; font: 800 14px var(--sans); color: var(--muted); }
+  .final.inmates { color: #2f7a4f; } .final.warden { color: #2e3440; }
+
+  .files { bottom: 104px; }
+  [data-view="inmate"] .only-warden, [data-view="warden"] .only-inmate { display: none !important; }
+  .watch { padding: 10px 16px; font: 800 15px var(--sans); color: var(--ink); background: #fffaf0; border: 3px dashed var(--ink); border-radius: 6px; }
+  .btn-submit { background: var(--yellow); }
+
+  @container (max-width: 600px) {
+    .labels-area { left: 12px; right: 12px; width: auto; translate: none; top: 100px; gap: 8px; }
+    .labels-area h2 { font-size: 18px; padding: 4px 12px 6px; }
+    .labels-area p { font-size: 11px; text-align: center; }
+    .labels { gap: 6px; }
+    .label { font-size: 13px; padding: 5px 9px; }
+    .files { bottom: 150px; }
+    .files .seat .slot { font-size: 11px; min-height: 24px; margin-top: 4px; }
+    .files .seat .mark { width: 26px; height: 26px; font-size: 15px; top: 10px; right: 2px; }
+    .files .seat .truth { font-size: 9px; }
+    .final { font-size: 24px; padding: 6px 14px 8px; }
+    .final small { font-size: 11px; }
+    .watch { font-size: 12px; padding: 6px 10px; }
+    .dock .info { flex-basis: 100%; }
+    .dock .btn { flex: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>谁是狱警 · 定稿 C · ④ 猜罪 + 终局</strong>
+  <span class="tb-note">选标签 → 点档案袋贴上 ｜ 候选多 1 张干扰罪行 ｜ 已自告的预贴锁定 ｜ 提交后逐袋 ✔ / ✘</span>
+  <div class="group"><button data-param="v" data-value="warden">你是狱警</button><button data-param="v" data-value="inmate">你是囚犯</button></div>
+  <div class="group"><button data-param="end" data-value="miss">演示：猜错一张</button><button data-param="end" data-value="all">演示：全猜中</button></div>
+  <div class="group"><button data-param="size" data-value="desktop">桌面 1280×800</button><button data-param="size" data-value="mobile">手机 390×844</button></div>
+  <div class="group"><button data-param="n" data-value="5">5 人</button><button data-param="n" data-value="6">6 人</button></div>
+  <div class="group"><button id="act-auto">一键演示提交</button><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device">
+  <div class="head">
+    <h1 class="title">谁是狱警？</h1>
+    <div class="eyebrow">狱警猜罪 · 翻盘</div>
+  </div>
+
+  <section class="labels-area">
+    <h2 id="h2">给每只档案袋贴上罪行</h2>
+    <p class="only-warden">全贴对你就翻盘独胜；有一张是多出来的干扰项</p>
+    <div class="labels only-warden" id="labels"></div>
+    <div class="watch only-inmate">狱警 老王 正在给大家的档案袋贴罪行……只要他贴错一张，囚犯就赢</div>
+    <div class="final" id="final"></div>
+  </section>
+
+  <div class="files" data-seats="all"></div>
+
+  <div class="dock">
+    <div class="secret only-inmate" data-secret title="点击遮挡 / 显示">
+      <div><div class="tag">你的罪行</div><small>点击遮挡</small></div>
+      <span class="word">偷吃外卖</span>
+    </div>
+    <div class="info"><strong data-bind="dock-title"></strong><span data-bind="dock-sub"></span></div>
+    <button class="btn btn-submit only-warden" id="act-submit" disabled>提交猜罪</button>
+  </div>
+</div></div>
+<script src="_kit.js"></script>
+<script>
+  const { players, params, CRIMES, EXTRA, warden } = KIT;
+  const view = params.get('v') || 'warden';
+  const end = params.get('end') || 'miss';
+  KIT.device.dataset.view = view;
+  (view === 'warden' ? warden : KIT.byName('小鱼干')).me = true;
+  const inmates = players.filter((p) => !p.warden);
+  const exposed = new Set([KIT.byName('Momo')].filter(Boolean)); // 与投票稿一致：Momo 已自告
+  const pool = [...inmates.map((p) => p.crime), EXTRA]; // 固定顺序，方便对照；实现时按服务端 availableGuessCrimes（已排序）
+  const guesses = new Map();
+  exposed.forEach((p) => guesses.set(p, p.crime));
+  let chosen = null;
+  let focus = inmates.find((p) => !guesses.has(p)) || null;
+  let checked = new Map(); // p -> true/false
+
+  KIT.status = (p) => (p.warden ? '狱警 · 猜罪中' : exposed.has(p) ? '已自告' : '囚犯');
+  KIT.decorate = (el, p) => {
+    if (p.warden) { el.classList.add('warden-seat'); return; }
+    const g = guesses.get(p);
+    const slot = document.createElement('div');
+    slot.className = 'slot' + (exposed.has(p) ? ' locked' : g ? ' filled' : '');
+    slot.textContent = g ? CRIMES[g] : view === 'warden' ? '贴罪行' : '待贴';
+    el.appendChild(slot);
+    if (view === 'warden' && !exposed.has(p) && !checked.size) {
+      el.classList.add('pickable');
+      if (p === focus) el.classList.add('focus');
+      el.onclick = () => place(p);
+    }
+    if (checked.has(p)) {
+      const ok = checked.get(p);
+      el.insertAdjacentHTML('beforeend', `<span class="mark ${ok ? 'ok' : 'bad'}">${ok ? '✔' : '✘'}</span>`);
+      if (!ok) el.insertAdjacentHTML('beforeend', `<span class="truth">实为 ${CRIMES[p.crime]}</span>`);
+    }
+  };
+
+  const labelsBox = document.getElementById('labels');
+  function renderLabels() {
+    const used = new Set(guesses.values());
+    labelsBox.innerHTML = pool.map((c) => `<button class="label" data-c="${c}" aria-pressed="${chosen === c}" ${used.has(c) ? 'disabled' : ''}>${CRIMES[c]}</button>`).join('');
+    labelsBox.querySelectorAll('.label').forEach((b) => b.addEventListener('click', () => {
+      chosen = b.dataset.c;
+      if (focus) place(focus); else renderLabels();
+    }));
+  }
+  async function place(p) {
+    if (checked.size) return;
+    if (!chosen) { focus = p; KIT.render(); return; }
+    const from = labelsBox.querySelector(`[data-c="${chosen}"]`);
+    // 这只袋子原先贴的标签会自动退回标签池（used 集合重算）
+    const g = Object.assign(document.createElement('div'), { className: 'label-fly', textContent: CRIMES[chosen] });
+    const c = chosen;
+    chosen = null;
+    await KIT.fly(from, KIT.seatOf(p), g, { arc: 70, spin: -10, dur: 440 });
+    guesses.set(p, c);
+    focus = inmates.find((x) => !guesses.has(x)) || null;
+    KIT.render(); renderLabels(); text();
+  }
+  function text() {
+    const done = inmates.filter((p) => guesses.has(p)).length;
+    const s = document.getElementById('act-submit');
+    s.disabled = done < inmates.length || checked.size > 0;
+    s.textContent = `提交猜罪（${done}/${inmates.length}）`;
+    if (checked.size) return;
+    KIT.bind('dock-title', view === 'warden' ? '最后的翻盘机会' : '等狱警猜罪');
+    KIT.bind('dock-sub', view === 'warden' ? '先点标签再点档案袋；点已贴的袋子可以换' : '你的罪行只有你自己知道——希望你答题时没暴露太多');
+  }
+  async function submit() {
+    KIT.render();
+    for (const p of inmates) { // 逐袋开封核对
+      checked.set(p, guesses.get(p) === p.crime);
+      KIT.render(); KIT.shake();
+      await KIT.wait(360);
+    }
+    const all = [...checked.values()].every(Boolean);
+    const f = document.getElementById('final');
+    f.className = 'final show ' + (all ? 'warden' : 'inmates');
+    f.innerHTML = all ? `狱警 ${warden.name} 翻盘独胜！<small>每一只档案袋都贴对了</small>` : `囚犯联盟胜！<small>狱警贴错了 ${[...checked.values()].filter((x) => !x).length} 张</small>`;
+    document.getElementById('h2').hidden = true;
+    labelsBox.hidden = true;
+    document.querySelectorAll('.labels-area p, .watch').forEach((x) => (x.hidden = true));
+    KIT.bind('dock-title', '游戏结束');
+    KIT.bind('dock-sub', '再来一局？（终局结算面板沿用 settlement-dock）');
+  }
+  document.getElementById('act-submit').addEventListener('click', submit);
+  document.getElementById('act-auto').addEventListener('click', () => {
+    const wrongOne = inmates.find((p) => !exposed.has(p));
+    inmates.forEach((p) => guesses.set(p, p.crime));
+    if (end === 'miss' && wrongOne) guesses.set(wrongOne, EXTRA === wrongOne.crime ? inmates[0].crime : EXTRA);
+    renderLabels(); submit();
+  });
+  KIT.render(); renderLabels(); text();
+</script>
+</body>
+</html>

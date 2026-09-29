@@ -2,7 +2,7 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 import { seedRoom } from './helpers/dbClient.ts';
 import { RoomDriver } from './helpers/wsClient.ts';
-import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL } from './helpers/serverEnv.ts';
+import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL, skipPcHostConsole } from './helpers/serverEnv.ts';
 
 interface BrowserMe {
   playerId: string;
@@ -67,22 +67,33 @@ test.describe('D6 landlord_platform_v1 客户端产品闭环', () => {
     }, { width: 1280, height: 800 });
 
     try {
+      await skipPcHostConsole(page);
       await page.goto(BASE_URL);
-      await expect(page.locator('.room-page')).toBeVisible({ timeout: 30_000 });
-      // seedRoom(ready:true) 全员已就绪且 resume 保留 ready：按钮可能是"取消准备"，仅在仍显示"准备"时点击
-      const readyBtn = page.getByRole('button', { name: '准备', exact: true });
-      if (await readyBtn.isVisible().catch(() => false)) await readyBtn.click();
-      await startPlatformGame(host);
+      // seedRoom(ready:true) 且成员在线即触发服务端"全员就绪 5 秒自动开局"：
+      // 慢机器上浏览器可能在倒计时走完后才完成 resume，直接落在对局页（room-page 一闪而过）。
+      // 落在大厅则手动开局；已在对局页则跳过（窄视口用例同样依赖该自动开局行为）。
+      const roomPage = page.locator('.room-page');
+      const table = page.locator('.tabletop-shell');
+      const landedOnRoom = await roomPage.waitFor({ state: 'visible', timeout: 8_000 }).then(() => true).catch(() => false);
+      if (landedOnRoom) {
+        // seedRoom(ready:true) 全员已就绪且 resume 保留 ready：按钮可能是"取消准备"，仅在仍显示"准备"时点击
+        const readyBtn = page.getByRole('button', { name: '准备', exact: true });
+        if (await readyBtn.isVisible().catch(() => false)) await readyBtn.click();
+        try {
+          await startPlatformGame(host);
+        } catch {
+          // 自动开局倒计时抢先触发（ACTION_NOT_ALLOWED）：对局已经开始，继续
+        }
+      }
+      await expect(table).toBeVisible({ timeout: 30_000 });
       const first = await host.waitGameState((view) => view.rulesetId === 'landlord_platform_v1');
       expect(first.payload.engineContractVersion).toBe(2);
       expect(first.payload.viewVersion).toBe(1);
       expect(first.payload.rulesetId).toBe('landlord_platform_v1');
       expect((first.payload.view as LandlordFrameView).schemaVersion).toBe(1);
 
-      const table = page.locator('.tabletop-shell');
-      await expect(table).toBeVisible({ timeout: 30_000 });
-      // 开局为叫分阶段：牌桌座位可见，手牌在叫分后（playing）才渲染
-      await expect(page.locator('.tabletop-seat')).toHaveCount(3);
+      // 开局为叫分阶段：牌桌座位可见（2 个对手半身像 + 我的名牌），手牌在叫分后（playing）才渲染
+      await expect(page.locator('.landlord-teahouse [data-player-id]')).toHaveCount(3);
 
       // 聊天入口只允许一个，且必须解析到游戏调色板令牌（防止挂载在 .game-page 外退化为裸文字）。
       const chatTrigger = page.locator('.game-chat-trigger');
@@ -91,7 +102,7 @@ test.describe('D6 landlord_platform_v1 客户端产品闭环', () => {
         const style = getComputedStyle(el);
         return { background: style.backgroundColor, borderWidth: style.borderTopWidth };
       });
-      expect(chatStyle.background).toBe('rgb(239, 81, 61)');
+      expect(chatStyle.background).toBe('rgb(194, 54, 22)');
       expect(chatStyle.borderWidth).toBe('3px');
 
       // 房主不叫，叫分权转给浏览器玩家；浏览器真实点击 3 分。
@@ -107,17 +118,17 @@ test.describe('D6 landlord_platform_v1 客户端产品闭环', () => {
       const farmerView = playing.payload.view as LandlordFrameView;
       expect(farmerView.me?.playerId).toBe(seeded.hostId);
       expect(farmerView.me?.hand.length).toBe(17);
-      expect(farmerView.bottomCards).toEqual([]);
+      expect(farmerView.bottomCards.length).toBe(3);
       expect(farmerView.players?.some((player) => 'hand' in player)).toBe(false);
 
       // 地主浏览器看到 3 张底牌并持有 20 张牌；只展示本人手牌，不生成他人手牌 DOM。
-      await expect(page.locator('.bottom-cards .card-face-static')).toHaveCount(3);
-      await expect(page.locator('.card-fan-item')).toHaveCount(20);
-      await expect(page.locator('.card-fan-container')).toHaveCount(1);
+      await expect(page.locator('.th-kitty .th-card')).toHaveCount(3);
+      await expect(page.locator('.th-hand .th-card')).toHaveCount(20);
+      await expect(page.locator('.th-hand')).toHaveCount(1);
 
       // 选中一张牌并真实出牌，服务端权威视图确认 20 → 19。
       // 扇形手牌相互重叠，卡片中心可能被邻牌遮挡：force 点击（模拟用户点到牌面暴露区域）。
-      await page.locator('.card-fan-item').first().click({ force: true });
+      await page.locator('.th-hand .th-card').first().click({ force: true });
       const playBtn = page.locator('.card-fan-play-btn');
       await expect(playBtn).toBeEnabled();
       await playBtn.click();
@@ -129,7 +140,7 @@ test.describe('D6 landlord_platform_v1 客户端产品闭环', () => {
           ) === true,
         15_000,
       );
-      await expect(page.locator('.card-fan-item')).toHaveCount(19);
+      await expect(page.locator('.th-hand .th-card')).toHaveCount(19);
     } finally {
       host.client.close();
       await page.context().close();
@@ -153,6 +164,7 @@ test.describe('D6 landlord_platform_v1 客户端产品闭环', () => {
     }, { width: 390, height: 844 });
 
     try {
+      await skipPcHostConsole(page);
       await page.goto(BASE_URL);
       await expect(page.locator('.room-page')).toBeVisible({ timeout: 30_000 });
       // 同上：全员已就绪时按钮为"取消准备"，仅在仍显示"准备"时点击
@@ -160,7 +172,7 @@ test.describe('D6 landlord_platform_v1 客户端产品闭环', () => {
       if (await readyBtn.isVisible().catch(() => false)) await readyBtn.click();
       await startPlatformGame(host, true);
       await expect(page.locator('.tabletop-shell')).toBeVisible({ timeout: 30_000 });
-      await expect(page.locator('.tabletop-seat')).toHaveCount(3);
+      await expect(page.locator('.landlord-teahouse [data-player-id]')).toHaveCount(3);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(overflow).toBeLessThanOrEqual(1);
     } finally {

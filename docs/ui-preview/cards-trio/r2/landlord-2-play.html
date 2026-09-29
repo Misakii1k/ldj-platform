@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>斗地主 · 茶馆正堂 · ② 出牌</title>
+<link rel="stylesheet" href="../_shell.css">
+<link rel="stylesheet" href="_poker.css">
+<link rel="stylesheet" href="_teahouse.css">
+</head>
+<body>
+<div class="toolbar">
+  <strong>斗地主 · 茶馆正堂 · ② 出牌（打磨稿）</strong>
+  <span class="note">第 1 轮 B 稿打磨：场景加梁托、花窗、墙裙、灯笼光晕；牌面加内框双角标、人头徽章、大小王星章；名牌加身份圆章与张数；炸弹演出加强（倍数不变，按现有规则）</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="landscape">手机横屏 844×390</button><button data-set-size="mobile">手机竖屏</button></div>
+  <div class="group"><button id="reset">重播</button><a href="index.html">返回目录</a></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="kitty" data-box="kitty"><span class="tag">底牌</span><div id="kitty-cards" style="display:flex;gap:6px"></div></div>
+  <div class="pile" data-box="pile"><div class="pile-cards"></div><span class="tag" id="pile-tag">阿杰 · 对子</span></div>
+
+  <div class="phase" data-box="phase">
+    <div class="t" id="phase-t">轮到你出牌</div>
+    <div class="s"><span id="phase-s">要压过对 K，或者不出</span></div>
+  </div>
+  <div class="hud" data-box="hud">
+    <div class="mult"><small>倍数</small><span class="numeral">×3</span></div>
+    <div class="turn-ring" id="my-ring"><svg viewBox="0 0 60 60"><circle class="track" cx="30" cy="30" r="26"/><circle class="bar" cx="30" cy="30" r="26"/></svg><span class="ring-num"></span></div>
+  </div>
+
+  <div class="me-zone">
+    <div class="fan my-hand" data-box="hand"></div>
+    <div class="dock" data-box="dock">
+      <button class="btn" id="btn-pass">不出</button>
+      <button class="btn" id="btn-hint">提示</button>
+      <button class="btn btn-primary" id="btn-play">出牌</button>
+    </div>
+  </div>
+  <div class="plate me-plate active" data-box="me"><span class="role lord">主</span><b>小鱼干（你）</b><span class="cnt" data-count id="me-count">14</span><div class="say"></div></div>
+  <div class="slam" id="slam"><span class="word">炸！</span></div>
+</div></div>
+<script src="../_shell.js"></script>
+<script src="_teahouse.js"></script>
+<script>
+(function () {
+  const P = Preview, T = Teahouse;
+  const device = document.querySelector('.device');
+  T.buildScene(device);
+  const jie = T.opponent('jie', '阿杰', 'l', 9);
+  const keke = T.opponent('keke', '可可', 'r', 7);
+  device.append(jie, keke);
+
+  // 固定数据：你是地主（叫 3 分，倍数 ×3），剩 14 张；上家阿杰出了对 K
+  const HAND = T.sortDesc([['大王', ''], ['2', '♠'], ['A', '♦'], ['Q', '♣'], ['J', '♥'], ['10', '♠'], ['8', '♠'], ['8', '♥'], ['8', '♣'], ['8', '♦'], ['7', '♦'], ['6', '♣'], ['5', '♥'], ['3', '♠']]);
+  const hand = document.querySelector('.my-hand');
+  T.renderHand(hand, HAND);
+  document.getElementById('kitty-cards').innerHTML = [['A', '♠'], ['2', '♥'], ['小王', '']].map((c) => T.card(c)).join('');
+  const pile = document.querySelector('.pile-cards');
+  pile.innerHTML = T.card(['K', '♠']) + T.card(['K', '♥']);
+  const pileTag = document.getElementById('pile-tag');
+  const me = document.querySelector('.me-plate');
+  const slam = document.getElementById('slam');
+  P.countdown(document.getElementById('my-ring'), 20);
+
+  document.getElementById('btn-hint').addEventListener('click', () => {
+    [...hand.children].forEach((c) => c.classList.toggle('sel', c.dataset.r === '8'));
+  });
+  document.getElementById('btn-pass').addEventListener('click', () => T.say(me, '不出'));
+
+  const COMBO = (els) => {
+    const rs = els.map((e) => e.dataset.r);
+    if (rs.length === 4 && rs.every((r) => r === rs[0])) return '炸弹';
+    if (rs.length === 2 && rs[0] === rs[1]) return '对子';
+    if (rs.length === 1) return '单张';
+    return '出牌';
+  };
+
+  let busy = false;
+  document.getElementById('btn-play').addEventListener('click', async () => {
+    const picked = [...hand.querySelectorAll('.sel')];
+    if (!picked.length || busy) return;
+    busy = true;
+    const kind = COMBO(picked);
+    const bomb = kind === '炸弹';
+    pile.classList.add('leaving');
+    await T.flyCards(picked, pile, { lift: bomb ? 220 : 160 });
+    pile.classList.remove('leaving');
+    pile.innerHTML = picked.map((c) => { const k = c.cloneNode(true); k.classList.remove('sel'); k.removeAttribute('style'); k.classList.add('land'); return k.outerHTML; }).join('');
+    picked.forEach((c) => c.remove());
+    P.indexFan(hand);
+    T.fitHand(hand);
+    P.roll(document.getElementById('me-count'), hand.children.length);
+    pileTag.textContent = `小鱼干 · ${kind}`;
+    T.setActive(null);
+    if (bomb) {
+      P.slam(slam);
+      P.shake(4);
+      // 炸弹：出牌区每张牌依次再弹一下，对手半身像往后一缩
+      [...pile.children].forEach((c, k) => !P.reduce && c.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-18px) rotate(-4deg)' }, { transform: 'none' }], { duration: 360, delay: 200 + k * 70, easing: 'cubic-bezier(.34,1.56,.64,1)' }));
+      [jie, keke].forEach((o) => !P.reduce && o.querySelector('.fig').animate([{ transform: 'none' }, { transform: 'translateY(8px) scale(.94)' }, { transform: 'none' }], { duration: 500, delay: 180, easing: 'ease-out' }));
+      setTimeout(() => T.say(jie, '啊？！', { hot: true }), 700);
+    }
+    // 下家（可可）接着想一会儿再不出，轮回你的上家后又回到你
+    document.getElementById('phase-t').textContent = '等可可出牌';
+    document.getElementById('phase-s').textContent = bomb ? '你炸了，看她接不接' : '看她接不接';
+    setTimeout(() => T.setActive(keke), bomb ? 1100 : 500);
+    setTimeout(() => { T.say(keke, '要不起'); T.setActive(jie); document.getElementById('phase-t').textContent = '等阿杰出牌'; }, bomb ? 2600 : 2000);
+    setTimeout(() => { T.say(jie, '不出'); T.setActive(me); document.getElementById('phase-t').textContent = '轮到你出牌'; document.getElementById('phase-s').textContent = '都不要，你随便出'; P.countdown(document.getElementById('my-ring'), 20); busy = false; }, bomb ? 4000 : 3400);
+  });
+})();
+</script>
+</body>
+</html>

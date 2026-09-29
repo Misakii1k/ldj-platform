@@ -17,6 +17,23 @@ const bellClashCardSchema = z
   })
   .strict();
 
+const challengeSchema = z
+  .object({
+    claimantId: pid,
+    card: z
+      .object({
+        kind: z.literal('phrase'),
+        color: z.enum(COLORS),
+        phrase: z.string().min(1),
+      })
+      .strict(),
+    voterIds: z.array(pid),
+    doubtIds: z.array(pid),
+    confirmIds: z.array(pid),
+  })
+  .strict()
+  .nullable();
+
 const bellClashPublicViewSchema = z
   .object({
     gameId: z.literal('bell-clash'),
@@ -27,14 +44,13 @@ const bellClashPublicViewSchema = z
     handCounts: z.record(pid, z.number().int().nonnegative()),
     currentPlayerId: pid,
     discardTop: bellClashCardSchema.nullable(),
-    bellOpen: z.boolean(),
-    bellClaimantId: pid.nullable(),
+    challenge: challengeSchema,
     drawCount: z.number().int().nonnegative(),
     winners: z.array(pid),
     /** 当前计时截止时刻；终局为 null */
     deadlineAt: z.number().nullable(),
-    /** 截止时刻的类别：回合 or 抢铃窗口。客户端据此换进度环的 phaseKey */
-    deadlineKind: z.enum(['turn', 'bell']).nullable(),
+    /** 截止时刻的类别：回合 or 质疑判定 */
+    deadlineKind: z.enum(['turn', 'challenge']).nullable(),
   })
   .strict();
 
@@ -57,6 +73,21 @@ function parseOrThrow<T>(schema: z.ZodType<unknown>, input: unknown, label: stri
 function buildPublicView(state: BellClashState): BellClashPublicView {
   const handCounts: Record<string, number> = {};
   for (const id of state.players) handCounts[id] = state.hands[id]!.length;
+
+  const challenge = state.challenge
+    ? {
+        claimantId: state.challenge.claimantId,
+        card: {
+          kind: 'phrase' as const,
+          color: state.challenge.card.color,
+          phrase: state.challenge.card.phrase,
+        },
+        voterIds: [...state.challenge.voters],
+        doubtIds: [...state.challenge.doubts],
+        confirmIds: [...state.challenge.confirms],
+      }
+    : null;
+
   return {
     gameId: 'bell-clash',
     rulesetId: 'bell_clash_v1',
@@ -66,11 +97,9 @@ function buildPublicView(state: BellClashState): BellClashPublicView {
     handCounts,
     currentPlayerId: state.currentPlayerId,
     discardTop: state.discardTop ? { ...state.discardTop } : null,
-    bellOpen: state.bellOpen,
-    bellClaimantId: state.bellClaimantId,
+    challenge,
     drawCount: state.drawPile.length,
     winners: [...state.winners],
-    // 老存档没有这两个字段，兜底为 null
     deadlineAt: state.deadlineAt ?? null,
     deadlineKind: state.deadlineKind ?? null,
   };

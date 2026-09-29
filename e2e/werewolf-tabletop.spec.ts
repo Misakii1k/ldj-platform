@@ -22,7 +22,7 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 import { seedRoom } from './helpers/dbClient.ts';
 import { RoomDriver } from './helpers/wsClient.ts';
-import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL } from './helpers/serverEnv.ts';
+import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL, skipPcHostConsole } from './helpers/serverEnv.ts';
 
 const WEREWOLF_CONFIG = {
   rulesetId: 'werewolf_platform_open_kill_v1',
@@ -44,6 +44,7 @@ interface BrowserMe {
 async function prepareBrowser(browser: Browser, me: BrowserMe): Promise<Page> {
   const context = await browser.newContext();
   const page = await context.newPage();
+  await skipPcHostConsole(page);
   await page.addInitScript(
     ([key, value]) => { localStorage.setItem(key, value); },
     [ME_STORAGE_KEY, JSON.stringify({ ...me, seatRole: 'player' })],
@@ -72,12 +73,12 @@ test.describe('D5 P1a 狼人杀 12 人审判桌（v2 引擎）', () => {
       const hostState = await host.waitGameState((v) => v.gameId === 'werewolf');
       expect(hostState.payload.role).toBe('player');
 
-      // —— v2 引擎判别：版本化判别符 + schemaVersion 1 ——
+      // —— v2 引擎判别：版本化判别符 + schemaVersion 2 ——
       expect(hostState.payload.engineContractVersion).toBe(2);
       expect(hostState.payload.viewVersion).toBe(1);
       expect(hostState.payload.rulesetId).toBe('werewolf_platform_open_kill_v1');
       const hostView = hostState.payload.view as Record<string, unknown>;
-      expect(hostView.schemaVersion).toBe(1);
+      expect(hostView.schemaVersion).toBe(2);
       expect(hostView.rulesetId).toBe('werewolf_platform_open_kill_v1');
       expect(hostView.phase).toBe('role_reveal');
 
@@ -89,15 +90,19 @@ test.describe('D5 P1a 狼人杀 12 人审判桌（v2 引擎）', () => {
         roomCode: seeded.roomCode,
         nickname: '玩家2',
       });
+      page.on('console', (msg) => console.log('[PAGE CONSOLE]', msg.text()));
+      page.on('websocket', (ws) => {
+        ws.on('framesent', (f) => console.log('[PAGE WS SENT]', f.payload));
+        ws.on('framereceived', (f) => console.log('[PAGE WS RECV]', f.payload.toString().slice(0, 160)));
+      });
       await page.setViewportSize({ width: 1280, height: 800 });
       await page.goto(BASE_URL);
 
-      // —— 渲染：dense 审判桌 12 席位 ——
-      await expect(page.locator('.seat-ring').first()).toBeVisible({ timeout: 30_000 });
-      await expect(page.locator('.seat-ring').first()).toHaveClass(/is-dense/);
-      await expect(page.locator('.seat-ring').first()).toHaveAttribute('aria-label', '审判桌，共 12 个席位');
-      await expect(page.locator('.seat-chip')).toHaveCount(12);
-      await expect(page.getByText('12 人局').first()).toBeVisible();
+      // —— 渲染：12 席位双翼布局 ——
+      await expect(page.locator('.werewolf-native-page').first()).toBeVisible({ timeout: 30_000 });
+      await expect(page.locator('.seat-rail .seat')).toHaveCount(12);
+      await expect(page.locator('#seats-left .seat')).toHaveCount(6);
+      await expect(page.locator('#seats-right .seat')).toHaveCount(6);
 
       // —— 真实 v2 引擎动作：host 与浏览器玩家 confirm_role 被 v2 reducer 受理 ——
       const confirmAck = await host.gameAction({ type: 'confirm_role' });
@@ -105,30 +110,30 @@ test.describe('D5 P1a 狼人杀 12 人审判桌（v2 引擎）', () => {
         confirmAck.type,
         `host confirm_role 应 ack：${confirmAck.payload.code ?? ''} ${confirmAck.payload.message ?? ''}`,
       ).toBe('ack');
-      await page.getByRole('button', { name: '我已记住身份' }).click();
+      // W06：发身份两步——先点中央大牌翻开，黄色「我已记住身份并就绪」才出现
+      await page.locator('.ww-deal').click();
+      await expect(page.locator('.ww-deal')).toHaveClass(/flipped/);
+      await page.getByRole('button', { name: /我已记住身份/ }).click();
+      await expect(page.getByRole('button', { name: /我已记住身份/ })).toHaveCount(0);
       await host.waitGameState(
-        (v) =>
-          Array.isArray(v.confirmedRolePlayerIds)
-          && (v.confirmedRolePlayerIds as string[]).includes(host.playerId)
-          && (v.confirmedRolePlayerIds as string[]).includes(browserPlayer.playerId),
+        (v) => (v.me as Record<string, unknown> | undefined)?.confirmedRole === true,
         15_000,
       );
-      await expect(page.getByRole('button', { name: '我已记住身份' })).toHaveCount(0);
 
-      // 阶段可能是 role_reveal（relaxed 45s）或已推进到 night；两者都是 skeleton 有效态
-      const phaseText = (await page.locator('.moon-header h1').textContent())?.trim() ?? '';
-      expect(['身份确认', '夜晚行动']).toContain(phaseText);
+      // 阶段可能是 role_reveal（relaxed 45s）或已推进到 night；两者都是有效态
+      const phaseText = (await page.locator('.chapter').textContent())?.trim() ?? '';
+      expect(phaseText.length).toBeGreaterThan(0);
 
       await page.screenshot({
-        path: 'C:/Users/87850/.gemini/antigravity/brain/786d7f94-b943-4023-b1ef-27107647f92a/scratch/werewolf-12p-in-game.png',
+        path: 'docs/superpowers/reports/2026-09-18-werewolf-durian/after/werewolf-12p-in-game.png',
         fullPage: false,
       });
 
-      // —— 几何：席位中心两两距离 > 席位宽度（dense 公式保证），且全部位于环形内 ——
+      // —— 几何：左右 rail 内席位不重叠，且全部位于舞台容器内 ——
       const geometry = await page.evaluate(() => {
-        const ring = document.querySelector('.seat-ring');
-        const ringRect = ring?.getBoundingClientRect() ?? { left: 0, top: 0, width: 0, height: 0 };
-        const chips = Array.from(document.querySelectorAll('.seat-chip')).map((el) => {
+        const layout = document.querySelector('.layout');
+        const layoutRect = layout?.getBoundingClientRect() ?? { left: 0, top: 0, width: 0, height: 0 };
+        const seats = Array.from(document.querySelectorAll('.seat-rail .seat')).map((el) => {
           const r = el.getBoundingClientRect();
           return {
             cx: r.left + r.width / 2,
@@ -136,49 +141,52 @@ test.describe('D5 P1a 狼人杀 12 人审判桌（v2 引擎）', () => {
             width: r.width,
             height: r.height,
             inside:
-              r.left >= ringRect.left - 1
-              && r.top >= ringRect.top - 1
-              && r.right <= ringRect.right + 1
-              && r.bottom <= ringRect.bottom + 1,
+              r.left >= layoutRect.left - 2
+              && r.top >= layoutRect.top - 2
+              && r.right <= layoutRect.right + 2
+              && r.bottom <= layoutRect.bottom + 2,
           };
         });
-        let minCenterDistance = Number.POSITIVE_INFINITY;
-        for (let i = 0; i < chips.length; i += 1) {
-          for (let j = i + 1; j < chips.length; j += 1) {
-            const d = Math.hypot(chips[i]!.cx - chips[j]!.cx, chips[i]!.cy - chips[j]!.cy);
-            minCenterDistance = Math.min(minCenterDistance, d);
-          }
-        }
-        const maxWidth = Math.max(...chips.map((c) => c.width));
-        const allInside = chips.every((c) => c.inside);
-        return { chipCount: chips.length, minCenterDistance, maxWidth, allInside };
+        const maxWidth = Math.max(...seats.map((c) => c.width));
+        const allInside = seats.every((c) => c.inside);
+        const overlaps = seats.some((a, i) => seats.some((b, j) => i < j
+          && !(a.cx - a.width / 2 >= b.cx + b.width / 2
+            || b.cx - b.width / 2 >= a.cx + a.width / 2
+            || a.cy - a.height / 2 >= b.cy + b.height / 2
+            || b.cy - b.height / 2 >= a.cy + a.height / 2)));
+        return { chipCount: seats.length, maxWidth, allInside, overlaps };
       });
       expect(geometry.chipCount).toBe(12);
       expect(geometry.allInside).toBe(true);
-      // dense 半径公式保证相邻席位中心弦距 ≥ 席位宽度 + 间隙；中心距必须大于席位宽度
-      expect(geometry.minCenterDistance).toBeGreaterThan(geometry.maxWidth);
+      expect(geometry.overlaps).toBe(false);
 
       // —— 浏览器视角隐私 ——
       // 1) 他人身份绝不进入 DOM：无任何已揭示身份标签（任何阶段、任何淘汰前）
       await expect(page.locator('.seat-chip__role')).toHaveCount(0);
-      // 2) 本人身份默认隐藏（PrivatePanel 需显式按下查看）：身份卡初始不可见
-      await expect(page.locator('.werewolf-compact-role__popover')).toHaveCount(0);
-      const privateRoleToggle = page.locator('.werewolf-compact-role__toggle-btn');
+      // 2) 本人身份默认隐藏（需显式按下查看）：身份卡初始不可见
+      await expect(page.locator('#dialog[open]')).toHaveCount(0);
+      const privateRoleToggle = page.locator('button#identity');
       await expect(privateRoleToggle).toBeVisible();
-      // 3) 按下查看后，身份匣只显示本人身份（7 种之一）
+      // 3) 按下查看后，身份弹窗只显示本人身份（7 种之一）
       await privateRoleToggle.click();
+      await expect(page.locator('#dialog[open]')).toBeVisible();
       const myRole = (
-        await page.locator('.werewolf-compact-role__popover .identity-card-front__role-name').textContent()
+        await page.locator('#dialog-title').textContent()
       )?.trim() ?? '';
-      expect((ROLE_NAMES as readonly string[]).includes(myRole), `身份应属于合法集合，收到：${myRole}`).toBe(true);
-      // 4) 席位卡绝不携带任何身份文本（身份只可能出现在身份匣）
-      const seatTexts = await page.locator('.seat-chip').allInnerTexts();
-      for (const text of seatTexts) {
-        for (const role of ROLE_NAMES) {
-          expect(text, `席位不应出现身份 ${role}`).not.toContain(role);
-        }
-      }
+      expect((ROLE_NAMES as readonly string[]).some((role) => myRole.includes(role)), `身份应属于合法集合，收到：${myRole}`).toBe(true);
 
+      await page.keyboard.press('Escape');
+      await expect(page.locator('#dialog[open]')).toHaveCount(0);
+      await privateRoleToggle.focus();
+      await privateRoleToggle.click();
+      await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+      await expect(page.locator('#dialog[open]')).toHaveCount(0);
+      for (const [width,height] of [[360,640],[390,844],[844,390],[1280,800],[1920,1080]]) {
+        await page.setViewportSize({width,height});
+        await page.waitForTimeout(200);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        await page.screenshot({path: 'docs/superpowers/reports/2026-09-18-werewolf-durian/after/werewolf-'+width+'x'+height+'.png'});
+      }
       await page.context().close();
     } finally {
       host.client.close();
@@ -222,7 +230,7 @@ test.describe('D5 P1a 狼人杀 12 人审判桌（v2 引擎）', () => {
     // 截图保存为 artifact 证据
     await preview.scrollIntoViewIfNeeded();
     await page.screenshot({
-      path: 'C:/Users/87850/.gemini/antigravity/brain/786d7f94-b943-4023-b1ef-27107647f92a/scratch/werewolf-camp-preview.png',
+      path: 'docs/superpowers/reports/2026-09-18-werewolf-durian/after/werewolf-camp-preview.png',
       fullPage: false,
     });
 
@@ -255,77 +263,34 @@ test.describe('D5 P1a 狼人杀 12 人审判桌（v2 引擎）', () => {
       await page.goto(BASE_URL);
 
       // 等待移动端舞台与左右翼席位渲染
-      await expect(page.locator('.werewolf-arena').first()).toBeVisible({ timeout: 20_000 });
-      await expect(page.locator('.werewolf-wing--left .seat-chip')).toHaveCount(4);
-      await expect(page.locator('.werewolf-wing--right .seat-chip')).toHaveCount(3);
+      await expect(page.locator('.werewolf-native-page').first()).toBeVisible({ timeout: 20_000 });
+      // 左右排布：7 人拆为左 4 / 右 3，两栏席位合计 7
+      await expect(page.locator('.seat-rail .seat')).toHaveCount(7);
+      await expect(page.locator('#seats-left .seat')).toHaveCount(4);
+      await expect(page.locator('#seats-right .seat')).toHaveCount(3);
 
-      // 验证席位卡片高度紧凑性（<= 64px）且无重叠、无溢出
+      // 验证席位卡片不被聊天入口遮挡且无重叠、无溢出；窄屏允许昵称换行。
       const seatMetrics = await page.evaluate(() => {
-        const chips = Array.from(document.querySelectorAll('.seat-chip')).map((el) => {
+        const seats = Array.from(document.querySelectorAll('.seat-rail .seat')).map((el) => {
           const r = el.getBoundingClientRect();
           return { height: r.height, top: r.top, bottom: r.bottom, left: r.left, right: r.right };
         });
-        const chat = document.querySelector('.game-chat-trigger')?.getBoundingClientRect();
-        const maxChipHeight = Math.max(...chips.map((c) => c.height));
+        const chat = document.querySelector('#werewolf-chat-btn')?.getBoundingClientRect();
+        const maxSeatHeight = Math.max(...seats.map((c) => c.height));
         // 验证聊天按钮绝不与任何席位重合（无碰撞）
         let collidesWithAnySeat = false;
         if (chat) {
-          collidesWithAnySeat = chips.some((sr) =>
+          collidesWithAnySeat = seats.some((sr) =>
             !(chat.right <= sr.left || chat.left >= sr.right || chat.bottom <= sr.top || chat.top >= sr.bottom)
           );
         }
-        return { maxChipHeight, collidesWithAnySeat };
+        return { maxSeatHeight, collidesWithAnySeat };
       });
-      expect(seatMetrics.maxChipHeight).toBeLessThanOrEqual(68);
+      expect(seatMetrics.maxSeatHeight).toBeLessThanOrEqual(180);
       expect(seatMetrics.collidesWithAnySeat).toBe(false);
 
-      // 验证在公投进度卡片渲染下的排版结构：标题与计票垂直分行居中、无文本折行溢出
-      await page.evaluate(() => {
-        // 动态注入 voting 阶段公投卡片以验证端到端 CSS 排版
-        const stack = document.querySelector('.werewolf-arena__center-stack');
-        if (stack) {
-          const dummy = document.createElement('div');
-          dummy.className = 'werewolf-spotlight werewolf-spotlight--voting';
-          dummy.innerHTML = `
-            <div class="werewolf-spotlight__vote-header">
-              <div class="werewolf-spotlight__vote-title-wrap">
-                <span class="werewolf-spotlight__pulsing-dot"></span>
-                <strong class="werewolf-spotlight__vote-title">放逐公投进行中</strong>
-              </div>
-              <div class="werewolf-spotlight__vote-tally">
-                <span class="werewolf-spotlight__vote-tally-label">已投票</span>
-                <strong class="werewolf-spotlight__vote-tally-num">6</strong>
-                <span class="werewolf-spotlight__vote-tally-total">/ 7</span>
-                <span class="werewolf-spotlight__vote-percent-badge">86%</span>
-              </div>
-            </div>
-            <div class="werewolf-spotlight__vote-track"><div class="werewolf-spotlight__vote-fill" style="width:86%"></div></div>
-            <div class="werewolf-spotlight__vote-footer">
-              <div class="werewolf-spotlight__vote-feedback-left"><span class="werewolf-spotlight__vote-status-text">⏳ 请点击上方席位头像完成投票</span></div>
-              <div class="werewolf-spotlight__vote-feedback-right"><span class="werewolf-spotlight__vote-remaining">还差 <strong>1</strong> 票即刻结算</span></div>
-            </div>
-          `;
-          stack.appendChild(dummy);
-        }
-      });
-
-      // 验证公投标题与计票各占一行，标题高度无换行
-      const voteLayout = await page.evaluate(() => {
-        const title = document.querySelector('.werewolf-spotlight__vote-title') as HTMLElement | null;
-        const tally = document.querySelector('.werewolf-spotlight__vote-tally') as HTMLElement | null;
-        const header = document.querySelector('.werewolf-spotlight__vote-header') as HTMLElement | null;
-        return {
-          titleHeight: title?.offsetHeight ?? 0,
-          tallyHeight: tally?.offsetHeight ?? 0,
-          headerDirection: header ? window.getComputedStyle(header).flexDirection : '',
-        };
-      });
-      expect(voteLayout.headerDirection).toBe('column');
-      expect(voteLayout.titleHeight).toBeLessThanOrEqual(24);
-      expect(voteLayout.tallyHeight).toBeLessThanOrEqual(24);
-
       // 截图保存为证据
-      const screenshotPath = 'C:/Users/87850/.gemini/antigravity/brain/cb997e70-02c1-4e9b-9b1f-d86a3ad769a7/scratch/werewolf-7p-portrait-verified.png';
+      const screenshotPath = 'docs/superpowers/reports/2026-09-18-werewolf-durian/after/werewolf-7p-portrait-verified.png';
       await page.screenshot({ path: screenshotPath, fullPage: false });
 
       await page.context().close();

@@ -215,10 +215,12 @@ test('票数只透传服务端进度，投票结果与终局复盘按公开字�
     },
   }), members);
   assert.deepEqual(result.voteLedger?.rows, [
-    { name: '玩家2', count: 3 },
-    { name: '玩家6', count: 1 },
+    { playerId: 'w2', name: '玩家2', seatLabel: '2 号', count: 3 },
+    { playerId: 'v', name: '玩家6', seatLabel: '6 号', count: 1 },
   ]);
   assert.equal(result.voteLedger?.abstained, 1);
+  // W05：加赛候选人派生字段
+  assert.deepEqual(runoffCandidate.runoffCandidateIds, ['w1', 's']);
 
   const over = buildWerewolfPresentation(view('game_over', {
     winner: 'village',
@@ -249,6 +251,35 @@ test('发言阶段取当前发言者最新公屏，座位号从 1 开始', () =>
   assert.equal(lastWords.speakerLine, '听预言家的');
 });
 
+
+test('W03：讨论阶段派生发言顺序 / 当前下标 / 下一位（跳过出局者）', () => {
+  const discussion = buildWerewolfPresentation(view('discussion', { currentSpeakerId: 's' }), members);
+  assert.deepEqual(discussion.speakingOrderIds, ['w1', 'w2', 's', 'x', 'g', 'v']);
+  assert.equal(discussion.speechOrderIndex, 2);
+  assert.equal(discussion.nextSpeakerId, 'x');
+
+  // 下一位已出局时顺延到下一位存活者
+  const deadNext = view('discussion', { currentSpeakerId: 's' });
+  deadNext.players[3]!.alive = false; // x 出局
+  const shifted = buildWerewolfPresentation(deadNext, members);
+  assert.equal(shifted.nextSpeakerId, 'g');
+
+  // 最后一位发言者没有下一位
+  const last = buildWerewolfPresentation(view('discussion', { currentSpeakerId: 'v' }), members);
+  assert.equal(last.speechOrderIndex, 5);
+  assert.equal(last.nextSpeakerId, null);
+
+  // 非讨论阶段为空态
+  const voting = buildWerewolfPresentation(view('voting'), members);
+  assert.deepEqual(voting.speakingOrderIds, []);
+  assert.equal(voting.speechOrderIndex, -1);
+  assert.equal(voting.nextSpeakerId, null);
+
+  // 讨论阶段但尚无发言者
+  const none = buildWerewolfPresentation(view('discussion'), members);
+  assert.equal(none.speechOrderIndex, -1);
+  assert.equal(none.nextSpeakerId, null);
+});
 
 test('视图解析接受无 me 的观战视角，并拒绝旧 schema、规则矛盾及未支持上游字段', () => {
   const spectator = structuredClone(view('night')) as Record<string, unknown>;

@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>狼人杀 · V 投票 / 放逐</title>
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="_ticket.css">
+<style>
+  .seat.ticket.pickable { cursor: pointer; }
+  .seat.ticket.pickable:hover { transform: translateY(-2px) rotate(-.6deg); border-color: var(--gold); }
+  .seat.ticket.is-picked { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(232, 194, 122, .35), 0 0 24px rgba(var(--warm), .4); }
+  .seat.ticket.is-cand { border-color: rgba(255, 170, 90, .8); }
+  .seat.ticket.is-cand .tag { color: #ffc49a; font-weight: 700; }
+  .seat.ticket.is-top { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(232, 194, 122, .45), 0 0 40px rgba(var(--warm), .6); z-index: 3; }
+
+  /* 票数徽章：票根右侧的衬线大数字 */
+  .votes {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%); z-index: 3; min-width: 38px; height: 38px; padding: 0 6px;
+    display: grid; place-items: center; border-radius: 10px; font: 700 24px/1 var(--serif); color: var(--cta-ink);
+    background: radial-gradient(circle at 35% 30%, #fff0c8, var(--gold)); box-shadow: 0 3px 0 #6b4a22;
+  }
+  .votes.bump { animation: bump 260ms var(--ease-back); }
+  @keyframes bump { 0% { transform: translateY(-50%) scale(1); } 45% { transform: translateY(-50%) scale(1.45); } 100% { transform: translateY(-50%) scale(1); } }
+  .seat.ticket.compact .votes { right: 50%; top: 32px; transform: translate(50%, 0); min-width: 28px; height: 26px; font-size: 17px; border-radius: 8px; }
+  .seat.ticket.compact .votes.bump { animation: bump-c 260ms var(--ease-back); }
+  @keyframes bump-c { 45% { transform: translate(50%, 0) scale(1.45); } }
+
+  /* 飞行的选票 */
+  .ballot {
+    position: absolute; z-index: 40; left: 0; top: 0; width: 26px; height: 18px; margin: -9px 0 0 -13px; pointer-events: none;
+    border-radius: 3px; background: linear-gradient(180deg, #fff6e0, #f0dcb0); border: 1px solid #b89a5c;
+    box-shadow: 0 0 14px rgba(var(--warm), .7);
+  }
+  .ballot::after { content: ""; position: absolute; left: 5px; right: 5px; top: 7px; height: 2px; background: #b3402f; }
+
+  /* 票箱 */
+  .urn { position: relative; margin: 0 auto; }
+  .urn .box {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 64%; border-radius: 10px 10px 14px 14px;
+    background: linear-gradient(180deg, #6a3a22, #3e2114); border: 1.5px solid var(--gold); box-shadow: 0 10px 24px #000a, inset 0 0 20px #0008;
+  }
+  .urn .box::before { content: "放逐"; position: absolute; left: 0; right: 0; top: 34%; text-align: center; font: 700 22px/1 var(--serif); letter-spacing: .4em; color: var(--gold-soft); text-shadow: 0 2px 0 #000a; }
+  .urn .lid { position: absolute; left: -6%; right: -6%; bottom: 62%; height: 14%; border-radius: 8px; background: linear-gradient(180deg, #7a4428, #4a2616); border: 1.5px solid var(--gold); }
+  .urn .slot { position: absolute; left: 30%; right: 30%; bottom: calc(62% + 5%); height: 4%; border-radius: 4px; background: #120709; }
+  .urn .peek { position: absolute; left: 50%; bottom: 70%; width: 30%; height: 22%; transform: translateX(-50%) rotate(-6deg); border-radius: 3px; background: linear-gradient(#fff6e0, #f0dcb0); border: 1px solid #b89a5c; }
+  .urn.shake { animation: urn 360ms ease; }
+  @keyframes urn { 20% { transform: rotate(-4deg); } 40% { transform: rotate(4deg); } 60% { transform: rotate(-3deg); } 80% { transform: rotate(2deg); } }
+
+  .vcenter { position: absolute; z-index: 6; display: grid; justify-items: center; text-align: center; }
+  .vcenter .kicker { font-size: 13px; letter-spacing: .3em; color: var(--gold); }
+  .vcenter h2 { margin: 6px 0 0; font: 700 44px/1.1 var(--serif); color: var(--ink); text-shadow: 0 3px 0 #000a, 0 0 24px rgba(var(--warm), .35); }
+  .vcenter .line { margin-top: 6px; font-size: 15px; color: var(--muted); }
+  .vcenter .line b { font-family: var(--serif); font-size: 18px; color: var(--gold-soft); }
+  .vcenter .progress { margin-top: 10px; display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; }
+  .vcenter .progress i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--gold-line); }
+  .vcenter .progress i.on { background: var(--gold); border-color: var(--gold); }
+  .vcenter [data-timer] { margin-top: 10px; }
+  .vcenter .portrait { width: 120px; height: 120px; border-radius: 50%; overflow: hidden; border: 2px solid var(--gold); box-shadow: 0 0 40px rgba(var(--warm), .5); margin-bottom: 8px; }
+  .vcenter .portrait svg { width: 100%; height: 100%; display: block; }
+  .vcenter.slam { animation: slam 520ms var(--ease-back); }
+  .vcenter .verdict { color: #ffb4a4; }
+
+  /* 撕票：被放逐者票根上下两半分离，下半掉落 */
+  .seat.ticket.torn { overflow: visible; }
+  .tear-half {
+    position: absolute; z-index: 45; pointer-events: none; overflow: hidden; border-radius: 10px;
+  }
+  .tear-half > .seat { position: absolute; left: 0; top: 0; margin: 0 !important; transform: none !important; }
+  /* 撕掉后原位留一个虚线空位 */
+  .seat.ticket.gone { background: rgba(60, 10, 10, .25); border: 1.5px dashed rgba(255, 110, 90, .55); box-shadow: none; }
+  .seat.ticket.gone > * { visibility: hidden; }
+  .seat.ticket.gone::after {
+    content: "已放逐"; position: absolute; inset: 0; display: grid; place-items: center;
+    color: #ff9a86; font-size: 13px; font-weight: 700; letter-spacing: .2em;
+  }
+
+  /* 遗言：追光打在被放逐者身上 */
+  .seat.ticket.last-words { visibility: visible; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(232, 194, 122, .4), 0 0 48px rgba(var(--warm), .65); opacity: 1; filter: none; }
+
+  .toolbar .group.steps button[aria-pressed="true"] { background: #e8c27a; }
+  .device[data-size="mobile"] .vcenter h2 { font-size: 28px; }
+  .device[data-size="mobile"] .vcenter .kicker { font-size: 11px; }
+  .device[data-size="mobile"] .vcenter .line { font-size: 12.5px; }
+  .device[data-size="mobile"] .vcenter .line b { font-size: 14px; }
+  .device[data-size="mobile"] .vcenter .portrait { width: 84px; height: 84px; }
+  .device[data-size="mobile"] .urn .box::before { font-size: 15px; letter-spacing: .25em; }
+  .device[data-size="mobile"] .dock { flex-wrap: wrap; }
+  .device[data-size="mobile"] .dock .info { flex: 1 0 100%; }
+  .device[data-size="mobile"] .dock .btn { flex: 1; }
+  .device[data-size="mobile"] .topbar .game { font-size: 16px; }
+  .device[data-size="mobile"] .topbar .day { font-size: 13px; padding: 2px 10px; }
+  .device[data-size="mobile"] .icon-btn { width: 32px; height: 32px; }
+</style>
+</head>
+<body data-time="day">
+<div class="toolbar">
+  <strong>V · 投票 / 放逐</strong>
+  <span class="note">沿用 A2 定稿 ｜ 投票：点票根选人，已投进度只显示人数 ｜ 结算：票从票箱一张张飞到票根，数字逐票跳动 ｜ 放逐：票根撕开掉落 + 轻屏震 → 追光转到他身上说遗言 ｜ 只公开得票数，不公开谁投了谁</span>
+  <div class="group"><button data-set-size="desktop">桌面 1280×800</button><button data-set-size="mobile">手机 390×844</button></div>
+  <div class="group"><button data-set-count="9">9 人</button><button data-set-count="12">12 人</button></div>
+  <div class="group steps"><button data-step="vote">① 投票</button><button data-step="count">② 唱票</button><button data-step="exile">③ 放逐</button><button data-step="last">④ 遗言</button></div>
+  <div class="group"><button id="tie">平票加赛版</button><button id="vreset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="scaler"><div class="device"></div></div></div>
+<script src="_ticket.js"></script>
+<script>
+window.CUSTOM_FLOW = true;
+const SELF = 6;
+// 固定票型：得票数（不含谁投谁）。弃票单独计。
+const TALLY = { 9: { 4: 4, 3: 2, 8: 1 }, 12: { 4: 5, 3: 3, 10: 1 } };
+const TIE_TALLY = { 9: { 4: 3, 3: 3, 8: 1 }, 12: { 4: 4, 3: 4, 10: 1 } };
+const v = { step: 'vote', pick: null, tie: false, counts: {}, busy: false };
+
+const q = (s) => document.querySelector(s);
+const W = () => window.WW;
+const tally = () => (v.tie ? TIE_TALLY : TALLY)[W().state.count];
+const alive = () => W().players().filter((p) => !p.dead);
+const voters = () => alive().length;
+const abstain = () => voters() - Object.values(tally()).reduce((a, b) => a + b, 0);
+const topNos = () => { const t = tally(); const m = Math.max(...Object.values(t)); return Object.keys(t).filter((k) => t[k] === m).map(Number); };
+const exiled = () => topNos()[0];
+const nameOf = (no) => W().players().find((p) => p.no === no).name;
+
+function seatTag(p) {
+  if (p.dead) return p.dead;
+  if (v.step === 'vote') {
+    if (p.no === SELF) return v.pick ? `你 · 投给 ${v.pick} 号` : '你 · 未投';
+    return (p.no * 7) % 3 === 0 ? '已投' : '投票中';
+  }
+  if (v.step === 'last' && p.no === exiled()) return '🎙 发表遗言';
+  if (v.tie && v.step !== 'vote' && topNos().includes(p.no)) return '平票 · 进加赛';
+  return '';
+}
+
+function paintSeats() {
+  for (const p of W().players()) {
+    const s = W().seatEls.get(p.no);
+    if (!s) continue;
+    s.classList.remove('is-speaking', 'is-next');
+    s.classList.toggle('is-self', p.self);
+    s.classList.toggle('is-dead', Boolean(p.dead));
+    s.classList.toggle('pickable', v.step === 'vote' && !p.dead && p.no !== SELF);
+    s.classList.toggle('is-picked', v.step === 'vote' && v.pick === p.no);
+    s.classList.toggle('is-top', v.step === 'count' && !v.busy && topNos().includes(p.no));
+    s.classList.toggle('is-cand', v.tie && v.step !== 'vote' && topNos().includes(p.no));
+    s.classList.toggle('last-words', v.step === 'last' && p.no === exiled());
+    s.querySelector('.tag').textContent = seatTag(p);
+    let badge = s.querySelector('.votes');
+    const n = v.counts[p.no] || 0;
+    if (v.step !== 'vote' && n > 0) {
+      if (!badge) { badge = document.createElement('span'); badge.className = 'votes'; s.appendChild(badge); }
+      badge.textContent = n;
+    } else if (badge) badge.remove();
+  }
+}
+
+function centerHtml() {
+  const c = q('.vcenter');
+  const size = W().state.size;
+  const t = tally();
+  if (v.step === 'vote') {
+    const done = Math.min(voters(), 5 + (v.pick ? 1 : 0));
+    c.innerHTML = `<div class="urn"><div class="box"></div><div class="lid"></div><div class="slot"></div>${v.pick ? '<div class="peek"></div>' : ''}</div>
+      <div class="kicker" style="margin-top:14px">第 2 天 · 放逐投票</div>
+      <h2>${v.pick ? `你投给了 ${v.pick} 号` : '投出你心中的狼'}</h2>
+      <div class="line">已投 <b>${done}</b> / ${voters()} 人 · 可以弃票</div>
+      <div class="progress">${'<i class="on"></i>'.repeat(done)}${'<i></i>'.repeat(voters() - done)}</div>
+      <div data-timer="${size === 'desktop' ? 30 : 22}"></div>`;
+  } else if (v.step === 'count') {
+    c.innerHTML = `<div class="urn"><div class="box"></div><div class="lid"></div><div class="slot"></div></div>
+      <div class="kicker" style="margin-top:14px">唱票</div>
+      <h2>${v.busy ? '正在开箱…' : v.tie ? `${topNos().join(' 号与 ')} 号平票` : `${exiled()} 号得票最多`}</h2>
+      <div class="line">${v.busy ? '票会一张张飞到被投的人身上' : `最高 <b>${t[topNos()[0]]}</b> 票 · 弃票 <b>${abstain()}</b>`}</div>`;
+  } else if (v.step === 'exile') {
+    if (v.tie) {
+      c.innerHTML = `<div class="kicker">平票</div><h2>进入加赛</h2>
+        <div class="line"><b>${topNos().join('</b> 号、<b>')}</b> 号成为候选人<br>候选人本轮不能投票，其余玩家重投</div>`;
+    } else {
+      c.innerHTML = `<div class="kicker">放逐结果</div><h2 class="verdict">${exiled()} 号 ${nameOf(exiled())}<br>被放逐</h2>
+        <div class="line">得票 <b>${t[exiled()]}</b> · 身份将在终局揭晓</div>`;
+    }
+  } else {
+    const p = W().players().find((x) => x.no === exiled());
+    c.innerHTML = `<div class="kicker">遗言</div><div class="portrait" style="margin-top:10px">${W().avatarSvg(p.no)}</div>
+      <h2>${p.name}</h2><div class="line"><b>${p.no}</b> 号 · 最后说几句</div><div data-timer="${size === 'desktop' ? 30 : 22}"></div>`;
+  }
+  const urn = c.querySelector('.urn');
+  if (urn) { const u = size === 'desktop' ? 150 : 96; Object.assign(urn.style, { width: u + 'px', height: u * .9 + 'px' }); }
+  // 倒计时环接到公共计时器
+  const host = c.querySelector('[data-timer]');
+  if (host) {
+    const r = Number(host.dataset.timer); const s = r * 2 + 10; const circ = 2 * Math.PI * r;
+    host.innerHTML = `<div class="timer"><svg width="${s}" height="${s}"><circle class="track" cx="${s / 2}" cy="${s / 2}" r="${r}" stroke-width="5"/><circle class="bar" cx="${s / 2}" cy="${s / 2}" r="${r}" stroke-width="5" stroke-dasharray="${circ}"/></svg><span class="num"></span></div>`;
+    tick.el = { bar: host.querySelector('.bar'), num: host.querySelector('.num'), root: host.firstElementChild, c: circ };
+  } else tick.el = null;
+  tick.paint();
+}
+
+// 本稿自带的倒计时（投票 45 秒 / 遗言 30 秒）
+const tick = {
+  el: null, left: 32, total: 45,
+  paint() {
+    if (!this.el) return;
+    this.el.num.textContent = this.left;
+    this.el.bar.style.strokeDashoffset = String(this.el.c * (1 - this.left / this.total));
+    this.el.root.classList.toggle('warn', this.left <= 10 && this.left > 5);
+    this.el.root.classList.toggle('crit', this.left <= 5 && this.left > 0);
+  },
+};
+setInterval(() => { if (tick.el && tick.left > 0) { tick.left -= 1; tick.paint(); } }, 1000);
+
+function paintDock() {
+  const dock = q('.dock');
+  const cta = dock.querySelector('[data-cta]');
+  const skip = dock.querySelector('.btn:not([data-cta])');
+  const [strong, span] = dock.querySelectorAll('.info > *');
+  cta.hidden = true; skip.hidden = true;
+  if (v.step === 'vote') {
+    strong.textContent = v.pick ? `已选 ${v.pick} 号 ${nameOf(v.pick)}` : '点两侧票根选择放逐对象';
+    span.textContent = v.pick ? '确认后不能更改' : '不能投自己；不确定可以弃票';
+    skip.hidden = false; skip.textContent = '弃票';
+    if (v.pick) { cta.hidden = false; cta.textContent = `投给 ${v.pick} 号`; cta.style.animation = 'none'; void cta.offsetWidth; cta.style.animation = ''; }
+  } else if (v.step === 'count') {
+    strong.textContent = v.busy ? '唱票中' : '唱票结束';
+    span.textContent = '只公开每人得了几票，不公开谁投了谁';
+  } else if (v.step === 'exile') {
+    strong.textContent = v.tie ? '平票加赛' : `${exiled()} 号被放逐`;
+    span.textContent = v.tie ? '候选人稍后发言，其余玩家重新投票' : '稍后进入遗言';
+  } else {
+    strong.textContent = `${exiled()} 号正在发表遗言`;
+    span.textContent = '遗言结束后进入夜晚';
+  }
+}
+
+function paint(slam) {
+  paintSeats(); centerHtml(); paintDock();
+  document.querySelectorAll('[data-step]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.step === v.step)));
+  q('#tie').setAttribute('aria-pressed', String(v.tie));
+  if (slam) { const c = q('.vcenter'); c.classList.remove('slam'); void c.offsetWidth; c.classList.add('slam'); }
+}
+
+// ── 演出 ──
+function scaleOf(d) { return d.getBoundingClientRect().width / d.offsetWidth || 1; }
+function centerOf(d, el) { const b = d.getBoundingClientRect(), r = el.getBoundingClientRect(), k = scaleOf(d); return { x: (r.left + r.width / 2 - b.left) / k, y: (r.top + r.height / 2 - b.top) / k, w: r.width / k, h: r.height / k, l: (r.left - b.left) / k, t: (r.top - b.top) / k }; }
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function countVotes() {
+  v.step = 'count'; v.counts = {}; v.busy = true; paint(true);
+  const d = q('.device');
+  const t = tally();
+  // 按票数从少到多唱，最高票最后落定
+  const queue = [];
+  Object.keys(t).map(Number).sort((a, b) => t[a] - t[b]).forEach((no) => { for (let i = 0; i < t[no]; i += 1) queue.push(no); });
+  for (const no of queue) {
+    if (v.step !== 'count') return;
+    const urn = q('.urn');
+    const from = centerOf(d, urn);
+    const to = centerOf(d, W().seatEls.get(no));
+    const b = document.createElement('div'); b.className = 'ballot'; d.appendChild(b);
+    urn.classList.remove('shake'); void urn.offsetWidth; urn.classList.add('shake');
+    const lift = Math.min(140, Math.abs(to.x - from.x) * .35 + 40);
+    const anim = b.animate([
+      { transform: `translate(${from.x}px, ${from.y - 30}px) rotate(0) scale(.6)` },
+      { transform: `translate(${(from.x + to.x) / 2}px, ${Math.min(from.y, to.y) - lift}px) rotate(200deg) scale(1.2)`, offset: .5 },
+      { transform: `translate(${to.x}px, ${to.y}px) rotate(360deg) scale(.8)` },
+    ], { duration: 420, easing: 'cubic-bezier(.5,0,.3,1)' });
+    await Promise.race([anim.finished.catch(() => {}), wait(480)]);
+    b.remove();
+    v.counts[no] = (v.counts[no] || 0) + 1;
+    paintSeats();
+    const badge = W().seatEls.get(no).querySelector('.votes');
+    if (badge) { badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump'); }
+    await wait(90);
+  }
+  v.busy = false; paint(false);
+  const top = W().seatEls.get(topNos()[0]);
+  top.classList.remove('land'); void top.offsetWidth; top.classList.add('land');
+}
+
+async function doExile() {
+  v.step = 'exile'; v.counts = { ...tally() }; v.busy = false; paint(true);
+  if (v.tie) return;
+  const d = q('.device');
+  const seat = W().seatEls.get(exiled());
+  const r = centerOf(d, seat);
+  // 复制两份票根，分别裁出上下两半，下半掉落
+  const halves = ['top', 'bottom'].map((part) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'tear-half';
+    Object.assign(wrap.style, { left: r.l + 'px', top: (part === 'top' ? r.t : r.t + r.h / 2) + 'px', width: r.w + 'px', height: r.h / 2 + 'px' });
+    const clone = seat.cloneNode(true);
+    Object.assign(clone.style, { width: r.w + 'px', height: r.h + 'px', top: part === 'top' ? '0' : -r.h / 2 + 'px' });
+    wrap.appendChild(clone);
+    // 撕口锯齿
+    wrap.style.clipPath = part === 'top'
+      ? 'polygon(0 0,100% 0,100% 88%,90% 100%,80% 86%,70% 100%,60% 88%,50% 100%,40% 86%,30% 100%,20% 88%,10% 100%,0 88%)'
+      : 'polygon(0 12%,10% 0,20% 12%,30% 0,40% 14%,50% 0,60% 12%,70% 0,80% 14%,90% 0,100% 12%,100% 100%,0 100%)';
+    d.appendChild(wrap);
+    return wrap;
+  });
+  seat.classList.add('gone');
+  halves[0].animate([{ transform: 'none' }, { transform: 'translate(-6px,-4px) rotate(-4deg)' }], { duration: 300, fill: 'forwards', easing: 'ease-out' });
+  halves[1].animate([
+    { transform: 'none', opacity: 1 },
+    { transform: 'translate(14px, 40px) rotate(14deg)', opacity: 1, offset: .5 },
+    { transform: 'translate(26px, 180px) rotate(32deg)', opacity: 0 },
+  ], { duration: 600, fill: 'forwards', easing: 'cubic-bezier(.4,0,.8,.6)' });
+  d.classList.remove('shake'); void d.offsetWidth; d.classList.add('shake');
+  await wait(650);
+  halves[0].animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250, fill: 'forwards' });
+  await wait(260);
+  halves.forEach((h) => h.remove());
+}
+
+function toLast() {
+  if (v.tie) return;
+  v.step = 'last'; v.counts = {}; tick.total = 30; tick.left = 30;
+  const seat = W().seatEls.get(exiled()); seat.classList.remove('gone');
+  paint(true);
+}
+
+function go(step) {
+  v.busy = false;
+  W().seatEls.forEach((s) => s.classList.remove('gone'));
+  if (step === 'vote') { v.step = 'vote'; v.pick = null; v.counts = {}; tick.total = 45; tick.left = 32; paint(true); }
+  else if (step === 'count') { v.pick = v.pick || 4; countVotes(); }
+  else if (step === 'exile') doExile();
+  else if (step === 'last') toLast();
+}
+
+document.addEventListener('click', (e) => {
+  const seat = e.target.closest('.seat.ticket.pickable');
+  if (seat) { v.pick = Number(seat.dataset.no); paint(false); return; }
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.dataset.step) go(b.dataset.step);
+  else if (b.id === 'tie') { v.tie = !v.tie; go('vote'); }
+  else if (b.id === 'vreset') go('vote');
+  else if (b.hasAttribute('data-cta') && v.step === 'vote') countVotes();
+  else if (b.closest('.dock') && v.step === 'vote') { v.pick = null; countVotes(); }
+});
+
+window.AFTER_RENDER = () => go(v.step === 'count' ? 'vote' : v.step);
+
+window.LAYOUT = function ({ size, count, players, makeSeat, device }) {
+  const WW = window.WW;
+  WW.reset(device);
+  const half = Math.ceil(count / 2);
+  const left = players.slice(0, half);
+  const right = players.slice(half).reverse();
+  const rail = (list, x, y, w, h, compact) => {
+    const r = WW.place(WW.add(device, 'box-rail'), x, y, w, h);
+    r.style.gridTemplateRows = `repeat(${list.length}, minmax(0, 1fr))`;
+    list.forEach((p) => r.appendChild(ticketize(makeSeat(p, compact))));
+  };
+  if (size === 'desktop') {
+    WW.buildTopbar(device, { x: 28, y: 18, w: 1224, day: '第 2 天 · 投票' });
+    rail(left, 24, 70, 250, 610);
+    rail(right, 1006, 70, 250, 610);
+    WW.buildStage(device, { x: 300, y: 70, w: 680, h: 560, floorH: 56 });
+    WW.place(WW.add(device, 'vcenter'), 300, 150, 680);
+    WW.buildDock(device, { x: 24, y: 706, w: 1232, h: 72 });
+  } else {
+    WW.buildTopbar(device, { x: 16, y: 16, w: 358, day: '第 2 天 · 投票' }, true);
+    rail(left, 8, 64, 86, 620, true);
+    rail(right, 296, 64, 86, 620, true);
+    WW.buildStage(device, { x: 100, y: 110, w: 190, h: 440, floorH: 40, spotW: 150 });
+    WW.place(WW.add(device, 'vcenter'), 100, 170, 190);
+    WW.buildDock(device, { x: 16, y: 700, w: 358, h: 124 });
+  }
+};
+</script>
+<script src="_shared.js"></script>
+</body>
+</html>

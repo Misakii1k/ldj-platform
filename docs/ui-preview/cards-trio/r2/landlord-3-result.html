@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>斗地主 · 茶馆正堂 · ③ 结算（含春天）</title>
+<link rel="stylesheet" href="../_shell.css">
+<link rel="stylesheet" href="_poker.css">
+<link rel="stylesheet" href="_teahouse.css">
+<style>
+  /* 结算：最后一手留在桌心 → 输家剩牌翻开摊在名牌下 → 红纸"捷报"从梁上垂下，盖胜负大印；春天时再盖一枚"春"字小印 */
+  .scroll {
+    position: absolute; left: 50%; top: 44px; translate: -50% 0; width: 460px; z-index: 30; transform-origin: 50% 0;
+    display: grid; justify-items: center; gap: 10px; padding: 26px 30px 30px; background:
+      repeating-linear-gradient(0deg, transparent 0 30px, rgba(255,253,247,.06) 30px 32px),
+      linear-gradient(90deg, var(--tea-red-dark), var(--tea-red) 18% 82%, var(--tea-red-dark));
+    border: 4px solid var(--ink); box-shadow: 0 8px 0 var(--ink); color: var(--gold); text-align: center; clip-path: inset(0 0 100% 0);
+  }
+  .scroll::before, .scroll::after { content: ""; position: absolute; left: -16px; right: -16px; height: 16px; background: var(--lacquer); border: 4px solid var(--ink); border-radius: 8px; }
+  .scroll::before { top: -12px; } .scroll::after { bottom: -12px; }
+  .scroll.open { animation: unroll 700ms var(--out) forwards; }
+  @keyframes unroll { to { clip-path: inset(-20px -30px -30px -30px); } }
+  .scroll .head { font: 700 20px/1 var(--serif); letter-spacing: .6em; text-indent: .6em; opacity: .9; }
+  .scroll .big { font: 900 64px/1.05 var(--serif); color: var(--cream); -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; text-shadow: 0 5px 0 var(--ink); }
+  .scroll .who { font: 800 16px/1.4 var(--sans); color: #ffe6b0; }
+  .scroll .facts { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
+  .scroll .facts span { padding: 5px 12px; background: rgba(255,253,247,.14); border: 2px solid rgba(255,253,247,.4); border-radius: 999px; font: 800 13px var(--sans); color: var(--cream); }
+  .seal {
+    position: absolute; right: -26px; bottom: 26px; width: 92px; height: 92px; display: grid; place-items: center; background: var(--cream);
+    border: 5px solid var(--coral); border-radius: 12px; color: var(--coral); font: 900 54px/1 var(--serif); rotate: -14deg; opacity: 0;
+    box-shadow: inset 0 0 0 4px var(--cream), inset 0 0 0 7px var(--coral);
+  }
+  .seal.stamp { animation: stamp 420ms var(--spring) forwards; }
+  @keyframes stamp { 0% { opacity: 0; transform: scale(2.6) rotate(18deg); } 60% { opacity: 1; transform: scale(.9); } 100% { opacity: 1; transform: none; } }
+
+  .last-hand { position: absolute; left: 50%; top: 380px; translate: -50% 0; z-index: 5; display: grid; justify-items: center; gap: 10px; }
+  .last-hand .row { display: flex; }
+  .last-hand .row .pk2 { --w: 72px; margin-left: -30px; }
+  .last-hand .row .pk2:first-child { margin-left: 0; }
+  .last-hand .tag { font: 800 13px/1 var(--sans); background: var(--cream); border: 2.5px solid var(--ink); border-radius: 999px; padding: 5px 10px; box-shadow: 0 2px 0 var(--ink); }
+
+  .opp.lost .fig { filter: saturate(.6); }
+  .opp.lost .plate { background: #efe6d4; }
+  .me-plate.won, .opp.won .plate { outline: 4px solid var(--yellow); outline-offset: 3px; }
+  .opp.won .halo { opacity: 1; }
+  .confetti { position: absolute; inset: 0; pointer-events: none; z-index: 40; overflow: hidden; }
+  .confetti i { position: absolute; top: -20px; width: 12px; height: 18px; border: 2px solid var(--ink); border-radius: 2px; animation: fall 1800ms var(--out) forwards; }
+  @keyframes fall { to { transform: translateY(900px) rotate(540deg); } }
+
+  .result-dock { display: flex; gap: 12px; }
+  .scene-switch { display: inline-flex; gap: 4px; }
+
+  .device[data-size="mobile"] .scroll { width: 330px; top: 30px; padding: 18px 16px 22px; gap: 6px; }
+  .device[data-size="mobile"] .scroll .big { font-size: 42px; }
+  .device[data-size="mobile"] .scroll .head { font-size: 15px; }
+  .device[data-size="mobile"] .scroll .who { font-size: 13px; }
+  .device[data-size="mobile"] .scroll .facts span { font-size: 11px; padding: 3px 8px; }
+  .device[data-size="mobile"] .scroll .facts span:nth-child(2) { display: none; }
+  .device[data-size="mobile"] .seal { width: 64px; height: 64px; font-size: 38px; right: -14px; bottom: 16px; border-width: 4px; }
+  .device[data-size="mobile"] .last-hand { top: 458px; }
+  .device[data-size="mobile"] .last-hand .row .pk2 { --w: 50px; margin-left: -22px; }
+  /* 横屏：捷报放中间上方，最后一手放在它下面的桌上 */
+  .device[data-size="landscape"] .scroll { left: 50%; right: auto; translate: -50% 0; top: 30px; width: 300px; padding: 14px 16px 16px; gap: 4px; border-width: 3px; }
+  .device[data-size="landscape"] .scroll::before, .device[data-size="landscape"] .scroll::after { height: 10px; left: -10px; right: -10px; border-width: 3px; }
+  .device[data-size="landscape"] .scroll::before { top: -8px; } .device[data-size="landscape"] .scroll::after { bottom: -8px; }
+  .device[data-size="landscape"] .scroll .head { font-size: 13px; }
+  .device[data-size="landscape"] .scroll .big { font-size: 38px; }
+  .device[data-size="landscape"] .scroll .who { font-size: 12px; }
+  .device[data-size="landscape"] .scroll .facts span { font-size: 10px; padding: 2px 7px; }
+  .device[data-size="landscape"] .scroll .facts span:nth-child(2) { display: none; }
+  .device[data-size="landscape"] .seal { width: 54px; height: 54px; font-size: 32px; right: -16px; bottom: 10px; border-width: 3.5px; }
+  .device[data-size="landscape"] .last-hand { left: 50%; translate: -50% 0; top: 196px; gap: 6px; }
+  .device[data-size="landscape"] .last-hand .row .pk2 { --w: 44px; margin-left: -19px; border-width: 2.5px; }
+  .device[data-size="landscape"] .me-plate { bottom: 16px !important; }
+  .device[data-size="landscape"] .dock { right: 12px; bottom: 12px; }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>斗地主 · 茶馆正堂 · ③ 结算</strong>
+  <span class="note">按现有规则只判胜负、不算分；"春天"不是规则项，只是画面上的附加印章：地主赢且两个农民一张都没出过时，捷报上多盖一枚"春"字印</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="landscape">手机横屏 844×390</button><button data-set-size="mobile">手机竖屏</button></div>
+  <div class="group"><button data-case="win" aria-pressed="true">地主胜</button><button data-case="spring">地主春天</button><button data-case="lose">农民胜</button><a href="index.html">返回目录</a></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="last-hand" data-box="last"><div class="row" id="last-row"></div><span class="tag" id="last-tag"></span></div>
+  <div class="scroll" id="scroll" data-box="scroll">
+    <span class="head">捷 报</span>
+    <span class="big" id="big"></span>
+    <span class="who" id="who"></span>
+    <div class="facts" id="facts"></div>
+    <span class="seal" id="seal">春</span>
+  </div>
+  <div class="me-zone">
+    <div class="dock result-dock" data-box="dock">
+      <button class="btn">返回房间</button>
+      <button class="btn btn-primary">再来一局</button>
+    </div>
+  </div>
+  <div class="plate me-plate" data-box="me" style="bottom:96px"><span class="role lord">主</span><b>小鱼干（你）</b><span class="cnt" data-count id="me-count">0</span><div class="say"></div></div>
+  <div class="confetti" id="confetti"></div>
+  <div class="slam" id="slam"><span class="word"></span></div>
+</div></div>
+<script src="../_shell.js"></script>
+<script src="_teahouse.js"></script>
+<script>
+(function () {
+  const P = Preview, T = Teahouse;
+  const device = document.querySelector('.device');
+  T.buildScene(device);
+  const CASES = {
+    // 你是地主，最后一手打出顺子获胜；阿杰剩 4 张，可可剩 2 张
+    win: { lordWin: true, spring: false, last: [['9', '♠'], ['10', '♥'], ['J', '♣'], ['Q', '♦'], ['K', '♠']], tag: '小鱼干 · 顺子', jie: [['A', '♣'], ['7', '♠'], ['5', '♦'], ['4', '♥']], keke: [['2', '♦'], ['6', '♣']], mult: 3 },
+    // 春天：两个农民一张没出
+    spring: { lordWin: true, spring: true, last: [['大王', ''], ['小王', '']], tag: '小鱼干 · 王炸', jie: [['2', '♣'], ['A', '♥'], ['K', '♣'], ['Q', '♠'], ['J', '♦'], ['10', '♣'], ['9', '♦'], ['8', '♣']], jieN: 17, keke: [['A', '♠'], ['K', '♦'], ['Q', '♥'], ['J', '♣'], ['10', '♦'], ['9', '♥'], ['7', '♣'], ['6', '♥']], kekeN: 17, mult: 3 },
+    // 农民胜：可可出完，你（地主）剩 3 张
+    lose: { lordWin: false, spring: false, last: [['7', '♥'], ['7', '♣']], tag: '可可 · 对子', me: 3, mult: 2 },
+  };
+
+  let jie, keke;
+  function reset() {
+    device.querySelectorAll('.opp').forEach((e) => e.remove());
+    jie = T.opponent('jie', '阿杰', 'l', 0);
+    keke = T.opponent('keke', '可可', 'r', 0);
+    device.append(jie, keke);
+    document.querySelectorAll('.mini-ring').forEach((r) => (r.style.visibility = 'hidden'));
+    document.getElementById('scroll').classList.remove('open');
+    document.getElementById('seal').classList.remove('stamp');
+    document.getElementById('confetti').innerHTML = '';
+    document.querySelector('.me-plate').classList.remove('won');
+  }
+
+  function openHand(opp, cards, total) {
+    const h = opp.querySelector('.opp-hand');
+    h.classList.add('open');
+    h.innerHTML = '';
+    T.setCount(opp, total ?? cards.length);
+    cards.forEach((c, k) => setTimeout(() => {
+      h.insertAdjacentHTML('beforeend', T.card(c, 'flip'));
+      P.indexFan(h);
+    }, k * 90));
+  }
+
+  async function run(key) {
+    reset();
+    const c = CASES[key];
+    const me = document.querySelector('.me-plate');
+    document.getElementById('last-row').innerHTML = c.last.map((x) => T.card(x, 'land')).join('');
+    document.getElementById('last-tag').textContent = c.tag;
+    P.roll(document.getElementById('me-count'), c.me ?? 0);
+    await new Promise((ok) => setTimeout(ok, 500));
+    // 1. 输家的剩牌翻开摊在名牌下
+    if (c.lordWin) {
+      openHand(jie, c.jie, c.jieN);
+      openHand(keke, c.keke, c.kekeN);
+      jie.classList.add('lost'); keke.classList.add('lost');
+    } else {
+      T.say(me, '还剩 3 张', { stay: true });
+      jie.classList.add('won'); keke.classList.add('won');
+    }
+    await new Promise((ok) => setTimeout(ok, 900));
+    // 2. 捷报展开
+    const win = c.lordWin;
+    document.getElementById('big').textContent = win ? '地主胜' : '农民胜';
+    document.getElementById('who').textContent = win ? '小鱼干 一人扛下两家' : '阿杰、可可 联手拿下';
+    document.getElementById('facts').innerHTML = [`叫分 ${c.mult} · 倍数 ×${c.mult}`, win ? '地主：小鱼干' : '地主：小鱼干（负）', c.spring ? '农民一张未出' : ''].filter(Boolean).map((t) => `<span>${t}</span>`).join('');
+    const scroll = document.getElementById('scroll');
+    scroll.classList.add('open');
+    await new Promise((ok) => setTimeout(ok, 720));
+    P.shake(3);
+    if (win) {
+      me.classList.add('won');
+      const conf = document.getElementById('confetti');
+      const colors = ['#c23616', '#f7c84b', '#e0a92a', '#fffdf7', '#5f9f86'];
+      if (!P.reduce) for (let i = 0; i < 36; i++) {
+        const b = document.createElement('i');
+        b.style.left = Math.random() * 100 + '%';
+        b.style.background = colors[i % colors.length];
+        b.style.animationDelay = Math.random() * 500 + 'ms';
+        b.style.animationDuration = 1400 + Math.random() * 900 + 'ms';
+        conf.appendChild(b);
+      }
+    }
+    // 3. 春天：再盖一枚"春"字印
+    if (c.spring) {
+      await new Promise((ok) => setTimeout(ok, 500));
+      document.getElementById('seal').classList.add('stamp');
+      const s = document.getElementById('slam');
+      s.querySelector('.word').textContent = '春天！';
+      P.slam(s);
+      P.shake(4);
+    }
+  }
+
+  document.querySelectorAll('[data-case]').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-case]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    run(b.dataset.case);
+  }));
+  run('win');
+})();
+</script>
+</body>
+</html>

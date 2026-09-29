@@ -79,7 +79,6 @@ export const mockV2BettingPayload = {
       { id: 'g:5000', value: 5000, slot: 'L1', odds: 3, authors: ['p2'] },
       { id: 'g:6000', value: 6000, slot: 'C', odds: 2, authors: ['p1'] },
       { id: 'g:7000', value: 7000, slot: 'R1', odds: 3, authors: ['p3'] },
-      { id: 'higher', value: null, slot: 'HIGHER', odds: 6, authors: [] },
     ],
     publicBets: {
       p1: [
@@ -147,7 +146,6 @@ export const mockV3SettlementPayload = {
       { id: 'g:5000', value: 5000, slot: 'L1', odds: 3, authors: ['p2'] },
       { id: 'g:6000', value: 6000, slot: 'C', odds: 2, authors: ['p1'] },
       { id: 'g:7000', value: 7000, slot: 'R1', odds: 3, authors: ['p3'] },
-      { id: 'higher', value: null, slot: 'HIGHER', odds: 6, authors: [] },
     ],
     publicBets: {
       p1: [
@@ -173,7 +171,6 @@ export const mockV3SettlementPayload = {
         { id: 'g:5000', value: 5000, slot: 'L1', odds: 3, authors: ['p2'] },
         { id: 'g:6000', value: 6000, slot: 'C', odds: 2, authors: ['p1'] },
         { id: 'g:7000', value: 7000, slot: 'R1', odds: 3, authors: ['p3'] },
-        { id: 'higher', value: null, slot: 'HIGHER', odds: 6, authors: [] },
       ],
       bets: {
         p1: [

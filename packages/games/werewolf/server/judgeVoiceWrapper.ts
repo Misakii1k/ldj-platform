@@ -15,7 +15,8 @@ const JUDGE_GAP_MS = 3500;
 export const JUDGE_NIGHT_HOLD_MS =
   NIGHT_CUE_DURATIONS_MS.reduce((sum, dur) => sum + dur, 0) + NIGHT_CUE_DURATIONS_MS.length * JUDGE_GAP_MS;
 
-/** 白天公告最短时限（天亮了+导语+最多 12 个报号+遗言提示，约 20s）。 */
+/** 白天公告最短时限：仅作无语音公告旧局（无时间线 fixture）的兜底；
+ *  正常对局由 publicVoice 按实际播报时长动态设定 deadlineAt，播报完即进发言。 */
 export const JUDGE_DAY_ANNOUNCEMENT_HOLD_MS = 20_000;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -118,8 +119,14 @@ export function wrapV2WithJudgeVoice<C, S, A, PV, SV, E, R>(
       }
       let effects: readonly GameEffect[] = applyPhaseHold('night', JUDGE_NIGHT_HOLD_MS, state, probe.nextState, ctx, probe.effects);
       if (effects.length === 0) effects = probe.effects;
-      const dayEffects = applyPhaseHold('day_announcement', JUDGE_DAY_ANNOUNCEMENT_HOLD_MS, state, probe.nextState, ctx, effects);
-      if (dayEffects.length > 0) effects = dayEffects;
+      // 天亮公告：有语音公告时 deadlineAt 已按实际播报时长动态设定，跳过固定保底；
+      // 仅无语音公告的旧局（无时间线）保留固定兜底
+      const hasVoiceAnnouncement = isRecord(probe.nextState) && isRecord(probe.nextState.announcement)
+        && typeof probe.nextState.announcement.endsAt === 'number';
+      if (!hasVoiceAnnouncement) {
+        const dayEffects = applyPhaseHold('day_announcement', JUDGE_DAY_ANNOUNCEMENT_HOLD_MS, state, probe.nextState, ctx, effects);
+        if (dayEffects.length > 0) effects = dayEffects;
+      }
       return { ...probe, effects };
     },
   };

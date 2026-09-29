@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RollingNumber 动效预览 · 聚乐桌游</title>
+<style>
+  :root {
+    --gp-paper: #fff4df;
+    --gp-surface: #fffdf7;
+    --gp-ink: #292722;
+    --gp-muted: #575147;
+    --gp-line: #292722;
+    --gp-green: #08715d;
+    --gp-coral: #c23616;
+    --gp-yellow: #f7c84b;
+    --gp-purple: #7358a7;
+    --gp-border: 3px solid var(--gp-line);
+    --gp-border-sm: 2.5px solid var(--gp-line);
+    --gp-shadow: 0 5px 0 var(--gp-line);
+    --gp-shadow-sm: 0 3px 0 var(--gp-line);
+    --gp-shadow-press: 0 1px 0 var(--gp-line);
+    --gp-radius-md: 14px;
+    --gp-radius-lg: 20px;
+    --gp-font: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+
+    /* 数字滚动专用令牌 */
+    --rn-dur: 420ms;
+    --rn-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --rn-stagger: 28ms;
+    --rn-blur: 2.5px;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px 20px 60px;
+    font-family: var(--gp-font);
+    color: var(--gp-ink);
+    background-color: var(--gp-paper);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(238,103,82,.23) 1.5px, transparent 1.7px),
+      radial-gradient(circle at 1px 1px, rgba(32,130,110,.16) 1.3px, transparent 1.6px);
+    background-position: 0 0, 16px 17px;
+    background-size: 30px 30px, 30px 30px;
+  }
+  h1 { font-size: 1.5rem; font-weight: 900; margin: 0 0 6px; }
+  .sub { color: var(--gp-muted); font-weight: 800; font-size: .86rem; margin: 0 0 28px; }
+  .grid { display: grid; gap: 22px; max-width: 980px; margin: 0 auto; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+
+  .card {
+    padding: 18px;
+    border: var(--gp-border);
+    border-radius: var(--gp-radius-lg);
+    background: var(--gp-surface);
+    box-shadow: var(--gp-shadow);
+  }
+  .card h2 { font-size: .95rem; font-weight: 900; margin: 0 0 4px; }
+  .card p { font-size: .78rem; font-weight: 800; color: var(--gp-muted); margin: 0 0 16px; line-height: 1.5; }
+  .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+  .btn {
+    min-height: 40px; padding: 6px 14px;
+    border: var(--gp-border-sm); border-radius: var(--gp-radius-md);
+    background: var(--gp-yellow); color: var(--gp-ink);
+    font: inherit; font-size: .84rem; font-weight: 900;
+    box-shadow: var(--gp-shadow-sm); cursor: pointer;
+    transition: transform 140ms var(--rn-ease), box-shadow 140ms var(--rn-ease);
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: var(--gp-shadow); }
+  .btn:active { transform: translateY(2px); box-shadow: var(--gp-shadow-press); }
+  .btn--ghost { background: var(--gp-surface); }
+  .btn--coral { background: var(--gp-coral); color: #fff; }
+
+  /* ══════════ RollingNumber 核心 ══════════ */
+  .rn {
+    display: inline-flex;
+    align-items: baseline;
+    font-variant-numeric: tabular-nums;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .rn__digit {
+    position: relative;
+    display: inline-block;
+    width: 0.62em;
+    height: 1em;
+    overflow: hidden;
+    /* 上下遮罩，让滑入滑出的数字有淡出感 */
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 18%, #000 82%, transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0%, #000 18%, #000 82%, transparent 100%);
+  }
+  .rn__glyph {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    will-change: transform, opacity, filter;
+  }
+  .rn__sep { display: inline-block; padding: 0 .04em; }
+
+  /* 动画：新数字从下方滑入（数值增大）或从上方滑入（数值减小） */
+  .rn__glyph.is-enter-up   { animation: rn-enter-up   var(--rn-dur) var(--rn-ease) both; }
+  .rn__glyph.is-leave-up   { animation: rn-leave-up   var(--rn-dur) var(--rn-ease) both; }
+  .rn__glyph.is-enter-down { animation: rn-enter-down var(--rn-dur) var(--rn-ease) both; }
+  .rn__glyph.is-leave-down { animation: rn-leave-down var(--rn-dur) var(--rn-ease) both; }
+
+  @keyframes rn-enter-up {
+    from { transform: translateY(110%); opacity: 0; filter: blur(var(--rn-blur)); }
+    to   { transform: translateY(0);    opacity: 1; filter: blur(0); }
+  }
+  @keyframes rn-leave-up {
+    from { transform: translateY(0);     opacity: 1; filter: blur(0); }
+    to   { transform: translateY(-110%); opacity: 0; filter: blur(var(--rn-blur)); }
+  }
+  @keyframes rn-enter-down {
+    from { transform: translateY(-110%); opacity: 0; filter: blur(var(--rn-blur)); }
+    to   { transform: translateY(0);     opacity: 1; filter: blur(0); }
+  }
+  @keyframes rn-leave-down {
+    from { transform: translateY(0);    opacity: 1; filter: blur(0); }
+    to   { transform: translateY(110%); opacity: 0; filter: blur(var(--rn-blur)); }
+  }
+
+  /* 整体轻微弹性缩放，模拟 iOS 数值变化时的"呼吸" */
+  .rn.is-bump { animation: rn-bump var(--rn-dur) var(--rn-ease); }
+  @keyframes rn-bump {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.06); }
+    100% { transform: scale(1); }
+  }
+
+  /* ══════════ 场景样式 ══════════ */
+  .score-big { font-size: 3.6rem; }
+  .score-big .rn__digit { width: .6em; }
+
+  .countdown {
+    display: grid; place-items: center;
+    width: 84px; height: 84px;
+    border: var(--gp-border); border-radius: 50%;
+    background: var(--gp-yellow); box-shadow: var(--gp-shadow);
+    font-size: 2.2rem;
+    transition: background 220ms var(--rn-ease), color 220ms var(--rn-ease);
+  }
+  .countdown.is-urgent { background: var(--gp-coral); color: #fff; animation: pulse 900ms ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { transform: scale(1);} 50% { transform: scale(1.05);} }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    min-height: 32px; padding: 4px 14px;
+    border: 2px solid var(--gp-line); border-radius: 999px;
+    background: var(--gp-yellow); box-shadow: 0 2px 0 var(--gp-line);
+    font-size: .95rem; font-weight: 900;
+  }
+  .pill--green { background: var(--gp-green); color: #fff; }
+
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat__label { font-size: .72rem; font-weight: 800; color: var(--gp-muted); }
+  .stat__val { font-size: 1.75rem; }
+  .stat__val .rn__sep { color: var(--gp-muted); }
+
+  .kv { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+
+  .note {
+    max-width: 980px; margin: 26px auto 0; padding: 14px 16px;
+    border: 2px dashed color-mix(in srgb, var(--gp-muted) 45%, transparent);
+    border-radius: 10px; background: color-mix(in srgb, var(--gp-muted) 8%, var(--gp-surface));
+    font-size: .8rem; font-weight: 800; color: var(--gp-muted); line-height: 1.6;
+  }
+  .note b { color: var(--gp-ink); }
+  code { font-family: ui-monospace, Consolas, monospace; font-size: .95em; background: rgba(0,0,0,.06); padding: 1px 5px; border-radius: 5px; }
+</style>
+</head>
+<body>
+
+<h1>RollingNumber 数字滚动动效</h1>
+<p class="sub">iOS 26 风格 · 逐位翻动 + 方向感知 + 进位联动 + 模糊滑入 · 全部使用 --gp-* 令牌</p>
+
+<div class="grid">
+
+  <!-- 场景 1：结算分数 -->
+  <div class="card">
+    <h2>① 结算大分数</h2>
+    <p>典型场景：狼人杀 / 斗地主结算。数值只动变化位，进位时相邻位一起滚。</p>
+    <div class="score-big rn" id="s1" data-value="0"></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" onclick="setRN('s1', 1280)">→ 1280</button>
+      <button class="btn" onclick="setRN('s1', 1299)">→ 1299</button>
+      <button class="btn" onclick="setRN('s1', 1300)">→ 1300（进位）</button>
+      <button class="btn btn--ghost" onclick="setRN('s1', 999)">→ 999</button>
+      <button class="btn btn--ghost" onclick="setRN('s1', 0)">归零</button>
+    </div>
+  </div>
+
+  <!-- 场景 2：倒计时 -->
+  <div class="card">
+    <h2>② 倒计时</h2>
+    <p>递减时数字从上方滑入，方向与数值变化一致。≤5 秒切珊瑚红紧迫态。</p>
+    <div class="row">
+      <div class="countdown rn" id="s2" data-value="30"></div>
+      <div>
+        <button class="btn btn--coral" onclick="startCountdown()">开始 30s</button>
+        <button class="btn btn--ghost" onclick="stopCountdown(); setRN('s2', 30)">重置</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 场景 3：胶囊徽章 -->
+  <div class="card">
+    <h2>③ 胶囊徽章 · 就绪人数</h2>
+    <p>小尺寸场景。多个数字独立滚动，分隔符 "/" 静止。</p>
+    <div class="row">
+      <span class="pill">已准备 <span class="rn" id="s3a" data-value="2"></span><span class="rn__sep">/</span><span class="rn" id="s3b" data-value="8"></span></span>
+      <span class="pill pill--green">🪙 <span class="rn" id="s3c" data-value="150"></span></span>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" onclick="bump('s3a', 1, 8)">+1 就绪</button>
+      <button class="btn btn--ghost" onclick="bump('s3a', -1, 8)">-1</button>
+      <button class="btn" onclick="bump('s3c', 25)">+25 金币</button>
+      <button class="btn btn--ghost" onclick="bump('s3c', -40)">-40</button>
+    </div>
+  </div>
+
+  <!-- 场景 4：统计面板 -->
+  <div class="card">
+    <h2>④ 统计面板 · 多数值同步变化</h2>
+    <p>多个数字同时变化时，各自独立动画，互不等待。带千分位分隔符。</p>
+    <div class="kv">
+      <div class="stat"><span class="stat__label">总得分</span><span class="stat__val rn" id="s4a" data-value="12480" data-group="true"></span></div>
+      <div class="stat"><span class="stat__label">胜场</span><span class="stat__val rn" id="s4b" data-value="17"></span></div>
+      <div class="stat"><span class="stat__label">胜率 %</span><span class="stat__val rn" id="s4c" data-value="63"></span></div>
+      <div class="stat"><span class="stat__label">连胜</span><span class="stat__val rn" id="s4d" data-value="3"></span></div>
+    </div>
+    <div class="row" style="margin-top:16px">
+      <button class="btn" onclick="winRound()">🏆 赢一局</button>
+      <button class="btn btn--ghost" onclick="loseRound()">💀 输一局</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="note">
+  <b>实现要点</b>（供确认后落地参考）：
+  每一位数字是独立的 <code>.rn__digit</code> 容器，内部叠放旧/新两个 <code>.rn__glyph</code>；
+  变化时旧字向变化反方向滑出、新字同向滑入，同时叠加 <code>blur(2.5px)</code> 与透明度过渡。
+  未变化的位完全不动。整体在变化瞬间加 <code>scale(1.06)</code> 轻微呼吸。
+  时长/缓动走 <code>--gp-dur-phase</code> / <code>--gp-ease-standard</code>，并遵守 <code>data-motion-level</code> 四档降级。
+  落地时封装为 React 组件 <code>&lt;RollingNumber value={n} /&gt;</code>，放在 <code>shared-ui/</code>。
+</div>
+
+<script>
+  const DUR = 420;
+
+  function fmt(n, group) {
+    const s = String(Math.abs(Math.round(n)));
+    return group ? s.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : s;
+  }
+
+  function render(el, str, prevStr, dir) {
+    // 右对齐比较：保证进位/退位时位数变化正确
+    const maxLen = Math.max(str.length, prevStr.length);
+    const cur = str.padStart(maxLen, ' ');
+    const prev = prevStr.padStart(maxLen, ' ');
+    el.innerHTML = '';
+    for (let i = 0; i < maxLen; i++) {
+      const c = cur[i], p = prev[i];
+      if (c === ',' ) { const s = document.createElement('span'); s.className='rn__sep'; s.textContent=','; el.appendChild(s); continue; }
+      if (c === ' ') continue; // 前导空位不渲染
+      const d = document.createElement('span');
+      d.className = 'rn__digit';
+      const changed = c !== p;
+      if (changed && p !== ' ' && p !== ',') {
+        const old = document.createElement('span');
+        old.className = 'rn__glyph ' + (dir > 0 ? 'is-leave-up' : 'is-leave-down');
+        old.textContent = p;
+        d.appendChild(old);
+      }
+      const nw = document.createElement('span');
+      nw.className = 'rn__glyph' + (changed ? (dir > 0 ? ' is-enter-up' : ' is-enter-down') : '');
+      nw.textContent = c;
+      d.appendChild(nw);
+      el.appendChild(d);
+    }
+  }
+
+  function setRN(id, val) {
+    const el = document.getElementById(id);
+    const prev = Number(el.dataset.value ?? 0);
+    const group = el.dataset.group === 'true';
+    const dir = val > prev ? 1 : val < prev ? -1 : 0;
+    render(el, fmt(val, group), fmt(prev, group), dir);
+    el.dataset.value = val;
+    if (dir !== 0) { el.classList.remove('is-bump'); void el.offsetWidth; el.classList.add('is-bump'); }
+  }
+
+  function bump(id, delta, max) {
+    const el = document.getElementById(id);
+    let v = Number(el.dataset.value) + delta;
+    if (v < 0) v = 0; if (max != null && v > max) v = max;
+    setRN(id, v);
+  }
+
+  // 倒计时
+  let cdTimer = null;
+  function startCountdown() {
+    stopCountdown();
+    let v = 30; setRN('s2', v);
+    const box = document.getElementById('s2');
+    box.classList.remove('is-urgent');
+    cdTimer = setInterval(() => {
+      v--; setRN('s2', v);
+      box.classList.toggle('is-urgent', v <= 5 && v > 0);
+      if (v <= 0) { stopCountdown(); box.classList.remove('is-urgent'); }
+    }, 1000);
+  }
+  function stopCountdown() { if (cdTimer) clearInterval(cdTimer); cdTimer = null; document.getElementById('s2').classList.remove('is-urgent'); }
+
+  // 统计面板
+  let wins = 17, total = 27, streak = 3, score = 12480;
+  function winRound() { wins++; total++; streak++; score += 640 + Math.floor(Math.random()*300); sync(); }
+  function loseRound() { total++; streak = 0; score = Math.max(0, score - 210); sync(); }
+  function sync() {
+    setRN('s4a', score); setRN('s4b', wins);
+    setRN('s4c', Math.round(wins/total*100)); setRN('s4d', streak);
+  }
+
+  // 初始渲染（无动画）
+  document.querySelectorAll('.rn[data-value]').forEach(el => {
+    const v = el.dataset.value; const g = el.dataset.group === 'true';
+    render(el, fmt(v, g), fmt(v, g), 0);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>奶酪大盗 · 方向 A · 圆桌夜话</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  /* 方向 A：圆桌环坐；夜色很淡（几乎白天，只加一层淡薰衣草） */
+  .device {
+    background:
+      radial-gradient(ellipse at 50% 42%, rgba(255,255,255,.7), transparent 60%),
+      linear-gradient(#efedfb, #dedaf3);
+  }
+  [data-time="day"] .device {
+    background:
+      radial-gradient(ellipse at 50% 42%, rgba(255,255,255,.75), transparent 60%),
+      linear-gradient(#fff4cf, #ffe3a0);
+  }
+  .sky { position: absolute; inset: 0; pointer-events: none; }
+  .sky .star { position: absolute; font-size: 14px; color: #a8a0d8; }
+  .sky .orb {
+    position: absolute; top: 28px; right: 48px; width: 64px; height: 64px; border-radius: 50%;
+    background: #fff7d6; border: 3px solid var(--ink); box-shadow: inset -14px -4px 0 #ece3b8, 0 3px 0 var(--ink);
+  }
+  [data-time="day"] .sky .star { display: none; }
+  [data-time="day"] .sky .orb { background: #ffd23f; box-shadow: 0 0 0 10px rgba(255,210,63,.35), 0 3px 0 var(--ink); }
+
+  .head { position: absolute; top: 24px; left: 32px; right: 140px; display: flex; align-items: flex-end; gap: 24px; }
+  .head .title { font-size: 34px; }
+  .head .hours { margin-left: auto; }
+
+  .table {
+    position: absolute; left: 50%; top: 50%; width: 540px; height: 270px; translate: -50% -54%;
+    border-radius: 50%; background: radial-gradient(ellipse at 50% 38%, #e6bb82, var(--wood) 60%, var(--wood-dark));
+    border: var(--border); box-shadow: 0 10px 0 var(--ink);
+    display: grid; place-items: center; align-content: center; gap: 6px;
+  }
+  .table::before {
+    content: ""; position: absolute; inset: 22px; border-radius: 50%; border: 2px dashed rgba(41,39,34,.28);
+  }
+  .table .cheese-box { width: 150px; position: relative; }
+  .table .caption { font: 800 13px var(--sans); background: var(--cream); border: 2.5px solid var(--ink); border-radius: 999px; padding: 4px 12px; box-shadow: 0 2px 0 var(--ink); }
+
+  .ring { position: absolute; inset: 0; pointer-events: none; }
+  .ring .seat {
+    position: absolute; pointer-events: auto;
+    --a: calc((var(--i) - 1) * 60deg + 90deg);
+    left: calc(50% + cos(var(--a)) * 370px); top: calc(49% + sin(var(--a)) * 214px);
+    translate: -50% -50%;
+  }
+
+  .dock { position: absolute; left: 50%; bottom: 20px; translate: -50% 0; width: min(760px, calc(100% - 48px)); }
+
+  @container (max-width: 600px) {
+    .sky .orb { top: 18px; right: 18px; width: 44px; height: 44px; }
+    .head { top: 18px; left: 18px; right: 80px; flex-direction: column; align-items: flex-start; gap: 10px; }
+    .head .title { font-size: 26px; }
+    .head .hours { margin-left: 0; }
+    .hours span { width: 30px; height: 30px; }
+    .table { width: 160px; height: 190px; top: 51%; translate: -50% -50%; }
+    .table .cheese-box { width: 100px; }
+    .table .caption { font-size: 11px; padding: 3px 8px; }
+    .ring .seat { width: 84px; padding: 8px 4px 6px; left: calc(50% + cos(var(--a)) * 150px); top: calc(52% + sin(var(--a)) * 170px); }
+    .seat .mouse-box { width: 40px; }
+    .seat-name { font-size: 12px; }
+    .die, .cup { transform: scale(.85); }
+    .dock { flex-wrap: wrap; bottom: 14px; padding: 10px 12px; }
+    .dock .actions { width: 100%; }
+    .dock .actions .btn, .dock .day-only { flex: 1; }
+  }
+</style>
+</head>
+<body data-time="night">
+<div class="toolbar">
+  <strong>方向 A · 圆桌夜话</strong>
+  <span class="note">构图：木圆桌居中，6 只老鼠环坐　夜色：最淡（几乎白天）　对标：榴莲的一屏总览</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile" aria-pressed="false">手机 390×844</button></div>
+  <div class="group"><button data-set-time="night" aria-pressed="true">夜晚</button><button data-set-time="day" aria-pressed="false">天亮 ☀</button></div>
+  <div class="group"><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="sky"><span class="star" style="left:18%;top:14%">✦</span><span class="star" style="left:40%;top:8%">✧</span><span class="star" style="left:66%;top:18%">✦</span><span class="star" style="left:8%;top:62%">✧</span><span class="star" style="left:90%;top:56%">✦</span><div class="orb"></div></div>
+
+  <div class="head" data-box="head">
+    <div>
+      <div class="eyebrow" data-night="NIGHT · 第 3 点" data-day="MORNING · 天亮了"></div>
+      <h1 class="title" data-night="你独自醒来了" data-day="奶酪还在吗？" data-after-steal="奶酪到手，别出声"></h1>
+    </div>
+    <div class="hours"><span class="done">1</span><span class="done">2</span><span class="now">3</span><span>4</span><span>5</span><span>6</span></div>
+  </div>
+
+  <div class="table" data-box="table">
+    <div class="cheese-box">
+      <svg id="cheese" class="cheese" viewBox="0 0 160 110" aria-label="奶酪"><path d="M8 96 L152 96 L152 52 L26 14 Z" fill="#f7c84b" stroke="#292722" stroke-width="5" stroke-linejoin="round"/><path d="M26 14 L152 52 L152 60 L22 22 Z" fill="#ffe08a"/><circle cx="60" cy="72" r="9" fill="#e0a92a"/><circle cx="104" cy="80" r="6" fill="#e0a92a"/><circle cx="126" cy="66" r="5" fill="#e0a92a"/></svg>
+      <div class="crumbs">· · ·</div>
+    </div>
+    <span class="caption" data-night="奶酪还在桌上" data-day="大家一起看向桌子" data-after-steal="只剩下一点碎屑"></span>
+  </div>
+
+  <div class="ring" data-seats="0-5"></div>
+
+  <div class="dock" data-box="dock">
+    <div class="info">
+      <strong data-night="只有你在 3 点醒着" data-day="讨论 2:00 · 谁在夜里醒过？"></strong>
+      <span data-night="可以偷走奶酪，或偷看一位玩家的骰子。只有你看得到。" data-day="说出你醒来的时刻和看到的东西，可以撒谎。"></span>
+    </div>
+    <div class="actions">
+      <button id="act-peek" class="btn" aria-pressed="false">偷看骰子</button>
+      <button id="act-steal" class="btn btn-primary">偷走奶酪</button>
+    </div>
+    <button class="btn btn-primary day-only">去投票指认</button>
+  </div>
+
+  <div class="sweep"></div>
+</div></div>
+<script src="_shared.js"></script>
+</body>
+</html>

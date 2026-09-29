@@ -1,0 +1,538 @@
+{
+  "base": "http://127.0.0.1:4176",
+  "chromium": "151.0.7922.34",
+  "cells": {
+    "360x640|moderator": {
+      "label": "狼人杀法官端",
+      "audit": {
+        "viewport": {
+          "w": 360,
+          "h": 640
+        },
+        "doc": {
+          "scrollWidth": 360,
+          "horizontalOverflow": false
+        },
+        "outOfViewport": [],
+        "clippedText": [],
+        "smallTargets": []
+      },
+      "fit": {
+        "viewportH": 640,
+        "contentH": 640,
+        "overflowPx": 0,
+        "scrollers": [
+          "div#mod-seat-grid.mod-seat-grid"
+        ]
+      },
+      "issues": []
+    },
+    "360x640|durianTable": {
+      "label": "榴莲公共桌面",
+      "audit": {
+        "viewport": {
+          "w": 360,
+          "h": 640
+        },
+        "doc": {
+          "scrollWidth": 360,
+          "horizontalOverflow": false
+        },
+        "outOfViewport": [],
+        "clippedText": [],
+        "smallTargets": []
+      },
+      "fit": {
+        "viewportH": 640,
+        "contentH": 640,
+        "overflowPx": 0,
+        "scrollers": [
+          "div#dt-placements.dt-placement-list",
+          "div#dt-players.dt-player-list"
+        ]
+      },
+      "issues": []
+    },
+    "360x640|display": {
+      "label": "朝外展示端",
+      "audit": {
+        "viewport": {
+          "w": 360,
+          "h": 640
+        },
+        "doc": {
+          "scrollWidth": 360,
+          "horizontalOverflow": false
+        },
+        "outOfViewport": [],
+        "clippedText": [],
+        "smallTargets": []
+      },
+      "fit": {
+        "viewportH": 640,
+        "contentH": 640,
+        "overflowPx": 0,
+        "scrollers": []
+      },
+      "issues": []
+    },
+    "390x844|moderator": {
+      "label": "狼人杀法官端",
+      "audit": {
+        "viewport": {
+          "w": 390,
+          "h": 844
+        },
+        "doc": {
+          "scrollWidth": 390,
+          "horizontalOverflow": false
+        },
+        "outOfViewport": [],
+        "clippedText": [],
+        "smallTargets": []
+      },
+      "fit": {
+        "viewportH": 844,
+        "contentH": 844,
+        "overflowPx": 0,
+        "scrollers": [
+          "div#mod-seat-grid.mod-seat-grid"
+        ]
+      },
+      "issues": []
+    },
+    "390x844|durianTable": {
+      "label": "榴莲公共桌面",
+      "audit": {
+        "viewport": {
+          "w": 390,
+          "h": 844
+        },
+        "doc": {
+          "scrollWidth": 390,
+          "horizontalOverflow": false
+        },
+        "outOfViewport": [],
+        "clippedText": [],
+        "smallTargets": []
+      },
+      "fit": {
+        "viewportH": 844,
+        "contentH": 844,
+        "overflowPx": 0,
+        "scrollers": [
+          "div#dt-placements.dt-placement-list",
+          "div#dt-players.dt-player-list"
+        ]
+      },
+      "issues": []
+    },
+    "390x844|display": {
+      "label": "朝外展示端",
+      "audit": {
+        "viewport": {
+          "w": 390,
+          "h": 844
+        },
+        "doc": {
+          "scrollWidth": 390,
+          "horizontalOverflow": false
+        },
+        "outOfViewport": [],
+        "clippedText": [],
+        "smallTargets": []
+      },
+      "fit": {
+        "viewportH": 844,
+        "contentH": 844,
+        "overflowPx": 0,
+        "scrollers": []
+      },
+      "issues": []
+    },
+    "844x390|moderator": {
+      "label": "狼人杀法官端",
+      "audit": {
+        "viewport": {
+          "w": 844,
+          "h": 390
+        },
+        "doc": {
+          "scrollWidth": 844,
+          "horizontalOverflow": false
+        },
+        "outOfViewport": [],
+        "clippedText": [],
+        "smallTargets": []
+      },
+      "fit": {
+        "viewportH": 390,
+        "contentH": 390,
+        "overflowPx": 0,
+        "scrollers": [
+          "div#mod-seat-grid.mod-seat-grid"
+        ]
+      },
+      "issues": []
+    },
+    "844x390|durianTable": {
+      "label": "榴莲公共桌面",
+      "audit": {
+        "viewport": {
+          "w": 844,
+          "h": 390
+        },
+        "doc": {
+          "scrollWidth": 844,
+          "horizontalOverflow": false
+        },
+        "outOfViewport": [],
+        "clippedText": [],
+        "smallTargets": []
+      },
+      "fit": {
+        "viewportH": 390,
+        "contentH": 390,
+        "overflowPx": 0,
+        "scrollers": [
+          "div#dt-placements.dt-placement-list",
+          "div#dt-players.dt-player-list"
+        ]
+      },
+      "issues": []
+    },
+    "844x390|display": {
+      "label": "朝外展示端",
+      "audit": {
+        "viewport": {
+          "w": 844,
+          "h": 390
+        },
+        "doc": {
+          "scrollWidth": 844,
+          "horizontalOverflow": false
+        },
+        "outOfViewport": [],
+        "clippedText": [],
+        "smallTargets": []
+      },
+      "fit": {
+        "viewportH": 390,
+        "contentH": 390,
+        "overflowPx": 0,
+        "scrollers": []
+      },
+      "issues": []
+    },
+    "1280x800|moderator": {
+      "label": "狼人杀法官端",
+      "audit": {
+        "viewport": {
+          "w": 1280,
+          "h": 800
+        },
+        "doc": {
+          "scrollWidth": 1280,
+          "horizontalOverflow": false
+        },
+        "outOfViewport": [],
+        "clippedText": [],
+        "smallTargets": []
+      },
+      "fit": {
+        "viewportH": 800,
+        "contentH": 800,
+        "overflowPx": 0,
+        "scrollers": []
+      },
+      "issues": []
+    },
+    "1280x800|durianTable": {
+      "label": "榴莲公共桌面",
+      "audit": {
+        "viewport": {
+          "w": 1280,
+          "h": 800
+        },
+        "doc": {
+          "scrollWidth": 1280,
+          "horizontalOverflow": false
+        },
+        "outOfViewport": [],
+        "clippedText": [],
+        "smallTargets": []
+      },
+      "fit": {
+        "viewportH": 800,
+        "contentH": 800,
+        "overflowPx": 0,
+        "scrollers": []
+      },
+      "issues": []
+    },
+    "1280x800|display": {
+      "label": "朝外展示端",
+      "audit": {
+        "viewport": {
+          "w": 1280,
+          "h": 800
+        },
+        "doc": {
+          "scrollWidth": 1280,
+          "horizontalOverflow": false
+        },
+        "outOfViewport": [],
+        "clippedText": [],
+        "smallTargets": []
+      },
+      "fit": {
+        "viewportH": 800,
+        "contentH": 800,
+        "overflowPx": 0,
+        "scrollers": []
+      },
+      "issues": []
+    }
+  },
+  "flows": [
+    {
+      "step": "法官端 · 初始 12 席位",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "法官端 · 初始存活 10（3、9 已出局）",
+      "ok": true,
+      "detail": {
+        "alive": "10"
+      }
+    },
+    {
+      "step": "法官端 · 席位显示真实身份",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "法官端 · 标记出局弹出二次确认",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "法官端 · 确认弹窗打开时焦点在弹层内",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "法官端 · 取消后状态不变",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "法官端 · 确认后 05 号出局",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "法官端 · 存活数降为 9",
+      "ok": true,
+      "detail": {
+        "alive": "9"
+      }
+    },
+    {
+      "step": "法官端 · 撤销出局恢复存活 10",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "法官端 · 结束对局弹出二次确认",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "法官端 · 亮牌后出现已结束横幅",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "法官端 · 亮牌后按钮禁用",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "法官端 · Tab 焦点不跑出弹层",
+      "ok": true,
+      "detail": {
+        "trail": [
+          "button#mod-rules-close",
+          "button#mod-rules-close",
+          "button#mod-rules-close",
+          "button#mod-rules-close",
+          "button#mod-rules-close",
+          "button#mod-rules-close",
+          "button#mod-rules-close",
+          "button#mod-rules-close",
+          "button#mod-rules-close",
+          "button#mod-rules-close"
+        ]
+      }
+    },
+    {
+      "step": "法官端 · 关闭后焦点回到触发按钮",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "法官端 console",
+      "issues": []
+    },
+    {
+      "step": "公共桌面 · 累计需求 5 项",
+      "ok": true,
+      "detail": [
+        {
+          "name": "榴莲",
+          "n": "5"
+        },
+        {
+          "name": "草莓",
+          "n": "3"
+        },
+        {
+          "name": "香蕉",
+          "n": "2"
+        },
+        {
+          "name": "葡萄",
+          "n": "2"
+        },
+        {
+          "name": "苹果",
+          "n": "3"
+        }
+      ]
+    },
+    {
+      "step": "公共桌面 · 累计需求数值与玩家端一致（榴莲5/草莓3/香蕉2/葡萄2/苹果3）",
+      "ok": true,
+      "detail": [
+        {
+          "name": "榴莲",
+          "n": "5"
+        },
+        {
+          "name": "草莓",
+          "n": "3"
+        },
+        {
+          "name": "香蕉",
+          "n": "2"
+        },
+        {
+          "name": "葡萄",
+          "n": "2"
+        },
+        {
+          "name": "苹果",
+          "n": "3"
+        }
+      ]
+    },
+    {
+      "step": "公共桌面 · 已出牌列 6 张",
+      "ok": true,
+      "detail": {
+        "placements": 6
+      }
+    },
+    {
+      "step": "公共桌面 · 玩家 7 位",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "公共桌面 · 牌堆剩余 15",
+      "ok": true,
+      "detail": {
+        "deck": "15"
+      }
+    },
+    {
+      "step": "公共桌面 · 显示当前轮到 03 号",
+      "ok": true,
+      "detail": {
+        "turn": "现在轮到 03 号 · 你的小果摊"
+      }
+    },
+    {
+      "step": "公共桌面 · 轮次 02",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "step": "公共桌面 · 内容区不含私密字段文案",
+      "ok": true,
+      "detail": {
+        "leaks": []
+      }
+    },
+    {
+      "step": "公共桌面 · 不渲染任何手牌类节点（头顶牌/摸到的牌/本人牌）",
+      "ok": true,
+      "detail": {
+        "hasCardLikeNodes": 0
+      }
+    },
+    {
+      "step": "公共桌面 console",
+      "issues": []
+    },
+    {
+      "step": "展示端 · 默认显示狼人杀进行中",
+      "ok": true,
+      "detail": {
+        "title": "狼人杀",
+        "status": "正在进行",
+        "facts": 3,
+        "room": "8241"
+      }
+    },
+    {
+      "step": "展示端 · 展示 3 项桌况概览",
+      "ok": true,
+      "detail": {
+        "title": "狼人杀",
+        "status": "正在进行",
+        "facts": 3,
+        "room": "8241"
+      }
+    },
+    {
+      "step": "展示端 · 可切到等待开局",
+      "ok": true,
+      "detail": {
+        "title": "准备开始",
+        "status": "等待开局",
+        "facts": 3,
+        "room": "8241"
+      }
+    },
+    {
+      "step": "展示端 · 可切到榴莲进行中",
+      "ok": true,
+      "detail": {
+        "title": "榴莲",
+        "status": "正在进行",
+        "facts": 3,
+        "room": "8241"
+      }
+    },
+    {
+      "step": "展示端 console",
+      "issues": []
+    }
+  ],
+  "consoleIssues": [],
+  "startedAt": "2026-09-18T12:05:16.092Z",
+  "finishedAt": "2026-09-18T12:05:33.200Z"
+}

@@ -86,7 +86,7 @@ test.describe('一智千金 T08 真实对局与私密性 E2E 验证', () => {
 
       // 验证浏览器页面渲染出一智千金界面
       await expect(page.locator('.ww-game')).toBeVisible({ timeout: 15_000 });
-      await expect(page.locator('.ww-question-card__prompt')).toBeVisible();
+      await expect(page.locator('.ww-question__prompt')).toBeVisible();
 
       // 5. 浏览器中由 host 填写 1000 并提交
       const input = page.locator('#ww-guess-input');
@@ -122,7 +122,7 @@ test.describe('一智千金 T08 真实对局与私密性 E2E 验证', () => {
 
       // 8. 验证浏览器端自动接收到新状态并显示版图
       await expect(page.locator('.ww-board')).toBeVisible({ timeout: 15_000 });
-      await expect(page.locator('.ww-target-card')).toHaveCount(5); // lower + 3 values + higher
+      await expect(page.locator('.ww-target-card')).toHaveCount(4); // lower + 3 values
     } finally {
       p2.client.close();
       p3.client.close();

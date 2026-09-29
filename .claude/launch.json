@@ -1,0 +1,97 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "server",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:server"
+      ],
+      "port": 8080
+    },
+    {
+      "name": "client",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "-w",
+        "@ldj/client"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "ui-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "docs/ui-preview",
+        "--port",
+        "5190",
+        "--strictPort"
+      ],
+      "port": 5190
+    },
+    {
+      "name": "ui-preview-cards",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "docs/ui-preview",
+        "--port",
+        "5191",
+        "--strictPort"
+      ],
+      "port": 5191
+    },
+    {
+      "name": "ui-preview-goose",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "docs/ui-preview",
+        "--port",
+        "5192",
+        "--strictPort"
+      ],
+      "port": 5192
+    },
+    {
+      "name": "ui-preview-werewolf",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "docs/ui-preview",
+        "--port",
+        "5193",
+        "--strictPort"
+      ],
+      "port": 5193
+    },
+    {
+      "name": "ui-preview-social",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "docs/ui-preview",
+        "--port",
+        "5194",
+        "--strictPort"
+      ],
+      "port": 5194
+    },
+    {
+      "name": "ui-preview-wits",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "docs/ui-preview",
+        "--port",
+        "5194",
+        "--strictPort"
+      ],
+      "port": 5194
+    }
+  ]
+}

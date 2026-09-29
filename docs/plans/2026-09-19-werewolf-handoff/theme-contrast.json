@@ -1,0 +1,70 @@
+{
+  "woodcut": {
+    "bg": "#f4efe5",
+    "surface": "#fffdf7",
+    "text": "#203c30",
+    "muted": "#465c4e",
+    "action": "#245844",
+    "actionText": "#ffffff",
+    "edge": "#748575",
+    "contrast": {
+      "textOnSurface": 11.794295481759248,
+      "mutedOnSurface": 7.115870350836123,
+      "textOnBg": 10.468603124209862,
+      "mutedOnBg": 6.316038351035435,
+      "action": 8.221192209293132,
+      "edgeOnSurface": 3.8556834214557703
+    }
+  },
+  "eclipse": {
+    "bg": "#191d2b",
+    "surface": "#272d40",
+    "text": "#f0edf6",
+    "muted": "#c8c8da",
+    "action": "#e6e1ee",
+    "actionText": "#2b2b40",
+    "edge": "#81879e",
+    "contrast": {
+      "textOnSurface": 11.8187338519086,
+      "mutedOnSurface": 8.289607939080508,
+      "textOnBg": 14.496814187425539,
+      "mutedOnBg": 10.168001706887667,
+      "action": 10.752986126632573,
+      "edgeOnSurface": 3.837281747663726
+    }
+  },
+  "dayTheatre": {
+    "bg": "#f7efe5",
+    "surface": "#fffaf2",
+    "text": "#4b2430",
+    "muted": "#714654",
+    "action": "#753747",
+    "actionText": "#ffffff",
+    "edge": "#a57b87",
+    "contrast": {
+      "textOnSurface": 12.676190010610883,
+      "mutedOnSurface": 7.467379439894974,
+      "textOnBg": 11.562439416326528,
+      "mutedOnBg": 6.8112833824859225,
+      "action": 8.772503879210735,
+      "edgeOnSurface": 3.494507898721735
+    }
+  },
+  "nightTheatre": {
+    "bg": "#1b1019",
+    "surface": "#321c2a",
+    "text": "#fff2e7",
+    "muted": "#ddc3cd",
+    "action": "#f1c997",
+    "actionText": "#311821",
+    "edge": "#ab8495",
+    "contrast": {
+      "textOnSurface": 14.31049484797988,
+      "mutedOnSurface": 9.558448332823788,
+      "textOnBg": 16.83776400251279,
+      "mutedOnBg": 11.246494196601319,
+      "action": 10.552991240767554,
+      "edgeOnSurface": 4.842933470702572
+    }
+  }
+}

@@ -163,6 +163,8 @@ export interface WerewolfSelfModel {
   readonly nightVictimSeat: number | null;
   readonly canWitchSelfSave: boolean;
   readonly lastGuardTargetName: string | null;
+  /** 守卫上一夜守护的玩家 id（剧场 W04 派生，契约 §2 引用 lastGuardTargetId；用于稳定标记席位） */
+  readonly lastGuardTargetPlayerId: string | null;
   readonly pendingShoot: boolean;
   readonly idiotRevealed: boolean;
   readonly hasNightVoted: boolean;
@@ -199,11 +201,22 @@ export interface WerewolfPresentationModel {
   readonly voteLedger: {
     readonly headline: string;
     readonly outcome?: WerewolfVoteOutcome;
-    readonly rows: readonly { readonly name: string; readonly count: number }[];
+    readonly rows: readonly {
+      readonly playerId: string;
+      readonly name: string;
+      readonly seatLabel: string;
+      readonly count: number;
+    }[];
     readonly abstained: number;
     /** 被放逐者的席位号（用于法官语音播报）；翻牌免死/平票时为 null。 */
     readonly exiledSeat: number | null;
   } | null;
+  /** 加赛候选人 id 列表（仅 runoff_voting 阶段非空；剧场 W05 派生，契约 §2 引用 runoffCandidates） */
+  readonly runoffCandidateIds: readonly string[];
+  /** 发身份确认进度（仅 role_reveal 阶段非空；剧场 W06 派生，契约 §2 引用 confirmedRolePlayerIds） */
+  readonly roleRevealProgress: { readonly confirmed: number; readonly total: number } | null;
+  /** 已确认身份的玩家 id（仅 role_reveal 阶段非空；用于票根「已确认」状态行） */
+  readonly roleConfirmedIds: readonly string[];
   /** 昨夜死亡者的席位号列表（天亮公告语音播报用）。 */
   readonly nightDeathSeats: readonly number[];
   readonly nightStage: 'wolf' | 'witch' | 'seer' | 'guard' | 'done' | null;
@@ -214,15 +227,38 @@ export interface WerewolfPresentationModel {
     readonly rows: readonly {
       readonly playerId: string;
       readonly name: string;
+      /** 以下终局扩展字段由 v2 引擎视图填充；真人主持（moderator/*）视图不填，消费方需回退 */
+      readonly seatLabel?: string;
+      /** 角色 key（终局揭晓票根翻面用；仅 game_over 出现） */
+      readonly role?: WerewolfRole;
       readonly roleLabel: string;
+      readonly team?: WerewolfTeam;
+      readonly artworkUrl?: string;
+      /** 死因或「存活」（终局揭晓才展示，契约 §2） */
+      readonly detail?: string;
       readonly alive?: boolean;
       readonly avatar?: string;
     }[];
   } | null;
+  /** 终局逐日票型小条（仅 game_over 出现；剧场 W07 派生，数据来自公开 voteHistory） */
+  readonly finaleDays: readonly { readonly key: string; readonly label: string; readonly text: string }[];
+  /** 胜方阵容（按角色去重 + 席位号；仅 game_over 且有胜负时出现） */
+  readonly winnerLineup: readonly {
+    readonly role: WerewolfRole;
+    readonly roleLabel: string;
+    readonly artworkUrl: string;
+    readonly seatLabels: readonly string[];
+  }[] | null;
   /** 当前发言者最近一条公屏，遗言阶段同样适用 */
   readonly speakerLine: string | null;
   /** 房间扩展角色池配置 */
   readonly rolesConfig: { readonly guard: boolean; readonly hunter: boolean; readonly idiot: boolean };
+  /** 当日发言顺序玩家 id（仅 discussion 阶段有值；剧场 W03 派生） */
+  readonly speakingOrderIds: readonly string[];
+  /** 当前发言者在发言顺序中的下标（0 起；无发言者或非讨论阶段为 -1） */
+  readonly speechOrderIndex: number;
+  /** 下一位待发言的存活玩家 id（无则 null；已出局者会被跳过） */
+  readonly nextSpeakerId: string | null;
   /** 自由发言环节已就绪玩家数量 */
   readonly freeDiscussionReadyCount?: number;
   /** 本人是否已在自由发言环节就绪 */
@@ -682,13 +718,91 @@ function voteLedgerOf(
   return {
     headline,
     outcome: summary.outcome,
-    rows: Object.entries(summary.tally).map(([targetId, count]) => ({
-      name: nameFor(members, targetId),
-      count,
-    })),
+    rows: Object.entries(summary.tally).map(([targetId, count]) => {
+      const target = view.players.find((p) => p.playerId === targetId);
+      return {
+        playerId: targetId,
+        name: nameFor(members, targetId),
+        seatLabel: target ? seatLabelOf(target.seat) : '',
+        count,
+      };
+    }),
     abstained: summary.abstained,
     exiledSeat,
   };
+}
+
+/** 终局死因文案（仅 game_over 后进入 DOM；放逐可从公开 voteHistory 补「第 N 天 · M 票」） */
+function exitDetailOf(
+  view: WerewolfView,
+  playerId: string,
+  player: WerewolfView['players'][number] | undefined,
+): string {
+  if (!player || player.alive) return '存活';
+  if (player.exitReason === 'voted_out') {
+    const rec = view.reveal?.voteHistory.find((r) => r.eliminatedPlayerId === playerId);
+    if (rec) {
+      const top = Math.max(...Object.values(rec.tally), 0);
+      return `第 ${rec.day} 天 · ${top} 票放逐`;
+    }
+    return '被放逐';
+  }
+  switch (player.exitReason) {
+    case 'night_kill': return '夜里被袭击';
+    case 'poisoned': return '被女巫毒杀';
+    case 'hunter_shot': return '被猎人带走';
+    case 'disconnect_timeout': return '掉线出局';
+    default: return '出局';
+  }
+}
+
+/** 终局逐日票型小条（只来自公开 voteHistory；夜间死亡服务端不携带天数，故小条只列白天投票日） */
+function finaleDaysOf(
+  view: WerewolfView,
+  members: readonly MemberLike[],
+): { key: string; label: string; text: string }[] {
+  if (!view.reveal) return [];
+  return view.reveal.voteHistory.map((rec) => {
+    let text: string;
+    if (rec.outcome === 'eliminated' && rec.eliminatedPlayerId) {
+      const target = view.players.find((p) => p.playerId === rec.eliminatedPlayerId);
+      const top = Math.max(...Object.values(rec.tally), 0);
+      text = `${target ? seatLabelOf(target.seat) : nameFor(members, rec.eliminatedPlayerId)} ${top} 票放逐`;
+    } else if (rec.outcome === 'idiot_saved' && rec.eliminatedPlayerId) {
+      const target = view.players.find((p) => p.playerId === rec.eliminatedPlayerId);
+      text = `${target ? seatLabelOf(target.seat) : ''} 最高票翻牌免死`;
+    } else if (rec.outcome === 'tie') {
+      text = '平票进入加赛';
+    } else if (rec.outcome === 'runoff_tie') {
+      text = '加赛仍平票，无人出局';
+    } else {
+      text = '全员弃票，无人出局';
+    }
+    return { key: `d${rec.day}-${rec.kind}`, label: `第 ${rec.day} 天`, text };
+  });
+}
+
+/** 胜方阵容：按角色去重，附席位号（终局揭晓的胜方插画并排） */
+function winnerLineupOf(
+  view: WerewolfView,
+): { role: WerewolfRole; roleLabel: string; artworkUrl: string; seatLabels: string[] }[] | null {
+  if (!view.winner || !view.reveal) return null;
+  const byRole = new Map<WerewolfRole, string[]>();
+  for (const player of view.players) {
+    const role = view.reveal.roles[player.playerId];
+    if (!role) continue;
+    const team = role === 'wolf' ? 'wolves' : 'village';
+    if (team !== view.winner) continue;
+    const list = byRole.get(role) ?? [];
+    list.push(seatLabelOf(player.seat));
+    byRole.set(role, list);
+  }
+  return [...byRole.entries()].map(([role, seatLabels]) => ({
+    role,
+    roleLabel: WEREWOLF_ROLE_NAMES[role],
+    artworkUrl: WEREWOLF_ROLE_ARTWORK[role] ?? '/assets/roles/villager.png',
+    seatLabels,
+  }));
 }
 
 export function latestSpeakerLine(
@@ -754,6 +868,15 @@ export function buildWerewolfPresentation(
   const remaining = Math.max(0, view.votesExpected - view.votesSubmitted);
   const speakerId = view.phase === 'last_words' ? view.lastWordsPlayerId : view.currentSpeakerId;
   const targetActions = targetActionsByPlayer(view, members);
+  // 剧场 W03 派生：讨论阶段的发言顺序、当前下标与下一位（跳过已出局者）
+  const speakingOrderIds = view.phase === 'discussion' ? (view.speakingOrder ?? []) : [];
+  const speechOrderIndex = speakingOrderIds.length > 0 && view.currentSpeakerId
+    ? speakingOrderIds.indexOf(view.currentSpeakerId)
+    : -1;
+  const nextSpeakerId = speechOrderIndex >= 0
+    ? (speakingOrderIds.slice(speechOrderIndex + 1).find((id) =>
+        view.players.some((player) => player.playerId === id && player.alive)) ?? null)
+    : null;
 
   return {
     phase: view.phase,
@@ -847,6 +970,7 @@ export function buildWerewolfPresentation(
             : null,
           canWitchSelfSave: Boolean(me.witchCanSelfSave),
           lastGuardTargetName: me.lastGuardTargetId ? nameFor(members, me.lastGuardTargetId) : null,
+          lastGuardTargetPlayerId: me.lastGuardTargetId ?? null,
           pendingShoot: Boolean(me.pendingShoot),
           idiotRevealed: Boolean(me.idiotRevealed),
           hasNightVoted: Boolean(me.hasNightVoted),
@@ -870,6 +994,11 @@ export function buildWerewolfPresentation(
         }
       : null,
     voteLedger: view.phase === 'vote_result' ? voteLedgerOf(view, members) : null,
+    runoffCandidateIds: view.phase === 'runoff_voting' ? [...view.runoffCandidates] : [],
+    roleRevealProgress: view.phase === 'role_reveal'
+      ? { confirmed: view.confirmedRolePlayerIds.length, total: view.players.length }
+      : null,
+    roleConfirmedIds: view.phase === 'role_reveal' ? [...view.confirmedRolePlayerIds] : [],
     nightDeathSeats: view.lastNightDeaths
       .map((id) => view.players.find((player) => player.playerId === id)?.seat)
       .filter((seat): seat is number => typeof seat === 'number'),
@@ -886,14 +1015,24 @@ export function buildWerewolfPresentation(
             return {
               playerId,
               name: member ? nameFor(members, playerId) : '未知玩家',
+              seatLabel: player ? seatLabelOf(player.seat) : '',
+              role,
               roleLabel: WEREWOLF_ROLE_NAMES[role] ?? '未知身份',
+              team: role === 'wolf' ? 'wolves' as const : 'village' as const,
+              artworkUrl: WEREWOLF_ROLE_ARTWORK[role] ?? '/assets/roles/villager.png',
+              detail: exitDetailOf(view, playerId, player),
               alive: player ? player.alive : undefined,
               avatar: member ? resolveMemberAvatar(member) : undefined,
             };
           }),
         }
       : null,
+    finaleDays: view.reveal ? finaleDaysOf(view, members) : [],
+    winnerLineup: winnerLineupOf(view),
     rolesConfig: view.config?.roles ?? { guard: false, hunter: false, idiot: false },
+    speakingOrderIds,
+    speechOrderIndex,
+    nextSpeakerId,
     freeDiscussionReadyCount: view.freeDiscussionReadyPlayerIds?.length ?? 0,
     hasReadiedVote: Boolean(
       me?.hasReadiedVote || (view.freeDiscussionReadyPlayerIds ?? []).includes(me?.playerId ?? ''),

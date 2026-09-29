@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { werewolfV2Module } from '../../server/v2/module.ts';
 import { JUDGE_NIGHT_HOLD_MS, JUDGE_DAY_ANNOUNCEMENT_HOLD_MS } from '../../server/judgeVoiceWrapper.ts';
-import { actor, apply } from './helpers.ts';
+import { dawnBroadcastMs } from '../../server/publicVoice.ts';
+import { actor, apply, system } from './helpers.ts';
 
 const IDS = ['w1', 'w2', 's', 'x', 'v1', 'v2'];
 
@@ -63,6 +64,75 @@ test('v2 judgeVoiceWrapper: 进入夜晚和天亮公告时对 deadlineAt 补齐�
     lastNightAction.nextState.deadlineAt! >= ctx.now + JUDGE_DAY_ANNOUNCEMENT_HOLD_MS,
     `day_announcement deadlineAt 应大于等于 now + hold (${ctx.now + JUDGE_DAY_ANNOUNCEMENT_HOLD_MS})`,
   );
+});
+
+test('v2 judgeVoiceWrapper: 天亮公告按实际播报时长动态定时，不套用固定保底', () => {
+  const ctx = {
+    now: 1_000_000,
+    random: {
+      nextInt: () => 0,
+      shuffle: <T>(items: readonly T[]) => [...items],
+    },
+  };
+  const cfg = werewolfV2Module.parseConfig({ roles: { guard: false, hunter: false, idiot: false } });
+  let st = werewolfV2Module.createInitialState(ctx, IDS, cfg);
+  st = apply(st, system, { type: 'begin' }, ctx);
+  for (const id of IDS) {
+    st = apply(st, actor(id), { type: 'confirm_role' }, ctx);
+  }
+  assert.equal(st.phase, 'night');
+  assert.equal(st.timelineState?.version, 1);
+
+  // 权威时间线驱动夜晚：狼刀 v1、预言家查验、女巫不用药；逐步推进至天亮公告
+  let enteredNow = 0;
+  let deadlineAt: number | null = null;
+  let timerDeadlineAt: number | undefined;
+  for (let guardSteps = 0; st.phase === 'night' && guardSteps < 30; guardSteps += 1) {
+    const cur = st.timelineState!.current;
+    if (cur.role === 'wolf' && cur.segment === 'action') {
+      st = apply(st, actor('w1'), { type: 'night_kill', targetPlayerId: 'v1', timelineId: cur.id }, ctx);
+      st = apply(st, actor('w2'), { type: 'night_kill', targetPlayerId: 'v1', timelineId: cur.id }, ctx);
+    } else if (cur.role === 'seer' && cur.segment === 'action') {
+      st = apply(st, actor('s'), { type: 'seer_check', targetPlayerId: 'w1', timelineId: cur.id }, ctx);
+    } else if (cur.role === 'witch' && cur.segment === 'action') {
+      st = apply(st, actor('x'), { type: 'witch_save', save: false, timelineId: cur.id }, ctx);
+      st = apply(st, actor('x'), { type: 'witch_poison', targetPlayerId: null, timelineId: cur.id }, ctx);
+    }
+    if (st.phase !== 'night') break;
+    const token = st.timelineState!.activeTimerToken!;
+    ctx.now = st.timelineState!.current.endsAt ?? ctx.now;
+    const outcome = werewolfV2Module.reduce(ctx, st, system, {
+      type: 'timeline_timeout', timelineId: st.timelineState!.current.id, token,
+    });
+    assert.equal(outcome.ok, true);
+    if (!outcome.ok) return;
+    st = outcome.nextState;
+    if (st.phase === 'day_announcement') {
+      enteredNow = ctx.now;
+      deadlineAt = st.deadlineAt;
+      const timerEffect = outcome.effects.find(
+        (e) => e.type === 'schedule_timer' && (e as { action?: { type?: string } }).action?.type === 'phase_timeout',
+      );
+      timerDeadlineAt = timerEffect && timerEffect.type === 'schedule_timer' ? timerEffect.deadlineAt : undefined;
+    }
+  }
+
+  assert.equal(st.phase, 'day_announcement');
+  assert.deepEqual(st.lastNightDeaths, ['v1']);
+  assert.ok(deadlineAt !== null, '天亮公告应有时限');
+  const holdMs = deadlineAt! - enteredNow;
+  assert.ok(
+    holdMs < JUDGE_DAY_ANNOUNCEMENT_HOLD_MS,
+    `天亮公告动态时限 (${holdMs}ms) 应小于旧的固定保底 (${JUDGE_DAY_ANNOUNCEMENT_HOLD_MS}ms)`,
+  );
+  const expectedHold = dawnBroadcastMs({
+    phase: 'day_announcement', day: st.day,
+    players: IDS.map((id) => ({ playerId: id, seat: st.players[id]!.seat })),
+    currentSpeakerId: null, lastWordsPlayerId: null,
+    lastNightDeaths: st.lastNightDeaths, lastVoteSummary: null, winner: null, aborted: false,
+  }, st.day);
+  assert.equal(holdMs, expectedHold, '天亮公告时限应等于实际播报时长（含客户端段间间隔）');
+  assert.equal(timerDeadlineAt, deadlineAt, 'phase_timeout 定时器应与动态 deadlineAt 同步');
 });
 
 test('v2 judgeVoiceWrapper: 权威时间线新局（timelineState.version===1）旁路旧整夜保底', () => {

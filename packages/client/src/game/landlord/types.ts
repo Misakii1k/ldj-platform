@@ -46,6 +46,7 @@ export interface LandlordPlatformPublicView {
   winnerId: string | null;
   deadlineAt: number | null;
   aborted: boolean;
+  revealedHands?: Record<string, LandlordCard[]>;
 }
 
 export interface LandlordPlatformPlayerView extends LandlordPlatformPublicView {
@@ -159,8 +160,24 @@ function parseTrick(value: unknown): LandlordPlatformPublicView['currentTrick'] 
   return combo === null ? null : { playerId: value.playerId, combo };
 }
 
+function parseRevealedHands(value: unknown): Record<string, LandlordCard[]> | null {
+  if (!isObject(value)) return null;
+  const result: Record<string, LandlordCard[]> = {};
+  for (const [key, cardsVal] of Object.entries(value)) {
+    if (!isPlayerId(key)) return null;
+    const cards = parseCards(cardsVal);
+    if (cards === null) return null;
+    result[key] = cards;
+  }
+  return result;
+}
+
 function parseBase(view: Record<string, unknown>, withMe: boolean): LandlordPlatformPublicView | null {
-  if (!hasExactKeys(view, withMe ? [...PUBLIC_KEYS, 'me'] : PUBLIC_KEYS)) return null;
+  const hasRevealed = 'revealedHands' in view;
+  const expectedKeys = withMe
+    ? (hasRevealed ? [...PUBLIC_KEYS, 'me', 'revealedHands'] : [...PUBLIC_KEYS, 'me'])
+    : (hasRevealed ? [...PUBLIC_KEYS, 'revealedHands'] : [...PUBLIC_KEYS]);
+  if (!hasExactKeys(view, expectedKeys)) return null;
   if (view.gameId !== 'landlord' || view.rulesetId !== 'landlord_platform_v1' || view.schemaVersion !== 1) return null;
   if (view.phase !== 'bidding' && view.phase !== 'playing' && view.phase !== 'game_over') return null;
   const players = parsePlayers(view.players);
@@ -175,6 +192,15 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): LandlordPlat
   if (view.winnerTeam !== null && view.winnerTeam !== 'landlord' && view.winnerTeam !== 'farmers') return null;
   if (view.deadlineAt !== null && !Number.isInteger(view.deadlineAt)) return null;
   if (typeof view.aborted !== 'boolean') return null;
+
+  let revealedHands: Record<string, LandlordCard[]> | undefined;
+  if (hasRevealed) {
+    if (view.phase !== 'game_over') return null;
+    const parsed = parseRevealedHands(view.revealedHands);
+    if (parsed === null) return null;
+    revealedHands = parsed;
+  }
+
   return {
     gameId: 'landlord',
     rulesetId: 'landlord_platform_v1',
@@ -193,6 +219,7 @@ function parseBase(view: Record<string, unknown>, withMe: boolean): LandlordPlat
     winnerId: view.winnerId,
     deadlineAt: view.deadlineAt as number | null,
     aborted: view.aborted,
+    ...(revealedHands ? { revealedHands } : {}),
   };
 }
 

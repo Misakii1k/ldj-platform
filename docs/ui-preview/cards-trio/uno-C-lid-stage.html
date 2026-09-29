@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UNO · C 立起的盒盖舞台</title>
+<link rel="stylesheet" href="_shell.css">
+<link rel="stylesheet" href="_uno.css">
+<style>
+  /* ── 场景：盒盖立在后面当背景墙（印着大 LOGO 与四色条纹），盒底斜放当舞台；对手贴纸排成上方一排"出场顺序" ── */
+  .device { background: #f4e9d6; }
+  .lid {
+    position: absolute; left: 40px; right: 40px; top: 20px; height: 360px; border: 5px solid var(--ink); border-radius: 26px;
+    background: var(--cream); overflow: hidden; box-shadow: 0 10px 0 var(--ink);
+  }
+  .lid .stripes { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(4, 1fr); rotate: -12deg; scale: 1.5; opacity: .9; }
+  .lid .stripes i:nth-child(1) { background: var(--red); } .lid .stripes i:nth-child(2) { background: var(--yellow); }
+  .lid .stripes i:nth-child(3) { background: var(--green); } .lid .stripes i:nth-child(4) { background: var(--blue); }
+  .lid .stripes i { border-inline: 4px solid var(--ink); }
+  .lid .logo {
+    position: absolute; left: 50%; top: 30px; translate: -50% 0; font: 900 120px/1 var(--serif); color: var(--cream);
+    -webkit-text-stroke: 6px var(--ink); paint-order: stroke fill; text-shadow: 0 10px 0 var(--ink); rotate: -6deg; opacity: .95;
+  }
+
+  /* 出场顺序：贴纸排成一排，方向箭头在中间流动 */
+  .order { position: absolute; left: 50%; top: 190px; translate: -50% 0; display: flex; align-items: center; gap: 10px; z-index: 4; }
+  .order .arrow { font: 900 26px/1 var(--serif); color: var(--ink); transition: rotate 300ms var(--spring); }
+  .order.ccw .arrow { rotate: 180deg; }
+  .order .sticker:nth-child(odd) { --rot: -2deg; } .order .sticker:nth-child(4n) { --rot: 3deg; }
+
+  /* 盒底舞台 */
+  .stage3d { position: absolute; left: 0; right: 0; top: 300px; height: 280px; perspective: 900px; z-index: 2; }
+  .tray {
+    position: absolute; left: 50%; top: 0; width: 820px; height: 360px; translate: -50% 0; transform: rotateX(38deg); transform-origin: 50% 0;
+    border: 5px solid var(--ink); border-radius: 24px; box-shadow: inset 0 0 0 14px var(--kraft-dark), inset 0 0 0 17px var(--ink);
+  }
+  .tray::after { content: ""; position: absolute; inset: 40px 160px; border-radius: 50%; background: var(--cur); border: 4px solid var(--ink); transition: background 300ms; }
+  .core { position: absolute; left: 50%; top: 356px; translate: -50% 0; display: flex; gap: 48px; align-items: flex-end; z-index: 5; }
+  .side { position: absolute; top: 420px; z-index: 5; display: grid; gap: 10px; justify-items: center; }
+  .side.l { left: 80px; } .side.r { right: 80px; }
+  .phase-word { font: 700 34px/1 var(--serif); }
+  .me-zone { position: absolute; left: 0; right: 0; bottom: 0; z-index: 7; display: grid; justify-items: center; gap: 12px; padding-bottom: 16px; }
+  .dir-ring { display: none; }
+
+  /* ── 手机 ── */
+  .device[data-size="mobile"] .lid { left: 10px; right: 10px; top: 10px; height: 260px; border-width: 4px; }
+  .device[data-size="mobile"] .lid .logo { font-size: 70px; top: 20px; -webkit-text-stroke: 4px var(--ink); text-shadow: 0 6px 0 var(--ink); }
+  .device[data-size="mobile"] .order { top: 118px; width: 360px; flex-wrap: wrap; justify-content: center; gap: 6px; }
+  .device[data-size="mobile"] .order .arrow { display: none; }
+  .device[data-size="mobile"] .order .sticker .avatar { display: none; }
+  .device[data-size="mobile"] .order .sticker { grid-template-columns: auto auto; gap: 0 6px; padding: 4px 10px; }
+  .device[data-size="mobile"] .stage3d { top: 232px; }
+  .device[data-size="mobile"] .tray { width: 380px; height: 300px; }
+  .device[data-size="mobile"] .tray::after { inset: 30px 60px; }
+  .device[data-size="mobile"] .core { top: 300px; gap: 24px; }
+  .device[data-size="mobile"] .side { top: 432px; grid-auto-flow: column; align-items: center; }
+  .device[data-size="mobile"] .side.l { left: 14px; } .device[data-size="mobile"] .side.r { right: 14px; }
+  .device[data-size="mobile"] .phase-word { font-size: 20px; }
+  .device[data-size="mobile"] .color-chip { font-size: 13px; padding: 4px 10px 4px 4px; }
+  .device[data-size="mobile"] .color-chip i { width: 20px; height: 20px; }
+  .device[data-size="mobile"] .turn-ring { width: 44px; height: 44px; }
+  .device[data-size="mobile"] .me-zone { gap: 8px; padding-bottom: 12px; }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>UNO · C 立起的盒盖舞台</strong>
+  <span class="note">对标：狼人杀的"场景即世界" ｜ 与 A/B 的差别：盒盖立在后面当背景墙（大 LOGO + 四色条纹），盒底斜放当舞台；对手贴纸排成一行"出场顺序"，反转时箭头整体掉头</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile">手机 390×844</button></div>
+  <div class="group"><button id="reset">重播</button><a href="index.html">返回目录</a></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="lid"><div class="stripes"><i></i><i></i><i></i><i></i></div><div class="logo">UNO</div></div>
+  <div class="order dir-order" data-box="order">
+    <div class="sticker active"><div class="avatar" style="background:#f29a7a">杰</div><b>阿杰</b><span class="n">9<small>张</small></span></div><span class="arrow">→</span>
+    <div class="sticker uno-warn"><div class="avatar" style="background:#8fd3b6">可</div><b>可可</b><span class="n">1<small>张</small></span></div><span class="arrow">→</span>
+    <div class="sticker"><div class="avatar" style="background:#b9a4e6">王</div><b>老王</b><span class="n">5<small>张</small></span></div><span class="arrow">→</span>
+    <div class="sticker uno-warn"><div class="avatar" style="background:#9cc7f0">糯</div><b>糯米</b><span class="n">1<small>张</small></span></div><span class="arrow">→</span>
+    <div class="sticker"><div class="avatar" style="background:#f6b7cf">M</div><b>Momo</b><span class="n">3<small>张</small></span></div><span class="arrow">→</span>
+    <div class="sticker" style="background:#fff1c4"><div class="avatar" style="background:#f7c84b">鱼</div><b>你</b><span class="n"><span data-me-count>7</span><small>张</small></span></div>
+  </div>
+  <div class="stage3d"><div class="tray kraft"></div></div>
+  <div class="core">
+    <div class="deck" data-box="deck"><div class="uc back"><span class="v">UNO</span></div></div>
+    <div class="discard" data-box="discard"></div>
+  </div>
+  <div class="side l" data-box="sideL"><span class="phase-word">轮到你</span><div class="turn-ring"><svg viewBox="0 0 60 60"><circle class="track" cx="30" cy="30" r="26"/><circle class="bar" cx="30" cy="30" r="26"/></svg><span class="ring-num"></span></div></div>
+  <div class="side r" data-box="sideR"><span class="color-chip"><i></i>当前：<span data-color-name></span></span></div>
+  <div class="dir-ring"><svg></svg></div>
+
+  <div class="me-zone">
+    <div class="fan my-hand" data-box="hand"></div>
+    <div class="dock" data-box="dock">
+      <button class="btn" id="btn-draw">摸牌</button>
+      <button class="btn btn-primary" id="btn-uno">UNO!</button>
+    </div>
+  </div>
+
+  <div class="picker"><div class="pad"><p>选一个颜色</p><button data-pick="red" style="background:var(--red)">红</button><button data-pick="yellow" style="background:var(--yellow)">黄</button><button data-pick="green" style="background:var(--green)">绿</button><button data-pick="blue" style="background:var(--blue)">蓝</button></div></div>
+  <div class="slam slam-fx"><span class="word"></span></div>
+</div></div>
+<script src="_uno-data.js"></script>
+<script src="_shell.js"></script>
+<script src="_uno.js"></script>
+<script>
+  // 反转时，出场顺序的箭头整体掉头（_uno.js 切换的是 .dir-ring 的 ccw，这里同步到顺序条）
+  new MutationObserver(() => document.querySelector('.dir-order').classList.toggle('ccw', document.querySelector('.dir-ring').classList.contains('ccw')))
+    .observe(document.querySelector('.dir-ring'), { attributes: true, attributeFilter: ['class'] });
+  Preview.countdown(document.querySelector('.turn-ring'), 15);
+</script>
+</body>
+</html>

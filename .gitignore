@@ -77,3 +77,5 @@ durian-intro-video/build/
 # 临时测量日志与预览网页
 /measure-log*.txt
 docs/design-preview.html
+
+e2e/.tmp-data-*/

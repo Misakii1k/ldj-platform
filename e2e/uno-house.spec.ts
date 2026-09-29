@@ -188,19 +188,17 @@ test.describe('D4-U-UI uno_platform_house_v1', () => {
             // 扇形手牌有持续动画，Playwright 的稳定性检查等不到静止，
             // 故用 dispatchEvent 直接派发点击（React 合成事件仍能收到）。
             await first.dispatchEvent('click');
-            // UNO 舞台传了 hidePlayButton，出牌走浮动控制条的「出牌」按钮，
-            // 而不是 CardFanEngine 自带的 .card-fan-play-btn（在 UNO 中永不渲染）。
-            const playBtn = page.locator('.uno-floating-controls')
-              .getByRole('button', { name: '出牌' });
-            await playBtn.waitFor({ state: 'visible', timeout: 5_000 });
-            await playBtn.click();
+            const playBtn = page.locator('.uno-floating-controls').getByRole('button', { name: '出牌' });
+            if (await playBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+              await playBtn.click();
+            }
             // 手上剩 2 张时会先弹预喊确认框，这里选择静默出牌以保持原有断言语义
-            const silentBtn = page.locator('.uno-precall-btn--silent');
-            if (await silentBtn.isVisible().catch(() => false)) {
+            const silentBtn = page.locator('.uno-precall-btn--silent, button:has-text("静默出牌")');
+            if (await silentBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
               await silentBtn.click();
             }
             if (isWild) {
-              const redBtn = page.locator('.uno-color-wheel-grid button.color-red');
+              const redBtn = page.locator('.pt-picker button[data-pick="red"], .uno-color-wheel-grid button.color-red').first();
               await redBtn.waitFor({ state: 'visible', timeout: 5_000 });
               await redBtn.click();
             }

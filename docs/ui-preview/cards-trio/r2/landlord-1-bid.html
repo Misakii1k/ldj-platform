@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>斗地主 · 茶馆正堂 · ① 叫地主 + 翻底牌</title>
+<link rel="stylesheet" href="../_shell.css">
+<link rel="stylesheet" href="_poker.css">
+<link rel="stylesheet" href="_teahouse.css">
+<style>
+  /* 叫分：桌心三块木牌 1 / 2 / 3 分，谁叫了就把木牌推到自己面前 */
+  .bid-board { position: absolute; left: 50%; top: 372px; translate: -50% 0; z-index: 5; display: flex; gap: 16px; }
+  .chip {
+    width: 84px; height: 100px; display: grid; place-items: center; align-content: center; gap: 2px; background: linear-gradient(180deg, #fff6e2, #f2dfb8);
+    border: var(--border); border-radius: 12px; box-shadow: var(--shadow); font: 700 44px/1 var(--serif); position: relative;
+  }
+  .chip small { font: 800 12px/1 var(--sans); color: var(--muted); letter-spacing: .2em; }
+  .chip.taken { opacity: .35; filter: grayscale(1); box-shadow: var(--shadow-sm); translate: 0 6px; }
+  .chip.top { background: linear-gradient(180deg, #ffe7a8, #f7c84b); }
+  .chip.top::after { content: "最高"; position: absolute; top: -12px; right: -10px; padding: 3px 8px; background: var(--tea-red); color: var(--cream); border: 2.5px solid var(--ink); border-radius: 999px; font: 900 11px var(--sans); rotate: 8deg; }
+
+  /* 底牌：三张背面扣在桌心，定地主后逐张翻开再飞进地主手里 */
+  .kitty { top: 280px; }
+  .kitty .pk2 { --w: 56px; }
+  .device[data-size="mobile"] .kitty .pk2 { --w: 40px; }
+
+  /* 定地主：冠冕落下 + 大字 */
+  .crown-drop { position: absolute; z-index: 60; width: 90px; pointer-events: none; opacity: 0; }
+  .crown-drop.go { animation: crown 900ms var(--out) forwards; }
+  @keyframes crown { 0% { opacity: 0; transform: translateY(-160px) rotate(-30deg) scale(1.6); } 55% { opacity: 1; transform: translateY(8px) rotate(6deg) scale(1); } 75% { transform: translateY(-6px) rotate(-3deg); } 100% { opacity: 1; transform: none; } }
+  .slam .word { font-size: 120px; }
+
+  .device[data-size="mobile"] .bid-board { top: 440px; gap: 10px; }
+  .device[data-size="mobile"] .chip { width: 64px; height: 76px; font-size: 32px; }
+  .device[data-size="mobile"] .crown-drop { width: 60px; }
+  .device[data-size="mobile"] .slam .word { font-size: 64px; }
+  .device[data-size="landscape"] .bid-board { top: 116px; gap: 10px; }
+  .device[data-size="landscape"] .chip { width: 54px; height: 64px; font-size: 26px; border-width: 2.5px; box-shadow: 0 3px 0 var(--ink); }
+  .device[data-size="landscape"] .chip small { font-size: 9px; }
+  .device[data-size="landscape"] .kitty { top: 58px; }
+  .device[data-size="landscape"] .kitty .pk2 { --w: 30px; }
+  .device[data-size="landscape"] .crown-drop { width: 50px; }
+  .device[data-size="landscape"] .slam .word { font-size: 62px; }
+  .device[data-size="landscape"] .my-hand { translate: -50px 0; }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>斗地主 · 茶馆正堂 · ① 叫地主 + 翻底牌</strong>
+  <span class="note">按现有规则：依次叫 0–3 分，叫 3 分立即定地主，否则三人叫完取最高（同分先叫者得）；倍数 = 最高叫分；底牌翻开后并入地主手牌。点「2 分 / 3 分」看你当地主，点「不叫 / 1 分」看阿杰当地主</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="landscape">手机横屏 844×390</button><button data-set-size="mobile">手机竖屏</button></div>
+  <div class="group"><button id="reset">重播</button><a href="index.html">返回目录</a></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="kitty" data-box="kitty"><span class="tag">底牌</span><div id="kitty-cards" style="display:flex;gap:8px"></div></div>
+  <div class="bid-board" data-box="bids">
+    <div class="chip" data-v="1"><small>叫</small>1<small>分</small></div>
+    <div class="chip" data-v="2"><small>叫</small>2<small>分</small></div>
+    <div class="chip" data-v="3"><small>叫</small>3<small>分</small></div>
+  </div>
+
+  <div class="phase" data-box="phase">
+    <div class="t" id="phase-t">轮到你叫分</div>
+    <div class="s" id="phase-s">阿杰叫了 1 分，可可不叫</div>
+  </div>
+  <div class="hud" data-box="hud">
+    <div class="mult"><small>倍数</small><span class="numeral" id="mult">×1</span></div>
+    <div class="turn-ring" id="my-ring"><svg viewBox="0 0 60 60"><circle class="track" cx="30" cy="30" r="26"/><circle class="bar" cx="30" cy="30" r="26"/></svg><span class="ring-num"></span></div>
+  </div>
+
+  <div class="me-zone">
+    <div class="fan my-hand" data-box="hand" data-avail="340"></div>
+    <div class="dock" data-box="dock" id="dock">
+      <button class="btn" data-bid="0">不叫</button>
+      <button class="btn" data-bid="1">1 分</button>
+      <button class="btn" data-bid="2">2 分</button>
+      <button class="btn btn-primary" data-bid="3">3 分</button>
+    </div>
+  </div>
+  <div class="plate me-plate active" data-box="me"><span class="role">?</span><b>小鱼干（你）</b><span class="cnt" data-count id="me-count">17</span><div class="say"></div></div>
+  <svg class="crown-drop" viewBox="0 0 44 30" aria-hidden="true"><path d="M2 15 Q6 28 22 28 Q38 28 42 15 L33 15 Q31 4 22 4 Q13 4 11 15 Z" fill="#f7c84b" stroke="#292722" stroke-width="3" stroke-linejoin="round"/><path d="M15 12 Q22 8 29 12" stroke="#fff6c8" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
+  <div class="slam" id="slam"><span class="word">你是地主</span></div>
+</div></div>
+<script src="../_shell.js"></script>
+<script src="_teahouse.js"></script>
+<script>
+(function () {
+  const P = Preview, T = Teahouse;
+  const device = document.querySelector('.device');
+  T.buildScene(device);
+  const jie = T.opponent('jie', '阿杰', 'l', 17, 'unknown');
+  const keke = T.opponent('keke', '可可', 'r', 17, 'unknown');
+  device.append(jie, keke);
+  jie.querySelector('.role').textContent = '?';
+  keke.querySelector('.role').textContent = '?';
+
+  // 固定数据：叫分顺序 阿杰 → 可可 → 你；阿杰叫 1、可可不叫，轮到你
+  const HAND = T.sortDesc([['大王', ''], ['2', '♠'], ['A', '♦'], ['Q', '♣'], ['J', '♥'], ['10', '♠'], ['8', '♠'], ['8', '♥'], ['8', '♣'], ['8', '♦'], ['7', '♦'], ['6', '♣'], ['5', '♥'], ['4', '♣'], ['4', '♦'], ['3', '♠'], ['3', '♥']]);
+  const KITTY = [['A', '♠'], ['2', '♥'], ['小王', '']];
+  const hand = document.querySelector('.my-hand');
+  T.renderHand(hand, HAND);
+  const kittyBox = document.getElementById('kitty-cards');
+  kittyBox.innerHTML = KITTY.map(() => T.back()).join('');
+  T.say(jie, '1 分', { stay: true });
+  T.say(keke, '不叫', { stay: true });
+  const chips = [...document.querySelectorAll('.chip')];
+  chips[0].classList.add('taken');
+  const me = document.querySelector('.me-plate');
+  const slam = document.getElementById('slam');
+  const ring = document.getElementById('my-ring');
+  P.countdown(ring, 15);
+
+  async function decide(landlord, score) {
+    clearTimeout(ring._t);
+    T.setActive(null);
+    P.roll(document.getElementById('mult'), score, { prefix: '×' });
+    document.getElementById('phase-t').textContent = landlord === me ? '你是地主！' : '阿杰是地主';
+    document.getElementById('phase-s').textContent = '翻开底牌';
+    document.getElementById('dock').style.visibility = 'hidden';
+    // 1. 身份圆章落定
+    T.setRole(me, landlord === me ? 'lord' : 'farmer');
+    T.setRole(jie.querySelector('.plate'), landlord === jie ? 'lord' : 'farmer');
+    T.setRole(keke.querySelector('.plate'), 'farmer');
+    // 2. 金元宝从天而降落在地主名牌上
+    const crown = document.querySelector('.crown-drop');
+    const target = P.local(landlord === me ? me : landlord.querySelector('.plate'));
+    Object.assign(crown.style, { left: target.x + target.w / 2 - 45 + 'px', top: target.y - 56 + 'px' });
+    if (device.dataset.size !== 'desktop') Object.assign(crown.style, { left: target.x + target.w / 2 - 25 + 'px', top: target.y - 34 + 'px' });
+    crown.classList.remove('go'); void crown.offsetWidth; crown.classList.add('go');
+    if (landlord === me) { P.slam(slam); P.shake(3); }
+    await new Promise((ok) => setTimeout(ok, 900));
+    // 3. 底牌逐张翻开
+    kittyBox.innerHTML = KITTY.map((c) => T.card(c, 'flip')).join('');
+    [...kittyBox.children].forEach((c, k) => (c.style.animationDelay = k * 160 + 'ms'));
+    await new Promise((ok) => setTimeout(ok, 1100));
+    // 4. 飞进地主手里；底牌正面留在桌上做公开记录
+    const flying = [...kittyBox.children];
+    const flyTo = landlord === me ? hand : landlord.querySelector('.plate');
+    await Promise.all(flying.map((c, k) => {
+      const ghost = c.cloneNode(true);
+      ghost.classList.remove('flip');
+      return new Promise((ok) => setTimeout(ok, k * 90)).then(() => P.fly(ghost, c, flyTo, { lift: 90, spin: 10, duration: 520, endScale: landlord === me ? 1 : .5 }));
+    }));
+    if (landlord !== me) {
+      T.setCount(jie, 20);
+      document.getElementById('phase-t').textContent = '阿杰先出牌';
+      document.getElementById('phase-s').textContent = '你和可可是农民';
+      T.setActive(jie);
+      return;
+    }
+    const merged = T.sortDesc([...HAND, ...KITTY]);
+    T.renderHand(hand, merged);
+    const isNew = (el) => KITTY.some(([r, s]) => el.dataset.r === r && (el.dataset.s ?? '') === s);
+    [...hand.children].forEach((el) => isNew(el) && el.classList.add('new', 'land'));
+    P.roll(document.getElementById('me-count'), 20);
+    document.getElementById('phase-t').textContent = '你先出牌';
+    document.getElementById('phase-s').textContent = '金边的三张是底牌';
+    T.setActive(me);
+    P.countdown(ring, 20);
+  }
+
+  document.querySelectorAll('[data-bid]').forEach((b) => b.addEventListener('click', () => {
+    const v = Number(b.dataset.bid);
+    T.say(me, v ? `${v} 分` : '不叫', { stay: true, hot: v === 3 });
+    if (v > 1) {
+      chips.forEach((c) => c.classList.remove('top'));
+      const chip = chips[v - 1];
+      chip.classList.add('top');
+      chips.slice(0, v - 1).forEach((c) => c.classList.add('taken'));
+      if (!P.reduce) chip.animate([{ transform: 'none' }, { transform: 'translateY(-26px) rotate(-6deg) scale(1.15)' }, { transform: 'none' }], { duration: 480, easing: 'cubic-bezier(.34,1.56,.64,1)' });
+    }
+    // 你是最后一个叫分的人：叫 2 / 3 分由你当地主；不叫或叫 1 分（与阿杰同分、他先叫）则阿杰当地主
+    setTimeout(() => decide(v > 1 ? me : jie, v > 1 ? v : 1), 500);
+  }));
+})();
+</script>
+</body>
+</html>

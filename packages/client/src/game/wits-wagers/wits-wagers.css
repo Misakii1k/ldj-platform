@@ -108,29 +108,6 @@
   box-sizing: border-box;
 }
 
-/* 题目卡片 */
-.ww-question-card {
-  background-color: var(--game-surface, #fffdf7);
-  border: 2px solid var(--game-line, #292722);
-  border-radius: var(--ww-radius);
-  padding: var(--ww-gap-lg);
-  box-shadow: 0 2px 4px rgba(41, 39, 34, 0.08);
-}
-
-.ww-question-card__prompt {
-  font-size: 1.25rem;
-  font-weight: 700;
-  line-height: 1.4;
-  margin: 0 0 var(--ww-gap-sm) 0;
-  color: var(--game-ink, #292722);
-}
-
-.ww-question-card__unit {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--game-muted, #575147);
-}
-
 /* 作答面板 V1 */
 .ww-guess-panel {
   background-color: var(--game-surface, #fffdf7);
@@ -249,46 +226,6 @@
   flex-direction: column;
   gap: var(--ww-gap-sm);
   box-shadow: 0 -2px 6px rgba(41, 39, 34, 0.06);
-}
-
-.ww-bet-editor__balances {
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  font-size: 0.9375rem;
-  font-weight: 700;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--game-paper, #fff4df);
-}
-
-.ww-bet-editor__chip-tabs {
-  display: flex;
-  gap: var(--ww-gap-sm);
-}
-
-.ww-chip-tab {
-  flex: 1;
-  padding: 8px;
-  border-radius: 8px;
-  border: 2px solid var(--game-line, #292722);
-  background-color: var(--game-paper, #fff4df);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-weight: 700;
-}
-
-.ww-chip-tab--active {
-  border-color: var(--game-dark, #115665);
-  background-color: var(--game-soft, #d5edf2);
-}
-
-.ww-bet-editor__stake-row {
-  display: flex;
-  align-items: center;
-  gap: var(--ww-gap-sm);
-  justify-content: space-between;
 }
 
 .ww-bet-editor__actions {
@@ -454,13 +391,6 @@
 .ww-bet-editor__placeholder {
   color: var(--game-muted, #575147);
   font-size: 0.875rem;
-}
-
-.ww-bet-editor__stake-controls {
-  display: flex;
-  align-items: center;
-  gap: var(--ww-gap-sm);
-  flex-wrap: wrap;
 }
 
 .ww-bet-editor__actions {
@@ -748,16 +678,46 @@
 }
 
 /* ===================================================================
- * P2 3D 毡面牌桌舞台
- * 透视只作用在 .ww-felt：飞行层与手部层必须留在这棵子树之外，
- * 否则 position:fixed 会被祖先 transform 变成相对定位。
+ * P2 毡面牌桌舞台（贵宾厅改造后为正视布局；3D 透视只保留在 shared-ui 飞行层，
+ * 飞行幽灵层必须留在 .ww-game 子树之外，否则 position:fixed 会被祖先 transform
+ * 变成相对定位）
  * =================================================================== */
 
-.ww-game[data-ww-theme="felt-green"] {
-  --ww-felt-a: #157a5c;
-  --ww-felt-b: #08362a;
-  --ww-rail: #6b4a2a;
-  --ww-rail-edge: #3d2915;
+/* 深夜赌场贵宾厅令牌（01-CONTRACT.md §3，像素参照 A2-casino-lounge.html）。
+   方向稿里的字面量色全部收敛到这里；组件样式一律引用令牌，不许再写字面量色。
+   两个值的令牌拆成 -2 后缀（牌背、席位卡底），用法见各引用处。
+
+   第二个选择器把同一套令牌也放到外壳上：贵宾厅是深色场景，外壳自带的
+   `tabletop-theme-poker` 奶油底会从场景层后面透出来（X01 第 4 条要求确认它不盖住场景），
+   而自定义属性只向下继承，外壳读不到后代 .ww-game 的令牌。两个选择器共用一份值，
+   不做二次抄写；`walnut` / `midnight` 不受影响（等 Q5）。
+   用 `:has(.ww-lounge)` 而不是 `[data-game-id]` 限定：只有挂了场景层的页面才是贵宾厅，
+   桌面模拟版在 X07 接入场景之前保持原样。 */
+.ww-game[data-ww-theme="felt-green"],
+.tabletop-shell[data-game-id="wits-wagers"]:has(.ww-lounge) {
+  --ww-felt-a: #1b5a42;
+  --ww-felt-b: #0a2a1f;
+  --ww-felt-mid: #0f3b2c;
+  --ww-rail: #2a1a10;
+  --ww-rail-edge: #1a0f09;
+  --ww-room: #07100c;
+  --ww-room-glow: #16261f;
+  --ww-lamp: #1f4a36;
+  --ww-lamp-light: rgba(255, 226, 160, 0.2);
+  --ww-brass: #c9a45c;
+  --ww-brass-hi: #ecd08e;
+  --ww-brass-dim: rgba(201, 164, 92, 0.45);
+  --ww-ivory: #f5ecd8;
+  --ww-ivory-2: #e9dcc0;
+  --ww-card-ink: #1c1a15;
+  --ww-card-back: #7d1f26;
+  --ww-card-back-2: #5a141a;
+  --ww-txt: #efe6d2;
+  --ww-muted: #a79f8b;
+  --ww-up: #9fe0bd;
+  --ww-down: #e79a8a;
+  --ww-seat-bg: rgba(20, 34, 27, 0.92);
+  --ww-seat-bg-2: rgba(7, 14, 10, 0.92);
 }
 
 .ww-game[data-ww-theme="walnut"] {
@@ -774,6 +734,49 @@
   --ww-rail-edge: #16202f;
 }
 
+/* ===================================================================
+ * X01 · 外壳深色化：贵宾厅是深色场景，外壳自带的奶油纸底、墨边顶栏与白底席位条
+ * 会从场景层后面透出来，把整个画面拉回浅色。只在挂了场景层的页面上覆盖，
+ * 且只改背景 / 描边 / 字色，不动布局与结构（C2：深色游戏用细边，不强行上黑边）。
+ * =================================================================== */
+
+.tabletop-shell[data-game-id="wits-wagers"]:has(.ww-lounge) {
+  background: var(--ww-room);
+  color: var(--ww-txt);
+}
+
+.tabletop-shell[data-game-id="wits-wagers"]:has(.ww-lounge) .tabletop-header {
+  background: var(--ww-seat-bg);
+  border: 1px solid var(--ww-brass-dim);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  color: var(--ww-txt);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.tabletop-shell[data-game-id="wits-wagers"]:has(.ww-lounge) .tabletop-header__kicker {
+  color: var(--ww-brass) !important;
+}
+
+.tabletop-shell[data-game-id="wits-wagers"]:has(.ww-lounge) .tabletop-header__title {
+  color: var(--ww-txt) !important;
+}
+
+.tabletop-shell[data-game-id="wits-wagers"]:has(.ww-lounge) .tabletop-header__sub {
+  color: var(--ww-muted);
+}
+
+/* 阶段胶囊：黄铜细边 + 金字（方向稿 .hud .phase） */
+.tabletop-shell[data-game-id="wits-wagers"]:has(.ww-lounge) .tabletop-phase-banner__title {
+  color: var(--ww-brass);
+  border-color: var(--ww-brass-dim);
+  background: var(--ww-seat-bg);
+}
+
+.tabletop-shell[data-game-id="wits-wagers"]:has(.ww-lounge) .tabletop-phase-banner__sub {
+  color: var(--ww-muted);
+}
+
 .ww-stage {
   position: relative;
   display: flex;
@@ -783,7 +786,7 @@
   flex: 1 1 auto;
 }
 
-/* 桌沿：银行托盘与题目卡并排 */
+/* 桌沿：只剩阶段倒计时环（旧银行托盘已随筹码化改造退场，X06/X07） */
 .ww-stage__rail {
   display: flex;
   align-items: stretch;
@@ -802,120 +805,13 @@
   --stage-countdown-font: calc(1.375rem * var(--ww-font-scale));
 }
 
-.ww-stage__rail .ww-question-card {
-  flex: 1 1 auto;
-  min-width: 0;
-  padding: var(--ww-gap-sm) var(--ww-gap-md);
-}
-
-.ww-stage__rail .ww-question-card__prompt {
-  font-size: calc(1.0625rem * var(--ww-font-scale));
-  margin-bottom: 2px;
-}
-
-.ww-stage__rail .ww-question-card__unit {
-  font-size: calc(0.8125rem * var(--ww-font-scale));
-}
-
-/* 银行托盘 */
-.ww-bank {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  min-width: 62px;
-  padding: 6px 8px;
-  border-radius: 10px;
-  border: 2px solid var(--ww-rail-edge, #3d2915);
-  background: linear-gradient(180deg, var(--ww-rail, #6b4a2a), var(--ww-rail-edge, #3d2915));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
-}
-
-.ww-bank__box {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  height: 26px;
-}
-
-.ww-bank__stack {
-  position: relative;
-  width: 30px;
-  height: 16px;
-}
-
-.ww-bank__layer {
-  position: absolute;
-  left: 0;
-  bottom: calc(var(--ww-layer) * 3px);
-  /* 每层错开一点角度，像随手码上去的 */
-  transform: rotate(calc((var(--ww-layer) - 1) * 2deg));
-  transform-origin: 50% 100%;
-}
-
-.ww-bank__label {
-  font-size: calc(0.6875rem * var(--ww-font-scale));
-  font-weight: 800;
-  color: #ffe9b8;
-  letter-spacing: 0.04em;
-}
-
-/* 收付进行中：钞箱亮边、叠层轻抖。
-   这个循环动画只登记在本文件里——game-ui.css 的全局环境动画清单要求选择器
-   出现在 styles.css，而 .ww-bank__* 只存在于这个游戏的私有样式表。 */
-.ww-bank.is-active {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 0 0 2px #f7c84b,
-    0 0 18px rgba(247, 200, 75, 0.45);
-}
-
-.ww-bank.is-active .ww-bank__stack {
-  animation: ww-bank-shuffle 620ms var(--gp-ease-standard, ease-in-out) infinite;
-  animation-delay: calc(var(--ww-stack-i) * 90ms);
-}
-
-@keyframes ww-bank-shuffle {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  45% {
-    transform: translateY(-2px);
-  }
-}
-
-html[data-motion-level='minimal'] .ww-bank.is-active .ww-bank__stack,
-html[data-motion-level='off'] .ww-bank.is-active .ww-bank__stack,
-html[data-motion-level='reduced'] .ww-bank.is-active .ww-bank__stack {
-  animation: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ww-bank.is-active .ww-bank__stack {
-    animation: none;
-  }
-}
-
-/* 毡面：唯一的 3D 容器 */
+/* 毡面：贵宾厅改造后（X01/X02）视觉交给最底层的 WitsLoungeScene，
+   这里只做布局容器与飞行锚点，不再有自带底色 / 边框 / 3D 透视（01-CONTRACT §1：正视毡面） */
 .ww-felt {
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
   padding: var(--ww-gap-md) var(--ww-gap-sm);
-  border-radius: 18px;
-  border: 3px solid var(--ww-rail-edge, #3d2915);
-  background:
-    repeating-linear-gradient(35deg, rgba(255, 255, 255, 0.035) 0 2px, transparent 2px 7px),
-    radial-gradient(circle at 50% 30%, var(--ww-felt-a, #157a5c) 0%, var(--ww-felt-b, #08362a) 100%);
-  box-shadow:
-    0 6px 0 var(--ww-rail-edge, #3d2915),
-    inset 0 0 44px rgba(0, 0, 0, 0.42);
-  perspective: 900px;
-  perspective-origin: 50% 12%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -925,11 +821,7 @@ html[data-motion-level='reduced'] .ww-bank.is-active .ww-bank__stack {
 }
 
 .ww-felt__surface {
-  position: absolute;
-  inset: 8px;
-  border-radius: 12px;
-  pointer-events: none;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  display: none;
 }
 
 .ww-felt__hint {
@@ -939,306 +831,24 @@ html[data-motion-level='reduced'] .ww-bank.is-active .ww-bank__stack {
   margin: 0;
 }
 
-/* 版图：牌向后仰，形成俯视桌面的空间感 */
+/* 版图：正视毡面，不倾斜（01-CONTRACT §1）；槽位外观见 stage/wits-lounge.css §4 */
 .ww-board {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: var(--ww-gap-sm);
+  gap: 14px;
   min-width: min-content;
   padding: 2px var(--ww-gap-sm) 6px;
-  transform-style: preserve-3d;
-  transform: rotateX(16deg);
 }
 
-.ww-board__slot {
-  transform-style: preserve-3d;
-  flex: 0 0 auto;
-}
-
-.ww-facedown-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--ww-gap-sm);
-  min-width: min-content;
-  padding: 2px var(--ww-gap-sm);
-  transform-style: preserve-3d;
-  transform: rotateX(16deg);
-}
-
-.ww-facedown-row__slot {
-  flex: 0 0 auto;
-  transform-style: preserve-3d;
-}
-
-.ww-facedown-row__placeholder {
-  width: var(--ww-card-w, 84px);
-  height: var(--ww-card-h, 118px);
-  border-radius: 8px;
-  border: 2px dashed rgba(255, 255, 255, 0.28);
-  background: rgba(0, 0, 0, 0.16);
-}
-
-/* 实体答案牌 */
-.ww-answer-card {
-  --ww-card-w: 84px;
-  --ww-card-h: 118px;
-
-  position: relative;
-  width: var(--ww-card-w);
-  min-height: var(--ww-card-h);
-  transform-style: preserve-3d;
-  transition:
-    transform var(--gp-dur-standard, 240ms) var(--gp-ease-decelerate, ease-out),
-    filter var(--gp-dur-fast, 140ms) var(--gp-ease-standard, ease);
-  /* 接触阴影：让牌看起来落在毡面上而不是浮空 */
-  filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.42));
-}
-
-.ww-answer-card[role="button"] {
-  cursor: pointer;
-}
-
-.ww-answer-card[role="button"]:hover,
-.ww-answer-card[role="button"]:focus-visible {
-  transform: translateY(-6px) translateZ(14px);
-  filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.48));
-  outline: none;
-}
-
-.ww-answer-card__inner {
-  position: relative;
-  width: 100%;
-  height: var(--ww-card-h);
-  transform-style: preserve-3d;
-  transition: transform var(--gp-dur-emphasis, 320ms) var(--gp-ease-decelerate, ease-out);
-}
-
-.ww-answer-card.is-face-down .ww-answer-card__inner {
-  transform: rotateY(180deg);
-}
-
-.ww-answer-card__face,
-.ww-answer-card__back {
-  position: absolute;
-  inset: 0;
-  border-radius: 8px;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  overflow: hidden;
-}
-
-.ww-answer-card__back {
-  transform: rotateY(180deg);
-}
-
-.ww-answer-card__face {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2px;
-  padding: 6px 4px;
-  box-sizing: border-box;
-  background: linear-gradient(175deg, #fffdf7 0%, #f4ead6 100%);
-  border: 2px solid var(--game-line, #292722);
-  color: var(--game-ink, #292722);
-  text-align: center;
-}
-
-.ww-answer-card--smaller .ww-answer-card__face {
-  background: linear-gradient(175deg, #e8593a 0%, #b62f11 100%);
-  border-color: #8c240d;
-  color: #ffffff;
-}
-
-.ww-answer-card--winner .ww-answer-card__face {
-  background: linear-gradient(175deg, #ffdd7d 0%, #f0b420 100%);
-  border-color: var(--game-ink, #292722);
-  color: var(--game-ink, #292722);
-  box-shadow: inset 0 0 0 2px #ffffff;
-}
-
-.ww-answer-card--selected .ww-answer-card__face {
-  border-color: var(--game-dark, #115665);
-  border-width: 3px;
-  box-shadow: inset 0 0 0 2px var(--game-soft, #d5edf2);
-}
-
-.ww-answer-card__slot {
-  font-size: calc(0.625rem * var(--ww-font-scale));
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  color: var(--game-muted, #575147);
-  text-transform: uppercase;
-}
-
-.ww-answer-card--smaller .ww-answer-card__slot {
-  color: rgba(255, 255, 255, 0.88);
-}
-
-.ww-answer-card__value {
-  font-size: calc(1.0625rem * var(--ww-font-scale));
-  font-weight: 800;
-  line-height: 1.15;
-  font-variant-numeric: tabular-nums;
-  word-break: break-word;
-}
-
-.ww-answer-card__odds {
-  font-size: calc(0.6875rem * var(--ww-font-scale));
-  font-weight: 800;
-  padding: 1px 6px;
-  border-radius: 5px;
-  border: 1px solid currentColor;
-  background: rgba(255, 255, 255, 0.45);
-}
-
-.ww-answer-card--smaller .ww-answer-card__odds {
-  background: rgba(255, 255, 255, 0.18);
-}
-
-.ww-answer-card__authors {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px;
-  justify-content: center;
-  max-width: 100%;
-}
-
-.ww-answer-card__author.is-timeout {
-  opacity: 0.55;
-  filter: grayscale(0.8);
-}
-
-/* 押在牌上的筹码：叠在牌面下沿，略微抬起 */
-.ww-answer-card__chips {
-  position: absolute;
-  left: 50%;
-  bottom: -14px;
-  display: flex;
-  gap: 2px;
-  transform: translateX(-50%) translateZ(18px);
-  pointer-events: none;
-}
-
-/* ===================================================================
- * 钞票（1 分 = ¥100，面值 100/200/500/1000）
- * =================================================================== */
-
-.ww-note {
-  display: inline-block;
-  line-height: 0;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
-}
-
-.ww-note--pending {
-  opacity: 0.62;
-}
-
-.ww-note svg {
-  display: block;
-  border-radius: 6px;
-}
-
-/* 一叠钞票：扇形错开叠放，看得出张数 */
-.ww-note-stack {
-  position: relative;
-  display: inline-block;
-  vertical-align: bottom;
-}
-
-.ww-note-stack__item {
-  position: absolute;
-  left: 0;
-  bottom: calc(var(--ww-note-i) * 2px);
-  transform: translateX(var(--ww-note-dx, 0)) rotate(var(--ww-note-rot, 0deg));
-  transform-origin: 50% 100%;
-}
-
-.ww-note-stack--pending {
-  opacity: 0.62;
-}
-
-/* 张数超过可见上限时，用角标交代总数 */
-.ww-note-stack__more {
-  position: absolute;
-  right: -6px;
-  top: -7px;
-  z-index: 2;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: var(--game-ink, #292722);
-  color: var(--game-paper, #fffdf7);
-  font-size: calc(0.5625rem * var(--ww-font-scale));
-  font-weight: 800;
-  line-height: 1.5;
-}
-
-/* 托盘里的钞票堆：给标签留出位置 */
-.ww-chip-tab__notes {
-  position: relative;
-  display: inline-block;
-  width: 44px;
-  height: 24px;
-  flex: 0 0 auto;
-}
-
-/* 手机竖屏：舞台优先，牌略缩以放下更多槽位 */
-@media (max-width: 480px) {
-  .ww-answer-card {
-    --ww-card-w: 74px;
-    --ww-card-h: 104px;
-  }
-  .ww-board,
-  .ww-facedown-row {
-    justify-content: flex-start;
-    transform: rotateX(12deg);
-  }
-  .ww-felt {
-    justify-content: flex-start;
-  }
-  .ww-stage__rail {
-    flex-wrap: wrap;
-  }
-}
-
-/* 横屏矮视口：压平透视，给牌让出垂直空间 */
-@media (orientation: landscape) and (max-height: 520px) {
-  .ww-answer-card {
-    --ww-card-w: 70px;
-    --ww-card-h: 96px;
-  }
-  .ww-board,
-  .ww-facedown-row {
-    transform: rotateX(8deg);
-  }
-  .ww-felt {
-    padding: var(--ww-gap-sm);
-  }
-}
-
-/* 降级：低动效档位下取消过渡与悬浮位移 */
-html[data-motion-level="minimal"] .ww-answer-card,
-html[data-motion-level="off"] .ww-answer-card,
-html[data-motion-level="minimal"] .ww-answer-card__inner,
-html[data-motion-level="off"] .ww-answer-card__inner {
-  transition: none;
-}
-
-html[data-motion-level="minimal"] .ww-answer-card[role="button"]:hover,
-html[data-motion-level="off"] .ww-answer-card[role="button"]:hover {
-  transform: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ww-answer-card,
-  .ww-answer-card__inner {
-    transition: none;
-  }
-  .ww-answer-card[role="button"]:hover {
-    transform: none;
+/* 手机竖屏：3 列网格（A2 方向稿 mobile 规则） */
+@media (max-width: 640px) {
+  .ww-board {
+    display: grid;
+    grid-template-columns: repeat(3, 108px);
+    gap: 12px 10px;
+    align-items: start;
+    min-width: 0;
   }
 }
 
@@ -1247,12 +857,6 @@ html[data-motion-level="off"] .ww-answer-card[role="button"]:hover {
  * 子层、低动效降级、perspective 与 FLIGHT_PERSPECTIVE 的对齐）。
  * 这里只留本游戏的道具补充。
  * =================================================================== */
-
-/* 钞票是薄纸片：翻到背面要能看见背面而不是被裁掉 */
-.stage-flight__ghost .ww-note {
-  display: block;
-  filter: none;
-}
 
 .ww-score-ticker {
   font-variant-numeric: tabular-nums;
@@ -1289,11 +893,6 @@ html[data-motion-level="off"] .ww-answer-card[role="button"]:hover {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-}
-
-.ww-sim .ww-sim__answer-card .ww-answer-card {
-  --ww-card-w: 76px;
-  --ww-card-h: 106px;
 }
 
 .ww-sim .ww-sim__chip-area {

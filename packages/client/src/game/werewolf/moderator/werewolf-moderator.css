@@ -48,7 +48,8 @@
 /* 顶部 Header */
 .mod-header {
   margin: 0;
-  padding: 10px 0 12px;
+  /* 右侧 52px 预留给全局悬浮控制坞（本文件懒加载晚于 styles.css，不能依赖外部覆盖） */
+  padding: 10px 52px 12px 0;
   gap: 14px;
   border-bottom: 1px solid var(--edge);
   background: transparent;

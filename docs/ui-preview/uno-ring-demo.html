@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UNO 牌桌方位与转向 · 方案演示</title>
+<style>
+/* ══ 平台设计令牌（取自 packages/client/src/shared-ui/game-ui.css）══ */
+:root{
+  --gp-paper:#fff4df; --gp-surface:#fffdf7; --gp-ink:#292722; --gp-muted:#575147;
+  --gp-line:#292722; --gp-coral:#c23616; --gp-yellow:#f7c84b; --gp-green:#08715d;
+  --gp-radius-sm:10px; --gp-radius-md:14px; --gp-radius-lg:20px; --gp-radius-pill:999px;
+  --gp-font:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  --sunset-ink:#431407; --sunset-accent:#c2410c; --sunset-title:#7c2d12;
+}
+*{box-sizing:border-box;}
+body{margin:0; padding:22px; font-family:var(--gp-font); background:#e8dcc8; color:var(--gp-ink);}
+h1{font-size:1.05rem; margin:0 0 6px; font-weight:900;}
+.lead{font-size:.8rem; color:var(--gp-muted); margin:0 0 16px; line-height:1.65;}
+
+.bar{
+  display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+  padding:12px 14px; margin-bottom:18px;
+  background:var(--gp-surface); border:2.5px solid var(--gp-line);
+  border-radius:var(--gp-radius-md); box-shadow:0 4px 0 var(--gp-line);
+}
+.bar label{font-size:.74rem; font-weight:900; color:var(--gp-muted); margin-right:2px;}
+.bar button{
+  font-family:inherit; font-size:.78rem; font-weight:900; cursor:pointer;
+  padding:7px 13px; color:var(--gp-ink); background:#fffaf0;
+  border:2px solid var(--gp-line); border-radius:var(--gp-radius-sm);
+  box-shadow:2px 2.5px 0 var(--gp-line); transition:transform .12s,box-shadow .12s,background .2s;
+}
+.bar button:hover{background:#ffeac2;}
+.bar button:active{transform:translate(1px,2px); box-shadow:1px 1px 0 var(--gp-line);}
+.bar button.on{background:var(--gp-yellow);}
+.vr{width:2px; height:26px; background:var(--gp-line); opacity:.18; margin:0 3px;}
+
+.row{display:flex; gap:26px; flex-wrap:wrap; align-items:flex-start;}
+
+.dev{
+  width:390px; height:660px; position:relative; overflow:hidden; flex-shrink:0;
+  border:3px solid var(--gp-line); border-radius:24px; box-shadow:0 6px 0 var(--gp-line);
+  background:radial-gradient(1200px 750px at 50% 30%,#fff7ed 0%,#ffedd5 40%,#fed7aa 80%,#fdba74 100%);
+  color:var(--sunset-ink);
+}
+.cap{text-align:center; font-size:.74rem; font-weight:900; margin-top:9px; color:var(--gp-muted);}
+.cap b{color:var(--gp-coral);}
+
+.hd{
+  height:44px; display:flex; align-items:center; justify-content:space-between;
+  padding:0 12px; background:rgba(255,255,255,.92);
+  border-bottom:1.5px solid rgba(234,88,12,.18); box-shadow:0 4px 16px rgba(194,65,12,.08);
+}
+.hd .t{font-size:.86rem; font-weight:900; color:var(--sunset-title);}
+.hd .k{font-size:.56rem; font-weight:900; letter-spacing:.05em; color:var(--sunset-accent);}
+.hd .mn{
+  width:32px; height:32px; display:grid; place-items:center;
+  background:#fffaf1; border:2px solid var(--gp-line); border-radius:var(--gp-radius-sm);
+  box-shadow:2px 2.5px 0 var(--gp-line); font-size:.9rem;
+}
+
+/* 现状保留席位条（作为对比参照） */
+.sb{height:42px; display:flex; gap:6px; align-items:center; padding:0 8px; overflow-x:auto; scrollbar-width:none;}
+.sb::-webkit-scrollbar{display:none;}
+.chip{
+  flex:0 0 auto; display:inline-flex; align-items:center; gap:6px;
+  padding:3px 10px 3px 4px; background:#fffdf8; color:var(--gp-ink);
+  border:2px solid var(--gp-line); border-radius:var(--gp-radius-pill);
+  box-shadow:2px 2px 0 var(--gp-line); font-size:.68rem; font-weight:800; white-space:nowrap;
+}
+.chip .av{
+  width:24px; height:24px; border-radius:50%; display:grid; place-items:center;
+  background:linear-gradient(145deg,#ffd9a8,#f2b872); color:#5a2b0c;
+  border:1.5px solid var(--gp-line); box-shadow:1px 1px 0 var(--gp-line);
+  font-size:.62rem; font-weight:900;
+}
+.chip.cur{background:#fff3c4; box-shadow:0 0 0 2px #ffd43b,3px 3px 0 var(--gp-line);}
+
+/* ══ 舞台：方案版没有席位条，多出 42px 全给环形 ══ */
+.ar{position:relative; height:calc(100% - 86px - 150px);}
+.arB{position:relative; height:calc(100% - 44px - 150px);}
+
+.cp{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:252px; height:252px; border-radius:50%; pointer-events:none; z-index:1;
+}
+.cp::before{
+  content:''; position:absolute; inset:0; border-radius:50%;
+  border:3px dashed rgba(234,88,12,.35);
+  box-shadow:0 0 24px rgba(249,115,22,.18), inset 0 0 24px rgba(249,115,22,.12);
+  animation:sp 16s linear infinite;
+}
+.v2 .cp{width:282px; height:282px;}
+.v2 .cp::before{
+  border:3px dashed rgba(194,65,12,.5);
+  box-shadow:0 0 26px rgba(249,115,22,.3), inset 0 0 26px rgba(249,115,22,.16);
+  animation-duration:7s;
+}
+.v2 .cp::after{
+  content:''; position:absolute; inset:-5px; border-radius:50%;
+  border:4px solid transparent; border-top-color:var(--gp-coral);
+  border-right-color:rgba(194,54,22,.35);
+  filter:drop-shadow(0 0 7px rgba(194,54,22,.55));
+  animation:sp 7s linear infinite;
+}
+.ccw .cp::before,.ccw .cp::after{animation-direction:reverse;}
+@keyframes sp{to{transform:rotate(360deg);}}
+.nm .cp::before,.nm .cp::after{animation:none!important;}
+
+/* 中央牌堆 */
+.mid{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  display:flex; gap:12px; align-items:center; z-index:4;
+}
+.cd{width:74px; height:111px; border-radius:11px; position:relative;}
+.cd svg{width:100%; height:100%; display:block; border-radius:9px;}
+.pb{
+  position:absolute; top:-9px; right:-9px; min-width:26px; height:26px; padding:0 7px;
+  border-radius:var(--gp-radius-pill); background:var(--gp-coral); color:#fff;
+  font-size:.76rem; font-weight:900; display:grid; place-items:center;
+  border:2px solid #fffdf7; box-shadow:0 2px 6px rgba(67,20,7,.35); z-index:3;
+}
+.cd.tp::after{
+  content:''; position:absolute; inset:-6px; border-radius:16px; z-index:1; pointer-events:none;
+  border:4px solid var(--cc,#3b82f6);
+  box-shadow:0 0 0 2px rgba(255,255,255,.85), inset 0 0 0 2px rgba(255,255,255,.85), 0 0 18px var(--cc,#3b82f6);
+}
+.ccb{
+  position:absolute; bottom:-11px; left:50%; transform:translateX(-50%); z-index:3;
+  padding:2px 11px; border-radius:var(--gp-radius-pill);
+  background:rgba(41,39,34,.92); color:var(--gp-yellow);
+  font-size:.62rem; font-weight:900; white-space:nowrap;
+  border:1.5px solid rgba(255,255,255,.3); box-shadow:0 4px 10px rgba(67,20,7,.4);
+}
+
+/* 现状：横排 */
+.flat{position:absolute; top:8px; left:0; right:0; z-index:5; display:flex; justify-content:center; gap:8px; flex-wrap:wrap; padding:0 8px;}
+.fst{
+  display:inline-flex; align-items:center; gap:6px; min-width:90px;
+  padding:3px 10px 3px 4px; background:#fffdf8;
+  border:2px solid var(--gp-line); border-radius:var(--gp-radius-pill);
+  box-shadow:2px 2px 0 var(--gp-line); font-size:.66rem; font-weight:800;
+}
+.fst .av{
+  width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
+  background:linear-gradient(145deg,#ffd9a8,#f2b872); color:#5a2b0c;
+  border:1.5px solid var(--gp-line); font-size:.58rem; font-weight:900;
+}
+
+/* ══ 方案：环形站位（放大版）══ */
+.ring{position:absolute; inset:0; z-index:5;}
+.st{
+  position:absolute; width:70px; transform:translate(-50%,-50%);
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  padding:6px 4px 7px; background:#fffdf8; color:var(--gp-ink);
+  border:2.5px solid var(--gp-line); border-radius:var(--gp-radius-md);
+  box-shadow:2px 3px 0 var(--gp-line);
+  transition:box-shadow .18s,border-color .18s,transform .18s,background .2s;
+}
+.st .av{
+  position:relative;
+  width:40px; height:40px; border-radius:50%; display:grid; place-items:center;
+  background:linear-gradient(145deg,#ffd9a8,#f2b872); color:#5a2b0c;
+  border:2px solid var(--gp-line); box-shadow:1.5px 1.5px 0 var(--gp-line);
+  font-size:.95rem; font-weight:900;
+}
+.st .nn{
+  font-size:.64rem; font-weight:900; max-width:64px; line-height:1.15;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.st .ct{
+  display:inline-flex; align-items:center; gap:2px;
+  font-size:.66rem; font-weight:900; padding:2px 9px;
+  border-radius:var(--gp-radius-pill); background:var(--gp-paper);
+  border:1.5px solid var(--gp-line);
+}
+.st.cur{background:#fff3c4; box-shadow:0 0 0 2.5px #ffd43b,3px 4px 0 var(--gp-line); transform:translate(-50%,-50%) scale(1.06);}
+.st.cur .av::after{
+  content:''; position:absolute; inset:-5px; border-radius:50%;
+  border:2.5px dashed #e8a723; animation:sp 6s linear infinite;
+}
+.nm .st.cur .av::after{animation:none;}
+.st.nx{border-style:dashed; background:#fffaf0;}
+.st .tg{
+  position:absolute; top:-11px; left:50%; transform:translateX(-50%);
+  font-size:.55rem; font-weight:900; padding:2px 8px; border-radius:var(--gp-radius-pill);
+  background:var(--gp-ink); color:var(--gp-paper); white-space:nowrap;
+  box-shadow:1px 1.5px 0 rgba(0,0,0,.3);
+}
+.st.d2 .ct{background:var(--gp-yellow);}
+.st.d2{border-color:#b45309; box-shadow:0 0 0 2px rgba(180,83,9,.4),2px 3px 0 var(--gp-line);}
+.st.d1 .ct{background:var(--gp-coral); color:#fff;}
+.st.d1{border-color:var(--gp-coral); box-shadow:0 0 0 2.5px rgba(194,54,22,.5),2px 3px 0 var(--gp-line);}
+.st .un{
+  position:absolute; bottom:-10px; left:50%; transform:translateX(-50%);
+  font-size:.55rem; font-weight:900; padding:2px 8px; border-radius:var(--gp-radius-pill);
+  background:var(--gp-coral); color:#fff; white-space:nowrap;
+  border:1.5px solid var(--gp-line);
+}
+.arw{
+  position:absolute; z-index:3; pointer-events:none;
+  width:17px; height:17px; transform:translate(-50%,-50%);
+  color:var(--gp-coral); opacity:.9;
+  filter:drop-shadow(0 1px 2px rgba(255,255,255,.95));
+}
+
+.meta{
+  position:absolute; bottom:8px; left:0; right:0; z-index:6;
+  display:flex; justify-content:center; align-items:center; gap:9px; font-size:.72rem;
+}
+.old{font-size:.72rem; font-weight:800; color:var(--sunset-ink); opacity:.9;}
+.new{
+  display:inline-flex; align-items:center; gap:5px;
+  padding:5px 13px; border-radius:var(--gp-radius-pill);
+  background:var(--gp-yellow); color:var(--gp-ink);
+  border:2px solid var(--gp-line); box-shadow:2px 2.5px 0 var(--gp-line);
+  font-size:.75rem; font-weight:900; white-space:nowrap;
+}
+.new svg{width:15px; height:15px;}
+.tn{
+  display:inline-flex; align-items:center; gap:4px;
+  padding:5px 12px; border-radius:var(--gp-radius-pill);
+  background:#fffdf8; border:2px solid var(--gp-line);
+  box-shadow:2px 2.5px 0 var(--gp-line); font-size:.74rem; font-weight:900;
+}
+
+.hd2{position:absolute; bottom:0; left:0; right:0; height:150px; display:flex; align-items:flex-end; justify-content:center; padding-bottom:16px;}
+.hc{width:52px; height:78px; margin:0 -5px; border-radius:8px; box-shadow:0 3px 10px rgba(67,20,7,.3); transform-origin:bottom center;}
+.hc svg{width:100%; height:100%; display:block; border-radius:7px;}
+
+.foot{
+  margin-top:18px; padding:14px 16px; background:var(--gp-surface);
+  border:2.5px solid var(--gp-line); border-radius:var(--gp-radius-md);
+  box-shadow:0 4px 0 var(--gp-line); font-size:.78rem; line-height:1.75;
+}
+.foot b{color:var(--gp-coral);}
+code{background:var(--gp-paper); padding:1px 6px; border-radius:5px; font-size:.92em; border:1px solid rgba(41,39,34,.15);}
+</style>
+</head>
+<body>
+
+<h1>UNO 牌桌方位与转向 · 方案演示</h1>
+<p class="lead">
+  方案版<b>去掉了顶部席位条</b>，腾出的 42px 全部给环形站位；站位放大到 76px 并按<b>弧长均分</b>排列。
+</p>
+
+<div class="bar">
+  <label>人数</label>
+  <button data-n="3">3人</button><button data-n="4">4人</button>
+  <button data-n="5">5人</button><button data-n="6" class="on">6人(满)</button>
+  <div class="vr"></div>
+  <label>方向</label><button id="bd" class="on">↻ 顺时针</button>
+  <div class="vr"></div>
+  <button id="bs">下一手 ▶</button><button id="bg">模拟剩1张</button>
+  <div class="vr"></div>
+  <button id="bm">动效：开</button>
+</div>
+
+<div class="row">
+  <div>
+    <div class="dev" id="dA">
+      <div class="hd">
+        <div><div class="k">局域网桌游</div><div class="t">UNO 房规模式</div></div>
+        <div class="mn">☰</div>
+      </div>
+      <div class="sb" id="sA"></div>
+      <div class="ar">
+        <div class="cp"></div>
+        <div class="flat" id="rA"></div>
+        <div class="mid" id="midA"></div>
+        <div class="meta"><span class="old" id="mA"></span></div>
+      </div>
+      <div class="hd2" id="hA"></div>
+    </div>
+    <div class="cap">现状 — 对手环被 <b>display:none</b> 隐藏</div>
+  </div>
+
+  <div>
+    <div class="dev v2" id="dB">
+      <div class="hd">
+        <div><div class="k">局域网桌游</div><div class="t">UNO 房规模式</div></div>
+        <div class="mn">☰</div>
+      </div>
+      <div class="arB">
+        <div class="cp"></div>
+        <div class="ring" id="rB"></div>
+        <div class="mid" id="midB"></div>
+        <div class="meta" id="mB"></div>
+      </div>
+      <div class="hd2" id="hB"></div>
+    </div>
+    <div class="cap">方案 — <b>无席位条</b>·站位放大·弧长均分</div>
+  </div>
+</div>
+
+<div class="foot">
+  <b>弧长均分</b>：椭圆 rx≠ry 时等角度不等弧长，视觉间隔会不匀。改为先按弧长参数化再等距采样，站位间距才真正整齐。<br>
+  <b>去掉席位条</b>后舞台高度 +42px，环形半径与站位尺寸同步放大，顶部空间被充分利用。<br>
+  <b>切换方向</b>可见站位顺序与箭头同步翻转；<b>动效：关</b>模拟 <code>data-motion-level:off</code>。
+</div>
+
+<script>
+const NAMES=['我','机器人1','机器人2','机器人3','机器人4','机器人5'];
+let N=6,dir=1,cur=1,mo=true,dg=false;
+let cnt=[7,5,3,6,2,4];
+
+const CW='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>';
+const CCW='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 3v6h6"/></svg>';
+const ARW='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13"/><path d="M13 6l6 6-6 6"/></svg>';
+
+const UC={red:'#e4342a',yellow:'#f5c518',green:'#26a65b',blue:'#2b6fd4'};
+/** 内嵌 SVG 画 UNO 牌面（脱离外部资源，任何打开方式都能显示） */
+function card(color,label){
+  const c=UC[color]||'#2b2722';
+  return `<svg viewBox="0 0 74 111" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="72" height="109" rx="9" fill="#fffdf7" stroke="#292722" stroke-width="2"/>
+    <ellipse cx="37" cy="55.5" rx="26" ry="42" fill="${c}" transform="rotate(-20 37 55.5)"/>
+    <ellipse cx="37" cy="55.5" rx="26" ry="42" fill="none" stroke="#fffdf7" stroke-width="2.5" transform="rotate(-20 37 55.5)"/>
+    <text x="37" y="70" text-anchor="middle" font-family="PingFang SC,system-ui,sans-serif"
+      font-size="40" font-weight="900" fill="#fffdf7" stroke="#292722" stroke-width="1.2">${label}</text>
+    <text x="10" y="18" font-family="system-ui" font-size="13" font-weight="900" fill="${c}">${label}</text>
+    <text x="64" y="102" text-anchor="end" font-family="system-ui" font-size="13" font-weight="900" fill="${c}" transform="rotate(180 64 97)">${label}</text>
+  </svg>`;
+}
+function backCard(){
+  return `<svg viewBox="0 0 74 111" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="72" height="109" rx="9" fill="#2b2722" stroke="#fffdf7" stroke-width="2.5"/>
+    <ellipse cx="37" cy="55.5" rx="25" ry="40" fill="#3d372f" transform="rotate(-20 37 55.5)"/>
+    <text x="37" y="63" text-anchor="middle" font-family="PingFang SC,system-ui,sans-serif"
+      font-size="19" font-weight="900" fill="#f7c84b" transform="rotate(-17 37 57)">UNO</text>
+  </svg>`;
+}
+const HAND=[['red','5'],['blue','7'],['green','2'],['yellow','4'],['red','9'],['blue','3'],['green','8']];
+
+function opp(){const o=[];for(let s=1;s<N;s++)o.push(((dir*s)%N+N)%N);return o;}
+function nxt(){return ((cur+dir)%N+N)%N;}
+
+/** 椭圆弧按弧长等距采样 —— 等角度会因 rx≠ry 导致视觉间隔不匀 */
+function arcPoints(n,cx,cy,rx,ry,a0,a1){
+  const S=900, cum=[0];
+  const P=t=>({x:cx+rx*Math.cos(a0+(a1-a0)*t), y:cy-ry*Math.sin(a0+(a1-a0)*t)});
+  let pv=P(0);
+  for(let i=1;i<=S;i++){const q=P(i/S); cum.push(cum[i-1]+Math.hypot(q.x-pv.x,q.y-pv.y)); pv=q;}
+  const T=cum[S], out=[];
+  for(let k=0;k<n;k++){
+    const t=T*(k+1)/(n+1);
+    let lo=0,hi=S;
+    while(lo<hi){const m=(lo+hi)>>1; if(cum[m]<t)lo=m+1; else hi=m;}
+    out.push(P(lo/S));
+  }
+  return out;
+}
+/** 弧张角随人数自适应：人少收拢抬高（避开中央牌堆），人多张开到侧翼 */
+const ARC={1:{span:60,f:.80},2:{span:130,f:.80},3:{span:140,f:.80},4:{span:210,f:.74},5:{span:250,f:.80}};
+
+function seats(el){
+  el.innerHTML='';
+  for(let i=0;i<N;i++){
+    const d=document.createElement('div');
+    d.className='chip'+(i===cur?' cur':'');
+    d.innerHTML=`<span class="av">${NAMES[i][0]}</span>${NAMES[i]} · ${cnt[i]}`;
+    el.appendChild(d);
+  }
+}
+function flat(el){
+  el.innerHTML='';
+  opp().forEach(i=>{
+    const d=document.createElement('div');
+    d.className='fst';
+    d.innerHTML=`<span class="av">${NAMES[i][0]}</span>${NAMES[i]} <b>${cnt[i]}</b>张`;
+    el.appendChild(d);
+  });
+}
+function ring(el){
+  el.innerHTML='';
+  const o=opp(), n=o.length;
+  const W=el.clientWidth||390, H=el.clientHeight||466;
+  const sw=70, sh=86;
+  const c=ARC[n]||ARC[5];
+  const rx=(W-sw)/2, ry=(H-sh)/2*c.f, cx=W/2, cy=H/2;
+  const half=c.span*Math.PI/360;
+  const pts=arcPoints(n,cx,cy,rx,ry,Math.PI/2+half,Math.PI/2-half);
+  const nx=nxt();
+  o.forEach((pi,i)=>{
+    const c=cnt[pi], p=pts[i];
+    let cl='st';
+    if(pi===cur)cl+=' cur';
+    if(pi===nx&&pi!==cur)cl+=' nx';
+    if(c===1)cl+=' d1'; else if(c===2)cl+=' d2';
+    const d=document.createElement('div');
+    d.className=cl; d.style.left=p.x+'px'; d.style.top=p.y+'px';
+    d.innerHTML=(pi===nx&&pi!==cur?'<span class="tg">下一位</span>':'')
+      +`<div class="av">${NAMES[pi][0]}</div><div class="nn">${NAMES[pi]}</div><div class="ct">${c} 张</div>`
+      +(c===1?'<span class="un">UNO!</span>':'');
+    el.appendChild(d);
+  });
+  for(let i=0;i<pts.length-1;i++){
+    const a=pts[i],b=pts[i+1];
+    const ang=Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
+    const s=document.createElement('div');
+    s.className='arw';
+    s.style.left=(a.x+b.x)/2+'px'; s.style.top=(a.y+b.y)/2+'px';
+    s.style.transform=`translate(-50%,-50%) rotate(${ang}deg)`;
+    s.innerHTML=ARW;
+    el.appendChild(s);
+  }
+}
+function mid(el){
+  el.innerHTML=`<div class="cd bk">${backCard()}<div class="pb">63</div></div>
+    <div class="cd tp" style="--cc:${UC.blue}">${card('blue','7')}<div class="ccb">当前色 · 蓝</div></div>`;
+}
+function hand(el){
+  el.innerHTML='';
+  const k=Math.min(cnt[0],7);
+  for(let i=0;i<k;i++){
+    const off=i-(k-1)/2;
+    const d=document.createElement('div');
+    d.className='hc';
+    d.style.transform=`rotate(${off*5}deg) translateY(${Math.abs(off)*4}px)`;
+    d.innerHTML=card(HAND[i%HAND.length][0],HAND[i%HAND.length][1]);
+    el.appendChild(d);
+  }
+}
+function draw(){
+  [dA,dB].forEach(d=>{d.classList.toggle('ccw',dir===-1);d.classList.toggle('nm',!mo);});
+  seats(sA);flat(rA);ring(rB);mid(midA);mid(midB);hand(hA);hand(hB);
+  mA.textContent=`方向：${dir===1?'顺时针':'逆时针'} · 轮到：${NAMES[cur]}`;
+  mB.innerHTML=`<span class="new">${dir===1?CW:CCW}${dir===1?'顺时针':'逆时针'}</span>`
+    +`<span class="tn">轮到 ${NAMES[cur]}</span>`;
+}
+document.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('[data-n]').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); N=+b.dataset.n; if(cur>=N)cur=1; draw();
+});
+bd.onclick=function(){dir=-dir;this.textContent=dir===1?'↻ 顺时针':'↺ 逆时针';draw();};
+bs.onclick=()=>{cur=nxt();draw();};
+bg.onclick=function(){dg=!dg;cnt=dg?[7,1,2,6,1,4]:[7,5,3,6,2,4];this.classList.toggle('on',dg);draw();};
+bm.onclick=function(){mo=!mo;this.textContent='动效：'+(mo?'开':'关');this.classList.toggle('on',!mo);draw();};
+draw();
+window.addEventListener('resize',draw);
+</script>
+</body>
+</html>

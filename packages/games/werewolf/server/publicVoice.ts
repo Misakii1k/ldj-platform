@@ -31,6 +31,37 @@ export function publicSceneCues(previous: VoiceView, next: VoiceView): string[] 
   return [];
 }
 
+/** 天亮播报的段间间隔与收尾，与客户端 judgeVoiceDirector.#executeDawn 的节奏对齐。 */
+const DAWN_OPEN_GAP_MS = 800;
+const DAWN_DEATH_GAP_MS = 700;
+const DAWN_LAST_WORDS_GAP_MS = 800;
+const DAWN_TAIL_MS = 900;
+/** 网络与渲染余量，保证服务端不在客户端播报中途切换阶段。 */
+const DAWN_BROADCAST_MARGIN_MS = 800;
+
+/**
+ * 天亮公告的实际播报时长（含客户端段间间隔）：阶段时限据此动态设定，
+ * 播报完毕即进入发言阶段，不再叠加固定的基础等待时长。
+ */
+export function dawnBroadcastMs(view: VoiceView, day: number): number {
+  const seatOf = (id: string) => view.players.find((p) => p.playerId === id)?.seat ?? 0;
+  const deaths = [...view.lastNightDeaths].sort((a, b) => seatOf(a) - seatOf(b));
+  let ms = getVoiceCueDurationMs('dawn') + DAWN_OPEN_GAP_MS;
+  if (deaths.length === 0) {
+    ms += getVoiceCueDurationMs('day_peaceful');
+  } else {
+    // 客户端只要有出局者就会先播导语，再逐位报号
+    ms += getVoiceCueDurationMs('day_death_intro') + DAWN_DEATH_GAP_MS;
+    for (const id of deaths) {
+      const n = seatOf(id) + 1;
+      ms += Math.max(getVoiceCueDurationMs(`day_death_number_${n}`), getVoiceCueDurationMs(`day_death_${n}`)) + DAWN_DEATH_GAP_MS;
+    }
+    // 首日有出局者时客户端追加遗言提示
+    if (day === 1) ms += DAWN_LAST_WORDS_GAP_MS + getVoiceCueDurationMs('day_last_words');
+  }
+  return ms + DAWN_TAIL_MS + DAWN_BROADCAST_MARGIN_MS;
+}
+
 export interface VoiceState { phase: string; day: number; deadlineAt: number | null; timelineState: WerewolfTimelineState | null; announcement?: WerewolfAnnouncement | null }
 export function applyPublicSceneVoice<S extends VoiceState>(previous: S, next: S, before: VoiceView, after: VoiceView,
   now: number, effects: readonly GameEffect[], hunterPassed: boolean): { state: S; effects: GameEffect[] } {
@@ -46,8 +77,11 @@ export function applyPublicSceneVoice<S extends VoiceState>(previous: S, next: S
   const state = { ...next, announcement };
   const duration = cues.reduce((sum,cue) => sum + getVoiceCueDurationMs(cue),0);
   let nextEffects = [...effects];
-  if (duration && state.deadlineAt !== null) {
-    state.deadlineAt += duration;
+  const enteringDawn = state.phase === 'day_announcement' && (before.phase !== 'day_announcement' || before.day !== after.day);
+  if (state.deadlineAt !== null && (enteringDawn || duration)) {
+    // 天亮公告：时限动态对齐实际播报时长（含客户端段间间隔），播完即进发言；
+    // 其余阶段维持「基础时限 + 播报时长」的叠加语义
+    state.deadlineAt = enteringDawn ? now + dawnBroadcastMs(after, state.day) : state.deadlineAt + duration;
     nextEffects = nextEffects.map(effect => effect.type === 'schedule_timer' && effect.deadlineAt === next.deadlineAt ? { ...effect, deadlineAt: state.deadlineAt! } : effect);
   }
   if (state.timelineState && state.phase !== 'night') {

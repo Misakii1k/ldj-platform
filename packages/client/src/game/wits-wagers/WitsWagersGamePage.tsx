@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
 import { TabletopOvalShell } from '../../shared-ui/TabletopOvalShell.tsx';
 import { ConfirmDialog } from '../../shared-ui/ConfirmDialog.tsx';
@@ -6,6 +6,9 @@ import type { WitsWagersPlayerView, ChipId, TargetId, BetPairView } from './type
 import { targetLabel } from './types.ts';
 import { GuessPanel } from './GuessPanel.tsx';
 import { WitsTableStage } from './stage/WitsTableStage.tsx';
+import { WitsLoungeScene } from './stage/WitsLoungeScene.tsx';
+import { WitsSeatRail } from './stage/WitsSeatRail.tsx';
+import { WitsAnswerPlaque } from './stage/WitsAnswerPlaque.tsx';
 import { WitsFlightLayer } from './stage/WitsFlightLayer.tsx';
 import { useWitsWagersStage } from './stage/useWitsWagersStage.ts';
 import { BetEditor } from './BetEditor.tsx';
@@ -19,6 +22,7 @@ import { buildSeats } from './seats.ts';
 import { createInitialDraft, selectChipTarget, isDraftDirty, isDraftValid } from './betDraft.ts';
 import { useWitsWagersController } from './useWitsWagersController.ts';
 import './wits-wagers.css';
+import './stage/wits-lounge.css';
 
 export interface WitsWagersGamePageProps {
   view: WitsWagersPlayerView;
@@ -78,14 +82,16 @@ export function WitsWagersGamePage({
 
   // 仅在服务端确认了新的下注版本或换轮时才覆盖草稿。
   // 绝不能一见推送就重置——别人下注引发的刷新会把我还没保存的调整抹掉。
+  // 渲染期同步（React 认可的 adjust-during-render 模式）：下注阶段进场的同一帧
+  // 就用已接受的投注渲染，否则托盘会先以空草稿画一帧、下一帧再长高（跳动门实测 103px）。
   const syncedBetKeyRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!me) return;
+  if (me) {
     const key = `${view.roundToken}:${me.betRevision}`;
-    if (syncedBetKeyRef.current === key) return;
-    syncedBetKeyRef.current = key;
-    setBetDraft(createInitialDraft(me.acceptedBets));
-  }, [me, view.roundToken]);
+    if (syncedBetKeyRef.current !== key) {
+      syncedBetKeyRef.current = key;
+      setBetDraft(createInitialDraft(me.acceptedBets));
+    }
+  }
 
   const handleSelectTarget = (targetId: TargetId) => {
     if (view.phase !== 'betting' || !me || !me.canBet) return;
@@ -151,6 +157,9 @@ export function WitsWagersGamePage({
       data-ww-density={settings.compact ? 'compact' : 'cozy'}
       style={{ ['--ww-font-scale' as string]: String(settings.fontScale) }}
     >
+      {/* 场景层垫在最底层：房间 / 光锥 / 烟雾 / 毡桌 / 吊灯，纯装饰不接事件 */}
+      <WitsLoungeScene compact={settings.compact} />
+
       {isSpectator && <div className="ww-spectator-banner">当前正在以观众身份观战</div>}
 
       {controller.error && (
@@ -164,7 +173,9 @@ export function WitsWagersGamePage({
 
       <WitsTableStage
         phase={view.phase}
-        question={view.phase === 'settlement' || view.phase === 'game_over' ? null : view.question}
+        question={view.phase === 'game_over' ? null : view.question}
+        questionKicker={view.phase === 'answering' ? '写下你的估数' : undefined}
+        dealing={stage.isPlaying}
         board={view.board}
         members={members}
         faceDownCount={activePlayerCount}
@@ -173,13 +184,31 @@ export function WitsWagersGamePage({
         revealedTargets={stage.revealedTargets}
         myDraft={view.phase === 'betting' ? betDraft : (me?.acceptedBets ?? null)}
         myAcceptedBets={me?.acceptedBets ?? null}
+        publicBets={view.publicBets}
         activeChipId={view.phase === 'betting' ? activeChipId : null}
+        myPlayerId={me?.playerId ?? null}
         onSelectTarget={handleSelectTarget}
         interactive={view.phase === 'betting' && Boolean(me?.canBet)}
-        bankActive={stage.bankActive}
+        chipsHidden={stage.hideTableChips}
         deadlineAt={view.deadlineAt}
         phaseKey={`${view.roundToken}:${view.phase}:${view.phaseEpoch}`}
+        phaseLabel={PHASE_LABELS[view.phase] ?? view.phase}
         stageRef={stage.stageRef}
+        answerPlaque={
+          view.phase === 'settlement' && view.revealed ? (
+            <WitsAnswerPlaque question={view.revealed.question} />
+          ) : undefined
+        }
+        seatsRail={
+          <WitsSeatRail
+            seats={seats}
+            phase={view.phase}
+            myPlayerId={me?.playerId ?? null}
+            effectsRevealedFor={stage.settleRevealed}
+            ranksRevealed={stage.ranksRevealed}
+            crownedPlayerId={stage.crownedId}
+          />
+        }
       />
 
       {view.phase === 'answering' && (
@@ -194,7 +223,7 @@ export function WitsWagersGamePage({
 
       {view.phase === 'arranging' && (
         <div className="ww-phase-block__lead">
-          全员作答完毕，版图已生成，请查看各数值槽位与赔率
+          排牌中，马上开始下注…
         </div>
       )}
 
@@ -204,6 +233,7 @@ export function WitsWagersGamePage({
           draft={betDraft}
           activeChipId={activeChipId}
           board={view.board}
+          myPlayerId={me.playerId}
           onSelectActiveChip={setActiveChipId}
           onChangeDraft={setBetDraft}
           onSaveBets={handleSaveBets}
@@ -238,6 +268,7 @@ export function WitsWagersGamePage({
         currentUserId={me?.playerId ?? undefined}
         centerArena={centerArena}
         phaseBannerText={PHASE_LABELS[view.phase] ?? view.phase}
+        hideSeats
         onShowRules={() => setRulesOpen(true)}
         topRightControls={(
           <WitsMenuControls

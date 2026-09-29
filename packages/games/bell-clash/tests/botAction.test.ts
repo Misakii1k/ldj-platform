@@ -157,10 +157,9 @@ test('终局阶段 → 机器人返回 null', () => {
   assert.equal(action, null);
 });
 
-// —— 按铃窗口 ——
+// —— 拍铃与质疑窗口 ——
 
-test('按铃窗口：手中无同色短语卡 → 机器人不拍铃（避免罚摸）', () => {
-  // 构造：a 刚打出红色短语卡 → 打开按铃窗口；b 手中没有红色短语卡
+test('规则 13：机器人：challenge 中且自己是投票人 → challenge_vote { doubt: false } 且被 reducer 接受；不是投票人 → null；平时从不返回 ring_bell', () => {
   const redPhrase: BellClashCard = { kind: 'phrase', color: 'red', phrase: '大声说「好耶！」' };
   const red1: BellClashCard = { kind: 'number', color: 'red', number: 1 };
   const blue2: BellClashCard = { kind: 'number', color: 'blue', number: 2 };
@@ -173,72 +172,39 @@ test('按铃窗口：手中无同色短语卡 → 机器人不拍铃（避免罚
     { a: [redPhrase, red1], b: [blue2, yellow1], c: [red1, yellow1] },
     red1,
   );
-  const opened = step(ctx, state, ACTOR('a'), { type: 'play_card', playerId: 'a', cardIndex: 0 });
-  assert.equal(opened.bellOpen, true, 'a 打出短语卡应开窗');
-  // b 手中无同色短语 → 不拍铃
-  const viewB = bellClashModule.getPlayerView(opened, 'b') as unknown as BellClashPlayerView;
+  // 平时轮到 a 时，非当前出牌者（b, c）从不返回 ring_bell，而是返回 null
+  const viewBNormal = bellClashModule.getPlayerView(state, 'b') as unknown as BellClashPlayerView;
+  const actionBNormal = bellClashModule.pickBotAction?.({
+    view: viewBNormal,
+    playerId: 'b',
+    random: { nextInt: () => 0, shuffle: <T>(items: readonly T[]) => [...items] },
+  });
+  assert.equal(actionBNormal, null, '平时机器人不主动拍铃');
+
+  // a 拍铃 (cardIndex: 0 为短语卡)
+  const rung = step(ctx, state, ACTOR('a'), { type: 'ring_bell', playerId: 'a', cardIndex: 0 });
+  assert.ok(rung.challenge !== null);
+
+  // a 是拍铃者（不是投票人）→ pickBotAction 返回 null
+  const viewA = bellClashModule.getPlayerView(rung, 'a') as unknown as BellClashPlayerView;
+  const actionA = bellClashModule.pickBotAction?.({
+    view: viewA,
+    playerId: 'a',
+    random: { nextInt: () => 0, shuffle: <T>(items: readonly T[]) => [...items] },
+  });
+  assert.equal(actionA, null, '拍铃者本人不是投票人，bot 返回 null');
+
+  // b 是投票人且未投过 → 返回 challenge_vote { doubt: false }
+  const viewB = bellClashModule.getPlayerView(rung, 'b') as unknown as BellClashPlayerView;
   const actionB = bellClashModule.pickBotAction?.({
     view: viewB,
     playerId: 'b',
     random: { nextInt: () => 0, shuffle: <T>(items: readonly T[]) => [...items] },
   });
-  assert.equal(actionB, null, 'b 没有红色短语卡，不应拍铃');
-});
-
-test('按铃窗口：手中有同色短语卡 → 机器人返回 ring_bell 且被 reducer 接受', () => {
-  const redPhrase: BellClashCard = { kind: 'phrase', color: 'red', phrase: '大声说「好耶！」' };
-  const red1: BellClashCard = { kind: 'number', color: 'red', number: 1 };
-  const blue2: BellClashCard = { kind: 'number', color: 'blue', number: 2 };
-  const yellow1: BellClashCard = { kind: 'number', color: 'yellow', number: 1 };
-  const ctx = deterministicContext();
-  const state = createBellClashState(
-    ['a', 'b', 'c'],
-    { rulesetId: 'bell_clash_v1', handSize: 3 },
-    [blue2],
-    { a: [redPhrase, red1, yellow1], b: [blue2, yellow1, red1], c: [redPhrase, red1, yellow1] },
-    red1,
-  );
-  // a 打出红色短语卡 → 打开按铃窗口
-  const opened = step(ctx, state, ACTOR('a'), { type: 'play_card', playerId: 'a', cardIndex: 0 });
-  assert.equal(opened.bellOpen, true);
-  // c 持有红色短语 → 应拍铃
-  const viewC = bellClashModule.getPlayerView(opened, 'c') as unknown as BellClashPlayerView;
-  const actionC = bellClashModule.pickBotAction?.({
-    view: viewC,
-    playerId: 'c',
-    random: { nextInt: () => 0, shuffle: <T>(items: readonly T[]) => [...items] },
-  });
-  assert.ok(actionC, 'c 应拍铃');
-  assert.deepEqual(actionC, { type: 'ring_bell', playerId: 'c' });
-  // 派发到 reducer：成功
-  const result = bellClashModule.reduce(ctx, opened, ACTOR('c'), bellClashModule.parseAction(actionC!));
-  assert.equal(result.ok, true, 'c 的拍铃应被接受');
-});
-
-test('按铃窗口：已有人拍铃 → 机器人不再拍（让系统结算）', () => {
-  const redPhrase: BellClashCard = { kind: 'phrase', color: 'red', phrase: '大声说「好耶！」' };
-  const red1: BellClashCard = { kind: 'number', color: 'red', number: 1 };
-  const blue2: BellClashCard = { kind: 'number', color: 'blue', number: 2 };
-  const yellow1: BellClashCard = { kind: 'number', color: 'yellow', number: 1 };
-  const ctx = deterministicContext();
-  const state = createBellClashState(
-    ['a', 'b', 'c'],
-    { rulesetId: 'bell_clash_v1', handSize: 3 },
-    [blue2],
-    { a: [redPhrase, red1, yellow1], b: [blue2, yellow1, red1], c: [redPhrase, red1, yellow1] },
-    red1,
-  );
-  let s = step(ctx, state, ACTOR('a'), { type: 'play_card', playerId: 'a', cardIndex: 0 });
-  s = step(ctx, s, ACTOR('c'), { type: 'ring_bell', playerId: 'c' });
-  assert.equal(s.bellClaimantId, 'c');
-  // 这时 b 也想拍铃 → 机器人应返回 null（让系统 resolve_bell 结算）
-  const viewB = bellClashModule.getPlayerView(s, 'b') as unknown as BellClashPlayerView;
-  const actionB = bellClashModule.pickBotAction?.({
-    view: viewB,
-    playerId: 'b',
-    random: { nextInt: () => 0, shuffle: <T>(items: readonly T[]) => [...items] },
-  });
-  assert.equal(actionB, null, 'b 不该在 c 已拍铃时再拍');
+  assert.deepEqual(actionB, { type: 'challenge_vote', playerId: 'b', doubt: false });
+  // 被 reducer 接受
+  const reduced = bellClashModule.reduce(ctx, rung, ACTOR('b'), bellClashModule.parseAction(actionB!));
+  assert.equal(reduced.ok, true, 'b 的投票应被 reducer 接受');
 });
 
 // —— 重复询问 / 已动作后 ——
@@ -257,11 +223,7 @@ test('已出过牌后再次询问（轮到下一位了）→ 机器人返回 nul
     return card.kind === 'number' && top.kind === 'number' && card.number === top.number;
   });
   if (idx < 0) return; // 当前手牌都打不出，reducer 仍会拒绝 play；跳过本测试的负面断言
-  let s2 = step(ctx, s1, ACTOR('a'), { type: 'play_card', playerId: 'a', cardIndex: idx });
-  // 若打开了按铃窗口，系统关闭窗口流转到下一位
-  if (s2.bellOpen) {
-    s2 = step(ctx, s2, SYS, { type: 'resolve_bell', claimantId: '' });
-  }
+  const s2 = step(ctx, s1, ACTOR('a'), { type: 'play_card', playerId: 'a', cardIndex: idx });
   // 现在轮到 b（除非 a 已打完）
   if (s2.phase === 'game_over') {
     // 走极端路径：直接断言终局 → null
@@ -305,10 +267,10 @@ test('完整冒烟：bot + system 交替直到 game_over，机器人只在轮到
   for (let stepN = 0; stepN < 600; stepN += 1) {
     if (s.phase === 'game_over') break;
     const current = s.currentPlayerId as string;
-    // 1) 询问所有玩家：非当前出牌者必须返回 null
+    // 1) 询问所有玩家：非当前出牌者必须返回 null（无 challenge 时）
     for (const id of PLAYERS) {
       if (id === current) continue;
-      if (s.bellOpen) continue; // 窗口期间所有非当前者都不动
+      if (s.challenge !== null) continue;
       const action = bellClashModule.pickBotAction?.({
         view: bellClashModule.getPlayerView(s, id) as unknown as BellClashPlayerView,
         playerId: id,
@@ -317,31 +279,7 @@ test('完整冒烟：bot + system 交替直到 game_over，机器人只在轮到
       assert.equal(action, null, `step=${stepN} id=${id} 非自己回合，bot 不该动`);
       askedWhenNotTurn.add(id);
     }
-    // 2) 按铃窗口
-    if (s.bellOpen) {
-      if (s.bellClaimantId !== null) {
-        s = step(ctx, s, SYS, { type: 'resolve_bell', claimantId: s.bellClaimantId });
-        continue;
-      }
-      // 找持同色短语卡的玩家让其拍铃；否则 system resolve
-      const top = s.discardTop!;
-      let claimant: string | null = null;
-      for (const id of PLAYERS) {
-        if (id === current) continue;
-        const hand = s.hands[id]!;
-        if (hand.some((c) => c.kind === 'phrase' && c.color === top.color)) {
-          claimant = id;
-          break;
-        }
-      }
-      if (claimant) {
-        s = step(ctx, s, ACTOR(claimant), { type: 'ring_bell', playerId: claimant });
-        continue;
-      }
-      s = step(ctx, s, SYS, { type: 'resolve_bell', claimantId: '' });
-      continue;
-    }
-    // 3) 当前出牌者：让 bot 决策
+    // 2) 当前出牌者：让 bot 决策
     const action = bellClashModule.pickBotAction?.({
       view: bellClashModule.getPlayerView(s, current) as unknown as BellClashPlayerView,
       playerId: current,

@@ -5,9 +5,9 @@ import { test, expect, type Browser, type Page } from '@playwright/test';
 import * as path from 'node:path';
 import { seedRoom } from './helpers/dbClient.ts';
 import { RoomDriver } from './helpers/wsClient.ts';
-import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL } from './helpers/serverEnv.ts';
+import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL, skipPcHostConsole } from './helpers/serverEnv.ts';
 
-const ARTIFACT_DIR = path.resolve('C:/Users/87850/.gemini/antigravity/brain/884af4c7-8e29-45cf-91a8-ec7b2fa16acd');
+const ARTIFACT_DIR = path.resolve('docs/superpowers/reports/2026-09-18-werewolf-durian/after');
 
 interface Me {
   playerId: string;
@@ -19,6 +19,7 @@ interface Me {
 async function openBrowser(browser: Browser, me: Me, viewport = { width: 1280, height: 800 }): Promise<Page> {
   const context = await browser.newContext();
   const page = await context.newPage();
+  await skipPcHostConsole(page);
   await page.addInitScript(
     ([key, value]) => { localStorage.setItem(key, value); },
     [ME_STORAGE_KEY, JSON.stringify({ ...me, seatRole: 'player' })],
@@ -34,7 +35,7 @@ test.describe('Durian 界面视觉、无溢出视口、设备端切换与聊天 
     test.setTimeout(60_000);
     const seeded = seedRoom(DB_PATH, {
       gameId: 'durian',
-      count: 3,
+      count: 7,
       ready: true,
       config: { rulesetId: 'durian_orchard_v1', mode: 'standard' },
     });
@@ -70,6 +71,13 @@ test.describe('Durian 界面视觉、无溢出视口、设备端切换与聊天 
       const screenshotPath = path.join(ARTIFACT_DIR, 'durian_standard_mode.png');
       await page.screenshot({ path: screenshotPath, fullPage: false });
 
+      for (const [width,height] of [[360,640],[390,844],[844,390],[1280,800],[1920,1080]]) {
+        await page.setViewportSize({width,height});
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        const dock = await page.locator('.tabletop-bottom-bar').boundingBox();
+        expect(dock!.y + dock!.height).toBeLessThanOrEqual(height + 1);
+        await page.screenshot({path: path.join(ARTIFACT_DIR,'durian-'+width+'x'+height+'.png')});
+      }
       // 3. 验证聊天按钮在标准模式下可见，点击后成功打开聊天抽屉
       const chatTrigger = page.locator('.game-chat-trigger');
       await expect(chatTrigger).toBeVisible();

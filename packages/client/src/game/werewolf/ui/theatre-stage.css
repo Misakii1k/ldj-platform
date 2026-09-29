@@ -1,0 +1,1591 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   狼人杀 · 剧场舞台骨架与剧场票根席位（W02）
+
+   像素参照（定稿方向稿，内联 CSS）：
+     docs/ui-preview/werewolf/directions/_shared.css   台口 / 帷幔 / 红幕 / 地板 / 脚灯 / 追光 / 倒计时环 / 发言者
+     docs/ui-preview/werewolf/directions/_ticket.css   包厢栏 + 剧场票根卡
+     docs/ui-preview/werewolf/directions/A2-box-wings.html（白天）、N-night.html（夜）
+
+   规则：
+   - 本文件不写任何颜色字面量，一律引用 `theatre.css` 里定义的 `--ww-*` 剧场令牌（契约 §3）。
+   - 大字与大数字用 `--gp-font-display`（衬线，DESIGN-DIRECTION C7）。
+   - 深色悬疑表皮：1–1.5px 金色细边 + 贴纸阴影，不上粗墨边硬投影（C2）。
+   - 媒体查询只用断点契约允许的 380 / 480 / 640 / 768 / 1024 / 1280 宽与 520 / 620 高。
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. 台口舞台（TheatreStage） ────────────────────────────────────────────────────────────────────────── */
+
+.ww-stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+/* 场馆底：径向舞台光 + 两侧暗角。昼夜同底，只换灯（契约 §1）。 */
+.ww-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 38%, rgba(var(--ww-velvet), .55) 0%, transparent 70%),
+    radial-gradient(ellipse at 50% 110%, rgba(var(--ww-velvet-lo), .55) 0%, transparent 60%),
+    var(--ww-house);
+}
+
+/* 夜晚：整体压暗、偏冷，中央留一束光 */
+.ww-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 30%, rgba(var(--ww-cold), .10), transparent 70%),
+    rgba(var(--ww-nightfall), .62);
+  opacity: 0;
+  transition: opacity var(--gp-dur-phase) ease;
+}
+.ww-stage[data-period="night"]::after { opacity: 1; }
+/* ── 台口拱门 ── */
+.ww-proscenium {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.ww-proscenium__arch {
+  position: absolute;
+  inset: 0;
+  border-radius: 50% 50% 0 0 / 18% 18% 0 0;
+  border: 10px solid var(--ww-wood);
+  border-bottom: 0;
+  box-shadow: var(--ww-shadow-arch);
+}
+.ww-proscenium__backdrop {
+  position: absolute;
+  inset: 10px 10px 0;
+  border-radius: 50% 50% 0 0 / 17% 17% 0 0;
+  overflow: hidden;
+  background: radial-gradient(ellipse 60% 70% at 50% 45%, var(--ww-stage), var(--ww-stage-lo) 75%);
+}
+
+/* 顶部帷幔：打孔扇贝边 + 金色排穗 */
+.ww-valance {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 14%;
+  z-index: 3;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--ww-velvet-lo) 0 10px,
+    var(--ww-velvet) 10px 26px,
+    var(--ww-velvet-hi) 26px 32px,
+    var(--ww-velvet) 32px 44px
+  );
+  -webkit-mask: radial-gradient(28px 22px at 50% 100%, transparent 98%, #000) 0 0 / 56px 100% repeat-x;
+          mask: radial-gradient(28px 22px at 50% 100%, transparent 98%, #000) 0 0 / 56px 100% repeat-x;
+  box-shadow: var(--ww-shadow-valance);
+}
+.ww-valance::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 18px;
+  height: 3px;
+  background: repeating-linear-gradient(90deg, var(--ww-gold) 0 6px, transparent 6px 9px);
+}
+
+/* ── 左右红幕：白天拉开只留两侧褶皱，夜晚合拢 ── */
+.ww-curtain {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 52%;
+  z-index: 2;
+  background:
+    linear-gradient(180deg, var(--ww-scrim-35), transparent 18%, transparent 80%, var(--ww-scrim-45)),
+    repeating-linear-gradient(
+      90deg,
+      var(--ww-velvet-lo) 0 8px,
+      var(--ww-velvet) 8px 24px,
+      var(--ww-velvet-hi) 24px 30px,
+      var(--ww-velvet) 30px 40px
+    );
+  transition: transform 900ms cubic-bezier(.7, 0, .25, 1);
+  box-shadow: var(--ww-shadow-curtain);
+}
+.ww-curtain--l { left: 0; transform-origin: left; }
+.ww-curtain--r { right: 0; transform-origin: right; }
+.ww-stage[data-period="day"] .ww-curtain--l { transform: translateX(-78%) scaleX(.9); }
+.ww-stage[data-period="day"] .ww-curtain--r { transform: translateX(78%) scaleX(.9); }
+
+/* 幕上的金色系带：白天露出来，夜里被幕布盖住 */
+.ww-curtain::after {
+  content: "";
+  position: absolute;
+  top: 52%;
+  width: 22px;
+  height: 38px;
+  border-radius: 6px;
+  background: linear-gradient(var(--ww-gold-soft), var(--ww-gold));
+  box-shadow: 0 2px 4px var(--ww-scrim-32);
+}
+.ww-curtain--l::after { right: 14%; }
+.ww-curtain--r::after { left: 14%; }
+.ww-stage[data-period="night"] .ww-curtain::after { opacity: 0; }
+
+/* ── 木地板 ── */
+.ww-floor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 10%;
+  z-index: 1;
+  background:
+    repeating-linear-gradient(90deg, var(--ww-scrim-28) 0 2px, transparent 2px 64px),
+    linear-gradient(180deg, var(--ww-floor-hi), var(--ww-floor) 60%, var(--ww-floor-lo));
+  clip-path: polygon(6% 0, 94% 0, 100% 100%, 0 100%);
+}
+
+/* ── 脚灯：白天亮，夜里熄 ── */
+.ww-footlights {
+  position: absolute;
+  left: 3%;
+  right: 3%;
+  bottom: 8%;
+  z-index: 4;
+  height: 10px;
+  display: flex;
+  justify-content: space-around;
+  pointer-events: none;
+}
+.ww-footlights i {
+  width: 18px;
+  height: 8px;
+  border-radius: 8px 8px 2px 2px;
+  background: var(--ww-daylight);
+  box-shadow: 0 -6px 18px 4px rgba(var(--ww-warm), .55);
+  transition: opacity 600ms, box-shadow 600ms;
+}
+.ww-stage[data-period="night"] .ww-footlights i {
+  opacity: .15;
+  box-shadow: none;
+}
+
+/* ── 锥形追光 + 追光落点 ── */
+.ww-spot {
+  position: absolute;
+  left: 19%;
+  right: 19%;
+  top: 2%;
+  bottom: 2%;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(var(--ww-warm), 0),
+    rgba(var(--ww-warm), .30) 40%,
+    rgba(var(--ww-warm), .42)
+  );
+  clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
+  filter: blur(6px);
+  transition: opacity 700ms, background 700ms;
+}
+.ww-spot-pool {
+  position: absolute;
+  left: 25%;
+  right: 25%;
+  bottom: 6%;
+  height: 8%;
+  z-index: 3;
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(var(--ww-warm), .55), rgba(var(--ww-warm), .12) 55%, transparent 72%);
+  transition: opacity 700ms;
+}
+.ww-stage[data-period="night"] .ww-spot {
+  background: linear-gradient(
+    180deg,
+    rgba(var(--ww-cold), 0),
+    rgba(var(--ww-cold), .18) 50%,
+    rgba(var(--ww-cold), .26)
+  );
+}
+.ww-stage[data-period="night"] .ww-spot-pool { opacity: .35; }
+
+/* ── 中央内容插槽 ── */
+.ww-stage__center {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 6% 8%;
+  text-align: center;
+}
+
+/* ── 2. 包厢栏（左右两排座位栏） ────────────────────────────────────────────────────────────────────────── */
+
+.ww-box-rail {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  gap: 12px;
+  padding: 16px 12px;
+  background: linear-gradient(180deg, var(--ww-rail-hi), var(--ww-rail-lo));
+  border: 1px solid var(--ww-rail-line);
+  border-radius: 18px;
+  box-shadow: var(--ww-shadow-rail);
+  overflow: hidden;
+}
+.ww-box-rail::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 14px;
+  pointer-events: none;
+  border: 1px dashed var(--ww-rail-dash);
+}
+
+/* ── 3. 剧场票根席位卡（TicketSeat） ────────────────────────────────────────────────────────────────────────── */
+
+.seat.ticket {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  overflow: visible;
+  border-radius: 10px;
+  text-align: left;
+  color: var(--ww-ink);
+  background:
+    linear-gradient(90deg, var(--ww-stub) 0 64px, transparent 64px),
+    linear-gradient(180deg, var(--ww-card-2), var(--ww-card));
+  border: 1.5px solid var(--ww-seat-line);
+  box-shadow: var(--ww-shadow-seat);
+  /* 齿孔两端的半圆缺口 */
+  -webkit-mask:
+    radial-gradient(circle 7px at 64px 0, transparent 98%, #000) top / 100% 51% no-repeat,
+    radial-gradient(circle 7px at 64px 100%, transparent 98%, #000) bottom / 100% 51% no-repeat;
+          mask:
+    radial-gradient(circle 7px at 64px 0, transparent 98%, #000) top / 100% 51% no-repeat,
+    radial-gradient(circle 7px at 64px 100%, transparent 98%, #000) bottom / 100% 51% no-repeat;
+  transition:
+    transform 260ms cubic-bezier(.34, 1.56, .64, 1),
+    border-color 260ms,
+    box-shadow 260ms,
+    opacity 400ms;
+}
+
+/* 左票根：大号衬线座位号 + SEAT 小字，右侧虚线齿孔 */
+.seat.ticket .no {
+  flex: 0 0 64px;
+  width: 64px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 2px;
+  font: 700 34px/1 var(--gp-font-display);
+  color: var(--ww-gold-soft);
+  text-shadow: 0 2px 0 var(--ww-scrim-36);
+  border-right: 2px dashed var(--ww-stub-line);
+}
+.seat.ticket .no small {
+  font: 600 9px/1 var(--gp-font, sans-serif);
+  letter-spacing: .25em;
+  color: var(--ww-dim);
+}
+.seat.ticket .no img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px var(--ww-scrim-42));
+}
+
+.seat.ticket .body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+}
+.seat.ticket .ava {
+  flex: 0 0 auto;
+  display: block;
+}
+.seat.ticket .ava .user-avatar {
+  border: 1.5px solid var(--ww-gold-line);
+}
+.seat.ticket .txt {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.seat.ticket .name {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--ww-ink);
+  overflow-wrap: anywhere;
+}
+.seat.ticket .tag {
+  font-size: 12px;
+  color: var(--ww-muted);
+  overflow-wrap: anywhere;
+}
+
+/* 「你」小胶囊 */
+.seat.ticket .me {
+  position: absolute;
+  top: -9px;
+  right: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: var(--gp-radius-pill);
+  background: var(--ww-ink);
+  color: var(--ww-card);
+}
+
+/* ── 票根状态（契约 §4.1） ── */
+
+/* 你：金色虚线边 */
+.seat.ticket.is-self { border-color: var(--ww-self-line); border-style: dashed; }
+
+/* 发言中：票根整块变金、座位号变深色 */
+.seat.ticket.is-speaking {
+  background:
+    linear-gradient(90deg, var(--ww-gold) 0 64px, transparent 64px),
+    linear-gradient(180deg, var(--ww-seat-hi), var(--ww-seat-hi-lo));
+  border-color: var(--ww-gold);
+  box-shadow: var(--ww-shadow-seat-active);
+}
+.seat.ticket.is-speaking .no { color: var(--ww-active-ink); text-shadow: none; }
+.seat.ticket.is-speaking .no small { color: var(--ww-wood-hi); }
+.seat.ticket.is-speaking .tag { color: var(--ww-gold-soft); font-weight: 700; }
+
+/* 可点：悬停上浮 + 微倾斜 + 边框提亮 */
+.seat.ticket.pickable { cursor: pointer; }
+.seat.ticket.pickable:hover {
+  transform: translateY(-2px) rotate(-.6deg);
+  border-color: var(--ww-gold);
+}
+.seat.ticket.pickable:focus-visible {
+  outline: 3px solid var(--ww-gold);
+  outline-offset: 2px;
+}
+
+/* 不可点（如守卫昨晚已守） */
+.seat.ticket.unpickable { opacity: .45; cursor: not-allowed; }
+
+/* 已选（夜间印章 / 投票选中） */
+.seat.ticket.is-picked {
+  border-color: var(--ww-gold);
+  box-shadow: var(--ww-shadow-picked);
+}
+
+/* 狼队友 */
+.seat.ticket.is-mate { border-color: var(--ww-mate-line); }
+.seat.ticket.is-mate .tag { color: var(--ww-bad); font-weight: 700; }
+
+/* 预言家查验：票根翻面变绿 / 红 */
+.seat.ticket.seer-village .no { background: var(--ww-good-bg); color: var(--ww-good); }
+.seat.ticket.seer-wolves .no { background: var(--ww-bad-bg); color: var(--ww-bad); }
+
+/* 出局（局中）：半透明灰化；票根左上角撕掉（锯齿 clip-path）+「作废」；状态行只写「出局」 */
+.seat.ticket.is-dead {
+  opacity: .5;
+  filter: grayscale(.8);
+}
+.seat.ticket.is-dead .no {
+  clip-path: polygon(0 38%, 8% 30%, 16% 36%, 26% 22%, 34% 28%, 44% 12%, 52% 18%, 62% 0, 100% 0, 100% 100%, 0 100%);
+  background: var(--ww-card);
+  color: var(--ww-dim);
+}
+.seat.ticket.is-dead .no small { display: none; }
+.seat.ticket.is-dead .no::after {
+  content: "作废";
+  font: 700 10px/1 var(--gp-font, sans-serif);
+  letter-spacing: .2em;
+  color: var(--ww-bad);
+  margin-top: 2px;
+}
+
+/* 被刀（女巫视角） */
+.seat.ticket.is-victim {
+  border-color: var(--ww-victim-line);
+  box-shadow: var(--ww-shadow-victim);
+}
+.seat.ticket.is-victim .tag { color: var(--ww-bad); font-weight: 700; }
+
+/* ── 附加表现态（tone） ── */
+
+/* 平票 · 加赛候选 */
+.seat.ticket.candidate { border-color: var(--ww-cand-line); }
+.seat.ticket.candidate .tag { color: var(--ww-cand-ink); font-weight: 700; }
+
+/* 唱票最高票：金光锁定 */
+.seat.ticket.top {
+  border-color: var(--ww-gold);
+  box-shadow:
+    0 0 0 3px var(--ww-gold-ring-45),
+    0 0 40px rgba(var(--ww-warm), .6);
+  z-index: 3;
+}
+
+/* 已放逐：原位留红色虚线空位 */
+.seat.ticket.gone {
+  background: var(--ww-gone-bg);
+  border: 1.5px dashed var(--ww-gone-line);
+  box-shadow: none;
+  color: var(--ww-bad);
+}
+.seat.ticket.gone > * { visibility: hidden; }
+.seat.ticket.gone::after {
+  content: "已放逐";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--ww-bad);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .2em;
+}
+
+/* 遗言：追光锁定 */
+.seat.ticket.last-words {
+  border-color: var(--ww-gold);
+  box-shadow:
+    0 0 0 3px var(--ww-gold-ring-40),
+    0 0 48px rgba(var(--ww-warm), .65);
+  opacity: 1;
+  filter: none;
+}
+
+/* 终局胜方金光 / 败方 62% 透明 */
+.seat.ticket.winner {
+  border-color: var(--ww-gold);
+  box-shadow:
+    0 0 0 2px var(--ww-gold-ring-40),
+    0 0 28px rgba(var(--ww-warm), .5);
+}
+.seat.ticket.loser { opacity: .62; }
+
+/* ── 终局揭晓后的票根（reveal） ── */
+
+.seat.ticket.revealed {
+  opacity: 1;
+  filter: none;
+}
+.seat.ticket.revealed .no { clip-path: none; font-size: 0; }
+.seat.ticket.revealed .no small { display: none; }
+.seat.ticket.revealed .no::after { display: none; }
+.seat.ticket.revealed .tag b { font-weight: 700; }
+.seat.ticket.revealed.wolves {
+  background:
+    linear-gradient(90deg, var(--ww-bad-bg) 0 64px, transparent 64px),
+    linear-gradient(180deg, var(--ww-card-2), var(--ww-card));
+}
+.seat.ticket.revealed.village {
+  background:
+    linear-gradient(90deg, var(--ww-good-bg) 0 64px, transparent 64px),
+    linear-gradient(180deg, var(--ww-card-2), var(--ww-card));
+}
+.seat.ticket.revealed.wolves .tag b { color: var(--ww-bad); }
+.seat.ticket.revealed.village .tag b { color: var(--ww-good); }
+
+/* ── 印章（狼 🐾 / 预言家 👁 / 女巫 ☠ / 守卫 🛡 / 猎人 🎯 / 白痴 🃏） ── */
+.stamp {
+  position: absolute;
+  z-index: 4;
+  right: 10px;
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  margin-top: -23px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  pointer-events: none;
+  font-size: 22px;
+  transform: rotate(-12deg);
+  border: 2.5px solid currentColor;
+  box-shadow: inset 0 0 0 3px var(--ww-scrim-25);
+  background: var(--ww-scrim-35);
+  animation: ww-stamp 420ms cubic-bezier(.34, 1.56, .64, 1);
+}
+.stamp.is-wolf { color: var(--ww-stamp-wolf); }
+.stamp.is-seer { color: var(--ww-stamp-seer); }
+.stamp.is-witch { color: var(--ww-stamp-witch); }
+.stamp.is-guard { color: var(--ww-stamp-guard); }
+.stamp.is-hunter { color: var(--ww-stamp-wolf); }
+.stamp.is-idiot { color: var(--ww-gold-soft); }
+@keyframes ww-stamp {
+  0% { transform: rotate(-24deg) scale(2.4); opacity: 0; }
+  60% { transform: rotate(-10deg) scale(.9); opacity: 1; }
+  100% { transform: rotate(-12deg) scale(1); }
+}
+
+/* 狼队友小狼爪 */
+.mate-paw {
+  position: absolute;
+  right: 8px;
+  top: 6px;
+  font-size: 13px;
+  opacity: .9;
+}
+
+/* 票数徽章：票根右侧的衬线大数字 */
+.votes {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  min-width: 38px;
+  height: 38px;
+  padding: 0 6px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  font: 700 24px/1 var(--gp-font-display);
+  color: var(--ww-active-ink);
+  background: radial-gradient(circle at 35% 30%, var(--ww-gold-soft), var(--ww-gold));
+  box-shadow: 0 3px 0 var(--ww-wood-hi);
+}
+
+/* ── 4. 手机紧凑竖版票根：上票根 / 横向齿孔 / 下头像 + 名字 ── */
+
+.seat.ticket.compact {
+  flex-direction: column;
+  text-align: center;
+  background:
+    linear-gradient(180deg, var(--ww-stub) 0 30px, transparent 30px),
+    linear-gradient(180deg, var(--ww-card-2), var(--ww-card));
+  -webkit-mask:
+    radial-gradient(circle 6px at 0 30px, transparent 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 6px at 100% 30px, transparent 98%, #000) right / 51% 100% no-repeat;
+          mask:
+    radial-gradient(circle 6px at 0 30px, transparent 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 6px at 100% 30px, transparent 98%, #000) right / 51% 100% no-repeat;
+}
+.seat.ticket.compact .no {
+  flex: 0 0 30px;
+  width: auto;
+  font-size: 18px;
+  border-right: 0;
+  border-bottom: 2px dashed var(--ww-stub-line);
+}
+.seat.ticket.compact .no small { display: none; }
+.seat.ticket.compact .no img { width: 22px; height: 22px; }
+.seat.ticket.compact.is-dead .no {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+}
+.seat.ticket.compact.is-dead .no::after { font-size: 8px; }
+.seat.ticket.compact .body {
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 2px;
+}
+.seat.ticket.compact .name { font-size: 11.5px; line-height: 1.1; }
+.seat.ticket.compact .tag { font-size: 10px; line-height: 1.15; }
+.seat.ticket.compact .me {
+  top: auto;
+  bottom: -9px;
+  right: 50%;
+  transform: translateX(50%);
+}
+.seat.ticket.compact.is-speaking {
+  background:
+    linear-gradient(180deg, var(--ww-gold) 0 30px, transparent 30px),
+    linear-gradient(180deg, var(--ww-seat-hi), var(--ww-seat-hi-lo));
+}
+.seat.ticket.compact .stamp {
+  right: 50%;
+  top: 34px;
+  margin: 0 -17px 0 0;
+  width: 34px;
+  height: 34px;
+  font-size: 16px;
+}
+.seat.ticket.compact .mate-paw { right: 4px; top: 34px; }
+.seat.ticket.compact .votes {
+  right: 50%;
+  top: 32px;
+  transform: translate(50%, 0);
+  min-width: 28px;
+  height: 26px;
+  font-size: 17px;
+  border-radius: 8px;
+}
+.seat.ticket.compact.revealed.wolves {
+  background:
+    linear-gradient(180deg, var(--ww-bad-bg) 0 30px, transparent 30px),
+    linear-gradient(180deg, var(--ww-card-2), var(--ww-card));
+}
+.seat.ticket.compact.revealed.village {
+  background:
+    linear-gradient(180deg, var(--ww-good-bg) 0 30px, transparent 30px),
+    linear-gradient(180deg, var(--ww-card-2), var(--ww-card));
+}
+
+/* ── 5. 中央发言者（W02 暂留原 .speaker 文本，W03 再替换） ── */
+
+.ww-stage .speaker {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 4px;
+  transition: opacity 500ms;
+}
+.ww-stage .speaker .kicker,
+.ww-stage .speaker-tag {
+  font-size: 13px;
+  letter-spacing: .3em;
+  color: var(--ww-gold);
+}
+.ww-stage .speaker h1 {
+  margin: 6px 0 0;
+  font: 700 44px/1.1 var(--gp-font-display);
+  color: var(--ww-ink);
+  text-shadow: var(--ww-text-shadow-name);
+}
+.ww-stage .speaker p {
+  margin: 0;
+  font-size: 15px;
+  color: var(--ww-muted);
+}
+
+/* ── 6. 倒计时环（桌面半径 36 / 手机 26；≤10s 橙，≤5s 红脉冲） ── */
+
+.ww-timer {
+  position: relative;
+  display: grid;
+  place-items: center;
+  justify-self: center;
+}
+.ww-timer svg { display: block; transform: rotate(-90deg); }
+.ww-timer .track { fill: none; stroke: var(--ww-hairline); }
+.ww-timer .bar {
+  fill: none;
+  stroke: var(--ww-gold);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear, stroke 300ms;
+}
+.ww-timer .num {
+  position: absolute;
+  font: 700 26px/1 var(--gp-font-display);
+  color: var(--ww-ink);
+  font-variant-numeric: tabular-nums;
+}
+.ww-timer.warn .bar { stroke: var(--ww-warn); }
+.ww-timer.warn .num { color: var(--ww-cand-ink); }
+.ww-timer.crit .bar { stroke: var(--ww-crit); }
+.ww-timer.crit { animation: ww-tick 1s ease-in-out infinite; }
+@keyframes ww-tick {
+  0%, 100% { transform: scale(1); }
+  12% { transform: scale(1.14); }
+  30% { transform: scale(1); }
+}
+
+/* ── 7. 夜幕标题（红幕落下时中央的月亮与「天黑请闭眼」） ── */
+
+.ww-night-title {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 600ms 300ms, transform 600ms 300ms;
+  pointer-events: none;
+}
+.ww-night-title .moon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 36%, var(--ww-moon-hi), var(--ww-moon-mid) 60%, var(--ww-moon-lo));
+  box-shadow: 0 0 40px 10px rgba(var(--ww-cold), .35);
+  -webkit-mask: radial-gradient(circle at 72% 34%, transparent 36%, #000 37%);
+          mask: radial-gradient(circle at 72% 34%, transparent 36%, #000 37%);
+}
+.ww-night-title h2 {
+  margin: 0;
+  font: 700 48px/1.1 var(--gp-font-display);
+  color: var(--ww-night-ink);
+  text-shadow: 0 0 30px rgba(var(--ww-cold), .5);
+}
+.ww-night-title p {
+  margin: 0;
+  color: var(--ww-night-muted);
+  font-size: 16px;
+}
+[data-period="night"] .ww-night-title { opacity: 1; transform: none; }
+
+/* ── 8. 顶栏（契约 §4.0） ── */
+
+.ww-stage-topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.ww-stage-topbar .game {
+  font: 400 18px/1 var(--gp-font-display);
+  letter-spacing: .08em;
+  color: var(--ww-gold-soft);
+  margin: 0;
+}
+.ww-stage-topbar .day {
+  font: 400 15px/1 var(--gp-font-display);
+  color: var(--ww-ink);
+  padding: 3px 12px;
+  border-radius: var(--gp-radius-pill);
+  border: 1px solid var(--ww-gold-line);
+  background: var(--ww-scrim-25);
+  white-space: nowrap;
+}
+.ww-stage-topbar .alive { color: var(--ww-muted); font-size: 13px; white-space: nowrap; }
+.ww-stage-topbar .alive b { font-family: var(--gp-font-display); font-size: 17px; color: var(--ww-ink); }
+
+/* ── 9. 底部操作区（契约 §4.0：左说明，右次要 + 唯一黄色主按钮） ── */
+
+.ww-stage-dock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.ww-stage-dock .info {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+.ww-stage-dock .info strong { font-size: 17px; color: var(--ww-ink); }
+.ww-stage-dock .info span { font-size: 13px; color: var(--ww-muted); }
+
+.ww-btn {
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 12px;
+  border: 1.5px solid var(--ww-gold-line);
+  background: var(--ww-scrim-35);
+  color: var(--ww-ink);
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+/* 每个视口唯一黄色主按钮（契约 §4.0 / DESIGN-DIRECTION §4.4） */
+.ww-btn.primary {
+  background: var(--gp-yellow);
+  color: var(--gp-ink);
+  border-color: var(--ww-cta-border);
+  box-shadow: var(--ww-shadow-cta);
+  animation: ww-cta-in 480ms cubic-bezier(.34, 1.56, .64, 1);
+}
+.ww-btn.primary:active { transform: translateY(3px); box-shadow: var(--ww-shadow-press); }
+.ww-btn:disabled { opacity: .6; cursor: not-allowed; }
+.ww-btn:focus-visible { outline: 3px solid var(--ww-gold); outline-offset: 2px; }
+@keyframes ww-cta-in {
+  0% { transform: scale(.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ── 10. 断点：只允许 380 / 480 / 640 / 768 / 1024 / 1280 宽与 520 / 620 高 ── */
+
+@media (max-width: 1280px) {
+  .ww-stage__center { padding: 5% 7%; }
+}
+
+@media (max-width: 1024px) {
+  .ww-stage .speaker h1 { font-size: 38px; }
+  .ww-box-rail { padding: 14px 10px; gap: 10px; }
+  .seat.ticket .name { font-size: 15px; }
+}
+
+@media (max-width: 768px) {
+  .ww-stage-topbar { gap: 8px; }
+  .ww-stage-topbar .game { font-size: 16px; }
+  .ww-stage-topbar .day { font-size: 13px; padding: 2px 10px; }
+  .ww-stage-topbar .alive { display: none; }
+
+  .ww-box-rail { padding: 12px 6px; gap: 10px; border-radius: 14px; }
+  .ww-stage .speaker h1 { font-size: 30px; }
+  .ww-stage .speaker .kicker,
+  .ww-stage .speaker-tag { font-size: 11px; }
+  .ww-stage .speaker p { font-size: 12px; }
+
+  .ww-footlights i:nth-child(n + 4) { display: none; }
+
+  .ww-stage-dock { flex-wrap: wrap; }
+  .ww-stage-dock .info { flex: 1 0 100%; }
+  .ww-stage-dock .btn,
+  .ww-stage-dock .ww-btn { flex: 1; }
+
+  .ww-night-title h2 { font-size: 36px; }
+}
+
+@media (max-width: 640px) {
+  .ww-stage__center { padding: 4% 5%; }
+}
+
+@media (max-width: 480px) {
+  .ww-stage .speaker h1 { font-size: 26px; }
+  .ww-timer .num { font-size: 22px; }
+}
+
+@media (max-width: 380px) {
+  .ww-box-rail { padding: 10px 4px; gap: 8px; }
+  .seat.ticket.compact .name { font-size: 11px; }
+  .seat.ticket.compact .tag { display: none; }
+  .seat.ticket.compact .no { font-size: 18px; }
+}
+
+@media (max-height: 620px) {
+  .ww-valance { height: 10%; }
+  .ww-stage__center { padding: 3% 5%; }
+  .ww-stage .speaker h1 { font-size: 26px; margin-top: 2px; }
+  .ww-stage .speaker p { display: none; }
+  .ww-box-rail { padding: 10px 8px; gap: 8px; }
+  .ww-night-title .moon { width: 48px; height: 48px; }
+  .ww-night-title h2 { font-size: 30px; }
+  .ww-night-title p { display: none; }
+}
+
+@media (max-height: 520px) {
+  .ww-valance { height: 8%; }
+  .ww-floor { height: 7%; }
+  .ww-stage .speaker h1 { font-size: 22px; }
+  .seat.ticket.compact .no { flex-basis: 24px; font-size: 17px; }
+  .ww-box-rail { padding: 8px 6px; gap: 6px; }
+}
+
+/* ── 11.3 中央发言者追光（W03，契约 §4.5；像素参照 A2-box-wings.html） ── */
+
+.ww-speaker {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 4px;
+  max-width: 100%;
+}
+.ww-speaker__kicker {
+  font-size: 13px;
+  letter-spacing: .3em;
+  color: var(--ww-gold);
+}
+.ww-speaker__portrait {
+  position: relative;
+  display: block;
+  width: 150px;
+  height: 150px;
+  margin: 10px 0 6px;
+  border-radius: 50%;
+  border: 2px solid var(--ww-gold);
+  box-shadow: 0 0 0 6px var(--ww-scrim-35), 0 0 40px rgba(var(--ww-warm), .5);
+  overflow: hidden;
+  background: var(--ww-card);
+}
+.ww-speaker__portrait img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+.ww-speaker__big {
+  font: 700 52px/1.1 var(--gp-font-display);
+  color: var(--ww-ink);
+  text-shadow: var(--ww-text-shadow-name);
+  animation: ww-speaker-slam 520ms cubic-bezier(.34, 1.56, .64, 1);
+}
+@keyframes ww-speaker-slam {
+  0% { transform: scale(.72) translateY(12px); opacity: 0; }
+  55% { transform: scale(1.08); opacity: 1; }
+  75% { transform: scale(.98) rotate(-.6deg); }
+  100% { transform: scale(1); }
+}
+.ww-speaker__sub {
+  margin-top: 6px;
+  font-size: 15px;
+  color: var(--ww-muted);
+}
+.ww-speaker__sub b {
+  font-family: var(--gp-font-display);
+  color: var(--ww-gold-soft);
+  font-size: 18px;
+}
+.ww-speaker__footnote {
+  font-size: 12px;
+  color: var(--ww-dim);
+}
+.ww-speaker__timer-note {
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--ww-muted);
+}
+.ww-speaker .ww-timer { margin-top: 14px; }
+.ww-timer svg { width: 88px; height: 88px; }
+
+/* ── 11.4 交麦飞行 + 落点回弹 + 屏震（W03，契约 §4.5 / §5；WAAPI 驱动飞行本体） ── */
+
+.ww-mic-flight {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 80;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--ww-gold-soft), var(--ww-gold));
+  box-shadow: 0 0 24px rgba(var(--ww-warm), .7);
+  pointer-events: none;
+}
+/* 落点票根回弹 */
+@keyframes ww-seat-land {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.06); }
+  65% { transform: scale(.98); }
+  100% { transform: scale(1); }
+}
+.seat.ticket.ww-seat-land { animation: ww-seat-land 480ms cubic-bezier(.34, 1.56, .64, 1); }
+/* 轻屏震：≤4px、260ms（契约 §5） */
+@keyframes ww-shake {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(2px, -2px); }
+  50% { transform: translate(-3px, 1px); }
+  75% { transform: translate(2px, 2px); }
+}
+.werewolf-native-page.ww-shake { animation: ww-shake 260ms linear; }
+/* 发言中票根脉动金晕（替代 native-game-motion.css 旧类名 .seat.active 的失效脉动） */
+@keyframes ww-seat-pulse {
+  0%, 100% { box-shadow: var(--ww-shadow-seat-active); }
+  50% { box-shadow: var(--ww-shadow-seat-active), 0 0 26px rgba(var(--ww-warm), .55); }
+}
+.seat.ticket.is-speaking { animation: ww-seat-pulse 2.4s ease-in-out infinite; }
+/* 可点票根呼吸微光 */
+@keyframes ww-seat-breathe {
+  0%, 100% { border-color: var(--ww-seat-line); }
+  50% { border-color: var(--ww-gold-line); }
+}
+.seat.ticket.pickable:not(.is-picked):not(.is-dead) { animation: ww-seat-breathe 2.8s ease-in-out infinite; }
+
+/* 断点：手机版中央发言者（A2 方向稿 mobile 档：头像 96 / 大字 30 / 环半径 26） */
+@media (max-width: 768px) {
+  .ww-speaker__portrait { width: 96px; height: 96px; margin: 8px 0 4px; }
+  .ww-speaker__big { font-size: 30px; }
+  .ww-speaker__kicker { font-size: 11px; }
+  .ww-speaker__sub { font-size: 12px; margin-top: 4px; }
+  .ww-speaker__sub b { font-size: 14px; }
+  .ww-speaker .ww-timer { margin-top: 10px; }
+  .ww-timer svg { width: 60px; height: 60px; }
+  .ww-timer .num { font-size: 22px; }
+}
+@media (max-width: 480px) {
+  .ww-speaker__big { font-size: 26px; }
+}
+@media (max-height: 620px) {
+  .ww-speaker__portrait { width: 76px; height: 76px; }
+  .ww-speaker__big { font-size: 26px; }
+  .ww-speaker__sub { font-size: 11px; }
+  .ww-timer svg { width: 52px; height: 52px; }
+  .ww-timer .num { font-size: 19px; }
+}
+
+/* ── 11.6 入夜 / 夜间行动（W04，契约 §4.4；像素参照 N-night.html） ── */
+
+.ww-wake {
+  position: relative;
+  z-index: 6;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 4px;
+  max-width: 100%;
+}
+.ww-wake__art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 240px;
+  height: 180px;
+  margin-bottom: 2px;
+}
+.ww-wake__art::before {
+  /* 冷月光光晕 */
+  content: "";
+  position: absolute;
+  inset: -12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--ww-cold), .38), rgba(var(--ww-cold), .08) 55%, transparent 70%);
+}
+.ww-wake__art img {
+  /* 绝对定位脱离 grid 轨道：避免 auto 轨道被内容撑大后百分比 max-height 失效 */
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  filter: drop-shadow(0 10px 24px var(--ww-scrim-45));
+  animation: ww-wake-art-in 560ms cubic-bezier(.34, 1.56, .64, 1);
+}
+@keyframes ww-wake-art-in {
+  0% { transform: translateY(24px) scale(.8); opacity: 0; }
+  100% { transform: none; opacity: 1; }
+}
+/* 闭眼等待：插画压成黑剪影 + 冷光描边 */
+.ww-wake.sleeping .ww-wake__art img {
+  filter:
+    brightness(.08)
+    drop-shadow(0 0 1px rgba(var(--ww-cold), .8))
+    drop-shadow(0 0 18px rgba(var(--ww-cold), .35));
+}
+.ww-wake__kicker {
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+  letter-spacing: .3em;
+  color: var(--ww-night-muted);
+  margin-top: 6px;
+}
+.ww-wake__big {
+  position: relative;
+  z-index: 1;
+  font: 700 44px/1.1 var(--gp-font-display);
+  color: var(--ww-night-ink);
+  text-shadow: 0 3px 0 rgba(var(--ww-nightfall), .66), 0 0 24px rgba(var(--ww-cold), .45);
+}
+.ww-wake__line {
+  position: relative;
+  z-index: 1;
+  margin-top: 6px;
+  font-size: 15px;
+  color: var(--ww-night-muted);
+}
+.ww-wake__line b { font-family: var(--gp-font-display); font-size: 18px; color: var(--ww-ink); }
+.ww-wake__line .red { color: var(--ww-bad); }
+.ww-wake__line .good { color: var(--ww-good); }
+.ww-wake__timer-note { position: relative; z-index: 1; margin-top: 10px; font-size: 14px; color: var(--ww-night-muted); }
+.ww-wake .ww-timer { position: relative; z-index: 1; margin-top: 10px; }
+.ww-wake .ww-timer .bar { stroke: var(--ww-night-muted); }
+
+/* 女巫药瓶（N-night .potions） */
+.ww-potions { display: flex; gap: 12px; margin-top: 12px; justify-content: center; }
+.ww-potion {
+  min-height: 46px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1.5px solid color-mix(in srgb, var(--ww-stamp-witch) 50%, transparent);
+  background: color-mix(in srgb, var(--ww-stamp-witch) 10%, var(--ww-scrim-35));
+  color: var(--ww-night-ink);
+  cursor: pointer;
+}
+button.ww-potion:hover:not(:disabled) { border-color: var(--ww-stamp-witch); }
+.ww-potion.is-on {
+  border-color: var(--ww-stamp-witch);
+  background: color-mix(in srgb, var(--ww-stamp-witch) 28%, var(--ww-scrim-35));
+  box-shadow: 0 0 20px color-mix(in srgb, var(--ww-stamp-witch) 35%, transparent);
+}
+.ww-potion.used { opacity: .35; text-decoration: line-through; pointer-events: none; }
+.ww-potion:disabled { opacity: .6; cursor: not-allowed; }
+
+/* 闭眼等待：全体票根压暗 55%，自己 90%（N-night body[data-view="sleep"]） */
+.layout[data-view="sleep"] .seat.ticket { opacity: .55; }
+.layout[data-view="sleep"] .seat.ticket.is-self { opacity: .9; }
+
+/* 断点：手机版夜间场景（N-night mobile 档） */
+@media (max-width: 768px) {
+  .ww-wake__art { width: 180px; height: 130px; }
+  .ww-wake__big { font-size: 30px; }
+  .ww-wake__kicker { font-size: 11px; }
+  .ww-wake__line { font-size: 12.5px; }
+  .ww-wake__line b { font-size: 14px; }
+  .ww-potions { flex-direction: column; gap: 8px; width: 100%; padding: 0 12px; }
+  .ww-potion { min-height: 44px; justify-content: center; font-size: 13px; padding: 0 8px; }
+}
+@media (max-height: 620px) {
+  .ww-wake__art { width: 150px; height: 100px; }
+  .ww-wake__big { font-size: 24px; }
+  .ww-potion { min-height: 40px; font-size: 12px; }
+}
+
+/* 夜间动效降级（契约 §5：reduced 保留印章砸下与翻面，minimal/off 直出） */
+html[data-motion-level="minimal"] .ww-wake__art img,
+html[data-motion-level="off"] .ww-wake__art img { animation: none; }
+
+/* ── 11.7 投票 / 唱票 / 放逐（W05，契约 §4.6；像素参照 V-vote.html） ── */
+
+.ww-vcenter {
+  position: relative;
+  z-index: 6;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 4px;
+  max-width: 100%;
+}
+.ww-vcenter__kicker {
+  margin-top: 14px;
+  font-size: 13px;
+  letter-spacing: .3em;
+  color: var(--ww-gold);
+}
+.ww-vcenter__big {
+  font: 700 44px/1.1 var(--gp-font-display);
+  color: var(--ww-ink);
+  text-shadow: var(--ww-text-shadow-name);
+  overflow-wrap: anywhere;
+}
+.ww-vcenter__big.verdict { color: var(--ww-bad); }
+.ww-vcenter__line { margin-top: 6px; font-size: 15px; color: var(--ww-muted); }
+.ww-vcenter__line b { font-family: var(--gp-font-display); font-size: 18px; color: var(--ww-gold-soft); }
+.ww-vcenter__progress {
+  margin-top: 10px;
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.ww-vcenter__progress i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid var(--ww-gold-line);
+}
+.ww-vcenter__progress i.on { background: var(--ww-gold); border-color: var(--ww-gold); }
+.ww-vcenter__timer-note { margin-top: 10px; font-size: 14px; color: var(--ww-muted); }
+.ww-vcenter .ww-timer { margin-top: 10px; }
+
+/* 票箱（放逐字刻在箱体上） */
+.ww-urn {
+  position: relative;
+  width: 150px;
+  height: 135px;
+  margin: 0 auto;
+}
+.ww-urn__box {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 64%;
+  border-radius: 10px 10px 14px 14px;
+  background: linear-gradient(180deg, var(--ww-urn-hi), var(--ww-urn-lo));
+  border: 1.5px solid var(--ww-gold);
+  box-shadow: 0 10px 24px var(--ww-scrim-45), inset 0 0 20px var(--ww-scrim-42);
+}
+.ww-urn__box::before {
+  content: "放逐";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 34%;
+  text-align: center;
+  font: 700 22px/1 var(--gp-font-display);
+  letter-spacing: .4em;
+  color: var(--ww-gold-soft);
+  text-shadow: 0 2px 0 var(--ww-scrim-45);
+}
+.ww-urn__lid {
+  position: absolute;
+  left: -6%;
+  right: -6%;
+  bottom: 62%;
+  height: 14%;
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--ww-urn-hi), var(--ww-urn-lo));
+  border: 1.5px solid var(--ww-gold);
+}
+.ww-urn__slot {
+  position: absolute;
+  left: 30%;
+  right: 30%;
+  bottom: calc(62% + 5%);
+  height: 4%;
+  border-radius: 4px;
+  background: var(--ww-house);
+}
+.ww-urn__peek {
+  position: absolute;
+  left: 50%;
+  bottom: 70%;
+  width: 30%;
+  height: 22%;
+  transform: translateX(-50%) rotate(-6deg);
+  border-radius: 3px;
+  background: linear-gradient(var(--ww-ballot), var(--ww-ballot-lo));
+  border: 1px solid var(--ww-ballot-line);
+}
+.ww-urn.shake { animation: ww-urn-shake 360ms ease; }
+@keyframes ww-urn-shake {
+  20% { transform: rotate(-4deg); }
+  40% { transform: rotate(4deg); }
+  60% { transform: rotate(-3deg); }
+  80% { transform: rotate(2deg); }
+}
+
+/* 飞行中的选票（WAAPI 驱动，元素挂在 body） */
+.ww-ballot {
+  position: absolute;
+  z-index: 40;
+  left: 0;
+  top: 0;
+  width: 26px;
+  height: 18px;
+  margin: -9px 0 0 -13px;
+  pointer-events: none;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--ww-ballot), var(--ww-ballot-lo));
+  border: 1px solid var(--ww-ballot-line);
+  box-shadow: 0 0 14px rgba(var(--ww-warm), .7);
+}
+.ww-ballot::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  top: 7px;
+  height: 2px;
+  background: var(--ww-ballot-ink);
+}
+
+/* 票数徽章跳动（唱票落定） */
+.seat.ticket .votes.bump { animation: ww-votes-bump 260ms cubic-bezier(.34, 1.56, .64, 1); }
+@keyframes ww-votes-bump {
+  0% { transform: translateY(-50%) scale(1); }
+  45% { transform: translateY(-50%) scale(1.45); }
+  100% { transform: translateY(-50%) scale(1); }
+}
+.seat.ticket.compact .votes.bump { animation: ww-votes-bump-c 260ms cubic-bezier(.34, 1.56, .64, 1); }
+@keyframes ww-votes-bump-c {
+  45% { transform: translate(50%, 0) scale(1.45); }
+}
+
+/* 撕票：被放逐者票根撕裂坠落后转为出局态 */
+.seat.ticket.torn {
+  overflow: visible;
+  animation: ww-tear 640ms cubic-bezier(.4, 0, .7, .4) both;
+}
+@keyframes ww-tear {
+  0% { transform: none; }
+  25% { transform: rotate(-4deg) translateY(0); }
+  45% { transform: rotate(3deg) translateY(2px); }
+  70% { transform: rotate(-7deg) translateY(10px); opacity: .9; }
+  100% { transform: rotate(-10deg) translateY(26px) scale(.96); opacity: .35; }
+}
+
+/* 断点：手机版投票场景 */
+@media (max-width: 768px) {
+  .ww-vcenter__big { font-size: 28px; }
+  .ww-vcenter__kicker { font-size: 11px; }
+  .ww-vcenter__line { font-size: 12.5px; }
+  .ww-vcenter__line b { font-size: 14px; }
+  .ww-urn { width: 96px; height: 86px; }
+  .ww-urn__box::before { font-size: 15px; letter-spacing: .25em; }
+}
+@media (max-height: 620px) {
+  .ww-urn { width: 110px; height: 99px; }
+  .ww-vcenter__big { font-size: 24px; }
+}
+
+/* 投票动效降级（契约 §5：reduced 保留落定数字，minimal/off 直出计数不飞票） */
+html[data-motion-level="reduced"] .ww-urn.shake,
+html[data-motion-level="minimal"] .ww-urn.shake,
+html[data-motion-level="off"] .ww-urn.shake { animation: none; }
+html[data-motion-level="minimal"] .seat.ticket .votes.bump,
+html[data-motion-level="off"] .seat.ticket .votes.bump { animation: none; }
+html[data-motion-level="off"] .seat.ticket.torn { animation: none; opacity: .35; }
+
+/* ── 11.8 发身份（W06，契约 §4.7；像素参照 R-reveal.html step=deal） ── */
+
+.ww-rcenter {
+  position: relative;
+  z-index: 6;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 4px;
+  max-width: 100%;
+}
+.ww-rcenter__kicker {
+  font-size: 13px;
+  letter-spacing: .3em;
+  color: var(--ww-gold);
+}
+.ww-rcenter__line { margin-top: 6px; font-size: 15px; color: var(--ww-muted); line-height: 1.5; }
+.ww-rcenter__line b { font-family: var(--gp-font-display); color: var(--ww-gold-soft); }
+.ww-rcenter__progress { margin-top: 10px; display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; }
+.ww-rcenter__progress i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--ww-gold-line); }
+.ww-rcenter__progress i.on { background: var(--ww-gold); border-color: var(--ww-gold); }
+
+/* 中央大牌：点击翻面 */
+.ww-deal {
+  perspective: 1200px;
+  margin: 10px 0 6px;
+  cursor: pointer;
+  width: 210px;
+  height: 290px;
+  padding: 0;
+  border: none;
+  background: none;
+  display: block;
+}
+.ww-deal__card {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 640ms cubic-bezier(.3, 1.4, .5, 1);
+}
+.ww-deal.flipped .ww-deal__card { transform: rotateY(180deg); }
+.ww-deal__face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid var(--ww-gold);
+  box-shadow: 0 0 0 6px var(--ww-scrim-35), 0 20px 40px var(--ww-scrim-45), 0 0 50px rgba(var(--ww-warm), .35);
+}
+.ww-deal__back {
+  background: var(--ww-card) url('/assets/roles/card_back.png') center / cover;
+}
+.ww-deal__back::after {
+  content: "点一下翻开";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  font-size: 13px;
+  color: var(--ww-gold-soft);
+  text-shadow: 0 1px 3px var(--ww-scrim-45);
+  letter-spacing: .2em;
+  text-align: center;
+}
+.ww-deal__front {
+  transform: rotateY(180deg);
+  background: radial-gradient(ellipse at 50% 30%, var(--ww-stage), var(--ww-stage-lo) 75%);
+  display: grid;
+  grid-template-rows: 1fr auto;
+}
+.ww-deal__front img {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: contain;
+  padding: 10px 10px 0;
+  filter: drop-shadow(0 8px 16px var(--ww-scrim-45));
+}
+.ww-deal__role-name {
+  padding: 6px 0 12px;
+  font: 700 30px/1 var(--gp-font-display);
+  color: var(--ww-ink);
+}
+.ww-deal__team {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: var(--gp-radius-pill);
+}
+.ww-deal__team.wolves { background: var(--ww-bad-bg); color: var(--ww-bad); }
+.ww-deal__team.village { background: var(--ww-good-bg); color: var(--ww-good); }
+/* 翻开瞬间扫光 */
+.ww-deal__front::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 240, 200, .55) 48%, transparent 64%);
+  transform: translateX(-120%);
+}
+.ww-deal.flipped .ww-deal__front::after { animation: ww-deal-sweep 900ms 420ms ease-out; }
+@keyframes ww-deal-sweep { to { transform: translateX(120%); } }
+.ww-deal__skill { max-width: 440px; }
+
+/* 断点：手机版发身份 */
+@media (max-width: 768px) {
+  .ww-deal { width: 150px; height: 206px; }
+  .ww-deal__role-name { font-size: 22px; padding-bottom: 8px; }
+  .ww-rcenter__kicker { font-size: 11px; }
+  .ww-rcenter__line { font-size: 12.5px; }
+}
+@media (max-height: 620px) {
+  .ww-deal { width: 130px; height: 178px; margin: 4px 0 2px; }
+  .ww-deal__skill { display: none; }
+}
+
+/* 发身份动效降级（契约 §5：minimal/off 停翻面与扫光，直接显示牌面） */
+html[data-motion-level="minimal"] .ww-deal__card,
+html[data-motion-level="off"] .ww-deal__card { transition: none; }
+html[data-motion-level="off"] .ww-deal.flipped .ww-deal__front::after,
+html[data-motion-level="minimal"] .ww-deal.flipped .ww-deal__front::after { animation: none; }
+
+/* ── 11.9 终局揭晓（W07，契约 §4.7；像素参照 R-reveal.html step=end） ── */
+
+.ww-finale {
+  position: relative;
+  z-index: 6;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 4px;
+  max-width: 100%;
+}
+.ww-finale__banner {
+  font: 700 64px/1.05 var(--gp-font-display);
+  letter-spacing: .06em;
+  animation: ww-finale-stamp 560ms cubic-bezier(.34, 1.56, .64, 1);
+}
+.ww-finale__banner.village { color: var(--ww-good); text-shadow: 0 4px 0 var(--ww-scrim-45), 0 0 36px color-mix(in srgb, var(--ww-good) 45%, transparent); }
+.ww-finale__banner.wolves { color: var(--ww-bad); text-shadow: 0 4px 0 var(--ww-scrim-45), 0 0 36px color-mix(in srgb, var(--ww-bad) 50%, transparent); }
+.ww-finale__banner.aborted { color: var(--ww-dim); text-shadow: 0 4px 0 var(--ww-scrim-45); }
+@keyframes ww-finale-stamp {
+  0% { transform: scale(2.2) rotate(-6deg); opacity: 0; }
+  60% { transform: scale(.94) rotate(1deg); opacity: 1; }
+  100% { transform: none; }
+}
+.ww-finale__lineup { display: flex; justify-content: center; gap: 4px; margin-top: 12px; flex-wrap: wrap; }
+.ww-finale__lineup figure {
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  animation: ww-finale-rise 480ms cubic-bezier(.34, 1.56, .64, 1) both;
+}
+.ww-finale__lineup img {
+  width: 92px;
+  height: 92px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 14px var(--ww-scrim-45));
+}
+.ww-finale__lineup figcaption { font-size: 12px; color: var(--ww-muted); }
+.ww-finale__lineup figcaption b { font-family: var(--gp-font-display); color: var(--ww-ink); font-size: 14px; }
+@keyframes ww-finale-rise {
+  0% { transform: translateY(30px); opacity: 0; }
+  100% { transform: none; opacity: 1; }
+}
+.ww-finale__days {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 100%;
+}
+.ww-finale__day {
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ww-muted);
+  border: 1px solid var(--ww-rail-line);
+  background: var(--ww-scrim-35);
+}
+.ww-finale__day b { color: var(--ww-gold-soft); font-family: var(--gp-font-display); font-size: 14px; }
+
+/* 终局票根逐张翻面（revealed 类加上时播一次） */
+.seat.ticket.revealed { animation: ww-tflip 460ms ease; }
+@keyframes ww-tflip {
+  0% { transform: rotateX(0); }
+  50% { transform: rotateX(90deg); }
+  100% { transform: rotateX(0); }
+}
+
+/* 断点：手机版终局 */
+@media (max-width: 768px) {
+  .ww-finale__banner { font-size: 34px; }
+  .ww-finale__lineup img { width: 52px; height: 52px; }
+  .ww-finale__lineup figcaption { font-size: 10px; }
+  .ww-finale__lineup figcaption b { font-size: 12px; }
+  .ww-finale__days { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .ww-finale__day { font-size: 11px; padding: 4px 7px; line-height: 1.35; }
+  .ww-finale__day b { font-size: 12px; }
+}
+@media (max-height: 620px) {
+  .ww-finale__banner { font-size: 30px; }
+  .ww-finale__lineup img { width: 44px; height: 44px; }
+  .ww-finale__days { display: none; }
+}
+
+/* 终局动效降级（契约 §5：reduced 停翻面与盖章位移，保留揭示本身；minimal/off 直出） */
+html[data-motion-level="reduced"] .seat.ticket.revealed,
+html[data-motion-level="minimal"] .seat.ticket.revealed,
+html[data-motion-level="off"] .seat.ticket.revealed { animation: none; }
+html[data-motion-level="reduced"] .ww-finale__banner,
+html[data-motion-level="minimal"] .ww-finale__banner,
+html[data-motion-level="off"] .ww-finale__banner { animation: none; }
+html[data-motion-level="minimal"] .ww-finale__lineup figure,
+html[data-motion-level="off"] .ww-finale__lineup figure { animation: none; }
+
+/* ── 11. 动效降级（契约 §5 四档；reduced 保留关键反馈，停装饰循环） ── */
+
+@media (prefers-reduced-motion: reduce) {
+  .ww-curtain,
+  .ww-spot,
+  .ww-footlights i,
+  .ww-stage::after { transition-duration: 1ms; }
+  .ww-timer.crit { animation: none; }
+  .ww-btn.primary { animation: none; }
+  .stamp { animation: none; }
+}
+
+html[data-motion-level="reduced"] .ww-timer.crit,
+html[data-motion-level="minimal"] .ww-timer.crit,
+html[data-motion-level="off"] .ww-timer.crit { animation: none; }
+
+/* 交麦演出降级（契约 §5）：reduced 保留飞行与 slam、无屏震；minimal 无 slam 只淡入；off 全无 */
+html[data-motion-level="reduced"] .werewolf-native-page.ww-shake { animation: none; }
+html[data-motion-level="minimal"] .ww-speaker__big { animation: none; }
+html[data-motion-level="off"] .ww-speaker__big { animation: none; }
+html[data-motion-level="minimal"] .seat.ticket.ww-seat-land,
+html[data-motion-level="off"] .seat.ticket.ww-seat-land { animation: none; }
+html[data-motion-level="minimal"] .seat.ticket.is-speaking,
+html[data-motion-level="off"] .seat.ticket.is-speaking,
+html[data-motion-level="minimal"] .seat.ticket.pickable:not(.is-picked):not(.is-dead),
+html[data-motion-level="off"] .seat.ticket.pickable:not(.is-picked):not(.is-dead) { animation: none; }
+html[data-motion-level="reduced"] .seat.ticket.is-speaking { animation: none; }
+html[data-motion-level="reduced"] .seat.ticket.pickable:not(.is-picked):not(.is-dead) { animation: none; }
+
+html[data-motion-level="minimal"] .ww-curtain,
+html[data-motion-level="minimal"] .ww-spot,
+html[data-motion-level="minimal"] .ww-stage::after,
+html[data-motion-level="off"] .ww-curtain,
+html[data-motion-level="off"] .ww-spot,
+html[data-motion-level="off"] .ww-stage::after {
+  transition: none;
+}

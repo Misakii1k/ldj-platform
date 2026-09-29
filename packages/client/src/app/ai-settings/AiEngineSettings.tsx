@@ -319,8 +319,9 @@ export function AiEngineSettings() {
         <strong>{model.trim() || '尚未选择模型'}</strong>
         <small>{provider === 'anthropic' ? 'Anthropic 协议' : 'OpenAI 兼容协议'}</small>
       </article>
+      <label className="room-sheet__field" htmlFor="settings-thinking-depth"><span>思考深度（推理强度）</span><select id="settings-thinking-depth" value={thinkingDepth} onChange={(event) => setThinkingDepth(event.target.value as ThinkingDepth)} disabled={disabled}>{THINKING_DEPTH_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select><small>{thinkingDepthDescription(provider)}</small></label>
       <button type="button" className="ai-advanced-toggle" aria-expanded={advancedOpen} aria-controls="ai-advanced-settings" onClick={() => setAdvancedOpen((current) => !current)}>
-        <span><strong>高级连接与推理设置</strong><small>接口、模型目录、思考深度、超时和管理员权限</small></span>
+        <span><strong>高级连接与推理设置</strong><small>接口、模型目录、超时和管理员权限</small></span>
         <span aria-hidden="true">{advancedOpen ? '收起' : '展开'}</span>
       </button>
       {advancedOpen && (
@@ -329,7 +330,6 @@ export function AiEngineSettings() {
             <label className="room-sheet__field" htmlFor="settings-provider"><span>服务商接口协议</span><select id="settings-provider" value={provider} onChange={(event) => { setProvider(event.target.value as LlmProviderType); setModels([]); }} disabled={disabled}><option value="openai">OpenAI / 兼容接口</option><option value="anthropic">Anthropic Claude</option></select></label>
             <label className="room-sheet__field" htmlFor="settings-base-url"><span>接口地址 Base URL</span><input id="settings-base-url" type="text" inputMode="url" autoComplete="off" spellCheck={false} value={baseUrl} onChange={(event) => { setBaseUrl(event.target.value); setModels([]); }} disabled={disabled} placeholder="https://api.example.com/v1 或 api.example.com" /><small>{fromEnv ? '当前默认来自环境变量。' : ''}支持根地址、带 /v1 或完整端点路径，可省略 https://；留空保存将回落到启动配置。</small></label>
             <AiModelPicker model={model} models={models} disabled={disabled} fetching={fetchingModels} onModelChange={setModel} onRefresh={() => void fetchModels()} />
-            <label className="room-sheet__field" htmlFor="settings-thinking-depth"><span>思考深度</span><select id="settings-thinking-depth" value={thinkingDepth} onChange={(event) => setThinkingDepth(event.target.value as ThinkingDepth)} disabled={disabled}>{THINKING_DEPTH_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select><small>{thinkingDepthDescription(provider)}</small></label>
             <label className="room-sheet__field" htmlFor="settings-timeout"><span>单次决策超时（毫秒）</span><input id="settings-timeout" type="number" min="1000" max="120000" step="1" value={timeoutMs} onChange={(event) => setTimeoutMs(event.target.value)} aria-invalid={timeoutInvalid ? 'true' : undefined} aria-describedby={timeoutInvalid && error ? 'ai-settings-error' : undefined} required disabled={disabled} /></label>
             <label className="room-sheet__field" htmlFor="settings-admin-token"><span>管理员口令</span><input id="settings-admin-token" type="password" value={adminToken} onChange={(event) => setAdminToken(event.target.value)} placeholder={needsAdminToken ? '远程操作需要 ADMIN_TOKEN' : '仅远程受保护时需要'} autoComplete="off" disabled={saving} /><small>仅本次设置会话有效，不会持久化。</small></label>
             {hasApiKey && !clearApiKey && <div className="ai-danger-zone"><div><strong>清除已保存密钥</strong><p>保存后将回落到环境变量或无密钥状态。</p></div><button type="button" onClick={() => { if (window.confirm('确认清除已保存的 API Key？此操作将在保存设置后生效。')) { setClearApiKey(true); setApiKey(''); } }} disabled={disabled}>清除密钥</button></div>}

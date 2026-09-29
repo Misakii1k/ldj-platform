@@ -31,7 +31,8 @@ import type {
 export const UNO_HOUSE_VERSIONED_IDENTITY = {
   engineContractVersion: 2 as const,
   rulesetId: 'uno_platform_house_v1',
-  viewVersion: 1,
+  // v2：公共视图新增 lastRound（结算快照），客户端解析器同发版升级
+  viewVersion: 2,
 };
 
 export { unoHouseChatPolicy } from './chatPolicy.ts';

@@ -1,0 +1,137 @@
+## main...origin/main
+ M compliance/d4/third-game-baseline.json
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/bell-clash-1280x800.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/bell-clash-390x844.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/bell-clash-sim-1280x800.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/bell-clash-sim-390x844.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/cheese-thief-1280x800.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/cheese-thief-390x844.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/cheese-thief-sim-1280x800.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/cheese-thief-sim-390x844.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/durian-1280x800.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/durian-390x844.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/echo-judge-1280x800.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/echo-judge-390x844.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/echo-judge-sim-1280x800.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/echo-judge-sim-390x844.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/goose-relay-sim-1280x800.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/goose-relay-sim-390x844.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/landlord-1280x800.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/landlord-390x844.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/loveletter-1280x800.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/loveletter-390x844.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/night-testimony-1280x800.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/night-testimony-390x844.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/night-testimony-sim-1280x800.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/night-testimony-sim-390x844.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/undercover-1280x800.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/undercover-390x844.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/undercover-blank-1280x800.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/undercover-blank-390x844.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/uno-1280x800.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/uno-390x844.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/werewolf-1280x800.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/werewolf-390x844.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/werewolf-moderator-1280x800.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/werewolf-moderator-390x844.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/werewolf-moderator-console-1280x800.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/baseline/werewolf-moderator-console-390x844.png
+ M docs/superpowers/reports/2026-08-15-game-ui-refresh/viewport-baseline.json
+ M e2e/bell-clash-tabletop.spec.ts
+ M e2e/cheese-thief-tabletop.spec.ts
+ M e2e/durian-tabletop.spec.ts
+ M e2e/echo-judge-tabletop.spec.ts
+ M e2e/goose-relay-tabletop.spec.ts
+ M e2e/landlord-platform.spec.ts
+ M e2e/launch-playable.spec.ts
+ M e2e/loveletter-tabletop.spec.ts
+ M e2e/night-testimony-tabletop.spec.ts
+ M e2e/smoke.spec.ts
+D  e2e/tmp-probe3.spec.ts
+ M e2e/undercover-blank.spec.ts
+ M e2e/uno-house.spec.ts
+ M e2e/uno-legacy.spec.ts
+ M e2e/visual-audit.spec.ts
+ M e2e/visual-smoke.spec.ts
+ M e2e/werewolf-moderator.spec.ts
+ M e2e/werewolf-tabletop.spec.ts
+ M eslint.config.js
+ M packages/client/index.html
+ M packages/client/public/version.json
+ M packages/client/src/App.tsx
+ M packages/client/src/app/GameHomePage.tsx
+ M packages/client/src/app/about-update.css
+ M packages/client/src/app/update/updateService.ts
+ M packages/client/src/game/GamePage.tsx
+ M packages/client/src/game/TabletopSettlementDock.tsx
+ M packages/client/src/game/cheese-thief/CheeseTabletopArena.tsx
+ M packages/client/src/game/cheese-thief/CheeseThiefGamePage.tsx
+ M packages/client/src/game/durian/DurianGamePage.tsx
+ M packages/client/src/game/durian/durian.css
+ M packages/client/src/game/tabletop/GameDrawer.tsx
+ M packages/client/src/game/werewolf/WerewolfGamePage.tsx
+ M packages/client/src/game/werewolf/moderator/DealCeremony.tsx
+ M packages/client/src/game/werewolf/moderator/ModeratorHostConsole.tsx
+ M packages/client/src/game/werewolf/moderator/ModeratorSeatRow.tsx
+ M packages/client/src/game/werewolf/moderator/PlayerCardView.tsx
+ M packages/client/src/game/werewolf/moderator/WerewolfModeratorPage.tsx
+ M packages/client/src/game/werewolf/moderator/werewolf-moderator.css
+ M packages/client/src/game/werewolf/presentation.ts
+ M packages/client/src/game/werewolf/ui/GameOverReveal.tsx
+ M packages/client/src/game/werewolf/ui/PrivateRolePanel.tsx
+ M packages/client/src/game/werewolf/ui/VoteLedger.tsx
+ M packages/client/src/game/werewolf/ui/WerewolfRoleSpotlight.tsx
+ M packages/client/src/game/werewolf/ui/WerewolfStage.tsx
+ M packages/client/src/game/werewolf/ui/judgeVoice.ts
+ M packages/client/src/game/werewolf/ui/judgeVoiceDirector.ts
+ M packages/client/src/main.tsx
+ M packages/client/src/room/RoomPage.tsx
+ M packages/client/src/shared-ui/DiceCup.tsx
+ M packages/client/src/shared-ui/GameSetupPanel.tsx
+ M packages/client/src/shared-ui/IdentityFlipCard.tsx
+ M packages/client/src/shared-ui/TabletopMenuDrawer.tsx
+ M packages/client/src/shared-ui/TabletopOvalShell.tsx
+ M packages/client/src/shared-ui/ThreeDiceCupCanvas.tsx
+ M packages/client/src/shared-ui/setupState.ts
+ M packages/client/src/shared-ui/useCompactLayout.ts
+ M packages/client/src/styles.css
+ M packages/client/tests/diceCup.test.ts
+ M packages/games/werewolf/server/module.ts
+ M packages/games/werewolf/server/v2/rules.ts
+ M packages/server/src/core/commands/chat.ts
+ M packages/server/src/core/commands/roomCommand.ts
+ M packages/server/src/core/game/session.ts
+ M packages/server/src/gateway/ws.ts
+ M packages/server/src/persistence/migrations.ts
+ M packages/server/tests/room.test.ts
+ M packages/shared/src/game/catalog.ts
+ M packages/shared/src/index.ts
+ M packages/shared/src/protocol/messages.ts
+ M scripts/check-release-endpoints.mjs
+ M scripts/tests/d4/measure-loc.test.mjs
+ M wrangler.json
+?? .workbuddy-ai/
+?? docs/plans/2026-09-19-werewolf-handoff/
+?? docs/superpowers/reports/2026-09-18-werewolf-durian/
+?? docs/ui-preview/
+?? output/
+?? packages/client/public/assets/fruits/
+?? packages/client/src/display/
+?? packages/client/src/game/cheese-thief/CheeseModel3DCanvas.tsx
+?? packages/client/src/game/durian/DurianTurnSheet.tsx
+?? packages/client/src/game/durian/durian-native.css
+?? packages/client/src/game/durian/fruit-party.css
+?? packages/client/src/game/native-game-motion.css
+?? packages/client/src/game/tabletop/useGameVisibility.ts
+?? packages/client/src/game/werewolf/theatre.css
+?? packages/client/src/game/werewolf/ui/SecretRoleCard.tsx
+?? packages/client/src/game/werewolf/ui/WerewolfThemeArt.tsx
+?? packages/client/src/game/werewolf/ui/WerewolfThemeSwitcher.tsx
+?? packages/client/src/game/werewolf/werewolf-native.css
+?? packages/client/src/game/werewolf/werewolf.css
+?? packages/client/tests/seatDriftRobustness.test.ts
+?? packages/shared/src/game/werewolfTimeline.ts
+?? scripts/auto-pipeline.mjs
+?? scripts/cf-auto.mjs
+?? scripts/serve-art-preview.mjs
+?? scripts/verify-werewolf-art.mjs

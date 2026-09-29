@@ -9,10 +9,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   parseWitsWagersView,
-  breakdownNotes,
-  formatMoney,
+  formatPoints,
   targetLabel,
-  YUAN_PER_POINT,
 } from '../src/game/wits-wagers/types.ts';
 
 // —— 固定 fixture：假题、假玩家，绝不引用生产题库 ——
@@ -386,32 +384,13 @@ test('result 严格白名单：合法结构通过，未知键或非法名次失�
   assert.equal(parseWitsWagersView(playerView({ result: { ...goodResult, rankings: badRankings }, phase: 'game_over' }), 'player'), null);
 });
 
-// —— 钞票展示层：服务端算分，桌面摆钞票（1 分 = ¥100） ——
+// —— 金额文案：一律「N 分」（2026-09-27 用户决定；钞票拆张随 X07 退场） ——
 
-test('formatMoney: 积分按 1 分 = ¥100 换算并加千分位', () => {
-  assert.equal(formatMoney(0), '¥0');
-  assert.equal(formatMoney(3), '¥300');
-  assert.equal(formatMoney(13), '¥1,300');
-  assert.equal(formatMoney(1234), '¥123,400');
-});
-
-test('breakdownNotes: 贪心拆张，张数最少且总额守恒', () => {
-  assert.deepEqual(breakdownNotes(0), []);
-  assert.deepEqual(breakdownNotes(-5), [], '负分不产生钞票');
-  assert.deepEqual(breakdownNotes(1), [100]);
-  assert.deepEqual(breakdownNotes(2), [200]);
-  assert.deepEqual(breakdownNotes(3), [200, 100], '¥300 是两张，不是三张一百');
-  assert.deepEqual(breakdownNotes(13), [1000, 200, 100]);
-  assert.deepEqual(breakdownNotes(17), [1000, 500, 200]);
-  assert.deepEqual(breakdownNotes(23), [1000, 1000, 200, 100]);
-
-  // 总额必须等于积分换算后的金额，且只用登记面值
-  for (const points of [1, 2, 7, 23, 46, 99, 137]) {
-    const notes = breakdownNotes(points);
-    const sum = notes.reduce((a, b) => a + b, 0);
-    assert.equal(sum, points * YUAN_PER_POINT, `${points} 分拆张后总额不守恒`);
-    assert.ok(notes.every((n) => [100, 200, 500, 1000].includes(n)));
-  }
+test('formatPoints: 直接显示「N 分」并加千分位（界面金额一律用分）', () => {
+  assert.equal(formatPoints(0), '0 分');
+  assert.equal(formatPoints(25), '25 分');
+  assert.equal(formatPoints(1234), '1,234 分');
+  assert.equal(formatPoints(-3), '-3 分');
 });
 
 test('targetLabel: 边缘槽用中文，数值槽用千分位', () => {
@@ -419,4 +398,108 @@ test('targetLabel: 边缘槽用中文，数值槽用千分位', () => {
   assert.equal(targetLabel({ id: 'g:8000', value: 8000 }), '8,000');
   assert.equal(targetLabel(null), '未知槽位');
   assert.equal(targetLabel(undefined), '未知槽位');
+});
+
+// —— X03：buildSeats 贵宾厅席位卡派生字段 ——
+
+test('buildSeats: 结算阶段派生座位号 / 玩家色 / 账本 / 名次，displayScores 覆盖分数显示', async () => {
+  const { buildSeats, playerColorFor } = await import('../src/game/wits-wagers/seats.ts');
+
+  const revealed = {
+    round: 2,
+    question: {
+      id: 'q-test',
+      prompt: '测试题面',
+      unit: '千米',
+      answer: 300,
+      sourceUrl: 'https://example.com',
+      sourceNote: '测试来源',
+      asOf: '2026-09-27',
+      explanation: '测试解析',
+      reviewed: true,
+    },
+    board: [
+      { id: 'lower', value: null, slot: 'LOWER', odds: 6, authors: [] },
+      { id: 'g:300', value: 300, slot: 'L1', odds: 3, authors: ['p1'] },
+      { id: 'g:900', value: 900, slot: 'R1', odds: 3, authors: ['p2'] },
+    ],
+    bets: {},
+    winningTargetIds: ['g:300'],
+    awardedAuthors: ['p1'],
+    ledger: [
+      { playerId: 'p1', scoreBefore: 10, reserved: 4, winProfit: 12, loss: 0, authorBonus: 3, scoreAfter: 25 },
+      { playerId: 'p2', scoreBefore: 0, reserved: 0, winProfit: 0, loss: 0, authorBonus: 0, scoreAfter: 0 },
+    ],
+  };
+
+  const parsed = parseWitsWagersView(
+    playerView({
+      phase: 'settlement',
+      revealed,
+      // 结算后服务端的 players[].score 已是权威新分（与 ledger.scoreAfter 一致）
+      players: [
+        { playerId: 'p1', score: 25, winningGuesses: 2, hasSubmitted: true, forfeited: false },
+        { playerId: 'p2', score: 0, winningGuesses: 0, hasSubmitted: true, forfeited: false },
+      ],
+    }),
+    'player',
+  );
+  assert.ok(parsed, '结算视角应解析通过');
+
+  const members = [
+    { playerId: 'p1', nickname: '甲' },
+    { playerId: 'p2', nickname: '乙' },
+  ];
+
+  const seats = buildSeats(parsed, members);
+  assert.equal(seats.length, 2);
+
+  const [s1, s2] = seats;
+  assert.equal(s1.seatNo, 1);
+  assert.equal(s2.seatNo, 2);
+  assert.equal(s1.color, playerColorFor('p1'));
+  assert.equal(s1.hasSubmitted, true);
+  assert.equal(s1.forfeited, false);
+  assert.equal(s1.delta, 15);
+  assert.equal(s1.authorBonus, 3);
+  assert.equal(s1.rank, 1, '分数高者名次在前');
+  assert.equal(s2.rank, 2);
+  assert.equal(s1.scoreBefore, 10);
+  assert.equal(s1.scoreAfter, 25);
+  assert.equal(s1.scoreValue, 25, '默认显示服务端权威分数');
+  assert.equal(s1.badge, '+15 分');
+  assert.equal(s2.badge, '持平');
+  assert.equal(s2.score, '0 分', '分数文案用「分」不用 ¥');
+
+  // 演出期间 displayScores 把分数钉在结算前
+  const pinned = buildSeats(parsed, members, { p1: 10 });
+  assert.equal(pinned[0].scoreValue, 10);
+  assert.equal(pinned[0].score, '10 分');
+  assert.equal(pinned[1].scoreValue, 0, '未覆盖的玩家不受影响');
+});
+
+test('buildSeats: 作答阶段只暴露 hasSubmitted，退席整卡标记', async () => {
+  const { buildSeats } = await import('../src/game/wits-wagers/seats.ts');
+
+  const parsed = parseWitsWagersView(
+    playerView({
+      phase: 'answering',
+      board: [],
+      publicBets: {},
+      players: [
+        { playerId: 'p1', score: 10, winningGuesses: 1, hasSubmitted: true, forfeited: false },
+        { playerId: 'p2', score: 0, winningGuesses: 0, hasSubmitted: false, forfeited: true },
+      ],
+    }),
+    'player',
+  );
+  assert.ok(parsed);
+
+  const seats = buildSeats(parsed, []);
+  assert.equal(seats[0].badge, '已交牌');
+  assert.equal(seats[0].delta, null, '作答阶段没有账本字段');
+  assert.equal(seats[0].rank, null);
+  assert.equal(seats[1].badge, '已退席');
+  assert.equal(seats[1].forfeited, true);
+  assert.equal(seats[1].isEliminated, true);
 });

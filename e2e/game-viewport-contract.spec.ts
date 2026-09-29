@@ -74,8 +74,8 @@ const GAME_CASES: GameCase[] = [
     id: 'bell-clash',
     label: 'Ding',
     count: 3,
-    config: { rulesetId: 'bell_clash_v1', handSize: 3, turnSeconds: 60, bellSeconds: 60 },
-    readySelector: '.tabletop-shell',
+    config: { rulesetId: 'bell_clash_v1', handSize: 6, turnSeconds: 60, challengeSeconds: 30 },
+    readySelector: '.bc-game, .tabletop-shell',
   },
   {
     id: 'durian',
@@ -141,7 +141,7 @@ const GAME_CASES: GameCase[] = [
     label: 'UNO house',
     count: 3,
     config: { rulesetId: 'uno_platform_house_v1', mode: 'individual', roundCount: 1 },
-    readySelector: '.uno-house-stage, .tabletop-shell',
+    readySelector: '.uno-house-table, .uno-house-stage, .tabletop-shell',
   },
   {
     id: 'landlord',
@@ -447,6 +447,62 @@ test.describe('G3-B 游戏视口合约（七档常用尺寸）', () => {
             const entry: ViewportEntry = { viewport: vp.name, ...m };
             entries.push(entry);
 
+            if (game.id === 'landlord') {
+              const isPortrait = vp.height > vp.width;
+              if (isPortrait) {
+                // 390x844、360x800、412x915、320x568、768x1024 竖屏档：断言旋转提示可见 + 无横向溢出
+                const hintVisible = await page.locator('.th-rotate-hint').isVisible().catch(() => false);
+                if (!hintVisible) {
+                  failures.push(`[${vp.name}] 斗地主竖屏应显示旋转提示 .th-rotate-hint`);
+                }
+                if (entry.overflowX > 1) {
+                  failures.push(`[${vp.name}] 斗地主竖屏横向溢出 ${entry.overflowX}px`);
+                }
+                if (vp.name === '390x844') {
+                  await page.screenshot({ path: path.join(SHOTS_DIR, `${game.id}-${vp.name}.png`), fullPage: false });
+                }
+                continue;
+              } else if (vp.name === '844x390') {
+                // 844x390 升为主验收档：断言手牌、出牌区、操作坞主按钮都在视口内且互不重叠；20 张手牌不溢出
+                const hintVisible = await page.locator('.th-rotate-hint').isVisible().catch(() => false);
+                if (hintVisible) {
+                  failures.push(`[${vp.name}] 斗地主 844x390 横屏错误显示了旋转提示`);
+                }
+                const layoutCheck = await page.evaluate(() => {
+                  const doc = document.documentElement;
+                  const vh = window.innerHeight;
+                  const vw = window.innerWidth;
+                  const overflowX = doc.scrollWidth - doc.clientWidth;
+                  const handEl = document.querySelector('.th-hand');
+                  const dockEl = document.querySelector('.th-dock');
+                  const trickEl = document.querySelector('.th-trick');
+                  const handR = handEl?.getBoundingClientRect();
+                  const dockR = dockEl?.getBoundingClientRect();
+                  const trickR = trickEl?.getBoundingClientRect();
+                  const errors: string[] = [];
+
+                  if (overflowX > 1) errors.push(`横向溢出 ${overflowX}px`);
+                  if (handR) {
+                    if (handR.left < -5 || handR.right > vw + 5) errors.push(`手牌区越出视口边界 [${handR.left}, ${handR.right}] (vw=${vw})`);
+                    if (handR.bottom > vh + 5) errors.push(`手牌区沉出底边 [${handR.bottom}] (vh=${vh})`);
+                  }
+                  if (dockR && dockR.width > 0 && dockR.height > 0) {
+                    if (dockR.right > vw + 5 || dockR.bottom > vh + 5) errors.push(`操作坞越出视口边界 [${dockR.right}, ${dockR.bottom}]`);
+                  }
+                  if (handR && trickR && trickR.width > 0 && trickR.height > 0) {
+                    const overlap = !(handR.right <= trickR.left || handR.left >= trickR.right || handR.bottom <= trickR.top || handR.top >= trickR.bottom);
+                    if (overlap) errors.push('手牌与桌心出牌区重叠');
+                  }
+                  return errors;
+                });
+                for (const err of layoutCheck) {
+                  failures.push(`[${vp.name}] ${err}`);
+                }
+                await page.screenshot({ path: path.join(SHOTS_DIR, `${game.id}-${vp.name}.png`), fullPage: false });
+                continue;
+              }
+            }
+
             if (entry.overflowX > 1) {
               failures.push(`[${vp.name}] 横向溢出 ${entry.overflowX}px（scrollWidth=${entry.scrollWidth} clientWidth=${entry.clientWidth}）`);
             }
@@ -469,6 +525,47 @@ test.describe('G3-B 游戏视口合约（七档常用尺寸）', () => {
               const seatChipCount = await page.locator('.seat-rail .seat, .seat-ring__list > *').count();
               if (!seatsVisible || seatChipCount === 0) {
                 failures.push(`[${vp.name}] 狼人杀席位缺失：席位轨不可见或席位数为 0（visible=${seatsVisible} chips=${seatChipCount}）`);
+              }
+            }
+            if (game.id === 'uno' && (vp.name === '390x844' || vp.name === '1280x800')) {
+              const overflow = await page.evaluate(() => {
+                const doc = document.documentElement;
+                const handEl = document.querySelector('.card-fan-deck, .pt-me-zone');
+                const handRect = handEl?.getBoundingClientRect();
+                const stickerRect = document.querySelector('.pt-me-sticker')?.getBoundingClientRect() ?? null;
+                const cardEl = document.querySelector('.card-fan-deck .card-fan-item, .pt-me-zone .pt-card');
+                return {
+                  overflowX: doc.scrollWidth - doc.clientWidth,
+                  handOffscreen: handRect ? (handRect.left < -5 || handRect.right > doc.clientWidth + 5) : false,
+                  handTop: handRect?.top ?? null,
+                  sticker: stickerRect
+                    ? { left: stickerRect.left, right: stickerRect.right, bottom: stickerRect.bottom }
+                    : null,
+                  // 用布局盒（offset*）量比例：getBoundingClientRect 会被扇形旋转撑大
+                  cardRatio: cardEl && (cardEl as HTMLElement).offsetWidth > 0
+                    ? (cardEl as HTMLElement).offsetHeight / (cardEl as HTMLElement).offsetWidth
+                    : null,
+                };
+              });
+              if (overflow.overflowX > 1) {
+                failures.push(`[${vp.name}] UNO 手牌区横向溢出 ${overflow.overflowX}px`);
+              }
+              if (overflow.handOffscreen) {
+                failures.push(`[${vp.name}] UNO 手牌区越出屏幕边界`);
+              }
+              if (overflow.sticker) {
+                if (overflow.sticker.left < -1) {
+                  failures.push(`[${vp.name}] UNO 我的贴纸左缘被裁切（left=${overflow.sticker.left.toFixed(1)}）`);
+                }
+                // 竖向分离只在手机竖屏强制：桌面端贴纸按设计收在左下角，与通宽手牌区盒不相撞
+                if (vp.name === '390x844' && overflow.handTop !== null && overflow.sticker.bottom > overflow.handTop + 1) {
+                  failures.push(
+                    `[${vp.name}] UNO 我的贴纸压到手牌区（sticker.bottom=${overflow.sticker.bottom.toFixed(1)} hand.top=${overflow.handTop.toFixed(1)}）`,
+                  );
+                }
+              }
+              if (overflow.cardRatio !== null && Math.abs(overflow.cardRatio - 1.48) > 0.05) {
+                failures.push(`[${vp.name}] UNO 手牌高宽比偏离契约 1.48（实测 ${overflow.cardRatio.toFixed(3)}）`);
               }
             }
             if (STRICT_TOUCH) {

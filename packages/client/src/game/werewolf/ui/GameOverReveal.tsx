@@ -10,10 +10,15 @@ import './werewolf-result.css';
 interface GameOverRevealProps {
   readonly reveal: WerewolfPresentationModel['reveal'];
   readonly seats?: WerewolfPresentationModel['seats'];
+  /**
+   * 是否在 reveal 出现时自动弹出。真人主持玩家端（moderator/PlayerCardView）保持自动弹出；
+   * 剧场 v2 舞台（W07）传 false：终局揭晓由中央 FinaleReveal 承担，本组件只作「查看终局复盘」弹窗。
+   */
+  readonly autoOpen?: boolean;
 }
 
-export function GameOverReveal({ reveal, seats = [] }: GameOverRevealProps) {
-  const [closed, setClosed] = useState(false);
+export function GameOverReveal({ reveal, seats = [], autoOpen = true }: GameOverRevealProps) {
+  const [closed, setClosed] = useState(!autoOpen);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();

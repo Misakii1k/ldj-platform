@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-14T02:49:37.586Z",
+  "generatedAt": "2026-09-28T11:24:12.940Z",
   "strictTouch": false,
   "games": [
     {
@@ -11,10 +11,7 @@
           "scrollWidth": 320,
           "clientWidth": 320,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn \"规则\" 32x44",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
-          ],
+          "smallTargets": [],
           "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
@@ -25,10 +22,7 @@
           "scrollWidth": 360,
           "clientWidth": 360,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn \"规则\" 32x44",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
-          ],
+          "smallTargets": [],
           "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
@@ -39,10 +33,7 @@
           "scrollWidth": 390,
           "clientWidth": 390,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn \"规则\" 32x44",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
-          ],
+          "smallTargets": [],
           "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
@@ -53,10 +44,7 @@
           "scrollWidth": 412,
           "clientWidth": 412,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn \"规则\" 32x44",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
-          ],
+          "smallTargets": [],
           "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
@@ -106,12 +94,11 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 32x44",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.d-button \"规则 ↗\" 63x36",
+            "button.d-button.d-menu-btn \"菜单\" 67x36",
+            "button.d-history-button \"牌列 0 张↗\" 82x38"
           ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 274x44 首屏可见"
-          ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -122,12 +109,11 @@
           "clientWidth": 360,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 32x44",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.d-button \"规则 ↗\" 63x36",
+            "button.d-button.d-menu-btn \"菜单\" 67x36",
+            "button.d-history-button \"牌列 0 张↗\" 82x38"
           ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 230x44 首屏可见"
-          ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -138,12 +124,11 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 32x44",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.d-button \"规则 ↗\" 63x36",
+            "button.d-button.d-menu-btn \"菜单\" 67x36",
+            "button.d-history-button \"牌列 0 张↗\" 82x38"
           ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 260x44 首屏可见"
-          ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -154,12 +139,11 @@
           "clientWidth": 412,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-rules-btn \"本局规则\" 32x44",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.d-button \"规则 ↗\" 63x36",
+            "button.d-button.d-menu-btn \"菜单\" 67x36",
+            "button.d-history-button \"牌列 0 张↗\" 82x38"
           ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 282x44 首屏可见"
-          ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -170,11 +154,11 @@
           "clientWidth": 844,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 542x41"
+            "button.d-button \"规则 ↗\" 58x36",
+            "button.d-button.d-menu-btn \"菜单\" 71x36",
+            "button.d-history-button \"牌列 0 张↗\" 82x38"
           ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 542x41 首屏可见"
-          ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -184,10 +168,12 @@
           "scrollWidth": 768,
           "clientWidth": 768,
           "offenders": [],
-          "smallTargets": [],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 638x44 首屏可见"
+          "smallTargets": [
+            "button.d-button \"规则 ↗\" 63x36",
+            "button.d-button.d-menu-btn \"菜单\" 67x36",
+            "button.d-history-button \"牌列 0 张↗\" 82x38"
           ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -197,10 +183,12 @@
           "scrollWidth": 1280,
           "clientWidth": 1280,
           "offenders": [],
-          "smallTargets": [],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待本回合推进…\" 530x44 首屏可见"
+          "smallTargets": [
+            "button.d-button \"规则 ↗\" 58x36",
+            "button.d-button.d-menu-btn \"菜单\" 71x36",
+            "button.d-history-button \"牌列 0 张↗\" 82x38"
           ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         }
@@ -216,11 +204,9 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 36x44"
           ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 274x44 首屏可见"
-          ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -231,11 +217,9 @@
           "clientWidth": 360,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 36x44"
           ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 230x44 首屏可见"
-          ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -246,11 +230,9 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 36x44"
           ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 260x44 首屏可见"
-          ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -261,11 +243,9 @@
           "clientWidth": 412,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 36x44"
           ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 282x44 首屏可见"
-          ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -275,12 +255,8 @@
           "scrollWidth": 844,
           "clientWidth": 844,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 542x41"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 542x41 首屏可见"
-          ],
+          "smallTargets": [],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -291,9 +267,7 @@
           "clientWidth": 768,
           "offenders": [],
           "smallTargets": [],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 638x44 首屏可见"
-          ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -304,9 +278,7 @@
           "clientWidth": 1280,
           "offenders": [],
           "smallTargets": [],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 530x44 首屏可见"
-          ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         }
@@ -322,10 +294,10 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 36x44"
           ],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"抢当头鹅\" 274x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"抢当头鹅\" 190x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -337,7 +309,7 @@
           "clientWidth": 360,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 36x44"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"抢当头鹅\" 230x44 首屏可见"
@@ -352,7 +324,7 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 36x44"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"抢当头鹅\" 260x44 首屏可见"
@@ -367,7 +339,7 @@
           "clientWidth": 412,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 36x44"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"抢当头鹅\" 282x44 首屏可见"
@@ -428,8 +400,7 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.cheese-tts-icon-btn.is-active \"语音\" 43x44",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -442,8 +413,7 @@
           "clientWidth": 360,
           "offenders": [],
           "smallTargets": [
-            "button.cheese-tts-icon-btn.is-active \"语音\" 43x44",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -456,8 +426,7 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.cheese-tts-icon-btn.is-active \"语音\" 43x44",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -470,8 +439,7 @@
           "clientWidth": 412,
           "offenders": [],
           "smallTargets": [
-            "button.cheese-tts-icon-btn.is-active \"语音\" 43x44",
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -522,10 +490,10 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"请先选牌\" 274x44 首屏可见"
+            "button.tabletop-action.tabletop-action--primary \"请先选牌\" 190x44 首屏可见"
           ],
           "seatCollisions": [],
           "bottomFit": []
@@ -537,7 +505,7 @@
           "clientWidth": 360,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"请先选牌\" 230x44 首屏可见"
@@ -552,7 +520,7 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"请先选牌\" 260x44 首屏可见"
@@ -567,7 +535,7 @@
           "clientWidth": 412,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [
             "button.tabletop-action.tabletop-action--primary \"请先选牌\" 282x44 首屏可见"
@@ -629,11 +597,9 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 274x44 首屏可见"
-          ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -644,11 +610,9 @@
           "clientWidth": 360,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 230x44 首屏可见"
-          ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -659,11 +623,9 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 260x44 首屏可见"
-          ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -674,11 +636,9 @@
           "clientWidth": 412,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 282x44 首屏可见"
-          ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -688,13 +648,8 @@
           "scrollWidth": 844,
           "clientWidth": 844,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 268x41",
-            "button.tabletop-action \"自告身份（狱警自曝进猜罪）\" 268x41"
-          ],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 268x41 首屏可见"
-          ],
+          "smallTargets": [],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -705,9 +660,7 @@
           "clientWidth": 768,
           "offenders": [],
           "smallTargets": [],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 638x44 首屏可见"
-          ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -718,9 +671,7 @@
           "clientWidth": 1280,
           "offenders": [],
           "smallTargets": [],
-          "primaryActions": [
-            "button.tabletop-action.tabletop-action--primary \"等待阶段推进\" 260x44 首屏可见"
-          ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         }
@@ -736,7 +687,7 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -749,7 +700,7 @@
           "clientWidth": 360,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -762,7 +713,7 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -775,7 +726,7 @@
           "clientWidth": 412,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -825,9 +776,7 @@
           "scrollWidth": 320,
           "clientWidth": 320,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
-          ],
+          "smallTargets": [],
           "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
@@ -838,9 +787,7 @@
           "scrollWidth": 360,
           "clientWidth": 360,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
-          ],
+          "smallTargets": [],
           "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
@@ -851,9 +798,7 @@
           "scrollWidth": 390,
           "clientWidth": 390,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
-          ],
+          "smallTargets": [],
           "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
@@ -864,9 +809,7 @@
           "scrollWidth": 412,
           "clientWidth": 412,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
-          ],
+          "smallTargets": [],
           "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
@@ -877,7 +820,9 @@
           "scrollWidth": 844,
           "clientWidth": 844,
           "offenders": [],
-          "smallTargets": [],
+          "smallTargets": [
+            "button.game-chat-trigger \"聊天\" 90x43"
+          ],
           "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
@@ -916,7 +861,7 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -929,7 +874,7 @@
           "clientWidth": 360,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -942,7 +887,7 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -955,7 +900,7 @@
           "clientWidth": 412,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1005,9 +950,7 @@
           "scrollWidth": 320,
           "clientWidth": 320,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
-          ],
+          "smallTargets": [],
           "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
@@ -1018,9 +961,7 @@
           "scrollWidth": 360,
           "clientWidth": 360,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
-          ],
+          "smallTargets": [],
           "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
@@ -1031,9 +972,7 @@
           "scrollWidth": 390,
           "clientWidth": 390,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
-          ],
+          "smallTargets": [],
           "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
@@ -1044,9 +983,7 @@
           "scrollWidth": 412,
           "clientWidth": 412,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
-          ],
+          "smallTargets": [],
           "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
@@ -1096,7 +1033,7 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1109,7 +1046,7 @@
           "clientWidth": 360,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1122,7 +1059,7 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1135,7 +1072,7 @@
           "clientWidth": 412,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1185,17 +1122,8 @@
           "scrollWidth": 320,
           "clientWidth": 320,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.mod-console__menu-btn \"菜单\" 32x44"
-          ],
-          "primaryActions": [
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 264x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 264x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 264x44 不在首屏(top=583)",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 264x44 不在首屏(top=734)",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 264x44 不在首屏(top=884)",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 264x44 不在首屏(top=1035)"
-          ],
+          "smallTargets": [],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -1205,17 +1133,8 @@
           "scrollWidth": 360,
           "clientWidth": 360,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.mod-console__menu-btn \"菜单\" 32x44"
-          ],
-          "primaryActions": [
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 304x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 304x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 304x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 304x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 304x44 不在首屏(top=884)",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 304x44 不在首屏(top=1035)"
-          ],
+          "smallTargets": [],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -1225,17 +1144,8 @@
           "scrollWidth": 390,
           "clientWidth": 390,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.mod-console__menu-btn \"菜单\" 32x44"
-          ],
-          "primaryActions": [
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 334x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 334x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 334x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 334x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 334x44 不在首屏(top=884)",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 334x44 不在首屏(top=1035)"
-          ],
+          "smallTargets": [],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -1245,17 +1155,8 @@
           "scrollWidth": 412,
           "clientWidth": 412,
           "offenders": [],
-          "smallTargets": [
-            "button.tabletop-sound-btn.mod-console__menu-btn \"菜单\" 32x44"
-          ],
-          "primaryActions": [
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 356x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 356x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 356x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 356x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 356x44 不在首屏(top=884)",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 356x44 不在首屏(top=1035)"
-          ],
+          "smallTargets": [],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -1266,14 +1167,7 @@
           "clientWidth": 844,
           "offenders": [],
           "smallTargets": [],
-          "primaryActions": [
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 84x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 84x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 84x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 84x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 84x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 84x44 首屏可见"
-          ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -1284,14 +1178,7 @@
           "clientWidth": 768,
           "offenders": [],
           "smallTargets": [],
-          "primaryActions": [
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 84x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 84x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 84x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 84x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 84x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 84x44 首屏可见"
-          ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         },
@@ -1302,14 +1189,7 @@
           "clientWidth": 1280,
           "offenders": [],
           "smallTargets": [],
-          "primaryActions": [
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 84x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 84x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 84x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 84x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 84x44 首屏可见",
-            "button.confirm-btn.confirm-btn--cancel \"标记出局\" 84x44 首屏可见"
-          ],
+          "primaryActions": [],
           "seatCollisions": [],
           "bottomFit": []
         }
@@ -1325,7 +1205,7 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1338,7 +1218,7 @@
           "clientWidth": 360,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1351,7 +1231,7 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1364,7 +1244,7 @@
           "clientWidth": 412,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1415,7 +1295,7 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1428,7 +1308,7 @@
           "clientWidth": 360,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1441,7 +1321,7 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1454,7 +1334,7 @@
           "clientWidth": 412,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1505,7 +1385,7 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 36x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1518,7 +1398,7 @@
           "clientWidth": 360,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 36x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1531,7 +1411,7 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 36x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1544,7 +1424,7 @@
           "clientWidth": 412,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 36x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1595,7 +1475,7 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1608,7 +1488,7 @@
           "clientWidth": 360,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1621,7 +1501,7 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1634,7 +1514,7 @@
           "clientWidth": 412,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1685,7 +1565,7 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1698,7 +1578,7 @@
           "clientWidth": 360,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1711,7 +1591,7 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1724,7 +1604,7 @@
           "clientWidth": 412,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1775,7 +1655,7 @@
           "clientWidth": 320,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1788,7 +1668,7 @@
           "clientWidth": 360,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1801,7 +1681,7 @@
           "clientWidth": 390,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],
@@ -1814,7 +1694,97 @@
           "clientWidth": 412,
           "offenders": [],
           "smallTargets": [
-            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 32x44"
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
+          ],
+          "primaryActions": [],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "844x390",
+          "overflowX": 0,
+          "scrollWidth": 844,
+          "clientWidth": 844,
+          "offenders": [],
+          "smallTargets": [],
+          "primaryActions": [],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "768x1024",
+          "overflowX": 0,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "offenders": [],
+          "smallTargets": [],
+          "primaryActions": [],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "1280x800",
+          "overflowX": 0,
+          "scrollWidth": 1280,
+          "clientWidth": 1280,
+          "offenders": [],
+          "smallTargets": [],
+          "primaryActions": [],
+          "seatCollisions": [],
+          "bottomFit": []
+        }
+      ]
+    },
+    {
+      "game": "wits-wagers-sim 一智千金·桌面模拟",
+      "entries": [
+        {
+          "viewport": "320x568",
+          "overflowX": 0,
+          "scrollWidth": 320,
+          "clientWidth": 320,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
+          ],
+          "primaryActions": [],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "360x800",
+          "overflowX": 0,
+          "scrollWidth": 360,
+          "clientWidth": 360,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
+          ],
+          "primaryActions": [],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "390x844",
+          "overflowX": 0,
+          "scrollWidth": 390,
+          "clientWidth": 390,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
+          ],
+          "primaryActions": [],
+          "seatCollisions": [],
+          "bottomFit": []
+        },
+        {
+          "viewport": "412x915",
+          "overflowX": 0,
+          "scrollWidth": 412,
+          "clientWidth": 412,
+          "offenders": [],
+          "smallTargets": [
+            "button.tabletop-sound-btn.tabletop-menu-btn \"菜单\" 34x44"
           ],
           "primaryActions": [],
           "seatCollisions": [],

@@ -1,0 +1,97 @@
+/* 法官控制台：单屏全知席位台。
+   视觉跟随玩家端默认 refined + woodcut（深色夜桌），变量来自 design-v2.css 的
+   body[data-design=refined]：--desk/--card/--text/--secondary/--edge/--detail/--active。
+   本文件只负责控制台布局，不重新定义主题色。 */
+body{height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+.tools{flex-shrink:0}.tools a{min-width:44px;justify-content:center;padding:0 4px}
+main{flex:1;min-height:0;display:flex}
+.mod-console{max-width:1600px;margin:0 auto;width:100%;height:100%;min-height:0;display:flex;flex-direction:column;gap:10px;padding:10px 24px max(12px,env(safe-area-inset-bottom))}
+.mod-header{margin:0;padding:10px 0 12px;gap:14px;border-bottom:1px solid var(--edge);background:transparent;flex-shrink:0;flex-wrap:wrap}
+.mod-header .brand{font:700 22px 'STSong','SimSun',serif;letter-spacing:.06em;color:var(--text)}
+.mod-header .brand small{display:block;font:500 10px Georgia,'Times New Roman',serif;letter-spacing:.18em;color:var(--detail);margin-top:6px}
+.mod-header .chapter{color:var(--secondary);font-size:12px;margin-left:auto}
+.mod-header button{border:1px solid var(--edge);background:var(--card);color:var(--text);font-weight:500;font-size:12px;border-radius:var(--v2-radius);box-shadow:0 2px 0 #0003;min-height:44px;padding:8px 13px}
+
+.mod-status{flex-shrink:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.mod-stat{display:flex;align-items:baseline;gap:7px;padding:9px 12px;border:1px solid var(--edge);border-radius:var(--v2-radius);background:var(--card);box-shadow:0 2px 0 #0004}
+.mod-stat>span{font-size:12px;color:var(--secondary)}
+.mod-stat>strong{font:500 30px Georgia,'Times New Roman',serif;line-height:1;font-variant-numeric:lining-nums tabular-nums;color:var(--text)}
+.mod-stat>small{font-size:11px;color:var(--secondary);margin-left:auto;white-space:nowrap}
+.mod-stat>small b{font-family:Georgia,'Times New Roman',serif;font-size:14px;color:var(--text)}
+.mod-stat--alive>strong{color:var(--detail)}
+.mod-stat--wolf{border-color:#b8563f}
+.mod-stat--wolf>strong{color:#ff9d84}
+.mod-stat--god>strong{color:#8fd8bd}
+.mod-note{grid-column:1/-1;margin:0;font-size:11.5px;line-height:1.6;color:var(--secondary)}
+
+.mod-seats{flex:1;min-height:0;display:flex;flex-direction:column;gap:7px}
+.mod-seats-head{flex-shrink:0;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.mod-seats-head h2{font-size:15px;margin:0;font-weight:700;color:var(--text);letter-spacing:.03em}
+.mod-seats-head span{font-size:11px;color:var(--secondary)}
+.mod-seat-grid{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(252px,1fr));gap:8px;align-content:start;padding-right:2px}
+
+.mod-seat{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--edge);border-radius:var(--v2-radius);background:var(--card);box-shadow:0 2px 0 #0004,inset 0 1px 0 #ffffff0a}
+.mod-seat.is-out{background:var(--desk);border-style:dashed;box-shadow:none}
+.mod-seat.is-revealed{border-color:#c2724f}
+.mod-seat__no{font:500 20px Georgia,'Times New Roman',serif;color:var(--detail);min-width:34px;text-align:center;font-variant-numeric:lining-nums tabular-nums}
+.mod-seat.is-out .mod-seat__no{color:var(--secondary)}
+.mod-seat__body{min-width:0;display:flex;flex-direction:column;gap:4px}
+.mod-seat__name{font-size:13px;font-weight:500;line-height:1.35;color:var(--text);overflow-wrap:anywhere}
+.mod-seat__meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+/* 身份徽章：深色底上的高对比实底，避免低对比"高级灰"。 */
+.mod-seat__role{font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;border:1px solid transparent;white-space:nowrap}
+.mod-seat__role[data-camp=wolf]{background:#8d2f1d;color:#fff1e8;border-color:#d4735a}
+.mod-seat__role[data-camp=god]{background:#0f5a48;color:#eafff7;border-color:#4fae91}
+.mod-seat__role[data-camp=villager]{background:#3a453f;color:#eef3ee;border-color:#8fa79a}
+.mod-seat__state{font-size:11px;color:var(--secondary)}
+.mod-seat__state[data-out=true]{color:#ff9d84;font-weight:700}
+.mod-seat__btn{min-height:44px;min-width:88px;font-size:12px;font-weight:500;border-radius:var(--v2-radius);border:1px solid var(--edge);box-shadow:0 2px 0 #0003;background:var(--card);color:var(--text);padding:8px 10px}
+.mod-seat.is-out .mod-seat__btn{background:var(--card)}
+
+.mod-footer{flex-shrink:0;display:flex;align-items:center;gap:14px;padding-top:10px;border-top:1px solid var(--edge)}
+.mod-footer p{margin:0;font-size:11.5px;color:var(--secondary);flex:1;min-width:0}
+.mod-reveal{min-height:44px;border:1px solid var(--active);border-radius:var(--v2-radius);box-shadow:0 3px 0 #0005;background:var(--active);color:var(--active-ink);font-weight:700;font-size:13px;padding:9px 16px}
+.mod-reveal:disabled{background:var(--card);border-color:var(--edge);color:var(--secondary);box-shadow:none}
+
+.mod-console.is-ended .mod-note{color:var(--detail)}
+.mod-ended-banner{margin:0;padding:8px 12px;border:1px solid #c2724f;border-radius:var(--v2-radius);background:#3a231c;color:#ffd9c4;font-weight:700;font-size:12.5px}
+
+#mod-confirm,#mod-rules-dialog{width:min(430px,calc(100vw - 28px))}
+.mod-dialog-actions{display:flex;gap:9px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+.mod-dialog-actions button{min-height:44px;border:1px solid var(--edge);border-radius:var(--v2-radius);box-shadow:0 2px 0 #0004;background:var(--card);color:var(--text);font-weight:500;font-size:12.5px;padding:9px 14px}
+#mod-confirm-ok{background:var(--active);color:var(--active-ink);border-color:var(--active);font-weight:700}
+.mod-rules-body p{margin:8px 0;font-size:12.5px;line-height:1.65;color:var(--text)}
+.mod-muted{color:var(--secondary)!important}
+
+@media(max-width:1024px){.mod-seat-grid{grid-template-columns:repeat(auto-fill,minmax(215px,1fr))}}
+@media(max-width:768px){
+ .mod-console{padding:8px 12px max(10px,env(safe-area-inset-bottom));gap:8px}
+ .mod-header{padding:6px 0 9px;gap:8px}.mod-header .brand{font-size:18px}.mod-header .brand small{font-size:9px;margin-top:3px}.mod-header .chapter{display:none}
+ .mod-status{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .mod-stat{padding:6px 9px}.mod-stat>strong{font-size:24px}.mod-stat>span{font-size:11px}.mod-stat>small{font-size:10px}
+ .mod-note{font-size:10.5px;line-height:1.5}
+ .mod-seat-grid{grid-template-columns:1fr;gap:6px}
+ .mod-seat{padding:6px 8px;gap:7px}.mod-seat__no{font-size:17px;min-width:28px}.mod-seat__name{font-size:12px}
+ .mod-seat__role{font-size:10px;padding:1px 6px}.mod-seat__state{font-size:10px}
+ .mod-seat__btn{min-width:76px;font-size:11px;padding:7px 8px}
+ .mod-seats-head h2{font-size:13px}.mod-seats-head span{display:none}
+ .mod-footer{gap:9px;padding-top:8px}.mod-footer p{display:none}.mod-reveal{flex:1}
+}
+@media(max-width:380px){
+ .mod-seat{grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;gap:4px 6px}
+ .mod-seat__no{grid-row:1/3}
+ .mod-seat__btn{grid-column:2;min-width:0;width:100%;min-height:44px}
+ .mod-stat>small{display:none}
+}
+@media(max-height:620px){
+ .mod-console{gap:6px;padding-top:6px}
+ .mod-header{padding:4px 0 6px}.mod-note{display:none}
+ .mod-stat{padding:5px 9px}.mod-stat>strong{font-size:21px}
+ .mod-seat{padding:5px 8px}
+}
+@media(max-height:520px) and (min-width:640px){
+ .mod-console{gap:5px}
+ .mod-status{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .mod-seat-grid{grid-template-columns:repeat(auto-fill,minmax(215px,1fr))}
+ .mod-footer p{display:none}
+}

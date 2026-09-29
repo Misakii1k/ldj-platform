@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0c1424">
+  <title>狼人杀 · 暗夜剧场｜设计预览</title>
+  <link rel="stylesheet" href="shared.css"><link rel="stylesheet" href="werewolf.css">
+  <script defer src="shared.js"></script><script defer src="werewolf.js"></script>
+<link rel="stylesheet" href="fusion.css"></head>
+<body data-game="werewolf">
+  <div id="preview-tools"></div>
+  <main class="w-game">
+    <header class="w-header">
+      <div class="w-wordmark"><span class="w-moon" aria-hidden="true">☾</span><div><h1>狼人杀</h1><span class="w-eyebrow">THE NIGHT THEATRE</span></div></div>
+      <button class="w-icon-button" id="w-rules" aria-label="查看本局规则">规则</button>
+    </header>
+    <div class="w-scroll">
+      <div class="w-table-layout">
+        <section class="w-scene" aria-labelledby="w-phase-title">
+          <div class="w-chapter"><span id="w-day">第三日</span><span class="w-chapter-line"></span><span id="w-phase-kicker">DAYLIGHT / 03</span></div>
+          <div class="w-scene-heading"><div><p class="w-eyebrow" id="w-scene-label">白昼 · 寻找真相</p><h2 id="w-phase-title">每一句话，都有分量。</h2></div><div class="w-timer"><strong id="w-time">00:48</strong><span>剩余时间</span></div></div>
+          <div class="w-spotlight" id="w-spotlight">
+            <div class="w-orbit" aria-hidden="true"><span class="w-orbit-dot"></span></div>
+            <div class="w-spotlight-emblem" aria-hidden="true"><span id="w-hero-number">06</span><svg viewBox="0 0 100 100"><path d="M15 66L33 28 50 54 67 28 85 66 71 81 29 81Z"/><path d="M29 66H71M42 68L50 75 58 68"/></svg></div>
+            <p class="w-spotlight-tag" id="w-hero-tag">轮到你发言</p><h3 id="w-hero-name">山间一阵晚风</h3><p class="w-spotlight-description" id="w-hero-description">说出你的判断，也听见不同的声音。</p>
+          </div>
+          <div class="w-scene-foot"><span id="w-scene-foot">下一位发言</span><strong id="w-next">07 号 · 南瓜</strong></div>
+        </section>
+        <section class="w-seats-section" aria-labelledby="w-seats-title">
+          <div class="w-section-heading"><h2 id="w-seats-title">围桌而坐 <span>THE TABLE</span></h2><span class="w-live-count">10 / 12 存活</span></div>
+          <div class="w-seats" id="w-seats"></div>
+          <div class="w-table-note"><span class="w-dot"></span><span id="w-table-note">6 号正在发言，请留意现场交流</span></div>
+          <button class="w-ledger-link" id="w-ledger">上一轮票型 <span>02 → 09 · 4 票放逐</span><span aria-hidden="true">↗</span></button>
+        </section>
+      </div>
+    </div>
+    <footer class="w-dock">
+      <div class="w-dock-inner"><p id="w-action-hint" aria-live="polite">你是 6 号 · 发言结束后交给下一位</p><div class="w-actions"><button class="w-secret-trigger" id="w-identity"><span class="w-mini-card" aria-hidden="true">☾</span><span>我的身份<small>私密查看</small></span></button><button class="w-primary" id="w-primary">结束发言 <span aria-hidden="true">→</span></button></div></div>
+    </footer>
+  </main>
+  <dialog class="w-dialog" id="w-dialog" aria-labelledby="w-dialog-title"><div id="w-dialog-content"></div><button class="w-dialog-close" id="w-dialog-close">关闭</button></dialog>
+  <div class="w-toast" id="w-toast" role="status" hidden></div>
+</body></html>

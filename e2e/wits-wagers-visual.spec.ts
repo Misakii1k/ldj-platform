@@ -107,7 +107,7 @@ test.describe('一智千金 T07 固定样例界面与视觉快照', () => {
 
     // 验证进入一智千金游戏界面
     await expect(page.locator('.ww-game')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('.ww-question-card__prompt')).toContainText('长江的总长度');
+    await expect(page.locator('.ww-question__prompt')).toContainText('长江的总长度');
     await expect(page.locator('.ww-btn--primary')).toBeVisible();
 
     // 验证根文档无横向溢出 (SPEC: documentElement.scrollWidth <= clientWidth + 1)
@@ -132,7 +132,7 @@ test.describe('一智千金 T07 固定样例界面与视觉快照', () => {
       );
     }
     await expect(page.locator('.ww-bet-editor')).toBeVisible();
-    await expect(page.locator('.ww-target-card')).toHaveCount(5); // lower + 3 values + higher
+    await expect(page.locator('.ww-target-card')).toHaveCount(4); // lower + 3 values
     await page.screenshot({ path: path.join(OUTPUT_DIR, 'v2-betting-desktop.png') });
 
     // 3. 推送 V3 结算阶段
@@ -147,8 +147,8 @@ test.describe('一智千金 T07 固定样例界面与视觉快照', () => {
         }),
       );
     }
-    await expect(page.locator('.ww-result-panel')).toBeVisible();
-    await expect(page.locator('.ww-result-panel__correct-box')).toContainText('6,300');
+    await expect(page.locator('.ww-plaque')).toBeVisible();
+    await expect(page.locator('.ww-plaque__value')).toContainText('6,300');
     await page.screenshot({ path: path.join(OUTPUT_DIR, 'v3-settlement-desktop.png') });
 
     // 4. 测试移动端 390x844
@@ -160,5 +160,36 @@ test.describe('一智千金 T07 固定样例界面与视觉快照', () => {
     );
     expect(isOverflowingMobile).toBe(false);
     await page.screenshot({ path: path.join(OUTPUT_DIR, 'v3-settlement-mobile.png') });
+
+    // 5. 移动端补齐 V1 作答 / V2 下注关键时刻（重推状态，soft-capture 不加断言以免影响既有验收）
+    if (activeWs) {
+      activeWs.send(
+        JSON.stringify({
+          v: 1,
+          type: 'game_state',
+          roomSeq: 4,
+          serverNow: Date.now(),
+          payload: mockV1AnsweringPayload,
+        }),
+      );
+    }
+    await page.locator('.ww-question__prompt').first().waitFor({ state: 'visible', timeout: 8_000 }).catch(() => {});
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: path.join(OUTPUT_DIR, 'v1-answering-mobile.png') });
+
+    if (activeWs) {
+      activeWs.send(
+        JSON.stringify({
+          v: 1,
+          type: 'game_state',
+          roomSeq: 5,
+          serverNow: Date.now(),
+          payload: mockV2BettingPayload,
+        }),
+      );
+    }
+    await page.locator('.ww-bet-editor').first().waitFor({ state: 'visible', timeout: 8_000 }).catch(() => {});
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: path.join(OUTPUT_DIR, 'v2-betting-mobile.png') });
   });
 });

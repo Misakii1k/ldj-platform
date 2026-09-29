@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>狼人杀 · R 发身份 / 终局揭晓</title>
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="_ticket.css">
+<style>
+  .rcenter { position: absolute; z-index: 36; display: grid; justify-items: center; text-align: center; }
+  .rcenter .kicker { font-size: 13px; letter-spacing: .3em; color: var(--gold); }
+  .rcenter h2 { margin: 6px 0 0; font: 700 44px/1.1 var(--serif); color: var(--ink); text-shadow: 0 3px 0 #000a, 0 0 24px rgba(var(--warm), .35); }
+  .rcenter .line { margin-top: 6px; font-size: 15px; color: var(--muted); line-height: 1.5; }
+  .rcenter .line b { font-family: var(--serif); color: var(--gold-soft); }
+
+  /* ── 发身份：中央一张大牌 ── */
+  .deal { perspective: 1200px; margin: 10px 0 6px; cursor: pointer; }
+  .deal .card { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 640ms cubic-bezier(.3, 1.4, .5, 1); }
+  .deal.flipped .card { transform: rotateY(180deg); }
+  .deal .face {
+    position: absolute; inset: 0; backface-visibility: hidden; border-radius: 16px; overflow: hidden;
+    border: 2px solid var(--gold); box-shadow: 0 0 0 6px rgba(0,0,0,.35), 0 20px 40px #000c, 0 0 50px rgba(var(--warm), .35);
+  }
+  .deal .back { background: #2a1117 url(img/card_back.png) center / cover; }
+  .deal .back::after { content: "点一下翻开"; position: absolute; left: 0; right: 0; bottom: 12px; font-size: 13px; color: var(--gold-soft); text-shadow: 0 1px 3px #000; letter-spacing: .2em; }
+  .deal .front { transform: rotateY(180deg); background: radial-gradient(ellipse at 50% 30%, #4a1c24, #1c080c 75%); display: grid; grid-template-rows: 1fr auto; }
+  .deal .front img { width: 100%; height: 100%; object-fit: contain; padding: 10px 10px 0; filter: drop-shadow(0 8px 16px #000a); }
+  .deal .front .role-name { padding: 6px 0 12px; font: 700 30px/1 var(--serif); color: var(--ink); }
+  .deal .front .team { position: absolute; top: 10px; left: 10px; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+  .team.wolves { background: #7a1a1a; color: #ffd0c4; }
+  .team.village { background: #1f4a34; color: #c8f0d8; }
+  /* 翻开瞬间扫光 */
+  .deal .front::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(110deg, transparent 30%, rgba(255, 240, 200, .55) 48%, transparent 64%);
+    transform: translateX(-120%);
+  }
+  .deal.flipped .front::after { animation: sweep 900ms 420ms ease-out; }
+  @keyframes sweep { to { transform: translateX(120%); } }
+  .skill { max-width: 440px; }
+  .confirmed-row { margin-top: 10px; display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; }
+  .confirmed-row i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--gold-line); }
+  .confirmed-row i.on { background: var(--gold); border-color: var(--gold); }
+
+  /* ── 终局：票根翻面 ── */
+  .seat.ticket .no, .seat.ticket .body { transition: none; }
+  .seat.ticket.revealed .no { font-size: 0; }
+  .seat.ticket.revealed .no small { display: none; }
+  .seat.ticket.revealed .no img { width: 50px; height: 50px; object-fit: contain; filter: drop-shadow(0 2px 3px #000a); }
+  .seat.ticket.compact.revealed .no img { width: 26px; height: 26px; }
+  .seat.ticket.revealed.wolves { background: linear-gradient(90deg, #5a1616 0 64px, transparent 64px), linear-gradient(180deg, #3a1418, #2a0e12); }
+  .seat.ticket.revealed.village { background: linear-gradient(90deg, #1c3a2a 0 64px, transparent 64px), linear-gradient(180deg, var(--card-2), var(--card)); }
+  .seat.ticket.compact.revealed.wolves { background: linear-gradient(180deg, #5a1616 0 30px, transparent 30px), linear-gradient(180deg, #3a1418, #2a0e12); }
+  .seat.ticket.compact.revealed.village { background: linear-gradient(180deg, #1c3a2a 0 30px, transparent 30px), linear-gradient(180deg, var(--card-2), var(--card)); }
+  .seat.ticket.revealed .tag b { font-weight: 700; }
+  .seat.ticket.revealed.wolves .tag b { color: #ff9a86; }
+  .seat.ticket.revealed.village .tag b { color: #9fe3b8; }
+  .seat.ticket.flip { animation: tflip 460ms ease; }
+  @keyframes tflip { 0% { transform: rotateX(0); } 50% { transform: rotateX(90deg); } 100% { transform: rotateX(0); } }
+  .seat.ticket.winner { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(232, 194, 122, .4), 0 0 28px rgba(var(--warm), .5); }
+  .seat.ticket.loser { opacity: .62; }
+  .seat.ticket.revealed.is-dead { filter: none; }
+  .seat.ticket.revealed.is-dead .no { clip-path: none; }
+  .seat.ticket.revealed .no::after { display: none; }
+
+  /* 胜负大字盖章 */
+  .banner { font: 700 64px/1.05 var(--serif); letter-spacing: .06em; }
+  .banner.wolves { color: #ffb4a4; text-shadow: 0 4px 0 #000a, 0 0 36px rgba(255, 80, 60, .5); }
+  .banner.village { color: #d8f4e2; text-shadow: 0 4px 0 #000a, 0 0 36px rgba(120, 220, 160, .45); }
+  .banner.stamp-in { animation: bstamp 560ms var(--ease-back); }
+  @keyframes bstamp { 0% { transform: scale(2.2) rotate(-6deg); opacity: 0; } 60% { transform: scale(.94) rotate(1deg); opacity: 1; } 100% { transform: none; } }
+  .lineup { display: flex; justify-content: center; gap: 4px; margin-top: 12px; }
+  .lineup figure { margin: 0; display: grid; justify-items: center; gap: 2px; animation: rise 480ms var(--ease-back) both; }
+  .lineup img { object-fit: contain; filter: drop-shadow(0 8px 14px #000c); }
+  .lineup figcaption { font-size: 12px; color: var(--muted); }
+  .lineup figcaption b { font-family: var(--serif); color: var(--ink); font-size: 14px; }
+  @keyframes rise { 0% { transform: translateY(30px); opacity: 0; } 100% { transform: none; opacity: 1; } }
+
+  /* 每天票型 / 死因小条 */
+  .timeline {
+    position: absolute; z-index: 20; display: flex; gap: 8px; align-items: stretch; overflow: hidden;
+  }
+  .timeline .day {
+    flex: 1; min-width: 0; padding: 7px 10px; border-radius: 10px; font-size: 12px; line-height: 1.45; color: var(--muted);
+    border: 1px solid rgba(232, 194, 122, .25); background: rgba(0, 0, 0, .35);
+  }
+  .timeline .day b { color: var(--gold-soft); font-family: var(--serif); font-size: 14px; }
+  .timeline .day .k { color: var(--ink); }
+  .timeline .day .wolf { color: #ff9a86; }
+
+  .toolbar .group.steps button[aria-pressed="true"] { background: #e8c27a; }
+  .toolbar .group.win button[aria-pressed="true"] { background: #e8c27a; }
+  .device[data-size="mobile"] .rcenter h2 { font-size: 28px; }
+  .device[data-size="mobile"] .rcenter .kicker { font-size: 11px; }
+  .device[data-size="mobile"] .rcenter .line { font-size: 12.5px; }
+  .device[data-size="mobile"] .banner { font-size: 34px; }
+  .device[data-size="mobile"] .deal .front .role-name { font-size: 22px; padding-bottom: 8px; }
+  .device[data-size="mobile"] .lineup figcaption { font-size: 10px; }
+  .device[data-size="mobile"] .lineup figcaption b { font-size: 12px; }
+  .device[data-size="mobile"] .lineup { flex-wrap: wrap; gap: 2px 6px; max-width: 190px; }
+  .device[data-size="mobile"] .timeline { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .device[data-size="mobile"] .timeline .day { font-size: 11px; padding: 4px 7px; line-height: 1.35; }
+  .device[data-size="mobile"] .timeline .day b { font-size: 12px; }
+  .device[data-size="mobile"] .dock { flex-wrap: wrap; }
+  .device[data-size="mobile"] .dock .info { flex: 1 0 100%; }
+  .device[data-size="mobile"] .dock .btn { flex: 1; }
+  .device[data-size="mobile"] .topbar .game { font-size: 16px; }
+  .device[data-size="mobile"] .topbar .day { font-size: 13px; padding: 2px 10px; }
+  .device[data-size="mobile"] .icon-btn { width: 32px; height: 32px; }
+</style>
+</head>
+<body data-time="day">
+<div class="toolbar">
+  <strong>R · 发身份 / 终局揭晓</strong>
+  <span class="note">沿用 A2 定稿 ｜ 发身份：点中央牌背翻面 → 身份插画 + 阵营 + 技能，再点黄色「我记住了」｜ 终局：两侧票根逐张翻面露出身份，胜方金光，中央胜负大字 + 胜方插画并排，下方每天票型 / 死因</span>
+  <div class="group"><button data-set-size="desktop">桌面 1280×800</button><button data-set-size="mobile">手机 390×844</button></div>
+  <div class="group"><button data-set-count="9">9 人</button><button data-set-count="12">12 人</button></div>
+  <div class="group steps"><button data-step="deal">① 发身份</button><button data-step="end">② 终局揭晓</button></div>
+  <div class="group win"><button data-win="village">好人胜</button><button data-win="wolves">狼人胜</button></div>
+  <div class="group"><button id="rreset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="scaler"><div class="device"></div></div></div>
+<script src="_ticket.js"></script>
+<script>
+window.CUSTOM_FLOW = true;
+const SELF = 6;
+const ROLE_META = {
+  wolf: { img: 'werewolf', name: '狼人', team: 'wolves', skill: '每晚与同伴睁眼，共同选择一名玩家袭击。白天隐藏身份，把票引向好人。' },
+  villager: { img: 'villager', name: '村民', team: 'village', skill: '没有夜间技能。认真听发言，用投票找出狼人。' },
+  seer: { img: 'seer', name: '预言家', team: 'village', skill: '每晚查验一名玩家，得知对方是好人还是狼人。' },
+  witch: { img: 'witch', name: '女巫', team: 'village', skill: '一瓶解药救人、一瓶毒药杀人，整局各用一次，同一晚只能用一瓶。' },
+  guard: { img: 'guard', name: '守卫', team: 'village', skill: '每晚守护一名玩家免遭狼人袭击，不能连续两晚守同一人。' },
+  hunter: { img: 'hunter', name: '猎人', team: 'village', skill: '出局时可以开枪带走一名玩家（被毒除外）。' },
+  idiot: { img: 'idiot', name: '白痴', team: 'village', skill: '被投票放逐时翻牌免死，但之后失去投票权。' },
+};
+// 身份分配（9 人：3 狼 预女猎 3 民；12 人：4 狼 预女猎守 4 民）
+const ROLES = {
+  9: { 1: 'villager', 2: 'hunter', 3: 'seer', 4: 'villager', 5: 'wolf', 6: 'witch', 7: 'wolf', 8: 'villager', 9: 'wolf' },
+  12: { 1: 'villager', 2: 'hunter', 3: 'seer', 4: 'villager', 5: 'wolf', 6: 'witch', 7: 'guard', 8: 'wolf', 9: 'wolf', 10: 'villager', 11: 'wolf', 12: 'villager' },
+};
+// 终局死因（按胜负两套）
+const ENDINGS = {
+  village: {
+    9: { dead: { 2: '第 1 夜 · 被袭击', 5: '第 1 天 · 放逐', 7: '第 2 夜 · 被毒', 9: '第 3 天 · 放逐' },
+      days: [['第 1 夜', '2 号被袭击'], ['第 1 天', '5 号 <b>5</b> 票放逐'], ['第 2 夜', '7 号被女巫毒杀'], ['第 3 天', '9 号 <b>4</b> 票放逐']] },
+    12: { dead: { 2: '第 1 夜 · 被袭击', 12: '第 1 天 · 放逐', 5: '第 2 天 · 放逐', 8: '第 2 夜 · 被毒', 9: '第 3 天 · 放逐', 11: '第 3 夜 · 猎人带走' },
+      days: [['第 1 夜', '2 号被袭击'], ['第 1 天', '12 号 <b>6</b> 票放逐'], ['第 2 天', '5 号 <b>5</b> 票放逐'], ['第 2 夜', '8 号被毒'], ['第 3 天', '9 号 <b>6</b> 票放逐']] },
+  },
+  wolves: {
+    9: { dead: { 2: '第 1 夜 · 被袭击', 4: '第 1 天 · 放逐', 3: '第 2 夜 · 被袭击', 8: '第 2 天 · 放逐', 1: '第 3 夜 · 被袭击' },
+      days: [['第 1 夜', '2 号被袭击'], ['第 1 天', '4 号 <b>4</b> 票放逐'], ['第 2 夜', '3 号被袭击'], ['第 2 天', '8 号 <b>3</b> 票放逐'], ['第 3 夜', '1 号被袭击']] },
+    12: { dead: { 2: '第 1 夜 · 被袭击', 12: '第 1 天 · 放逐', 3: '第 2 夜 · 被袭击', 4: '第 2 天 · 放逐', 7: '第 3 夜 · 被袭击', 10: '第 3 天 · 放逐', 1: '第 4 夜 · 被袭击' },
+      days: [['第 1 夜', '2 号被袭击'], ['第 1 天', '12 号放逐'], ['第 2 夜', '3 号被袭击'], ['第 2 天', '4 号放逐'], ['第 3 夜', '7 号被袭击']] },
+  },
+};
+const r = { step: 'deal', win: 'village', flipped: false, confirmed: false, run: 0 };
+const q = (s) => document.querySelector(s);
+const W = () => window.WW;
+const count = () => W().state.count;
+const roleOf = (no) => ROLES[count()][no];
+const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+
+function paintDeal() {
+  const c = q('.rcenter');
+  const desk = W().state.size === 'desktop';
+  const me = ROLE_META[roleOf(SELF)];
+  const total = count();
+  const done = r.confirmed ? 8 : 5;
+  const cw = desk ? 210 : 150, ch = desk ? 290 : 206;
+  c.innerHTML = `<div class="kicker">第 1 夜之前 · 查看你的身份</div>
+    <div class="deal${r.flipped ? ' flipped' : ''}" style="width:${cw}px;height:${ch}px">
+      <div class="card"><div class="face back"></div>
+        <div class="face front"><span class="team ${me.team}">${me.team === 'wolves' ? '狼人阵营' : '好人阵营'}</span><img src="img/${me.img}.png" alt=""><div class="role-name">${me.name}</div></div>
+      </div>
+    </div>
+    <div class="line skill">${r.flipped ? me.skill : '只有你能看到。别让旁边的人瞄到屏幕。'}</div>
+    <div class="line" style="margin-top:8px">已确认 <b>${done}</b> / ${total} 人</div>
+    <div class="confirmed-row">${'<i class="on"></i>'.repeat(done)}${'<i></i>'.repeat(total - done)}</div>`;
+  for (const p of W().players()) {
+    const s = W().seatEls.get(p.no);
+    s.className = s.className.replace(/\b(revealed|wolves|village|winner|loser|flip|is-dead)\b/g, '').trim();
+    s.classList.add('seat', 'ticket');
+    s.classList.toggle('is-self', p.self);
+    s.querySelector('.tag').textContent = p.no === SELF ? (r.confirmed ? '你 · 已确认' : '你 · 查看中') : (p.no <= done + 1 && p.no !== SELF ? '已确认' : '查看中');
+    resetStub(s, p.no);
+  }
+  const dock = q('.dock');
+  const cta = dock.querySelector('[data-cta]');
+  dock.querySelector('.btn:not([data-cta])').hidden = true;
+  dock.querySelector('.info strong').textContent = r.confirmed ? '已确认，等待其他人' : r.flipped ? `你是${me.name}` : '点中央的牌翻开身份';
+  dock.querySelector('.info span').textContent = r.confirmed ? '所有人确认后天黑' : r.flipped ? '记住后点黄色按钮，牌会盖回去' : '翻开后可随时在右上角 🂠 再次查看';
+  cta.hidden = !r.flipped || r.confirmed;
+  cta.textContent = '我记住了';
+}
+
+function resetStub(s, no) {
+  const stub = s.querySelector('.no');
+  stub.innerHTML = `<small>SEAT</small>${no}`;
+}
+
+async function playEnd() {
+  const run = ++r.run;
+  const c = q('.rcenter');
+  const desk = W().state.size === 'desktop';
+  const end = ENDINGS[r.win][count()];
+  c.innerHTML = `<div class="kicker">终局 · 身份揭晓</div><h2>正在揭晓…</h2>`;
+  q('.timeline').innerHTML = '';
+  const dock = q('.dock');
+  dock.querySelector('[data-cta]').hidden = true;
+  const again = dock.querySelector('.btn:not([data-cta])');
+  again.hidden = true;
+  dock.querySelector('.info strong').textContent = '身份揭晓中';
+  dock.querySelector('.info span').textContent = '所有人的票根将逐张翻开';
+  // 先把所有票根还原成座位号、按终局死亡状态标出局
+  for (const p of W().players()) {
+    const s = W().seatEls.get(p.no);
+    s.classList.remove('revealed', 'wolves', 'village', 'winner', 'loser', 'flip');
+    s.classList.toggle('is-dead', Boolean(end.dead[p.no]));
+    s.querySelector('.tag').textContent = end.dead[p.no] || '存活';
+    resetStub(s, p.no);
+  }
+  await wait(300);
+  // 逐张翻面
+  for (const p of W().players()) {
+    if (run !== r.run) return;
+    const s = W().seatEls.get(p.no);
+    const m = ROLE_META[roleOf(p.no)];
+    s.classList.remove('flip'); void s.offsetWidth; s.classList.add('flip');
+    await wait(200);
+    s.classList.add('revealed', m.team);
+    s.querySelector('.no').innerHTML = `<img src="img/${m.img}.png" alt="">`;
+    s.querySelector('.tag').innerHTML = `<b>${m.name}</b> · ${end.dead[p.no] || '存活'}`;
+    await wait(110);
+  }
+  if (run !== r.run) return;
+  await wait(250);
+  // 胜负大字 + 胜方插画并排
+  const winners = W().players().filter((p) => ROLE_META[roleOf(p.no)].team === r.win);
+  for (const p of W().players()) {
+    const s = W().seatEls.get(p.no);
+    const win = ROLE_META[roleOf(p.no)].team === r.win;
+    s.classList.toggle('winner', win);
+    s.classList.toggle('loser', !win);
+  }
+  const uniq = [];
+  for (const p of winners) { const role = roleOf(p.no); if (!uniq.some((u) => u.role === role)) uniq.push({ role, nos: [] }); uniq.find((u) => u.role === role).nos.push(p.no); }
+  const imgSize = desk ? (uniq.length > 4 ? 92 : 112) : 52;
+  c.innerHTML = `<div class="kicker">第 ${r.win === 'village' ? 3 : 4} ${r.win === 'village' ? '天' : '夜'} · 游戏结束</div>
+    <div class="banner ${r.win} stamp-in">${r.win === 'village' ? '好人胜利' : '狼人胜利'}</div>
+    <div class="line">${r.win === 'village' ? '所有狼人都已出局' : '好人阵营已无法翻盘'} · 你是 <b>${ROLE_META[roleOf(SELF)].name}</b>，${ROLE_META[roleOf(SELF)].team === r.win ? '<b style="color:#9fe3b8">你赢了</b>' : '<b style="color:#ff9a86">你输了</b>'}</div>
+    <div class="lineup">${uniq.map((u, i) => `<figure style="animation-delay:${i * 90}ms"><img src="img/${ROLE_META[u.role].img}.png" alt="" style="width:${imgSize}px;height:${imgSize}px"><figcaption><b>${u.nos.join('、')}</b> 号 ${ROLE_META[u.role].name}</figcaption></figure>`).join('')}</div>`;
+  const d = q('.device'); d.classList.remove('shake'); void d.offsetWidth; d.classList.add('shake');
+  q('.timeline').innerHTML = end.days.map(([k, t]) => `<div class="day"><span class="k">${k}</span> · ${t.replace(/(\d+) 号/g, (m0, n) => (roleOf(Number(n)) === 'wolf' ? `<span class="wolf">${n} 号(狼)</span>` : `${n} 号`))}</div>`).join('');
+  dock.querySelector('.info strong').textContent = r.win === 'village' ? '好人胜利' : '狼人胜利';
+  dock.querySelector('.info span').textContent = '可以回到房间再来一局';
+  const cta = dock.querySelector('[data-cta]');
+  cta.hidden = false; cta.textContent = '再来一局';
+  again.hidden = false; again.textContent = '查看完整复盘';
+}
+
+function go(step) {
+  r.step = step; r.run += 1;
+  document.querySelectorAll('[data-step]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.step === step)));
+  document.querySelectorAll('[data-win]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.win === r.win)));
+  q('.timeline').hidden = step !== 'end';
+  const topDay = q('.topbar .day');
+  if (topDay) topDay.textContent = step === 'deal' ? '开局 · 发身份' : '终局';
+  if (step === 'deal') { r.flipped = false; r.confirmed = false; paintDeal(); }
+  else playEnd();
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.deal') && r.step === 'deal' && !r.confirmed) { r.flipped = true; paintDeal(); return; }
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.dataset.step) go(b.dataset.step);
+  else if (b.dataset.win) { r.win = b.dataset.win; go('end'); }
+  else if (b.id === 'rreset') go(r.step);
+  else if (b.hasAttribute('data-cta') && r.step === 'deal') {
+    r.confirmed = true; r.flipped = false; paintDeal();
+  }
+});
+
+window.AFTER_RENDER = () => go(r.step);
+
+window.LAYOUT = function ({ size, count: n, players, makeSeat, device }) {
+  const WW = window.WW;
+  WW.reset(device);
+  const half = Math.ceil(n / 2);
+  const left = players.slice(0, half);
+  const right = players.slice(half).reverse();
+  const rail = (list, x, y, w, h, compact) => {
+    const el = WW.place(WW.add(device, 'box-rail'), x, y, w, h);
+    el.style.gridTemplateRows = `repeat(${list.length}, minmax(0, 1fr))`;
+    list.forEach((p) => el.appendChild(ticketize(makeSeat({ ...p, dead: null }, compact))));
+  };
+  if (size === 'desktop') {
+    WW.buildTopbar(device, { x: 28, y: 18, w: 1224 });
+    rail(left, 24, 70, 250, 610);
+    rail(right, 1006, 70, 250, 610);
+    WW.buildStage(device, { x: 300, y: 70, w: 680, h: 560, floorH: 56 });
+    WW.place(WW.add(device, 'rcenter'), 300, 110, 680);
+    WW.place(WW.add(device, 'timeline'), 300, 640, 680, 58);
+    WW.buildDock(device, { x: 24, y: 706, w: 1232, h: 72 });
+  } else {
+    WW.buildTopbar(device, { x: 16, y: 16, w: 358 }, true);
+    rail(left, 8, 64, 86, 520, true);
+    rail(right, 296, 64, 86, 520, true);
+    WW.buildStage(device, { x: 100, y: 110, w: 190, h: 440, floorH: 40, spotW: 150 });
+    WW.place(WW.add(device, 'rcenter'), 100, 120, 190);
+    WW.place(WW.add(device, 'timeline'), 8, 592, 374, 100);
+    WW.buildDock(device, { x: 16, y: 700, w: 358, h: 124 });
+  }
+};
+</script>
+<script src="_shared.js"></script>
+</body>
+</html>

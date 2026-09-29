@@ -28,6 +28,7 @@ export default tseslint.config(
       '.workbuddy-ai/**',
       'output/**',
       'scripts/archive/**',
+      'docs/ui-preview/**',
     ],
   },
   js.configs.recommended,
@@ -74,7 +75,13 @@ export default tseslint.config(
   },
   {
     // 视觉审计脚本：含 Playwright page.evaluate 内运行的浏览器端代码
-    files: ['scripts/audit-*.mjs', 'scripts/verify-ingame-motion.mjs', 'scripts/capture-visual-audit.mjs'],
+    files: [
+      'scripts/audit-*.mjs',
+      'scripts/verify-ingame-motion.mjs',
+      'scripts/capture-visual-audit.mjs',
+      'scripts/capture-*.mjs',
+      'scripts/check-stage-jitter.mjs',
+    ],
     languageOptions: {
       globals: {
         window: 'readonly',
@@ -83,6 +90,8 @@ export default tseslint.config(
         MutationObserver: 'readonly',
         Node: 'readonly',
         getComputedStyle: 'readonly',
+        performance: 'readonly',
+        requestAnimationFrame: 'readonly',
       },
     },
   },

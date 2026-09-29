@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>以鹅传鹅 · D2 案情墙 · 按身份给号令</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  /* D2 = D 的世界和构图 + 按规则改正的内容。
+     规则（以服务端 rules.ts / views.ts 为准）：
+       - 头鹅在队首，公开；只有头鹅手里有案情卡（凶手鹅 + 受害鹅两张鹅卡），传递期间随时可看。
+       - 恶鹅固定 1 只，只有本人知道；其余是白鹅。
+       - 传递时没有候选卡池，其他人什么案情都看不到；手机只是一台"号令机"：
+         还没轮到 → 背过身去；下一棒 → 转过来看；轮到自己 → 演，演完点按钮；传完的 → 安静看戏。
+     画面：
+       - 墙底一排拍立得 = 全体玩家，照片是统一的鹅剪影（按人上色），不再用鹅卡当头像。
+         还没轮到的鹅在照片里是"背身"的，一眼看出谁背着身。
+       - 中央钉着一张"密令"纸条：只写这台手机此刻该做的一件事。
+       - 身份和案情都是"按住看"，松手就盖回去，防旁边的人瞄到。
+       - 鹅卡插画只出现在头鹅的案情卡里。 */
+  :root {
+    --night: #15161c; --night-2: #1f2029;
+    --cork: #6b4a31; --cork-2: #5a3d28;
+    --gold: #d9b35c; --gold-soft: rgba(217,179,92,.35);
+    --paper: #efe6d2; --paper-2: #e4d8bd; --paper-ink: #2b2620;
+    --thread: #c9423a;
+    --dim: rgba(239,230,210,.62);
+    --sticker: 0 6px 16px rgba(0,0,0,.45), 0 1px 0 rgba(0,0,0,.4);
+  }
+
+  /* ---------- 场景（同 D） ---------- */
+  .device { background: var(--night); color: var(--paper); }
+  .wall {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 50% 48% at 50% 36%, rgba(255,214,140,.28), transparent 72%),
+      radial-gradient(circle at 20% 30%, rgba(0,0,0,.18) 0 1.5px, transparent 2px) 0 0/14px 12px,
+      radial-gradient(circle at 70% 70%, rgba(255,255,255,.05) 0 1.5px, transparent 2px) 0 0/18px 16px,
+      linear-gradient(var(--cork), var(--cork-2));
+    transition: filter 300ms;
+  }
+  /* 背身等待时整面墙压暗：这台手机现在"不该被看" */
+  body[data-turn="wait"] .wall { filter: brightness(.62); }
+  .frame { position: absolute; inset: 18px 18px 96px; border: 1.5px solid var(--gold-soft); border-radius: 6px; box-shadow: inset 0 0 90px rgba(0,0,0,.6); pointer-events: none; }
+  .floor { position: absolute; left: 0; right: 0; bottom: 0; height: 96px; background: linear-gradient(#2a2421, #17130f); border-top: 1.5px solid var(--gold-soft); }
+  .lamp {
+    position: absolute; left: 50%; top: -34px; translate: -50% 0; width: 170px; height: 64px;
+    background: #2c2d36; border: 1.5px solid var(--gold); border-radius: 0 0 90px 90px; z-index: 1;
+  }
+  .lamp::after { content: ""; position: absolute; left: 50%; bottom: -8px; translate: -50% 0; width: 56px; height: 12px; border-radius: 50%; background: #ffe7a8; box-shadow: 0 0 40px 12px rgba(255,220,140,.5); }
+  .scrawl { position: absolute; font: 700 18px var(--serif); color: rgba(239,230,210,.16); rotate: -6deg; letter-spacing: .1em; }
+
+  /* ---------- 顶部小字 ---------- */
+  .kicker {
+    position: absolute; left: 50%; top: 46px; translate: -50% 0; z-index: 4; white-space: nowrap;
+    font: 700 13px var(--sans); letter-spacing: .3em; color: var(--gold);
+  }
+
+  /* ---------- 红线（同 D） ---------- */
+  .links path { fill: none; stroke-linecap: round; }
+  .links path[data-layer="thread"] { stroke: var(--thread); stroke-width: 2.5; opacity: .4; }
+  .links path.done[data-layer="thread"] { opacity: 1; }
+  .links path.next[data-layer="thread"] { opacity: 1; stroke-width: 3.5; stroke-dasharray: 8 7; animation: march 700ms linear infinite; filter: drop-shadow(0 0 4px rgba(201,66,58,.8)); }
+
+  /* ---------- 席位：拍立得 + 鹅剪影 ---------- */
+  .polaroid {
+    position: relative; width: 100px; padding: 6px 6px 8px; background: var(--paper); color: var(--paper-ink);
+    border: 1px solid rgba(217,179,92,.6); border-radius: 3px; box-shadow: var(--sticker); rotate: var(--r, 0deg);
+    transition: transform 220ms cubic-bezier(.34,1.56,.64,1), filter 220ms, box-shadow 220ms;
+  }
+  .polaroid .pic {
+    height: 84px; overflow: hidden; border-radius: 1px; display: grid; place-items: end center;
+    background: radial-gradient(ellipse 70% 60% at 50% 40%, #3a3b48, #22232c);
+  }
+  .polaroid .pic svg { width: 78px; height: 78px; display: block; }
+  .polaroid .g-side { display: block; } .polaroid .g-back { display: none; }
+  /* 还没轮到的：照片里是背身的鹅 */
+  .polaroid.is-wait .g-side { display: none; } .polaroid.is-wait .g-back { display: block; }
+  .polaroid.is-wait .pic { background: radial-gradient(ellipse 70% 60% at 50% 40%, #2c2d37, #1a1b22); }
+  .polaroid.is-active .pic svg { animation: flap 700ms ease-in-out infinite; transform-origin: 50% 100%; }
+  .polaroid .name { margin-top: 5px; font: 700 14px/1.2 var(--serif); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .polaroid .pin {
+    position: absolute; left: 50%; top: -7px; translate: -50% 0; width: 14px; height: 14px; border-radius: 50%; z-index: 2;
+    background: radial-gradient(circle at 35% 35%, #ff8a7a, var(--thread) 60%, #7a1f1a); box-shadow: 0 2px 3px rgba(0,0,0,.5);
+  }
+  .polaroid .no {
+    position: absolute; left: -8px; top: -8px; min-width: 26px; height: 26px; padding: 0 6px; display: grid; place-items: center; z-index: 2;
+    background: var(--night-2); color: var(--gold); border: 1px solid var(--gold); border-radius: 999px; font: 700 13px var(--serif);
+  }
+  .polaroid.is-head .no { background: var(--gold); color: var(--night); }
+  .polaroid .stamp {
+    position: absolute; left: 50%; top: 40%; translate: -50% -50%; rotate: -14deg; display: none; z-index: 3;
+    padding: 2px 8px; border: 2px solid var(--thread); color: var(--thread); font: 900 14px var(--serif); letter-spacing: .2em; background: rgba(239,230,210,.85);
+  }
+  .polaroid .flag {
+    position: absolute; left: 50%; bottom: -13px; translate: -50% 0; display: none; white-space: nowrap; z-index: 3;
+    padding: 2px 8px; background: var(--night-2); color: var(--gold); border: 1px solid var(--gold); border-radius: 999px; font: 700 11px var(--sans);
+  }
+  .polaroid.is-me { box-shadow: 0 0 0 2px var(--thread), var(--sticker); }
+  .polaroid.is-me .name::after { content: " · 你"; color: var(--thread); }
+  .polaroid.is-done { filter: grayscale(.85) brightness(.72); transform: translateY(8px); }
+  .polaroid.is-done .stamp { display: block; }
+  .polaroid.is-done .stamp::before { content: "已传"; }
+  .polaroid.is-active, .polaroid.is-next { transform: translateY(-14px); }
+  .polaroid.is-active { box-shadow: 0 0 0 2px var(--gold), 0 0 26px 6px rgba(255,214,140,.45), var(--sticker); z-index: 5; }
+  .polaroid.is-next { box-shadow: 0 0 0 1.5px var(--gold), var(--sticker); }
+  .polaroid.is-me.is-active, .polaroid.is-me.is-next { box-shadow: 0 0 0 2px var(--thread), 0 0 0 4px var(--gold), 0 0 26px 6px rgba(255,214,140,.4), var(--sticker); }
+  .polaroid.is-active .flag, .polaroid.is-next .flag { display: block; }
+  .polaroid.is-active .flag::before { content: "在演"; }
+  .polaroid.is-next .flag::before { content: "在看"; }
+  [data-size="mobile"] .polaroid { width: 62px; padding: 4px 4px 5px; }
+  [data-size="mobile"] .polaroid .pic { height: 50px; }
+  [data-size="mobile"] .polaroid .pic svg { width: 48px; height: 48px; }
+  [data-size="mobile"] .polaroid .name { font-size: 11px; margin-top: 3px; }
+  [data-size="mobile"] .polaroid .no { min-width: 20px; height: 20px; font-size: 11px; left: -6px; top: -6px; padding: 0 4px; }
+  [data-size="mobile"] .polaroid .stamp { font-size: 10px; padding: 1px 4px; letter-spacing: .1em; }
+  [data-size="mobile"] .polaroid.is-me .name::after { content: ""; }
+  [data-size="mobile"] .polaroid .flag { font-size: 9px; padding: 1px 5px; bottom: -11px; }
+  [data-size="mobile"] .polaroid.is-active, [data-size="mobile"] .polaroid.is-next { transform: translateY(-8px); }
+
+  /* ---------- 中央：密令纸条（只写这台手机现在该做的一件事） ---------- */
+  .order {
+    position: absolute; left: 50%; top: 84px; translate: -50% 0; width: 600px; z-index: 4;
+    padding: 22px 34px 26px; background: var(--paper); color: var(--paper-ink); text-align: center;
+    border: 1px solid rgba(217,179,92,.7); border-radius: 3px; rotate: -1deg;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.35), 0 18px 40px rgba(0,0,0,.55);
+    background-image: repeating-linear-gradient(transparent 0 31px, rgba(43,38,32,.07) 31px 32px);
+  }
+  .order > .pin {
+    position: absolute; left: 50%; top: -9px; translate: -50% 0; width: 18px; height: 18px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #ff8a7a, var(--thread) 60%, #7a1f1a); box-shadow: 0 2px 3px rgba(0,0,0,.5);
+  }
+  .order .to { font: 700 13px var(--sans); letter-spacing: .24em; color: rgba(43,38,32,.55); }
+  .order .to b { color: var(--thread); letter-spacing: .08em; }
+  .order .art { height: 128px; margin: 8px auto 4px; display: grid; place-items: center; }
+  .order .art svg { width: 128px; height: 128px; }
+  .order .title { font-size: 46px; color: var(--paper-ink); }
+  .order .hint { margin: 10px auto 0; max-width: 480px; font: 600 16px/1.55 var(--sans); color: rgba(43,38,32,.72); }
+  .order .hint b { color: var(--paper-ink); }
+  .order .ban { margin-top: 14px; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+  .order .ban span { padding: 3px 10px; border: 1px solid rgba(43,38,32,.35); border-radius: 999px; font: 700 12px var(--sans); color: rgba(43,38,32,.7); }
+  .order .ban span.no { border-color: var(--thread); color: var(--thread); }
+  /* "轮到你"：纸条镶金 + 盖章 */
+  body[data-turn="mine"] .order { box-shadow: 0 0 0 2px var(--gold), 0 0 50px 10px rgba(255,214,140,.35), 0 18px 40px rgba(0,0,0,.55); }
+  .order .seal {
+    position: absolute; right: 22px; top: 18px; rotate: 12deg; display: none;
+    padding: 3px 10px; border: 2.5px solid var(--thread); color: var(--thread); font: 900 16px var(--serif); letter-spacing: .2em;
+  }
+  body[data-turn="mine"] .order .seal { display: block; }
+  /* 背身等：纸条也暗一点，字够大，隔着桌子扫一眼就懂 */
+  body[data-turn="wait"] .order { filter: brightness(.86); }
+  .order .art svg.pose-act { animation: flap 700ms ease-in-out infinite; transform-origin: 50% 100%; }
+  .order .art svg.pose-watch .eye { animation: blink 3s infinite; transform-origin: center; transform-box: fill-box; }
+
+  /* 头鹅的案情卡：两张鹅卡，按住才翻开 */
+  .case { margin: 14px auto 0; display: flex; justify-content: center; gap: 18px; }
+  .case .card {
+    position: relative; width: 112px; height: 154px; border-radius: 8px; overflow: hidden; border: 1px solid var(--gold);
+    box-shadow: var(--sticker); background: repeating-linear-gradient(135deg, #25262f 0 10px, #2c2d38 10px 20px);
+  }
+  .case .card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 120ms; }
+  .case .card .back { position: absolute; inset: 0; display: grid; place-items: center; font: 900 18px var(--serif); color: var(--thread); letter-spacing: .2em; }
+  .case .card .back span { border: 2px solid var(--thread); padding: 3px 8px; rotate: -10deg; }
+  .case .card .lbl {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 4px 0; font: 700 12px var(--sans); color: var(--paper);
+    background: rgba(21,22,28,.85); letter-spacing: .12em;
+  }
+  .case .card:first-child .lbl { color: #ff9c8f; }
+  .case.open .card img { opacity: 1; }
+  .case.open .card .back { display: none; }
+  .peek-btn {
+    margin-top: 12px; padding: 8px 18px; border-radius: 999px; cursor: pointer; user-select: none; touch-action: none;
+    background: var(--night-2); color: var(--gold); border: 1px solid var(--gold); font: 700 14px var(--sans);
+  }
+  .peek-btn:active, .peek-btn.held { background: var(--gold); color: var(--night); }
+
+  /* ---------- 角落：进度 + 倒计时（同 D） ---------- */
+  .progress { position: absolute; left: 48px; top: 40px; z-index: 4; }
+  .progress .numeral { font-size: 48px; color: var(--gold); }
+  .progress .of { font: 700 20px var(--serif); color: var(--dim); }
+  .progress small { display: block; margin-top: 4px; font: 700 12px var(--sans); letter-spacing: .24em; color: var(--dim); }
+  .countdown { background: rgba(21,22,28,.85); border-radius: 50%; }
+  .countdown .ring-bg { stroke: rgba(239,230,210,.14); } .countdown .ring-fg { stroke: var(--gold); }
+  .countdown .num { color: var(--paper); }
+  .countdown.last10 .ring-fg { stroke: var(--thread); }
+  .countdown small { color: var(--dim); }
+  #cd { right: 48px; top: 38px; }
+
+  /* ---------- 操作坞：身份（按住看）+ 唯一主按钮 ---------- */
+  .dock {
+    position: absolute; left: 50%; bottom: 18px; translate: -50% 0; width: 780px; z-index: 6;
+    display: flex; align-items: center; gap: 14px; padding: 8px 10px 8px 12px;
+    background: rgba(31,32,41,.94); border: 1px solid var(--gold-soft); border-radius: 16px; box-shadow: var(--sticker);
+  }
+  .idcard {
+    position: relative; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 4px 14px 4px 6px;
+    border: 1px solid var(--gold-soft); border-radius: 12px; cursor: pointer; user-select: none; touch-action: none; background: transparent; color: var(--paper);
+    font: 700 14px var(--sans); text-align: left;
+  }
+  .idcard .face { width: 38px; height: 38px; border-radius: 8px; display: grid; place-items: center; background: repeating-linear-gradient(135deg, #25262f 0 6px, #2c2d38 6px 12px); border: 1px solid var(--gold-soft); color: var(--gold); font: 900 16px var(--serif); }
+  .idcard .txt small { display: block; font: 600 11px var(--sans); color: var(--dim); }
+  .idcard .txt b { font: 700 16px var(--serif); }
+  .idcard .shown { display: none; } .idcard.held .shown { display: block; } .idcard.held .hidden { display: none; }
+  .idcard.held { border-color: var(--gold); background: rgba(217,179,92,.1); }
+  .idcard.role-evil.held { border-color: var(--thread); background: rgba(201,66,58,.14); }
+  .idcard.role-evil.held .face { background: var(--thread); color: var(--paper); border-color: var(--thread); }
+  .idcard.role-head .face { background: var(--gold); color: var(--night); border-color: var(--gold); }
+  .dock .info { flex: 1; font: 600 13px/1.45 var(--sans); color: var(--dim); }
+  .dock .btn { border: 1px solid var(--gold); box-shadow: 0 3px 0 rgba(0,0,0,.5); min-height: 52px; min-width: 240px; }
+  .dock .btn:disabled { background: transparent; color: var(--dim); border-color: var(--gold-soft); box-shadow: none; }
+  .dock .btn-primary:not(:disabled) { color: var(--night); font-size: 18px; }
+  .dock .btn-primary:not(:disabled):hover { transform: translateY(-2px); }
+  .dock .btn-primary:not(:disabled):active { transform: translateY(2px); box-shadow: none; }
+
+  /* ---------- 手机 ---------- */
+  [data-size="mobile"] .frame { inset: 10px 10px 88px; }
+  [data-size="mobile"] .floor { height: 88px; }
+  [data-size="mobile"] .lamp { width: 110px; height: 44px; top: -22px; }
+  [data-size="mobile"] .scrawl { display: none; }
+  [data-size="mobile"] .kicker { top: 96px; font-size: 11px; letter-spacing: .14em; }
+  [data-size="mobile"] .order { top: 124px; width: 358px; padding: 16px 16px 18px; }
+  [data-size="mobile"] .order .to { font-size: 11px; letter-spacing: .14em; }
+  [data-size="mobile"] .order .art { height: 88px; margin: 4px auto 2px; }
+  [data-size="mobile"] .order .art svg { width: 88px; height: 88px; }
+  [data-size="mobile"] .order .title { font-size: 32px; }
+  [data-size="mobile"] .order .hint { font-size: 14px; margin-top: 8px; }
+  [data-size="mobile"] .order .ban { margin-top: 10px; gap: 6px; }
+  [data-size="mobile"] .order .ban span { font-size: 11px; padding: 2px 8px; }
+  [data-size="mobile"] .order .seal { font-size: 12px; right: 12px; top: 12px; padding: 2px 6px; }
+  [data-size="mobile"] .case { gap: 12px; margin-top: 10px; }
+  [data-size="mobile"] .case .card { width: 84px; height: 116px; }
+  [data-size="mobile"] .case .card .back { font-size: 14px; }
+  [data-size="mobile"] .peek-btn { margin-top: 8px; font-size: 13px; padding: 6px 14px; }
+  /* 头鹅的回合把图示让给案情卡 */
+  .order.has-case .art { display: none; }
+  [data-size="mobile"] .progress { left: 22px; top: 24px; }
+  [data-size="mobile"] .progress .numeral { font-size: 34px; }
+  [data-size="mobile"] .progress .of { font-size: 15px; }
+  [data-size="mobile"] .progress small { font-size: 10px; }
+  [data-size="mobile"] #cd { right: 22px; top: 20px; width: 64px; height: 64px; }
+  [data-size="mobile"] #cd .num { font-size: 24px; }
+  [data-size="mobile"] .dock { width: 366px; bottom: 14px; padding: 8px; gap: 8px; }
+  [data-size="mobile"] .dock .info { display: none; }
+  [data-size="mobile"] .idcard { padding: 4px 8px 4px 4px; gap: 6px; }
+  [data-size="mobile"] .idcard .txt b { font-size: 14px; }
+  [data-size="mobile"] .dock .btn { flex: 1; min-width: 0; font-size: 15px; padding: 8px 12px; white-space: normal; line-height: 1.25; }
+  [data-size="mobile"] .dock .btn-primary:not(:disabled) { font-size: 17px; }
+
+  @keyframes march { to { stroke-dashoffset: -32; } }
+  @keyframes flap { 0%, 100% { rotate: -4deg; } 50% { rotate: 4deg; translate: 0 -3px; } }
+  @keyframes blink { 0%, 92%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>D2 · 案情墙 · 按身份给号令</strong>
+  <span class="note">第 3 轮：按规则改正 ｜ 席位是按人上色的鹅剪影（不再用鹅卡）｜ 中央是这台手机的"密令"：背身 / 转过来看 / 轮到你演 / 安静看戏 ｜ 鹅卡只出现在头鹅的案情卡里，按住才翻开</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile" aria-pressed="false">手机 390×844</button></div>
+  <div class="group"><button data-set-count="5">5 人</button><button data-set-count="7">7 人</button><button data-set-count="9">9 人</button></div>
+  <div class="group"><span class="note">视角：</span><button data-set-me="0">头鹅 阿杰</button><button data-set-me="3">白鹅 老王</button><button data-set-me="5" id="me-evil">恶鹅</button></div>
+  <div class="group"><button data-act="first">从头鹅开始</button><button data-act="next">下一棒 ▶</button><button data-act="myturn">跳到我</button><button data-act="last5">最后 5 秒</button><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="wall"></div>
+  <div class="frame"></div>
+  <div class="floor"></div>
+  <div class="lamp"></div>
+  <span class="scrawl" style="left:70px;top:230px">凶手是谁？</span>
+  <span class="scrawl" style="right:74px;top:260px;rotate:5deg">谁在说谎……</span>
+
+  <div class="kicker" data-box="kicker">静默传递 · 只许比划 · 可以鹅叫 · 不许说字</div>
+  <div class="progress" data-box="progress"><span class="numeral" id="prog"></span><span class="of" id="of"></span><small>第几棒</small></div>
+  <div class="countdown" id="cd" data-box="countdown">
+    <svg viewBox="0 0 84 84"><circle class="ring-bg" cx="42" cy="42" r="34"/><circle class="ring-fg" cx="42" cy="42" r="34"/></svg>
+    <span class="num numeral">30</span>
+  </div>
+
+  <div class="order" id="order" data-box="order" data-swap>
+    <span class="pin"></span><span class="seal">到你了</span>
+    <div class="to" id="to"></div>
+    <div class="art" id="art"></div>
+    <h1 class="title" id="headline"></h1>
+    <div class="hint" id="hint"></div>
+    <div id="extra"></div>
+  </div>
+
+  <svg class="links" aria-hidden="true"></svg>
+  <div class="seats"></div>
+
+  <div class="dock" data-box="dock">
+    <button class="idcard" id="idcard" type="button"></button>
+    <div class="info" id="info"></div>
+    <button class="btn btn-primary" id="act-pass"></button>
+  </div>
+</div></div>
+
+<script>
+  // 5 人局时恶鹅是第 5 棒（与 _shared.js 的 EVIL 一致）
+  (() => {
+    const n = Math.min(9, Math.max(5, Number(new URLSearchParams(location.search).get('n')) || 7));
+    document.getElementById('me-evil').dataset.setMe = String(Math.min(5, n - 1));
+  })();
+
+  const ROT = [-3, 2, -2, 3, -1, 2, -3, 1, -2];
+  // 每位玩家一只颜色不同的鹅；颜色只是区分人，不代表身份
+  const COLORS = ['#efe9da', '#e8b04a', '#7fb3c9', '#d98b7a', '#9ec27f', '#b79ad6', '#e5835a', '#8f9bb3', '#d7c46a'];
+  const INK = '#2b2620', BEAK = '#e8913a';
+
+  // 侧身鹅（面朝右）
+  const gooseSide = (c, cls = '', extra = '') => `<svg class="g-side ${cls}" viewBox="0 0 120 120" aria-hidden="true">
+      <path d="M44 108 v8 M60 108 v8" stroke="${BEAK}" stroke-width="4" stroke-linecap="round"/>
+      <path d="M22 80 L8 68 L26 72 Z" fill="${c}" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>
+      <ellipse cx="52" cy="86" rx="34" ry="23" fill="${c}" stroke="${INK}" stroke-width="2.5"/>
+      <path d="M36 84 Q52 72 68 84" fill="none" stroke="${INK}" stroke-width="2" opacity=".35"/>
+      <path d="M70 76 C76 60 72 46 76 34" fill="none" stroke="${INK}" stroke-width="15" stroke-linecap="round"/>
+      <path d="M70 76 C76 60 72 46 76 34" fill="none" stroke="${c}" stroke-width="10" stroke-linecap="round"/>
+      <circle cx="80" cy="28" r="12" fill="${c}" stroke="${INK}" stroke-width="2.5"/>
+      <path d="M90 24 L106 29 L90 34 Z" fill="${BEAK}" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
+      <circle class="eye" cx="83" cy="25" r="2.6" fill="${INK}"/>${extra}</svg>`;
+  // 背身鹅（只看到后背和后脑勺）
+  const gooseBack = (c, cls = '') => `<svg class="g-back ${cls}" viewBox="0 0 120 120" aria-hidden="true">
+      <path d="M50 110 v6 M70 110 v6" stroke="${BEAK}" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="60" cy="84" rx="30" ry="27" fill="${c}" stroke="${INK}" stroke-width="2.5"/>
+      <path d="M60 104 L52 114 L68 114 Z" fill="${c}" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M60 60 V34" stroke="${INK}" stroke-width="15" stroke-linecap="round"/>
+      <path d="M60 60 V34" stroke="${c}" stroke-width="10" stroke-linecap="round"/>
+      <circle cx="60" cy="26" r="13" fill="${c}" stroke="${INK}" stroke-width="2.5"/>
+      <path d="M44 80 Q60 92 76 80" fill="none" stroke="${INK}" stroke-width="2" opacity=".3"/></svg>`;
+  // 密令图示的几种姿势
+  const POSE = {
+    back: (c) => gooseBack(c, 'pose-back').replace('class="g-back', 'class="'),
+    watch: (c) => gooseSide(c, 'pose-watch',
+      `<circle cx="83" cy="25" r="6" fill="#fff" stroke="${INK}" stroke-width="2"/><circle class="eye" cx="84" cy="25" r="3.2" fill="${INK}"/>
+       <path d="M100 10 l8 -6 M104 20 l10 -2" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/>`).replace('class="g-side', 'class="'),
+    act: (c) => gooseSide(c, 'pose-act',
+      `<path d="M40 70 Q30 40 50 30 Q48 52 60 66" fill="${c}" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>
+       <path d="M18 40 q-8 6 0 12 M8 34 q-10 10 0 22" fill="none" stroke="${INK}" stroke-width="2.5" stroke-linecap="round" opacity=".6"/>`).replace('class="g-side', 'class="'),
+    hush: (c) => gooseSide(c, 'pose-hush',
+      `<path d="M96 18 v24" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>
+       <circle cx="96" cy="44" r="4" fill="${c}" stroke="${INK}" stroke-width="2"/>`).replace('class="g-side', 'class="'),
+  };
+
+  const CASE = { murderer: { img: 'img/goose_014_ninja.png', name: '忍者鹅' }, victim: { img: 'img/goose_016_ballerina.png', name: '芭蕾舞鹅' } };
+  const $ = (id) => document.getElementById(id);
+
+  // 按住看：松手/移出就盖回去
+  function holdToPeek(el, onChange) {
+    const set = (v) => { el.classList.toggle('held', v); onChange && onChange(v); };
+    el.addEventListener('pointerdown', (e) => { e.preventDefault(); set(true); });
+    ['pointerup', 'pointerleave', 'pointercancel', 'blur'].forEach((t) => el.addEventListener(t, () => set(false)));
+    el.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); set(true); } });
+    el.addEventListener('keyup', () => set(false));
+  }
+
+  function idcardHtml(me) {
+    if (me.role === 'head') {
+      return `<span class="face">头</span><span class="txt"><small>身份 · 公开</small><b>头鹅</b></span>`;
+    }
+    const shown = me.role === 'evil'
+      ? `<span class="txt shown"><small>只有你知道</small><b>恶鹅 · 轮到你时悄悄演歪</b></span>`
+      : `<span class="txt shown"><small>只有你知道</small><b>白鹅 · 看到什么演什么</b></span>`;
+    return `<span class="face">${me.role === 'evil' ? '恶' : '?'}</span>
+      <span class="txt hidden"><small>按住看</small><b>我的身份</b></span>${shown}`;
+  }
+
+  window.DESIGN = {
+    linkLayers: ['thread'],
+    seat: (p) => `<div class="polaroid" style="--r:${ROT[p.i]}deg">
+      <span class="pin"></span><span class="no">${p.i === 0 ? '头鹅' : p.seatNo}</span>
+      <div class="pic">${gooseSide(COLORS[p.i])}${gooseBack(COLORS[p.i])}</div>
+      <div class="name">${p.name}</div><span class="stamp"></span><span class="flag"></span></div>`,
+    layout(size, n, w, h) {
+      if (size === 'mobile') {
+        if (n <= 5) {
+          const span = (n - 1) * 72;
+          return Array.from({ length: n }, (_, i) => ({ x: w / 2 - span / 2 + i * 72, y: h - 196 }));
+        }
+        const top = Math.ceil(n / 2), rest = n - top;
+        return Array.from({ length: n }, (_, i) => {
+          const row = i < top ? 0 : 1, k = row ? i - top : i, count = row ? rest : top;
+          const span = (count - 1) * 72, x = w / 2 - span / 2 + k * 72;
+          return { x: row ? w - x : x, y: row ? h - 146 : h - 246 };
+        });
+      }
+      const span = Math.min(1060, (n - 1) * 124);
+      return Array.from({ length: n }, (_, i) => {
+        const t = n === 1 ? 0 : i / (n - 1) - 0.5;
+        return { x: w / 2 + t * span, y: h - 204 + t * t * 40 };
+      });
+    },
+    linkPath(a, b) {
+      const off = document.querySelector('.device').dataset.size === 'mobile' ? 34 : 56;
+      const ay = a.y - off, by = b.y - off;
+      if (Math.abs(ay - by) > 30) return `M${a.x} ${ay} C${a.x + 60} ${ay}, ${b.x + 60} ${by}, ${b.x} ${by}`;
+      const sag = Math.min(24, Math.abs(b.x - a.x) * 0.2);
+      return `M${a.x} ${ay} Q${(a.x + b.x) / 2} ${(ay + by) / 2 + sag} ${b.x} ${by}`;
+    },
+    passLabel(c) {
+      if (c.finished) return '传递完毕 · 全员转回来';
+      if (c.isMyTurn) return c.watcher ? `演完了，交给 ${c.watcher.name}` : '演完了，结束传递';
+      if (c.isMyWatch) return `看 ${c.performer.name} 演…`;
+      if (c.me.i < c.state.cur) return '已传完 · 安静看戏';
+      return `背身等 · 还有 ${c.me.i - c.state.cur - 1} 棒到你看`;
+    },
+    onState(c) {
+      const me = c.me, color = COLORS[me.i];
+      // 席位：还没轮到、也不是下一棒的，照片里背过身
+      document.querySelectorAll('.seats .polaroid').forEach((el, i) => el.classList.toggle('is-wait', i > c.state.cur + 1));
+
+      $('prog').textContent = c.finished ? c.n : c.state.cur + 1;
+      $('of').textContent = ` / ${c.n}`;
+      $('to').innerHTML = `给 <b>${me.name}</b> 的密令`;
+      const order = $('order');
+      order.classList.remove('has-case');
+      let art, title, hint, extra = '';
+      const ban = `<div class="ban"><span>只许比划</span><span>可以鹅叫</span><span class="no">不许说字</span><span class="no">不许写字</span></div>`;
+
+      if (c.finished) {
+        art = POSE.watch(color);
+        title = '全员转回来';
+        hint = '整条鹅链都演完了，马上开始讨论';
+      } else if (c.isMyTurn && me.role === 'head') {
+        art = POSE.act(color);
+        title = '轮到你演案情';
+        hint = c.watcher
+          ? `按住看案情卡，把 <b>谁害了谁</b> 演给 <b>${c.watcher.name}</b> 看`
+          : '按住看案情卡，演完就结束传递';
+        order.classList.add('has-case');
+        extra = `<div class="case" id="case">
+            <div class="card"><img src="${CASE.murderer.img}" alt="${CASE.murderer.name}"><div class="back"><span>绝密</span></div><div class="lbl">凶手鹅</div></div>
+            <div class="card"><img src="${CASE.victim.img}" alt="${CASE.victim.name}"><div class="back"><span>绝密</span></div><div class="lbl">受害鹅</div></div>
+          </div><button class="peek-btn" id="peek-case" type="button">按住看案情卡</button>`;
+      } else if (c.isMyTurn) {
+        art = POSE.act(color);
+        title = '轮到你演！';
+        hint = c.watcher
+          ? `把刚才 <b>${c.prev.name}</b> 的动作演给 <b>${c.watcher.name}</b> 看`
+          : `你是末棒：把刚才 <b>${c.prev.name}</b> 的动作演出来，演完进入讨论`;
+        extra = ban;
+      } else if (c.isMyWatch) {
+        art = POSE.watch(color);
+        title = `转过来，看 ${c.performer.name} 演`;
+        hint = c.performer.i === 0
+          ? `头鹅在演案情。记住每个动作，下一棒你要原样演给 <b>${c.players[me.i + 1]?.name ?? '大家'}</b> 看`
+          : `记住每个动作，下一棒你要原样演给 <b>${c.players[me.i + 1]?.name ?? '大家'}</b> 看`;
+        extra = ban;
+      } else if (me.i < c.state.cur) {
+        art = POSE.hush(color);
+        title = '传完了，安静看戏';
+        hint = `别出声、别比划、别提示 · 现在 <b>${c.performer.name}</b> 演给 <b>${c.watcher ? c.watcher.name : '大家'}</b> 看`;
+      } else {
+        art = POSE.back(color);
+        title = '背过身去，别偷看';
+        const k = me.i - c.state.cur - 1;
+        hint = k === 0 ? '马上轮到你看了，等手机叫你转身' : `还有 <b>${k}</b> 棒才到你看 · 手机会叫你转身`;
+      }
+      $('art').innerHTML = art;
+      $('headline').textContent = title;
+      $('hint').innerHTML = hint;
+      $('extra').innerHTML = extra;
+      const peek = $('peek-case');
+      if (peek) holdToPeek(peek, (v) => $('case').classList.toggle('open', v));
+
+      // 操作坞
+      const id = $('idcard');
+      id.className = `idcard role-${me.role}`;
+      id.innerHTML = idcardHtml(me);
+      if (!id.dataset.bound) { holdToPeek(id); id.dataset.bound = '1'; }
+      $('info').textContent = me.role === 'head'
+        ? (c.isMyTurn ? '只有你手里有案情卡；演的时候把手机扣下' : '案情卡在你手里，别让别人瞄到')
+        : c.isMyTurn ? '演够了就点右边；30 秒到了也会自动传下去'
+        : '身份只按住时显示，松手就盖回去';
+    },
+  };
+</script>
+<script src="_shared.js"></script>
+</body>
+</html>

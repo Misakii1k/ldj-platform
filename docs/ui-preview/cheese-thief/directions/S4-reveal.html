@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>奶酪大盗 · 画面 4 揭晓结算</title>
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="_attic.css">
+<style>
+  /* 画面 4：揭晓。所有席位卡依次翻面露出身份和骰子，告示牌盖章出胜负大字，胜方高光；时间线收在底部小条。 */
+  .notice .title.verdict { font-size: 60px; }
+  .notice.stamp { animation: stamp 360ms cubic-bezier(.34,1.56,.64,1); }
+  .notice .sub { font: 800 16px var(--sans); margin-top: 4px; }
+
+  .seat.flip-out { animation: flip-out 160ms ease-in forwards; }
+  .seat.flip-in { animation: flip-in 220ms cubic-bezier(.34,1.56,.64,1); }
+  .role {
+    position: absolute; right: 10px; top: -12px; font: 900 13px var(--sans); padding: 3px 10px;
+    border: 2.5px solid var(--ink); border-radius: 999px; box-shadow: 0 2px 0 var(--ink); background: var(--cream); display: none;
+  }
+  .seat.shown .role { display: block; }
+  .role.thief { background: var(--ink); color: var(--cream); }
+  .role.accomplice { background: var(--m2); }
+  .seat.shown .cup { display: none; }
+  .seat.shown .die { display: grid; }
+  .seat .votes { font: 800 12px var(--sans); color: var(--muted); display: none; }
+  .seat.shown .votes { display: block; }
+  .seat.out { background: #efe9dc; }
+  .seat.out .seat-name { text-decoration: line-through 3px var(--coral); }
+  .winners .seat.win { outline: 4px solid var(--yellow); outline-offset: 3px; transform: translateY(-4px); box-shadow: var(--shadow); }
+  .winners .seat:not(.win) { opacity: .72; }
+  .col .seat .seat-name { grid-column: 2; }
+  .col .seat .votes { grid-column: 2; grid-row: 2; margin-top: -8px; }
+
+  /* 时间线小条 */
+  .dock { display: grid; grid-template-columns: 1fr auto; gap: 10px 16px; }
+  .timeline { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; opacity: 0; transition: opacity 300ms; }
+  .winners .timeline { opacity: 1; }
+  .tl { display: grid; align-content: start; gap: 3px; padding: 6px 8px; border-radius: 10px; background: rgba(41,39,34,.05); min-height: 64px; }
+  .tl .h { font: 700 18px/1 var(--serif); }
+  .tl .who { font: 800 12px/1.3 var(--sans); overflow-wrap: anywhere; }
+  .tl .what { font: 700 11px/1.3 var(--sans); color: var(--muted); }
+  .tl.steal { background: var(--ink); color: var(--cream); }
+  .tl.steal .what { color: #e8dfcc; }
+  .dock .btn { align-self: center; }
+
+  @keyframes flip-out { to { transform: rotateY(90deg); } }
+  @keyframes flip-in { from { transform: rotateY(-90deg); } to { transform: none; } }
+  @keyframes stamp { from { transform: scale(1.6); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  @container (max-width: 600px) {
+    .notice .title.verdict { font-size: 38px; }
+    .notice .sub { font-size: 13px; }
+    .role { font-size: 10px; padding: 1px 6px; right: 4px; top: -10px; }
+    .col .seat .votes { font-size: 10px; margin-top: 0; }
+    .col .seat .votes { grid-column: 1 / -1; grid-row: auto; justify-self: center; }
+    .dock { grid-template-columns: 1fr; gap: 8px; }
+    .timeline { gap: 3px; }
+    .tl { padding: 4px 3px; min-height: 52px; }
+    .tl .h { font-size: 14px; }
+    .tl .who { font-size: 10px; }
+    .tl .what { font-size: 9px; }
+    .dock .btn { width: 100%; min-height: 44px; }
+    .center { top: 330px; }
+  }
+</style>
+</head>
+<body data-time="day" data-seat-style="badge">
+<div class="toolbar">
+  <strong>画面 4 · 揭晓结算</strong>
+  <span class="note">身份翻牌 + 胜负大字，时间线收在底部。可切换两种结局。</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile" aria-pressed="false">手机 390×844</button></div>
+  <div class="group"><button data-set-count="4">4 人</button><button data-set-count="6">6 人</button><button data-set-count="8">8 人</button></div>
+  <div class="group"><button data-outcome="village">村民胜</button><button data-outcome="thief">大盗胜</button></div>
+  <div class="group"><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="wall"></div>
+  <div class="beams"><b></b><i></i><i></i></div>
+  <div class="floor"></div>
+  <div class="mousehole"></div>
+  <div class="window" data-box="window">
+    <span class="cloud" style="left:20%;top:62%;width:70px"></span>
+    <span class="cloud" style="left:58%;top:72%;width:54px"></span>
+    <div class="moon"></div><div class="sun"></div>
+    <div class="mullion"></div><div class="transom"></div>
+    <div class="curtain l"></div><div class="curtain r"></div>
+  </div>
+  <div class="sill"></div>
+  <div class="beam"></div>
+
+  <div class="notice" data-box="notice">
+    <div class="when" id="when">投票结束</div>
+    <h1 class="title" id="title">揭晓……</h1>
+    <div class="sub" id="sub" hidden></div>
+  </div>
+  <div class="hours-box" data-box="hours"><div class="hours"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span></div></div>
+
+  <div class="col left" data-half="left"></div>
+  <div class="col right" data-half="right"></div>
+
+  <div class="center" data-box="center">
+    <div class="cheese-box" id="cheese-slot" style="visibility:hidden">
+      <svg id="cheese" class="cheese" viewBox="0 0 220 150" aria-label="奶酪">
+        <path d="M20 70 Q20 36 110 30 Q200 36 200 70 L200 108 Q200 138 110 142 Q20 138 20 108 Z" fill="#b8431f" stroke="#292722" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M28 70 Q28 44 110 38 Q192 44 192 70 L192 104 Q192 130 110 134 Q28 130 28 104 Z" fill="#f7c84b"/>
+        <path d="M28 72 Q28 46 110 40 Q192 46 192 72 Q192 96 110 100 Q28 96 28 72 Z" fill="#ffe08a" stroke="#292722" stroke-width="3"/>
+        <path d="M110 70 L192 72 L192 104 Q176 124 140 131 L140 90 Z" fill="#f2b937" stroke="#292722" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M110 70 L140 90 L140 131 Q126 133 110 134 Z" fill="#e8a92a" stroke="#292722" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M110 70 L192 72 Q184 60 162 52 Z" fill="#fff0b8" stroke="#292722" stroke-width="3" stroke-linejoin="round"/>
+        <ellipse cx="64" cy="66" rx="12" ry="6" fill="#e0a92a"/>
+        <ellipse cx="96" cy="54" rx="8" ry="4" fill="#e0a92a"/>
+        <ellipse cx="60" cy="112" rx="10" ry="12" fill="#e0a92a" stroke="#292722" stroke-width="2"/>
+        <ellipse cx="88" cy="120" rx="6" ry="7" fill="#e0a92a" stroke="#292722" stroke-width="2"/>
+        <circle cx="160" cy="98" r="9" fill="#c98a1c" stroke="#292722" stroke-width="2.5"/>
+        <circle cx="178" cy="86" r="5" fill="#c98a1c" stroke="#292722" stroke-width="2"/>
+        <circle cx="124" cy="112" r="6" fill="#b87c16" stroke="#292722" stroke-width="2"/>
+        <path d="M44 60 Q70 46 104 44" stroke="#fff8d8" stroke-width="5" stroke-linecap="round" fill="none"/>
+      </svg>
+    </div>
+    <div class="board"></div>
+    <span class="caption" id="caption">翻开所有人的底牌</span>
+  </div>
+
+  <div class="dock" data-box="dock">
+    <div class="timeline" id="timeline"></div>
+    <button class="btn btn-primary" id="again">再来一局</button>
+  </div>
+</div></div>
+<script>document.body.dataset.n = Math.min(8, Math.max(4, Number(new URLSearchParams(location.search).get('n')) || 6));</script>
+<script src="_shared.js"></script>
+<script>
+(function () {
+  const { players, count, fly, shake, reduce } = window.CT;
+  const $ = (id) => document.getElementById(id);
+  const outcome = new URLSearchParams(location.search).get('o') === 'thief' ? 'thief' : 'village';
+  document.querySelectorAll('[data-outcome]').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.outcome === outcome));
+    b.addEventListener('click', () => { const u = new URL(location.href); u.searchParams.set('o', b.dataset.outcome); location.href = u; });
+  });
+
+  // 身份：你（小鱼干）3 点独醒偷走奶酪 = 大盗；共犯按人数 0/1/1/2/2
+  const accCount = { 4: 0, 5: 1, 6: 1, 7: 2, 8: 2 }[count];
+  const accNames = ['阿杰', '大橘'].slice(0, accCount);
+  const thief = players.find((p) => p.me);
+  const role = (p) => (p === thief ? 'thief' : accNames.includes(p.name) ? 'accomplice' : 'village');
+  const ROLE_TEXT = { thief: '大盗', accomplice: '共犯', village: '村民' };
+  // 票数：村民胜时大盗票最多；大盗胜时一名村民被冤枉
+  const scapegoat = players.find((p) => role(p) === 'village');
+  const votes = new Map(players.map((p) => [p.name, 0]));
+  const top = outcome === 'village' ? thief : scapegoat;
+  votes.set(top.name, Math.ceil(count / 2) + 1);
+  // 剩下的票各投给一个不同的人，保证不平票
+  players.filter((p) => p !== top).slice(0, count - votes.get(top.name)).forEach((p) => votes.set(p.name, 1));
+
+  const seats = [...document.querySelectorAll('.seat')];
+  seats.forEach((s, i) => {
+    const p = players[Number(s.style.getPropertyValue('--i'))];
+    s.dataset.role = role(p);
+    s.insertAdjacentHTML('beforeend', `<span class="role ${role(p)}">${ROLE_TEXT[role(p)]}</span><span class="votes">得 ${votes.get(p.name)} 票</span>`);
+    if (p === top) s.dataset.out = '1';
+    const win = outcome === 'village' ? role(p) === 'village' : role(p) !== 'village';
+    s.classList.toggle('win', win);
+  });
+
+  // 时间线：按点数聚合醒来的人
+  const byHour = Array.from({ length: 6 }, (_, h) => players.filter((p) => p.die === h + 1));
+  let stolen = false;
+  $('timeline').innerHTML = byHour.map((list, h) => {
+    let what = '没人醒', cls = '';
+    if (list.length > 1) what = '同醒·互相看见';
+    else if (list.length === 1 && !stolen) { what = '独醒·偷走奶酪'; cls = 'steal'; stolen = true; }
+    else if (list.length === 1) what = '独醒·偷看骰子';
+    return `<div class="tl ${cls}"><span class="h">${h + 1} 点</span><span class="who">${list.map((p) => p.name).join('、') || '—'}</span><span class="what">${what}</span></div>`;
+  }).join('');
+
+  // 你的卡上带着偷到的奶酪
+  const meSlot = document.querySelector('#me .seat-loot');
+  const mini = $('cheese').cloneNode(true);
+  mini.removeAttribute('id');
+  meSlot.appendChild(mini);
+
+  function flipAll(done) {
+    if (reduce) { seats.forEach((s) => { s.classList.add('shown'); if (s.dataset.out) s.classList.add('out'); }); return done(); }
+    seats.forEach((s, i) => setTimeout(() => {
+      s.classList.add('flip-out');
+      setTimeout(() => {
+        s.classList.remove('flip-out');
+        s.classList.add('shown', 'flip-in');
+        if (s.dataset.out) s.classList.add('out');
+      }, 160);
+    }, 300 + i * 140));
+    setTimeout(done, 300 + seats.length * 140 + 420);
+  }
+
+  function verdict() {
+    const village = outcome === 'village';
+    $('when').textContent = village ? '大盗被投出' : '投错了人';
+    $('title').textContent = village ? '村民胜！' : '大盗胜！';
+    $('title').classList.add('verdict');
+    $('sub').hidden = false;
+    $('sub').textContent = village ? `大盗是 ${thief.name}（你），3 点偷走了奶酪` : `${scapegoat.name} 被冤枉出局，大盗是 ${thief.name}（你）`;
+    document.querySelector('.notice').classList.add('stamp');
+    document.body.classList.add('winners');
+    shake();
+    const slot = $('cheese-slot');
+    if (village) {
+      // 奶酪从大盗手里飞回砧板
+      $('caption').textContent = '奶酪回到了砧板上';
+      const ghost = mini.cloneNode(true);
+      mini.style.visibility = 'hidden';
+      fly(ghost, mini, slot, () => { slot.style.visibility = ''; mini.remove(); }, 120);
+    } else {
+      $('caption').textContent = '奶酪被带走了';
+      mini.parentElement.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.6) rotate(-10deg)' }, { transform: 'scale(1)' }], { duration: 420, easing: 'cubic-bezier(.34,1.56,.64,1)' });
+    }
+  }
+
+  flipAll(verdict);
+  $('again').addEventListener('click', () => location.reload());
+})();
+</script>
+</body>
+</html>

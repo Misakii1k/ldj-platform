@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>狼人杀 / 榴莲 原型复核报告 · 2026-09-18 R2</title>
+<style>
+  :root{--ink:#1b1a17;--muted:#4a463d;--line:#c9c2b2;--bg:#fdfbf6;--card:#fff;--ok:#0a6b4f;--bad:#a3320f;--accent:#08715d}
+  *{box-sizing:border-box}
+  body{margin:0;padding:32px 20px 64px;background:var(--bg);color:var(--ink);font:15px/1.65 "Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+  .wrap{max-width:1080px;margin:0 auto}
+  h1{font-size:26px;margin:0 0 6px}
+  h2{font-size:19px;margin:36px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--line)}
+  h3{font-size:16px;margin:22px 0 8px}
+  p{margin:8px 0}
+  .sub{color:var(--muted);font-size:14px}
+  .meta{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:16px 0}
+  .meta dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0;font-size:14px}
+  .meta dt{color:var(--muted)}
+  .meta dd{margin:0;font-weight:600}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13.5px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f1ede1;font-weight:700}
+  tr:last-child td{border-bottom:none}
+  .row-fail{background:#fff3ee}
+  .badges{display:flex;flex-wrap:wrap;gap:5px}
+  .ok,.bad{display:inline-block;padding:1px 7px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+  .ok{background:#e2f2ea;color:var(--ok);border:1px solid #9ecdb8}
+  .bad{background:#fbe3da;color:var(--bad);border:1px solid #e0a892}
+  .mono{font-family:Consolas,"Courier New",monospace}
+  .small{font-size:12px;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:12px}
+  figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  figure img{display:block;width:100%;height:auto;background:#eee}
+  figcaption{font-size:12px;color:var(--muted);padding:6px 8px;border-top:1px solid var(--line);word-break:break-all}
+  .fix{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:12px 16px;margin:14px 0}
+  .fix h3{margin-top:0}
+  code{background:#f1ede1;padding:1px 5px;border-radius:4px;font-family:Consolas,"Courier New",monospace;font-size:13px}
+  pre{background:#26241f;color:#f3efe4;padding:12px 14px;border-radius:8px;overflow:auto;font-size:12.5px}
+  ul{margin:8px 0;padding-left:22px}
+  li{margin:5px 0}
+  .warn{border-left-color:var(--bad)}
+  .honest{background:#fff8e8;border:1px solid #e3c98a;border-radius:8px;padding:12px 16px;margin:14px 0}
+  .kpi{display:flex;flex-wrap:wrap;gap:12px;margin:16px 0}
+  .kpi div{flex:1 1 150px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .kpi b{display:block;font-size:24px;font-family:Georgia,"Times New Roman",serif;color:var(--accent)}
+  .kpi span{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>狼人杀 / 榴莲 UI 原型复核报告</h1>
+<p class="sub">2026-09-18 · 第二轮独立复核（R2）· 真实 Chromium，非规则推演</p>
+
+<div class="kpi">
+  <div><b>36/36</b><span>榴莲回合流程断言</span></div>
+  <div><b>25/25</b><span>狼人杀交互断言</span></div>
+  <div><b>28/28</b><span>视口审计单元格无问题</span></div>
+  <div><b>33</b><span>本轮真实截图</span></div>
+</div>
+
+<div class="meta">
+<dl>
+  <dt>浏览器</dt><dd>Chromium 151.0.7922.34（Playwright 1.62.1，无头）</dd>
+  <dt>视口</dt><dd>360×640 · 390×844 · 844×390（横屏）· 1280×800</dd>
+  <dt>被测页面</dt><dd><code>durian.html</code>（最新榴莲）· <code>art-directions.html</code>（最新狼人杀，默认 refined + woodcut）</dd>
+  <dt>服务</dt><dd>本任务临时静态服务 <code>127.0.0.1:4175</code>，仅绑定回环</dd>
+  <dt>开始 / 结束</dt><dd>2026-09-18T10:51:44.848Z → 2026-09-18T10:52:20.580Z</dd>
+</dl>
+</div>
+
+<h2>1. 结论</h2>
+<ul>
+  <li><b>无横向溢出、无文字裁切、无小于 44px 的触控目标</b>，共 28 个「视口 × 页面 × 状态」单元格全部通过。</li>
+  <li>榴莲回合弹窗的<b>收起 / 恢复 / 选边 / 确认 / 质疑 / 下一轮</b>闭环完整可用，36 项断言全部通过；确认出牌只提交一次。</li>
+  <li>本轮实测并修复 <b>3 个焦点缺陷</b>（详见第 4 节），修复后全部复验通过。</li>
+  <li>已确认偏好未被破坏：狼人杀左右各 6 人且四种视口均无需滚动；榴莲数量在水果下方；Georgia 只作用于大数字；长昵称完整显示。</li>
+  <li>仍有一处<b>需用户裁决</b>的取舍：榴莲在短横屏 844×390 紧凑模式下，桌面累计需求区需要向下滚动约 93px 才能看到（内容可达，未被裁掉）。详见第 6 节。</li>
+</ul>
+
+<h2>2. 方法与可信度自检</h2>
+<p>为避免"检测器空转"得出虚假结论，本轮先对检测逻辑做了<b>注入式自检</b>：在真实页面中注入三个已知缺陷，确认检测器能全部捕获。</p>
+<table>
+<thead><tr><th>注入的已知缺陷</th><th>是否被检出</th></tr></thead>
+<tbody>
+<tr><td>宽 5000px 的元素（必然横向出界）</td><td><span class="ok">检出</span></td></tr>
+<tr><td><code>overflow:hidden</code> 且文字溢出的容器（必然裁字）</td><td><span class="ok">检出</span></td></tr>
+<tr><td>20×20px 的按钮（必然小于 44px）</td><td><span class="ok">检出</span></td></tr>
+</tbody>
+</table>
+<p class="sub">自检脚本对 <code>durian.html</code> 与 <code>art-directions.html</code> 各跑一次，两类页面均全部检出，因此下表的"0 问题"结论可信。</p>
+
+<h2>3. 视口审计明细</h2>
+<table>
+<thead><tr><th>视口</th><th>页面</th><th>状态</th><th>检查结果</th></tr></thead>
+<tbody>
+<tr><td class="mono">360x640</td><td>榴莲</td><td>回合弹窗</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">360x640</td><td>榴莲</td><td>桌面·紧凑</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">360x640</td><td>榴莲</td><td>桌面·舒展</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">360x640</td><td>榴莲</td><td>结算弹窗</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">360x640</td><td>狼人杀</td><td>A 林中木刻</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">360x640</td><td>狼人杀</td><td>B 月蚀星轨</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">360x640</td><td>狼人杀</td><td>C 赤幕剧场</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">390x844</td><td>榴莲</td><td>回合弹窗</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">390x844</td><td>榴莲</td><td>桌面·紧凑</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">390x844</td><td>榴莲</td><td>桌面·舒展</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">390x844</td><td>榴莲</td><td>结算弹窗</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">390x844</td><td>狼人杀</td><td>A 林中木刻</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">390x844</td><td>狼人杀</td><td>B 月蚀星轨</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">390x844</td><td>狼人杀</td><td>C 赤幕剧场</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">844x390</td><td>榴莲</td><td>回合弹窗</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">844x390</td><td>榴莲</td><td>桌面·紧凑</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">844x390</td><td>榴莲</td><td>桌面·舒展</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">844x390</td><td>榴莲</td><td>结算弹窗</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">844x390</td><td>狼人杀</td><td>A 林中木刻</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">844x390</td><td>狼人杀</td><td>B 月蚀星轨</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">844x390</td><td>狼人杀</td><td>C 赤幕剧场</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">1280x800</td><td>榴莲</td><td>回合弹窗</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">1280x800</td><td>榴莲</td><td>桌面·紧凑</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">1280x800</td><td>榴莲</td><td>桌面·舒展</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">1280x800</td><td>榴莲</td><td>结算弹窗</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">1280x800</td><td>狼人杀</td><td>A 林中木刻</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">1280x800</td><td>狼人杀</td><td>B 月蚀星轨</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+<tr><td class="mono">1280x800</td><td>狼人杀</td><td>C 赤幕剧场</td><td class="badges"><span class="ok">横向溢出 0</span><span class="ok">出界 0</span><span class="ok">裁字 0</span><span class="ok">触控达标</span></td></tr>
+
+</tbody>
+</table>
+
+<h3>3.1 一屏容纳情况（逐元素实测，非手写）</h3>
+<table>
+<thead><tr><th>视口</th><th>狼人杀左右席位栏</th><th>榴莲·紧凑</th><th>榴莲·舒展</th><th>榴莲·回合弹窗</th></tr></thead>
+<tbody>
+<tr><td class="mono">360×640</td><td><span class="ok">12 席全在屏内</span><br><span class="mono small">底 555 / 屏高 640</span></td><td><span class="ok">一屏放下</span></td><td><span class="warn">需滚动 127px</span><br><span class="mono small">main.d-game +127px</span></td><td><span class="ok">一屏放下</span></td></tr>
+<tr><td class="mono">390×844</td><td><span class="ok">12 席全在屏内</span><br><span class="mono small">底 759 / 屏高 844</span></td><td><span class="ok">一屏放下</span></td><td><span class="ok">一屏放下</span></td><td><span class="ok">一屏放下</span></td></tr>
+<tr><td class="mono">844×390</td><td><span class="ok">12 席全在屏内</span><br><span class="mono small">底 311 / 屏高 390</span></td><td><span class="ok">一屏放下</span></td><td><span class="ok">一屏放下</span></td><td><span class="warn">需滚动 199px</span><br><span class="mono small">div.d-dialog-body +199px</span></td></tr>
+<tr><td class="mono">1280×800</td><td><span class="ok">12 席全在屏内</span><br><span class="mono small">底 703 / 屏高 800</span></td><td><span class="ok">一屏放下</span></td><td><span class="warn">需滚动 76px</span><br><span class="mono small">main.d-game +76px</span></td><td><span class="ok">一屏放下</span></td></tr>
+</tbody>
+</table>
+<p class="sub">判定方式：遍历所有 <code>overflowY:auto/scroll</code> 的元素，实测 <code>scrollHeight - clientHeight</code>；只要存在内部滚动就说明一屏放不下。注意 <code>documentElement.scrollHeight</code> 会被 <code>body{overflow:hidden}</code> 夹住，只看整页会得出"不需要滚动"的错误结论。</p>
+<p class="sub">榴莲回合弹窗与结算弹窗允许内部滚动（确认按钮常驻在滚动区之外），这是既定设计，不计为问题。</p>
+
+<h2>4. 本轮修复的 3 个焦点缺陷</h2>
+
+<div class="fix">
+<h3>4.1 模态弹层内 Tab 焦点每轮停在 <code>&lt;body&gt;</code></h3>
+<p><b>现象：</b>弹层打开时按 Tab，每循环一次就有一站落在 <code>body</code> 上——焦点环消失，读屏位置丢失。</p>
+<p><b>根因（已用最小对照页证明是浏览器原生行为，不是测试假象）：</b>一个不含任何自定义脚本的 <code>&lt;dialog&gt;</code> + <code>showModal()</code> 页面，Tab 轨迹为 <code>body → #close → body → #close → …</code>。影响榴莲全部 3 个弹层与狼人杀共用的 <code>#dialog</code>。</p>
+<p><b>修复：</b>为每个弹层加显式 Tab 循环（首尾相接、跳过 <code>disabled</code> 与不可见元素）。
+<code>durian.js:142</code> 新增 <code>trapFocus()</code>，<code>durian.js:176</code> 应用于所有 <code>.d-dialog</code>；<code>art-directions.js:22</code> 为共用弹层加同样的处理。</p>
+<p><b>复验：</b>榴莲 Tab 轨迹不再出现 <code>body</code>；狼人杀弹层内 Tab 10 次始终停留在弹层内。</p>
+</div>
+
+<div class="fix">
+<h3>4.2 榴莲点「确认出牌」后焦点丢失</h3>
+<p><b>现象：</b>点击确认后阶段切到 <code>waiting</code>，被点击的按钮随即被重新渲染销毁，<code>document.activeElement</code> 掉到 <code>body</code>。</p>
+<p><b>修复：</b><code>durian.js:112</code> 的 <code>place()</code> 在渲染完成后，把焦点交给新阶段第一个可用按钮（<code>看牌列</code>），与该文件既有做法一致。</p>
+<p><b>复验：</b>断言「确认出牌后焦点不丢到 body」由失败转为通过。</p>
+</div>
+
+<div class="fix">
+<h3>4.3 狼人杀点「结束发言」后焦点丢失</h3>
+<p><b>现象：</b>推进到下一位发言者后，<code>#finish</code> 变为 <code>disabled</code>，焦点无处可去而掉到 <code>body</code>，键盘用户失去上下文。</p>
+<p><b>修复：</b><code>art-directions.js:43</code> 推进后把焦点移到新的发言人标题；<code>art-directions.html:14</code> 为该标题加 <code>tabindex="-1"</code>。</p>
+<p><b>复验：</b>断言「推进后焦点落到新发言人」通过。</p>
+</div>
+
+<div class="honest">
+<h3>4.4 需要更正的上一轮判断</h3>
+<p>本轮批量脚本最初报告"狼人杀 4 个弹层关闭后焦点未回到触发元素"。<b>该结论是测试假象</b>：脚本用的是程序化 <code>element.click()</code>，它不会移动焦点，导致弹层打开时记录的"触发元素"其实是 <code>body</code>。</p>
+<p>改用真实鼠标点击 / 键盘 Enter 复测后，<b>焦点均正确回到触发元素</b>（<code>#rules</code>、<code>#identity</code>、<code>#ledger</code>、席位按钮四种场景全部通过）。另用无自定义代码的最小对照页确认，Chromium 原生已具备关闭后回焦能力。</p>
+<p>因此：<code>art-directions.js:19/45</code> 中补充的显式回焦<b>并非修复 Chromium 缺陷</b>，而是为 iOS Safari 等未真机验证的环境留的跨浏览器保险。若认为原型应保持最小改动，这两处可以移除，Chromium 下行为不变。</p>
+</div>
+
+<h2>5. 交互流程断言明细</h2>
+
+<h3>5.1 榴莲回合弹窗（36/36 通过）</h3>
+<table><thead><tr><th>结果</th><th>断言</th><th>细节</th></tr></thead><tbody>
+<tr class=""><td><span class="ok">通过</span></td><td>1. placement 场景加载后回合弹窗自动打开</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>1b. 弹窗打开时焦点在弹层内</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>1c. 初始牌列张数为 6</td><td class="mono small">{&quot;before&quot;:6}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>2. 点「收起看桌面」后弹窗关闭</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>2b. 收起未提交（牌列张数不变）</td><td class="mono small">{&quot;after&quot;:6}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>2c. 收起后顶部出现「继续我的回合」</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>2d. 收起后焦点回到 #d-resume</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>3. 点「继续我的回合」重新打开弹窗</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>4. 选左半边后 aria-pressed=true</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>4b. 选边后确认按钮可用</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>5. 再次收起后重开，选择仍保留</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>5b. 重开后确认按钮仍可用</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>6. 确认出牌后牌列 +1（只提交一次）</td><td class="mono small">{&quot;before&quot;:6,&quot;afterPlace&quot;:7}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>6b. 确认后回合弹窗关闭（进入等待）</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>6c. 确认出牌后焦点不丢到 body</td><td class="mono small">{&quot;isBody&quot;:false,&quot;tag&quot;:&quot;button#d-view-history&quot;}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>7. waiting 阶段有「看牌列」与「开始下一轮」出路</td><td class="mono small">{&quot;history&quot;:true,&quot;next&quot;:true}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>7b. 「看牌列」打开牌列弹窗</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>8. 开始下一轮后轮次 +1</td><td class="mono small">{&quot;round&quot;:&quot;03&quot;}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>8b. 下一轮牌列清空</td><td class="mono small">{&quot;count&quot;:0}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>8c. 下一轮摸牌弹窗自动打开</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>8d. 焦点落在「摸一张牌」按钮</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>9. 摸牌后进入选边阶段且弹窗仍打开</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>9b. 未选边时确认按钮禁用</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>9c. 选右半边后确认按钮可用</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>9d. 出牌后牌列 +1</td><td class="mono small">{&quot;count&quot;:1}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>10. ESC 可关闭回合弹窗</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>10b. 遮罩外点击可关闭回合弹窗</td><td class="mono small">{&quot;r&quot;:{&quot;top&quot;:134.3125,&quot;left&quot;:12,&quot;width&quot;:366,&quot;height&quot;:575.375}}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>10c. 弹窗内部点击不会关闭</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>11. draw 场景弹窗自动打开</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>11b. 桌面已有出牌时出现「按铃质疑」</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>11c. 质疑后结算弹窗打开</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>11d. 结算内容已渲染且可继续下一轮</td><td class="mono small">{&quot;title&quot;:&quot;质疑成功&quot;,&quot;hasNext&quot;:true,&quot;bodyLen&quot;:154,&quot;scrollable&quot;:false}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>11e. 结算后「开始下一轮」推进轮次</td><td class="mono small">{&quot;roundBefore&quot;:&quot;02&quot;,&quot;roundAfter&quot;:&quot;03&quot;}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>11f. 新一轮摸牌弹窗自动打开</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>11g. 焦点落在「摸一张牌」按钮</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>12. Tab 焦点不跑出弹层</td><td class="mono small">{&quot;trail&quot;:[&quot;button&quot;,&quot;button&quot;,&quot;button&quot;,&quot;button&quot;,&quot;button&quot;,&quot;button&quot;,&quot;button&quot;,&quot;button&quot;,&quot;button&quot;,&quot;button&quot;,&quot;butt</td></tr>
+</tbody></table>
+<p class="sub">控制台错误 / 页面异常：无</p>
+
+<h3>5.2 狼人杀交互（25/25 通过）</h3>
+<table><thead><tr><th>结果</th><th>断言</th><th>细节</th></tr></thead><tbody>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 本局规则 弹层可打开</td><td class="mono small">{&quot;title&quot;:&quot;十二人 · 经典场&quot;}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 本局规则 打开后焦点在弹层内</td><td class="mono small">{&quot;open&quot;:true,&quot;id&quot;:&quot;dialog&quot;,&quot;activeInside&quot;:true,&quot;activeTag&quot;:&quot;button#close&quot;}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 本局规则 弹层完整在视口内</td><td class="mono small">{&quot;fits&quot;:true,&quot;r&quot;:{&quot;top&quot;:266.5,&quot;bottom&quot;:533.5,&quot;left&quot;:450,&quot;right&quot;:830}}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 本局规则 ESC 可关闭</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 本局规则 关闭后焦点回到触发元素</td><td class="mono small">{&quot;activeIsTrigger&quot;:true,&quot;activeTag&quot;:&quot;button#rules&quot;}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 我的身份 弹层可打开</td><td class="mono small">{&quot;title&quot;:&quot;预言家 · 好人阵营&quot;}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 我的身份 打开后焦点在弹层内</td><td class="mono small">{&quot;open&quot;:true,&quot;id&quot;:&quot;dialog&quot;,&quot;activeInside&quot;:true,&quot;activeTag&quot;:&quot;button#close&quot;}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 我的身份 弹层完整在视口内</td><td class="mono small">{&quot;fits&quot;:true,&quot;r&quot;:{&quot;top&quot;:203.8,&quot;bottom&quot;:596.2,&quot;left&quot;:450,&quot;right&quot;:830}}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 我的身份 ESC 可关闭</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 我的身份 关闭后焦点回到触发元素</td><td class="mono small">{&quot;activeIsTrigger&quot;:true,&quot;activeTag&quot;:&quot;button#identity&quot;}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 上一轮票型 弹层可打开</td><td class="mono small">{&quot;title&quot;:&quot;第二日 · 放逐记录&quot;}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 上一轮票型 打开后焦点在弹层内</td><td class="mono small">{&quot;open&quot;:true,&quot;id&quot;:&quot;dialog&quot;,&quot;activeInside&quot;:true,&quot;activeTag&quot;:&quot;button#close&quot;}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 上一轮票型 弹层完整在视口内</td><td class="mono small">{&quot;fits&quot;:true,&quot;r&quot;:{&quot;top&quot;:241.8,&quot;bottom&quot;:558.2,&quot;left&quot;:450,&quot;right&quot;:830}}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 上一轮票型 ESC 可关闭</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 上一轮票型 关闭后焦点回到触发元素</td><td class="mono small">{&quot;activeIsTrigger&quot;:true,&quot;activeTag&quot;:&quot;button#ledger&quot;}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 查看席位 弹层可打开</td><td class="mono small">{&quot;title&quot;:&quot;1 号 · 阿橙&quot;}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 查看席位 打开后焦点在弹层内</td><td class="mono small">{&quot;open&quot;:true,&quot;id&quot;:&quot;dialog&quot;,&quot;activeInside&quot;:true,&quot;activeTag&quot;:&quot;button#close&quot;}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 查看席位 弹层完整在视口内</td><td class="mono small">{&quot;fits&quot;:true,&quot;r&quot;:{&quot;top&quot;:297.7,&quot;bottom&quot;:502.3,&quot;left&quot;:450,&quot;right&quot;:830}}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 查看席位 ESC 可关闭</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 查看席位 关闭后焦点回到触发元素</td><td class="mono small">{&quot;activeIsTrigger&quot;:true,&quot;activeTag&quot;:&quot;button&quot;}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 「收起并返回」按钮可关闭弹层</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 结束发言推进到 07 号</td><td class="mono small">{&quot;beforeSpeaker&quot;:&quot;山间一阵晚风&quot;,&quot;afterSpeaker&quot;:&quot;南瓜&quot;}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 推进后按钮变为禁用（正在聆听）</td><td class="mono small">—</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · 推进后焦点落到新发言人（不丢到 body）</td><td class="mono small">{&quot;isBody&quot;:false,&quot;tag&quot;:&quot;h1&quot;,&quot;text&quot;:&quot;南瓜&quot;}</td></tr>
+<tr class=""><td><span class="ok">通过</span></td><td>狼人杀 · Tab 焦点不跑出弹层</td><td class="mono small">{&quot;trail&quot;:[&quot;button#close&quot;,&quot;button#close&quot;,&quot;button#close&quot;,&quot;button#close&quot;,&quot;button#close&quot;,&quot;button#close&quot;,&quot;button#close&quot;,&quot;button#close&quot;,</td></tr>
+</tbody></table>
+<p class="sub">控制台错误 / 页面异常：无</p>
+
+<h2>6. 已知限制与未验证项（请勿据此认为已全面验收）</h2>
+<div class="honest">
+<h3>6.0 对上一版报告的更正</h3>
+<p>本报告上一版有两处结论不准确，现已更正：</p>
+<ul>
+  <li><b>原写"844×390 紧凑模式需滚动约 93px"</b> —— 该问题已在本轮修好（见 6.1），现为"一屏放下"。</li>
+  <li><b>原写"1280×800 舒展模式全部在屏内，无滚动容器"</b> —— <b>这是错的</b>。当时的判定只看元素可见性，没有逐元素测内部滚动量，也没有察觉底部粘性操作条会盖住正文。实测 <code>main.d-game</code> 需滚动 76px，且「桌面累计需求」在初始滚动位置会被粘性操作条遮住大半。上一版之所以得出错误结论，正是因为依赖了被 <code>body{overflow:hidden}</code> 夹住的 <code>documentElement.scrollHeight</code>。本轮已改为逐元素测量。</li>
+</ul>
+</div>
+<ul>
+  <li><b>榴莲舒展模式仍需滚动：</b>360×640 需 127px、1280×800 需 76px；390×844 与 844×390 为一屏。这与 <code>DESIGN.md</code>「舒展模式为 2 列 × 3 行，可能需要少量滚动」的既有约定一致。<b>默认的紧凑模式在四种视口全部一屏放下</b>，符合"尽量一屏展示"的偏好。是否进一步压缩舒展模式由你决定。</li>
+  <li><b>未做真机验证：</b>以上全部为桌面 Chromium 模拟视口的结论，未在 iOS / Android 真机上测过触控、刘海安全区与软键盘。</li>
+  <li><b>Georgia 缺失环境未测：</b>Georgia 为系统字体，缺失时回退 <code>Times New Roman/serif</code>，字宽会有差异。</li>
+  <li><b>狼人杀只验收了白天发言场景：</b><code>art-directions.html</code> 仍是发言场景候选稿，夜晚与投票的完整交互仍在早期 <code>werewolf.html</code>，本轮未验收。</li>
+  <li><b>本报告不代表正式接入已就绪：</b>未改动 <code>packages/client/**</code> 任何生产代码，未做协议、构建与业务联调。接入差异见 <code>integration-diff.html</code>。</li>
+</ul>
+
+<h3>6.1 本轮修复：短横屏不再需要滚动</h3>
+<p><b>根因：</b>在短横屏断点下 <code>.d-layout</code> 被设为两列（<code>durian-fit.css:26</code>），但它的第二个子元素 <code>.d-play-area</code> 早已移进回合弹窗，<code>.d-layout</code> 只剩 <code>.d-players-area</code> 一个孩子——<b>整个第二列是空的</b>。与此同时「桌面累计需求」被压在下方，恰好多出 93px。</p>
+<p><b>修复（<code>durian-fit.css</code>，新增 <code>max-height:520px and min-width:640px</code> 块）：</b>把空的第二列真正用起来，让 <code>.d-players-area</code> 在该断点变成两列网格，把「桌面累计需求」移进右列；同时把该断点原先被 <code>display:none</code> 隐藏的水果名<b>恢复显示</b>。</p>
+<p><b>结果：</b>844×390 与 640×390 的紧凑与舒展模式<b>全部一屏放下（溢出 0）</b>，且水果名比修改前显示得更完整。全程<b>没有缩小任何字号，也没有把任何触控目标压到 44px 以下</b>。</p>
+
+<h2>7. 复现方式</h2>
+<p>复核脚本与原始结果已随目录交付，可直接复跑核验：</p>
+<pre># 0) 依赖：仓库已装 @playwright/test 1.62.1 与 chromium
+# 1) 在 D:\项目 启动仅回环的静态服务（复用仓库已有脚本，127.0.0.1:4173，勿绑 0.0.0.0）
+node scripts/serve-art-preview.mjs
+
+# 2) 语法校验
+node --check docs/ui-preview/werewolf-durian/durian.js
+node --check docs/ui-preview/werewolf-durian/art-directions.js
+
+# 3) 检测器自检（先证明检测逻辑有效）
+R2_BASE=http://127.0.0.1:4173 node docs/ui-preview/werewolf-durian/verify/r2-selftest.mjs
+
+# 4) 四视口 + 流程全量复核
+R2_BASE=http://127.0.0.1:4173 R2_ROOT=. node docs/ui-preview/werewolf-durian/verify/r2-verify.mjs</pre>
+<p class="sub">原始数据：<code>verify/r2-results.json</code>（本报告所有表格均由它生成，未手工转录）。原型目录内本轮只新增 <code>verified-report-r2.html</code>、<code>screenshots/verified-20260918-r2/</code> 与 <code>verify/</code>；<code>packages/client/**</code> 等生产代码零改动。</p>
+
+<h2>8. 本轮截图（33 张，尺寸与视口一致）</h2>
+<div class="grid">
+<figure><img src="screenshots/verified-20260918-r2/durian-1280x800-result.png" alt="durian-1280x800-result.png" loading="lazy"><figcaption>durian-1280x800-result.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/durian-1280x800-table-comfortable.png" alt="durian-1280x800-table-comfortable.png" loading="lazy"><figcaption>durian-1280x800-table-comfortable.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/durian-1280x800-table-compact.png" alt="durian-1280x800-table-compact.png" loading="lazy"><figcaption>durian-1280x800-table-compact.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/durian-1280x800-turn-dialog.png" alt="durian-1280x800-turn-dialog.png" loading="lazy"><figcaption>durian-1280x800-turn-dialog.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/durian-360x640-result.png" alt="durian-360x640-result.png" loading="lazy"><figcaption>durian-360x640-result.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/durian-360x640-table-comfortable.png" alt="durian-360x640-table-comfortable.png" loading="lazy"><figcaption>durian-360x640-table-comfortable.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/durian-360x640-table-compact.png" alt="durian-360x640-table-compact.png" loading="lazy"><figcaption>durian-360x640-table-compact.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/durian-360x640-turn-dialog.png" alt="durian-360x640-turn-dialog.png" loading="lazy"><figcaption>durian-360x640-turn-dialog.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/durian-390x844-challenge-result.png" alt="durian-390x844-challenge-result.png" loading="lazy"><figcaption>durian-390x844-challenge-result.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/durian-390x844-result.png" alt="durian-390x844-result.png" loading="lazy"><figcaption>durian-390x844-result.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/durian-390x844-table-comfortable.png" alt="durian-390x844-table-comfortable.png" loading="lazy"><figcaption>durian-390x844-table-comfortable.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/durian-390x844-table-compact.png" alt="durian-390x844-table-compact.png" loading="lazy"><figcaption>durian-390x844-table-compact.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/durian-390x844-turn-dialog.png" alt="durian-390x844-turn-dialog.png" loading="lazy"><figcaption>durian-390x844-turn-dialog.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/durian-844x390-result.png" alt="durian-844x390-result.png" loading="lazy"><figcaption>durian-844x390-result.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/durian-844x390-table-comfortable.png" alt="durian-844x390-table-comfortable.png" loading="lazy"><figcaption>durian-844x390-table-comfortable.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/durian-844x390-table-compact.png" alt="durian-844x390-table-compact.png" loading="lazy"><figcaption>durian-844x390-table-compact.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/durian-844x390-turn-dialog.png" alt="durian-844x390-turn-dialog.png" loading="lazy"><figcaption>durian-844x390-turn-dialog.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/werewolf-1280x800-after-finish.png" alt="werewolf-1280x800-after-finish.png" loading="lazy"><figcaption>werewolf-1280x800-after-finish.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/werewolf-1280x800-identity-dialog.png" alt="werewolf-1280x800-identity-dialog.png" loading="lazy"><figcaption>werewolf-1280x800-identity-dialog.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/werewolf-1280x800-ledger-dialog.png" alt="werewolf-1280x800-ledger-dialog.png" loading="lazy"><figcaption>werewolf-1280x800-ledger-dialog.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/werewolf-1280x800-refined-curtain.png" alt="werewolf-1280x800-refined-curtain.png" loading="lazy"><figcaption>werewolf-1280x800-refined-curtain.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/werewolf-1280x800-refined-eclipse.png" alt="werewolf-1280x800-refined-eclipse.png" loading="lazy"><figcaption>werewolf-1280x800-refined-eclipse.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/werewolf-1280x800-refined-woodcut.png" alt="werewolf-1280x800-refined-woodcut.png" loading="lazy"><figcaption>werewolf-1280x800-refined-woodcut.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/werewolf-1280x800-rules-dialog.png" alt="werewolf-1280x800-rules-dialog.png" loading="lazy"><figcaption>werewolf-1280x800-rules-dialog.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/werewolf-360x640-refined-curtain.png" alt="werewolf-360x640-refined-curtain.png" loading="lazy"><figcaption>werewolf-360x640-refined-curtain.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/werewolf-360x640-refined-eclipse.png" alt="werewolf-360x640-refined-eclipse.png" loading="lazy"><figcaption>werewolf-360x640-refined-eclipse.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/werewolf-360x640-refined-woodcut.png" alt="werewolf-360x640-refined-woodcut.png" loading="lazy"><figcaption>werewolf-360x640-refined-woodcut.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/werewolf-390x844-refined-curtain.png" alt="werewolf-390x844-refined-curtain.png" loading="lazy"><figcaption>werewolf-390x844-refined-curtain.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/werewolf-390x844-refined-eclipse.png" alt="werewolf-390x844-refined-eclipse.png" loading="lazy"><figcaption>werewolf-390x844-refined-eclipse.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/werewolf-390x844-refined-woodcut.png" alt="werewolf-390x844-refined-woodcut.png" loading="lazy"><figcaption>werewolf-390x844-refined-woodcut.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/werewolf-844x390-refined-curtain.png" alt="werewolf-844x390-refined-curtain.png" loading="lazy"><figcaption>werewolf-844x390-refined-curtain.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/werewolf-844x390-refined-eclipse.png" alt="werewolf-844x390-refined-eclipse.png" loading="lazy"><figcaption>werewolf-844x390-refined-eclipse.png</figcaption></figure>
+<figure><img src="screenshots/verified-20260918-r2/werewolf-844x390-refined-woodcut.png" alt="werewolf-844x390-refined-woodcut.png" loading="lazy"><figcaption>werewolf-844x390-refined-woodcut.png</figcaption></figure>
+</div>
+
+<p class="sub" style="margin-top:28px">报告生成于 2026-09-18T10:52:20.580Z · 数据来源：<code>r2-results.json</code>（由真实浏览器运行直接产出）</p>
+
+</div>
+</body>
+</html>

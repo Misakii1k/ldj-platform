@@ -9,7 +9,7 @@ import { blankModule } from '../packages/games/undercover/server/blank/module.ts
 import { seedRoom } from './helpers/dbClient.ts';
 import { RoomDriver } from './helpers/wsClient.ts';
 import { seedActiveSession } from './support/sessionSeeder.ts';
-import { BASE_URL, DB_PATH, WS_URL, seedBrowserSession } from './helpers/serverEnv.ts';
+import { BASE_URL, DB_PATH, WS_URL, seedBrowserSession, skipPcHostConsole } from './helpers/serverEnv.ts';
 
 const SHOTS_DIR = path.resolve(process.cwd(), 'screenshots');
 
@@ -34,6 +34,7 @@ test.describe('全页面视觉识别与多视口走查', () => {
     // 桌面首页
     const deskCtx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
     const deskPage = await deskCtx.newPage();
+    await skipPcHostConsole(deskPage);
     await deskPage.goto(BASE_URL);
     await expect(deskPage.locator('.game-home-page')).toBeVisible();
     await deskPage.waitForTimeout(600);
@@ -59,6 +60,7 @@ test.describe('全页面视觉识别与多视口走查', () => {
     // 移动端首页
     const mobCtx = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const mobPage = await mobCtx.newPage();
+    await skipPcHostConsole(mobPage);
     await mobPage.goto(BASE_URL);
     await expect(mobPage.locator('.game-home-page')).toBeVisible();
     await mobPage.waitForTimeout(600);
@@ -233,6 +235,7 @@ test.describe('全页面视觉识别与多视口走查', () => {
       roomCode: seeded.roomCode,
       nickname: '白板玩家',
     });
+    await skipPcHostConsole(blankPage);
     await blankPage.goto(BASE_URL);
     await expect(blankPage.locator('.blank-word-card__blank')).toBeVisible({ timeout: 20_000 });
     await saveScreenshot(blankPage, '18_blank_word_reveal_desktop.png');
@@ -354,6 +357,7 @@ test.describe('全页面视觉识别与多视口走查', () => {
       const startAck = await driver.startGame(spec.config);
       if (startAck.type !== 'ack') throw new Error(`${spec.gameId} startGame 失败：${startAck.payload?.code ?? ''} ${startAck.payload?.message ?? ''}`);
       const page = await preparePlayerPage(browser, 1280, 800, { ...seeded.players[0]!, roomCode: seeded.roomCode, nickname: spec.nickname });
+      await skipPcHostConsole(page);
       await page.goto(BASE_URL);
       await expect(page.locator('.tabletop-shell')).toBeVisible({ timeout: 20_000 });
       await saveScreenshot(page, spec.file);
@@ -390,6 +394,7 @@ test.describe('全页面视觉识别与多视口走查', () => {
       roomCode: ctSeeded.roomCode,
       nickname: '小偷玩家',
     });
+    await skipPcHostConsole(ctPage);
     await ctPage.goto(BASE_URL);
     await expect(ctPage.locator('.tabletop-shell')).toBeVisible({ timeout: 20_000 });
     await saveScreenshot(ctPage, '16_cheese_thief_tabletop.png');
@@ -403,6 +408,7 @@ test.describe('全页面视觉识别与多视口走查', () => {
       roomCode: durianSeeded.roomCode,
       nickname: '店长',
     });
+    await skipPcHostConsole(durianPage);
     await durianPage.goto(BASE_URL);
     await expect(durianPage.locator('.tabletop-shell')).toBeVisible({ timeout: 20_000 });
     await saveScreenshot(durianPage, '17_durian_tabletop.png');
@@ -415,7 +421,7 @@ test.describe('全页面视觉识别与多视口走查', () => {
     await durianPage.context().close();
   });
 
-  test('6c. 桌面模拟模式（奶酪大盗 / 铃铛对决 / 囚徒之夜 / 伪人测试 / 鹅传鹅）自由道具走查', async ({ browser }) => {
+  test('6c. 桌面模拟模式（奶酪大盗 / 铃铛对决 / 囚徒之夜 / 伪人测试 / 鹅传鹅 / 一智千金）自由道具走查', async ({ browser }) => {
     type SimShotSpec = { file: string; gameId: string; count: number; config: Record<string, unknown>; nickname: string };
     const simSpecs: SimShotSpec[] = [
       { file: '24_sim_cheese_thief.png', gameId: 'cheese-thief', count: 5, config: { rulesetId: 'cheese_thief_sim_v1', roleCards: true }, nickname: '盗鼠模拟' },
@@ -423,6 +429,7 @@ test.describe('全页面视觉识别与多视口走查', () => {
       { file: '26_sim_goose_relay.png', gameId: 'goose-relay', count: 5, config: { rulesetId: 'goose_relay_sim_v1', candidateCount: 9 }, nickname: '鹅传模拟' },
       { file: '27_sim_night_testimony.png', gameId: 'night-testimony', count: 4, config: { rulesetId: 'night_testimony_sim_v1' }, nickname: '证词模拟' },
       { file: '28_sim_echo_judge.png', gameId: 'echo-judge', count: 4, config: { rulesetId: 'echo_judge_sim_v1' }, nickname: '伪人模拟' },
+      { file: '29_sim_wits_wagers.png', gameId: 'wits-wagers', count: 3, config: { rulesetId: 'wits_wagers_sim_v1' }, nickname: '千金模拟' },
     ];
     for (const spec of simSpecs) {
       const seeded = seedRoom(DB_PATH, { gameId: spec.gameId, count: spec.count, ready: true, config: spec.config });

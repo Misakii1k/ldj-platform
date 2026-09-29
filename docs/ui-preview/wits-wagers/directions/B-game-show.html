@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>一智千金 · B 复古电视问答秀</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+/* =========================================================
+   B 复古电视问答秀
+   世界：70 年代直播演播厅。背后是一面灯泡跑马框的「答案大墙」，翻牌数字；选手站在一排发光的领奖台后；两盏追光打在台上。
+   表皮：深色悬疑 → 酒红丝绒幕 + 暖金细边。只取演播厅的灯泡与翻牌，不做 CRT 扫描线 / 像素风（C13）。
+   ========================================================= */
+.device {
+  --velvet: #3a0d18; --velvet-2: #1c060c; --gold: #e8b85a; --gold-dim: rgba(232,184,90,.4);
+  --panel: #14090c; --flap: #231317; --txt: #f6e9d6; --muted: #b59f8c; --bulb: #ffd88a;
+  background: var(--velvet-2); color: var(--txt); --ring-bg: #1a0a0e;
+}
+.decor { position: absolute; inset: 0; pointer-events: none; }
+.decor .curtain { position: absolute; inset: 0;
+  background: repeating-linear-gradient(90deg, rgba(0,0,0,.35) 0 10px, rgba(255,255,255,.03) 18px, rgba(0,0,0,.35) 36px), linear-gradient(var(--velvet), var(--velvet-2) 80%);
+}
+.decor .spot { position: absolute; top: -40px; width: 520px; height: 900px; opacity: .55;
+  background: linear-gradient(rgba(255,230,180,.28), rgba(255,230,180,0) 85%); clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
+  animation: sway 9s ease-in-out infinite; transform-origin: top center;
+}
+.decor .spot.l { left: 4%; transform: rotate(-14deg); } .decor .spot.r { right: 4%; transform: rotate(14deg); animation-delay: -4.5s; }
+@keyframes sway { 50% { rotate: 6deg; } }
+.decor .floor { position: absolute; left: 0; right: 0; bottom: 0; height: 190px;
+  background: linear-gradient(#1a0a0e, #0c0406); border-top: 2px solid var(--gold-dim);
+}
+.decor .floor::before { content: ""; position: absolute; inset: 0; background: radial-gradient(40% 70% at 50% 0%, rgba(255,216,138,.14), transparent); }
+
+/* 跑马灯框：包住题目 + 答案墙 */
+.decor .marquee { position: absolute; left: 50%; top: 60px; width: 1060px; height: 470px; transform: translateX(-50%);
+  border-radius: 22px; background: linear-gradient(#1b0b10, #120609);
+  box-shadow: 0 0 0 3px #5b3a1a, 0 0 0 6px var(--gold), 0 0 0 9px #5b3a1a, 0 30px 60px rgba(0,0,0,.6), inset 0 0 60px rgba(0,0,0,.8);
+}
+.decor .bulbs { position: absolute; inset: -6px; border-radius: 26px;
+  background:
+    radial-gradient(circle, var(--bulb) 0 3px, transparent 4px) 0 0 / 26px 26px;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; padding: 8px;
+  filter: drop-shadow(0 0 4px var(--bulb)); animation: chase 1.2s steps(2) infinite;
+}
+@keyframes chase { 50% { background-position: 13px 13px; } }
+
+.hud { position: absolute; left: 32px; right: 32px; top: 16px; display: flex; align-items: center; gap: 14px; z-index: 5; }
+.hud .round { font-size: 14px; color: var(--muted); }
+.hud .round b { font-size: 22px; color: var(--gold); }
+.hud .phase { font: 800 13px/1 var(--sans); letter-spacing: .25em; color: #1c0a0e; background: var(--gold); border-radius: 4px; padding: 5px 10px; }
+.hud .ring { margin-left: auto; --ring: var(--bulb); width: 50px; height: 50px; }
+
+.question { position: absolute; left: 50%; top: 92px; transform: translateX(-50%); width: 920px; text-align: center; z-index: 4; }
+.q-kicker { font: 700 13px/1 var(--sans); letter-spacing: .35em; color: var(--bulb); }
+.q-text { margin: 12px 0 4px; font: 800 38px/1.2 var(--serif); color: #fff3dc; }
+.q-unit { font-size: 13px; color: var(--muted); }
+
+/* 答案墙：一排翻牌面板 */
+.board { position: absolute; left: 50%; top: 214px; transform: translateX(-50%); display: flex; gap: 10px; z-index: 4; perspective: 900px; }
+.slot { position: relative; width: 128px; height: 290px; display: grid; grid-template-rows: auto auto 1fr; justify-items: center; gap: 8px; }
+.slot .odds { font: 800 15px/1 var(--sans); color: #1c0a0e; background: var(--gold); padding: 5px 10px; border-radius: 4px; letter-spacing: .05em; }
+.flap { width: 128px; height: 116px; border-radius: 10px; background: var(--panel); display: grid; place-items: center; position: relative;
+  box-shadow: inset 0 0 0 1px var(--gold-dim), inset 0 -2px 0 rgba(0,0,0,.6);
+}
+.flap::after { content: ""; position: absolute; left: 6px; right: 6px; top: 50%; height: 2px; background: rgba(0,0,0,.8); box-shadow: 0 1px 0 rgba(255,255,255,.05); }
+.flap .v { font: 800 38px/1 var(--serif); color: #fff3dc; letter-spacing: .02em; }
+.flap .v.small { font-size: 22px; line-height: 1.2; text-align: center; color: var(--bulb); }
+.flap .v span { display: inline-block; padding: 8px 5px; margin: 0 1px; border-radius: 4px; background: var(--flap); box-shadow: inset 0 0 0 1px rgba(255,255,255,.05); }
+.by { display: flex; gap: 4px; min-height: 18px; }
+.by i { font: 800 10px/18px var(--sans); font-style: normal; width: 18px; text-align: center; border-radius: 50%; background: var(--c); color: #1c0a0e; }
+.chips { display: flex; flex-wrap: wrap; justify-content: center; align-content: flex-start; gap: 4px; width: 128px; min-height: 60px; padding: 8px 4px; border-radius: 10px; background: rgba(0,0,0,.35); box-shadow: inset 0 0 0 1px rgba(232,184,90,.14); }
+.chip { width: 30px; height: 30px; border-radius: 50%; position: relative; display: grid; place-items: center; font: 900 12px/1 var(--sans); color: #1c0a0e;
+  background: radial-gradient(circle at 35% 30%, #fff8 0 20%, transparent 21%), var(--pc); box-shadow: 0 0 0 2px #1c0a0e, 0 0 0 3px var(--gold-dim), 0 3px 6px rgba(0,0,0,.5);
+}
+.chip::before { content: attr(data-l); }
+.chip em { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); font: 800 10px/1 var(--sans); font-style: normal; background: #fff3dc; color: #1c0a0e; padding: 2px 4px; border-radius: 4px; }
+.slot.win .flap { box-shadow: inset 0 0 0 2px var(--bulb), 0 0 0 3px var(--bulb), 0 0 60px rgba(255,216,138,.7); }
+.slot.win .flap .v span { background: #3a2410; color: var(--bulb); }
+.slot.win .odds { animation: glow .5s ease-in-out infinite; }
+.slot.lose { opacity: .32; filter: grayscale(.7); }
+
+/* 领奖台：选手一排站在台前 */
+.seats { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%); display: flex; gap: 12px; z-index: 4; }
+.seat { width: 150px; height: 104px; position: relative; text-align: center; padding-top: 12px;
+  background: linear-gradient(#2c1116, #160609); border-radius: 12px 12px 4px 4px; box-shadow: inset 0 0 0 1px var(--gold-dim), 0 10px 20px rgba(0,0,0,.5);
+}
+.seat::before { content: ""; position: absolute; left: 10px; right: 10px; top: 0; height: 4px; border-radius: 0 0 4px 4px; background: var(--pc); box-shadow: 0 0 14px var(--pc); }
+.seat .no { position: absolute; top: 10px; left: 10px; width: 22px; height: 22px; border-radius: 50%; font: 800 12px/22px var(--sans); background: var(--pc); color: #1c0a0e; }
+.seat .nm { font: 800 16px/1.2 var(--sans); padding: 0 12px 0 34px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+.seat .sc { margin-top: 8px; font: 800 30px/1 var(--serif); color: var(--bulb); font-variant-numeric: tabular-nums; }
+.seat .sc small { font: 600 11px var(--sans); color: var(--muted); margin-left: 2px; }
+.seat .tag { margin-top: 12px; font-size: 13px; color: var(--muted); }
+.seat.done .tag { color: var(--bulb); }
+.seat.done::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 22px rgba(255,216,138,.25); }
+.seat.me { box-shadow: inset 0 0 0 2px var(--gold), 0 0 30px rgba(232,184,90,.3); }
+
+/* 作答 */
+.pile { position: absolute; left: 50%; top: 226px; transform: translateX(-50%); width: 560px; height: 150px; z-index: 4; display: flex; justify-content: center; gap: 10px; }
+.facedown { width: 80px; height: 110px; }
+.facedown.flying { width: 80px; height: 110px; }
+.back { width: 100%; height: 100%; border-radius: 10px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--gold-dim); display: grid; place-items: center; }
+.back::before { content: "?"; font: 800 44px/1 var(--serif); color: var(--gold-dim); }
+.pile-count { position: absolute; bottom: 0; left: 0; right: 0; text-align: center; color: var(--muted); font-size: 14px; }
+.pile-count b { color: var(--bulb); font-size: 20px; }
+.entry { position: absolute; left: 50%; top: 392px; transform: translateX(-50%); width: 460px; text-align: center; z-index: 4; display: grid; grid-template-columns: auto 1fr; gap: 0 12px; align-items: center; }
+.entry-label { font: 700 13px/1 var(--sans); letter-spacing: .25em; color: var(--bulb); }
+.entry-field { height: 72px; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; background: var(--panel); box-shadow: inset 0 0 0 1.5px var(--gold); }
+.entry-value { font-size: 42px; color: #fff3dc; letter-spacing: .12em; }
+.entry-unit { color: var(--muted); }
+.entry-hint { grid-column: 1 / -1; margin-top: 8px; font-size: 12px; color: var(--muted); }
+
+/* 下注：我的筹码托盘（替代我那张领奖台上方的一条） */
+.tray { position: absolute; left: 50%; top: 522px; transform: translateX(-50%); display: flex; gap: 14px; align-items: center; z-index: 6; }
+.tray-bal { font-size: 13px; color: var(--muted); }
+.tray-bal b { color: var(--bulb); font-size: 24px; }
+.bet { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px; background: rgba(0,0,0,.4); box-shadow: inset 0 0 0 1px var(--gold-dim); }
+.bet .chip { width: 34px; height: 34px; }
+.bet-to { font: 800 16px var(--serif); } .bet-to small { font: 700 12px var(--sans); color: var(--bulb); }
+.stepper { display: flex; gap: 4px; align-items: center; }
+.stepper button { width: 30px; height: 30px; border-radius: 6px; background: transparent; color: var(--txt); border: 1px solid var(--gold-dim); font-size: 16px; }
+.stepper span { min-width: 28px; text-align: center; }
+[data-screen="betting"] .seats .seat { height: 84px; }
+[data-screen="betting"] .seat .sc { font-size: 24px; margin-top: 4px; }
+
+/* 结算 */
+.reveal { position: absolute; left: 50%; top: 150px; transform: translateX(-50%); z-index: 5; display: flex; align-items: center; gap: 14px; }
+.rv-label { font: 800 13px/1 var(--sans); letter-spacing: .25em; background: var(--gold); color: #1c0a0e; padding: 6px 10px; border-radius: 4px; }
+.rv-value { font: 900 60px/1 var(--serif); color: var(--bulb); text-shadow: 0 0 24px rgba(255,216,138,.6); font-variant-numeric: tabular-nums; }
+.rv-value small { font: 600 16px var(--sans); color: var(--muted); margin-left: 4px; }
+.rv-src { font-size: 12px; color: var(--muted); max-width: 150px; }
+[data-screen="settlement"] .question { top: 80px; }
+[data-screen="settlement"] .q-kicker { display: none; }
+[data-screen="settlement"] .q-text { font-size: 22px; color: var(--muted); }
+[data-screen="settlement"] .q-unit { display: none; }
+[data-screen="settlement"] .board { top: 240px; }
+[data-screen="settlement"] .chips { min-height: 40px; }
+.device[data-screen="settlement"] .seats { display: none; }
+.ledger { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%); display: flex; gap: 10px; z-index: 5; }
+.row { width: 148px; height: 104px; position: relative; padding: 12px 10px 0; border-radius: 12px 12px 4px 4px; background: linear-gradient(#2c1116, #160609); box-shadow: inset 0 0 0 1px var(--gold-dim);
+  display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; gap: 2px 6px; align-content: start; }
+.row::before { content: ""; position: absolute; left: 10px; right: 10px; top: 0; height: 4px; background: var(--pc); box-shadow: 0 0 14px var(--pc); }
+.row .rk { font-size: 13px; color: var(--muted); } .row .nm { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .sc { grid-column: 1 / -1; font-size: 32px; color: var(--bulb); }
+.row .dl { position: absolute; right: 10px; bottom: 14px; font-size: 15px; } .row .dl.up { color: #b8f0c4; } .row .dl.down { color: #f0a8a0; }
+.row .au { position: absolute; right: 8px; top: -20px; font: 800 10px/1 var(--sans); background: var(--bulb); color: #1c0a0e; padding: 3px 5px; border-radius: 4px; }
+.row:first-child { box-shadow: inset 0 0 0 2px var(--bulb), 0 0 40px rgba(255,216,138,.4); }
+.row:first-child .rk::after { content: " 👑"; }
+.row.me .nm::after { content: "（你）"; color: var(--muted); font-weight: 600; }
+
+.dock { position: absolute; left: 0; right: 0; bottom: 24px; display: flex; justify-content: center; z-index: 6; }
+.dock-wait { font: 700 15px var(--sans); color: var(--bulb); letter-spacing: .25em; animation: glow 1s ease-in-out infinite; }
+
+/* ---------------- 手机 390×844 ---------------- */
+[data-size="mobile"] .decor .marquee { top: 60px; width: 370px; height: 456px; }
+[data-size="mobile"] .decor .spot { width: 260px; }
+[data-size="mobile"] .decor .floor { height: 300px; }
+[data-size="mobile"] .hud { left: 16px; right: 16px; top: 12px; }
+[data-size="mobile"] .hud .ring { width: 44px; height: 44px; }
+[data-size="mobile"] .question { top: 82px; width: 340px; }
+[data-size="mobile"] .q-text { font-size: 23px; }
+[data-size="mobile"] .board { top: 200px; display: grid; grid-template-columns: repeat(3, 108px); gap: 8px 8px; }
+[data-size="mobile"] .slot { width: 108px; height: 150px; gap: 4px; }
+[data-size="mobile"] .flap { width: 108px; height: 62px; }
+[data-size="mobile"] .flap .v { font-size: 24px; }
+[data-size="mobile"] .flap .v.small { font-size: 16px; }
+[data-size="mobile"] .flap .v span { padding: 5px 3px; }
+[data-size="mobile"] .slot .odds { font-size: 12px; padding: 3px 7px; }
+[data-size="mobile"] .by { min-height: 0; position: absolute; top: 26px; right: 2px; z-index: 1; }
+[data-size="mobile"] .by i { width: 14px; font-size: 8px; line-height: 14px; }
+[data-size="mobile"] .chips { width: 108px; min-height: 40px; padding: 5px 3px; }
+[data-size="mobile"] .chip { width: 22px; height: 22px; font-size: 9px; }
+[data-size="mobile"] .seats { left: 10px; right: 10px; transform: none; bottom: 96px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+[data-size="mobile"] .seat { width: auto; height: 84px; padding-top: 10px; }
+[data-size="mobile"] .seat .no { width: 18px; height: 18px; line-height: 18px; font-size: 10px; top: 10px; left: 6px; }
+[data-size="mobile"] .seat .nm { font-size: 13px; padding: 0 6px 0 28px; }
+[data-size="mobile"] .seat .sc { font-size: 24px; }
+[data-size="mobile"] .seat .tag { font-size: 12px; margin-top: 10px; }
+[data-size="mobile"] .pile { top: 196px; width: 340px; flex-wrap: wrap; height: 170px; }
+[data-size="mobile"] .facedown { width: 58px; height: 80px; }
+[data-size="mobile"] .back::before { font-size: 32px; }
+[data-size="mobile"] .entry { top: 390px; width: 340px; grid-template-columns: 1fr; gap: 6px; }
+[data-size="mobile"] .entry-field { height: 64px; }
+[data-size="mobile"] .entry-value { font-size: 36px; }
+[data-size="mobile"] .tray { left: 10px; right: 10px; transform: none; top: 526px; flex-wrap: wrap; gap: 6px; justify-content: center; }
+[data-size="mobile"] .tray-bal { width: 100%; text-align: center; }
+[data-size="mobile"] .bet { flex: 1; gap: 4px; padding: 6px; }
+[data-size="mobile"] .bet .chip { width: 28px; height: 28px; }
+[data-size="mobile"] .bet-to { font-size: 13px; }
+[data-size="mobile"] .stepper button { width: 28px; height: 28px; }
+[data-size="mobile"] .stepper span { min-width: 22px; font-size: 13px; }
+[data-size="mobile"][data-screen="betting"] .seat { height: 66px; }
+[data-size="mobile"][data-screen="betting"] .seat .sc { font-size: 18px; margin-top: 2px; }
+[data-size="mobile"] .reveal { top: 142px; gap: 8px; }
+[data-size="mobile"] .rv-label { display: none; }
+[data-size="mobile"] .rv-value { font-size: 46px; }
+[data-size="mobile"] .rv-src { font-size: 11px; max-width: 120px; }
+[data-size="mobile"][data-screen="settlement"] .question { top: 76px; }
+[data-size="mobile"][data-screen="settlement"] .q-text { font-size: 16px; }
+[data-size="mobile"][data-screen="settlement"] .board { top: 240px; }
+[data-size="mobile"][data-screen="settlement"] .slot { height: 138px; }
+[data-size="mobile"] .ledger { left: 10px; right: 10px; transform: none; bottom: 96px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px 8px; }
+[data-size="mobile"] .row { width: auto; height: 84px; padding: 10px 6px 0; }
+[data-size="mobile"] .row .nm { font-size: 13px; }
+[data-size="mobile"] .row .sc { font-size: 24px; }
+[data-size="mobile"] .row .dl { font-size: 12px; right: 6px; bottom: 12px; }
+[data-size="mobile"] .row.me .nm::after { content: ""; }
+[data-size="mobile"] .dock { bottom: 22px; padding: 0 16px; }
+[data-size="mobile"] .cta { width: 100%; }
+</style>
+</head>
+<body data-title="B · 复古电视问答秀" data-note="对标 Balatro 计分演出 + 榴莲一屏总览 ｜ 灯泡跑马框答案墙 + 翻牌数字 + 选手领奖台一排 ｜ 与 A/C 差别：最「综艺」，选手在下、答案墙在上，像站在台前抢答">
+<script src="_shared.js"></script>
+<script>
+const flap = (n) => String(n).split('').map((d) => `<span>${d}</span>`).join('');
+WWUse({
+  decor: () => '<div class="curtain"></div><div class="spot l"></div><div class="spot r"></div><div class="floor"></div><div class="marquee"><div class="bulbs"></div></div>',
+  kicker: (s) => ({ answering: '本轮题目 · 写下你的估数', arranging: '答案墙上榜', betting: '押你觉得最接近的那一块', settlement: '' })[s],
+  seat: (p, s) => `<span class="no">${p.seat}</span><div class="nm">${p.name}${p.me ? '（你）' : ''}</div>
+    ${s === 'answering' ? `<div class="tag">${p.submitted ? '● 已亮灯' : '思考中…'}</div>` : `<div class="sc">${p.before}<small>分</small></div>`}`,
+  back: () => '<div class="back"></div>',
+  card: (t) => `<div class="odds">净赢 ×${t.odds}</div>
+    <div class="flap">${t.value === null ? '<span class="v small">更低<br><small style="font-size:11px;color:#b59f8c">比所有答案都小</small></span>' : `<span class="v">${flap(t.value)}</span>`}</div>
+    <div class="by">${t.authors.map((a) => `<i style="--c:${a.c}">${a.seat}</i>`).join('')}</div>`,
+  chip: (p, id, extra) => `<span class="chip" style="--pc:${p.c}" data-l="${id}">${extra ? `<em>+${extra}</em>` : ''}</span>`,
+  // 揭晓：答案墙上的数字像翻牌机一样逐位翻动
+  onReveal: async (device) => {
+    for (const el of device.querySelectorAll('.slot.win .flap .v span, .slot:not(.lower) .flap .v span')) {
+      el.animate([{ transform: 'rotateX(0)' }, { transform: 'rotateX(90deg)' }, { transform: 'rotateX(0)' }], { duration: 260, easing: 'ease-in-out' });
+    }
+    await WW.wait(300);
+  },
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>奶酪大盗 · 画面 2 掷骰</title>
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="_attic.css">
+<style>
+  /* 画面 2：入夜前私密掷骰。舞台主角是"你"的大骰盅；摇完揭开看点数，可以再盖回去。4 人局掷两骰自选一个。 */
+  .center .stage-cup { position: relative; width: 250px; height: 190px; display: grid; place-items: end center; }
+  .cup-big {
+    position: absolute; left: 50%; bottom: 8px; width: 170px; height: 150px; translate: -50% 0; z-index: 2;
+    background: linear-gradient(90deg, #a8733d, #c48b52 40%, #a8733d); border: var(--border);
+    border-radius: 80px 80px 18px 18px; box-shadow: var(--shadow);
+    transition: transform 320ms cubic-bezier(.22,1,.36,1), opacity 320ms;
+  }
+  .cup-big::before { content: ""; position: absolute; left: 14px; right: 14px; top: 34px; height: 12px; border-block: 3px solid var(--ink); background: #8a5a32; }
+  .cup-big::after { content: "?"; position: absolute; inset: 50px 0 0; display: grid; place-items: center; font: 700 56px var(--serif); color: var(--cream); text-shadow: 0 3px 0 var(--ink); }
+  .cup-big.shaking { animation: shake-cup 560ms ease-in-out; }
+  .cup-big.lifted { transform: translate(64px, -96px) rotate(18deg); opacity: 0; }
+  .big-dice { display: flex; gap: 18px; z-index: 1; padding-bottom: 20px; }
+  .big-dice .die {
+    display: grid; width: 104px; height: 104px; padding: 14px; border-width: 3px; border-radius: 20px; box-shadow: var(--shadow);
+    opacity: 0; transform: scale(.4);
+  }
+  .big-dice .die i { width: 17px; height: 17px; }
+  .revealed-big .big-dice .die { opacity: 1; transform: none; transition: transform 380ms cubic-bezier(.34,1.56,.64,1) 120ms, opacity 200ms 120ms; }
+  .big-dice .pick { cursor: pointer; }
+  .big-dice .pick:hover { transform: translateY(-4px) rotate(-3deg); }
+  .big-dice .chosen { outline: 5px solid var(--yellow); outline-offset: 4px; }
+  .big-dice .dropped { opacity: .35 !important; transform: scale(.85) !important; }
+  .center .caption b { font-family: var(--serif); font-size: 1.25em; }
+
+  .hours span.mine { background: var(--yellow); transform: scale(1.22); box-shadow: 0 0 0 4px rgba(247,200,75,.45), 0 2px 0 var(--ink); }
+
+  /* 席位：别人还在摇时骰盅轻晃，摇好后变成 ✓ */
+  .seat.rolling .cup { animation: shake-cup 520ms ease-in-out infinite; }
+  .seat.rolled .cup::after { content: "✓"; }
+  .pre-roll #me .die { display: none; }
+
+  @keyframes shake-cup {
+    0%, 100% { rotate: 0deg; translate: -50% 0; }
+    20% { rotate: -12deg; translate: calc(-50% - 8px) -6px; }
+    45% { rotate: 10deg; translate: calc(-50% + 8px) -10px; }
+    70% { rotate: -7deg; translate: calc(-50% - 4px) -4px; }
+  }
+  .seat .cup { translate: 0 0; }
+  .seat.rolling .cup { animation-name: wobble-cup; }
+  @keyframes wobble-cup { 0%, 100% { rotate: 0deg; } 30% { rotate: -14deg; } 65% { rotate: 12deg; } }
+
+  @container (max-width: 600px) {
+    .center .stage-cup { width: 130px; height: 120px; }
+    .cup-big { width: 100px; height: 92px; border-radius: 50px 50px 12px 12px; }
+    .cup-big::before { top: 20px; height: 8px; left: 8px; right: 8px; }
+    .cup-big::after { inset: 30px 0 0; font-size: 34px; }
+    .cup-big.lifted { transform: translate(34px, -60px) rotate(18deg); }
+    .big-dice { gap: 8px; padding-bottom: 14px; }
+    .big-dice .die { width: 64px; height: 64px; padding: 8px; border-radius: 13px; }
+    .big-dice .die i { width: 11px; height: 11px; }
+    .n4 .big-dice .die { width: 58px; height: 58px; }
+  }
+</style>
+</head>
+<body data-time="night" data-seat-style="badge" class="pre-roll">
+<div class="toolbar">
+  <strong>画面 2 · 掷骰</strong>
+  <span class="note">入夜前每人私密摇一次骰子，点数就是醒来时刻。4 人局切到「4 人」看两骰自选。</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile" aria-pressed="false">手机 390×844</button></div>
+  <div class="group"><button data-set-count="4">4 人</button><button data-set-count="6">6 人</button><button data-set-count="8">8 人</button></div>
+  <div class="group"><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="wall"></div>
+  <div class="beams"><b></b><i></i><i></i></div>
+  <div class="floor"></div>
+  <div class="mousehole"></div>
+  <div class="window" data-box="window">
+    <span class="cloud" style="left:20%;top:62%;width:70px"></span>
+    <span class="cloud" style="left:58%;top:72%;width:54px"></span>
+    <span class="star" style="left:16%;top:18%">✦</span><span class="star" style="left:34%;top:36%">✧</span><span class="star" style="left:82%;top:22%">✦</span><span class="star" style="left:26%;top:8%">✧</span><span class="star" style="left:88%;top:48%">✧</span>
+    <div class="moon"></div><div class="sun"></div>
+    <div class="mullion"></div><div class="transom"></div>
+    <div class="curtain l"></div><div class="curtain r"></div>
+  </div>
+  <div class="sill"></div>
+  <div class="beam"></div>
+
+  <div class="notice" data-box="notice">
+    <div class="when">入夜前</div>
+    <h1 class="title" id="title">摇出你的醒来时刻</h1>
+  </div>
+  <div class="hours-box" data-box="hours"><div class="hours"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span></div></div>
+
+  <div class="col left" data-half="left"></div>
+  <div class="col right" data-half="right"></div>
+
+  <div class="center" data-box="center">
+    <div class="stage-cup">
+      <div class="big-dice" id="big-dice"></div>
+      <div class="cup-big" id="cup"></div>
+    </div>
+    <div class="board"></div>
+    <span class="caption" id="caption">点数只有你能看到</span>
+  </div>
+
+  <div class="dock" data-box="dock">
+    <div class="info">
+      <strong id="dock-title">用手盖住骰盅，摇一摇</strong>
+      <span id="dock-sub">摇到几点，就在几点醒来</span>
+    </div>
+    <div class="actions" style="display:flex">
+      <button id="act-cover" class="btn" hidden>盖回骰盅</button>
+      <button id="act-roll" class="btn btn-primary">摇骰子</button>
+    </div>
+  </div>
+</div></div>
+<script>document.body.dataset.n = Math.min(8, Math.max(4, Number(new URLSearchParams(location.search).get('n')) || 6));</script>
+<script src="_shared.js"></script>
+<script>
+(function () {
+  const { players, count, die, reduce } = window.CT;
+  const me = players.find((p) => p.me);
+  const four = count === 4;
+  document.body.classList.toggle('n4', four);
+  const $ = (id) => document.getElementById(id);
+  const cup = $('cup'), dice = $('big-dice'), rollBtn = $('act-roll'), coverBtn = $('act-cover');
+  const hours = [...document.querySelectorAll('.hours span')];
+  const others = [...document.querySelectorAll('.seat:not(#me)')];
+  const meDice = document.querySelector('#me .seat-dice');
+  const meCup = document.createElement('div');
+  meCup.className = 'cup';
+  meDice.prepend(meCup);
+
+  const values = four ? [me.die, me.alt] : [me.die];
+  dice.innerHTML = values.map(die).join('');
+  let chosen = four ? null : me.die;
+
+  function setMine(n) {
+    hours.forEach((h) => h.classList.toggle('mine', Number(h.textContent) === n));
+    $('title').textContent = `你会在 ${n} 点醒来`;
+    $('caption').innerHTML = `记住：<b>${n}</b> 点`;
+    $('dock-title').textContent = '记住点数，然后盖好';
+    $('dock-sub').textContent = '别让旁边的人看到';
+    meDice.querySelector('.die').outerHTML = die(n);
+    document.body.classList.remove('pre-roll');
+    meCup.remove();
+    coverBtn.hidden = false;
+  }
+
+  // 其他人错开开始摇、错开摇好，演示"大家都在摇"
+  others.forEach((s, i) => setTimeout(() => s.classList.add('rolling'), 200 + i * 120));
+  others.forEach((s, i) => setTimeout(() => { s.classList.remove('rolling'); s.classList.add('rolled'); }, 1600 + i * 380));
+
+  rollBtn.addEventListener('click', () => {
+    rollBtn.disabled = true;
+    const lift = () => {
+      cup.classList.remove('shaking');
+      cup.classList.add('lifted');
+      document.body.classList.add('revealed-big');
+      if (four) {
+        $('title').textContent = '两颗骰子，选一个';
+        $('dock-title').textContent = '点一颗骰子作为醒来时刻';
+        $('dock-sub').textContent = '0:30 内不选，默认第一颗';
+        $('caption').textContent = '4 人局：两骰自选';
+        [...dice.children].forEach((d, k) => {
+          d.classList.add('pick');
+          d.addEventListener('click', () => {
+            if (chosen) return;
+            chosen = values[k];
+            d.classList.add('chosen');
+            dice.children[1 - k].classList.add('dropped');
+            setMine(chosen);
+          });
+        });
+      } else {
+        setMine(chosen);
+      }
+    };
+    if (reduce) return lift();
+    cup.classList.add('shaking');
+    setTimeout(lift, 560);
+  });
+
+  coverBtn.addEventListener('click', () => {
+    const covered = cup.classList.toggle('lifted') === false;
+    document.body.classList.toggle('revealed-big', !covered);
+    coverBtn.textContent = covered ? '再看一眼' : '盖回骰盅';
+    rollBtn.hidden = true;
+  });
+})();
+</script>
+</body>
+</html>

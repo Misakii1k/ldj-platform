@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "frozenAt": "2026-08-05",
+  "frozenAt": "2026-09-29",
   "baselineKind": "d4_third_game_content_hash_provisional",
   "candidate": {
     "gameId": "werewolf",
@@ -51,9 +51,9 @@
     {
       "path": "packages/games/werewolf/server/module.ts",
       "role": "current_game_module",
-      "sha256": "40b304addb6338fcc40f523a9dcd43eec6b646df5037f97110902d8e042bfbe5",
-      "lineCount": 1571,
-      "effectiveNonTestLineCount": 1234
+      "sha256": "a41555b9ab23ad0bdc57619c1664540d393b08c8562d693628e1fe02035d0bf8",
+      "lineCount": 1872,
+      "effectiveNonTestLineCount": 1510
     },
     {
       "path": "packages/games/werewolf/server/bot.ts",
@@ -72,7 +72,7 @@
     {
       "path": "packages/games/werewolf/shared/manifest.ts",
       "role": "current_manifest",
-      "sha256": "d6cb97e1802ca3562ea2a48b244cb0541dc2e2012d847c4d85ff4f248802765c",
+      "sha256": "e30908461e0eb30834aad639d60aff5bfb1605b55365292f2f63e5d0200be13c",
       "lineCount": 16,
       "effectiveNonTestLineCount": 12
     },
@@ -86,29 +86,29 @@
     {
       "path": "packages/games/werewolf/tests/manifest.test.ts",
       "role": "current_manifest_tests",
-      "sha256": "e74b00bfb5d75b009bdcd5f95160a25dfd5a0484fb4e0bd3262274c24122deae",
+      "sha256": "f0b8e469894a80332d363bc19ce1030446a54228c1571c848507f1e16d74d4df",
       "lineCount": 13,
       "effectiveNonTestLineCount": 0
     },
     {
       "path": "packages/games/werewolf/tests/module.test.ts",
       "role": "current_module_tests",
-      "sha256": "40b2f4a4b31e010f3102dd710595e3a3c591cec3403f37909e8dad550f1c105f",
-      "lineCount": 318,
+      "sha256": "82fa8bb49647499caacb780f5d40426c32c0f7d2f3ef50323c37c15d764c5f1c",
+      "lineCount": 322,
       "effectiveNonTestLineCount": 0
     },
     {
       "path": "packages/games/werewolf/tests/openKill.test.ts",
       "role": "current_open_kill_tests",
-      "sha256": "9d99b037ef05541863fb00f1f335f1f3991c922b0f0dff2c5c0af3461fd81317",
-      "lineCount": 241,
+      "sha256": "7859e481acce80c6667a21df0c8cf29ef7a553fc110f154e78d1bf41619fd194",
+      "lineCount": 242,
       "effectiveNonTestLineCount": 0
     },
     {
       "path": "packages/games/werewolf/tests/roles.test.ts",
       "role": "current_role_and_migration_tests",
-      "sha256": "7ea7ec9352bd0e3e6ed50daf502bc4b9babce6ceb26f442d8ec6665cd544b357",
-      "lineCount": 422,
+      "sha256": "14c1d436d52b73db28418cf0428858ad4632ce26c961f6922f87b025b134b137",
+      "lineCount": 426,
       "effectiveNonTestLineCount": 0
     }
   ],

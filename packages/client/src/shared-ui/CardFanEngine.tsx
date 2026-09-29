@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { webAudio } from './WebAudioManager.ts';
 import { GameIcon } from './GameIcon.tsx';
 import { computeDenseHandLayout } from './denseHandLayout.ts';
+import { computeCornerHand } from '../game/party-table/cornerHandLayout.ts';
 
 export interface CardItem {
   id: string;
@@ -38,6 +39,8 @@ export interface CardFanEngineProps {
   denseWhenCrowded?: boolean;
   /** 稠密策略触发阈值（张数），缺省 12；主要供测试与调参 */
   denseThreshold?: number;
+  /** 手牌收紧策略：'dense'（可出牌前置抬升/双排）| 'corner'（UNO/Ding 派对角标收紧），缺省走经典等距扇形 */
+  crowdMode?: 'dense' | 'corner';
 }
 
 interface FanMetrics {
@@ -147,6 +150,7 @@ export function CardFanEngine({
   hidePlayButton = false,
   denseWhenCrowded = false,
   denseThreshold,
+  crowdMode,
 }: CardFanEngineProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const deckRef = useRef<HTMLDivElement | null>(null);
@@ -169,8 +173,32 @@ export function CardFanEngine({
     };
   }, []);
 
-  const handleCardClick = (card: CardItem) => {
+  const total = cards.length;
+  const isCorner = crowdMode === 'corner';
+  const isMobile = metrics.containerWidth <= 480;
+  const cornerLayout = isCorner
+    ? computeCornerHand({
+        count: total,
+        cardWidth: effCardWidth,
+        availableWidth: isMobile ? 350 : Math.min(820, metrics.containerWidth - 24),
+        baseOverlap: isMobile ? -20 : -24,
+      })
+    : null;
+
+  const handleCardClick = (card: CardItem, idx: number) => {
     if (disabled || card.disabled) return;
+
+    // corner 模式且紧凑时，触屏下第一次点只 peek，第二次点才选中
+    if (isCorner && cornerLayout?.tight) {
+      const isCoarse = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+      if (isCoarse && peekIdx !== idx) {
+        setPeekIdx(idx);
+        onHoverCard?.(card);
+        webAudio.playCardFlip();
+        return;
+      }
+    }
+
     webAudio.playCardFlip();
 
     let nextSelected: string[];
@@ -207,7 +235,6 @@ export function CardFanEngine({
   };
 
   // 弧度与横向展开计算（包含卡牌过多时的自适应缩紧）
-  const total = cards.length;
   const { stepAngle, startAngle, stepX, startX } = computeFanLayout(
     total,
     effCardWidth,
@@ -217,7 +244,8 @@ export function CardFanEngine({
   );
 
   // 稠密策略（opt-in）：手牌拥挤时按可出性重排，普通局面仍走上面的等距扇形
-  const dense = denseWhenCrowded
+  const useDense = (crowdMode === 'dense' || denseWhenCrowded) && !isCorner;
+  const dense = useDense
     ? computeDenseHandLayout(
         cards.map((c) => ({ id: c.id, playable: !c.disabled })),
         { cardWidth: effCardWidth, containerWidth: metrics.containerWidth, denseThreshold },
@@ -235,7 +263,11 @@ export function CardFanEngine({
     const rect = deckRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const relX = clientX - centerX;
-    const approxIdx = Math.round((relX - startX) / (stepX || 1));
+    const effectiveStepX = isCorner && cornerLayout ? (effCardWidth + cornerLayout.overlap) : (stepX || 1);
+    const effectiveStartX = isCorner && cornerLayout
+      ? (-((effCardWidth + (total - 1) * effectiveStepX) / 2) + effCardWidth / 2)
+      : startX;
+    const approxIdx = Math.round((relX - effectiveStartX) / (effectiveStepX || 1));
     const clamped = Math.max(0, Math.min(total - 1, approxIdx));
     setPeekIdx(clamped);
   };
@@ -282,7 +314,7 @@ export function CardFanEngine({
 
       {/* 扇形卡牌渲染区 */}
       <div
-        className={`card-fan-deck ${dense && dense.mode !== 'fan' ? `card-fan-deck--${dense.mode}` : ''}`}
+        className={`card-fan-deck ${dense && dense.mode !== 'fan' ? `card-fan-deck--${dense.mode}` : ''} ${isCorner && cornerLayout?.tight ? 'is-corner-tight tight' : ''}`}
         ref={deckRef}
         style={{ height: deckHeight }}
         onPointerDown={handleDeckPointerDown}
@@ -299,8 +331,6 @@ export function CardFanEngine({
           const baseAngle = dp ? dp.angle : startAngle + idx * stepAngle;
           let angle = baseAngle;
           let translateX = dp ? dp.x : startX + idx * stepX;
-          // 稠密模式下可出牌抬升成为视觉焦点；双排时后排再整体上移
-          // （rowOffsetY 为负表示向上，translateY 同样是负值向上，故直接相加）
           const denseOffsetY = dp
             ? -dp.lift + (dp.row === 1 ? (dense?.rowOffsetY ?? 0) : 0)
             : 0;
@@ -308,32 +338,43 @@ export function CardFanEngine({
             ? -metrics.lift + denseOffsetY
             : (dp ? denseOffsetY : Math.abs(angle) * metrics.slope);
           let scale = isSelected ? 1.06 : 1;
-          // 可出牌压在不可出牌之上，保证抬起来那几张完整可见
           let zIndex = isSelected || isPlaying
             ? 100 + idx
             : dp
               ? (dp.playable ? 60 + idx : (dp.row === 1 ? idx : 20 + idx))
               : idx;
 
-          // 邻卡风琴式向两侧避让展开（手指长按/滑动/hover 时的清晰观察动效）
-          // 稠密模式已按可出性精确排布，风琴避让会打乱它，故只在普通扇形下启用
-          if (peekIdx !== null && !isPlaying && !dp) {
+          if (isCorner && cornerLayout) {
+            const cornerStepX = effCardWidth + cornerLayout.overlap;
+            const span = effCardWidth + (total - 1) * cornerStepX;
+            const cornerStartX = -span / 2 + effCardWidth / 2;
+            const stepA = cornerLayout.tiltDeg;
+            const startA = total <= 1 ? 0 : -((total - 1) * stepA) / 2;
+
+            const isTarget = isPeeking || isSelected;
+            angle = isTarget ? 0 : (startA + idx * stepA);
+            translateX = cornerStartX + idx * cornerStepX;
+            if (peekIdx !== null && idx > peekIdx) {
+              translateX += (isMobile ? 26 : 36);
+            }
+            translateY = isTarget ? -40 : Math.abs(angle) * metrics.slope;
+            scale = isTarget ? 1.06 : 1;
+            zIndex = isTarget ? 200 + idx : idx;
+          } else if (peekIdx !== null && !isPlaying && !dp) {
+            // 邻卡风琴式向两侧避让展开（普通扇形）
             const dist = Math.abs(idx - peekIdx);
             if (isPeeking) {
-              // 当前聚焦选中的卡牌：大幅抬升、放大、最高层级、稍微摆正角度
               translateY -= (metrics.lift + 14);
               scale = 1.16;
               angle = baseAngle * 0.45;
               zIndex = 300;
             } else if (dist === 1) {
-              // 相邻第 1 格：向两侧推开 18px，轻微抬升与微调角度
               const sign = idx < peekIdx ? -1 : 1;
               translateX += sign * 18;
               translateY -= 12;
               scale = 1.06;
               zIndex = 200;
             } else if (dist === 2) {
-              // 相邻第 2 格：向两侧推开 9px
               const sign = idx < peekIdx ? -1 : 1;
               translateX += sign * 9;
               translateY -= 5;
@@ -363,7 +404,7 @@ export function CardFanEngine({
                 height: effCardHeight,
                 ['--i' as string]: idx,
               }}
-              onClick={() => handleCardClick(card)}
+              onClick={() => handleCardClick(card, idx)}
               onMouseEnter={() => {
                 setPeekIdx(idx);
                 onHoverCard?.(card);

@@ -11,7 +11,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { seedRoom } from './helpers/dbClient.ts';
 import { RoomDriver } from './helpers/wsClient.ts';
-import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL } from './helpers/serverEnv.ts';
+import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL, skipPcHostConsole } from './helpers/serverEnv.ts';
 
 /** 浏览器作为第 2 位玩家 resume：设置本地会话后访问根路径即自动加入房间 */
 async function prepareBrowser(browser: import('@playwright/test').Browser, me: {
@@ -61,6 +61,8 @@ test('smoke：Node WS 建房开局 + 浏览器加入渲染', async ({ browser })
     roomCode: seeded.roomCode,
     nickname: '玩家2',
   });
+
+  await skipPcHostConsole(page);
 
   await page.goto(BASE_URL);
 

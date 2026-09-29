@@ -14,7 +14,7 @@
 import { test, expect, type Browser, type Page } from '@playwright/test';
 import { seedRoom } from './helpers/dbClient.ts';
 import { RoomDriver } from './helpers/wsClient.ts';
-import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL } from './helpers/serverEnv.ts';
+import { BASE_URL, DB_PATH, ME_STORAGE_KEY, WS_URL, skipPcHostConsole } from './helpers/serverEnv.ts';
 
 const MODERATOR_CONFIG = { rulesetId: 'werewolf_moderator_v1' } as const;
 const PLAYER_COUNT = 7; // 1 名法官 + 6 名抽卡玩家
@@ -30,6 +30,7 @@ interface BrowserSession {
 async function openSession(browser: Browser, session: BrowserSession): Promise<Page> {
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const page = await context.newPage();
+  await skipPcHostConsole(page);
   await page.addInitScript(
     ([key, value]) => { localStorage.setItem(key, value); },
     [ME_STORAGE_KEY, JSON.stringify(session)],
@@ -72,12 +73,10 @@ test.describe('狼人杀·真人主持（法官控制台 / 玩家端）', () => 
         seatRole: 'player',
       });
 
-      // —— 抽卡仪式：洗牌演出自动结束，卡牌默认遮挡 ——
-      const dealCeremony = playerPage.locator('.mod-deal-ceremony');
-      await expect(dealCeremony).toBeVisible({ timeout: 20_000 });
+      // —— 抽卡仪式：卡牌出现，洗牌演出结束后卡牌默认遮挡 ——
       const card = playerPage.locator('.identity-flip-card');
       await expect(card).toBeVisible({ timeout: 20_000 });
-      await expect(dealCeremony).toHaveCount(0, { timeout: 10_000 });
+      await expect(playerPage.locator('.mod-deal-ceremony')).toHaveCount(0, { timeout: 10_000 });
       await expect(card).not.toHaveClass(/is-revealed/);
 
       await card.click();
@@ -127,24 +126,27 @@ test.describe('狼人杀·真人主持（法官控制台 / 玩家端）', () => 
       await expect(playerPage.locator('.seat-chip.is-out')).toHaveCount(1);
 
       // —— 撤销出局同步恢复 ——
+      await expect(judgePage.locator('.confirm-dialog')).toHaveCount(0);
       await targetRow.getByRole('button', { name: '撤销出局' }).click();
+      await expect(judgePage.locator('.confirm-dialog')).toBeVisible();
       await judgePage.locator('.confirm-dialog').getByRole('button', { name: '确认撤销出局' }).click();
       await expect(targetRow.getByRole('button', { name: '标记出局' })).toBeVisible({ timeout: 15_000 });
       await expect(playerPage.locator('.mod-player-eliminated')).toHaveCount(0);
 
       // —— 刷新不重播抽卡演出、不自动亮牌（防窥 + 仪式一次性）——
       await playerPage.reload();
-      await expect(playerPage.locator('.identity-flip-card')).toBeVisible({ timeout: 20_000 });
+      await expect(playerPage.locator('.mod-player-arena')).toBeVisible({ timeout: 20_000 });
+      await expect(playerPage.locator('.ww-secret-trigger')).toBeVisible({ timeout: 20_000 });
       await expect(playerPage.locator('.mod-deal-ceremony')).toHaveCount(0);
       await expect(playerPage.locator('.identity-flip-card.is-revealed')).toHaveCount(0);
 
       // —— 结束对局并亮牌 ——
       await judgePage.locator('.mod-console__menu-btn').click();
-      await judgePage.getByRole('button', { name: /结束对局并亮牌/ }).click();
+      await judgePage.locator('.tabletop-drawer-item').filter({ hasText: '结束对局并亮牌' }).click();
       await judgePage.locator('.confirm-dialog').getByRole('button', { name: '确认结束并亮牌' }).click();
 
       await expect(judgePage.locator('.mod-console__ended')).toContainText('全场身份底牌已公开', { timeout: 15_000 });
-      await expect(playerPage.locator('.werewolf-reveal-modal')).toBeVisible({ timeout: 20_000 });
+      await expect(playerPage.locator('.ww-result-modal')).toBeVisible({ timeout: 20_000 });
       await expect(playerPage.locator('.seat-chip__role').first()).toBeVisible();
 
       await playerPage.context().close();

@@ -1,0 +1,248 @@
+/* 第 2 轮 · 斗地主「茶馆正堂」三个画面共用：场景、对手、桌面、HUD、手牌、操作坞。只服务于静态预览。 */
+:root {
+  --tea-red: #b8431f; --tea-red-dark: #8c2f14; --lacquer: #7a3a1e; --lacquer-dark: #5a2812;
+  --wood: #c9955e; --wood-light: #e2b884; --wood-dark: #9c6a3a; --jade: #5f9f86; --gold: #e0a92a;
+  --wall: #f3e6c8; --wall-dark: #e6d3ad;
+}
+.device { background: var(--wall); }
+
+/* ── 场景 ── */
+.scene { position: absolute; inset: 0; pointer-events: none; }
+.wall { position: absolute; inset: 0 0 40% 0; background:
+  radial-gradient(ellipse 34% 60% at 50% 30%, rgba(255,236,190,.9), transparent 70%),
+  repeating-linear-gradient(90deg, transparent 0 212px, rgba(122,58,30,.13) 212px 218px),
+  linear-gradient(180deg, var(--wall-dark), var(--wall) 30%); }
+.wainscot { position: absolute; left: 0; right: 0; top: 52%; height: 8%; background:
+  repeating-linear-gradient(90deg, var(--lacquer) 0 4px, transparent 4px 64px), #d8b78a; border-block: 4px solid var(--ink); }
+.beam { position: absolute; left: 0; right: 0; top: 0; height: 44px; background: linear-gradient(180deg, var(--lacquer-dark), var(--lacquer)); border-bottom: 4px solid var(--ink); }
+.beam::after { content: ""; position: absolute; left: 0; right: 0; bottom: 7px; height: 6px; background: repeating-linear-gradient(90deg, var(--gold) 0 26px, transparent 26px 34px, var(--gold) 34px 38px, transparent 38px 46px); opacity: .85; }
+.bracket { position: absolute; top: 44px; width: 70px; height: 26px; background: var(--lacquer); border: 4px solid var(--ink); border-top: 0; border-radius: 0 0 40px 40px; }
+.bracket::after { content: ""; position: absolute; left: 50%; top: 4px; width: 14px; height: 14px; translate: -50% 0; background: var(--gold); border: 3px solid var(--ink); border-radius: 50%; }
+.plaque { position: absolute; left: 50%; top: 58px; translate: -50% 0; padding: 10px 40px 12px; background: linear-gradient(180deg, #8a4523, var(--lacquer)); border: 4px solid var(--ink); border-radius: 6px;
+  box-shadow: 0 5px 0 var(--ink), inset 0 0 0 5px var(--lacquer-dark), inset 0 0 0 7px var(--gold); font: 700 30px/1 var(--serif); color: var(--gold); letter-spacing: .5em; text-indent: .5em; }
+.couplet { position: absolute; top: 90px; width: 54px; padding: 16px 0; background: linear-gradient(90deg, var(--tea-red-dark), var(--tea-red) 30% 70%, var(--tea-red-dark));
+  border: 4px solid var(--ink); box-shadow: var(--shadow-sm); writing-mode: vertical-rl; font: 700 27px/54px var(--serif); color: var(--gold); text-align: center; letter-spacing: .32em;
+  -webkit-text-stroke: .6px var(--ink); }
+.couplet::before, .couplet::after { content: ""; position: absolute; left: 50%; width: 64px; height: 10px; translate: -50% 0; background: var(--lacquer); border: 3px solid var(--ink); border-radius: 5px; }
+.couplet::before { top: -9px; } .couplet::after { bottom: -9px; }
+.couplet.l { left: 3%; } .couplet.r { right: 3%; }
+.win { position: absolute; top: 112px; width: 160px; height: 164px; border: 5px solid var(--ink); border-radius: 80px 80px 6px 6px; overflow: hidden;
+  background: radial-gradient(circle at 50% 70%, #fff7da, #ffe3a0 70%); box-shadow: inset 0 0 0 8px var(--lacquer); }
+.win::before { content: ""; position: absolute; inset: 8px; background:
+  repeating-linear-gradient(0deg, transparent 0 20px, var(--lacquer) 20px 24px),
+  repeating-linear-gradient(90deg, transparent 0 20px, var(--lacquer) 20px 24px); opacity: .9;
+  mask: radial-gradient(circle at 50% 55%, transparent 0 26px, #000 27px); }
+.win::after { content: ""; position: absolute; left: 50%; top: 55%; width: 54px; height: 54px; translate: -50% -50%; border: 4px solid var(--lacquer); border-radius: 50%; }
+.win.l { left: 12.5%; } .win.r { right: 12.5%; }
+.lantern { position: absolute; top: 40px; width: 70px; transform-origin: 50% 0; animation: sway 4.5s ease-in-out infinite; }
+.lantern.l { left: 26%; } .lantern.r { right: 26%; animation-delay: -2.2s; }
+.lantern::before { content: ""; position: absolute; left: 50%; top: 56%; width: 220px; height: 220px; translate: -50% -50%; border-radius: 50%; background: radial-gradient(circle, rgba(255,170,80,.35), transparent 65%); z-index: -1; }
+@keyframes sway { 50% { rotate: 2.5deg; } }
+.teapot { position: absolute; left: 23%; top: 468px; width: 96px; z-index: 5; }
+.device[data-size="mobile"] .teapot { display: none; }
+
+/* 透视八仙桌 */
+.table-wrap { position: absolute; left: 0; right: 0; bottom: 0; height: 64%; perspective: 900px; }
+.table { position: absolute; left: 50%; top: 0; width: 1180px; height: 660px; translate: -50% 0; transform: rotateX(46deg); transform-origin: 50% 0;
+  background:
+    radial-gradient(ellipse 40% 30% at 50% 32%, rgba(255,236,190,.55), transparent 70%),
+    repeating-linear-gradient(90deg, rgba(90,40,18,.07) 0 2px, transparent 2px 38px),
+    linear-gradient(180deg, var(--wood-light), var(--wood) 55%, var(--wood-dark));
+  border: 5px solid var(--ink); border-radius: 24px; box-shadow: inset 0 0 0 22px var(--wood-dark), inset 0 0 0 26px var(--ink); }
+.table::after { /* 桌心红毡 */ content: ""; position: absolute; left: 50%; top: 60px; width: 560px; height: 300px; translate: -50% 0; border-radius: 16px;
+  background: repeating-linear-gradient(45deg, transparent 0 10px, rgba(255,253,247,.06) 10px 12px), var(--tea-red); border: 4px solid var(--ink); box-shadow: inset 0 0 0 10px rgba(255,253,247,.14); }
+.table-edge { position: absolute; left: 50%; top: 0; width: 840px; height: 16px; translate: -50% -8px; background: var(--wood-dark); border: 4px solid var(--ink); border-radius: 10px; }
+
+/* ── 对手 ── */
+.opp { position: absolute; bottom: 58%; z-index: 4; display: grid; justify-items: center; }
+.opp.l { left: 18%; } .opp.r { right: 18%; }
+.opp .fig { width: 124px; display: block; position: relative; }
+.opp .halo { position: absolute; left: 50%; top: 40%; width: 190px; height: 190px; translate: -50% -50%; border-radius: 50%; background: radial-gradient(circle, rgba(247,200,75,.6), transparent 65%); opacity: 0; transition: opacity 240ms; }
+.opp.active .halo { opacity: 1; animation: breathe 1.6s ease-in-out infinite; }
+@keyframes breathe { 50% { scale: 1.08; } }
+.plate { margin-top: -18px; display: flex; align-items: center; gap: 8px; padding: 7px 12px 7px 8px; background: var(--cream); border: var(--border); border-radius: 14px; box-shadow: var(--shadow-sm); position: relative; white-space: nowrap; }
+.plate b { font: 900 17px var(--sans); }
+.role { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; border: 2.5px solid var(--ink); font: 700 14px/1 var(--serif); background: #e9f1e4; color: #3d6b4e; }
+.role.lord { background: var(--tea-red); color: var(--gold); }
+.opp.active .plate { outline: 4px solid var(--yellow); outline-offset: 3px; }
+.cnt { display: inline-flex; align-items: center; gap: 4px; font: 700 22px/1 var(--serif); margin-left: 2px; }
+.cnt::before { content: ""; width: 14px; height: 19px; border: 2px solid var(--ink); border-radius: 3px; background: var(--tea-red); box-shadow: 3px -3px 0 -1px var(--tea-red), 3px -3px 0 1px var(--ink); }
+.cnt.warn { color: var(--coral); }
+.opp-hand { position: absolute; top: 100%; margin-top: 18px; display: flex; }
+.opp-hand .pk2 { --w: 30px; margin-left: -22px; border-width: 2px; box-shadow: inset 0 0 0 2px #b8431f, inset 0 0 0 3px rgba(255,253,247,.75), 0 2px 0 var(--ink); }
+.opp-hand .pk2:first-child { margin-left: 0; }
+.opp-hand .pk2.back::after { content: none; }
+.opp-hand.open .pk2 { --w: 40px; margin-left: -24px; box-shadow: 0 2px 0 var(--ink); }
+.mini-ring { position: absolute; right: -16px; top: -16px; width: 34px; height: 34px; }
+.mini-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.mini-ring .track { fill: var(--cream); stroke: var(--ink); stroke-width: 4; }
+.mini-ring .bar { fill: none; stroke: var(--jade); stroke-width: 7; transition: stroke-dashoffset 1s linear; }
+.mini-ring .ring-num { position: absolute; inset: 0; display: grid; place-items: center; font: 700 13px/1 var(--serif); }
+.mini-ring.low .bar { stroke: var(--gold); } .mini-ring.last .bar { stroke: var(--coral); }
+
+/* 气泡：不出 / 叫分 */
+.say { position: absolute; bottom: calc(100% - 26px); left: 50%; translate: -50% 0; padding: 6px 14px; background: var(--cream); border: var(--border); border-radius: 14px; box-shadow: var(--shadow-sm);
+  font: 900 18px var(--sans); white-space: nowrap; opacity: 0; z-index: 6; }
+.say::after { content: ""; position: absolute; left: 50%; bottom: -10px; width: 14px; height: 14px; translate: -50% 0; rotate: 45deg; background: var(--cream); border-right: var(--border); border-bottom: var(--border); }
+.say.show { animation: say 1600ms var(--out) forwards; }
+.say.stay { opacity: 1; animation: pop 300ms var(--spring); }
+.say.hot { background: #fff1c4; }
+@keyframes say { 0% { opacity: 0; transform: translateY(10px) scale(.7); } 12% { opacity: 1; transform: none; } 82% { opacity: 1; } 100% { opacity: 0; transform: translateY(-8px); } }
+
+/* ── 桌面中央 ── */
+.kitty { position: absolute; left: 50%; top: 300px; translate: -50% 0; z-index: 5; display: flex; align-items: center; gap: 10px; }
+.kitty .pk2 { --w: 40px; border-width: 2.5px; }
+.kitty .tag, .pile .tag { font: 800 12px/1 var(--sans); color: var(--cream); background: var(--lacquer); border: 2.5px solid var(--ink); border-radius: 999px; padding: 5px 10px; box-shadow: 0 2px 0 var(--ink); }
+.pile { position: absolute; left: 50%; top: 368px; translate: -50% 0; z-index: 5; display: grid; justify-items: center; gap: 10px; }
+.pile-cards { display: flex; justify-content: center; min-height: 100px; }
+.pile-cards .pk2 { --w: 72px; margin-left: -30px; }
+.pile-cards .pk2:first-child { margin-left: 0; }
+.pile-cards.leaving { opacity: 0; transition: opacity 140ms; }
+.pile .tag { background: var(--cream); color: var(--ink); font-size: 13px; }
+
+/* HUD：左阶段 / 右倍数 + 倒计时 */
+.phase { position: absolute; left: 36px; top: 520px; z-index: 6; }
+.phase .t { font: 700 36px/1.1 var(--serif); }
+.phase .s { font: 800 14px var(--sans); color: var(--muted); margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+.hud { position: absolute; right: 36px; top: 520px; display: flex; gap: 14px; align-items: flex-start; z-index: 6; }
+.mult { display: grid; justify-items: center; gap: 2px; padding: 8px 14px 10px; background: var(--tea-red); color: var(--cream); border: var(--border); border-radius: 6px; box-shadow: var(--shadow-sm); rotate: 2deg; }
+.mult small { font: 800 11px/1 var(--sans); letter-spacing: .2em; opacity: .9; }
+.mult .numeral { font-size: 34px; font-weight: 700; display: inline-block; }
+.turn-ring { position: relative; width: 62px; height: 62px; flex: none; }
+.turn-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.turn-ring .track { fill: var(--cream); stroke: var(--ink); stroke-width: 3; }
+.turn-ring .bar { fill: none; stroke: var(--jade); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 200ms; }
+.turn-ring.low .bar { stroke: var(--gold); } .turn-ring.last .bar { stroke: var(--coral); }
+.turn-ring .ring-num { position: absolute; inset: 0; display: grid; place-items: center; font: 700 22px/1 var(--serif); }
+.turn-ring.last { animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.08); } }
+
+/* 我 */
+.me-zone { position: absolute; left: 0; right: 0; bottom: 0; z-index: 7; display: grid; justify-items: center; gap: 12px; padding-bottom: 18px; }
+.me-plate { position: absolute; left: 36px; bottom: 30px; z-index: 8; }
+.me-plate .say { bottom: calc(100% + 14px); }
+.my-hand { --tilt: 1.5deg; min-height: 112px; }
+.my-hand .pk2 { --w: 78px; }
+.my-hand .pk2.new { box-shadow: inset 0 0 0 4px #fff1c4, 0 0 0 3px var(--gold), 0 3px 0 var(--ink); }
+.dock { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 50px; }
+
+/* 冲屏 */
+.slam .word { font: 900 150px/1 var(--serif); color: var(--tea-red); -webkit-text-stroke: 6px var(--ink); paint-order: stroke fill; text-shadow: 0 10px 0 var(--ink); letter-spacing: .06em; white-space: nowrap; }
+.slam.run::before { content: ""; position: absolute; width: 560px; height: 560px; border-radius: 50%; background: repeating-conic-gradient(rgba(247,200,75,.55) 0 8deg, transparent 8deg 20deg); animation: rays 900ms var(--out) forwards; }
+@keyframes rays { from { transform: scale(.3) rotate(0); opacity: 1; } to { transform: scale(1.3) rotate(40deg); opacity: 0; } }
+.fly-trail { filter: drop-shadow(0 12px 0 rgba(41,39,34,.25)); }
+
+/* ── 手机 ── */
+.device[data-size="mobile"] .wall { inset: 0 0 50% 0; }
+.device[data-size="mobile"] .wainscot { top: 44%; height: 6%; }
+.device[data-size="mobile"] .beam { height: 28px; }
+.device[data-size="mobile"] .bracket, .device[data-size="mobile"] .couplet, .device[data-size="mobile"] .win { display: none; }
+.device[data-size="mobile"] .plaque { top: 36px; font-size: 18px; padding: 7px 18px 8px; letter-spacing: .4em; }
+.device[data-size="mobile"] .lantern { width: 38px; top: 26px; }
+.device[data-size="mobile"] .lantern.l { left: 5%; } .device[data-size="mobile"] .lantern.r { right: 5%; }
+.device[data-size="mobile"] .lantern::before { width: 120px; height: 120px; }
+.device[data-size="mobile"] .table-wrap { height: 60%; }
+.device[data-size="mobile"] .table { width: 620px; height: 580px; }
+.device[data-size="mobile"] .table::after { width: 300px; height: 240px; top: 40px; }
+.device[data-size="mobile"] .table-edge { width: 430px; }
+.device[data-size="mobile"] .opp { bottom: 62%; }
+.device[data-size="mobile"] .opp.l { left: 4%; } .device[data-size="mobile"] .opp.r { right: 4%; }
+.device[data-size="mobile"] .opp .fig { width: 76px; }
+.device[data-size="mobile"] .opp .halo { width: 120px; height: 120px; }
+.device[data-size="mobile"] .plate { padding: 4px 8px 4px 4px; gap: 5px; margin-top: -12px; }
+.device[data-size="mobile"] .plate b { font-size: 14px; }
+.device[data-size="mobile"] .role { width: 22px; height: 22px; font-size: 11px; border-width: 2px; }
+.device[data-size="mobile"] .cnt { font-size: 17px; }
+.device[data-size="mobile"] .opp-hand { display: none; }
+.device[data-size="mobile"] .opp-hand.open { display: flex; margin-top: 8px; }
+.device[data-size="mobile"] .opp-hand.open .pk2 { --w: 26px; margin-left: -18px; }
+.device[data-size="mobile"] .say { font-size: 14px; padding: 4px 10px; }
+.device[data-size="mobile"] .kitty { top: 378px; }
+.device[data-size="mobile"] .kitty .pk2 { --w: 32px; }
+.device[data-size="mobile"] .pile { top: 438px; }
+.device[data-size="mobile"] .pile-cards { min-height: 74px; }
+.device[data-size="mobile"] .pile-cards .pk2 { --w: 52px; margin-left: -22px; }
+.device[data-size="mobile"] .phase { left: 12px; top: 100px; }
+.device[data-size="mobile"] .phase .t { font-size: 22px; }
+.device[data-size="mobile"] .phase .s { display: none; }
+.device[data-size="mobile"] .hud { right: 12px; top: 100px; gap: 8px; }
+.device[data-size="mobile"] .mult { padding: 5px 9px 6px; }
+.device[data-size="mobile"] .mult .numeral { font-size: 22px; }
+.device[data-size="mobile"] .turn-ring { width: 46px; height: 46px; }
+.device[data-size="mobile"] .turn-ring .ring-num { font-size: 17px; }
+.device[data-size="mobile"] .me-zone { gap: 8px; padding-bottom: 12px; }
+.device[data-size="mobile"] .me-plate { left: 50%; translate: -50% 0; bottom: 152px; }
+.device[data-size="mobile"] .my-hand { --tilt: 1.1deg; min-height: 78px; }
+.device[data-size="mobile"] .my-hand .pk2 { --w: 52px; border-width: 2.5px; }
+.device[data-size="mobile"] .dock { gap: 8px; }
+.device[data-size="mobile"] .dock .btn { min-height: 46px; padding: 6px 14px; font-size: 15px; }
+.device[data-size="mobile"] .slam .word { font-size: 84px; -webkit-text-stroke: 4px var(--ink); text-shadow: 0 7px 0 var(--ink); }
+
+/* ── 竖屏：斗地主只做横屏，竖屏盖一层"请横过来" ── */
+.rotate-hint { display: none; }
+.device[data-size="mobile"] .rotate-hint {
+  display: grid; place-items: center; align-content: center; gap: 18px; position: absolute; inset: 0; z-index: 200; text-align: center; padding: 0 30px;
+  background: radial-gradient(ellipse at 50% 40%, #fff6e2, var(--wall) 70%);
+}
+.rotate-hint .phone { width: 86px; height: 150px; border: 5px solid var(--ink); border-radius: 18px; background: var(--cream); box-shadow: var(--shadow); position: relative; animation: turn 2.2s var(--out) infinite; }
+.rotate-hint .phone::after { content: ""; position: absolute; left: 50%; bottom: 8px; width: 20px; height: 5px; translate: -50% 0; border-radius: 3px; background: var(--ink); }
+.rotate-hint .phone i { position: absolute; inset: 16px 10px 24px; border-radius: 6px; background: var(--tea-red); }
+@keyframes turn { 0%, 20% { rotate: 0deg; } 55%, 100% { rotate: -90deg; } }
+.rotate-hint b { font: 700 28px/1.2 var(--serif); }
+.rotate-hint span { font: 800 15px/1.5 var(--sans); color: var(--muted); }
+
+/* ── 手机横屏 844×390：场景压矮，对手在左右，手牌 + 操作占底部 ── */
+.device[data-size="landscape"] .wall { inset: 0 0 46% 0; }
+.device[data-size="landscape"] .wainscot { top: 46%; height: 5%; border-width: 3px; }
+.device[data-size="landscape"] .beam { height: 24px; border-bottom-width: 3px; }
+.device[data-size="landscape"] .beam::after { bottom: 4px; height: 4px; }
+.device[data-size="landscape"] .bracket, .device[data-size="landscape"] .win { display: none; }
+.device[data-size="landscape"] .couplet { top: 40px; width: 34px; padding: 8px 0; font-size: 16px; line-height: 34px; border-width: 3px; }
+.device[data-size="landscape"] .couplet::before, .device[data-size="landscape"] .couplet::after { width: 42px; height: 7px; }
+.device[data-size="landscape"] .couplet.l { left: 1.5%; } .device[data-size="landscape"] .couplet.r { right: 1.5%; }
+.device[data-size="landscape"] .plaque { top: 28px; font-size: 16px; padding: 5px 20px 6px; border-width: 3px; box-shadow: 0 3px 0 var(--ink), inset 0 0 0 3px var(--lacquer-dark), inset 0 0 0 5px var(--gold); }
+.device[data-size="landscape"] .lantern { width: 34px; top: 20px; }
+.device[data-size="landscape"] .lantern.l { left: 22%; } .device[data-size="landscape"] .lantern.r { right: 22%; }
+.device[data-size="landscape"] .lantern::before { width: 110px; height: 110px; }
+.device[data-size="landscape"] .table-wrap { height: 62%; perspective: 600px; }
+.device[data-size="landscape"] .table { width: 900px; height: 440px; }
+.device[data-size="landscape"] .table::after { width: 420px; height: 190px; top: 30px; }
+.device[data-size="landscape"] .table-edge { width: 620px; height: 12px; border-width: 3px; }
+.device[data-size="landscape"] .opp { bottom: auto; top: 58px; }
+.device[data-size="landscape"] .opp.l { left: 8%; } .device[data-size="landscape"] .opp.r { right: 8%; }
+.device[data-size="landscape"] .opp .fig { width: 66px; }
+.device[data-size="landscape"] .opp .halo { width: 110px; height: 110px; }
+.device[data-size="landscape"] .plate { padding: 3px 8px 3px 3px; gap: 5px; margin-top: -10px; border-width: 2.5px; }
+.device[data-size="landscape"] .plate b { font-size: 13px; }
+.device[data-size="landscape"] .role { width: 20px; height: 20px; font-size: 10px; border-width: 2px; }
+.device[data-size="landscape"] .cnt { font-size: 16px; }
+.device[data-size="landscape"] .mini-ring { width: 26px; height: 26px; right: -12px; top: -12px; }
+.device[data-size="landscape"] .mini-ring .ring-num { font-size: 10px; }
+.device[data-size="landscape"] .opp-hand { margin-top: 6px; }
+.device[data-size="landscape"] .opp-hand .pk2 { --w: 20px; margin-left: -15px; border-width: 1.5px; }
+.device[data-size="landscape"] .opp-hand.open .pk2 { --w: 26px; margin-left: -17px; }
+.device[data-size="landscape"] .say { font-size: 13px; padding: 3px 9px; border-width: 2.5px; }
+.device[data-size="landscape"] .kitty { top: 58px; gap: 6px; }
+.device[data-size="landscape"] .kitty .pk2 { --w: 28px; border-width: 2px; }
+.device[data-size="landscape"] .kitty .tag, .device[data-size="landscape"] .pile .tag { font-size: 11px; padding: 3px 8px; }
+.device[data-size="landscape"] .pile { top: 112px; gap: 6px; }
+.device[data-size="landscape"] .pile-cards { min-height: 64px; }
+.device[data-size="landscape"] .pile-cards .pk2 { --w: 46px; margin-left: -20px; border-width: 2.5px; }
+.device[data-size="landscape"] .teapot { left: 25%; top: 170px; width: 54px; }
+.device[data-size="landscape"] .phase { left: 12px; top: auto; bottom: 64px; }
+.device[data-size="landscape"] .phase .t { font-size: 20px; }
+.device[data-size="landscape"] .phase .s { display: none; }
+.device[data-size="landscape"] .hud { right: 12px; top: auto; bottom: 64px; gap: 8px; align-items: center; }
+.device[data-size="landscape"] .mult { padding: 4px 8px 5px; border-width: 2.5px; }
+.device[data-size="landscape"] .mult small { font-size: 9px; }
+.device[data-size="landscape"] .mult .numeral { font-size: 20px; }
+.device[data-size="landscape"] .turn-ring { width: 40px; height: 40px; }
+.device[data-size="landscape"] .turn-ring .ring-num { font-size: 15px; }
+.device[data-size="landscape"] .me-zone { gap: 6px; padding-bottom: 8px; }
+.device[data-size="landscape"] .me-plate { left: 12px; bottom: 12px; }
+.device[data-size="landscape"] .my-hand { --tilt: .9deg; min-height: 76px; }
+.device[data-size="landscape"] .my-hand .pk2 { --w: 50px; border-width: 2.5px; }
+.device[data-size="landscape"] .dock { position: absolute; right: 12px; bottom: 10px; gap: 6px; min-height: 0; }
+.device[data-size="landscape"] .dock .btn { min-height: 40px; padding: 4px 12px; font-size: 14px; border-width: 2.5px; }
+.device[data-size="landscape"] .slam .word { font-size: 90px; -webkit-text-stroke: 4px var(--ink); text-shadow: 0 6px 0 var(--ink); }
+.device[data-size="landscape"] .slam.run::before { width: 380px; height: 380px; }

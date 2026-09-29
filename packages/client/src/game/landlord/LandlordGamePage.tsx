@@ -1,37 +1,42 @@
 /**
- * 斗地主（landlord_platform_v1）页面。
+ * 斗地主（landlord_platform_v1）页面 —— 老茶馆正堂。
  *
- * U10 从 NewGamePages.tsx 整体迁入 —— 抽走 UNO legacy（U07）之后那个文件
- * 只剩斗地主，留着一个「新游戏们」的杂物文件没有意义，直接改名归位。
- *
- * 演出层见同目录 stage/：3D 毡面牌桌、出牌飞到中央、炸弹/王炸全屏事件。
+ * 视觉契约：contracts/landlord.md
+ * 隐喻：坐在老茶馆正堂的八仙桌前打牌（第一人称视角，透视八仙桌，墙面花窗梁托）。
+ * 演出层：stage/useLandlordStage.tsx（叫分、出牌飞行、炸弹全屏冲屏、底牌翻开、终局捷报）。
  */
-/* eslint-disable @typescript-eslint/no-explicit-any -- 服务端视图未做类型收窄，按运行时视图消费。 */
-import { useEffect, useState, useMemo, useRef } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any -- 服务端原始视图透传适配 */
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useConnection } from '../../connection/useConnection.ts';
-import { PlayingCard, CardBack } from '../PlayingCard.tsx';
-import { nameFor, useGameAction, type MemberLike } from '../useGameAction.ts';
-import { TabletopOvalShell } from '../../shared-ui/TabletopOvalShell.tsx';
-import { GameIcon } from '../../shared-ui/GameIcon.tsx';
+import { nameFor, useGameAction } from '../useGameAction.ts';
 import { webAudio } from '../../shared-ui/WebAudioManager.ts';
 import { useCountdown } from '../../shared-ui/useCountdown.ts';
-import { UserAvatar } from '../../user/UserAvatar.tsx';
-import { useUserProfile } from '../../user/UserProfileContext.tsx';
 import { resolveMemberAvatar } from '../../user/avatar.ts';
-import { GameActionFeedback } from '../../shared-ui/GameMotion.tsx';
-import { ArenaBoard } from '../../shared-ui/ArenaBoard.tsx';
-import { TabletopEventOverlay } from '../../shared-ui/TabletopEventOverlay.tsx';
-import { StageCountdownRing } from '../../shared-ui/stage/StageCountdownRing.tsx';
+import { RollingNumber } from '../../shared-ui/RollingNumber.tsx';
 import { FlightLayer } from '../../shared-ui/stage/FlightLayer.tsx';
 import { useLandlordStage } from './stage/useLandlordStage.tsx';
+import {
+  TeahouseScene,
+  PokerCard,
+  OpponentFigure,
+  LandlordPlate,
+  RotateHint,
+  BidChips,
+  VictoryScroll,
+  IngotDrop,
+  computeTeahouseHandOverlap,
+  type LandlordRole,
+} from './teahouse/index.ts';
+import type { LandlordCard, LandlordPlatformPlayerView } from './types.ts';
+import './landlord.css';
 
 type AnyView = Record<string, any>;
 
-
-
 const RANK_ORDER: Record<string, number> = {
   BJ: 17,
+  大王: 17,
   SJ: 16,
+  小王: 16,
   '2': 15,
   A: 14,
   K: 13,
@@ -49,12 +54,16 @@ const RANK_ORDER: Record<string, number> = {
 
 const SUIT_ORDER: Record<string, number> = {
   spades: 4,
+  '♠': 4,
   hearts: 3,
+  '♥': 3,
   clubs: 2,
+  '♣': 2,
   diamonds: 1,
+  '♦': 1,
 };
 
-function comboName(type: string): React.ReactNode {
+function comboName(type: string): string {
   switch (type) {
     case 'single': return '单张';
     case 'pair': return '对子';
@@ -63,255 +72,40 @@ function comboName(type: string): React.ReactNode {
     case 'triple_pair': return '三带对';
     case 'straight': return '顺子';
     case 'pair_sequence': return '连对';
-    case 'bomb':
-      return (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-          <GameIcon name="bomb" size={14} />
-          炸弹
-        </span>
-      );
-    case 'rocket':
-      return (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-          <GameIcon name="rocket" size={14} />
-          王炸
-        </span>
-      );
-    default: return type;
+    case 'bomb': return '炸弹';
+    case 'rocket': return '王炸';
+    default: return type || '出牌';
   }
-}
-
-/** 默认保持紧叠；只有整排超出可用宽度时才加大重叠，绝不比原间距更疏 */
-function computeLandlordHandOverlap(count: number, containerWidth: number, cardWidth: number): number {
-  if (count <= 1 || cardWidth <= 0) return 0;
-  const preferredOverlap = Math.min(34, Math.round(cardWidth * 0.53));
-  const minStep = Math.max(16, Math.round(cardWidth * 0.28));
-  const preferredStep = Math.max(minStep, cardWidth - preferredOverlap);
-  const usable = Math.max(cardWidth, containerWidth - 16);
-  const fitStep = (usable - cardWidth) / (count - 1);
-  const step = Math.min(preferredStep, Math.max(minStep, fitStep));
-  return Math.max(0, Math.round(cardWidth - step));
-}
-
-/** 底牌与当前牌型共用的静态牌面 */
-function CardFace({ card, className }: { card: AnyView; className?: string }) {
-  return <PlayingCard rank={card.rank} suit={card.suit} className={className ?? 'card-face-static'} />;
-}
-
-function landlordSubtitle(view: AnyView, members: MemberLike[]): string {
-  if (view.phase === 'bidding') return `${nameFor(members, view.currentBidderId)} 正在叫分`;
-  if (view.phase === 'game_over') return `${view.winnerTeam === 'landlord' ? '地主' : '农民'}阵营获胜`;
-  return `${nameFor(members, view.currentPlayerId)} 的回合 · 倍率 ${view.multiplier}`;
-}
-
-/** 左右对手席位组件 */
-function formatCountdownSuffix(seconds: number | null): string {
-  return seconds === null ? '' : ` (${seconds}s)`;
-}
-
-function OpponentStation({
-  player,
-  position,
-  view,
-  members,
-  remainSeconds,
-}: {
-  player: AnyView;
-  position: 'left' | 'right';
-  view: AnyView;
-  members: MemberLike[];
-  remainSeconds: number | null;
-}) {
-  const isTurn = player.playerId === view.currentPlayerId || player.playerId === view.currentBidderId;
-  const isLandlord = player.playerId === view.landlordId;
-  const name = nameFor(members, player.playerId);
-  const bid = (view.bids || []).find((b: AnyView) => b.playerId === player.playerId);
-
-  let statusBubble: React.ReactNode = null;
-  if (view.phase === 'bidding') {
-    if (bid) {
-      statusBubble = bid.score === 0 ? '不叫' : `${bid.score} 分`;
-    } else if (isTurn) {
-      statusBubble = (
-        <span className="landlord-countdown-pill">
-          <GameIcon name="hourglass" size={12} />
-          {remainSeconds === null ? '思考中' : `${remainSeconds}s`}
-        </span>
-      );
-    }
-  } else if (view.phase === 'playing') {
-    if (isTurn) {
-      statusBubble = (
-        <span className="landlord-countdown-pill">
-          <GameIcon name="hourglass" size={12} />
-          {remainSeconds === null ? '思考中' : `${remainSeconds}s`}
-        </span>
-      );
-    }
-  }
-
-  return (
-    <div className={`landlord-opponent landlord-opponent--${position} ${isTurn ? 'is-turn' : ''}`}>
-      {/* 气泡提示 / 倒计时 */}
-      {statusBubble && (
-        <div className={`landlord-bubble landlord-bubble--${position}`}>
-          {statusBubble}
-        </div>
-      )}
-
-      {/* 头像与光圈 */}
-      <div className="landlord-opponent-avatar-box">
-        <UserAvatar
-          avatar={resolveMemberAvatar(
-            (members as any[]).find((m) => m.playerId === player.playerId),
-            { seat: player.seat, playerId: player.playerId },
-          )}
-          nickname={name}
-          size={46}
-          className="landlord-opponent-avatar"
-        />
-        {isTurn && <div className="tabletop-turn-halo" />}
-        <span className="landlord-opponent-hand-count" title="剩余手牌">
-          <GameIcon name="cards_deck" size={11} style={{ marginRight: '3px' }} />
-          {player.handCount}
-        </span>
-      </div>
-
-      {/* 玩家信息 */}
-      <div className="landlord-opponent-info">
-        <span className="landlord-opponent-name" title={name}>{name}</span>
-        {view.landlordId ? (
-          <span className={`landlord-role-badge ${isLandlord ? 'is-landlord' : 'is-farmer'}`}>
-            <GameIcon name={isLandlord ? 'crown' : 'farmer'} size={12} style={{ marginRight: '3px' }} />
-            {isLandlord ? '地主' : '农民'}
-          </span>
-        ) : (
-          <span className="landlord-role-badge">待定</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/** 玩家独立出牌与行动展示区（左家在左边、右家在右边、自己在下方） */
-function PlayerActionDrop({
-  playerId,
-  position,
-  view,
-  remainSeconds,
-}: {
-  playerId: string;
-  position: 'left' | 'right' | 'self';
-  view: AnyView;
-  remainSeconds: number | null;
-}) {
-  const isBidding = view.phase === 'bidding';
-  const isPlaying = view.phase === 'playing';
-  const isCurrentTurn = view.currentPlayerId === playerId || view.currentBidderId === playerId;
-
-  // 叫分阶段
-  if (isBidding) {
-    const bid = (view.bids || []).find((b: AnyView) => b.playerId === playerId);
-    if (bid) {
-      return (
-        <div className={`landlord-drop-zone landlord-drop-zone--${position} is-bidded`}>
-          <span className="landlord-drop-badge landlord-drop-badge--bid">
-            {bid.score === 0 ? '不叫' : `${bid.score} 分`}
-          </span>
-        </div>
-      );
-    }
-    if (isCurrentTurn) {
-      return (
-        <div className={`landlord-drop-zone landlord-drop-zone--${position} is-thinking`}>
-          <span className="landlord-drop-badge landlord-drop-badge--thinking landlord-countdown-badge">
-            <GameIcon name="hourglass" size={13} style={{ marginRight: '3px' }} />
-            {position === 'self' ? `轮到你叫分${formatCountdownSuffix(remainSeconds)}` : `叫分倒计时${formatCountdownSuffix(remainSeconds)}`}
-          </span>
-        </div>
-      );
-    }
-    return <div className={`landlord-drop-zone landlord-drop-zone--${position} is-empty`} />;
-  }
-
-  // 出牌阶段
-  if (isPlaying) {
-    const isTrickOwner = view.currentTrick && view.currentTrick.playerId === playerId;
-
-    if (isTrickOwner && view.currentTrick) {
-      return (
-        <div className={`landlord-drop-zone landlord-drop-zone--${position} is-played`}>
-          <div className="landlord-drop-combo-header">
-            <span className="landlord-drop-combo-tag">
-              {comboName(view.currentTrick.combo?.type ?? '')}
-            </span>
-          </div>
-          <div className="landlord-drop-cards">
-            {(view.currentTrick.combo?.cards ?? []).map((card: AnyView) => (
-              <CardFace key={card.id} card={card} />
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    if (isCurrentTurn) {
-      return (
-        <div className={`landlord-drop-zone landlord-drop-zone--${position} is-thinking`}>
-          <span className="landlord-drop-badge landlord-drop-badge--thinking landlord-countdown-badge">
-            <GameIcon name="hourglass" size={13} style={{ marginRight: '3px' }} />
-            {position === 'self' ? `轮到你出牌${formatCountdownSuffix(remainSeconds)}` : `出牌倒计时${formatCountdownSuffix(remainSeconds)}`}
-          </span>
-        </div>
-      );
-    }
-
-    return <div className={`landlord-drop-zone landlord-drop-zone--${position} is-empty`} />;
-  }
-
-  return <div className={`landlord-drop-zone landlord-drop-zone--${position} is-empty`} />;
 }
 
 export function LandlordGamePage({ view }: { view: AnyView }) {
-  // 出牌 / 底牌翻开 / 炸弹的演出由服务端差分驱动，避免与权威状态脱节
-  const { profile } = useUserProfile();
-  const { state } = useConnection();
+  const { state, send } = useConnection();
   const members = state.room?.members ?? [];
-  const { act, busy, error } = useGameAction();
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const handContainerRef = useRef<HTMLDivElement | null>(null);
-  const [cardOverlap, setCardOverlap] = useState(34);
+  const { act, busy } = useGameAction();
+
   const me = view.me;
-  const myTurn = Boolean(me) && view.currentPlayerId === me?.playerId;
-  const myBid = Boolean(me) && view.currentBidderId === me?.playerId;
+  const myId = me?.playerId ?? null;
+  const myTurn = Boolean(me) && view.currentPlayerId === myId;
+  const myBid = Boolean(me) && view.currentBidderId === myId;
+  const isMyTurn = (view.phase === 'bidding' && myBid) || (view.phase === 'playing' && myTurn);
 
-  // 出牌 / 底牌翻开 / 炸弹的演出由服务端差分驱动，避免与权威状态脱节
-  const stage = useLandlordStage(view as unknown as import('./types.ts').LandlordPlatformPlayerView);
+  // 舞台动效编排（音效、飞行、炸弹）
+  const stage = useLandlordStage(view as unknown as LandlordPlatformPlayerView);
 
+  // 倒计时
   const hasDeadline = typeof view.deadlineAt === 'number' && Number.isFinite(view.deadlineAt);
   const countdown = useCountdown(hasDeadline ? view.deadlineAt : null);
   const remainSeconds = hasDeadline && Number.isFinite(countdown.secondsLeft)
     ? Math.max(0, countdown.secondsLeft)
     : null;
 
-  useEffect(() => {
-    if (view.phase !== 'playing' || !myTurn) setSelectedIds([]);
-  }, [myTurn, view.phase]);
+  // 手牌选中状态
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const handContainerRef = useRef<HTMLDivElement | null>(null);
+  const [cardOverlap, setCardOverlap] = useState(-38);
 
-  // 叫分结束、地主确定的关键瞬间：用共享全屏反馈盖一次印（仅在地主 id 从无到有时触发）。
-  const [landlordReveal, setLandlordReveal] = useState<{ name: string; isMe: boolean } | null>(null);
-  const prevLandlordIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    const current = typeof view.landlordId === 'string' ? view.landlordId : null;
-    const previous = prevLandlordIdRef.current;
-    prevLandlordIdRef.current = current;
-    if (current !== null && previous === null) {
-      setLandlordReveal({ name: nameFor(members, current), isMe: current === me?.playerId });
-    }
-  }, [view.landlordId, members, me?.playerId]);
-
-  // 整理手牌：按大王>小王>2>A>K>Q>J>10>9>8>7>6>5>4>3 降序排列
-  const sortedHand = useMemo(() => {
+  // 整理手牌：大牌在左（大王 > 小王 > 2 > A > ... > 3）
+  const sortedHand: LandlordCard[] = useMemo(() => {
     if (!me?.hand) return [];
     return [...me.hand].sort((a: AnyView, b: AnyView) => {
       const diff = (RANK_ORDER[b.rank] ?? 0) - (RANK_ORDER[a.rank] ?? 0);
@@ -320,28 +114,9 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
     });
   }, [me?.hand]);
 
-  useEffect(() => {
-    const el = handContainerRef.current;
-    if (!el) return;
-    const read = () => {
-      const card = el.querySelector<HTMLElement>('.landlord-hand-card .playing-card, .landlord-hand-card svg');
-      const cardWidth = card?.getBoundingClientRect().width || 64;
-      setCardOverlap(computeLandlordHandOverlap(sortedHand.length, el.clientWidth, cardWidth));
-    };
-    read();
-    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(read) : null;
-    if (observer) observer.observe(el);
-    window.addEventListener('resize', read);
-    return () => {
-      observer?.disconnect();
-      window.removeEventListener('resize', read);
-    };
-  }, [sortedHand.length]);
-
-  // 映射左家（上家）与右家（下家）
+  // 左右对手映射（顺时针：右家为下家，左家为上家）
   const { leftPlayer, rightPlayer } = useMemo(() => {
     const allPlayers: AnyView[] = view.players || [];
-    const myId = me?.playerId;
     const myIndex = allPlayers.findIndex((p: AnyView) => p.playerId === myId);
 
     if (allPlayers.length === 3 && myIndex !== -1) {
@@ -355,90 +130,56 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
       leftPlayer: others[0] ?? null,
       rightPlayer: others[1] ?? null,
     };
-  }, [view.players, me?.playerId]);
+  }, [view.players, myId]);
 
-  const handleCardToggle = (cardId: string) => {
+  // 叫分最高分
+  const maxBidScore = useMemo(() => {
+    const bids: Array<{ score: number }> = view.bids || [];
+    if (!bids.length) return 0;
+    return Math.max(...bids.map((b) => b.score));
+  }, [view.bids]);
+
+  // 角色判定
+  const getRole = useCallback((playerId: string | null): LandlordRole => {
+    if (!view.landlordId) return 'unknown';
+    return view.landlordId === playerId ? 'lord' : 'farmer';
+  }, [view.landlordId]);
+
+  const myRole = getRole(myId);
+
+  // 动态重叠度计算（严格使用 computeTeahouseHandOverlap）
+  useEffect(() => {
+    const updateOverlap = () => {
+      const isLandscape = typeof window !== 'undefined'
+        && window.innerWidth > window.innerHeight
+        && window.innerHeight <= 520;
+      const cardWidth = isLandscape ? 50 : 78;
+      const availableWidth = isLandscape ? (view.phase === 'bidding' ? 340 : 400) : 900;
+      const baseOverlap = isLandscape ? -24 : -38;
+      const overlap = computeTeahouseHandOverlap({
+        count: sortedHand.length,
+        cardWidth,
+        availableWidth,
+        baseOverlap,
+      });
+      setCardOverlap(overlap);
+    };
+
+    updateOverlap();
+    window.addEventListener('resize', updateOverlap);
+    return () => window.removeEventListener('resize', updateOverlap);
+  }, [sortedHand.length, view.phase]);
+
+  // 选牌切换
+  const handleToggleCard = (cardId: string) => {
     if (busy || view.phase !== 'playing' || !myTurn) return;
     webAudio.playCardFlip();
     setSelectedIds((prev) =>
-      prev.includes(cardId) ? prev.filter((id) => id !== cardId) : [...prev, cardId]
+      prev.includes(cardId) ? prev.filter((id) => id !== cardId) : [...prev, cardId],
     );
   };
 
-  // 手牌拖拽区间多选：按住起牌横向划过，途经区间内的牌全部选中；原地松开等同点击切换单牌
-  const dragRef = useRef<{ index: number; startX: number; moved: boolean; initialSelected: string[]; toggleMode: 'select' | 'deselect' } | null>(null);
-  const lastDragRangeRef = useRef<string>('');
-
-  const selectRange = (from: number, to: number) => {
-    const drag = dragRef.current;
-    if (!drag) return;
-    const lo = Math.min(from, to);
-    const hi = Math.max(from, to);
-    const rangeIds = sortedHand.slice(lo, hi + 1).map((card: AnyView) => card.id);
-    const key = `${lo}:${hi}`;
-    if (key !== lastDragRangeRef.current) {
-      lastDragRangeRef.current = key;
-      webAudio.playCardFlip();
-    }
-    
-    let newSelected = [...drag.initialSelected];
-    if (drag.toggleMode === 'select') {
-      rangeIds.forEach(id => {
-        if (!newSelected.includes(id)) newSelected.push(id);
-      });
-    } else {
-      newSelected = newSelected.filter(id => !rangeIds.includes(id));
-    }
-    setSelectedIds(newSelected);
-  };
-
-  const handleHandPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (busy || view.phase !== 'playing') return;
-    const el = (e.target as HTMLElement).closest<HTMLElement>('.landlord-hand-card');
-    if (!el) return;
-    const index = Number(el.dataset.index);
-    if (Number.isNaN(index)) return;
-    
-    e.currentTarget.setPointerCapture(e.pointerId);
-    const cardId = sortedHand[index].id;
-    const isSelected = selectedIds.includes(cardId);
-    
-    dragRef.current = { 
-      index, 
-      startX: e.clientX, 
-      moved: false, 
-      initialSelected: [...selectedIds],
-      toggleMode: isSelected ? 'deselect' : 'select'
-    };
-    lastDragRangeRef.current = '';
-  };
-
-  const handleHandPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current;
-    if (!drag) return;
-    const el = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('.landlord-hand-card');
-    if (!el) return;
-    const index = Number(el.dataset.index);
-    if (Number.isNaN(index)) return;
-    if (Math.abs(e.clientX - drag.startX) > 6) drag.moved = true;
-    if (drag.moved) selectRange(drag.index, index);
-  };
-
-  const handleHandPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current;
-    dragRef.current = null;
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {
-      // ignore
-    }
-    if (!drag) return;
-    if (!drag.moved) {
-      const card = sortedHand[drag.index];
-      if (card) handleCardToggle((card as AnyView).id);
-    }
-  };
-
+  // 出牌
   const handlePlaySelected = () => {
     if (busy || selectedIds.length === 0) return;
     webAudio.playCardPlay();
@@ -446,320 +187,410 @@ export function LandlordGamePage({ view }: { view: AnyView }) {
     setSelectedIds([]);
   };
 
-  const centerArena = (
-    <div className="landlord-battlefield ld-arena stage-felt-3d" ref={stage.stageRef}>
-      {/* 出牌与叫分共用一套计时，用 phase 区分满格测量 */}
-      <StageCountdownRing
-        deadlineAt={view.deadlineAt ?? null}
-        phaseKey={`${view.phase}:${view.currentPlayerId ?? view.currentBidderId ?? 'idle'}`}
-        active={view.phase !== 'game_over'}
-        className="ld-countdown"
-      />
-      {/* 桌面背景专属水印：大号“斗地主”艺术书法与小幅“聚乐桌游”品牌徽章 */}
-      <div className="landlord-table-watermark" aria-hidden="true">
-        <div className="landlord-table-watermark__logo">
-          <span className="landlord-table-watermark__icon">✦</span>
-          <span>聚乐桌游 · 经典棋牌</span>
+  // 春天判定：地主胜且两个农民在 revealedHands 均为 17 张
+  const isSpring = useMemo(() => {
+    if (view.phase !== 'game_over' || view.winnerTeam !== 'landlord') return false;
+    if (!view.revealedHands) return false;
+    const farmers = (view.players || []).filter((p: AnyView) => p.playerId !== view.landlordId);
+    if (farmers.length !== 2) return false;
+    return farmers.every((f: AnyView) => (view.revealedHands?.[f.playerId]?.length ?? 0) === 17);
+  }, [view.phase, view.winnerTeam, view.revealedHands, view.players, view.landlordId]);
+
+  // 最高叫分：从公开的 bids 派生（服务端只保证 multiplier = max(1, 最高叫分)，
+  // 三家都不叫时倍数是兜底的 1，但并没人叫过 1 分，所以要分开显示）。
+  const topBid = useMemo(() => {
+    const scores = (view.bids || []).map((b: AnyView) => b.score as number);
+    return scores.length === 0 ? 0 : Math.max(...scores);
+  }, [view.bids]);
+
+  // 气泡推导（优先级：瞬时气泡 > 叫分常驻气泡）
+  const getPlayerBubble = useCallback((playerId: string | null) => {
+    if (!playerId) return null;
+    // 炸弹落地：被压一手的主人冒"啊？！"（契约 §4.2：上家冒气泡，延迟 700ms 由 stage 承载）
+    if (stage.bombAck?.playerId === playerId) {
+      return { text: '啊？！', sticky: false, hot: true };
+    }
+    // 过牌：被越过回合那家冒"不出"（1.6 秒淡出；服务端不含"能出但不出"信息，统一用动作名）
+    if (stage.passNotice?.playerId === playerId) {
+      return { text: '不出', sticky: false, hot: false };
+    }
+    if (view.phase === 'bidding') {
+      const bid = (view.bids || []).find((b: AnyView) => b.playerId === playerId);
+      if (bid) {
+        return {
+          text: bid.score === 0 ? '不叫' : `${bid.score} 分`,
+          sticky: true,
+          hot: bid.score === 3,
+        };
+      }
+    }
+    return null;
+  }, [view.phase, view.bids, stage.bombAck, stage.passNotice]);
+
+  // 底牌是否属于我的新入手牌（高亮描金边）
+  const bottomCardIds = useMemo(() => {
+    if (view.landlordId !== myId) return new Set<string>();
+    return new Set((view.bottomCards || []).map((c: AnyView) => c.id));
+  }, [view.landlordId, myId, view.bottomCards]);
+
+  // 阶段大字与说明
+  let phaseTitle = '聚乐茶馆';
+  let phaseSubtitle = '斗地主正堂';
+  if (view.phase === 'bidding') {
+    if (myBid) {
+      phaseTitle = '轮到你叫分';
+      phaseSubtitle = maxBidScore > 0 ? `当前最高 ${maxBidScore} 分，可叫更高或不叫` : '叫 3 分立即定地主，或叫 1-2 分';
+    } else {
+      const currentName = view.currentBidderId ? nameFor(members, view.currentBidderId) : '对手';
+      phaseTitle = '等待叫分';
+      phaseSubtitle = `等待 ${currentName} 叫分`;
+    }
+  } else if (view.phase === 'playing') {
+    if (myTurn) {
+      phaseTitle = '轮到你出牌';
+      phaseSubtitle = view.currentTrick ? '压过当前牌型，或者不出' : '自由出牌';
+    } else {
+      const currentName = view.currentPlayerId ? nameFor(members, view.currentPlayerId) : '对手';
+      phaseTitle = '等待出牌';
+      phaseSubtitle = `等 ${currentName} 出牌`;
+    }
+  } else if (view.phase === 'game_over') {
+    phaseTitle = '对局结束';
+    phaseSubtitle = view.winnerTeam === 'landlord' ? '地主阵营获胜' : '农民阵营获胜';
+  }
+
+  // 农民名字列表
+  const farmerNames = useMemo(() => {
+    return (view.players || [])
+      .filter((p: AnyView) => p.playerId !== view.landlordId)
+      .map((p: AnyView) => nameFor(members, p.playerId));
+  }, [view.players, view.landlordId, members]);
+
+  // 离开房间与再来一局处理
+  const handleReturnRoom = useCallback(() => {
+    void send('leave_room', {}).catch(() => {});
+  }, [send]);
+
+  const handlePlayAgain = useCallback(() => {
+    void send('room_command', { command: 'start_game' }).catch(() => {});
+  }, [send]);
+
+  return (
+    <div
+      className="landlord-teahouse landlord-game-page tabletop-shell"
+      ref={stage.stageRef}
+      data-box="teahouse-stage"
+      data-testid="landlord-teahouse"
+      data-phase={view.phase}
+    >
+      {/* 1. 茶馆全景舞台装饰（墙面、八仙桌、花窗、对联、牌匾、灯笼、盖碗茶） */}
+      <TeahouseScene />
+
+      {/* 2. 左侧对手（上家）：data-player-id 直接挂在 .th-opp 上（无包装层，避免流内白条） */}
+      {leftPlayer && (
+        <OpponentFigure
+          side="left"
+          playerId={leftPlayer.playerId}
+          flinch={stage.flinchIds.includes(leftPlayer.playerId)}
+          nickname={nameFor(members, leftPlayer.playerId)}
+          avatar={resolveMemberAvatar(
+            members.find((m) => m.playerId === leftPlayer.playerId),
+            { playerId: leftPlayer.playerId },
+          )}
+          role={getRole(leftPlayer.playerId)}
+          handCount={leftPlayer.handCount ?? 0}
+          active={
+            (view.phase === 'bidding' && view.currentBidderId === leftPlayer.playerId) ||
+            (view.phase === 'playing' && view.currentPlayerId === leftPlayer.playerId)
+          }
+          deadlineAt={view.deadlineAt}
+          bubble={getPlayerBubble(leftPlayer.playerId)}
+          revealedCards={view.revealedHands?.[leftPlayer.playerId]}
+        />
+      )}
+
+      {/* 3. 右侧对手（下家） */}
+      {rightPlayer && (
+        <OpponentFigure
+          side="right"
+          playerId={rightPlayer.playerId}
+          flinch={stage.flinchIds.includes(rightPlayer.playerId)}
+          nickname={nameFor(members, rightPlayer.playerId)}
+          avatar={resolveMemberAvatar(
+            members.find((m) => m.playerId === rightPlayer.playerId),
+            { playerId: rightPlayer.playerId },
+          )}
+          role={getRole(rightPlayer.playerId)}
+          handCount={rightPlayer.handCount ?? 0}
+          active={
+            (view.phase === 'bidding' && view.currentBidderId === rightPlayer.playerId) ||
+            (view.phase === 'playing' && view.currentPlayerId === rightPlayer.playerId)
+          }
+          deadlineAt={view.deadlineAt}
+          bubble={getPlayerBubble(rightPlayer.playerId)}
+          revealedCards={view.revealedHands?.[rightPlayer.playerId]}
+        />
+      )}
+
+      {/* 4. 桌心区域：底牌、叫分木牌、出牌区、捷报 */}
+      {/* 底牌展示：叫分阶段背面扣着；定地主后逐张翻开飞进地主手里，正面留在桌心做公开记录 */}
+      <div
+        className={`th-kitty${view.landlordId ? ' th-kitty--open' : ''}`}
+        data-box="kitty"
+        data-stage-anchor="kitty"
+      >
+        <span className="th-tag">底牌</span>
+        <div className="th-kitty__cards">
+          {view.landlordId && view.bottomCards && view.bottomCards.length === 3 ? (
+            view.bottomCards.map((card: AnyView, idx: number) => (
+              <PokerCard
+                key={card.id ?? idx}
+                rank={card.rank}
+                suit={card.suit}
+                flip={stage.revealingBottom}
+                /* 底牌间隔 160ms 逐张翻开（契约 §4.1） */
+                style={stage.revealingBottom ? { animationDelay: `${idx * 160}ms` } : undefined}
+              />
+            ))
+          ) : (
+            [0, 1, 2].map((idx) => (
+              <PokerCard key={idx} back />
+            ))
+          )}
         </div>
-        <div className="landlord-table-watermark__title">斗地主</div>
-        <div className="landlord-table-watermark__badge">CLASSIC LANDLORD</div>
       </div>
 
-      {/* 顶部：地主底牌与倍率 */}
-      <div className="landlord-top-bar">
+      {/* 叫分阶段：桌心三块木牌 */}
+      {view.phase === 'bidding' && (
+        <BidChips
+          currentScore={maxBidScore}
+          onSelect={myBid && !busy ? (score) => void act({ type: 'bid_score', score }) : undefined}
+        />
+      )}
+
+      {/* 出牌阶段：桌心出牌区（终局时作为最后一手移到卷轴下方） */}
+      {view.currentTrick && (
         <div
-          className="landlord-bottom-cards-panel bottom-cards"
-          data-revealing={stage.revealingBottom ? 'true' : undefined}
+          className={`th-trick${view.phase === 'game_over' ? ' th-trick--final' : ''}`}
+          data-box="pile"
+          data-stage-anchor="trick"
         >
-          <span className="landlord-bottom-cards-label">
-            <GameIcon name="crown" size={13} style={{ marginRight: '4px' }} />
-            {view.landlordId ? '地主底牌' : '地主底牌 · 叫分后公开'}
+          <div className="th-trick__cards">
+            {view.currentTrick.combo.cards.map((c: AnyView, idx: number) => (
+              <PokerCard
+                key={c.id ?? idx}
+                rank={c.rank}
+                suit={c.suit}
+                /* 炸弹落地：出牌区每张牌依次再弹一下（契约 §4.2） */
+                className={stage.trickPop ? 'is-bomb-pop' : undefined}
+                style={stage.trickPop ? { animationDelay: `${idx * 70}ms` } : undefined}
+              />
+            ))}
+          </div>
+          <span className={`th-tag${stage.trickFlash ? ' is-bomb-flash' : ''}`}>
+            {nameFor(members, view.currentTrick.playerId)} · {comboName(view.currentTrick.combo.type)}
           </span>
-          <div className="landlord-bottom-cards-row">
-            {view.landlordId
-              ? (view.bottomCards ?? []).map((card: AnyView) => <CardFace key={card.id} card={card} className="card-face-static" />)
-              : [0, 1, 2].map((i) => <CardBack key={i} className="card-face-static" />)}
+        </div>
+      )}
+
+      {/* 终局结算：朱红捷报展开 */}
+      {view.phase === 'game_over' && (
+        <VictoryScroll
+          winnerTeam={view.winnerTeam}
+          winnerName={view.winnerId ? nameFor(members, view.winnerId) : undefined}
+          landlordName={view.landlordId ? nameFor(members, view.landlordId) : undefined}
+          farmerNames={farmerNames}
+          multiplier={view.multiplier}
+          topBid={topBid}
+          isSpring={isSpring}
+        />
+      )}
+
+      {/* 5. HUD：左阶段大字 / 右倍数牌 + 倒计时 */}
+      <div className="th-phase" data-box="phase">
+        <div className="th-phase__title">{phaseTitle}</div>
+        <div className="th-phase__sub">{phaseSubtitle}</div>
+      </div>
+      <div className="th-hud" data-box="hud">
+        <div className="th-mult">
+          <small>倍数</small>
+          <span className="th-mult__num">
+            <RollingNumber value={view.multiplier} prefix="×" />
+          </span>
+        </div>
+        {isMyTurn && typeof remainSeconds === 'number' && (
+          <div className={`th-turn-ring ${remainSeconds <= 5 ? 'is-last' : remainSeconds <= 10 ? 'is-low' : ''}`}>
+            <svg viewBox="0 0 60 60">
+              <circle className="track" cx="30" cy="30" r="26" />
+              <circle
+                className="bar"
+                cx="30"
+                cy="30"
+                r="26"
+                style={{
+                  strokeDasharray: 2 * Math.PI * 26,
+                  strokeDashoffset: 2 * Math.PI * 26 * (1 - Math.max(0, Math.min(1, remainSeconds / 20))),
+                }}
+              />
+            </svg>
+            <span className="ring-num">{remainSeconds}</span>
           </div>
-        </div>
-        <div className="landlord-multiplier-badge">
-          <span>倍率 <strong>x{view.multiplier}</strong></span>
-        </div>
-      </div>
-
-      {/* 中间战场：左翼（左家头像 + 左家出牌区）+ 中心开阔区 + 右翼（右家出牌区 + 右家头像） */}
-      <div className="landlord-mid-arena">
-        {/* 左家区域（上家）：左侧头像 + 右侧出牌 */}
-        <div className="landlord-station-group landlord-station-group--left">
-          {leftPlayer && (
-            <>
-              <OpponentStation
-                player={leftPlayer}
-                position="left"
-                view={view}
-                members={members}
-                remainSeconds={remainSeconds}
-              />
-              <PlayerActionDrop
-                playerId={leftPlayer.playerId}
-                position="left"
-                view={view}
-                remainSeconds={remainSeconds}
-              />
-            </>
-          )}
-        </div>
-
-        {/* 中心开阔区：叫分/自由出牌轮次的焦点提示 */}
-        <div className="landlord-center-nexus stage-felt-3d__plane" data-stage-anchor="trick">
-          {(view.phase === 'bidding' || (view.phase === 'playing' && !view.currentTrick)) && (
-            <ArenaBoard
-              className="landlord-nexus-board"
-              tone={view.phase === 'bidding' ? 'accent' : 'paper'}
-              compact
-              headline={
-                view.phase === 'bidding'
-                  ? `等待 ${nameFor(members, view.currentBidderId)} 叫分`
-                  : '自由出牌轮次'
-              }
-              hint={
-                view.phase === 'bidding'
-                  ? '按顺序叫分，最高分者成为地主并公开 3 张底牌'
-                  : '无人接牌，你可以出任意合法牌型'
-              }
-            />
-          )}
-{error && (
-            <GameActionFeedback
-              active
-              feedbackKey={error}
-              variant="error"
-              className="game-error landlord-arena-error"
-              role="alert"
-            >
-              {error}
-            </GameActionFeedback>
-          )}
-        </div>
-
-        {/* 右家区域（下家）：左侧出牌 + 右侧头像 */}
-        <div className="landlord-station-group landlord-station-group--right">
-          {rightPlayer && (
-            <>
-              <PlayerActionDrop
-                playerId={rightPlayer.playerId}
-                position="right"
-                view={view}
-                remainSeconds={remainSeconds}
-              />
-              <OpponentStation
-                player={rightPlayer}
-                position="right"
-                view={view}
-                members={members}
-                remainSeconds={remainSeconds}
-              />
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* 底部：我的出牌展示区（位于操作栏与手牌上方） */}
-      <div className="landlord-self-drop-bar">
-        {me && (
-          <PlayerActionDrop
-            playerId={me.playerId}
-            position="self"
-            view={view}
-            remainSeconds={remainSeconds}
-          />
         )}
       </div>
-    </div>
-  );
 
-  const bottomBar = (
-    <div className="landlord-player-dashboard">
-      {/* 自身状态与动作操作栏 */}
-      <div className="landlord-self-bar">
-        {/* 我的身份标识 */}
+      {/* 6. 底部我的手牌与操作坞 */}
+      <div className="th-me-zone">
         {me && (
-          <div className="landlord-self-badge">
-            <UserAvatar avatar={profile.avatar} nickname={nameFor(members, me.playerId)} size={24} style={{ marginRight: '6px' }} />
-            <span className="landlord-self-name">{nameFor(members, me.playerId)} (我)</span>
-            {view.landlordId && (
-              <span className={`landlord-role-badge ${me.playerId === view.landlordId ? 'is-landlord' : 'is-farmer'}`}>
-                {me.playerId === view.landlordId ? '地主' : '农民'}
-              </span>
-            )}
+          <div
+            className={`th-hand${view.phase === 'bidding' ? ' th-hand--bidding' : ''}`}
+            data-box="hand"
+            data-stage-anchor="hand"
+            ref={handContainerRef}
+            style={{
+              ['--overlap' as string]: `${cardOverlap}px`,
+              ['--mid' as string]: String((sortedHand.length - 1) / 2),
+            }}
+          >
+            {sortedHand.map((card, idx) => {
+              const isSelected = selectedIds.includes(card.id);
+              const isNew = bottomCardIds.has(card.id);
+              return (
+                <PokerCard
+                  key={card.id}
+                  rank={card.rank}
+                  suit={card.suit}
+                  selected={isSelected}
+                  isNew={isNew}
+                  onClick={() => handleToggleCard(card.id)}
+                  style={{ ['--i' as string]: String(idx) }}
+                />
+              );
+            })}
           </div>
         )}
 
-        {/* 动作操作面板 */}
-        <div className="landlord-action-dock">
+        {/* 底部操作坞 */}
+        <div className="th-dock" data-box="dock">
+          {/* 叫分阶段 */}
           {view.phase === 'bidding' && (
             myBid ? (
-              <div className="landlord-bid-row">
+              <>
                 <button
                   type="button"
-                  className="landlord-btn landlord-btn--pass"
+                  className="gp-btn"
                   disabled={busy}
                   onClick={() => void act({ type: 'bid_score', score: 0 })}
                 >
                   不叫
                 </button>
-                {[1, 2, 3].map((score) => (
-                  <button
-                    key={score}
-                    type="button"
-                    className={`landlord-btn ${score === 3 ? 'landlord-btn--primary' : 'landlord-btn--bid'}`}
-                    disabled={busy}
-                    onClick={() => void act({ type: 'bid_score', score })}
-                  >
-                    {score} 分
-                  </button>
-                ))}
-              </div>
+                <button
+                  type="button"
+                  className="gp-btn"
+                  disabled={busy || maxBidScore >= 1}
+                  onClick={() => void act({ type: 'bid_score', score: 1 })}
+                >
+                  1 分
+                </button>
+                <button
+                  type="button"
+                  className="gp-btn"
+                  disabled={busy || maxBidScore >= 2}
+                  onClick={() => void act({ type: 'bid_score', score: 2 })}
+                >
+                  2 分
+                </button>
+                <button
+                  type="button"
+                  className="gp-btn gp-btn--primary"
+                  disabled={busy}
+                  onClick={() => void act({ type: 'bid_score', score: 3 })}
+                >
+                  3 分
+                </button>
+              </>
             ) : (
-              <div className="landlord-wait-tag">
-                等待 {nameFor(members, view.currentBidderId)} 叫分{formatCountdownSuffix(remainSeconds)}
-              </div>
+              <span className="th-tag">等待对手叫分</span>
             )
           )}
 
+          {/* 出牌阶段 */}
           {view.phase === 'playing' && (
             myTurn ? (
-              <div className="landlord-play-row">
+              <>
                 <button
                   type="button"
-                  className="landlord-btn landlord-btn--pass"
+                  className="gp-btn"
                   disabled={busy || !view.currentTrick}
                   onClick={() => void act({ type: 'pass_turn' })}
-                  title={!view.currentTrick ? '当前为自由出牌，必须出牌' : '不出本轮'}
+                  title={!view.currentTrick ? '首出必须出牌' : '不出本轮'}
                 >
                   不出
                 </button>
-                {selectedIds.length > 0 && (
-                  <button
-                    type="button"
-                    className="landlord-btn landlord-btn--reset"
-                    disabled={busy}
-                    onClick={() => setSelectedIds([])}
-                  >
-                    重选
-                  </button>
-                )}
                 <button
                   type="button"
-                  className="landlord-btn landlord-btn--primary"
+                  className="gp-btn gp-btn--primary card-fan-play-btn"
                   disabled={busy || selectedIds.length === 0}
                   onClick={handlePlaySelected}
-                  title={selectedIds.length === 0 ? '请先在下方手牌中点击选择要打出的牌' : undefined}
                 >
-                  {busy ? '提交中…' : selectedIds.length > 0 ? `出牌 (${selectedIds.length}张)` : '请先选牌'}
+                  {busy ? '出牌中…' : selectedIds.length > 0 ? `出牌 (${selectedIds.length})` : '出牌'}
                 </button>
-              </div>
+              </>
             ) : (
-              <div className="landlord-wait-tag">
-                等待 {nameFor(members, view.currentPlayerId)} 出牌{formatCountdownSuffix(remainSeconds)}
-              </div>
+              <span className="th-tag">等待对手出牌</span>
             )
           )}
 
+          {/* 终局结算阶段 */}
           {view.phase === 'game_over' && (
-            <div className="landlord-game-over-tag">
-              {view.winnerTeam === 'landlord' ? '地主阵营' : '农民阵营'} 获胜！
-            </div>
+            <>
+              <button
+                type="button"
+                className="gp-btn"
+                onClick={handleReturnRoom}
+              >
+                返回房间
+              </button>
+              <button
+                type="button"
+                className="gp-btn gp-btn--primary"
+                onClick={handlePlayAgain}
+              >
+                再来一局
+              </button>
+            </>
           )}
         </div>
       </div>
 
-      {/* 手牌横向展开牌架（支持点击切换 / 按住横向拖动区间多选） */}
+      {/* 7. 左下角我的名牌：data-player-id 直接挂在 .th-me-plate 上 */}
       {me && (
-        <div className="landlord-hand-container card-fan-container" data-stage-anchor="hand" ref={handContainerRef}>
-          <div
-            className="landlord-hand-rack"
-            role="region"
-            aria-label="我的手牌"
-            style={{ touchAction: 'pan-y', ['--landlord-card-overlap' as string]: `${cardOverlap}px` }}
-            onPointerDown={handleHandPointerDown}
-            onPointerMove={handleHandPointerMove}
-            onPointerUp={handleHandPointerUp}
-            onPointerCancel={handleHandPointerUp}
-          >
-            {sortedHand.map((card: AnyView, idx: number) => {
-              const isSelected = selectedIds.includes(card.id);
-              return (
-                <button
-                  key={card.id}
-                  type="button"
-                  data-index={idx}
-                  className={`landlord-hand-card card-fan-item ${isSelected ? 'is-selected' : ''}`}
-                  style={{
-                    zIndex: isSelected ? 100 + idx : idx + 1,
-                  }}
-                  aria-disabled={busy || view.phase !== 'playing'}
-                  aria-pressed={isSelected}
-                  title={`${card.rank} ${card.suit ?? ''}`}
-                >
-                  <PlayingCard rank={card.rank} suit={card.suit} />
-                </button>
-              );
-            })}
-          </div>
+        <LandlordPlate
+          playerId={me.playerId}
+          nickname={nameFor(members, me.playerId)}
+          role={myRole}
+          handCount={me.hand?.length}
+          active={isMyTurn}
+          bubble={getPlayerBubble(me.playerId)}
+        />
+      )}
+
+      {/* 8. 冲屏演出：炸弹/王炸、"你是地主"、春天（按事件自动回收，条件挂载即重启动画；勿加 key——见下方 IngotDrop 注释） */}
+      {stage.slam && (
+        <div className="th-slam" data-slam-key={stage.slam.key} aria-hidden="true">
+          <span className="th-slam__word">{stage.slam.label}</span>
         </div>
       )}
+
+      {/* 9. 金元宝落定：地主诞生时落到地主名牌上（条件挂载即重启动画；勿加 key——React 19 对带 key 的条件子节点在与兄弟节点并发增删时会插入重复节点，2026-09-28 实测） */}
+      {stage.ingot && (
+        <IngotDrop top={stage.ingot.top} left={stage.ingot.left} />
+      )}
+
+      {/* 10. 手机竖屏遮罩提示（仅在竖屏窄视口激活） */}
+      <RotateHint />
+
+      {/* 11. 卡牌飞行演出层 */}
+      <FlightLayer flights={stage.flights} simplified={stage.simplifiedFlights} />
     </div>
   );
-
-  const seats = useMemo(() => {
-    const allPlayers: AnyView[] = view.players || [];
-    return allPlayers.map((p: AnyView) => ({
-      id: p.playerId,
-      name: nameFor(members, p.playerId),
-      isCurrentTurn: (view.phase === 'bidding' && view.currentBidderId === p.playerId) || (view.phase === 'playing' && view.currentPlayerId === p.playerId),
-      // 手牌数：外壳席位条的手牌徽章，斗地主三人局看对手剩牌是关键信息
-      handCount: typeof p.handCount === 'number' ? p.handCount : undefined,
-      badge: p.playerId === view.landlordId ? '地主' : view.landlordId ? '农民' : undefined,
-    }));
-  }, [view.players, view.phase, view.currentBidderId, view.currentPlayerId, view.landlordId, members]);
-
-  return (
-    <>
-      <TabletopOvalShell
-        title="斗地主"
-        subtitle={landlordSubtitle(view, members)}
-        gameId="landlord"
-        theme="poker"
-        recommendLandscape
-        players={seats}
-        currentUserId={me?.playerId}
-        centerArena={centerArena}
-        bottomBar={bottomBar}
-        phaseKey={`${view.phase}:${view.currentBidderId ?? view.currentPlayerId ?? view.winnerTeam ?? 'idle'}`}
-      />
-      <TabletopEventOverlay
-        open={landlordReveal !== null}
-        variant={landlordReveal?.isMe ? 'reveal' : 'stamp'}
-        label={landlordReveal?.isMe ? '你成为地主！' : `地主是 ${landlordReveal?.name ?? ''}`}
-        sublabel={landlordReveal?.isMe ? '底牌已归你所有，先手出牌' : '底牌已公开，地主先手出牌'}
-        durationMs={1900}
-        onComplete={() => setLandlordReveal(null)}
-      />
-
-      {/* 炸弹 / 王炸：倍数翻番的全屏事件 */}
-      <TabletopEventOverlay
-        open={stage.bombBanner !== null}
-        variant="burst"
-        label={stage.bombBanner?.label ?? ''}
-        sublabel={stage.bombBanner ? `倍率 ×${stage.bombBanner.multiplier}` : ''}
-        durationMs={1400}
-        onComplete={stage.dismissBomb}
-      />
-
-      {/* 飞行层必须挂在牌桌外壳之外：毡面是 perspective 容器，
-          一旦有 transform 祖先，position:fixed 会退化为相对定位。 */}
-      <FlightLayer flights={stage.flights} simplified={stage.simplifiedFlights} />
-    </>
-  );
 }
-

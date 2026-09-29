@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ding · B 铃在手边</title>
+<link rel="stylesheet" href="_shell.css">
+<link rel="stylesheet" href="_uno.css">
+<link rel="stylesheet" href="_ding.css">
+<style>
+  /* ── 与 UNO 同款纸盒，换深绿主色；盒子中央只放牌堆，铃是装在盒子右下角外面的一个大实体按钮，紧挨你的手牌；
+       短语打出时，一条胶带横幅"啪"地贴满整个盒子 ── */
+  .device { background: var(--ding-soft); }
+  .box {
+    position: absolute; left: 40px; top: 22px; width: 960px; height: 500px;
+    border: 5px solid var(--ink); border-radius: 26px; box-shadow: 0 10px 0 var(--ink), inset 0 0 0 10px var(--kraft-dark);
+    padding: 18px; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: auto 1fr; gap: 14px;
+  }
+  .seat-row { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .seat-row .sticker { justify-self: center; }
+  .well {
+    grid-column: 1 / -1; border: 4px solid var(--ink); border-radius: 18px; background: var(--ding); position: relative; overflow: hidden;
+    box-shadow: inset 0 8px 0 rgba(0,0,0,.2); display: grid; place-items: center;
+  }
+  .well::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(-45deg, rgba(255,255,255,.07) 0 26px, transparent 26px 52px); }
+  .well::after {
+    content: ""; position: absolute; left: 50%; top: 50%; width: 420px; height: 420px; translate: -50% -50%; border-radius: 50%;
+    background: radial-gradient(circle, color-mix(in srgb, var(--cur) 70%, transparent) 0 40%, transparent 70%); transition: background 300ms;
+  }
+  .core { position: relative; z-index: 2; display: flex; align-items: center; gap: 60px; }
+  .discard .uc { --w: 128px; }
+  .idle-word { position: absolute; left: 24px; top: 20px; font: 700 28px/1 var(--serif); color: var(--cream); z-index: 2; }
+  .well .color-chip { position: absolute; right: 18px; top: 16px; z-index: 2; }
+
+  /* 胶带横幅：斜贴满整个盒子 */
+  .phrase-banner {
+    position: absolute; left: -30px; right: -30px; top: 50%; z-index: 6; rotate: -4deg; border-radius: 4px; padding: 16px 0 18px;
+    background: repeating-linear-gradient(90deg, var(--cream) 0 40px, var(--ding-soft) 40px 80px); translate: 0 -50%;
+  }
+  .device.bell-open .phrase-banner { translate: 0 -50%; }
+  .phrase-banner small { color: var(--ink); }
+  .phrase-banner .text { font-size: 48px; }
+  .phrase-banner.in { animation: tape 380ms var(--out); }
+  @keyframes tape { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+
+  /* 铃：盒外右侧专属底座 */
+  .bell-stand {
+    position: absolute; right: 40px; bottom: 150px; width: 220px; display: grid; justify-items: center; gap: 12px; padding: 22px 0 18px;
+    background: var(--cream); border: var(--border); border-radius: 26px; box-shadow: var(--shadow); z-index: 6;
+  }
+  .bell-stand .bell { --bell: 170px; }
+  .bell-stand .label { font: 900 15px var(--sans); color: var(--muted); }
+  .device.bell-open .bell-stand { background: #fff1c4; outline: 4px solid var(--yellow); outline-offset: 4px; }
+  .device.bell-open .bell-stand .label { color: var(--ink); }
+
+  .me-zone { position: absolute; left: 40px; right: 290px; bottom: 0; z-index: 7; display: grid; justify-items: center; gap: 12px; padding-bottom: 16px; }
+  .me-tag { position: absolute; left: 0; bottom: 26px; }
+  #btn-ring { display: none; }
+
+  /* ── 手机：盒子在上，铃在右下角紧挨手牌 ── */
+  .device[data-size="mobile"] .box { left: 10px; top: 12px; width: 370px; height: 450px; padding: 10px; gap: 8px; grid-template-rows: auto 1fr; border-width: 4px; }
+  .device[data-size="mobile"] .seat-row { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .device[data-size="mobile"] .seat-row .sticker .avatar { display: none; }
+  .device[data-size="mobile"] .seat-row .sticker { grid-template-columns: auto auto; gap: 0 6px; padding: 4px 10px; }
+  .device[data-size="mobile"] .well { border-width: 3px; border-radius: 12px; }
+  .device[data-size="mobile"] .core { gap: 20px; }
+  .device[data-size="mobile"] .discard .uc { --w: 96px; }
+  .device[data-size="mobile"] .well::after { width: 260px; height: 260px; }
+  .device[data-size="mobile"] .idle-word { font-size: 18px; left: 12px; top: 12px; }
+  .device[data-size="mobile"] .well .color-chip { font-size: 13px; padding: 4px 10px 4px 4px; right: 10px; top: 8px; }
+  .device[data-size="mobile"] .well .color-chip i { width: 20px; height: 20px; }
+  .device[data-size="mobile"] .phrase-banner { left: -14px; right: -14px; padding: 10px 0 12px; }
+  .device[data-size="mobile"] .phrase-banner .text { font-size: 28px; }
+  .device[data-size="mobile"] .bell-stand { right: 10px; bottom: 16px; width: 120px; padding: 12px 0 10px; gap: 6px; border-radius: 18px; }
+  .device[data-size="mobile"] .bell-stand .bell { --bell: 92px; }
+  .device[data-size="mobile"] .bell-stand .label { font-size: 12px; }
+  .device[data-size="mobile"] .me-zone { left: 0; right: 130px; gap: 8px; padding-bottom: 12px; }
+  .device[data-size="mobile"] .me-tag { position: static; }
+  .device[data-size="mobile"] .my-hand .uc { --w: 52px; }
+  .device[data-size="mobile"] .my-hand { --overlap: -24px; }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>Ding · B 铃在手边</strong>
+  <span class="note">对标：UNO 同系列（C17） ｜ 与 A 的差别：盒子中央只放大号弃牌；铃装在盒外右下角的专属底座上，紧挨你的手牌，伸手就能拍；短语打出时一条胶带横幅斜贴满整个盒子</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile">手机 390×844</button></div>
+  <div class="group"><button id="demo-open">① 阿杰打出短语卡</button><button id="reset">重播</button><a href="index.html">返回目录</a></div>
+</div>
+<div class="stage-wrap"><div class="device ding" data-size="desktop">
+  <div class="box kraft" data-box="box">
+    <div class="seat-row">
+      <div class="sticker active" data-opp="jie" style="--rot:-3deg"><div class="avatar" style="background:#f29a7a">杰</div><b>阿杰</b><span class="n">4<small>张</small></span></div>
+      <div class="sticker" style="--rot:2deg"><div class="avatar" style="background:#8fd3b6">可</div><b>可可</b><span class="n">6<small>张</small></span></div>
+      <div class="sticker" style="--rot:-1deg"><div class="avatar" style="background:#b9a4e6">王</div><b>老王</b><span class="n">8<small>张</small></span></div>
+      <div class="sticker" style="--rot:3deg"><div class="avatar" style="background:#9cc7f0">糯</div><b>糯米</b><span class="n">5<small>张</small></span></div>
+      <div class="sticker" style="--rot:-2deg"><div class="avatar" style="background:#f6b7cf">M</div><b>Momo</b><span class="n">7<small>张</small></span></div>
+    </div>
+    <div class="well">
+      <div class="idle-word">轮到阿杰</div>
+      <span class="color-chip"><i></i>当前：<span data-color-name></span></span>
+      <div class="core">
+        <div class="deck" data-box="deck"><div class="uc back"><span class="v">Ding</span></div></div>
+        <div class="discard" data-box="discard"></div>
+      </div>
+    </div>
+  </div>
+  <div class="phrase-banner"><small>谁做了这个动作就拍铃</small><span class="text"></span></div>
+
+  <div class="bell-stand" data-box="bell">
+    <button class="bell" aria-label="拍铃"><span class="base"></span><span class="dome"></span><span class="knob"></span>
+      <span class="bell-ring"><svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="46"/><circle class="bar" cx="50" cy="50" r="46"/></svg><span class="ring-num"></span></span></button>
+    <span class="label">有人做了就拍</span>
+  </div>
+
+  <div class="me-zone">
+    <div class="sticker me-tag" data-box="me"><div class="avatar" style="background:#f7c84b">鱼</div><b>小鱼干（你）</b><span class="n"><span data-me-count>6</span><small>张</small></span></div>
+    <div class="fan my-hand" data-box="hand"></div>
+    <div class="dock" data-box="dock">
+      <button class="btn" id="btn-draw">摸牌</button>
+      <button class="btn" id="btn-ring">拍铃！</button>
+    </div>
+  </div>
+
+  <div class="picker"><div class="pad"><p>选一个颜色</p><button data-pick="red" style="background:var(--red)">红</button><button data-pick="yellow" style="background:var(--yellow)">黄</button><button data-pick="green" style="background:var(--green)">绿</button><button data-pick="blue" style="background:var(--blue)">蓝</button></div></div>
+  <div class="slam slam-fx"><span class="word"></span></div>
+</div></div>
+<script src="_ding.js"></script>
+<script src="_shell.js"></script>
+<script src="_uno.js"></script>
+</body>
+</html>

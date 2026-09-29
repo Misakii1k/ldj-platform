@@ -1,27 +1,23 @@
 /**
- * 狼人杀唯一主题源（02-VISUAL.md / T09）。
+ * 狼人杀唯一主题源（剧场 · 2026-09-26 视觉交接计划 W01）。
  *
  * - 持久 key: ldj_werewolf_theme_pair_v1
- * - 偏好对: forest | theatre，缺省 forest
- * - 自动迁移旧 key: ldj_werewolf_theme (woodcut/eclipse -> forest, theatre -> theatre)
- * - 结合 period (day/night) 纯函数解析为四种渲染主题：
- *   forest + day   -> woodcut-day
- *   forest + night -> eclipse-night
- *   theatre + day  -> theatre-day
- *   theatre + night -> theatre-night
+ * - 只保留剧场一套主题（用户 2026-09-26「最后一个主题只要一套就行了，要剧场」）。
+ *   森林（木刻日 / 月蚀夜）不再打磨，主题切换入口与相关组件已移除。
+ * - 旧存储值（forest / woodcut / eclipse / 任何未知值）一律迁移为 theatre。
+ * - 结合 period (day/night) 纯函数解析为两种渲染主题：
+ *   theatre + day   -> theatre-day（红幕拉开、脚灯亮、暖追光，**仍是暗场**）
+ *   theatre + night -> theatre-night（红幕合拢、脚灯熄、冷月光，近黑）
  * - storage 读写异常安全容错，绝不抛出异常导致崩溃。
  */
 
-export type WerewolfThemePair = 'forest' | 'theatre';
+export type WerewolfThemePair = 'theatre';
 export type WerewolfThemePeriod = 'day' | 'night';
-export type WerewolfResolvedTheme =
-  | 'woodcut-day'
-  | 'eclipse-night'
-  | 'theatre-day'
-  | 'theatre-night';
+export type WerewolfResolvedTheme = 'theatre-day' | 'theatre-night';
 
 export const THEME_PAIR_STORAGE_KEY = 'ldj_werewolf_theme_pair_v1';
 export const LEGACY_THEME_STORAGE_KEY = 'ldj_werewolf_theme';
+export const DEFAULT_THEME_PAIR: WerewolfThemePair = 'theatre';
 
 export function resolveThemePeriod(
   timelinePeriod?: 'day' | 'night' | null,
@@ -43,14 +39,9 @@ export function resolveThemePeriod(
   return 'day';
 }
 
-export function resolveWerewolfTheme(
-  pair: WerewolfThemePair,
-  period: WerewolfThemePeriod,
-): WerewolfResolvedTheme {
-  if (pair === 'theatre') {
-    return period === 'night' ? 'theatre-night' : 'theatre-day';
-  }
-  return period === 'night' ? 'eclipse-night' : 'woodcut-day';
+/** 唯一主题：period 直接决定渲染主题，不再有主题对这一维度。 */
+export function resolveWerewolfTheme(period: WerewolfThemePeriod): WerewolfResolvedTheme {
+  return period === 'night' ? 'theatre-night' : 'theatre-day';
 }
 
 function safeGetStorage(storage?: Storage): Storage | null {
@@ -61,38 +52,24 @@ function safeGetStorage(storage?: Storage): Storage | null {
   return null;
 }
 
+/**
+ * 读取主题偏好。只可能是 theatre：任何旧值（forest / woodcut / eclipse / 未知值）
+ * 与缺失值都会就地归一化成 theatre，旧 key 一并清掉。
+ */
 export function getThemePairPreference(storage?: Storage): WerewolfThemePair {
+  const s = safeGetStorage(storage);
+  if (!s) return DEFAULT_THEME_PAIR;
   try {
-    const s = safeGetStorage(storage);
-    if (!s) return 'forest';
-
-    const current = s.getItem(THEME_PAIR_STORAGE_KEY);
-    if (current === 'forest' || current === 'theatre') {
-      return current;
+    if (s.getItem(THEME_PAIR_STORAGE_KEY) !== DEFAULT_THEME_PAIR) {
+      s.setItem(THEME_PAIR_STORAGE_KEY, DEFAULT_THEME_PAIR);
     }
-
-    // 兼容旧 key 一次性迁移
-    const legacy = s.getItem(LEGACY_THEME_STORAGE_KEY);
-    if (legacy === 'theatre') {
-      try {
-        s.setItem(THEME_PAIR_STORAGE_KEY, 'theatre');
-      } catch {
-        // ignore storage errors
-      }
-      return 'theatre';
-    }
-    if (legacy === 'woodcut' || legacy === 'eclipse') {
-      try {
-        s.setItem(THEME_PAIR_STORAGE_KEY, 'forest');
-      } catch {
-        // ignore storage errors
-      }
-      return 'forest';
+    if (s.getItem(LEGACY_THEME_STORAGE_KEY) !== null) {
+      s.removeItem(LEGACY_THEME_STORAGE_KEY);
     }
   } catch {
-    // ignore
+    // 隐私模式 / 配额受限时安全回退，不影响渲染
   }
-  return 'forest';
+  return DEFAULT_THEME_PAIR;
 }
 
 export function setThemePairPreference(pair: WerewolfThemePair, storage?: Storage): void {
@@ -101,6 +78,6 @@ export function setThemePairPreference(pair: WerewolfThemePair, storage?: Storag
     if (!s) return;
     s.setItem(THEME_PAIR_STORAGE_KEY, pair);
   } catch {
-    // ignore
+    // ignore storage errors
   }
 }

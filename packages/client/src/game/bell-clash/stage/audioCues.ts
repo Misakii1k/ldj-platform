@@ -2,8 +2,7 @@ import { webAudio } from '../../../shared-ui/WebAudioManager.ts';
 import type { StageEvent } from './deriveStageEvents.ts';
 
 /**
- * 事件 → 音效。全部复用本游戏原有的五个音色，不新增。
- * 静音状态由 webAudio 单例自己判断，这里不再重复判断。
+ * 事件 → 音效与触觉反馈。
  */
 export function playCueFor(event: StageEvent): void {
   try {
@@ -15,12 +14,21 @@ export function playCueFor(event: StageEvent): void {
       case 'penaltyDrawn':
         webAudio.playDealCards();
         break;
-      case 'bellOpened':
-      case 'bellClaimed':
+      case 'bellRung':
         webAudio.playBuzzer();
+        VIBRATE.ring();
+        break;
+      case 'challengeResolved':
+        if (event.success) {
+          webAudio.playTurnAlert();
+        } else {
+          webAudio.playUnoDrawPenalty();
+          VIBRATE.bellMiss();
+        }
         break;
       case 'myTurnStarted':
         webAudio.playTurnAlert();
+        VIBRATE.myTurn();
         break;
       case 'gameOver':
         webAudio.playVictory();
@@ -41,12 +49,12 @@ function buzz(pattern: readonly number[]): void {
   }
 }
 
-/** 三种震动节奏，沿用本游戏原有的手感。 */
+/** 震动节奏 */
 export const VIBRATE = {
-  /** 轮到自己：与伪人测试的「轮到我发言」跨游戏统一 */
+  /** 轮到自己 */
   myTurn: () => buzz([30, 40, 30]),
-  /** 抢铃窗口开启：比回合提醒更急 */
-  bellOpen: () => buzz([40, 50, 40]),
-  /** 我按下拍铃：最重的一下 */
+  /** 我按下拍铃 */
   ring: () => buzz([50, 60, 50]),
+  /** 拍错 */
+  bellMiss: () => buzz([40, 50, 40]),
 };

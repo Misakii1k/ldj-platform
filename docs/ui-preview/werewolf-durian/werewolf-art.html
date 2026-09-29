@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>狼人杀 · 全新艺术设计方案集</title>
+  <link rel="stylesheet" href="werewolf-art.css">
+</head>
+<body data-style="storybook" data-scene="day" data-viewport="phone">
+
+  <!-- 顶部控制工坊：方便直观切换对比所有艺术风格与设备尺寸 -->
+  <aside class="art-studio-bar" aria-label="艺术方案切换控制台">
+    <div class="studio-section">
+      <a href="index.html" class="studio-back">← 返回双游戏主控</a>
+      <span class="studio-divider"></span>
+      <span class="studio-label">选择艺术风格：</span>
+      <div class="style-switcher" role="radiogroup" aria-label="艺术风格">
+        <button class="style-btn is-active" data-style-target="storybook" role="radio" aria-checked="true">
+          <span class="swatch s-storybook"></span>
+          <span class="btn-text"><strong>01 怪诞绘本</strong><small>爱德华·戈里/锈湖手绘</small></span>
+        </button>
+        <button class="style-btn" data-style-target="tarot" role="radio" aria-checked="false">
+          <span class="swatch s-tarot"></span>
+          <span class="btn-text"><strong>02 秘术塔罗</strong><small>烫暗金/星轨与大阿卡那</small></span>
+        </button>
+        <button class="style-btn" data-style-target="folklore" role="radio" aria-checked="false">
+          <span class="swatch s-folklore"></span>
+          <span class="btn-text"><strong>03 北欧剪影</strong><small>高反差冷杉密林与符石</small></span>
+        </button>
+        <button class="style-btn" data-style-target="theatre" role="radio" aria-checked="false">
+          <span class="swatch s-theatre"></span>
+          <span class="btn-text"><strong>04 悬疑剧院</strong><small>天鹅绒幕布与强切聚光灯</small></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="studio-section studio-sub">
+      <div class="scene-switcher" role="group" aria-label="对局场景">
+        <button class="scene-btn is-active" data-scene-target="day">☀️ 白天发言</button>
+        <button class="scene-btn" data-scene-target="night">🌙 夜间查验</button>
+        <button class="scene-btn" data-scene-target="vote">🗳️ 放逐公投</button>
+      </div>
+      <div class="viewport-switcher" role="group" aria-label="视图尺寸">
+        <button class="viewport-btn is-active" data-viewport-target="phone">📱 手机 390×844</button>
+        <button class="viewport-btn" data-viewport-target="small">📱 小屏 360×640</button>
+        <button class="viewport-btn" data-viewport-target="free">🖥️ 宽屏沉浸</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 艺术风格展示视口容器 -->
+  <main class="showcase-viewport">
+    <div class="device-frame" id="device-frame">
+      <div class="screen-canvas" id="screen-canvas">
+
+        <!-- 游戏头部：各风格有专属徽章与装帧 -->
+        <header class="game-header">
+          <div class="game-brand">
+            <div class="brand-crest" aria-hidden="true"></div>
+            <div>
+              <h1 class="brand-title">狼人杀</h1>
+              <span class="brand-subtitle" id="dynamic-subtitle">THE STORYBOOK FABLE</span>
+            </div>
+          </div>
+          <div class="header-tools">
+            <span class="chapter-badge" id="chapter-badge">第 3 日 · 自由之声</span>
+            <button class="icon-btn" id="btn-rules" aria-label="查看对局规则">规则</button>
+          </div>
+        </header>
+
+        <!-- 核心环桌对决区域：左右两侧围坐，一屏尽览无须滑动 -->
+        <div class="tabletop-arena">
+
+          <!-- 左翼席位 (01 ~ 06 号) -->
+          <aside class="wing-seats wing-left" id="wing-left" aria-label="左侧席位 1至6号">
+            <!-- 动态生成 01 ~ 06 -->
+          </aside>
+
+          <!-- 中央核心焦点视界 (艺术图腾 + 当前发言者 + 倒计时) -->
+          <section class="center-stage" aria-label="中央焦点舞台">
+
+            <!-- 顶部阶段倒计时胶囊 -->
+            <div class="stage-kicker-capsule">
+              <span class="stage-phase-tag" id="focus-tag">● 06 号发言中</span>
+              <div class="stage-timer">
+                <span class="timer-num" id="countdown-num">00:48</span>
+                <span class="timer-label">剩余</span>
+              </div>
+            </div>
+
+            <!-- 艺术图腾与画卷背板 -->
+            <div class="stage-art-backdrop" id="art-backdrop" aria-hidden="true">
+              <!-- 01 怪诞绘本艺术层 -->
+              <div class="art-layer art-storybook">
+                <svg viewBox="0 0 260 160" class="svg-art">
+                  <circle cx="130" cy="70" r="46" class="sb-moon" />
+                  <path d="M10 160 L40 85 L60 55 M250 160 L220 80 L200 50" class="sb-branches" />
+                  <g class="sb-wolf-totem" transform="translate(102, 32)">
+                    <path d="M28 60 L14 42 L7 10 L22 26 L34 26 L49 10 L42 42 Z" class="sb-wolf-head" />
+                    <circle cx="20" cy="32" r="2.5" class="sb-eye" />
+                    <circle cx="36" cy="32" r="2.5" class="sb-eye" />
+                    <path d="M28 48 L22 41 L34 41 Z" class="sb-nose" />
+                  </g>
+                  <rect x="8" y="8" width="244" height="144" rx="4" class="sb-frame" />
+                </svg>
+              </div>
+
+              <!-- 02 秘术塔罗艺术层 -->
+              <div class="art-layer art-tarot">
+                <div class="tarot-celestial">
+                  <div class="celestial-ring ring-outer"></div>
+                  <div class="celestial-ring ring-zodiac"></div>
+                  <div class="celestial-ring ring-inner"></div>
+                  <div class="tarot-emblem">
+                    <span class="tarot-numeral">VI</span>
+                    <svg viewBox="0 0 80 80" class="tarot-svg">
+                      <polygon points="40,5 72,68 8,68" class="tarot-poly" />
+                      <polygon points="40,75 72,12 8,12" class="tarot-poly" />
+                      <circle cx="40" cy="40" r="14" class="tarot-core" />
+                      <circle cx="40" cy="40" r="5" class="tarot-dot" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 03 北欧剪影艺术层 -->
+              <div class="art-layer art-folklore">
+                <div class="folklore-mist"></div>
+                <svg viewBox="0 0 260 160" class="svg-folklore">
+                  <circle cx="130" cy="52" r="38" class="fk-moon" />
+                  <path d="M0 160 L25 80 L40 160 M30 160 L65 60 L90 160 M170 160 L200 55 L230 160 M210 160 L240 75 L260 160" class="fk-fir-back" />
+                  <path d="M115 115 C115 95 122 88 126 80 C128 76 132 68 130 62 C132 66 137 72 135 80 C140 86 150 98 150 115 Z" class="fk-wolf" />
+                </svg>
+              </div>
+
+              <!-- 04 悬疑剧院艺术层 -->
+              <div class="art-layer art-theatre">
+                <div class="theatre-drape drape-left"></div>
+                <div class="theatre-drape drape-right"></div>
+                <div class="theatre-spotlight-beam"></div>
+                <div class="theatre-stage-floor"></div>
+                <div class="theatre-badge">
+                  <span class="theatre-act-label">ACT III</span>
+                  <span class="theatre-act-title">独 白 审 判</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 发言者身份与台词气泡卡 -->
+            <div class="focus-bubble-card">
+              <div class="focus-actor-header">
+                <div class="focus-actor-badge">
+                  <span class="actor-seat-num" id="focus-seat-num">06</span>
+                </div>
+                <div class="focus-actor-meta">
+                  <h2 class="focus-actor-name" id="focus-player-name">山间一阵晚风</h2>
+                  <span class="focus-actor-role">预言家视角 · 发言中</span>
+                </div>
+              </div>
+
+              <p class="focus-speech-bubble" id="focus-quote">“听完前置位 4、5 号的起跳逻辑，我更倾向相信 4 号是有真视角的预言家。”</p>
+
+              <div class="stage-sub-info">
+                <span class="next-cue">下位：<strong id="next-player-cue">07 号 南瓜</strong></span>
+                <span class="alive-ratio">10 / 12 人在席</span>
+              </div>
+            </div>
+
+            <!-- 昨夜出局/放逐记录紧凑胶囊 -->
+            <button class="meta-pill-btn" id="btn-ledger" aria-label="查看放逐记录">
+              <span class="pill-icon">📜</span>
+              <span class="pill-title">放逐实录：</span>
+              <span class="pill-data">09 号出局（4 票）</span>
+              <span class="pill-arrow">↗</span>
+            </button>
+
+          </section>
+
+          <!-- 右翼席位 (07 ~ 12 号) -->
+          <aside class="wing-seats wing-right" id="wing-right" aria-label="右侧席位 7至12号">
+            <!-- 动态生成 07 ~ 12 -->
+          </aside>
+
+        </div>
+
+        <!-- 底部高质感操作底座 (固定于底部，符合 WCAG AAA 对比度) -->
+        <footer class="game-dock">
+          <div class="dock-status" id="dock-status">你是 06 号 · 正在向全场发表你的推理</div>
+          <div class="dock-controls">
+            <!-- 秘密身份入口 (带有防偷看私密信封/塔罗牌质感) -->
+            <button class="secret-card-trigger" id="btn-identity" aria-haspopup="dialog">
+              <div class="card-icon-preview">
+                <span class="card-mini-face">☾</span>
+              </div>
+              <div class="card-trigger-label">
+                <strong>私密身份</strong>
+                <small>长按/点击查看</small>
+              </div>
+            </button>
+
+            <!-- 核心行动主按钮 -->
+            <button class="action-primary-btn" id="btn-primary-action">
+              <span class="btn-glow"></span>
+              <span class="btn-action-text" id="primary-btn-label">结束我的发言</span>
+              <span class="btn-action-icon">→</span>
+            </button>
+          </div>
+        </footer>
+
+        <!-- 风格专属：全屏私密身份手牌弹窗 (Modal) -->
+        <dialog class="art-modal" id="modal-identity" aria-labelledby="modal-role-name">
+          <div class="modal-card">
+            <div class="modal-card-edge">
+              <span class="edge-ornament o-tl">✦</span>
+              <span class="edge-ornament o-tr">✦</span>
+              <span class="edge-ornament o-bl">✦</span>
+              <span class="edge-ornament o-br">✦</span>
+            </div>
+            <div class="modal-header">
+              <span class="camp-tag camp-good" id="modal-camp-tag">好人阵营 · 神职</span>
+              <h3 class="role-name" id="modal-role-name">预言家 (Seer)</h3>
+              <p class="role-quote">“在永夜与谎言的迷雾中，唯有灵眸洞悉真形。”</p>
+            </div>
+            <div class="modal-art-figure">
+              <div class="figure-illustration" id="figure-illustration">
+                <svg viewBox="0 0 160 160" class="seer-svg">
+                  <circle cx="80" cy="80" r="70" class="seer-halo" />
+                  <path d="M20 80 Q80 20 140 80 Q80 140 20 80 Z" class="seer-eye-outer" />
+                  <circle cx="80" cy="80" r="24" class="seer-eye-pupil" />
+                  <circle cx="80" cy="80" r="10" class="seer-eye-iris" />
+                  <path d="M80 5 L80 25 M80 135 L80 155 M5 80 L25 80 M135 80 L155 80" class="seer-spikes" />
+                </svg>
+              </div>
+            </div>
+            <div class="role-skill-box">
+              <h4>神职特权：洞察真伪</h4>
+              <p>每个夜晚可以秘密查验一名同桌玩家的真实身份（好人或狼人）。今晚你的查验将决定明日投票的走向。</p>
+            </div>
+            <button class="modal-dismiss-btn" id="btn-close-identity">收起身份牌 · 防止旁人窥视</button>
+          </div>
+        </dialog>
+
+        <!-- 席位玩家档案弹窗 -->
+        <dialog class="art-modal" id="modal-player" aria-labelledby="modal-player-title">
+          <div class="modal-card player-info-card">
+            <h3 class="role-name" id="modal-player-title">07 号 · 南瓜</h3>
+            <p id="modal-player-status" class="player-status-line">存活 · 预备发言</p>
+            <div class="player-log-box" id="modal-player-log">
+              <p><strong>第一日：</strong>弃票</p>
+              <p><strong>第二日：</strong>投票给 09 号薄荷</p>
+              <p><strong>发言状态：</strong>即将接替 06 号发言</p>
+            </div>
+            <button class="modal-dismiss-btn" id="btn-close-player">关闭档案</button>
+          </div>
+        </dialog>
+
+        <!-- 提示吐司 -->
+        <div class="art-toast" id="art-toast" role="status" hidden></div>
+
+      </div>
+    </div>
+  </main>
+
+  <script src="werewolf-art.js"></script>
+</body>
+</html>

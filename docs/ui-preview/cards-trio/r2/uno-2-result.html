@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UNO · 整屏色块 · ② 本局结算</title>
+<link rel="stylesheet" href="../_shell.css">
+<link rel="stylesheet" href="_party.css">
+<style>
+  /* 结算：出完的人贴纸放大到圆盘上；其他人的剩牌逐张翻开飞进"计分罐"，数字一张一张往上跳；最后按累计分排名 */
+  .winner-badge { position: absolute; left: 50%; top: 44%; translate: -50% -50%; z-index: 6; display: grid; justify-items: center; gap: 8px; }
+  .winner-badge .avatar { width: 120px; height: 120px; border-radius: 50%; border: 5px solid var(--ink); display: grid; place-items: center; font: 900 52px var(--serif); box-shadow: 0 8px 0 var(--ink); background: #f7c84b; }
+  .winner-badge b { font: 700 40px/1 var(--serif); padding: 8px 20px; background: var(--cream); border: var(--border); border-radius: 14px; box-shadow: var(--shadow-sm); rotate: -3deg; }
+  .winner-badge small { font: 800 15px var(--sans); color: var(--cream); background: var(--ink); padding: 5px 12px; border-radius: 999px; }
+  .winner-badge.in { animation: pop 460ms var(--spring); }
+
+  /* 计分板：每人一行 = 名字 + 剩牌 + 本局分（逐张累加）+ 累计分 */
+  .board { position: absolute; left: 50%; bottom: 22px; translate: -50% 0; width: 880px; z-index: 7; background: var(--cream); border: var(--border); border-radius: 20px; box-shadow: var(--shadow); padding: 14px 18px 16px; }
+  .board h3 { margin: 0 0 10px; display: flex; justify-content: space-between; align-items: baseline; font: 700 24px/1 var(--serif); }
+  .board h3 small { font: 800 13px var(--sans); color: var(--muted); }
+  .row { display: grid; grid-template-columns: 36px 150px 1fr 82px 82px; align-items: center; gap: 12px; padding: 6px 8px; border-radius: 12px; opacity: 0; translate: -20px 0; transition: opacity 240ms, translate 240ms var(--spring); }
+  .row.in { opacity: 1; translate: 0 0; }
+  .row + .row { border-top: 2px dashed rgba(41,39,34,.15); }
+  .row .rk { font: 700 22px/1 var(--serif); text-align: center; }
+  .row .nm { display: flex; align-items: center; gap: 8px; font: 900 16px var(--sans); }
+  .row .nm i { width: 30px; height: 30px; border-radius: 50%; border: 2.5px solid var(--ink); display: grid; place-items: center; font: 900 13px var(--serif); font-style: normal; flex: none; }
+  .row .cards { display: flex; min-height: 50px; align-items: center; }
+  .row .cards .uc2 { --w: 34px; border-width: 2px; margin-left: -10px; box-shadow: 0 2px 0 var(--ink); }
+  .row .cards .uc2:first-child { margin-left: 0; }
+  .row .cards .uc2 .face { border-width: 1.5px; }
+  .row .cards .uc2 .face::before { border-width: 1.5px; }
+  .row .cards .uc2 .v { -webkit-text-stroke: 1px var(--ink); text-shadow: 0 1.5px 0 var(--ink); }
+  .row .cards .uc2 .c1, .row .cards .uc2 .c2 { display: none; }
+  .row .cards .uc2.flip { animation: flipIn 320ms var(--out) both; }
+  .row .cards .none { font: 800 14px var(--sans); color: var(--muted); }
+  .row .pts, .row .tot { font: 700 30px/1 var(--serif); text-align: right; font-variant-numeric: tabular-nums; }
+  .row .pts { color: var(--coral); }
+  .row .pts.zero { color: var(--green); }
+  .row .tot small, .row .pts small { font: 800 11px var(--sans); color: var(--muted); display: block; margin-top: 2px; }
+  .row.best { background: #fff1c4; box-shadow: inset 0 0 0 3px var(--yellow); }
+  .row.best .rk::before { content: "★"; color: var(--gold, #e0a92a); display: block; font-size: 14px; }
+  .board-head { display: grid; grid-template-columns: 36px 150px 1fr 82px 82px; gap: 12px; padding: 0 8px 6px; font: 800 12px var(--sans); color: var(--muted); }
+  .board-head span:nth-child(4), .board-head span:nth-child(5) { text-align: right; }
+  .pop-num { position: absolute; z-index: 80; font: 900 22px/1 var(--serif); color: var(--coral); -webkit-text-stroke: 1px var(--ink); paint-order: stroke fill; pointer-events: none; }
+  .next { position: absolute; right: 26px; top: 20px; z-index: 8; display: flex; gap: 10px; }
+
+  .device.result .core, .device.result .dir-ring, .device.result .hud, .device.result .phase-word, .device.result .ring-seats { display: none; }
+  /* 桌面：圆盘 + 胜者移到左侧，计分板占右侧 */
+  .device.result .disc { left: 27%; top: 50%; width: 400px; height: 400px; }
+  .winner-badge { left: 27%; top: 50%; }
+  .board { left: auto; right: 36px; bottom: auto; top: 86px; translate: none; width: 640px; }
+  .next { top: auto; bottom: 22px; right: 36px; }
+  .device[data-size="mobile"] .winner-badge { left: 50%; top: 20%; }
+  .device[data-size="mobile"] .winner-badge .avatar { width: 76px; height: 76px; font-size: 32px; border-width: 4px; }
+  .device[data-size="mobile"] .winner-badge b { font-size: 24px; padding: 6px 12px; }
+  .device[data-size="mobile"] .winner-badge small { font-size: 12px; }
+  .device[data-size="mobile"].result .disc { left: 50%; top: 20%; width: 250px; height: 250px; }
+  .device[data-size="mobile"] .board { left: 10px; right: auto; top: auto; width: 370px; bottom: 76px; padding: 10px 10px 12px; }
+  .device[data-size="mobile"] .board h3 { font-size: 18px; margin-bottom: 6px; }
+  .device[data-size="mobile"] .board h3 small { font-size: 11px; }
+  .device[data-size="mobile"] .row, .device[data-size="mobile"] .board-head { grid-template-columns: 22px 78px 1fr 48px 48px; gap: 6px; padding: 4px 4px; }
+  .device[data-size="mobile"] .row .rk { font-size: 16px; }
+  .device[data-size="mobile"] .row .nm { font-size: 13px; gap: 4px; }
+  .device[data-size="mobile"] .row .nm i { display: none; }
+  .device[data-size="mobile"] .row .cards { min-height: 38px; }
+  .device[data-size="mobile"] .row .cards .uc2 { --w: 24px; margin-left: -12px; }
+  .device[data-size="mobile"] .row .pts, .device[data-size="mobile"] .row .tot { font-size: 20px; }
+  .device[data-size="mobile"] .row .tot small, .device[data-size="mobile"] .row .pts small { display: none; }
+  .device[data-size="mobile"] .next { left: 0; right: 0; top: auto; bottom: 14px; justify-content: center; }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>UNO · 整屏色块 · ② 本局结算</strong>
+  <span class="note">按欢乐房规：有人出完即本局结束；其他人剩牌计分（数字 = 面值、功能牌 20、万能牌 50），出完的人 0 分；多局累计分低者胜</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile">手机 390×844</button></div>
+  <div class="group"><button id="reset">重播</button><a href="index.html">返回目录</a></div>
+</div>
+<div class="stage-wrap"><div class="device result" data-size="desktop">
+  <div class="round-tag">第 <b>2</b> / 3 局 · 结束</div>
+  <div class="winner-badge" data-box="winner"><div class="avatar" style="background:#8fd3b6">可</div><b>可可 出完了！</b><small>本局 0 分</small></div>
+  <div class="board" data-box="board">
+    <h3>本局计分 <small>分越低越好 · 还剩 1 局</small></h3>
+    <div class="board-head"><span>名次</span><span>玩家</span><span>剩牌</span><span>本局</span><span>累计</span></div>
+    <div id="rows"></div>
+  </div>
+  <div class="next" data-box="next"><button class="btn">看总榜</button><button class="btn btn-primary">下一局</button></div>
+</div></div>
+<script src="../_shell.js"></script>
+<script src="_party.js"></script>
+<script>
+(function () {
+  const P = Preview, U = Party;
+  const device = document.querySelector('.device');
+  U.build();
+  U.setColor('green', { splash: false });
+  const score = (c) => (c.v === 'wild' || c.v === 'draw4' ? 50 : ['skip', 'reverse', 'draw2'].includes(c.v) ? 20 : Number(c.v));
+  // 固定数据：第 2 局可可出完；before = 第 1 局累计分
+  const PLAYERS = [
+    { id: 'keke', name: '可可', a: '可', bg: '#8fd3b6', before: 18, cards: [] },
+    { id: 'me', name: '小鱼干（你）', a: '鱼', bg: '#f7c84b', before: 34, cards: [{ c: 'red', v: '3' }, { c: 'blue', v: '7' }] },
+    { id: 'nuomi', name: '糯米', a: '糯', bg: '#9cc7f0', before: 12, cards: [{ c: 'wild', v: 'draw4' }] },
+    { id: 'momo', name: 'Momo', a: 'M', bg: '#f6b7cf', before: 9, cards: [{ c: 'green', v: 'skip' }, { c: 'yellow', v: '8' }] },
+    { id: 'wang', name: '老王', a: '王', bg: '#b9a4e6', before: 40, cards: [{ c: 'red', v: '5' }, { c: 'blue', v: '2' }, { c: 'yellow', v: '1' }, { c: 'green', v: '6' }] },
+    { id: 'jie', name: '阿杰', a: '杰', bg: '#f29a7a', before: 27, cards: [{ c: 'red', v: 'reverse' }, { c: 'wild', v: 'wild' }, { c: 'blue', v: '9' }, { c: 'green', v: '4' }, { c: 'yellow', v: '2' }] },
+  ];
+  const rows = document.getElementById('rows');
+  rows.innerHTML = PLAYERS.map((p) => `<div class="row" data-id="${p.id}"><span class="rk">·</span><span class="nm"><i style="background:${p.bg}">${p.a}</i>${p.name}</span><span class="cards">${p.cards.length ? '' : '<span class="none">出完了</span>'}</span><span class="pts ${p.cards.length ? '' : 'zero'}" data-value="0">0<small>本局</small></span><span class="tot" data-value="${p.before}">${p.before}<small>累计</small></span></div>`).join('');
+
+  const wait = (ms) => new Promise((ok) => setTimeout(ok, P.reduce ? 0 : ms));
+  function setNum(el, v, label) {
+    el.dataset.value = v;
+    el.innerHTML = `${v}<small>${label}</small>`;
+    if (!P.reduce) el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.4)' }, { transform: 'scale(1)' }], { duration: 260, easing: 'cubic-bezier(.34,1.56,.64,1)' });
+  }
+  function floatNum(anchor, text) {
+    if (P.reduce) return;
+    const r = P.local(anchor);
+    const n = U.node(`<span class="pop-num">+${text}</span>`);
+    Object.assign(n.style, { left: r.x + r.w / 2 - 12 + 'px', top: r.y - 10 + 'px' });
+    device.querySelector('.fly-layer').appendChild(n);
+    n.animate([{ transform: 'translateY(0)', opacity: 1 }, { transform: 'translateY(-30px)', opacity: 0 }], { duration: 640, easing: 'ease-out' }).finished.then(() => n.remove());
+  }
+
+  async function run() {
+    P.shake(3);
+    U.slam('UNO!', 'uno');
+    await wait(700);
+    for (const p of PLAYERS) {
+      const row = rows.querySelector(`[data-id="${p.id}"]`);
+      row.classList.add('in');
+      await wait(160);
+      const box = row.querySelector('.cards');
+      const pts = row.querySelector('.pts');
+      let sum = 0;
+      for (const c of p.cards) {
+        box.insertAdjacentHTML('beforeend', U.card(c, 'flip'));
+        sum += score(c);
+        setNum(pts, sum, '本局');
+        floatNum(box.lastElementChild, score(c));
+        await wait(c.v === 'wild' || c.v === 'draw4' ? 360 : 200);
+      }
+      if (sum >= 50) P.shake(2);
+      const tot = row.querySelector('.tot');
+      await wait(120);
+      setNum(tot, p.before + sum, '累计');
+      p.total = p.before + sum;
+    }
+    await wait(300);
+    // 按累计分排名（低者在前），行的顺序用动画换位
+    const order = [...PLAYERS].sort((a, b) => a.total - b.total);
+    const before = new Map([...rows.children].map((r) => [r, r.getBoundingClientRect().top]));
+    order.forEach((p, k) => {
+      const row = rows.querySelector(`[data-id="${p.id}"]`);
+      row.querySelector('.rk').textContent = k + 1;
+      rows.appendChild(row);
+    });
+    [...rows.children].forEach((r) => {
+      const dy = (before.get(r) - r.getBoundingClientRect().top) / (device.getBoundingClientRect().width / parseFloat(device.style.width));
+      if (dy && !P.reduce) r.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], { duration: 480, easing: 'cubic-bezier(.22,1,.36,1)' });
+    });
+    rows.firstElementChild.classList.add('best');
+  }
+  document.querySelector('.winner-badge').classList.add('in');
+  setTimeout(run, 400);
+})();
+</script>
+</body>
+</html>

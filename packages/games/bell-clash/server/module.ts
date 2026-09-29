@@ -41,7 +41,7 @@ function parseState(input: unknown): BellClashState {
 }
 
 /** 玩家可发起的动作类型（其余仅允许 system 投递） */
-const PLAYER_ACTIONS = new Set<string>(['play_card', 'draw_card', 'ring_bell']);
+const PLAYER_ACTIONS = new Set<string>(['play_card', 'draw_card', 'ring_bell', 'challenge_vote']);
 
 function playerMatches(actor: Actor, action: BellClashAction): boolean {
   return actor.kind === 'player' && 'playerId' in action && actor.playerId === action.playerId;
@@ -83,7 +83,8 @@ export const bellClashModule: GameModuleV2<
     }
     // 首张弃牌顶：从剩余牌堆取一张（保证开局可接）
     let discardTop = deck.pop() ?? null;
-    // 若首张是短语卡，重新换一张数字卡（避免开局即按铃窗口）
+    // 开局展示一张有色数字牌（纯展示理由：短语卡没有颜色，放在桌心看不出当前该出什么色）。
+    // 注意这与拍铃无关——新规则下任何时候都能拍铃，且亮卡不必与顶牌同色。
     if (discardTop && discardTop.kind === 'phrase') {
       const numberIndex = deck.findIndex((card) => card.kind === 'number');
       if (numberIndex >= 0) {

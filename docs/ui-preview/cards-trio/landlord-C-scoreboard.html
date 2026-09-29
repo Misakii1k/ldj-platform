@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>斗地主 · C 水牌对垒</title>
+<link rel="stylesheet" href="_shell.css">
+<link rel="stylesheet" href="_landlord.css">
+<style>
+  /* ── 场景：茶馆里一面挂起来的"水牌"当计分板，下方是一条长条桌，地主与农民两阵对垒 ── */
+  .device {
+    background:
+      radial-gradient(ellipse 70% 50% at 50% 58%, rgba(255,226,160,.7), transparent 70%),
+      linear-gradient(180deg, #e9d7b4 0 60%, #cfae80 60%);
+  }
+  .device::before { /* 墙裙 */
+    content: ""; position: absolute; left: 0; right: 0; top: 60%; height: 10px; background: var(--lacquer); border-block: 3px solid var(--ink);
+  }
+  .rope { position: absolute; top: 0; width: 4px; height: 40px; background: var(--ink); }
+  .rope.l { left: calc(50% - 200px); } .rope.r { left: calc(50% + 196px); }
+
+  /* 水牌：计分主角 */
+  .board {
+    position: absolute; left: 50%; top: 36px; translate: -50% 0; width: 460px; padding: 16px 24px 18px;
+    background: #f7eedb; border: 4px solid var(--ink); border-radius: 8px; box-shadow: 0 8px 0 var(--ink), inset 0 0 0 8px var(--lacquer), inset 0 0 0 11px var(--ink);
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; rotate: -1deg; z-index: 3;
+  }
+  .board .cell small { display: block; font: 800 13px/1 var(--sans); letter-spacing: .3em; color: var(--muted); margin-bottom: 6px; }
+  .board .cell .numeral { font-size: 54px; font-weight: 700; display: inline-block; }
+  .board .times { font: 700 40px/1 var(--serif); color: var(--tea-red); }
+  .board .mult-cell .numeral { color: var(--tea-red); }
+  .board .kitty { justify-content: center; grid-column: 1 / -1; margin-top: 12px; }
+  .device.bombed .board { animation: boardHit 420ms var(--spring); }
+  @keyframes boardHit { 30% { rotate: 3deg; scale: 1.06; } }
+
+  /* 两阵：左地主（你），右两农民 */
+  .camp { position: absolute; top: 300px; display: grid; gap: 14px; z-index: 4; }
+  .camp.lord { left: 40px; }
+  .camp.farm { right: 40px; }
+  .camp h3 { margin: 0; font: 700 22px/1 var(--serif); display: flex; align-items: center; gap: 8px; }
+  .camp.farm h3 { justify-content: flex-end; }
+  .seat {
+    width: 210px; display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 10px; padding: 10px 12px;
+    background: var(--cream); border: var(--border); border-radius: 14px; box-shadow: var(--shadow-sm);
+  }
+  .seat.lord-seat { background: #fff1c4; }
+  .seat.active { outline: 4px solid var(--yellow); outline-offset: 3px; }
+  .seat .avatar { width: 52px; height: 52px; border-radius: 50%; border: var(--border); display: grid; place-items: center; font: 900 20px var(--serif); }
+  .seat b { font: 900 17px var(--sans); }
+  .seat .count-chip { font-size: 26px; }
+  .vs { position: absolute; left: 50%; top: 262px; translate: -50% 0; font: 700 22px/1 var(--serif); color: var(--muted); letter-spacing: .5em; z-index: 3; }
+
+  /* 长条桌 */
+  .bench {
+    position: absolute; left: 50%; top: 300px; translate: -50% 0; width: 560px; height: 190px;
+    background: linear-gradient(180deg, var(--wood-light), var(--wood)); border: 4px solid var(--ink); border-radius: 14px;
+    box-shadow: 0 10px 0 var(--ink), inset 0 -14px 0 var(--wood-dark);
+    display: grid; place-items: center; z-index: 2;
+  }
+  .pile { position: absolute; left: 50%; top: 318px; translate: -50% 0; z-index: 5; }
+  .tea { position: absolute; left: calc(50% + 200px); top: 318px; width: 70px; z-index: 5; }
+  .phase { position: absolute; left: 50%; top: 512px; translate: -50% 0; z-index: 5; display: flex; align-items: center; gap: 14px; }
+  .phase .t { font: 700 30px/1 var(--serif); }
+
+  .me-zone { position: absolute; left: 0; right: 0; bottom: 0; z-index: 7; display: grid; justify-items: center; gap: 12px; padding-bottom: 18px; }
+  .me-bubble { left: 50%; bottom: 240px; translate: -50% 0; }
+
+  /* ── 手机 ── */
+  .device[data-size="mobile"] { background: radial-gradient(ellipse 90% 40% at 50% 50%, rgba(255,226,160,.7), transparent 70%), linear-gradient(180deg, #e9d7b4 0 52%, #cfae80 52%); }
+  .device[data-size="mobile"]::before { top: 52%; }
+  .device[data-size="mobile"] .rope.l { left: calc(50% - 150px); } .device[data-size="mobile"] .rope.r { left: calc(50% + 146px); }
+  .device[data-size="mobile"] .board { width: 340px; top: 24px; padding: 12px 14px 14px; }
+  .device[data-size="mobile"] .board .cell .numeral { font-size: 38px; }
+  .device[data-size="mobile"] .board .times { font-size: 28px; }
+  .device[data-size="mobile"] .vs { display: none; }
+  .device[data-size="mobile"] .camp { top: 208px; gap: 6px; }
+  .device[data-size="mobile"] .camp.lord { left: 10px; } .device[data-size="mobile"] .camp.farm { right: 10px; }
+  .device[data-size="mobile"] .camp h3 { font-size: 15px; }
+  .device[data-size="mobile"] .seat { width: 178px; grid-template-columns: 36px 1fr auto; padding: 6px 8px; gap: 6px; }
+  .device[data-size="mobile"] .seat .avatar { width: 36px; height: 36px; font-size: 15px; }
+  .device[data-size="mobile"] .seat b { font-size: 14px; }
+  .device[data-size="mobile"] .seat .count-chip { font-size: 20px; }
+  .device[data-size="mobile"] .camp.lord .seat + .seat { display: none; }
+  .device[data-size="mobile"] .camp.farm { top: 208px; }
+  .device[data-size="mobile"] .camp.farm .seat { width: 178px; }
+  .device[data-size="mobile"] .camp.lord { top: 208px; }
+  .device[data-size="mobile"] .bench { width: 360px; height: 170px; top: 396px; }
+  .device[data-size="mobile"] .pile { top: 412px; }
+  .device[data-size="mobile"] .tea { display: none; }
+  .device[data-size="mobile"] .phase { top: 584px; }
+  .device[data-size="mobile"] .phase .t { font-size: 22px; }
+  .device[data-size="mobile"] .turn-ring { width: 46px; height: 46px; }
+  .device[data-size="mobile"] .me-bubble { bottom: 230px; }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <strong>斗地主 · C 水牌对垒</strong>
+  <span class="note">对标：Balatro 的"计分即主角" ｜ 与 A/B 的差别：顶上一面茶馆水牌做计分板（底分 × 倍数 大字），下方长条桌两阵对垒——左地主、右农民，阵营关系一眼看清</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile">手机 390×844</button></div>
+  <div class="group"><button id="btn-kitty">翻底牌</button><button id="reset">重播</button><a href="index.html">返回目录</a></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <span class="rope l"></span><span class="rope r"></span>
+  <div class="board" data-box="board">
+    <div class="cell"><small>底 分</small><span class="numeral">3</span></div>
+    <div class="times">×</div>
+    <div class="cell mult-cell"><small>倍 数</small><span class="numeral" data-mult>×6</span></div>
+    <div class="kitty"><div class="pk back"></div><div class="pk back"></div><div class="pk back"></div></div>
+  </div>
+
+  <div class="vs">地 主 · 对 · 农 民</div>
+  <div class="camp lord" data-box="lord">
+    <h3><svg class="ingot" viewBox="0 0 40 28" aria-hidden="true"><path d="M2 14 Q6 26 20 26 Q34 26 38 14 L30 14 Q28 4 20 4 Q12 4 10 14 Z" fill="#f7c84b" stroke="#292722" stroke-width="3" stroke-linejoin="round"/></svg>地主</h3>
+    <div class="seat lord-seat active"><div class="avatar" style="background:#f7c84b">鱼</div><b>小鱼干（你）</b><span class="count-chip"><span data-me-count>14</span></span></div>
+  </div>
+  <div class="camp farm" data-box="farm">
+    <h3>农民</h3>
+    <div class="seat"><div class="avatar" style="background:#f29a7a">杰</div><b>阿杰</b><span class="count-chip">9</span></div>
+    <div class="seat"><div class="avatar" style="background:#8fd3b6">可</div><b>可可</b><span class="count-chip">7</span></div>
+  </div>
+
+  <div class="bench"></div>
+  <div class="pile" data-box="pile"><div class="pile-cards"></div><div class="pile-label">阿杰 · 对子</div></div>
+  <svg class="tea" viewBox="0 0 120 60" aria-hidden="true"><ellipse cx="60" cy="44" rx="54" ry="12" fill="#fffdf7" stroke="#292722" stroke-width="4"/><path d="M26 20 Q26 46 60 46 Q94 46 94 20 Z" fill="#fffdf7" stroke="#292722" stroke-width="4" stroke-linejoin="round"/><path d="M36 28 Q60 34 84 28" stroke="#6fae95" stroke-width="5" fill="none" stroke-linecap="round"/><ellipse cx="60" cy="18" rx="36" ry="8" fill="#fffdf7" stroke="#292722" stroke-width="4"/><circle cx="60" cy="12" r="6" fill="#fffdf7" stroke="#292722" stroke-width="3.5"/></svg>
+  <div class="phase" data-box="phase">
+    <span class="t">轮到你出牌</span>
+    <div class="turn-ring"><svg viewBox="0 0 60 60"><circle class="track" cx="30" cy="30" r="26"/><circle class="bar" cx="30" cy="30" r="26"/></svg><span class="ring-num"></span></div>
+  </div>
+
+  <div class="me-zone">
+    <div class="fan my-hand" data-box="hand"></div>
+    <div class="dock" data-box="dock">
+      <button class="btn" id="btn-pass">不出</button>
+      <button class="btn" id="btn-hint">提示（选中炸弹）</button>
+      <button class="btn btn-primary" id="btn-play">出牌</button>
+    </div>
+  </div>
+  <div class="me-bubble"></div>
+  <div class="slam slam-bomb"><span class="word">炸！</span></div>
+</div></div>
+<script src="_shell.js"></script>
+<script src="_landlord.js"></script>
+</body>
+</html>

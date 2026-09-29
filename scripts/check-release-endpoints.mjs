@@ -16,7 +16,7 @@
 const ORIGIN = (
   process.env.TABLETOP_CLOUD_ORIGIN ||
   process.env.VITE_CLOUD_ORIGIN ||
-  'https://tabletop.pages.dev'
+  'https://ldj-platform.pages.dev'
 ).replace(/\/$/, '');
 
 const TIMEOUT_MS = 20_000;
@@ -147,8 +147,8 @@ if (failed.length > 0) {
   for (const entry of failed) {
     console.log(`  - ${entry.name}: ${entry.detail}`);
   }
-  if (ORIGIN === 'https://tabletop.pages.dev' && !process.env.TABLETOP_CLOUD_ORIGIN) {
-    console.log('\n💡 提示：当前检测使用的是默认源 https://tabletop.pages.dev（当前该域名返回 HTML 占位页）。');
+  if (ORIGIN === 'https://ldj-platform.pages.dev' && !process.env.TABLETOP_CLOUD_ORIGIN) {
+    console.log('\n💡 提示：当前检测使用的是默认源 https://ldj-platform.pages.dev（当前该域名返回 HTML 占位页）。');
     console.log('   若您已将本项目的 packages/client 与 functions 部署到您的 Cloudflare Pages，');
     console.log('   请通过 TABLETOP_CLOUD_ORIGIN=https://<your-project>.pages.dev node scripts/check-release-endpoints.mjs 指定实际源。');
   }

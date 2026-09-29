@@ -1,6 +1,6 @@
 {
-  "": "node_modules/wrangler/config-schema.json",
-  "name": "tabletop",
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "ldj-platform",
   "pages_build_output_dir": "packages/client/dist",
   "compatibility_date": "2026-09-01",
   "compatibility_flags": [

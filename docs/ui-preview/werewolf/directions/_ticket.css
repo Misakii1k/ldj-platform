@@ -1,0 +1,71 @@
+/* 狼人杀 · 定稿席位：包厢栏 + 剧场票根卡（A2 定稿，入夜等后续画面共用） */
+/* ── 包厢栏（同 A） ── */
+.box-rail {
+  position: absolute; z-index: 5; display: grid; gap: 12px; padding: 16px 12px;
+  background: linear-gradient(180deg, #2a0f15, #1a080c);
+  border: 1px solid rgba(232, 194, 122, .25); border-radius: 18px;
+  box-shadow: inset 0 0 30px #000a;
+}
+.box-rail::before {
+  content: ""; position: absolute; inset: 6px; border-radius: 14px; pointer-events: none;
+  border: 1px dashed rgba(232, 194, 122, .15);
+}
+
+/* ── 剧场票根席位卡 ──
+   左：票根（大号衬线座位号）；中：齿孔虚线；右：头像 + 名字 + 状态。
+   出局：票根被撕掉一角（clip-path 斜切 + 撕口锯齿）。 */
+.seat.ticket {
+  padding: 0; gap: 0; align-items: stretch; overflow: visible; border-radius: 10px;
+  background: linear-gradient(90deg, #3a1a14 0 64px, transparent 64px), linear-gradient(180deg, var(--card-2), var(--card));
+  /* 齿孔两端的半圆缺口 */
+  -webkit-mask: radial-gradient(circle 7px at 64px 0, transparent 98%, #000) top / 100% 51% no-repeat,
+                radial-gradient(circle 7px at 64px 100%, transparent 98%, #000) bottom / 100% 51% no-repeat;
+          mask: radial-gradient(circle 7px at 64px 0, transparent 98%, #000) top / 100% 51% no-repeat,
+                radial-gradient(circle 7px at 64px 100%, transparent 98%, #000) bottom / 100% 51% no-repeat;
+}
+.seat.ticket .no {
+  position: static; flex: 0 0 64px; width: 64px; height: auto; border-radius: 0; box-shadow: none;
+  background: none; display: grid; place-content: center; justify-items: center; gap: 2px;
+  font: 700 34px/1 var(--serif); color: var(--gold-soft); text-shadow: 0 2px 0 #0008;
+  border-right: 2px dashed rgba(232, 194, 122, .45);
+}
+.seat.ticket .no small { font: 600 9px/1 var(--sans); letter-spacing: .25em; color: var(--dim); }
+.seat.ticket .body { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 8px 10px; }
+.seat.ticket .ava { width: 46px; height: 46px; }
+.seat.ticket .name { font-size: 17px; }
+.seat.ticket .me { top: -9px; right: 10px; }
+.seat.ticket .rose { right: 10px; bottom: 8px; }
+/* 发言中：票根整块变金 */
+.seat.ticket.is-speaking { background: linear-gradient(90deg, var(--gold) 0 64px, transparent 64px), linear-gradient(180deg, #4a2418, #2e1411); }
+.seat.ticket.is-speaking .no { color: var(--cta-ink); text-shadow: none; }
+.seat.ticket.is-speaking .no small { color: #6b4a22; }
+body[data-time="night"] .seat.ticket.is-speaking { background: linear-gradient(90deg, #3a1a14 0 64px, transparent 64px), linear-gradient(180deg, var(--card-2), var(--card)); }
+body[data-time="night"] .seat.ticket.is-speaking .no { color: var(--gold-soft); }
+/* 出局：票根左上角被撕掉 */
+.seat.ticket.is-dead .no {
+  clip-path: polygon(0 38%, 8% 30%, 16% 36%, 26% 22%, 34% 28%, 44% 12%, 52% 18%, 62% 0, 100% 0, 100% 100%, 0 100%);
+  background: #2a1410; color: var(--dim);
+}
+.seat.ticket.is-dead .no::after { content: "作废"; font: 700 10px/1 var(--sans); letter-spacing: .2em; color: var(--danger); margin-top: 2px; }
+.seat.ticket.is-dead .no small { display: none; }
+
+/* 手机：票根竖版——上票根（号码）/ 齿孔横线 / 下头像 + 名字 */
+.seat.ticket.compact {
+  flex-direction: column; text-align: center;
+  background: linear-gradient(180deg, #3a1a14 0 30px, transparent 30px), linear-gradient(180deg, var(--card-2), var(--card));
+  -webkit-mask: radial-gradient(circle 6px at 0 30px, transparent 98%, #000) left / 51% 100% no-repeat,
+                radial-gradient(circle 6px at 100% 30px, transparent 98%, #000) right / 51% 100% no-repeat;
+          mask: radial-gradient(circle 6px at 0 30px, transparent 98%, #000) left / 51% 100% no-repeat,
+                radial-gradient(circle 6px at 100% 30px, transparent 98%, #000) right / 51% 100% no-repeat;
+}
+.seat.ticket.compact .no { flex: 0 0 30px; width: auto; font-size: 21px; border-right: 0; border-bottom: 2px dashed rgba(232, 194, 122, .45); }
+.seat.ticket.compact .no small { display: none; }
+.seat.ticket.compact .no::after { font-size: 8px; }
+.seat.ticket.compact.is-dead .no { display: flex; gap: 4px; align-items: center; justify-content: center; }
+.seat.ticket.compact .body { flex-direction: column; gap: 3px; padding: 6px 3px 6px; }
+.seat.ticket.compact .ava { width: 32px; height: 32px; }
+.seat.ticket.compact .name { font-size: 12px; }
+.seat.ticket.compact .tag { font-size: 10.5px; }
+.seat.ticket.compact.is-speaking { background: linear-gradient(180deg, var(--gold) 0 30px, transparent 30px), linear-gradient(180deg, #4a2418, #2e1411); }
+body[data-time="night"] .seat.ticket.compact.is-speaking { background: linear-gradient(180deg, #3a1a14 0 30px, transparent 30px), linear-gradient(180deg, var(--card-2), var(--card)); }
+.seat.ticket.compact .me { top: auto; bottom: -9px; right: 50%; transform: translateX(50%); }

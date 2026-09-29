@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>奶酪大盗 · 画面 3 天亮指认</title>
+<link rel="stylesheet" href="_shared.css">
+<link rel="stylesheet" href="_attic.css">
+<style>
+  /* 画面 3：天亮后讨论 → 秘密投票。舞台是空砧板 + 倒计时；指认 = 一张"就是你！"小卡飞过去贴在对方卡片上。票数到揭晓才公开。 */
+  .center { gap: 14px; }
+  .timer {
+    position: relative; width: 190px; height: 190px; display: grid; place-items: center;
+    border-radius: 50%; background: var(--cream); border: var(--border); box-shadow: var(--shadow);
+  }
+  .timer svg { position: absolute; inset: 8px; width: calc(100% - 16px); height: calc(100% - 16px); rotate: -90deg; }
+  .timer circle { fill: none; stroke-width: 12; }
+  .timer .track { stroke: rgba(41,39,34,.1); }
+  .timer .bar { stroke: var(--m3); stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 300ms; }
+  .timer.hurry .bar { stroke: var(--coral); }
+  .timer.hurry { animation: pulse 1s ease-in-out infinite; }
+  .timer .num { font: 700 58px/1 var(--serif); font-variant-numeric: tabular-nums; }
+  .timer .lbl { position: absolute; bottom: 38px; font: 800 14px var(--sans); color: var(--muted); }
+  .empty-board { position: relative; }
+  .empty-board .board { margin-top: 0; }
+  .center .caption b { font-family: var(--serif); }
+
+  /* 投票中：可点的席位 */
+  .voting .seat:not(#me) { cursor: pointer; }
+  .voting .seat:not(#me):hover { transform: translateY(-4px) rotate(-1.5deg); }
+  .seat.target { outline: 4px solid var(--yellow); outline-offset: 3px; transform: translateY(-4px); box-shadow: var(--shadow); }
+  .vote-tag {
+    position: absolute; right: -14px; top: 50%; translate: 0 -50%; rotate: 8deg; z-index: 5;
+    font: 900 14px var(--sans); white-space: nowrap; padding: 6px 10px; background: var(--yellow);
+    border: 2.5px solid var(--ink); border-radius: 10px; box-shadow: 0 3px 0 var(--ink);
+  }
+  .vote-tag.stuck { animation: stamp 260ms cubic-bezier(.34,1.56,.64,1); }
+  .col.right .vote-tag { right: auto; left: -14px; rotate: -8deg; }
+  .seat .voted-mark {
+    position: absolute; bottom: -9px; right: 10px; font: 800 11px var(--sans); padding: 2px 7px;
+    background: var(--ink); color: var(--cream); border-radius: 999px; opacity: 0; transition: opacity 200ms;
+  }
+  .seat.has-voted .voted-mark { opacity: 1; }
+
+  .tally { font: 800 15px var(--sans); }
+  .tally b { font: 700 20px var(--serif); }
+
+  @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+  @keyframes stamp { from { transform: scale(1.8); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  @container (max-width: 600px) {
+    .timer { width: 118px; height: 118px; }
+    .timer circle { stroke-width: 10; }
+    .timer .num { font-size: 36px; }
+    .timer .lbl { bottom: 20px; font-size: 11px; }
+    .vote-tag { font-size: 11px; padding: 3px 6px; right: -8px; }
+    .col.right .vote-tag { left: -8px; }
+    .seat .voted-mark { font-size: 9px; right: 4px; }
+  }
+</style>
+</head>
+<body data-time="day" data-seat-style="badge">
+<div class="toolbar">
+  <strong>画面 3 · 天亮指认</strong>
+  <span class="note">天亮讨论 2:00 → 秘密投票 0:30。演示里倒计时加速播放。</span>
+  <div class="group"><button data-set-size="desktop" aria-pressed="true">桌面 1280×800</button><button data-set-size="mobile" aria-pressed="false">手机 390×844</button></div>
+  <div class="group"><button data-set-count="4">4 人</button><button data-set-count="6">6 人</button><button data-set-count="8">8 人</button></div>
+  <div class="group"><button id="reset">重播</button></div>
+</div>
+<div class="stage-wrap"><div class="device" data-size="desktop">
+  <div class="wall"></div>
+  <div class="beams"><b></b><i></i><i></i></div>
+  <div class="floor"></div>
+  <div class="mousehole"></div>
+  <div class="window" data-box="window">
+    <span class="cloud" style="left:20%;top:62%;width:70px"></span>
+    <span class="cloud" style="left:58%;top:72%;width:54px"></span>
+    <div class="moon"></div><div class="sun"></div>
+    <div class="mullion"></div><div class="transom"></div>
+    <div class="curtain l"></div><div class="curtain r"></div>
+  </div>
+  <div class="sill"></div>
+  <div class="beam"></div>
+
+  <div class="notice" data-box="notice">
+    <div class="when" id="when">天亮了 · 讨论</div>
+    <h1 class="title" id="title">奶酪不见了！</h1>
+  </div>
+  <div class="hours-box" data-box="hours"><div class="hours"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span></div></div>
+
+  <div class="col left" data-half="left"></div>
+  <div class="col right" data-half="right"></div>
+
+  <div class="center" data-box="center">
+    <div class="timer" id="timer">
+      <svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="44"/><circle class="bar" id="bar" cx="50" cy="50" r="44"/></svg>
+      <span class="num" id="num">2:00</span><span class="lbl" id="lbl">讨论</span>
+    </div>
+    <div class="empty-board"><div class="board"></div></div>
+    <span class="caption" id="caption">砧板空了，谁拿的？</span>
+  </div>
+
+  <div class="dock" data-box="dock">
+    <div class="info">
+      <strong id="dock-title">说出你几点醒来、看到了什么</strong>
+      <span id="dock-sub">你是 3 点醒的。可以说真话，也可以不说。</span>
+    </div>
+    <div class="actions" style="display:flex">
+      <button id="act-skip" class="btn">弃票</button>
+      <button id="act-go" class="btn btn-primary">提前去投票</button>
+    </div>
+  </div>
+</div></div>
+<script>document.body.dataset.n = Math.min(8, Math.max(4, Number(new URLSearchParams(location.search).get('n')) || 6));</script>
+<script src="_shared.js"></script>
+<script>
+(function () {
+  const { fly, shake, reduce } = window.CT;
+  const $ = (id) => document.getElementById(id);
+  const seats = [...document.querySelectorAll('.seat')];
+  const others = seats.filter((s) => s.id !== 'me');
+  seats.forEach((s) => s.insertAdjacentHTML('beforeend', '<span class="voted-mark">已投</span>'));
+  const C = 2 * Math.PI * 44;
+  $('bar').style.strokeDasharray = C;
+  const skip = $('act-skip'), go = $('act-go');
+  skip.hidden = true;
+
+  let phase = 'talk', left = 120, total = 120, target = null, tick;
+  const fmt = (s) => (s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : String(s));
+  function draw() {
+    $('num').textContent = fmt(left);
+    $('bar').style.strokeDashoffset = C * (1 - left / total);
+    $('timer').classList.toggle('hurry', left <= 10);
+  }
+  function run(sec, stepMs) {
+    clearInterval(tick);
+    left = total = sec;
+    draw();
+    tick = setInterval(() => {
+      left = Math.max(0, left - 1);
+      draw();
+      if (!left) { clearInterval(tick); if (phase === 'talk') toVote(); }
+    }, stepMs);
+  }
+
+  function toVote() {
+    phase = 'vote';
+    document.body.classList.add('voting');
+    $('when').textContent = '天亮了 · 投票';
+    $('title').textContent = '谁偷了奶酪？';
+    $('lbl').textContent = '投票';
+    $('caption').innerHTML = '秘密投票，结果揭晓时公开';
+    $('dock-title').textContent = '点一只老鼠，指认它';
+    $('dock-sub').textContent = '票数最多的出局；平票一起出局';
+    skip.hidden = false;
+    go.textContent = '确认指认';
+    go.disabled = true;
+    run(30, 220);
+    // 其他人陆续投完（只显示"已投"，不显示投给谁）
+    others.forEach((s, i) => setTimeout(() => s.classList.add('has-voted'), 900 + i * 700));
+  }
+
+  go.addEventListener('click', () => {
+    if (phase === 'talk') return toVote();
+    if (!target) return;
+    go.disabled = skip.disabled = true;
+    document.body.classList.remove('voting');
+    const card = document.createElement('div');
+    card.className = 'vote-tag';
+    card.textContent = '就是你！';
+    const tag = card.cloneNode(true);
+    tag.style.visibility = 'hidden';
+    target.appendChild(tag);
+    fly(card, go, tag, () => {
+      tag.style.visibility = '';
+      tag.classList.add('stuck');
+      document.getElementById('me').classList.add('has-voted');
+      shake();
+      $('dock-title').textContent = '已指认，等其他人投完';
+      $('dock-sub').textContent = '投票是秘密的，别人看不到你投给了谁';
+    }, 120);
+  });
+  skip.addEventListener('click', () => {
+    go.disabled = skip.disabled = true;
+    document.body.classList.remove('voting');
+    target?.classList.remove('target');
+    document.getElementById('me').classList.add('has-voted');
+    $('dock-title').textContent = '你弃票了';
+    $('dock-sub').textContent = '等其他人投完';
+  });
+  others.forEach((s) => s.addEventListener('click', () => {
+    if (!document.body.classList.contains('voting')) return;
+    target?.classList.remove('target');
+    target = s;
+    s.classList.add('target');
+    go.disabled = false;
+    go.textContent = `指认 ${s.querySelector('.seat-name').textContent}`;
+  }));
+
+  run(120, reduce ? 1000 : 60);
+})();
+</script>
+</body>
+</html>

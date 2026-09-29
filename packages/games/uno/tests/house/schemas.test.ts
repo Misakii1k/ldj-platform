@@ -99,6 +99,7 @@ function validPublicView(): UnoHousePublicView {
     cumulativeScores: [0, 0],
     matchRanking: null,
     clockInfo: { turnDeadlineAt: null, windowDeadlineAt: null },
+    lastRound: null,
   };
 }
 
@@ -247,6 +248,26 @@ test('house schemas：state 拒绝未知键与畸形窗口', () => {
 test('house schemas：public/player view 严格校验', () => {
   assert.deepEqual(unoHousePublicViewSchema.parse(validPublicView()), validPublicView());
   assert.throws(() => unoHousePublicViewSchema.parse({ ...validPublicView(), extra: 1 }), z.ZodError);
+
+  // lastRound 结算快照：合法形状通过，多键/缺键/坏牌都被拒
+  const withLastRound = {
+    ...validPublicView(),
+    phase: 'round_over' as const,
+    lastRound: {
+      roundNumber: 1,
+      finisherPlayerId: 'p2',
+      remainingHands: [[numberCard('r1:g0:red-5-1')], []],
+    },
+  };
+  assert.doesNotThrow(() => unoHousePublicViewSchema.parse(withLastRound));
+  assert.throws(
+    () => unoHousePublicViewSchema.parse({ ...withLastRound, lastRound: { ...withLastRound.lastRound, extra: 1 } }),
+    z.ZodError,
+  );
+  assert.throws(
+    () => unoHousePublicViewSchema.parse({ ...validPublicView(), lastRound: undefined }),
+    z.ZodError,
+  );
 
   const playerView = {
     ...validPublicView(),
