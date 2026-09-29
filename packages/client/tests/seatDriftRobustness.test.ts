@@ -348,10 +348,10 @@ test('【奶酪大盗】isSpectator === false 时正确挂载手牌操作区与�
 
   // 参局玩家不应展示公共大屏 badge
   assert.ok(!html.includes('cheese-screen-badge'), '参局玩家端不应展示 cheese-screen-badge');
-  // 必须展示手牌选骰面板
-  assert.ok(html.includes('cheese-hour-choice-panel'), '开局阶段应挂载时刻自选面板');
-  assert.ok(html.includes('选定 2 点醒来'), '应挂载选定 2 点醒来的操作');
-  assert.ok(html.includes('选定 4 点醒来'), '应挂载选定 4 点醒来的操作');
+  // 阁楼世界版（2026-09-29 计划）：开局两骰自选收敛到坞内按钮，不再有独立面板
+  assert.ok(html.includes('cta-stage'), '开局阶段应挂载阁楼舞台');
+  assert.ok(html.includes('选定 2 点'), '应挂载选定 2 点的操作');
+  assert.ok(html.includes('选定 4 点'), '应挂载选定 4 点的操作');
 });
 
 test('【榴莲】isSpectator === false 标准模式下正确挂载个人手牌区与 ActionDock', () => {

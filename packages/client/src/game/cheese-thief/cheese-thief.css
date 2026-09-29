@@ -3627,9 +3627,11 @@ html[data-motion-level='off'] .cheese-vignette {
   border: 3px solid var(--game-ink);
   border-radius: 18px;
   box-shadow: 0 5px 0 var(--game-ink);
+  /* 壳是 theme=night（浅色文字），坞是奶油卡：必须显式锁墨色，防止继承浅字 */
+  color: var(--game-ink);
 }
 .cta-dock__info { flex: 1; min-width: 0; }
-.cta-dock__info strong { display: block; font-size: 19px; }
+.cta-dock__info strong { display: block; font-size: 19px; color: var(--game-ink); }
 .cta-dock__info span { font-size: 15px; color: var(--game-ink); }
 /* 复用 e2e 锚点类名；中和旧段落样式 */
 .cta-dock .cheese-secret-card {
@@ -3644,12 +3646,15 @@ html[data-motion-level='off'] .cheese-vignette {
   font-weight: 700;
   font-size: 18px;
   font-variant-numeric: tabular-nums;
+  color: var(--game-ink);
   padding: 6px 14px;
   background: var(--game-paper);
   border: 2.5px solid var(--game-ink);
   border-radius: 999px;
   box-shadow: 0 2px 0 var(--game-ink);
 }
+/* 共享倒计时组件的紧急态色在奶油纸上也要保住对比度 */
+.cta-dock__pill .tabletop-countdown-text { color: inherit; }
 .cta-dock__actions { display: flex; gap: 10px; }
 
 .cta-btn {
