@@ -133,6 +133,32 @@ export function nightNotice(
   return { when, title: '你独自醒来了', caption: '月光下，奶酪还在砧板上' };
 }
 
+/* ── ② 掷骰（入夜前） ────────────────────────────────────── */
+
+export interface RollInfo {
+  /** 大骰盅下的骰子：4 人局两颗候选，5–8 人局一颗（服务器已定） */
+  readonly values: readonly number[];
+  /** true = 4 人局两骰自选（点骰子发 choose_hour）；false = 纯演出揭开 */
+  readonly fourPick: boolean;
+}
+
+/** 掷骰画面数据：hour_choice（4 人局）或 night 第 0 时刻开局窗口（5–8 人局）。 */
+export function rollValuesFor(view: PlayerView): RollInfo | null {
+  const me = view.me;
+  if (!me) return null;
+  if (view.phase === 'hour_choice') {
+    return me.hourChoices ? { values: me.hourChoices, fourPick: true } : null;
+  }
+  if (view.phase === 'night' && view.currentHour === 0) {
+    return me.wakeHour >= 1 ? { values: [me.wakeHour], fourPick: false } : null;
+  }
+  return null;
+}
+
+export function isRollScene(view: PlayerView): boolean {
+  return rollValuesFor(view) !== null;
+}
+
 /* ── ③ 投票：已投集合与（终局后的）票数统计 ───────────────── */
 
 /** 投票中的「已投」名单：只用键集合，不看投向（隐私红线）。 */

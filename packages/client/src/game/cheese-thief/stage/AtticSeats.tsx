@@ -46,13 +46,22 @@ const PIPS: Record<number, readonly number[]> = {
   1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8],
 };
 
-export function DieFace({ value, className }: { readonly value: number; readonly className?: string }) {
+/** 九格点阵（按钮/卡片通用） */
+export function DiePips({ value }: { readonly value: number }) {
   const on = PIPS[value] ?? [];
   return (
-    <div className={`cta-die${className ? ` ${className}` : ''}`} aria-label={`${value} 点`} role="img">
+    <>
       {Array.from({ length: 9 }, (_, i) => (
         <i key={i} className={on.includes(i) ? 'on' : undefined} />
       ))}
+    </>
+  );
+}
+
+export function DieFace({ value, className }: { readonly value: number; readonly className?: string }) {
+  return (
+    <div className={`cta-die${className ? ` ${className}` : ''}`} aria-label={`${value} 点`} role="img">
+      <DiePips value={value} />
     </div>
   );
 }

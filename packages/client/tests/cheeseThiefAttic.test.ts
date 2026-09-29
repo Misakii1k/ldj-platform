@@ -10,7 +10,9 @@ import {
   awakeSeatIds,
   cheeseSightFor,
   isAutoStealDue,
+  isRollScene,
   nightNotice,
+  rollValuesFor,
   seatToneIndex,
   splitSeats,
   timelineRows,
@@ -152,6 +154,26 @@ test('自动偷：独醒且奶酪在场才触发', () => {
   assert.equal(isAutoStealDue(makeView({ currentHour: 0 }), 'p2'), false);
   assert.equal(isAutoStealDue(makeView({ phase: 'dawn', currentHour: 0 }), 'p2'), false);
   assert.equal(isAutoStealDue(makeView({ me: null }), null), false);
+});
+
+test('② 掷骰数据：4 人局两骰候选，5–8 人局开局窗口一颗（纯演出）', () => {
+  // 4 人局 hour_choice：两颗候选
+  const four = rollValuesFor(makeView({ phase: 'hour_choice', currentHour: 0, me: { wakeHour: 0, hourChoices: [2, 4] } }));
+  assert.deepEqual(four, { values: [2, 4], fourPick: true });
+  // 5–8 人局 night 第 0 时刻：一颗（服务器已定）
+  const single = rollValuesFor(makeView({ phase: 'night', currentHour: 0, me: { wakeHour: 3 } }));
+  assert.deepEqual(single, { values: [3], fourPick: false });
+  // 夜中非开局 / 白天 / 观战者：无掷骰画面
+  assert.equal(rollValuesFor(makeView({ phase: 'night', currentHour: 3 })), null);
+  assert.equal(rollValuesFor(makeView({ phase: 'dawn', currentHour: 0 })), null);
+  assert.equal(rollValuesFor(makeView({ phase: 'night', currentHour: 0, me: null })), null);
+  assert.equal(isRollScene(makeView({ phase: 'night', currentHour: 0, me: { wakeHour: 3 } })), true);
+  assert.equal(isRollScene(makeView({ phase: 'vote', currentHour: 0 })), false);
+});
+
+test('掷骰画面与自动偷互不触发（hour_choice / 第 0 时刻不自动偷）', () => {
+  assert.equal(isAutoStealDue(makeView({ phase: 'hour_choice', currentHour: 0, me: { wakeHour: 0, hourChoices: [2, 4] } })), false);
+  assert.equal(isAutoStealDue(makeView({ phase: 'night', currentHour: 0, me: { wakeHour: 3 } })), false);
 });
 
 test('夜间告示牌文案状态机', () => {
